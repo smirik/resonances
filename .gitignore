@@ -1,6 +1,12 @@
+# Cache directory is needed but no files should be there
+cache/*
+!cache/.gitkeep
+
+# Common python excludes
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+**/.DS_Store
 
 # C extensions
 *.so
