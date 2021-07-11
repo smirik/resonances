@@ -1,12 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 from resonances.config import config
 from resonances.resonance.libration import libration
 
 
 def asteroids(data, mmrs, librations, save=True, save_path='cache'):
+    if save:
+        Path(save_path).mkdir(parents=True, exist_ok=True)
+
     for i, mmr in enumerate(mmrs):
         asteroid(
             data['times'],
@@ -26,14 +30,14 @@ def asteroids(data, mmrs, librations, save=True, save_path='cache'):
                 'ecc': data['ecc'][i],
             }
             df = pd.DataFrame(data=df_data)
-            df.to_csv('{}/{}-{}.csv'.format(save_path, mmr.body_name, mmr.to_s()))
+            df.to_csv('{}/data-{}-{}.csv'.format(save_path, mmr.body_name, mmr.to_s()))
 
 
 def asteroid(times, angle, axis, ecc, mmr, status, libration_data, save_path='cache'):
     plt.style.use('default')
     fig, axs = plt.subplots(6, 1, sharex=False, figsize=(20, 10))
     fig.suptitle(
-        "Asteroid {}, resonance = {}, type = {}".format(mmr.body_name, mmr.to_s(), status),
+        "Asteroid {}, resonance = {}, status = {}".format(mmr.body_name, mmr.to_s(), status),
         fontsize=14,
     )
     for axi in axs:
@@ -51,4 +55,4 @@ def asteroid(times, angle, axis, ecc, mmr, status, libration_data, save_path='ca
     axs[5].plot(libration_data['density']['ps'], libration_data['density']['kdes'])
 
     plt.tight_layout()
-    plt.savefig('{}/{}-{}-{}.png'.format(save_path, status, mmr.body_name, mmr.to_s()))
+    plt.savefig('{}/fig-{}-{}-{}.png'.format(save_path, status, mmr.body_name, mmr.to_s()))

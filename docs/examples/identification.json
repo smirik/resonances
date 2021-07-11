@@ -1,0 +1,44 @@
+{
+    "stop": 6.28e5,
+    "Nout": 10000,
+    "plot": true,
+    "save": true,
+    "save_path": "cache/identification",
+    "asteroids": [
+      {
+        "elem": {
+          "m": 0.0,
+          "a": 2.398825840331548,
+          "e": 0.2194125828625336,
+          "inc": 0.23627318991620527,
+          "Omega": 0.6370508455573044,
+          "omega": 5.752902062786396,
+          "M": 2.4309844848211464,
+          "label": "A463"
+        },
+        "resonances": [
+          {
+            "integers": [4, -2, -1, 0, 0, -1],
+            "bodies": ["Jupiter", "Saturn"]
+          }
+        ],
+        "plot": true
+      }, 
+      {
+        "elem": {
+          "num": 490,
+          "label": "Ast490"
+        },
+        "resonances": [
+          {
+            "integers": [5, -2, -2, 0, 0, -1],
+            "bodies": ["Jupiter", "Saturn"]
+          },
+          {
+            "integers": [4, -2, -1, 0, 0, -1],
+            "bodies": ["Jupiter", "Saturn"]
+          }
+        ]
+      }
+    ]
+  }

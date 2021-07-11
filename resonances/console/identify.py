@@ -1,6 +1,4 @@
 import json
-import numpy as np
-import pandas as pd
 from resonances.console.console import console as cs
 from resonances.config import config
 
@@ -24,9 +22,6 @@ def quick():
         )
     ]
 
-    os = sim.calculate_orbits(primary=sim.particles[0])
-    sim.status()
-
     data = integration.integrate(sim, mmrs, config.get('interval'), config.get('Nout'))
     librations = integration.librations(data, mmrs, config.get('Nout'))
     plot.asteroids(data, mmrs, librations)
@@ -34,9 +29,10 @@ def quick():
 
 def asteroid():
     cs.asteroid()
-    print('Getting data from file {}'.format(cs.args.config))
     with open(cs.args.config, "r") as read_file:
-        a_config = json.load(read_file)
+        c_config = json.load(read_file)
+
+    cs.create_output_dir(c_config['save_path'])
 
     sim = integration.create_solar_system()
 
@@ -44,7 +40,7 @@ def asteroid():
     # @todo need to verify that data are full
     # Add checks for asteroids, resonances, Nout and stop, plot (or default values)
     i = 0
-    for asteroid in a_config['asteroids']:
+    for asteroid in c_config['asteroids']:
         if 'num' in asteroid['elements']:
             elem = astdys.search(asteroid['elements']['num'])
         else:
@@ -63,11 +59,8 @@ def asteroid():
             )
         i += 1
 
-    os = sim.calculate_orbits(primary=sim.particles[0])
-    sim.status()
+    data = integration.integrate(sim, mmrs, c_config['stop'], c_config['Nout'])
+    librations = integration.librations(data, mmrs, c_config['Nout'])
 
-    data = integration.integrate(sim, mmrs, a_config['stop'], a_config['Nout'])
-    librations = integration.librations(data, mmrs, a_config['Nout'])
-
-    if a_config['plot']:
-        plot.asteroids(data, mmrs, librations, a_config['save'], a_config['save_path'])
+    if c_config['plot']:
+        plot.asteroids(data, mmrs, librations, c_config['save'], c_config['save_path'])

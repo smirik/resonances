@@ -4,7 +4,7 @@
     "libration.Nfreq": 1000,
     "libration.periodogram.critical": 0.5,
     "libration.density.adjust": 0.2,
-    "libration.density.critical": 0.3,
+    "libration.density.critical": 0.25,
     "interval": 6.28e5,
     "Nout": 10000
 }

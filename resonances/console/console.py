@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 
 def static_init(cls):
@@ -14,7 +15,16 @@ class console:
 
     @classmethod
     def static_init(cls):
-        cls.parser = argparse.ArgumentParser(description='Identify if an asteroid has a given resonance.')
+        cls.parser = argparse.ArgumentParser(description='')
+
+    @classmethod
+    def create_output_dir(cls, output):
+        Path(output).mkdir(parents=True, exist_ok=True)
+
+    @classmethod
+    def shape(cls):
+        cls.parser.add_argument('--config', nargs='?', type=str)
+        cls.args = cls.parser.parse_args()
 
     @classmethod
     def asteroid(cls):
