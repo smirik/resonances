@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from resonances.config import config
 from resonances.resonance.libration import libration
 
 
@@ -30,7 +31,7 @@ def asteroids(data, mmrs, librations, save=True, save_path='cache'):
 
 def asteroid(times, angle, axis, ecc, mmr, status, libration_data, save_path='cache'):
     plt.style.use('default')
-    fig, axs = plt.subplots(5, 1, sharex=False, figsize=(20, 10))
+    fig, axs = plt.subplots(6, 1, sharex=False, figsize=(20, 10))
     fig.suptitle(
         "Asteroid {}, resonance = {}, type = {}".format(mmr.body_name, mmr.to_s(), status),
         fontsize=14,
@@ -43,7 +44,11 @@ def asteroid(times, angle, axis, ecc, mmr, status, libration_data, save_path='ca
     axs[1].plot(times / (2 * np.pi), libration.shift(angle), linestyle='', marker=',')
     axs[2].plot(times / (2 * np.pi), axis, linestyle='', marker=',')
     axs[3].plot(times / (2 * np.pi), ecc, linestyle='', marker=',')
+    axs[4].set_xlim([config.get('libration.start'), config.get('libration.stop')])
     axs[4].plot(libration_data['ps'], libration_data['periodogram'], linestyle='', marker=',')
+    axs[5].set_xlim([0, 2 * np.pi])
+    axs[5].xaxis.set_major_locator(plt.LinearLocator(numticks=10))
+    axs[5].plot(libration_data['density']['ps'], libration_data['density']['kdes'])
 
     plt.tight_layout()
     plt.savefig('{}/{}-{}-{}.png'.format(save_path, status, mmr.body_name, mmr.to_s()))

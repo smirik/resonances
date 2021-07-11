@@ -50,6 +50,6 @@ def test_libration():
     data = libration.libration(
         df['times'], df['angle'], len(df), config.get('libration.start'), config.get('libration.stop'), config.get('libration.Nfreq')
     )
-    # assert data['flag'] is False
-    # assert libration.has(df['times'], df['angle'], len(df)) is False
-    # assert 0 == libration.status(df['times'], df['angle'], len(df))
+    assert data['flag'] is False
+    assert libration.has(df['times'], df['angle'], len(df)) is False
+    assert 0 == libration.status(df['times'], df['angle'], len(df))

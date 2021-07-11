@@ -135,11 +135,5 @@ def librations(data, mmrs, Nout):
     libration_data = []
     for i, mmr in enumerate(mmrs):
         libration_data.append(libration.libration(data['times'] / (2 * np.pi), data['angle'][i], Nout))
-        if libration_data[i]['flag']:
-            if libration_data[i]['pure']:
-                status[i] = 2
-            else:
-                status[i] = 1
-        else:
-            status[i] = 0
+        status[i] = libration_data[i]['status']
     return {'status': status, 'libration_data': libration_data}
