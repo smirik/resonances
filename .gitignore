@@ -1,3 +1,6 @@
+# Temporary: no Jupyter notebooks in core directory
+*.ipynb
+
 # Cache directory is needed but no files should be there
 cache/*
 !cache/.gitkeep
