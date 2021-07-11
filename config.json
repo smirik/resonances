@@ -1,0 +1,7 @@
+{
+    "libration.start": 500,
+    "libration.stop": 20000,
+    "libration.Nfreq": 1000,
+    "interval": 6.28e5,
+    "Nout": 10000
+}

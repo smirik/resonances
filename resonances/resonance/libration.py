@@ -11,18 +11,28 @@ class libration:
         return {'ps': ps, 'ws': ws, 'periodogram': periodogram}
 
     @classmethod
-    def has_libration(cls, x, y, Nout, start=500, stop=20000, num_freqs=1000):
+    def has(cls, x, y, Nout, start=500, stop=20000, num_freqs=1000):
         tmp = cls.libration(x, y, Nout, start, stop, num_freqs)
         if tmp['flag']:
             return True
         return False
 
     @classmethod
-    def shift_apocentric(cls, angle):
-        for i, elem in enumerate(angle):
+    def status(cls, x, y, Nout, start=500, stop=20000, num_freqs=1000):
+        res = cls.libration(x, y, Nout, start, stop, num_freqs)
+        if res['pure']:
+            return 2
+        if res['flag']:
+            return 1
+        return 0
+
+    @classmethod
+    def shift(cls, angle, distance=0):
+        tmp = np.array(angle, copy=True)
+        for i, elem in enumerate(tmp):
             if elem > np.pi:
-                angle[i] = angle[i] - 2 * np.pi
-        return angle
+                tmp[i] = tmp[i] - 2 * np.pi
+        return tmp
 
     @classmethod
     def pure(cls, y):
@@ -38,8 +48,10 @@ class libration:
     @classmethod
     def has_pure_libration(cls, y):  # not working for librations that are not around 0 or +/- np.pi
         flag1 = cls.pure(y)
-        flag2 = cls.pure(cls.shift_apocentric(y))
-        if flag1 or flag2:
+        if flag1:
+            return True
+        flag2 = cls.pure(cls.shift(y))
+        if flag2:
             return True
         return False
 
@@ -54,4 +66,11 @@ class libration:
 
         pure = cls.has_pure_libration(y)
 
-        return {'periodogram': data['periodogram'], 'ps': data['ps'], 'ws': data['ws'], 'flag': flag, 'pure': pure, 'pmax': pmax}
+        return {
+            'periodogram': np.sqrt(4 * data['periodogram'] / Nout),
+            'ps': data['ps'],
+            'ws': data['ws'],
+            'flag': flag,
+            'pure': pure,
+            'pmax': pmax,
+        }

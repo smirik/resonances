@@ -16,6 +16,7 @@ seaborn = "^0.11.1"
 
 [tool.poetry.scripts]
 identify-asteroid = "resonances.console.identify:asteroid"
+identify-quick = "resonances.console.identify:quick"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"

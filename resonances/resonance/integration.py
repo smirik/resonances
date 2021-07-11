@@ -66,12 +66,12 @@ def add_asteroid_by_elem(sim: rebound.Simulation, elem):
 
 def add_asteroid_by_num(sim: rebound.Simulation, asteroid_num):
     elem = astdys.search(asteroid_num)
-    return add_asteroid_by_elem(elem)
+    return add_asteroid_by_elem(sim, elem)
 
 
 def add_asteroids(sim: rebound.Simulation, asteroids):
     for asteroid in asteroids:
-        sim = add_asteroid_by_num(asteroid)
+        sim = add_asteroid_by_num(sim, asteroid)
     # os = sim.calculate_orbits(primary=sim.particles[0])
     return sim
 

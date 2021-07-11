@@ -10,12 +10,22 @@ def static_init(cls):
 @static_init
 class console:
     args = None
+    parser = None
 
     @classmethod
     def static_init(cls):
-        parser = argparse.ArgumentParser(description='Identify if an asteroid has a given resonance.')
-        parser.add_argument('--config', nargs='?', type=str)
-        cls.args = parser.parse_args()
+        cls.parser = argparse.ArgumentParser(description='Identify if an asteroid has a given resonance.')
+
+    @classmethod
+    def asteroid(cls):
+        cls.parser.add_argument('--config', nargs='?', type=str)
+        cls.args = cls.parser.parse_args()
+
+    @classmethod
+    def quick(cls):
+        cls.parser.add_argument('asteroid', help='The number of the asteroid you want to research.', type=int)
+        cls.parser.add_argument('-r', '--resonance', nargs='+', help='<Required> Setup the resonance', required=True, type=int)
+        cls.args = cls.parser.parse_args()
 
 
 # def test_static_init():

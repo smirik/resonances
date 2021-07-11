@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from scipy.signal.spectral import periodogram
 
+from resonances.config import config
 from resonances.resonance.three_body import ThreeBody
 from resonances.resonance.libration import libration
 from resonances.resonance import integration
@@ -55,8 +56,8 @@ def run(asteroid, variations, num_variations, mmr_template: ThreeBody, saveOutpu
 
     os = sim.calculate_orbits(primary=sim.particles[0])
 
-    Nout = 10000
-    data = integration.integrate(sim, mmrs, 6.28e5, Nout)
+    Nout = config.get('Nout')
+    data = integration.integrate(sim, mmrs, config.get('interval'), config.get('Nout'))
 
     for i, mmr in enumerate(mmrs):
         libration_status = libration.libration(data['times'] / (2 * np.pi), data['angle'][i], Nout)
@@ -82,7 +83,7 @@ def run(asteroid, variations, num_variations, mmr_template: ThreeBody, saveOutpu
                 axi.xaxis.set_major_locator(plt.LinearLocator(numticks=21))
                 axi.set_xlim([0, 100000])
             axs[0].plot(data['times'] / (2 * np.pi), data['angle'][i], linestyle='', marker=',')
-            axs[1].plot(data['times'] / (2 * np.pi), libration.shift_apocentric(data['angle'][i]), linestyle='', marker=',')
+            axs[1].plot(data['times'] / (2 * np.pi), libration.shift(data['angle'][i]), linestyle='', marker=',')
             axs[2].plot(data['times'] / (2 * np.pi), data['axis'][i], linestyle='', marker=',')
             axs[3].plot(data['times'] / (2 * np.pi), data['ecc'][i], linestyle='', marker=',')
             axs[4].plot(libration_status['ps'], np.sqrt(4 * libration_status['periodogram'] / Nout), linestyle='', marker=',')
