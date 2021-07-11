@@ -4,10 +4,14 @@ import pandas as pd
 from scipy.signal.spectral import periodogram
 
 from resonances.resonance.three_body import ThreeBody
-from resonances.resonance import libration
+from resonances.resonance.libration import libration
 from resonances.resonance import integration
 
 from resonances.data.astdys import astdys
+
+
+def test():
+    print('hello from structure:test')
 
 
 def run(asteroid, variations, num_variations, mmr_template: ThreeBody, saveOutput=False, dump=100, plot=False, saveData=False):
@@ -34,7 +38,7 @@ def run(asteroid, variations, num_variations, mmr_template: ThreeBody, saveOutpu
                 m=0.0,
                 a=axis,
                 e=ecc,
-                inc=elem['i'],
+                inc=elem['inc'],
                 Omega=elem['Omega'],
                 omega=elem['omega'],
                 M=elem['M'],

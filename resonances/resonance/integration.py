@@ -4,18 +4,11 @@ from pathlib import Path
 
 from resonances.resonance.three_body import ThreeBody
 from resonances.data.astdys import astdys
+from resonances.resonance.libration import libration
 
 
-def create_solar_system():
-    solar_file_src = "cache/solar.bin"
-    solar_file = Path(solar_file_src)
-
-    if solar_file.exists():
-        sim = rebound.Simulation(solar_file_src)
-        return sim
-
-    sim = rebound.Simulation()
-    labels = [
+def list_of_planets():
+    planets = [
         'Sun',
         'Mercury',
         'Venus',
@@ -27,27 +20,59 @@ def create_solar_system():
         'Neptune',
         'Pluto',
     ]
-    sim.add(labels, date='2020-12-17 00:00')
+    return planets
+
+
+# @todo additional checks required
+def index_of_planets(planets_names):
+    planets = list_of_planets()
+    if isinstance(planets_names, list):
+        arr = []
+        for name in planets_names:
+            arr.append(planets.index(name))
+        return arr
+
+    return planets.index(planets_names)
+
+
+def create_solar_system():
+    solar_file_src = "cache/solar.bin"
+    solar_file = Path(solar_file_src)
+
+    if solar_file.exists():
+        sim = rebound.Simulation(solar_file_src)
+        return sim
+
+    sim = rebound.Simulation()
+    sim.add(list_of_planets(), date='2020-12-17 00:00')
     sim.save("cache/solar.bin")
     return sim
 
 
+def add_asteroid_by_elem(sim: rebound.Simulation, elem):
+    sim.add(
+        m=0.0,
+        a=elem['a'],
+        e=elem['e'],
+        inc=elem['inc'],
+        Omega=elem['Omega'],
+        omega=elem['omega'],
+        M=elem['M'],
+        date=astdys.date,
+        primary=sim.particles[0],
+    )
+    return sim
+
+
+def add_asteroid_by_num(sim: rebound.Simulation, asteroid_num):
+    elem = astdys.search(asteroid_num)
+    return add_asteroid_by_elem(elem)
+
+
 def add_asteroids(sim: rebound.Simulation, asteroids):
     for asteroid in asteroids:
-        elem = astdys.search(asteroid)
-        sim.add(
-            m=0.0,
-            a=elem['a'],
-            e=elem['e'],
-            inc=elem['i'],
-            Omega=elem['Omega'],
-            omega=elem['omega'],
-            M=elem['M'],
-            date=astdys.date,
-            primary=sim.particles[0],
-        )
-
-    os = sim.calculate_orbits(primary=sim.particles[0])
+        sim = add_asteroid_by_num(asteroid)
+    # os = sim.calculate_orbits(primary=sim.particles[0])
     return sim
 
 
@@ -102,3 +127,19 @@ def integrate(
             angle[k][i] = mmr.angle(os)
 
     return {"times": times, "axis": axis, "ecc": ecc, "angle": angle}
+
+
+# @todo validation of mmrs, data
+def librations(data, mmrs, Nout):
+    status = np.zeros(len(mmrs))
+    libration_data = []
+    for i, mmr in enumerate(mmrs):
+        libration_data.append(libration.libration(data['times'] / (2 * np.pi), data['angle'][i], Nout))
+        if libration_data[i]['flag']:
+            if libration_data[i]['pure']:
+                status[i] = 2
+            else:
+                status[i] = 1
+        else:
+            status[i] = 0
+    return {'status': status, 'libration_data': libration_data}

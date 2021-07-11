@@ -14,7 +14,9 @@ class ThreeBody:
         self.coeff = np.array(coeff)
         if sum(self.coeff) != 0:
             raise Exception(
-                "Sum of integers in a resonance should follow the D'alambert rule."
+                "Sum of integers in a resonance should follow the D'alambert rule. Given {}, the sum is equal to {}.".format(
+                    ', '.join(str(e) for e in coeff), sum(self.coeff)
+                )
             )
         self.index_of_planets = index_of_planets
         self.index_of_body = index_of_body

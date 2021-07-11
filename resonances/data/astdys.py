@@ -46,14 +46,14 @@ class astdys:
                 'Name,': 'epoch',
                 'Epoch(MJD),': 'a',
                 'a,': 'e',
-                'e,': 'i',
+                'e,': 'inc',
                 'i,': 'Omega',
                 'long.': 'omega',
                 'node,': 'M',
             }
         )
         cat['num'] = cat['num'].str.replace("'", "")
-        deg_cols = ['i', 'Omega', 'omega', 'M']
+        deg_cols = ['inc', 'Omega', 'omega', 'M']
         for col in deg_cols:
             cat[col] = cat[col].map(lambda x: float(x) * np.pi / 180)
 
