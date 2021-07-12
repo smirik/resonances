@@ -1,4 +1,5 @@
 import json
+import time
 
 from resonances.console.console import console as cs
 from resonances.simulation import shape
@@ -7,6 +8,7 @@ from resonances.resonance import integration
 
 
 def calc_shape():
+    start_time = time.time()
     cs.shape()
     with open(cs.args.config, "r") as read_file:
         c_config = json.load(read_file)
@@ -25,3 +27,5 @@ def calc_shape():
         c_config['plot'],
         c_config['dump'],
     )
+
+    print("--- %s seconds ---" % (time.time() - start_time))
