@@ -1,5 +1,5 @@
 {
-    "stop": 6.28e5,
+    "tmax": 6.28e5,
     "Nout": 10000,
     "plot": true,
     "save": true,

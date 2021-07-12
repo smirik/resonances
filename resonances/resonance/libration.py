@@ -1,7 +1,8 @@
 import numpy as np
 from scipy import signal
 from scipy import stats
-from resonances.config import config
+
+import resonances.config
 
 
 class libration:
@@ -44,35 +45,41 @@ class libration:
     @classmethod
     def density(cls, y, num_freqs):
         ps = np.linspace(0, 2 * np.pi, num_freqs)
-        # plt.figure(figsize=(20, 10))
-        adjust = config.get('libration.density.adjust')
+        adjust = resonances.config.get('libration.density.adjust')
         kernel = stats.gaussian_kde(y)
         kernel.set_bandwidth(kernel.factor * adjust)
         kdes = kernel(ps)
         max_value = max(kdes)
-        #    plt.plot(ps, kdes, label='A{}, i={}'.format(resonant_asteroids[i], i))
         return {'max': max_value, 'ps': ps, 'kdes': kdes}
 
     @classmethod
-    def libration(cls, x, y, Nout, start=1000, stop=20000, num_freqs=1000):
+    def body(cls, sim, body: resonances.Body):
+        data = cls.find(
+            x=sim.times,
+            y=body.angle,
+            Nout=sim.Nout,
+            start=sim.libration_start,
+            stop=sim.libration_stop,
+            num_freqs=sim.libration_num_freqs,
+            pcrit=resonances.config.get('libration.periodogram.critical'),
+            dcrit=resonances.config.get('libration.density.critical'),
+        )
+        body.status = data['status']
+        body.libration_data = data
+        return data
+
+    @classmethod
+    def find(cls, x, y, Nout, start, stop, num_freqs, pcrit, dcrit):
         data = cls.periodogram(x, y, start, stop, num_freqs)
         pmax = np.sqrt(4 * data['periodogram'].max() / Nout)
         density = cls.density(y, num_freqs)
         dmax = density['max']
         pure = cls.has_pure_libration(y)
 
-        if pure:
+        status = cls.resolve(pure, pmax, pcrit, dmax, dcrit)
+        flag = False
+        if status > 0:
             flag = True
-            status = 2
-        elif pmax < config.get('libration.periodogram.critical'):
-            flag = False
-            status = 0
-        elif dmax > config.get('libration.density.critical'):
-            flag = True
-            status = 1
-        elif dmax <= config.get('libration.density.critical'):
-            flag = False
-            status = 0
 
         return {
             'periodogram': np.sqrt(4 * data['periodogram'] / Nout),
@@ -87,11 +94,13 @@ class libration:
         }
 
     @classmethod
-    def has(cls, x, y, Nout, start=500, stop=20000, num_freqs=1000):
-        res = cls.libration(x, y, Nout, start, stop, num_freqs)
-        return res['flag']
-
-    @classmethod
-    def status(cls, x, y, Nout, start=500, stop=20000, num_freqs=1000):
-        res = cls.libration(x, y, Nout, start, stop, num_freqs)
-        return res['status']
+    def resolve(cls, pure, pmax, pcrit, dmax, dcrit):
+        if pure:
+            status = 2
+        elif pmax < pcrit:
+            status = 0
+        elif dmax > dcrit:
+            status = 1
+        elif dmax <= dcrit:
+            status = 0
+        return status

@@ -15,12 +15,12 @@ pandas = "^1.3.0"
 seaborn = "^0.11.1"
 
 [tool.poetry.scripts]
-identify-asteroid = "resonances.console.identify:asteroid"
-ia = "resonances.console.identify:asteroid"
-identify-quick = "resonances.console.identify:quick"
-iq = "resonances.console.identify:quick"
-simulation-shape = "resonances.console.simulation:calc_shape"
-ss = "resonances.console.simulation:calc_shape"
+identify-asteroid = "resonances.console:asteroid"
+ia = "resonances.console:asteroid"
+identify-quick = "resonances.console:quick"
+iq = "resonances.console:quick"
+simulation-shape = "resonances.console:calc_shape"
+ss = "resonances.console:calc_shape"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"

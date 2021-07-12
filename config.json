@@ -1,10 +1,17 @@
 {
     "libration.start": 500,
     "libration.stop": 20000,
-    "libration.Nfreq": 1000,
+    "libration.num_freqs": 1000,
     "libration.periodogram.critical": 0.5,
     "libration.density.adjust": 0.2,
     "libration.density.critical": 0.25,
-    "interval": 6.28e5,
-    "Nout": 10000
+    "integration.tmax": 6.28e5,
+    "integration.dt": 1.0,
+    "integration.Nout": 10000,
+    "integration.integrator": "whfast",
+    "solar_system_file": "cache/solar.bin",
+    "save": true,
+    "save.path": "cache",
+    "plot.path": "cache",
+    "plot": true
 }
