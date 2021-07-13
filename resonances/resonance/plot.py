@@ -9,7 +9,7 @@ import resonances.config
 def body(sim, body: resonances.Body):
     asteroid_plot(sim.times, body.angle, body.axis, body.ecc, body.name, body.mmr, body.status, body.libration_data)
     if sim.plot == True:
-        plt.savefig('{}/fig-{}-{}-{}.png'.format(sim.save_path, body.status, body.name, body.mmr.to_s()))
+        plt.savefig('{}/fig-{}-{}-{}-{}.png'.format(sim.save_path, body.index_in_simulation, body.status, body.name, body.mmr.to_s()))
     elif sim.plot == 'show':
         plt.show()
 

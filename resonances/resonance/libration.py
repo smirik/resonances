@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import signal
 from scipy import stats
+from astropy.timeseries import LombScargle
 
 import resonances.config
 
@@ -34,6 +35,146 @@ class libration:
         if flag2:
             return True
         return False
+
+    @classmethod
+    def monotony_estimation(data):
+        num = 0
+        prev = data[0]
+        for elem in data:
+            if prev - elem > np.pi:
+                prev = elem
+                continue
+            if elem - prev > np.pi:
+                num += 1
+                prev = elem
+                continue
+            if elem < prev:
+                num += 1  # num of "decreasing" points
+            prev = elem
+        return num / (len(data) - 1)
+
+    @classmethod
+    def find_breaks(cls, data, coeff=1.0, break_value=np.pi):
+        """
+        This function finds continuos breaks in a given dataset and return these breaks among with additional data.
+
+        Parameters
+        ----------
+
+        data : list
+            one-dimensional array of data where to find breaks
+        coeff : float
+            Used as a multiplicator to convert indexes of the output array (i*coeff). Useful for plotting. (Default: 10)
+        break_value : float
+            Used to determine a break. If the absolute diff between the previous one and the current is more than break_value, then there is a break. (Default: np.pi)
+
+        Returns
+        -------
+        list
+            Returns a multidimensional array: res[0] - the indexes (multiplied by coeff) when the break happened, res[1] - the direction of the break (1 if it intersects the top line and thus elem>prev, -1 otherwise), res[2] - values of the elements prior to the breaks, res[3] - the values in the break points.
+        """
+        prev = data[0]
+        res = [[], [], [], []]  # break point, direction (1 or -1), prev, curr
+        for i, elem in enumerate(data):
+            if abs(elem - prev) > break_value:
+                res[0].append(i * coeff)
+                direction = 1 if elem > prev else -1
+                res[1].append(direction)
+                res[2].append(prev)
+                res[3].append(elem)
+            prev = elem
+        return res
+
+    @classmethod
+    def circulation(cls, data, coeff=1.0):
+        """
+        Find and returns libration periods with some additional data.
+
+        Parameters
+        ----------
+
+        data : list
+            Input data to find breaks.
+
+        Returns
+        -------
+
+        list
+            Returns a multidimensional list. res[0] - the start of a libration period, res[1] - the end of a libration period, res[2] - the length of the given libration period.
+
+        """
+        breaks = cls.find_breaks(data, coeff=coeff)
+
+        if 0 == len(breaks[1]):  # full interval is a libration
+            return [[0], [(len(data) - 1) * coeff], [(len(data) - 1) * coeff]]
+
+        breaks_diff = np.diff(breaks[0])
+
+        librations = [[], [], []]  # start, stop, length
+
+        # we set the first libration to be started at 0
+        # librations[0].append(0.0)
+        # librations[1].append(breaks[0][0])
+        # librations[2].append(breaks[0][0])
+
+        libration_start = 0
+        libration_length = breaks[0][0]
+        prev_direction = breaks[1][0]
+
+        for i in range(1, len(breaks[0])):
+            curr_direction = breaks[1][i]
+            libration_length += breaks_diff[i - 1]
+            if curr_direction == prev_direction:  # circulation found
+                librations[0].append(libration_start)
+                librations[1].append(breaks[0][i])
+                librations[2].append(libration_length)
+
+                libration_start = breaks[0][i]
+                libration_length = 0.0
+
+            if i == (len(breaks[0]) - 1):
+                librations[0].append(libration_start)
+                librations[1].append(len(data) * coeff)
+                librations[2].append(libration_length + (len(data) * coeff - breaks[0][i]))
+
+            prev_direction = curr_direction
+        return librations
+
+    @classmethod
+    def periodogram_lomb(cls, x, y, minimum_frequency=0.00001, maximum_frequency=0.002, kernel=None, nyquist_factor=5):
+        """Calculates Lomb-Scargle periodogram for a time series.
+
+        Parameters
+        ----------
+        x : list
+            list of times
+        y : list
+            list of values (angles, axis e.t.c.)
+        minimum_frequency : float, optional
+            the minimum frequency to look for peaks, by default 0.00001
+        maximum_frequency : float, optional
+            the maximum frequency to look for peaks, by default 0.002
+        kernel : int, optional
+            if specificied, then it applies scipy.signal.medfilt to y, by default None
+        nyquist_factor : int, optional
+            the parameter from lomg-scargle method, by default 5
+
+        Returns
+        -------
+        (frequence, power)
+            Return list of frequencies among with related power.
+        """
+        if kernel is not None:
+            frequency, power = LombScargle(x, signal.medfilt(y, kernel)).autopower(
+                nyquist_factor=nyquist_factor, minimum_frequency=minimum_frequency, maximum_frequency=maximum_frequency
+            )
+        else:
+            frequency, power = LombScargle(x, y).autopower(
+                nyquist_factor=nyquist_factor, minimum_frequency=minimum_frequency, maximum_frequency=maximum_frequency
+            )
+        return (frequency, power)
+        # frequency, power = LombScargle(x, signal.medfilt(y, kernel)).autopower(nyquist_factor=nyquist_factor, minimum_frequency=minimum_frequency, maximum_frequency=maximum_frequency)
+        # max_power = power.max()
 
     @classmethod
     def periodogram(cls, x, y, start, stop, num_freqs):

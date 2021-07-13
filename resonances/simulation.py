@@ -138,7 +138,7 @@ class Simulation:
             'ecc': body.ecc,
         }
         df = pd.DataFrame(data=df_data)
-        df.to_csv('{}/data-{}-{}.csv'.format(self.save_path, body.name, body.mmr.to_s()))
+        df.to_csv('{}/data-{}-{}-{}.csv'.format(self.save_path, body.index_in_simulation, body.name, body.mmr.to_s()))
 
     def check_or_create_save_path(self):
         Path(self.save_path).mkdir(parents=True, exist_ok=True)
