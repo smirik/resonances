@@ -18,15 +18,17 @@ def body(sim, body: resonances.Body):
     #     fontsize=14,
     # )
 
+    axs[0].set_title('Resonant angle')
     axs[0].set_xlim([0, sim.tmax_yrs])
     axs[0].xaxis.set_major_locator(plt.MultipleLocator(10000))
     axs[0].xaxis.set_minor_locator(plt.MultipleLocator(2000))
     axs[0].set_title('{} - {} ({})'.format(body.name, body.mmr.to_short(), body.status))
+    axs[0].set_title('Filtered semi-major axis')
     axs[0].plot(sim.times / (2 * np.pi), body.angle, linestyle='', marker=',')
     axs[1].plot(sim.times / (2 * np.pi), body.axis_filtered, linestyle='', marker=',')
     axs[1].sharex(axs[0])
 
-    axs[2].set_title('Periodograms')
+    axs[2].set_title('Periodograms (angle and axis)')
 
     axs[2].set_xlim(0, 40000)
     # axs[2].set_ylim(0, 0.2)
@@ -52,7 +54,8 @@ def body(sim, body: resonances.Body):
 
     axs[3].sharex(axs[2])
 
-    axs[4].plot(sim.times / (2 * np.pi), body.axis, linestyle='', marker=',')
+    axs[4].set_title('Eccentricity')
+    axs[4].plot(sim.times / (2 * np.pi), body.ecc, linestyle='', marker=',')
 
     plt.tight_layout()
 
@@ -61,4 +64,3 @@ def body(sim, body: resonances.Body):
         plt.savefig('{}/fig-{}-{}-{}-{}.png'.format(sim.save_path, body.index_in_simulation, body.status, body.name, body.mmr.to_s()))
     elif sim.plot == 'show':
         plt.show()
-

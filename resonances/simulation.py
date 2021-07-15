@@ -41,6 +41,8 @@ class Simulation:
 
         self.save = resonances.config.get('save')
         self.save_path = resonances.config.get('save.path')
+        self.save_summary = resonances.config.get('save.summary')
+        self.save_additional_data = resonances.config.get('save.additional.data')
         self.plot = resonances.config.get('plot')
 
         self.setup(tmax, Nout, save, save_path, plot)
@@ -122,6 +124,8 @@ class Simulation:
                 body.angle[i] = body.calc_angle(os)
 
         self.identify_librations()
+        if self.save_summary:
+            self.save_simulation_summary()
         if self.save or self.plot:
             for body in self.bodies:
                 if self.save:
@@ -144,10 +148,64 @@ class Simulation:
             'times': self.times / (2 * np.pi),
             'angle': body.angle,
             'a': body.axis,
-            'ecc': body.ecc,
+            'e': body.ecc,
         }
+        if self.save_additional_data:
+            len_diff = len(body.angle) - len(body.periodogram_power)
+            df_data = {
+                'periodogram': np.append(body.periodogram_power, np.zeros(len_diff)),
+                'a_filtered': body.axis_filtered,
+                'a_periodogram': np.append(body.axis_periodogram_power, np.zeros(len_diff)),
+            }
         df = pd.DataFrame(data=df_data)
         df.to_csv('{}/data-{}-{}-{}.csv'.format(self.save_path, body.index_in_simulation, body.name, body.mmr.to_s()))
+
+    def get_simulation_summary(self):
+        data = []
+        for i, body in enumerate(self.bodies):
+            s = ', '.join('({:.0f}, {:.0f})'.format(left, right) for left, right in body.periodogram_peaks_overlapping)
+            data.append(
+                [
+                    body.name,
+                    body.status,
+                    body.libration_pure,
+                    body.libration_metrics['num_libration_periods'],
+                    body.libration_metrics['max_libration_length'],
+                    body.monotony,
+                    s,
+                    body.initial_data['a'],
+                    body.initial_data['e'],
+                    body.initial_data['inc'],
+                    body.initial_data['Omega'],
+                    body.initial_data['omega'],
+                    body.initial_data['M'],
+                ]
+            )
+        return data
+
+    def save_simulation_summary(self):
+        self.check_or_create_save_path()
+        data = self.get_simulation_summary()
+        df = pd.DataFrame(
+            data,
+            columns=[
+                'name',
+                'status',
+                'pure',
+                'num_libration_periods',
+                'max_libration_length',
+                'monotony',
+                'overlapping',
+                'a',
+                'e',
+                'inc',
+                'Omega',
+                'omega',
+                'M',
+            ],
+        )
+        df.to_csv('{}/summary.csv'.format(self.save_path))
+        return data
 
     def check_or_create_save_path(self):
         Path(self.save_path).mkdir(parents=True, exist_ok=True)

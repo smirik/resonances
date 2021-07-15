@@ -13,6 +13,9 @@
     "integration.integrator": "whfast",
     "solar_system_file": "cache/solar.bin",
     "save": true,
+    "save.summary": true,
+    "save.additional.data": true,
+    "save.only.undetermined": false,
     "save.path": "cache",
     "plot.path": "cache",
     "plot": true

@@ -25,6 +25,7 @@ class Body:
         self.librations = None
         self.libration_metrics = None
         self.libration_status = None
+        self.libration_pure = None
 
         self.periodogram_frequency = None
         self.periodogram_power = None

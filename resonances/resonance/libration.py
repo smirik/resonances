@@ -53,30 +53,30 @@ class libration:
         return num / (len(data) - 1)
 
     @classmethod
-    def find_breaks(cls, data, coeff=1.0, break_value=np.pi):
+    def find_breaks(cls, x, y, break_value=np.pi):
         """
         This function finds continuos breaks in a given dataset and return these breaks among with additional data.
 
         Parameters
         ----------
 
-        data : list
+        x : list
+            one-dimensional array of time
+        y : list
             one-dimensional array of data where to find breaks
-        coeff : float
-            Used as a multiplicator to convert indexes of the output array (i*coeff). Useful for plotting. (Default: 10)
         break_value : float
             Used to determine a break. If the absolute diff between the previous one and the current is more than break_value, then there is a break. (Default: np.pi)
 
         Returns
         -------
         list
-            Returns a multidimensional array: res[0] - the indexes (multiplied by coeff) when the break happened, res[1] - the direction of the break (1 if it intersects the top line and thus elem>prev, -1 otherwise), res[2] - values of the elements prior to the breaks, res[3] - the values in the break points.
+            Returns a multidimensional array: res[0] - the time when the break happened, res[1] - the direction of the break (1 if it intersects the top line and thus elem>prev, -1 otherwise), res[2] - values of the elements prior to the breaks, res[3] - the values in the break points.
         """
-        prev = data[0]
+        prev = y[0]
         res = [[], [], [], []]  # break point, direction (1 or -1), prev, curr
-        for i, elem in enumerate(data):
+        for i, elem in enumerate(y):
             if abs(elem - prev) > break_value:
-                res[0].append(i * coeff)
+                res[0].append(x[i])
                 direction = 1 if elem > prev else -1
                 res[1].append(direction)
                 res[2].append(prev)
@@ -85,14 +85,16 @@ class libration:
         return res
 
     @classmethod
-    def circulation(cls, data, coeff=1.0):
+    def circulation(cls, x, y):
         """
         Find and returns libration periods with some additional data.
 
         Parameters
         ----------
 
-        data : list
+        x : list
+            one-dimensional array of time
+        y : list
             Input data to find breaks.
 
         Returns
@@ -102,17 +104,17 @@ class libration:
             Returns a multidimensional list. res[0] - the start of a libration period, res[1] - the end of a libration period, res[2] - the length of the given libration period.
 
         """
-        breaks = cls.find_breaks(data, coeff=coeff)
+        breaks = cls.find_breaks(x, y)
 
         if 0 == len(breaks[1]):  # full interval is a libration
-            return [[0], [(len(data) - 1) * coeff], [(len(data) - 1) * coeff]]
+            return [[x[0]], [x[len(y) - 1]], [x[-1] - x[0]]]
 
         breaks_diff = np.diff(breaks[0])
 
         librations = [[], [], []]  # start, stop, length
 
-        libration_start = 0
-        libration_length = breaks[0][0]
+        libration_start = x[0]
+        libration_length = breaks[0][0] - x[0]
         prev_direction = breaks[1][0]
 
         for i in range(1, len(breaks[0])):
@@ -125,11 +127,19 @@ class libration:
 
                 libration_start = breaks[0][i]
                 libration_length = 0.0
-
             if i == (len(breaks[0]) - 1):
-                librations[0].append(libration_start)
-                librations[1].append(len(data) * coeff)
-                librations[2].append(libration_length + (len(data) * coeff - breaks[0][i]))
+                # If the last break has happened before the end, then add one more interval of libration.
+                if breaks[0][i] == x[-1]:
+                    # flush data for libration period. If there is a circulation, it is already flushed.
+                    if curr_direction != prev_direction:
+                        librations[0].append(libration_start)
+                        librations[1].append(x[-1])
+                        librations[2].append(libration_length + (x[-1] - breaks[0][i]))
+                else:
+                    # append last libration (because break is not in the last point)
+                    librations[0].append(breaks[0][i])
+                    librations[1].append(x[-1])
+                    librations[2].append(libration_length + (x[-1] - breaks[0][i]))
 
             prev_direction = curr_direction
         return librations
@@ -207,7 +217,7 @@ class libration:
     def body(cls, sim, body: resonances.Body):
         pure = resonances.libration.pure(body.angle)
 
-        librations = resonances.libration.circulation(body.angle, coeff=10)
+        librations = resonances.libration.circulation(sim.times / (2 * np.pi), body.angle)
         libration_metrics = resonances.libration.circulation_metrics(librations)
 
         (frequency, power) = resonances.libration.periodogram(
@@ -236,6 +246,7 @@ class libration:
         if sim.save:
             body.librations = librations
             body.libration_metrics = libration_metrics
+            body.libration_pure = pure
 
             body.periodogram_frequency = frequency
             body.periodogram_power = power

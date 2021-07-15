@@ -8,11 +8,11 @@ start_time = time.time()
 
 def main():
     sim = loader.create_simulation_from_json('cache/examples/libration-examples.json')
-    sim.Nout = 100000
+    sim.Nout = 10000
     sim.run()
 
 
-def main23():
+def main22():
     sim = resonances.Simulation(save=True, plot=True, save_path='cache/res')
     sim.create_solar_system()
     sim.Nout = 10000
