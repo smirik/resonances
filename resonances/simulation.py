@@ -19,14 +19,23 @@ class Simulation:
 
         self.librations = None
         self.libration_data = []
-        self.libration_start = resonances.config.get('libration.start')
-        self.libration_stop = resonances.config.get('libration.stop')
-        self.libration_num_freqs = resonances.config.get('libration.num_freqs')
+
+        # Libration and filtering settings
+        self.oscillations_cutoff = resonances.config.get('libration.oscillation.filter.cutoff')
+        self.oscillations_filter_order = resonances.config.get('libration.oscillation.filter.order')
+
+        self.periodogram_frequency_min = resonances.config.get('libration.periodogram.frequency.min')
+        self.periodogram_frequency_max = resonances.config.get('libration.periodogram.frequency.max')
+        self.periodogram_critical = resonances.config.get('libration.periodogram.critical')
+        self.periodogram_soft = resonances.config.get('libration.periodogram.soft')
+
+        self.libration_period_critical = resonances.config.get('libration.period.critical')
+        self.libration_monotony_critical = resonances.config.get('libration.monotony.critical')
 
         self.sim = None
 
         self.Nout = resonances.config.get('integration.Nout')
-        self.tmax = resonances.config.get('integration.tmax')
+        self.set_tmax(resonances.config.get('integration.tmax'))
         self.integrator = resonances.config.get('integration.integrator')
         self.dt = resonances.config.get('integration.dt')
 
@@ -43,7 +52,7 @@ class Simulation:
             self.sim = rebound.Simulation(resonances.config.get('solar_system_file'))
         else:
             self.sim = rebound.Simulation()
-            self.sim.add(self.list_of_planets(), date='2020-12-17 00:00')
+            self.sim.add(self.list_of_planets(), date='2020-12-17 00:00')  # date of AstDyS current catalogue
             self.sim.save(resonances.config.get('solar_system_file'))
 
     def add_body(self, elem_or_num, mmr: resonances.MMR, name='asteroid'):
@@ -165,9 +174,9 @@ class Simulation:
             arr.append(self.planets.index(planet))
         return arr
 
-    def setup(self, tmax=None, Nout=None, save=None, save_path=None, plot=None):
+    def setup(self, tmax=None, Nout=None, save=None, save_path=None, plot=None, oscillations_cutoff=None):
         if tmax is not None:
-            self.tmax = tmax
+            self.set_tmax(tmax)
         if Nout is not None:
             self.Nout = Nout
         if save is not None:
@@ -176,3 +185,9 @@ class Simulation:
             self.save_path = save_path
         if plot is not None:
             self.plot = plot
+        if oscillations_cutoff is not None:
+            self.oscillations_cutoff = oscillations_cutoff
+
+    def set_tmax(self, tmax):
+        self.tmax = tmax
+        self.tmax_yrs = tmax / (2 * np.pi)

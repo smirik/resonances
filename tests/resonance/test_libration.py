@@ -5,19 +5,16 @@ import resonances
 
 
 def test_pure():
-    df = pd.read_csv('tests/resonance/fixtures/pure.csv')
-    flag = resonances.libration.has_pure_libration(df['angle'])
-    assert flag is True
-    flag = resonances.libration.pure(df['angle'])
-    assert flag is True
+    arr = [1, 2, 3, 3, 2, 1, 1, 2, 3, 3, 2, 1]
+    assert True == resonances.libration.pure(arr)
 
-    df = pd.read_csv('tests/resonance/fixtures/apocentric.csv')
-    flag = resonances.libration.pure(df['angle'])
-    assert flag is False
-    flag = resonances.libration.has_pure_libration(df['angle'])
-    assert flag is True
+    arr = [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6]
+    assert False == resonances.libration.pure(arr)
 
-    # test has_pure_libration and rewrite it after new normal example
+    arr = [6, 0, 1, 0, 6, 5, 6, 0, 1, 2]
+    assert True == resonances.libration.pure(arr)
+
+    # test pure and rewrite it after new normal example
 
 
 def test_shift():
@@ -28,53 +25,25 @@ def test_shift():
     assert shift[2] == pytest.approx(data[2] - 2 * np.pi)
 
 
-def test_libration():
-    df = pd.read_csv('tests/resonance/fixtures/pure.csv')
-    data = resonances.libration.find(
-        df['times'],
-        df['angle'],
-        len(df),
-        resonances.config.get('libration.start'),
-        resonances.config.get('libration.stop'),
-        resonances.config.get('libration.num_freqs'),
-        resonances.config.get('libration.periodogram.critical'),
-        resonances.config.get('libration.density.critical'),
-    )
-    assert data['flag'] is True
-    assert data['status'] is 2
-
-    df = pd.read_csv('tests/resonance/fixtures/transient.csv')
-    data = resonances.libration.find(
-        df['times'],
-        df['angle'],
-        len(df),
-        resonances.config.get('libration.start'),
-        resonances.config.get('libration.stop'),
-        resonances.config.get('libration.num_freqs'),
-        resonances.config.get('libration.periodogram.critical'),
-        resonances.config.get('libration.density.critical'),
-    )
-    assert data['flag'] is True
-    assert data['status'] is 1
-
-    df = pd.read_csv('tests/resonance/fixtures/fp.csv')
-    data = resonances.libration.find(
-        df['times'],
-        df['angle'],
-        len(df),
-        resonances.config.get('libration.start'),
-        resonances.config.get('libration.stop'),
-        resonances.config.get('libration.num_freqs'),
-        resonances.config.get('libration.periodogram.critical'),
-        resonances.config.get('libration.density.critical'),
-    )
-    assert data['flag'] is False
-    assert data['status'] is 0
-
-
 def test_resolve():
-    assert 2 == resonances.libration.resolve(True, 100, 200, 100, 200)
-    assert 2 == resonances.libration.resolve(True, 200, 100, 200, 100)
-    assert 0 == resonances.libration.resolve(False, 100, 200, 300, 200)
-    assert 0 == resonances.libration.resolve(False, 200, 100, 200, 300)
-    assert 1 == resonances.libration.resolve(False, 200, 100, 300, 200)
+    overlapping = [[100, 102]]
+    empty = []
+
+    lib_crit = resonances.config.get('libration.period.critical')
+    mon_crit = resonances.config.get('libration.monotony.critical')
+
+    # pure libration with libration for both angle and axis at the same frequency
+    assert 2 == resonances.libration.resolve(True, overlapping, 100000, lib_crit, 0.5, mon_crit)
+    # pure libration with libration for both angle and axis but not at the same frequency
+    assert -2 == resonances.libration.resolve(True, empty, 100000, lib_crit, 0.5, mon_crit)
+    # case of very slow circulation
+    assert -2 == resonances.libration.resolve(True, empty, 100000, lib_crit, 0.1, mon_crit)
+
+    assert 1 == resonances.libration.resolve(False, overlapping, 30000, lib_crit, 0.4, mon_crit)
+    # monotony does not apply if libration length is greater than critical and overlapping
+    assert 1 == resonances.libration.resolve(False, overlapping, 30000, lib_crit, 0.1, mon_crit)
+    # uncertain status if there is no overlapping but still acceptable libration length and monotony
+    assert -1 == resonances.libration.resolve(False, empty, 30000, lib_crit, 0.4, mon_crit)
+    # no resonance if no overlapping and libration period less than critical or no monotony if no overlapping
+    assert 0 == resonances.libration.resolve(False, empty, 10000, lib_crit, 0.5, mon_crit)
+    assert 0 == resonances.libration.resolve(False, empty, 30000, lib_crit, 0.3, mon_crit)

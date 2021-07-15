@@ -1,6 +1,5 @@
 import numpy as np
 from scipy import signal
-from scipy import stats
 from astropy.timeseries import LombScargle
 
 import resonances.config
@@ -16,7 +15,7 @@ class libration:
         return tmp
 
     @classmethod
-    def pure(cls, y):
+    def is_pure(cls, y):
         prev = y[0]
         num = 0
         for elem in y:
@@ -27,17 +26,17 @@ class libration:
         return True
 
     @classmethod
-    def has_pure_libration(cls, y):  # not working for librations that are not around 0 or +/- np.pi
-        flag1 = cls.pure(y)
+    def pure(cls, y):  # not working for librations that are not around 0 or +/- np.pi
+        flag1 = cls.is_pure(y)
         if flag1:
             return True
-        flag2 = cls.pure(cls.shift(y))
+        flag2 = cls.is_pure(cls.shift(y))
         if flag2:
             return True
         return False
 
     @classmethod
-    def monotony_estimation(data):
+    def monotony_estimation(cls, data):
         num = 0
         prev = data[0]
         for elem in data:
@@ -112,11 +111,6 @@ class libration:
 
         librations = [[], [], []]  # start, stop, length
 
-        # we set the first libration to be started at 0
-        # librations[0].append(0.0)
-        # librations[1].append(breaks[0][0])
-        # librations[2].append(breaks[0][0])
-
         libration_start = 0
         libration_length = breaks[0][0]
         prev_direction = breaks[1][0]
@@ -141,7 +135,28 @@ class libration:
         return librations
 
     @classmethod
-    def periodogram_lomb(cls, x, y, minimum_frequency=0.00001, maximum_frequency=0.002, kernel=None, nyquist_factor=5):
+    def circulation_metrics(cls, librations):
+        max_libration_length = max(librations[2])
+        num_libration_periods = len(librations[0])
+
+        return {'num_libration_periods': num_libration_periods, 'max_libration_length': max_libration_length}
+
+    @classmethod
+    def overlap(cls, a, b, delta=0):
+        return max(0, min(a[1] + delta, b[1] + delta) - max(a[0] - delta, b[0] - delta))
+
+    @classmethod
+    def overlap_list(cls, a_list, b_list, delta=0):
+        arr = []
+        for a_elem in a_list:
+            for b_elem in b_list:
+                if cls.overlap(a_elem, b_elem, delta=delta):
+                    arr.append(a_elem)
+                    break
+        return arr
+
+    @classmethod
+    def periodogram(cls, x, y, minimum_frequency=0.00001, maximum_frequency=0.002, nyquist_factor=5):
         """Calculates Lomb-Scargle periodogram for a time series.
 
         Parameters
@@ -154,8 +169,6 @@ class libration:
             the minimum frequency to look for peaks, by default 0.00001
         maximum_frequency : float, optional
             the maximum frequency to look for peaks, by default 0.002
-        kernel : int, optional
-            if specificied, then it applies scipy.signal.medfilt to y, by default None
         nyquist_factor : int, optional
             the parameter from lomg-scargle method, by default 5
 
@@ -164,84 +177,107 @@ class libration:
         (frequence, power)
             Return list of frequencies among with related power.
         """
-        if kernel is not None:
-            frequency, power = LombScargle(x, signal.medfilt(y, kernel)).autopower(
-                nyquist_factor=nyquist_factor, minimum_frequency=minimum_frequency, maximum_frequency=maximum_frequency
-            )
-        else:
-            frequency, power = LombScargle(x, y).autopower(
-                nyquist_factor=nyquist_factor, minimum_frequency=minimum_frequency, maximum_frequency=maximum_frequency
-            )
+        frequency, power = LombScargle(x, y).autopower(
+            nyquist_factor=nyquist_factor, minimum_frequency=minimum_frequency, maximum_frequency=maximum_frequency
+        )
         return (frequency, power)
         # frequency, power = LombScargle(x, signal.medfilt(y, kernel)).autopower(nyquist_factor=nyquist_factor, minimum_frequency=minimum_frequency, maximum_frequency=maximum_frequency)
         # max_power = power.max()
 
     @classmethod
-    def periodogram(cls, x, y, start, stop, num_freqs):
-        ps = np.linspace(start, stop, num_freqs)
-        ws = np.asarray([2 * np.pi / P for P in ps])
-        periodogram = signal.lombscargle(x, y, ws)
-        return {'ps': ps, 'ws': ws, 'periodogram': periodogram}
+    def find_peaks_with_position(cls, frequency, power, height=0.05, distance=10):
+        peaks, props = signal.find_peaks(power, height=height, distance=distance, width=(None, None))
+        peaks_right, peaks_left = (
+            1.0 / frequency[np.rint(props['left_ips']).astype(int)],
+            1.0 / frequency[np.rint(props['right_ips']).astype(int)],
+        )
+        peaks_position = list(zip(peaks_left, peaks_right))
+        peaks_position = sorted(peaks_position, key=lambda tup: tup[0])
+        return {'position': peaks_position, 'peaks': peaks}
 
     @classmethod
-    def density(cls, y, num_freqs):
-        ps = np.linspace(0, 2 * np.pi, num_freqs)
-        adjust = resonances.config.get('libration.density.adjust')
-        kernel = stats.gaussian_kde(y)
-        kernel.set_bandwidth(kernel.factor * adjust)
-        kdes = kernel(ps)
-        max_value = max(kdes)
-        return {'max': max_value, 'ps': ps, 'kdes': kdes}
+    def butter_lowpass_filter(cls, data, cutoff, fs, order, nyq):
+        normal_cutoff = cutoff / nyq
+        # Get the filter coefficients
+        b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
+        y = signal.filtfilt(b, a, data)
+        return y
 
     @classmethod
     def body(cls, sim, body: resonances.Body):
-        data = cls.find(
-            x=sim.times,
-            y=body.angle,
-            Nout=sim.Nout,
-            start=sim.libration_start,
-            stop=sim.libration_stop,
-            num_freqs=sim.libration_num_freqs,
-            pcrit=resonances.config.get('libration.periodogram.critical'),
-            dcrit=resonances.config.get('libration.density.critical'),
+        pure = resonances.libration.pure(body.angle)
+
+        librations = resonances.libration.circulation(body.angle, coeff=10)
+        libration_metrics = resonances.libration.circulation_metrics(librations)
+
+        (frequency, power) = resonances.libration.periodogram(
+            sim.times / (2 * np.pi),
+            body.angle,
+            minimum_frequency=sim.periodogram_frequency_min,
+            maximum_frequency=sim.periodogram_frequency_max,
         )
-        body.status = data['status']
-        body.libration_data = data
-        return data
+
+        integration_time = round(sim.tmax / (2 * np.pi))
+        fs = sim.Nout / integration_time  # sample rate, Hz || Nout/time, i.e. 10000/100000
+        cutoff = sim.oscillations_cutoff  # should be a little bit more than needed
+        nyq = 0.5 * fs  # Nyquist Frequency
+        order = sim.oscillations_filter_order  # polynom order
+        axis = cls.butter_lowpass_filter(body.axis, cutoff, fs, order, nyq)
+        (axis_frequency, axis_power) = resonances.libration.periodogram(
+            sim.times / (2 * np.pi), axis, minimum_frequency=sim.periodogram_frequency_min, maximum_frequency=sim.periodogram_frequency_max
+        )
+
+        angle_peaks_data = cls.find_peaks_with_position(frequency, power, height=sim.periodogram_soft)
+        axis_peaks_data = cls.find_peaks_with_position(axis_frequency, axis_power, height=sim.periodogram_soft)
+        overlapping = cls.overlap_list(angle_peaks_data['position'], axis_peaks_data['position'], delta=0)
+
+        monotony = resonances.libration.monotony_estimation(body.angle)
+
+        if sim.save:
+            body.librations = librations
+            body.libration_metrics = libration_metrics
+
+            body.periodogram_frequency = frequency
+            body.periodogram_power = power
+            body.periodogram_peaks = angle_peaks_data
+
+            body.axis_filtered = axis
+            body.axis_periodogram_frequency = axis_frequency
+            body.axis_periodogram_power = axis_power
+            body.axis_periodogram_peaks = axis_peaks_data
+
+            body.periodogram_peaks_overlapping = overlapping
+
+            body.monotony = monotony
+
+        body.status = cls.resolve(
+            pure,
+            overlapping,
+            libration_metrics['max_libration_length'],
+            sim.libration_period_critical,
+            monotony,
+            sim.libration_monotony_critical,
+        )
+        return body.status
 
     @classmethod
-    def find(cls, x, y, Nout, start, stop, num_freqs, pcrit, dcrit):
-        data = cls.periodogram(x, y, start, stop, num_freqs)
-        pmax = np.sqrt(4 * data['periodogram'].max() / Nout)
-        density = cls.density(y, num_freqs)
-        dmax = density['max']
-        pure = cls.has_pure_libration(y)
-
-        status = cls.resolve(pure, pmax, pcrit, dmax, dcrit)
-        flag = False
-        if status > 0:
-            flag = True
-
-        return {
-            'periodogram': np.sqrt(4 * data['periodogram'] / Nout),
-            'ps': data['ps'],
-            'ws': data['ws'],
-            'flag': flag,
-            'status': status,
-            'pure': pure,
-            'pmax': pmax,
-            'density': density,
-            'dmax': dmax,
-        }
-
-    @classmethod
-    def resolve(cls, pure, pmax, pcrit, dmax, dcrit):
-        if pure:
-            status = 2
-        elif pmax < pcrit:
-            status = 0
-        elif dmax > dcrit:
-            status = 1
-        elif dmax <= dcrit:
-            status = 0
+    def resolve(cls, pure, overlapping, max_libration_length, libration_period_critical, monotony, libration_monotony_critical):
+        status = 0
+        if pure and (len(overlapping) > 0):
+            status = 2  # pure libration
+        elif pure:
+            # seems to be pure but libration periods of axis and resonant angle are different
+            # need manual check
+            status = -2
+        elif (len(overlapping) > 0) and (max_libration_length > libration_period_critical):
+            status = 1  # transient resonance
+        elif (
+            (max_libration_length > libration_period_critical)
+            and (monotony >= libration_monotony_critical[0])
+            and (monotony <= libration_monotony_critical[1])
+        ):
+            # Looks like chaotic but has long stable period and acceptable monotony
+            # need to verify manually
+            status = -1
+        # No resonance
         return status

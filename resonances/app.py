@@ -1,15 +1,24 @@
 import time
 import resonances
 
+from resonances.data import loader
+
 start_time = time.time()
 
 
 def main():
+    sim = loader.create_simulation_from_json('cache/examples/libration-examples.json')
+    sim.Nout = 100000
+    sim.run()
+
+
+def main23():
     sim = resonances.Simulation(save=True, plot=True, save_path='cache/res')
     sim.create_solar_system()
+    sim.Nout = 10000
     sim.add_body(463, resonances.ThreeBody('4J-2S-1'), 'A463')
+    print(sim.Nout)
     sim.run()
-    print('Hello from end')
 
 
 def run():

@@ -1,6 +1,6 @@
 {
-    "stop": 6.28e5,
-    "Nout": 10000,
+    "integration.tmax": 628319,
+    "integration.Nout": 10000,
     "plot": true,
     "save": true,
     "save_path": "cache/simulation-shape",

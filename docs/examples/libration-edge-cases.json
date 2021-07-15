@@ -1,5 +1,6 @@
 {
-    "tmax": 6.28e5,
+    "integration.tmax": 628319,
+    "integration.Nout": 10000,
     "Nout": 10000,
     "plot": true,
     "save": true,

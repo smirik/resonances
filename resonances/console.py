@@ -2,6 +2,7 @@ import json, time, argparse
 
 import resonances
 from resonances.experiment import shape
+from resonances.data import loader
 
 parser = argparse.ArgumentParser(description='')
 
@@ -24,28 +25,8 @@ def quick():
 def asteroid():
     parser.add_argument('--config', nargs='?', type=str)
     args = parser.parse_args()
-    with open(args.config, "r") as read_file:
-        c_config = json.load(read_file)
 
-    sim = resonances.Simulation(
-        save=c_config['save'], plot=c_config['plot'], save_path=c_config['save_path'], tmax=c_config['tmax'], Nout=c_config['Nout']
-    )
-    sim.create_solar_system()
-
-    mmrs = []
-    # @todo need to verify that data are full
-    # Add checks for asteroids, resonances, Nout and stop, plot (or default values)
-    for asteroid in c_config['asteroids']:
-        if 'num' in asteroid['elem']:
-            elem_or_num = asteroid['elem']['num']
-        else:
-            elem_or_num = asteroid['elem']
-        # @todo validation
-        for resonance in asteroid['resonances']:
-            sim.add_body(
-                elem_or_num, resonances.ThreeBody(resonance['integers'], resonance['bodies']), '{}'.format(asteroid['elem']['label'])
-            )
-
+    sim = loader.create_simulation_from_json(args.config)
     sim.run()
 
 

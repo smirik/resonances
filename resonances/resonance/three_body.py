@@ -4,7 +4,7 @@ from resonances.resonance.mmr import MMR
 
 
 class ThreeBody(MMR):
-    def __init__(self, coeff=[], planets_names=['Jupiter', 'Saturn'], s=None):
+    def __init__(self, coeff=[], planets_names=[], s=None):
         if s is not None:
             self.init_from_short_notation(s)
             return
@@ -60,20 +60,6 @@ class ThreeBody(MMR):
             return 'Neptune'
         raise Exception('Bad notation used. Only the following letter are available: R (for Mercury), V, E, M, J, S, U, N ')
 
-    # def angle(self, os):
-    #     body = os[self.index_of_body - 1]  # because Sun is not is os
-    #     body1 = os[self.index_of_planets[0] - 1]
-    #     body2 = os[self.index_of_planets[1] - 1]
-    #     angle = rebound.mod2pi(
-    #         self.coeff[0] * body1.l
-    #         + self.coeff[1] * body2.l
-    #         + self.coeff[2] * body.l
-    #         + self.coeff[3] * (body1.Omega + body1.omega)
-    #         + self.coeff[4] * (body2.Omega + body2.omega)
-    #         + self.coeff[5] * (body.Omega + body.omega)
-    #     )
-    #     return angle
-
     def to_s(self):
         s = '{:d}{:.1}{:+d}{:.1}{:+d}{:+d}{:+d}{:+d}'.format(
             int(self.coeff[0]),
@@ -87,8 +73,12 @@ class ThreeBody(MMR):
         )
         return s
 
-    # def index_of_bodies(self):
-    #     return self.index_of_planets + [self.index_of_body]
-
-    # def number_of_bodies(self):
-    #     return 3
+    def to_short(self):
+        s = '{:d}{:.1}{:+d}{:.1}{:+d}'.format(
+            int(self.coeff[0]),
+            self.planets_names[0],
+            int(self.coeff[1]),
+            self.planets_names[1],
+            int(self.coeff[2]),
+        )
+        return s

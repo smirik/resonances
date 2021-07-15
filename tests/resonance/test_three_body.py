@@ -13,8 +13,8 @@ def test_full_create():
     mmr = ThreeBody([4, -2, -1, 0, 0, -1])
     assert 4 == mmr.coeff[0]
     assert -1 == mmr.coeff[2]
-    assert 'Jupiter' in mmr.planets_names
-    assert 'Saturn' in mmr.planets_names
+    assert 'Jupiter' not in mmr.planets_names
+    assert 'Saturn' not in mmr.planets_names
 
     mmr = ThreeBody([4, -2, -1, 0, 0, -1], ['Earth', 'Mars'])
     assert 'Jupiter' not in mmr.planets_names
@@ -59,3 +59,13 @@ def test_short_notation():
     with pytest.raises(Exception) as exception:
         mmr = ThreeBody('4A-2S-1-5')
     assert 'three' in str(exception.value)
+
+
+def test_to_s_and_to_short():
+    mmr = ThreeBody([4, -2, -1, 0, 0, -1], ['Earth', 'Mars'])
+    assert '4E-2M-1+0+0-1' == mmr.to_s()
+    assert '4E-2M-1' == mmr.to_short()
+
+    mmr = ThreeBody('2J-5S+1')
+    assert '2J-5S+1+0+0+2' == mmr.to_s()
+    assert '2J-5S+1' == mmr.to_short()

@@ -20,8 +20,24 @@ class Body:
         self.longitude = None
         self.varpi = None
         self.angle = None
+
+        # Libration and filtering data
         self.librations = None
-        self.status = None
+        self.libration_metrics = None
+        self.libration_status = None
+
+        self.periodogram_frequency = None
+        self.periodogram_power = None
+        self.periodogram_peaks = None
+
+        self.axis_filtered = None
+        self.axis_periodogram_frequency = None
+        self.axis_periodogram_power = None
+        self.axis_periodogram_peaks = None
+
+        self.periodogram_peaks_overlapping = None
+
+        self.monotony = None
 
         # Simulation data
         self.index_in_simulation = None
