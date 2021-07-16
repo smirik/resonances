@@ -23,6 +23,12 @@ class config:
         return value
 
     @classmethod
+    def has(cls, key):
+        if key in cls.config:
+            return True
+        return False
+
+    @classmethod
     def static_init(cls):
         config_file_path = 'config.json'
         config_file = Path(config_file_path)

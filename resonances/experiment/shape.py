@@ -6,14 +6,16 @@ import resonances
 
 
 def run(elem, variations, mmr: resonances.MMR, save=False, save_path="cache", need_plot=False, dump=100):
-    a_arr = np.linspace(variations['a']['min'], variations['a']['max'], variations['a']['num'])
-    e_arr = np.linspace(variations['e']['min'], variations['e']['max'], variations['e']['num'])
-    particles = list(product(a_arr, e_arr))
+
+    particles = []
+    for variation in variations:
+        a_arr = np.linspace(variation['a']['min'], variation['a']['max'], variation['a']['num'])
+        e_arr = np.linspace(variation['e']['min'], variation['e']['max'], variation['e']['num'])
+        particles += list(product(a_arr, e_arr))
 
     num_particles = len(particles)
 
     num_iterations = int(math.ceil(num_particles / dump))
-    Nout = resonances.config.get('integration.Nout')
 
     for j in range(num_iterations):
         sim = resonances.Simulation(save=save, save_path=save_path, plot=need_plot)

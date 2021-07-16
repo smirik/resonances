@@ -10,7 +10,7 @@ from resonances.resonance import plot
 
 
 class Simulation:
-    def __init__(self, save=None, plot=None, save_path=None, tmax=None, Nout=None):
+    def __init__(self, save=None, plot=None, save_path=None):
         self.planets = self.list_of_planets()
 
         self.times = []
@@ -34,18 +34,33 @@ class Simulation:
 
         self.sim = None
 
-        self.Nout = resonances.config.get('integration.Nout')
-        self.set_tmax(resonances.config.get('integration.tmax'))
+        self.Nout = None
+        self.tmax = resonances.config.get('integration.tmax')
         self.integrator = resonances.config.get('integration.integrator')
         self.dt = resonances.config.get('integration.dt')
+        if resonances.config.has('integration.integrator.safe_mode'):
+            self.integrator_safe_mode = resonances.config.get('integration.integrator.safe_mode')
+        else:
+            self.integrator_safe_mode = 1
+
+        if resonances.config.has('integration.integrator.corrector'):
+            self.integrator_corrector = resonances.config.get('integration.integrator.corrector')
+        else:
+            self.integrator_corrector = None
 
         self.save = resonances.config.get('save')
         self.save_path = resonances.config.get('save.path')
         self.save_summary = resonances.config.get('save.summary')
         self.save_additional_data = resonances.config.get('save.additional.data')
+        if resonances.config.has('save.only.undetermined'):
+            self.save_only_undetermined = resonances.config.get('save.only.undetermined')
+        else:
+            self.save_only_undetermined = False
+
+        self.save_additional_data = resonances.config.get('save.additional.data')
         self.plot = resonances.config.get('plot')
 
-        self.setup(tmax, Nout, save, save_path, plot)
+        self.setup(save, save_path, plot)
 
     def create_solar_system(self):
         solar_file = Path(resonances.config.get('solar_system_file'))
@@ -93,10 +108,19 @@ class Simulation:
             primary=self.sim.particles[0],
         )
 
-    def setup_integrator(self):
+    def setup_integrator(self, N_active=10):
+        self.sim.integrator = self.integrator
         self.sim.integrator = self.integrator
         self.sim.dt = self.dt
-        self.sim.N_active = 10
+        self.sim.N_active = N_active
+
+        if 'whfast' == self.integrator:
+            self.sim.ri_whfast.safe_mode = 0
+            if self.integrator_corrector is not None:
+                self.sim.ri_whfast.corrector = self.integrator_corrector
+        elif 'SABA' in self.integrator:
+            self.sim.ri_saba.safe_mode = self.integrator_safe_mode
+
         self.sim.move_to_com()
 
     def run(self):
@@ -128,10 +152,17 @@ class Simulation:
             self.save_simulation_summary()
         if self.save or self.plot:
             for body in self.bodies:
-                if self.save:
-                    self.save_body(body)
-                if self.plot:
-                    self.plot_body(body)
+                if self.save_only_undetermined:
+                    if body.status < 0:
+                        if self.save:
+                            self.save_body(body)
+                        if self.plot:
+                            self.plot_body(body)
+                else:
+                    if self.save:
+                        self.save_body(body)
+                    if self.plot:
+                        self.plot_body(body)
 
     def identify_librations(self):
         self.librations = np.zeros(len(self.bodies))
@@ -232,20 +263,29 @@ class Simulation:
             arr.append(self.planets.index(planet))
         return arr
 
-    def setup(self, tmax=None, Nout=None, save=None, save_path=None, plot=None, oscillations_cutoff=None):
-        if tmax is not None:
-            self.set_tmax(tmax)
-        if Nout is not None:
-            self.Nout = Nout
+    def setup(self, save=None, save_path=None, plot=None, tmax=None, Nout=None):
         if save is not None:
             self.save = save
         if save_path is not None:
             self.save_path = save_path
         if plot is not None:
             self.plot = plot
-        if oscillations_cutoff is not None:
-            self.oscillations_cutoff = oscillations_cutoff
+        if tmax is not None:
+            self.tmax = tmax
+        if Nout is not None:
+            self.Nout = int(Nout)
 
-    def set_tmax(self, tmax):
-        self.tmax = tmax
-        self.tmax_yrs = tmax / (2 * np.pi)
+    @property
+    def tmax(self):
+        return self.__tmax
+
+    @tmax.setter
+    def tmax(self, value):
+        self.__tmax = value
+        self.tmax_yrs = self.__tmax / (2 * np.pi)
+        if self.Nout is None:
+            self.Nout = int(self.__tmax / 100)
+
+    @tmax.deleter
+    def tmax(self):
+        del self.__tmax

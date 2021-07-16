@@ -10,8 +10,6 @@ def create_simulation_from_json(json_file_src):
         save=c_config['save'],
         plot=c_config['plot'],
         save_path=c_config['save_path'],
-        tmax=c_config['integration.tmax'],
-        Nout=c_config['integration.Nout'],
     )
     sim.create_solar_system()
 
