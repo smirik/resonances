@@ -235,7 +235,7 @@ class Simulation:
                 'M',
             ],
         )
-        df.to_csv('{}/summary.csv'.format(self.save_path))
+        df.to_csv('{}/summary.csv'.format(self.save_path), mode='a', header=False)
         return data
 
     def check_or_create_save_path(self):
