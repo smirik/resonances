@@ -47,3 +47,20 @@ def test_resolve():
     # no resonance if no overlapping and libration period less than critical or no monotony if no overlapping
     assert 0 == resonances.libration.resolve(False, empty, 10000, lib_crit, 0.5, mon_crit)
     assert 0 == resonances.libration.resolve(False, empty, 30000, lib_crit, 0.3, mon_crit)
+
+
+def test_monotony_estimation():
+    data = [1, 2, 3, 4, 5]
+    assert 0.0 == resonances.libration.monotony_estimation(data)
+
+    data = [5, 4, 3, 2, 1]
+    assert 1.0 == resonances.libration.monotony_estimation(data)
+
+    data = [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]
+    assert 0.0 == resonances.libration.monotony_estimation(data)
+
+    data = [1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1]
+    assert 0.5 == resonances.libration.monotony_estimation(data)
+
+    data = [1, 2, 3, 4, 5, 6, 1, 6, 1, 6, 1]
+    assert 0.2 == resonances.libration.monotony_estimation(data)

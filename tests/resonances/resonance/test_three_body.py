@@ -3,12 +3,6 @@ import resonances
 import pytest
 
 
-def test_dalambert():
-    with pytest.raises(Exception) as exception:
-        mmr = ThreeBody([4, -2, -1, 0, 0, 1])
-    assert 'Sum of integers' in str(exception.value)
-
-
 def test_full_create():
     mmr = ThreeBody([4, -2, -1, 0, 0, -1])
     assert 4 == mmr.coeff[0]

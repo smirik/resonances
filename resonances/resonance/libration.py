@@ -36,14 +36,14 @@ class libration:
         return False
 
     @classmethod
-    def monotony_estimation(cls, data):
+    def monotony_estimation(cls, data, crit=np.pi):
         num = 0
         prev = data[0]
         for elem in data:
-            if prev - elem > np.pi:
+            if prev - elem > crit:
                 prev = elem
                 continue
-            if elem - prev > np.pi:
+            if elem - prev > crit:
                 num += 1
                 prev = elem
                 continue
@@ -243,7 +243,16 @@ class libration:
 
         monotony = resonances.libration.monotony_estimation(body.angle)
 
-        if sim.save:
+        body.status = cls.resolve(
+            pure,
+            overlapping,
+            libration_metrics['max_libration_length'],
+            sim.libration_period_critical,
+            monotony,
+            sim.libration_monotony_critical,
+        )
+
+        if sim.shall_save_body(body):
             body.librations = librations
             body.libration_metrics = libration_metrics
             body.libration_pure = pure
@@ -261,14 +270,6 @@ class libration:
 
             body.monotony = monotony
 
-        body.status = cls.resolve(
-            pure,
-            overlapping,
-            libration_metrics['max_libration_length'],
-            sim.libration_period_critical,
-            monotony,
-            sim.libration_monotony_critical,
-        )
         return body.status
 
     @classmethod

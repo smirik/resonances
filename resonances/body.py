@@ -58,15 +58,6 @@ class Body:
         )
         return angle
 
-    def set_initial_data(self, elem):
-        self.initial_data = elem
-
-    def set_mmr(self, mmr: MMR):
-        self.mmr = mmr
-
-    def set_index_of_planets(self, index_of_planets):
-        self.index_of_planets = index_of_planets
-
     def setup_vars_for_simulation(self, num):
         self.axis, self.ecc, self.longitude, self.varpi, self.angle = (
             np.zeros(num),

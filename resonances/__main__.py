@@ -1,4 +1,4 @@
 from resonances import app
 
 if __name__ == '__main__':
-    app.run()
+    print('You have installed the resonances package. Check please the documentation!')

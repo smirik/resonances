@@ -1,7 +1,7 @@
 import resonances
 
 
-def test_breaks():
+def test_find_breaks():
     x = [1, 2, 3]
     y = [1, 2, 5]
 
@@ -60,7 +60,7 @@ def test_breaks():
     assert 1.0 == breaks[3][1]
 
 
-def test_circulation():
+def test_circulation_and_circulation_metrics():
     x = [3, 5, 7]
     y = [1, 2, 3]  # no breaks, full interval is a libration
     data = resonances.libration.circulation(x, y)
@@ -110,3 +110,31 @@ def test_circulation():
     metrics = resonances.libration.circulation_metrics(data)
     assert 1 == metrics['num_libration_periods']
     assert 16 == metrics['max_libration_length']
+
+
+def test_overlap():
+    assert 1.0 == resonances.libration.overlap([1, 3], [2, 4])
+    assert 0.0 == resonances.libration.overlap([1, 2], [3, 4])
+    assert 0.0 == resonances.libration.overlap([1, 2], [2, 3])
+    assert 2.0 == resonances.libration.overlap([1, 10], [8, 12])
+
+    assert 0 < resonances.libration.overlap([1, 2], [2, 3], delta=0.1)
+    assert 0 == resonances.libration.overlap([1, 2], [3, 4], delta=0.1)
+    assert 0 < resonances.libration.overlap([1, 2], [3, 4], delta=1.1)
+
+
+def test_overlap_list():
+    data = resonances.libration.overlap_list([[1, 3], [10, 11]], [[2, 4], [20, 21]])
+    assert 1 == len(data)
+    assert [1, 3] == data[0]
+
+    data = resonances.libration.overlap_list([[1, 2], [10, 11]], [[3, 4], [20, 21]])
+    assert 0 == len(data)
+
+    data = resonances.libration.overlap_list([[1, 3], [10, 12]], [[2, 4], [11, 21]])
+    assert 2 == len(data)
+    assert [1, 3] == data[0]
+    assert [10, 12] == data[1]
+
+    data = resonances.libration.overlap_list([[1, 2], [10, 11]], [[2, 3], [20, 21]])
+    assert 0 == len(data)

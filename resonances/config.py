@@ -29,6 +29,13 @@ class config:
         return False
 
     @classmethod
+    def set(cls, key, value):
+        if not cls.has(key):
+            raise Exception('There is no config with key = {}. The full config: {}'.format(key, json.dumps(cls.config)))
+
+        cls.config[key] = value
+
+    @classmethod
     def static_init(cls):
         config_file_path = 'config.json'
         config_file = Path(config_file_path)

@@ -16,8 +16,12 @@
     "save": true,
     "save.summary": true,
     "save.additional.data": true,
-    "save.only.undetermined": true,
+    "save.only.undetermined": false,
     "save.path": "cache",
     "plot.path": "cache",
-    "plot": true
+    "plot": true,
+    "catalog": "cache/allnum.csv",
+    "catalog.date": "2020-12-17 00:00",
+    "astdys.catalog": "cache/allnum.cat",
+    "astdys.date": "2020-12-17 00:00"
 }

@@ -17,8 +17,7 @@ class Simulation:
         self.bodies: List[resonances.Body] = []
         self.particles = []
 
-        self.librations = None
-        self.libration_data = []
+        self.bodies_date = resonances.config.get('catalog.date')
 
         # Libration and filtering settings
         self.oscillations_cutoff = resonances.config.get('libration.oscillation.filter.cutoff')
@@ -75,7 +74,7 @@ class Simulation:
     def add_body(self, elem_or_num, mmr: resonances.MMR, name='asteroid'):
         body = resonances.Body()
 
-        if isinstance(elem_or_num, int):
+        if isinstance(elem_or_num, int) or (isinstance(elem_or_num, str)):
             elem = astdys.search(elem_or_num)
         elif isinstance(elem_or_num, dict):
             elem = elem_or_num
@@ -84,10 +83,10 @@ class Simulation:
         else:
             raise Exception('You can add body only by its number or all orbital elements')
 
-        body.set_initial_data(elem)
+        body.initial_data = elem
         body.name = name
-        body.set_mmr(mmr)
-        body.set_index_of_planets(self.get_index_of_planets(mmr.planets_names))
+        body.mmr = mmr
+        body.index_of_planets = self.get_index_of_planets(mmr.planets_names)
         self.bodies.append(body)
 
     def add_bodies_to_simulation(self):
@@ -104,7 +103,7 @@ class Simulation:
             Omega=body.initial_data['Omega'],
             omega=body.initial_data['omega'],
             M=body.initial_data['M'],
-            date=astdys.date,
+            date=self.bodies_date,
             primary=self.sim.particles[0],
         )
 
@@ -150,24 +149,30 @@ class Simulation:
         self.identify_librations()
         if self.save_summary:
             self.save_simulation_summary()
-        if self.save or self.plot:
+        if self.save or self.plot or self.save_only_undetermined:
             for body in self.bodies:
-                if self.save_only_undetermined:
-                    if body.status < 0:
-                        if self.save:
-                            self.save_body(body)
-                        if self.plot:
-                            self.plot_body(body)
-                else:
-                    if self.save:
-                        self.save_body(body)
-                    if self.plot:
-                        self.plot_body(body)
+                if self.shall_save_body(body):
+                    self.save_body(body)
+                if self.shall_plot_body(body):
+                    self.plot_body(body)
 
     def identify_librations(self):
-        self.librations = np.zeros(len(self.bodies))
         for i, body in enumerate(self.bodies):
             resonances.libration.body(self, body)
+
+    def shall_save_body(self, body: resonances.Body):
+        if self.save:
+            return True
+        elif (self.save_only_undetermined) and (body.status < 0):
+            return True
+        return False
+
+    def shall_plot_body(self, body: resonances.Body):
+        if self.plot:
+            return True
+        elif (self.save_only_undetermined) and (body.status < 0):
+            return True
+        return False
 
     def plot_body(self, body: resonances.Body):
         self.check_or_create_save_path()
@@ -175,21 +180,23 @@ class Simulation:
 
     def save_body(self, body: resonances.Body):
         self.check_or_create_save_path()
+        df_data = self.get_body_data(body)
+        df = pd.DataFrame(data=df_data)
+        df.to_csv('{}/data-{}-{}.csv'.format(self.save_path, body.index_in_simulation, body.name))
+
+    def get_body_data(self, body: resonances.Body):
         df_data = {
             'times': self.times / (2 * np.pi),
             'angle': body.angle,
             'a': body.axis,
             'e': body.ecc,
         }
-        if self.save_additional_data:
+        if self.save_additional_data and (body.periodogram_power is not None):
             len_diff = len(body.angle) - len(body.periodogram_power)
-            df_data = {
-                'periodogram': np.append(body.periodogram_power, np.zeros(len_diff)),
-                'a_filtered': body.axis_filtered,
-                'a_periodogram': np.append(body.axis_periodogram_power, np.zeros(len_diff)),
-            }
-        df = pd.DataFrame(data=df_data)
-        df.to_csv('{}/data-{}-{}-{}.csv'.format(self.save_path, body.index_in_simulation, body.name, body.mmr.to_s()))
+            df_data['periodogram'] = np.append(body.periodogram_power, np.zeros(len_diff))
+            df_data['a_filtered'] = body.axis_filtered
+            df_data['a_periodogram'] = np.append(body.axis_periodogram_power, np.zeros(len_diff))
+        return df_data
 
     def get_simulation_summary(self):
         data = []
