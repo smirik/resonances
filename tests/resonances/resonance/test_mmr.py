@@ -18,11 +18,11 @@ def test_initialisation():
 
 def test_dalambert():
     with pytest.raises(Exception) as exception:
-        mmr = resonances.MMR([4, -2, -1, 0, 0, 1])
+        resonances.MMR([4, -2, -1, 0, 0, 1])
         assert 'Sum of integers' in str(exception.value)
 
     with pytest.raises(Exception) as exception:
-        mmr = resonances.MMR([2, -1, 0, 0])
+        resonances.MMR([2, -1, 0, 0])
         assert 'Sum of integers' in str(exception.value)
 
 

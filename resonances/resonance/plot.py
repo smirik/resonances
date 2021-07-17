@@ -65,7 +65,7 @@ def body(sim, body: resonances.Body):
     plt.tight_layout()
 
     # asteroid_plot(sim.times, body.angle, body.axis, body.ecc, body.name, body.mmr, body.status, body.libration_data)
-    if sim.plot == True:
+    if sim.plot is True:
         plt.savefig('{}/{}-{}.png'.format(sim.save_path, body.index_in_simulation, body.name))
     elif sim.plot == 'show':
         plt.show()

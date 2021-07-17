@@ -134,7 +134,7 @@ class Simulation:
             self.sim.integrate(time)
             os = self.sim.calculate_orbits(primary=ps[0])
 
-            for k, body in enumerate(self.bodies):
+            for body in self.bodies:
                 tmp = os[body.index_in_simulation - 1]  # ? -1 because Sun is not in os
                 body.axis[i], body.ecc[i], body.longitude[i], body.varpi[i] = (
                     tmp.a,
@@ -155,7 +155,7 @@ class Simulation:
                     self.plot_body(body)
 
     def identify_librations(self):
-        for i, body in enumerate(self.bodies):
+        for body in self.bodies:
             resonances.libration.body(self, body)
 
     def shall_save_body(self, body: resonances.Body):
@@ -198,7 +198,7 @@ class Simulation:
 
     def get_simulation_summary(self):
         data = []
-        for i, body in enumerate(self.bodies):
+        for body in self.bodies:
             s = ', '.join('({:.0f}, {:.0f})'.format(left, right) for left, right in body.periodogram_peaks_overlapping)
             data.append(
                 [

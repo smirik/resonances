@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 import pytest
 import resonances
@@ -6,13 +5,13 @@ import resonances
 
 def test_pure():
     arr = [1, 2, 3, 3, 2, 1, 1, 2, 3, 3, 2, 1]
-    assert True == resonances.libration.pure(arr)
+    assert resonances.libration.pure(arr) is True
 
     arr = [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6]
-    assert False == resonances.libration.pure(arr)
+    assert resonances.libration.pure(arr) is False
 
     arr = [6, 0, 1, 0, 6, 5, 6, 0, 1, 2]
-    assert True == resonances.libration.pure(arr)
+    assert resonances.libration.pure(arr) is True
 
     # test pure and rewrite it after new normal example
 

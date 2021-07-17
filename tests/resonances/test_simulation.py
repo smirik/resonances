@@ -24,7 +24,7 @@ def test_init():
 
 def test_solar_system():
     sim = tools.create_test_simulation_for_solar_system()
-    assert True == isinstance(sim.sim, rebound.Simulation)
+    assert isinstance(sim.sim, rebound.Simulation) is True
     assert 10 == len(sim.sim.particles)
 
 
@@ -67,11 +67,11 @@ def test_run():
     assert 10 == len(sim.bodies[0].angle)
     assert 10 == len(sim.bodies[0].axis)
     assert 10 == len(sim.bodies[0].ecc)
-    assert not None == sim.bodies[0].status
+    assert sim.bodies[0].status is not None
 
-    assert True == Path('cache/tests/data-10-asteroid.csv').exists()
-    assert True == Path('cache/tests/10-asteroid.png').exists()
-    assert True == Path('cache/tests/summary.csv').exists()
+    assert Path('cache/tests/data-10-asteroid.csv').exists() is True
+    assert Path('cache/tests/10-asteroid.png').exists() is True
+    assert Path('cache/tests/summary.csv').exists() is True
 
 
 @pytest.fixture
@@ -113,7 +113,7 @@ def test_saving_summary():
     tools.add_test_asteroid_to_simulation(sim)
     sim.run()
 
-    assert True == Path('cache/tests/summary.csv').exists()
+    assert Path('cache/tests/summary.csv').exists() is True
     shutil.rmtree('cache/tests')
 
     del sim
@@ -121,7 +121,7 @@ def test_saving_summary():
     tools.add_test_asteroid_to_simulation(sim)
     sim.run()
 
-    assert False == Path('cache/tests/summary.csv').exists()
+    assert Path('cache/tests/summary.csv').exists() is False
 
 
 def test_get_body_data():
@@ -130,13 +130,13 @@ def test_get_body_data():
     sim.run()
 
     data = sim.get_body_data(sim.bodies[0])
-    assert True == ('times' in data)
-    assert True == ('angle' in data)
-    assert True == ('a' in data)
-    assert True == ('e' in data)
-    assert False == ('periodogram' in data)
-    assert False == ('a_filtered' in data)
-    assert False == ('a_periodogram' in data)
+    assert ('times' in data) is True
+    assert ('angle' in data) is True
+    assert ('a' in data) is True
+    assert ('e' in data) is True
+    assert ('periodogram' in data) is False
+    assert ('a_filtered' in data) is False
+    assert ('a_periodogram' in data) is False
 
     del sim
     sim = tools.create_test_simulation_for_solar_system(save_additional_data=True, save=True)
@@ -144,10 +144,10 @@ def test_get_body_data():
     sim.run()
 
     data = sim.get_body_data(sim.bodies[0])
-    assert True == ('angle' in data)
-    assert True == ('periodogram' in data)
-    assert True == ('a_filtered' in data)
-    assert True == ('a_periodogram' in data)
+    assert ('angle' in data) is True
+    assert ('periodogram' in data) is True
+    assert ('a_filtered' in data) is True
+    assert ('a_periodogram' in data) is True
 
 
 def test_get_simulation_summary():

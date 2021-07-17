@@ -1,4 +1,6 @@
-import json, time, argparse
+import json
+import time
+import argparse
 
 import resonances
 from resonances.experiment import shape
