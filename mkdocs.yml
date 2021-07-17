@@ -1,0 +1,12 @@
+site_name: Mean Motion Resonances
+site_url: https://github.com/smirik/resonances
+repo_url: https://github.com/smirik/resonances
+site_description: The python package that identifies two-body and three-body mean motion resonances.
+
+theme:
+    name: readthedocs
+    include_homepage_in_sidebar: True
+nav:
+    - Home: index.md
+    - Config: config.md
+    - Libration module: libration.md
