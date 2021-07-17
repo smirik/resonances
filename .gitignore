@@ -5,6 +5,7 @@
 cache/*
 !cache/.gitkeep
 site/ 
+docs/cache
 
 # Common python excludes
 # Byte-compiled / optimized / DLL files

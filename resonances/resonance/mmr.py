@@ -9,7 +9,7 @@ class MMR:
 
         if sum(self.coeff) != 0:
             raise Exception(
-                "Sum of integers in a resonance should follow the D'alambert rule. Given {}, the sum is equal to {}.".format(
+                "Sum of integers in a resonance should follow the D'Alembert rule. Given {}, the sum is equal to {}.".format(
                     ', '.join(str(e) for e in coeff), sum(self.coeff)
                 )
             )
