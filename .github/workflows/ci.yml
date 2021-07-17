@@ -36,6 +36,9 @@ jobs:
         shell: bash
         run: python -m poetry install --no-root
 
+      - name: Code Quality
+        run: poetry run black . --check
+
       - name: Test with pytest
         run: |
-          poetry run pytest -v tests tests/resonances
+          poetry run pytest -v tests/resonances
