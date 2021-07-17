@@ -2,7 +2,7 @@ import json, time, argparse
 
 import resonances
 from resonances.experiment import shape
-from resonances.data import loader
+from resonances.experiment import loader
 
 parser = argparse.ArgumentParser(description='')
 
@@ -22,7 +22,7 @@ def quick():
     sim.run()
 
 
-def asteroid():
+def asteroids():
     parser.add_argument('--config', nargs='?', type=str)
     args = parser.parse_args()
 

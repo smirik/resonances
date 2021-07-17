@@ -16,6 +16,14 @@ def run_around_tests():
     shutil.rmtree('cache/tests')
 
 
+def test_required_config_values():
+    assert True == resonances.config.has('catalog')
+    assert True == resonances.config.has('catalog.date')
+    assert True == resonances.config.has('astdys.catalog.url')
+    assert True == resonances.config.has('astdys.catalog')
+    assert True == resonances.config.has('astdys.date')
+
+
 def test_transform_astdys_catalog():
     cat = astdys.transform_astdys_catalog()
     assert 'a' in cat

@@ -22,6 +22,7 @@
     "plot": true,
     "catalog": "cache/allnum.csv",
     "catalog.date": "2020-12-17 00:00",
+    "astdys.catalog.url": "https://newton.spacedys.com/~astdys2/catalogs/allnum.cat",
     "astdys.catalog": "cache/allnum.cat",
     "astdys.date": "2020-12-17 00:00"
 }

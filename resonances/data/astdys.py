@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import urllib.request
 
 import resonances.config
 
@@ -13,7 +14,6 @@ class astdys:
     def search(cls, num):
         num = str(num)
         if cls.catalog is None:
-            print('No catalog loaded. Loading...')
             cls.check_or_build_catalog()
             cls.catalog = pd.read_csv(resonances.config.get('catalog'))
             cls.catalog['num'] = cls.catalog['num'].astype(str)
@@ -29,7 +29,14 @@ class astdys:
         if not output_file.exists():
             input_file = Path(resonances.config.get('astdys.catalog'))
             if not input_file.exists():
-                raise Exception("No input catalog available: put AstDys allnum.cat or allnum.csv in the cache directory!")
+                print('Cannot find AstDyS catalog. Trying to download it...')
+                try:
+                    urllib.request.urlretrieve(resonances.config.get('astdys.catalog.url'), 'cache/allnum.cat')
+                except Exception:
+                    raise Exception(
+                        "No input catalog available. Cannot download it too. Put AstDys allnum.cat or allnum.csv in the cache directory!"
+                    )
+                print('Successfully downloaded. Continue working...')
 
             cat = cls.transform_astdys_catalog()
             cat.to_csv(resonances.config.get('catalog'), index=False)

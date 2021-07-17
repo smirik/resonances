@@ -3,7 +3,7 @@
     "integration.Nout": 62831,
     "plot": true,
     "save": true,
-    "save_path": "cache/identification",
+    "save_path": "cache/asteroids",
     "asteroids": [
       {
         "elem": {
@@ -14,7 +14,7 @@
           "Omega": 0.6370508455573044,
           "omega": 5.752902062786396,
           "M": 2.4309844848211464,
-          "label": "A463"
+          "label": "Asteroid 463"
         },
         "resonances": [
           {
@@ -27,7 +27,7 @@
       {
         "elem": {
           "num": 490,
-          "label": "Ast490"
+          "label": "Asteroid 490"
         },
         "resonances": [
           {

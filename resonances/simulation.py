@@ -10,7 +10,7 @@ from resonances.resonance import plot
 
 
 class Simulation:
-    def __init__(self, save=None, plot=None, save_path=None):
+    def __init__(self):
         self.planets = self.list_of_planets()
 
         self.times = []
@@ -58,8 +58,6 @@ class Simulation:
 
         self.save_additional_data = resonances.config.get('save.additional.data')
         self.plot = resonances.config.get('plot')
-
-        self.setup(save, save_path, plot)
 
     def create_solar_system(self):
         solar_file = Path(resonances.config.get('solar_system_file'))
