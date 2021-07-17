@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="canonical" href="https://github.com/smirik/resonances/libration/">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Libration module - Mean-Motion Resonances</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Libration module";
+    var mkdocs_page_input_path = "libration.md";
+    var mkdocs_page_url = "/smirik/resonances/libration/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Mean-Motion Resonances</a>
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Getting Started</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../quick-start/">Quick start</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../install/">Installation and updates</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Features</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations and Bodies</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Libration module</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#metrics">Metrics</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-workflow-of-identification">The workflow of identification</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#possible-statuses">Possible statuses</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#a-few-comments-to-the-negative-statuses">A few comments to the negative statuses</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Advanced</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../console/">Console commands</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">About</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../about/">Copyright, license, references</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Mean-Motion Resonances</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Features &raquo;</li>
+        
+      
+    
+    <li>Libration module</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/smirik/resonances/edit/master/docs/libration.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="libration">Libration</h1>
+<p>There is no obvious algorithm how to identify whether or not the asteroid is in the resonance. While there are simple cases (such as 463 Lola in <code>4J-2S-1</code>, see <a href="../quick-start/">Example</a>), there are many asteroids whose resonant angles are librating but not the whole time. Moreover, it might be the case that the resonant angle librates, but the frequency of these oscillations differs from the frequency of the librations of the values of the semi-major axis. Therefore, a complex solution is needed.</p>
+<h2 id="metrics">Metrics</h2>
+<p>The module <code>resonances.libration</code> uses several metrics to resolve whether or not an asteroid is resonant:</p>
+<ol>
+<li><code>pure</code>: this flag shows is there at least one period of circulation. Technically, it means that the resonant angle (limited by 2&pi; filter) should never break the limits of <code>0</code> and <code>2&amp;pi</code> or be shifted by a constant.</li>
+<li><code>overlapping</code>: the module calculates the frequencies of oscillations of the resonant angle and semi-major axis (see <a href="../config/">Config</a> for the limits used by default). If there is a shared frequency within limits, then it signals that there might be a resonance.</li>
+<li><code>max_libration_length</code>: it represents the longest period of libration of the resonant angle. Or, in other words, how long there was no circulation. For all resonant asteroids, this value should be high enough.</li>
+<li><code>monotony</code>: a very simple metric that calculates the percentage of the points when the value of the resonant angle for the current time is less than the same value for the previous step. If the resonant angle librates, it means that this value should be close to <code>0.5</code>.</li>
+</ol>
+<p>All these values are available for <code>Body</code> objects after the integration. They are available in the output file <code>summary.csv</code>. The time series (if the appropriate flag is set) are also stored in CSV files in the output directory.</p>
+<p>You may invoke or recalculate them in the following way:</p>
+<pre><code class="language-python">sim = resonances.Simulation()
+# ...
+body = sim.bodies[0]
+body.librations
+body.libration_metrics
+body.libration_pure
+body.periodogram_frequency
+body.periodogram_power
+body.periodogram_peaks
+body.axis_filtered
+body.axis_periodogram_frequency
+body.axis_periodogram_power
+body.axis_periodogram_peaks
+</code></pre>
+<p>For the detailed algorithm, see <code>resonances/resonance/libration.py</code> file.</p>
+<h2 id="the-workflow-of-identification">The workflow of identification</h2>
+<p>How the app distinguishes different types of asteroids?</p>
+<ol>
+<li>If there is a pure libration around 0 or &pi; <strong>and</strong> the frequency of libration (based on <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lombscargle.html">the Lomb-Scargle periodogram</a>) is close to the frequency of oscillations of semi-major axis (more precisely: if the peaks taken with their width overlap each other), then the function ends with the status <code>2</code>.</li>
+<li>If there is no shared frequency for the oscillations of the resonant angle and the semi-major axis, but the libration is pure, then the app considers this case <em>difficult</em> and set the status <code>-2</code>, which means that manual verification is needed.</li>
+<li>If there is a shared frequency of oscillations and the libration period is <em>long enough</em> (set in <a href="../config/">Config</a>), then the function ends with the status <code>1</code>, which means that the asteroid is in a transient resonance.</li>
+<li>However, if there is no shared frequency but still the libration period is <em>long enough</em>, the app checks the monotony metrics. If it is acceptable, then the function ends with the status <code>-1</code>, which means that there is something strange and thus should be verified manually.</li>
+<li>For all other cases, the function ends with the status <code>0</code>, which means that the asteroid is not in the resonance.</li>
+</ol>
+<h2 id="possible-statuses">Possible statuses</h2>
+<table>
+<thead>
+<tr>
+<th align="center">Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">2</td>
+<td>There is a pure libration around 0 or Pi.</td>
+</tr>
+<tr>
+<td align="center">1</td>
+<td>There is a libration, but it does not look pure.</td>
+</tr>
+<tr>
+<td align="center">0</td>
+<td>There is no libration (circulation or similar).</td>
+</tr>
+<tr>
+<td align="center">-1</td>
+<td>Requires manual verification (transient libration).</td>
+</tr>
+<tr>
+<td align="center">-2</td>
+<td>Requires manual verification (pure libration).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a-few-comments-to-the-negative-statuses">A few comments to the negative statuses</h3>
+<ol>
+<li><code>-1</code>: It looks like that there is no libration because there is no shared frequency of oscillation between resonant angle and semi-major axis. However, the behaviour of the resonant angle is not chaotic and thus needs to be manually verified.</li>
+<li><code>-2</code>: There is a pure libration of the resonant angle. However, the frequency of oscillations does not correspond to the frequency of the oscillations of the semi-major axis. Thus, it requires manual verification.</li>
+</ol>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../config/" class="btn btn-neutral float-right" title="Config">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../core/" class="btn btn-neutral" title="Simulations and Bodies"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/smirik/resonances/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../core/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../config/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

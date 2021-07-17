@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="canonical" href="https://github.com/smirik/resonances/console/">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Console commands - Mean-Motion Resonances</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Console commands";
+    var mkdocs_page_input_path = "console.md";
+    var mkdocs_page_url = "/smirik/resonances/console/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Mean-Motion Resonances</a>
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Getting Started</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../quick-start/">Quick start</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../install/">Installation and updates</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Features</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations and Bodies</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../libration/">Libration module</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Advanced</span></p>
+                <ul class="current">
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Console commands</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#quick-identification">Quick identification</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#identify-several-asteroids">Identify several asteroids</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#resonance-shape">Resonance shape</a>
+    </li>
+    </ul>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">About</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../about/">Copyright, license, references</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Mean-Motion Resonances</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Advanced &raquo;</li>
+        
+      
+    
+    <li>Console commands</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/smirik/resonances/edit/master/docs/console.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="console-commands">Console commands</h1>
+<p>While <code>resonances</code> are designed to be used as a package, which means that you import them into your project and manipulate the data in the way you want, there are some console commands that are made mainly as examples of what one can do with this package.</p>
+<h2 id="quick-identification">Quick identification</h2>
+<p>If you want to check if the given asteroid is in the given resonance, you can run:</p>
+<pre><code class="language-bash">poetry run identify-quick 463 4J-2S-1
+</code></pre>
+<p>The first argument specifies the number of the asteroid, the second one — the corresponding resonance in a short form.</p>
+<p>As a result, the app will integrate this asteroid and identify whether or not it is in the resonance. The results will be placed in <code>cache</code> folder: the data file, the figure, and the quick summary in <code>summary.csv</code>.</p>
+<h2 id="identify-several-asteroids">Identify several asteroids</h2>
+<p>You might want to check several asteroids whether or not they are resonant. Moreover, for each asteroid, you might want to specify several resonances. It is possible through the command:</p>
+<pre><code class="language-bash">poetry run identify-asteroids --config=docs/examples/asteroids.json
+</code></pre>
+<p>You have to specify the input data in <code>json</code> format. There is a self-explanatory example in <code>docs/examples/asteroids.json</code>. Note that you may specify many possible resonances for many asteroids.</p>
+<h2 id="resonance-shape">Resonance shape</h2>
+<p>There is another example available in <code>docs/examples/simulation-shape.json</code>. It shows how one might run a simulation that includes many test particles.</p>
+<pre><code class="language-bash">poetry run simulation-shape --config=docs/examples/simulation-shape.json
+</code></pre>
+<p>This command creates a set of test particles specified in <code>simulation-shape.json</code>, integrate them for <code>100,000</code> years, and identify whether or not they are in the resonance.</p>
+<p>The parameter <code>variations</code> in <code>json</code> file specifies the variations of initial data that are used to create test particles. In the example, there are three groups of variations:</p>
+<ol>
+<li>Variate <code>a</code> between <code>2.389</code> and <code>2.401</code> (approx.) and use linear distribution with 2 points (yes, it is very small, but this is only for test purposes) and <code>e</code> between <code>0.0</code> and <code>0.3</code> with 2 points.</li>
+<li>Variate <code>a</code> between <code>2.389</code> and <code>2.401</code> (approx.) and use linear distribution with 3 points and <code>e</code> between <code>0.3</code> and <code>0.6</code> with 3 points.</li>
+<li>Variate <code>a</code> between <code>2.389</code> and <code>2.401</code> (approx.) and use linear distribution with 2 points and <code>e</code> between <code>0.6</code> and <code>0.9</code> with 2 points.</li>
+</ol>
+<p>In total, the app will create <code>2*2+3*3+2*2=17</code> test particles. Of course, you may change these values to the appropriate (i.e. <code>100</code> points per interval).</p>
+<p>The results of the integration will be saved in <code>cache/simulation-shape</code> directory. The main files are <code>summary.csv</code> and <code>ae-plane.csv</code>. Note that the flag <code>save.only.undetermined</code> is set to <code>true</code>. Therefore, the data and the figures will be only for the bodies whose statuses are uncertain.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../about/" class="btn btn-neutral float-right" title="Copyright, license, references">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../config/" class="btn btn-neutral" title="Config"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/smirik/resonances/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../config/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../about/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
