@@ -1,0 +1,63 @@
+{
+    "integration.tmax": 628319,
+    "plot": true,
+    "save": true,
+    "save.summary": true,
+    "save_path": "cache/simulation-shape",
+    "save.only.undetermined": true,
+    "dump": 100,
+    "label": "A463 resonance shape",
+    "elem": {
+        "m": 0.0,
+        "a": 2.398825840331548,
+        "e": 0.2194125828625336,
+        "inc": 0.23627318991620527,
+        "Omega": 0.6370508455573044,
+        "omega": 5.752902062786396,
+        "M": 2.4309844848211464
+    },
+    "variations": [
+        {
+            "a": {
+                "min": 2.388825840331548,
+                "max": 2.408825840331548,
+                "num": 2
+            },
+            "e": {
+                "min": 0.0,
+                "max": 0.3,
+                "num": 2
+            }
+        },
+        {
+            "a": {
+                "min": 2.388825840331548,
+                "max": 2.408825840331548,
+                "num": 3
+            },
+            "e": {
+                "min": 0.3,
+                "max": 0.6,
+                "num": 3
+            }
+        },
+        {
+            "a": {
+                "min": 2.388825840331548,
+                "max": 2.408825840331548,
+                "num": 2
+            },
+            "e": {
+                "min": 0.6,
+                "max": 0.9,
+                "num": 1
+            }
+        }        
+    ],
+    "resonance": {
+        "integers": [4, -2, -1, 0, 0, -1],
+        "bodies": ["Jupiter", "Saturn"]
+    }
+
+
+}
