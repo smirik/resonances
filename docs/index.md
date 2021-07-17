@@ -1,11 +1,6 @@
-# Mean-Motion Reasonances
-
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Resonances](https://github.com/smirik/resonances/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/smirik/resonances/actions/workflows/ci.yml)
+# Mean-Motion Resonances on steroids
 
 `resonances` is an open-source package dedicated to the identification of mean-motion resonances of small bodies. Many examples are for the Solar system; however, you might use the package for any possible planetary system, including exoplanets.
-
-For more information, [read the documentation](https://github.com/smirik/resonances).
 
 ## Features
 
@@ -66,11 +61,3 @@ The authors of the package:
 - The creators of [REBOUND integrator](https://rebound.readthedocs.io).
 - The creators of [Astropy](http://astropy.org).
 - The creators of `numpy`, `scipy`, `pandas`, and `matplotlib`.
-
-## Contributing
-
-Feel free to contribute to the code by sending pull requests [to the repository](https://github.com/smirik/resonances).
-
-## License
-
-MIT

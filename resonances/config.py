@@ -37,11 +37,12 @@ class config:
 
     @classmethod
     def static_init(cls):
-        config_file_path = 'config.json'
+        config_file_dir = Path(__file__).parent.parent.resolve()
+        config_file_path = '{}/config.json'.format(str(config_file_dir))
         config_file = Path(config_file_path)
 
         if not config_file.exists():
-            raise Exception('No config.json presented. Cannot continue working.')
+            raise Exception('No config.json presented. Looking at {} Cannot continue working.'.format(config_file_path))
 
-        with open('config.json', "r") as read_file:
+        with open(config_file_path, "r") as read_file:
             cls.config = json.load(read_file)

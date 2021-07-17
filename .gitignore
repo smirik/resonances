@@ -4,6 +4,8 @@
 # Cache directory is needed but no files should be there
 cache/*
 !cache/.gitkeep
+site/ 
+docs/cache
 
 # Common python excludes
 # Byte-compiled / optimized / DLL files

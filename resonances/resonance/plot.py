@@ -5,11 +5,9 @@ import resonances.config
 
 
 def body(sim, body: resonances.Body):
-    plt.plot(body.axis)
-
     plt.style.use('default')
 
-    fig, axs = plt.subplots(5, 1, figsize=(15, 15))
+    fig, axs = plt.subplots(5, 1, figsize=(10, 10))
 
     fig.suptitle(
         "Object {}, resonance = {}, status = {}".format(body.name, body.mmr.to_short(), body.status),
@@ -21,7 +19,7 @@ def body(sim, body: resonances.Body):
     axs[0].xaxis.set_major_locator(plt.MultipleLocator(10000))
     axs[0].xaxis.set_minor_locator(plt.MultipleLocator(2000))
     axs[0].set_title('{} - {} ({})'.format(body.name, body.mmr.to_short(), body.status))
-    axs[0].set_title('Filtered semi-major axis')
+    axs[1].set_title('Filtered semi-major axis')
     axs[0].plot(sim.times / (2 * np.pi), body.angle, linestyle='', marker=',')
     if body.axis_filtered is not None:
         axs[1].plot(sim.times / (2 * np.pi), body.axis_filtered, linestyle='', marker=',')
