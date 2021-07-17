@@ -2,9 +2,9 @@ name: Resonances App
 
 on:
   push:
-    branches: [main, develop, initialize]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 jobs:
   build:
