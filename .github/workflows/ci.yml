@@ -38,4 +38,4 @@ jobs:
 
       - name: Test with pytest
         run: |
-          python -m pytest -v tests tests/resonances
+          poetry run pytest -v tests tests/resonances
