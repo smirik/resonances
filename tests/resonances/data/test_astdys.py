@@ -17,11 +17,11 @@ def run_around_tests():
 
 
 def test_required_config_values():
-    assert True == resonances.config.has('catalog')
-    assert True == resonances.config.has('catalog.date')
-    assert True == resonances.config.has('astdys.catalog.url')
-    assert True == resonances.config.has('astdys.catalog')
-    assert True == resonances.config.has('astdys.date')
+    assert resonances.config.has('catalog') is True
+    assert resonances.config.has('catalog.date') is True
+    assert resonances.config.has('astdys.catalog.url') is True
+    assert resonances.config.has('astdys.catalog') is True
+    assert resonances.config.has('astdys.date') is True
 
 
 def test_transform_astdys_catalog():
@@ -49,7 +49,7 @@ def test_transform_astdys_catalog():
 
 def test_check_or_build_catalog():
     astdys.check_or_build_catalog()
-    assert True == Path(resonances.config.get('catalog')).is_file()
+    assert Path(resonances.config.get('catalog')).is_file() is True
 
     cat = pd.read_csv('tests/fixtures/small.csv')
     assert 10 == len(cat)
@@ -70,8 +70,8 @@ def test_search():
     assert 242.94481 == pytest.approx(obj['M'] / np.pi * 180, 0.01)
 
     obj = astdys.search(10)
-    assert not None == obj
+    assert obj is not None
     obj = astdys.search(11)
-    assert None == obj
+    assert obj is None
     obj = astdys.search(123456789)
-    assert None == obj
+    assert obj is None

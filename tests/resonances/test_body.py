@@ -5,16 +5,16 @@ def test_checkers():
     body = resonances.Body()
     body.status = 2
 
-    assert True == body.in_resonance()
-    assert True == body.in_pure_resonance()
+    assert body.in_resonance() is True
+    assert body.in_pure_resonance() is True
 
     body.status = 1
-    assert True == body.in_resonance()
-    assert False == body.in_pure_resonance()
+    assert body.in_resonance() is True
+    assert body.in_pure_resonance() is False
 
     body.status = 0
-    assert False == body.in_resonance()
-    assert False == body.in_pure_resonance()
+    assert body.in_resonance() is False
+    assert body.in_pure_resonance() is False
 
 
 def test_setup():

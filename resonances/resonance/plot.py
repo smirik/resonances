@@ -21,7 +21,7 @@ def body(sim, body: resonances.Body):
     axs[0].set_title('{} - {} ({})'.format(body.name, body.mmr.to_short(), body.status))
     axs[1].set_title('Filtered semi-major axis')
     axs[0].plot(sim.times / (2 * np.pi), body.angle, linestyle='', marker=',')
-    if body.axis_filtered is not None:
+    if body.axis_filtered is not None:  # pragma: no cover
         axs[1].plot(sim.times / (2 * np.pi), body.axis_filtered, linestyle='', marker=',')
     else:
         axs[1].plot(sim.times / (2 * np.pi), body.axis, linestyle='', marker=',')
@@ -33,7 +33,9 @@ def body(sim, body: resonances.Body):
     # axs[2].set_ylim(0, 0.2)
     axs[2].axhline(y=0.05, color='r', linestyle='--')
     axs[2].axhline(y=0.1, color='g', linestyle='--')
-    if (body.periodogram_peaks is not None) and ('peaks' in body.periodogram_peaks) and (body.periodogram_peaks['peaks'].size):
+    if (
+        (body.periodogram_peaks is not None) and ('peaks' in body.periodogram_peaks) and (body.periodogram_peaks['peaks'].size)
+    ):  # pragma: no cover
         peaks = body.periodogram_peaks['peaks']
         for peak_width in body.periodogram_peaks['position']:
             axs[2].axvline(x=peak_width[0], color='gray', linestyle="dashed")
@@ -49,7 +51,7 @@ def body(sim, body: resonances.Body):
         (body.axis_periodogram_peaks is not None)
         and ('peaks' in body.axis_periodogram_peaks)
         and (body.axis_periodogram_peaks['peaks'].size)
-    ):
+    ):  # pragma: no cover
         peaks = body.axis_periodogram_peaks['peaks']
         for peak_width in body.axis_periodogram_peaks['position']:
             axs[3].axvline(x=peak_width[0], color='gray', linestyle="dashed")
@@ -64,8 +66,7 @@ def body(sim, body: resonances.Body):
 
     plt.tight_layout()
 
-    # asteroid_plot(sim.times, body.angle, body.axis, body.ecc, body.name, body.mmr, body.status, body.libration_data)
-    if sim.plot == True:
+    if sim.plot is True:  # pragma: no cover
         plt.savefig('{}/{}-{}.png'.format(sim.save_path, body.index_in_simulation, body.name))
-    elif sim.plot == 'show':
+    elif sim.plot == 'show':  # pragma: no cover
         plt.show()

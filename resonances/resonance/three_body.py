@@ -4,7 +4,7 @@ from resonances.resonance.mmr import MMR
 
 
 class ThreeBody(MMR):
-    def __init__(self, coeff=[], planets_names=[], s=None):
+    def __init__(self, coeff, planets_names=None, s=None):
         if s is not None:
             self.init_from_short_notation(s)
             return
@@ -19,7 +19,11 @@ class ThreeBody(MMR):
                     ', '.join(str(e) for e in coeff), sum(self.coeff)
                 )
             )
-        self.planets_names = planets_names
+
+        if planets_names is None:
+            self.planets_names = []
+        else:
+            self.planets_names = planets_names
 
     def init_from_short_notation(self, s):
         tmp = re.split('-|\\+', s)

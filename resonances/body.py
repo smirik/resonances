@@ -1,8 +1,6 @@
 import numpy as np
 import rebound
 
-from resonances.resonance.mmr import MMR
-
 
 class Body:
     def __init__(self, type='particle'):

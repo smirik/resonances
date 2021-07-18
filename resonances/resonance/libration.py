@@ -65,12 +65,17 @@ class libration:
         y : list
             one-dimensional array of data where to find breaks
         break_value : float
-            Used to determine a break. If the absolute diff between the previous one and the current is more than break_value, then there is a break. (Default: np.pi)
+            Used to determine a break. If the absolute diff between the previous one and
+            the current is more than break_value, then there is a break. (Default: np.pi)
 
         Returns
         -------
         list
-            Returns a multidimensional array: res[0] - the time when the break happened, res[1] - the direction of the break (1 if it intersects the top line and thus elem>prev, -1 otherwise), res[2] - values of the elements prior to the breaks, res[3] - the values in the break points.
+            Returns a multidimensional array:
+            res[0] - the time when the break happened,
+            res[1] - the direction of the break (1 if it intersects the top line and thus elem>prev, -1 otherwise),
+            res[2] - values of the elements prior to the breaks,
+            res[3] - the values in the break points.
         """
         prev = y[0]
         res = [[], [], [], []]  # break point, direction (1 or -1), prev, curr
@@ -101,7 +106,10 @@ class libration:
         -------
 
         list
-            Returns a multidimensional list. res[0] - the start of a libration period, res[1] - the end of a libration period, res[2] - the length of the given libration period.
+            Returns a multidimensional list.
+            res[0] - the start of a libration period,
+            res[1] - the end of a libration period,
+            res[2] - the length of the given libration period.
 
         """
         breaks = cls.find_breaks(x, y)
@@ -191,8 +199,6 @@ class libration:
             nyquist_factor=nyquist_factor, minimum_frequency=minimum_frequency, maximum_frequency=maximum_frequency
         )
         return (frequency, power)
-        # frequency, power = LombScargle(x, signal.medfilt(y, kernel)).autopower(nyquist_factor=nyquist_factor, minimum_frequency=minimum_frequency, maximum_frequency=maximum_frequency)
-        # max_power = power.max()
 
     @classmethod
     def find_peaks_with_position(cls, frequency, power, height=0.05, distance=10):
