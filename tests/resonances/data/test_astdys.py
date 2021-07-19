@@ -47,8 +47,8 @@ def test_transform_astdys_catalog():
     assert 242.94481 == pytest.approx(cat['M'].iloc[5] / np.pi * 180, 0.01)
 
 
-def test_check_or_build_catalog():
-    astdys.check_or_build_catalog()
+def test_build():
+    astdys.build()
     assert Path(resonances.config.get('catalog')).is_file() is True
 
     cat = pd.read_csv('tests/fixtures/small.csv')
@@ -57,6 +57,13 @@ def test_check_or_build_catalog():
     assert 0.07816 == pytest.approx(cat['e'].iloc[0], 0.01)
     assert 6 == cat['num'].iloc[5]
     assert 2.42456 == pytest.approx(cat['a'].iloc[5], 0.01)
+
+
+def test_load():
+    astdys.catalog = None
+    assert astdys.catalog is None
+    astdys.load()
+    assert astdys.catalog is not None
 
 
 def test_search():
@@ -75,3 +82,11 @@ def test_search():
     assert obj is None
     obj = astdys.search(123456789)
     assert obj is None
+
+
+def test_search_possible_resonant_asteroids():
+    mmr = resonances.ThreeBody('4J-2S-1')
+    df = astdys.search_possible_resonant_asteroids(mmr)
+    asteroids = df['num'].tolist()
+    assert '7' in asteroids  # these are FIIIIXTURES!
+    assert '9' in asteroids

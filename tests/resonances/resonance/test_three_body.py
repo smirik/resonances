@@ -15,6 +15,14 @@ def test_full_create():
     assert 'Earth' in mmr.planets_names
     assert 'Mars' in mmr.planets_names
 
+    with pytest.raises(Exception) as exception:
+        mmr = resonances.ThreeBody([4, -2, -1, 0, 0, 0], ['Jupiter', 'Saturn'])
+    assert 'alambert' in str(exception.value)
+
+    with pytest.raises(Exception) as exception:
+        mmr = resonances.ThreeBody([4, -2, -2, 0, 0, 0], ['Jupiter', 'Saturn'])
+    assert 'gcd' in str(exception.value)
+
 
 def test_short_notation():
     mmr = resonances.ThreeBody('4V-2E-1')
@@ -62,3 +70,31 @@ def test_to_s_and_to_short():
     mmr = resonances.ThreeBody('2J-5S+1')
     assert '2J-5S+1+0+0+2' == mmr.to_s()
     assert '2J-5S+1' == mmr.to_short()
+
+
+def test_resonant_axis_getter_and_setter():
+    mmr = resonances.ThreeBody('4J-2S-1')
+    assert mmr._resonant_axis is None
+    assert 2.3981 == pytest.approx(mmr.resonant_axis, rel=0.1)
+    assert mmr._resonant_axis is not None
+    mmr.resonant_axis = 1.0
+    assert 1.0 == mmr.resonant_axis
+
+
+def test_calculate_axis():
+    # see Smirnov, Shevchenko 2013
+    mmr = resonances.ThreeBody('4J-2S-1')
+    axis = mmr.calculate_resonant_axis()
+    assert 2.3981 == pytest.approx(axis, rel=0.1)
+
+    mmr = resonances.ThreeBody('5J-2S-2')
+    axis = mmr.calculate_resonant_axis()
+    assert 3.1746 == pytest.approx(axis, rel=0.1)
+
+    mmr = resonances.ThreeBody('3J-2S-1')
+    axis = mmr.calculate_resonant_axis()
+    assert 3.0801 == pytest.approx(axis, rel=0.1)
+
+    del mmr
+    mmr = resonances.ThreeBody('4J-2S-1')
+    assert 2.3981 == pytest.approx(mmr.resonant_axis, rel=0.1)

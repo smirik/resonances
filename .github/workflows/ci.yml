@@ -1,10 +1,9 @@
-name: Resonances
+name: Resonances App
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 jobs:
   build:
@@ -38,6 +37,9 @@ jobs:
 
       - name: Code Quality
         run: poetry run black . --check
+
+      - name: Lint
+        run: poetry run flake8 --count
 
       - name: Test with pytest
         run: |

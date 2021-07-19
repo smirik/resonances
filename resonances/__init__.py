@@ -11,3 +11,5 @@ from .simulation import Simulation
 from .resonance.libration import libration
 
 import resonances.resonance.plot
+
+import resonances.data.const

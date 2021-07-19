@@ -268,9 +268,11 @@ class Simulation:
             arr.append(self.planets.index(planet))
         return arr
 
-    def setup(self, save=None, save_path=None, plot=None, tmax=None, Nout=None):
+    def setup(self, save=None, save_path=None, save_only_undetermined=None, plot=None, tmax=None, Nout=None):
         if save is not None:
             self.save = save
+        if save_only_undetermined:
+            self.save_only_undetermined = save_only_undetermined
         if save_path is not None:
             self.save_path = save_path
         if plot is not None:

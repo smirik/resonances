@@ -22,6 +22,10 @@ identify-quick = "resonances.experiment.console:quick"
 iq = "resonances.experiment.console:quick"
 simulation-shape = "resonances.experiment.console:calc_shape"
 ss = "resonances.experiment.console:calc_shape"
+identify-resonances = "resonances.experiment.console:identifier"
+ir = "resonances.experiment.console:identifier"
+asteroids-in-resonance = "resonances.experiment.console:finder"
+ain = "resonances.experiment.console:asteroids_in_resonance"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"

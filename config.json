@@ -24,5 +24,9 @@
     "catalog.date": "2020-12-17 00:00",
     "astdys.catalog.url": "https://newton.spacedys.com/~astdys2/catalogs/allnum.cat",
     "astdys.catalog": "cache/allnum.cat",
-    "astdys.date": "2020-12-17 00:00"
+    "astdys.date": "2020-12-17 00:00",
+    "matrix.3body.primary_max": 8,
+    "matrix.3body.coefficients_max": 7,
+    "matrix.3body.max_order": 6,
+    "matrix.3body.file": "cache/mmr-3body.csv"
 }

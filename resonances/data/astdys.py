@@ -14,9 +14,7 @@ class astdys:
     def search(cls, num):
         num = str(num)
         if cls.catalog is None:
-            cls.check_or_build_catalog()
-            cls.catalog = pd.read_csv(resonances.config.get('catalog'))
-            cls.catalog['num'] = cls.catalog['num'].astype(str)
+            cls.load()
 
         if num in cls.catalog['num'].values:
             return cls.catalog.loc[cls.catalog['num'] == num].to_dict('records')[0]
@@ -24,22 +22,38 @@ class astdys:
         return None
 
     @classmethod
-    def check_or_build_catalog(cls):
-        output_file = Path(resonances.config.get('catalog'))
-        if not output_file.exists():
-            input_file = Path(resonances.config.get('astdys.catalog'))
-            if not input_file.exists():
-                print('Cannot find AstDyS catalog. Trying to download it...')
-                try:
-                    urllib.request.urlretrieve(resonances.config.get('astdys.catalog.url'), 'cache/allnum.cat')
-                except Exception:
-                    raise Exception(
-                        "No input catalog available. Cannot download it too. Put AstDys allnum.cat or allnum.csv in the cache directory!"
-                    )
-                print('Successfully downloaded. Continue working...')
+    def search_possible_resonant_asteroids(cls, mmr, sigma=0.02):
+        if cls.catalog is None:
+            cls.load()
+        axis = mmr.resonant_axis
+        df = cls.catalog[(cls.catalog['a'] >= axis - sigma) & (cls.catalog['a'] <= axis + sigma)]
+        return df
 
-            cat = cls.transform_astdys_catalog()
-            cat.to_csv(resonances.config.get('catalog'), index=False)
+    @classmethod
+    def load(cls):
+        if cls.catalog is None:
+            output_file = Path(resonances.config.get('catalog'))
+            if not output_file.exists():
+                cls.build()
+
+        cls.catalog = pd.read_csv(resonances.config.get('catalog'))
+        cls.catalog['num'] = cls.catalog['num'].astype(str)
+
+    @classmethod
+    def build(cls):
+        input_file = Path(resonances.config.get('astdys.catalog'))
+        if not input_file.exists():
+            print('Cannot find AstDyS catalog. Trying to download it...')
+            try:
+                urllib.request.urlretrieve(resonances.config.get('astdys.catalog.url'), 'cache/allnum.cat')
+            except Exception:
+                raise Exception(
+                    "No input catalog available. Cannot download it too. Put AstDys allnum.cat or allnum.csv in the cache directory!"
+                )
+            print('Successfully downloaded. Continue working...')
+
+        cat = cls.transform_astdys_catalog()
+        cat.to_csv(resonances.config.get('catalog'), index=False)
 
     @classmethod
     def transform_astdys_catalog(cls):

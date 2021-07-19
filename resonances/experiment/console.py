@@ -3,8 +3,12 @@ import time
 import argparse
 
 import resonances
+from resonances.matrix.three_body_matrix import ThreeBodyMatrix
+from resonances.data.astdys import astdys
+
 from resonances.experiment import shape
 from resonances.experiment import loader
+from resonances.experiment import finder
 
 parser = argparse.ArgumentParser(description='')
 
@@ -52,3 +56,32 @@ def calc_shape():
     )
 
     print("--- %s seconds ---" % (time.time() - start_time))
+
+
+def identifier():
+    start_time = time.time()
+    parser.add_argument('asteroid', help='The number of the asteroid you want to research.', type=int)
+    args = parser.parse_args()
+
+    resonances.config.set('save.path', 'cache/identifier')
+
+    sim = resonances.Simulation()
+    sim.create_solar_system()
+    elem = astdys.search(args.asteroid)
+    mmrs = ThreeBodyMatrix.find_resonances(elem['a'])
+    print('The asteroid {} is found.'.format(args.asteroid))
+    print('The value of semi-major axis is {:6.4f}'.format(elem['a']))
+    for mmr in mmrs:
+        print('Adding a possible resonance: {}'.format(mmr.to_short()))
+        sim.add_body(args.asteroid, mmr, '{}-{}'.format(args.asteroid, mmr.to_short()))
+    print('Running integration.')
+    sim.run()
+    print("--- %s seconds ---" % (time.time() - start_time))
+
+
+def asteroids_in_resonance():
+    parser.add_argument('resonance', help='The resonance in a short notation like 4J-2S-1.', type=str)
+    args = parser.parse_args()
+
+    finder.run(resonances.ThreeBody(args.resonance))
+    return
