@@ -11,7 +11,9 @@ def run(mmr: resonances.ThreeBody, dump=100, max_iterations=1000):
     num_iterations = int(math.ceil(num_particles / dump))
     for j in range(num_iterations):
         if j > (max_iterations - 1):
-            print('Terminating because the app has reached the limit specified in max_iterations parameter ({}).'.format(max_iterations))
+            resonances.logger.info(
+                'Terminating because the app has reached the limit specified in max_iterations parameter ({}).'.format(max_iterations)
+            )
             break
 
         sim = resonances.Simulation()
@@ -31,4 +33,4 @@ def run(mmr: resonances.ThreeBody, dump=100, max_iterations=1000):
             sim.add_body(asteroids[key], mmr, '{}-{}'.format(asteroids[key], key))
 
         sim.run()
-        print('Iteration {} has finished. Processed from {}. Starting the new one.'.format(j, j * dump))
+        resonances.logger.info('Iteration {} has finished. Processed from {}. Starting the new one.'.format(j, j * dump))

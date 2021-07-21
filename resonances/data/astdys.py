@@ -4,6 +4,7 @@ from pathlib import Path
 import urllib.request
 
 import resonances.config
+import resonances.logger
 
 
 class astdys:
@@ -43,14 +44,14 @@ class astdys:
     def build(cls):
         input_file = Path(resonances.config.get('astdys.catalog'))
         if not input_file.exists():
-            print('Cannot find AstDyS catalog. Trying to download it...')
+            resonances.logger.info('Cannot find AstDyS catalog. Trying to download it...')
             try:
                 urllib.request.urlretrieve(resonances.config.get('astdys.catalog.url'), 'cache/allnum.cat')
             except Exception:
                 raise Exception(
                     "No input catalog available. Cannot download it too. Put AstDys allnum.cat or allnum.csv in the cache directory!"
                 )
-            print('Successfully downloaded. Continue working...')
+            resonances.logger.info('Successfully downloaded. Continue working...')
 
         cat = cls.transform_astdys_catalog()
         cat.to_csv(resonances.config.get('catalog'), index=False)

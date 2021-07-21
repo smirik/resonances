@@ -28,5 +28,7 @@
     "matrix.3body.primary_max": 8,
     "matrix.3body.coefficients_max": 7,
     "matrix.3body.max_order": 6,
-    "matrix.3body.file": "cache/mmr-3body.csv"
+    "matrix.3body.file": "cache/mmr-3body.csv",
+    "log.file": "cache/resonances.log",
+    "log.level": "info"
 }
