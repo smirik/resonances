@@ -66,15 +66,20 @@ def calc_shape():
 def identifier():
     start_time = time.time()
     parser.add_argument('asteroid', help='The number of the asteroid you want to research.', type=int)
+    parser.add_argument('--planets', help='The planets, whose three body resonances are searched. Use comma to separate planets.', type=str)
     args = parser.parse_args()
 
     resonances.config.set('save.path', 'cache/identifier')
     resonances.logger.info('Starting simulation "identifier" for the asteroid {}'.format(args.asteroid))
 
+    planets = None
+    if args.planets is not None:
+        planets = [item.strip() for item in args.planets.split(',')]
+
     sim = resonances.Simulation()
     sim.create_solar_system()
     elem = astdys.search(args.asteroid)
-    mmrs = ThreeBodyMatrix.find_resonances(elem['a'])
+    mmrs = ThreeBodyMatrix.find_resonances(elem['a'], planets=planets)
     resonances.logger.info('The asteroid {} is found.'.format(args.asteroid))
     resonances.logger.info('The value of semi-major axis is {:6.4f}'.format(elem['a']))
     for mmr in mmrs:

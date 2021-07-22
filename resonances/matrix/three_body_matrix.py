@@ -60,11 +60,20 @@ class ThreeBodyMatrix:
             cls.matrix = catalog
 
     @classmethod
-    def find_resonances(cls, a, sigma=0.02):
+    def find_resonances(cls, a, sigma=0.02, planets=None):
         if cls.matrix is None:
             cls.load()
 
-        df = cls.matrix[(cls.matrix['a'] >= (a - sigma)) & (cls.matrix['a'] <= (a + sigma))]
+        if isinstance(planets, list):
+            df = cls.matrix[
+                (cls.matrix['a'] >= (a - sigma))
+                & (cls.matrix['a'] <= (a + sigma))
+                & (cls.matrix['planet1'].isin(planets))
+                & (cls.matrix['planet2'].isin(planets))
+            ]
+        else:
+            df = cls.matrix[(cls.matrix['a'] >= (a - sigma)) & (cls.matrix['a'] <= (a + sigma))]
+
         mmrs = []
         for mmr in df['mmr'].tolist():
             mmrs.append(resonances.ThreeBody(mmr))

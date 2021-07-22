@@ -62,6 +62,10 @@ def test_find_resonances():
     mmrs_list = [mmr.to_short() for mmr in mmrs]
     assert '4J-2S-1' in mmrs_list
 
+    mmrs = ThreeBodyMatrix.find_resonances(2.39, sigma=0.1, planets=['Mercury', 'Venus', 'Earth', 'Mars', 'Uranus', 'Neptune'])
+    mmrs_list = [mmr.to_short() for mmr in mmrs]
+    assert '4J-2S-1' not in mmrs_list
+
     mmrs = ThreeBodyMatrix.find_resonances(3.17, sigma=0.1)
     mmrs_list = [mmr.to_short() for mmr in mmrs]
     assert '5J-2S-2' in mmrs_list
