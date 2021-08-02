@@ -33,6 +33,7 @@ def create_test_simulation_for_solar_system(
     sim.tmax = 20
     sim.dt = 1
     sim.Nout = 10
+    sim.libration_period_min = 1
     sim.integrator = 'whfast'
     sim.integrator_corrector = None
     sim.save_path = 'cache/tests'

@@ -30,6 +30,7 @@ class Simulation:
 
         self.libration_period_critical = resonances.config.get('libration.period.critical')
         self.libration_monotony_critical = resonances.config.get('libration.monotony.critical')
+        self.libration_period_min = resonances.config.get('libration.period.min')
 
         self.sim = None
 

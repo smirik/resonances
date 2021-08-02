@@ -28,6 +28,8 @@ class Body:
         self.periodogram_power = None
         self.periodogram_peaks = None
 
+        self.angle_filtered = None
+
         self.axis_filtered = None
         self.axis_periodogram_frequency = None
         self.axis_periodogram_power = None

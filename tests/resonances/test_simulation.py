@@ -68,6 +68,8 @@ def test_run():
     assert 10 == len(sim.bodies[0].axis)
     assert 10 == len(sim.bodies[0].ecc)
     assert sim.bodies[0].status is not None
+    assert sim.bodies[0].axis_filtered is not None
+    assert sim.bodies[0].angle_filtered is not None
 
     assert Path('cache/tests/data-10-asteroid.csv').exists() is True
     assert Path('cache/tests/10-asteroid.png').exists() is True

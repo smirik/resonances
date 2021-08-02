@@ -1,6 +1,7 @@
 {
     "integration.tmax": 628319,
-    "integration.Nout": 62831,
+    "integration.Nout": 6283,
+    "integration.dt": 1.0,
     "plot": true,
     "save": true,
     "save_path": "cache/asteroids",
@@ -37,6 +38,30 @@
           {
             "integers": [4, -2, -1, 0, 0, -1],
             "bodies": ["Jupiter", "Saturn"]
+          }
+        ]
+      },
+      {
+        "elem": {
+          "num": 588,
+          "label": "Asteroid 588 (Trojan)"
+        },
+        "resonances": [
+          {
+            "integers": [1, -1, 0, 0],
+            "bodies": ["Jupiter"]
+          }
+        ]
+      },
+      {
+        "elem": {
+          "num": 153,
+          "label": "Asteroid 153 (Hilda)"
+        },
+        "resonances": [
+          {
+            "integers": [3, -2, 0, -1],
+            "bodies": ["Jupiter"]
           }
         ]
       }
