@@ -29,7 +29,7 @@ def create_simulation_from_json(json_file_src):
         # @todo validation
         for resonance in asteroid['resonances']:
             sim.add_body(
-                elem_or_num, resonances.ThreeBody(resonance['integers'], resonance['bodies']), '{}'.format(asteroid['elem']['label'])
+                elem_or_num, resonances.create_mmr(resonance['integers'], resonance['bodies']), '{}'.format(asteroid['elem']['label'])
             )
 
     return sim

@@ -19,5 +19,39 @@ class MMR:
         else:
             self.planets_names = planets_names
 
+        self._resonant_axis = None
+
     def number_of_bodies(self):
         return len(self.coeff) / 2
+
+    def get_planet_name_from_letter(self, letter):
+        if letter == 'R':
+            return 'Mercury'
+        elif letter == 'V':
+            return 'Venus'
+        elif letter == 'E':
+            return 'Earth'
+        elif letter == 'M':
+            return 'Mars'
+        elif letter == 'J':
+            return 'Jupiter'
+        elif letter == 'S':
+            return 'Saturn'
+        elif letter == 'U':
+            return 'Uranus'
+        elif letter == 'N':
+            return 'Neptune'
+        raise Exception('Bad notation used. Only the following letter are available: R (for Mercury), V, E, M, J, S, U, N ')
+
+    @property
+    def resonant_axis(self):
+        if self._resonant_axis is None:
+            self._resonant_axis = self.calculate_resonant_axis()
+        return self._resonant_axis
+
+    @resonant_axis.setter
+    def resonant_axis(self, value):
+        self._resonant_axis = value
+
+    def calculate_resonant_axis(self):
+        pass

@@ -17,7 +17,7 @@ def test_full_create():
 
     with pytest.raises(Exception) as exception:
         mmr = resonances.ThreeBody([4, -2, -1, 0, 0, 0], ['Jupiter', 'Saturn'])
-    assert 'alambert' in str(exception.value)
+    assert 'Alembert' in str(exception.value)
 
     with pytest.raises(Exception) as exception:
         mmr = resonances.ThreeBody([4, -2, -2, 0, 0, 0], ['Jupiter', 'Saturn'])
@@ -98,3 +98,18 @@ def test_calculate_axis():
     del mmr
     mmr = resonances.ThreeBody('4J-2S-1')
     assert 2.3981 == pytest.approx(mmr.resonant_axis, rel=0.1)
+
+
+def test_calc_angle():
+    mmr = resonances.ThreeBody('4J-2S-1')
+
+    body1 = resonances.Body()
+    body1.l, body1.Omega, body1.omega = 0.4, 0.1, 0.1
+    body2 = resonances.Body()
+    body2.l, body2.Omega, body2.omega = 0.1, 0.3, 0.2
+    body = resonances.Body()
+    body.l, body.Omega, body.omega = 0.3, 0.1, 0.1
+
+    angle = mmr.calc_angle(body, [body1, body2])
+    # 4*0.4 + (-2)*0.1 + (-1)*0.3 + 0 + 0 + (-1)*(0.1+0.1)
+    assert 0.9 == pytest.approx(angle)

@@ -1,7 +1,7 @@
 import resonances
 
 
-def get_body_elements_sample():
+def get_3body_elements_sample():
     return {
         "a": 2.398825840331548,
         "e": 0.2194125828625336,
@@ -9,6 +9,17 @@ def get_body_elements_sample():
         "Omega": 0.6370508455573044,
         "omega": 5.752902062786396,
         "M": 2.4309844848211464,
+    }
+
+
+def get_2body_elements_sample():
+    return {
+        "a": 5.209257694069917,
+        "e": 0.14745593050306657,
+        "inc": 0.18011789643153706,
+        "Omega": 5.524615000652142,
+        "omega": 2.3272255828984143,
+        "M": 5.032162555506645,
     }
 
 
@@ -35,7 +46,7 @@ def create_test_simulation_for_solar_system(
 
 
 def add_test_asteroid_to_simulation(sim):
-    elem = get_body_elements_sample()
+    elem = get_3body_elements_sample()
     mmr = resonances.ThreeBody('4J-2S-1')
     sim.add_body(elem, mmr, name='asteroid')
     return sim

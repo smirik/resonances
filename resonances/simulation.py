@@ -107,7 +107,6 @@ class Simulation:
 
     def setup_integrator(self, N_active=10):
         self.sim.integrator = self.integrator
-        self.sim.integrator = self.integrator
         self.sim.dt = self.dt
         self.sim.N_active = N_active
 
@@ -142,7 +141,11 @@ class Simulation:
                     tmp.l,
                     tmp.Omega + tmp.omega,
                 )
-                body.angle[i] = body.calc_angle(os)
+                planets = []
+                for index in body.index_of_planets:
+                    planets.append(os[index - 1])
+
+                body.angle[i] = body.mmr.calc_angle(os[body.index_in_simulation - 1], planets)
 
         self.identify_librations()
         if self.save_summary:

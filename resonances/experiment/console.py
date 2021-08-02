@@ -4,6 +4,7 @@ import argparse
 
 import resonances
 from resonances.matrix.three_body_matrix import ThreeBodyMatrix
+from resonances.matrix.two_body_matrix import TwoBodyMatrix
 from resonances.data.astdys import astdys
 
 from resonances.experiment import shape
@@ -19,13 +20,13 @@ def get_parser():
 
 def quick():
     parser.add_argument('asteroid', help='The number of the asteroid you want to research.', type=int)
-    parser.add_argument('resonance', help='The resonance in a short notation like 4J-2S-1.', type=str)
+    parser.add_argument('resonance', help='The resonance in a short notation like 4J-2S-1 or 2J-1.', type=str)
     args = parser.parse_args()
 
     resonances.logger.info('Starting simulation "quick" for the asteroid {} and the resonance {}.'.format(args.asteroid, args.resonance))
     sim = resonances.Simulation()
     sim.create_solar_system()
-    sim.add_body(args.asteroid, resonances.ThreeBody(args.resonance), 'ast-{}'.format(args.asteroid))
+    sim.add_body(args.asteroid, resonances.create_mmr(args.resonance), 'ast-{}'.format(args.asteroid))
     sim.run()
     resonances.logger.info('Successfully ended.')
 
@@ -48,7 +49,7 @@ def calc_shape():
     with open(args.config, "r") as read_file:
         c_config = json.load(read_file)
 
-    mmr_template = resonances.ThreeBody(c_config['resonance']['integers'], c_config['resonance']['bodies'])
+    mmr_template = resonances.create_mmr(c_config['resonance']['integers'], c_config['resonance']['bodies'])
     resonances.logger.info('Starting shape simulation based on the file {}'.format(args.config))
     shape.run(
         c_config['elem'],
@@ -66,7 +67,9 @@ def calc_shape():
 def identifier():
     start_time = time.time()
     parser.add_argument('asteroid', help='The number of the asteroid you want to research.', type=int)
-    parser.add_argument('--planets', help='The planets, whose three body resonances are searched. Use comma to separate planets.', type=str)
+    parser.add_argument(
+        '--planets', help='The planets, whose three body or two body resonances are searched. Use comma to separate planets.', type=str
+    )
     args = parser.parse_args()
 
     resonances.config.set('save.path', 'cache/identifier')
@@ -80,6 +83,8 @@ def identifier():
     sim.create_solar_system()
     elem = astdys.search(args.asteroid)
     mmrs = ThreeBodyMatrix.find_resonances(elem['a'], planets=planets)
+    mmrs2 = TwoBodyMatrix.find_resonances(elem['a'], planets=planets)
+    mmrs = mmrs + mmrs2
     resonances.logger.info('The asteroid {} is found.'.format(args.asteroid))
     resonances.logger.info('The value of semi-major axis is {:6.4f}'.format(elem['a']))
     for mmr in mmrs:
@@ -95,5 +100,5 @@ def asteroids_in_resonance():
     args = parser.parse_args()
 
     resonances.logger.info('Starting simulation "asteroids in resonance" for the resonance {}'.format(args.resonance))
-    finder.run(resonances.ThreeBody(args.resonance))
+    finder.run(resonances.create_mmr(args.resonance))
     resonances.logger.info('Successfully ended.')

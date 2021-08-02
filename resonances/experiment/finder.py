@@ -3,7 +3,7 @@ from resonances.data.astdys import astdys
 import math
 
 
-def run(mmr: resonances.ThreeBody, dump=100, max_iterations=1000):
+def run(mmr: resonances.MMR, dump=100, max_iterations=1000):
     df = astdys.search_possible_resonant_asteroids(mmr)
     asteroids = df['num'].tolist()
 

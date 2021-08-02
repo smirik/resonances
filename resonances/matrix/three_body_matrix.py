@@ -1,14 +1,14 @@
-import resonances
 import numpy as np
 import pandas as pd
 import itertools
-from pathlib import Path
+
+import resonances
+from resonances.matrix.matrix import Matrix
 
 
-class ThreeBodyMatrix:
+class ThreeBodyMatrix(Matrix):
 
-    matrix = None
-    planets = None
+    catalog_file = 'matrix.3body.file'
 
     @classmethod
     def build(cls):
@@ -44,22 +44,6 @@ class ThreeBodyMatrix:
         return df
 
     @classmethod
-    def dump(cls):
-        if cls.matrix is None:
-            cls.build()
-
-        cls.matrix.to_csv(resonances.config.get('matrix.3body.file'))
-
-    @classmethod
-    def load(cls, reload=False):
-        catalog_file = Path(resonances.config.get('matrix.3body.file'))
-        if (not catalog_file.exists()) or (reload):
-            cls.dump()
-        else:
-            catalog = pd.read_csv(resonances.config.get('matrix.3body.file'))
-            cls.matrix = catalog
-
-    @classmethod
     def find_resonances(cls, a, sigma=0.02, planets=None):
         if cls.matrix is None:
             cls.load()
@@ -76,5 +60,5 @@ class ThreeBodyMatrix:
 
         mmrs = []
         for mmr in df['mmr'].tolist():
-            mmrs.append(resonances.ThreeBody(mmr))
+            mmrs.append(resonances.create_mmr(mmr))
         return mmrs

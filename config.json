@@ -1,5 +1,5 @@
 {
-    "libration.oscillation.filter.cutoff": 0.001,
+    "libration.oscillation.filter.cutoff": 0.0005,
     "libration.oscillation.filter.order": 2,
     "libration.periodogram.frequency.min": 0.00001,
     "libration.periodogram.frequency.max": 0.002,
@@ -29,6 +29,10 @@
     "matrix.3body.coefficients_max": 7,
     "matrix.3body.max_order": 6,
     "matrix.3body.file": "cache/mmr-3body.csv",
+    "matrix.2body.primary_max": 12,
+    "matrix.2body.coefficients_max": 11,
+    "matrix.2body.max_order": 10,
+    "matrix.2body.file": "cache/mmr-2body.csv",
     "log.file": "cache/resonances.log",
     "log.level": "info"
 }

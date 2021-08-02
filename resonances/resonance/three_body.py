@@ -3,34 +3,31 @@ import re
 from resonances.resonance.mmr import MMR
 import resonances.data.util as util
 from resonances.data import const
+import rebound
 
 
 class ThreeBody(MMR):
-    def __init__(self, coeff, planets_names=None, s=None):
-        self._resonant_axis = None
-
-        if s is not None:
-            self.init_from_short_notation(s)
-            return
+    def __init__(self, coeff, planets_names=None):
         if isinstance(coeff, str):
-            self.init_from_short_notation(coeff)
-            return
+            coeff, planets_names = self.init_from_short_notation(coeff)
 
-        self.coeff = np.array(coeff)
-        if sum(self.coeff) != 0:
-            raise Exception(
-                "Sum of integers in a resonance should follow the D'alambert rule. Given {}, the sum is equal to {}.".format(
-                    ', '.join(str(e) for e in coeff), sum(self.coeff)
-                )
-            )
+        super().__init__(coeff, planets_names)
 
         if np.gcd(np.gcd(self.coeff[0], self.coeff[1]), self.coeff[2]) > 1:
             raise Exception('The integers should have gcd equals 1. Given {}.'.format(', '.join(str(e) for e in coeff)))
 
-        if planets_names is None:
-            self.planets_names = []
-        else:
-            self.planets_names = planets_names
+    def calc_angle(self, body, planets):
+        body1 = planets[0]
+        body2 = planets[1]
+        angle = rebound.mod2pi(
+            self.coeff[0] * body1.l
+            + self.coeff[1] * body2.l
+            + self.coeff[2] * body.l
+            + self.coeff[3] * (body1.Omega + body1.omega)
+            + self.coeff[4] * (body2.Omega + body2.omega)
+            + self.coeff[5] * (body.Omega + body.omega)
+        )
+        return angle
 
     def init_from_short_notation(self, s):
         tmp = re.split('-|\\+', s)
@@ -39,7 +36,7 @@ class ThreeBody(MMR):
 
         first_letter = tmp[0][len(tmp[0]) - 1]
         second_letter = tmp[1][len(tmp[1]) - 1]
-        self.planets_names = [self.get_planet_name_from_letter(first_letter), self.get_planet_name_from_letter(second_letter)]
+        planets_names = [self.get_planet_name_from_letter(first_letter), self.get_planet_name_from_letter(second_letter)]
 
         coeff1 = int(str.replace(tmp[0], first_letter, ''))
         coeff2 = int(str.replace(tmp[1], second_letter, ''))
@@ -50,26 +47,8 @@ class ThreeBody(MMR):
             coeff2 = -coeff2
         if symbol3 == '-':
             coeff3 = -coeff3
-        self.coeff = [coeff1, coeff2, coeff3, 0, 0, (0 - coeff1 - coeff2 - coeff3)]
-
-    def get_planet_name_from_letter(self, letter):
-        if letter == 'R':
-            return 'Mercury'
-        elif letter == 'V':
-            return 'Venus'
-        elif letter == 'E':
-            return 'Earth'
-        elif letter == 'M':
-            return 'Mars'
-        elif letter == 'J':
-            return 'Jupiter'
-        elif letter == 'S':
-            return 'Saturn'
-        elif letter == 'U':
-            return 'Uranus'
-        elif letter == 'N':
-            return 'Neptune'
-        raise Exception('Bad notation used. Only the following letter are available: R (for Mercury), V, E, M, J, S, U, N ')
+        coeff = [coeff1, coeff2, coeff3, 0, 0, (0 - coeff1 - coeff2 - coeff3)]
+        return coeff, planets_names
 
     def to_s(self):
         s = '{:d}{:.1}{:+d}{:.1}{:+d}{:+d}{:+d}{:+d}'.format(

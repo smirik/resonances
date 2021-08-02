@@ -39,7 +39,7 @@ def test_build():
 def test_dump():
     ThreeBodyMatrix.planets = ['Jupiter', 'Saturn']  # for performance
     ThreeBodyMatrix.dump()
-    assert Path(resonances.config.get('matrix.3body.file')).is_file() is True
+    assert Path(resonances.config.get(ThreeBodyMatrix.catalog_file)).is_file() is True
 
 
 def test_load():
