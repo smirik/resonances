@@ -216,7 +216,7 @@ class libration:
         normal_cutoff = cutoff / nyq
         # Get the filter coefficients
         b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
-        y = signal.filtfilt(b, a, data)
+        y = signal.filtfilt(b, a, data, method="gust")
         return y
 
     @classmethod
