@@ -1,9 +1,23 @@
 [tool.poetry]
 name = "resonances"
-version = "0.2.1"
+version = "0.2.2"
 description = "Identification of mean-motion resonances"
 authors = ["Evgeny Smirnov <smirik@gmail.com>"]
 license = "MIT"
+readme = "README.md"
+homepage = "http://smirik.github.io/resonances/"
+repository = "https://github.com/smirik/resonances"
+documentation = "http://smirik.github.io/resonances/"
+keywords = ["astronomy", "nbody", "resonance", "mmr"]
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Intended Audience :: Science/Research',
+    'Intended Audience :: Developers',
+    'Topic :: Scientific/Engineering :: Astronomy',
+    'Programming Language :: Python :: 3',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: OS Independent'
+]
 
 [tool.poetry.dependencies]
 python = ">=3.7.1,<3.10"
