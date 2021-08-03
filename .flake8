@@ -11,3 +11,5 @@ exclude =
     .pytest_cache,
     .mypy_cache,
     __init__.py
+per-file-ignores =
+    resonances/matrix/three_body_matrix.py:C901

@@ -30,6 +30,7 @@ class Simulation:
 
         self.libration_period_critical = resonances.config.get('libration.period.critical')
         self.libration_monotony_critical = resonances.config.get('libration.monotony.critical')
+        self.libration_period_min = resonances.config.get('libration.period.min')
 
         self.sim = None
 
@@ -107,7 +108,6 @@ class Simulation:
 
     def setup_integrator(self, N_active=10):
         self.sim.integrator = self.integrator
-        self.sim.integrator = self.integrator
         self.sim.dt = self.dt
         self.sim.N_active = N_active
 
@@ -142,7 +142,11 @@ class Simulation:
                     tmp.l,
                     tmp.Omega + tmp.omega,
                 )
-                body.angle[i] = body.calc_angle(os)
+                planets = []
+                for index in body.index_of_planets:
+                    planets.append(os[index - 1])
+
+                body.angle[i] = body.mmr.calc_angle(os[body.index_in_simulation - 1], planets)
 
         self.identify_librations()
         if self.save_summary:
@@ -268,9 +272,11 @@ class Simulation:
             arr.append(self.planets.index(planet))
         return arr
 
-    def setup(self, save=None, save_path=None, plot=None, tmax=None, Nout=None):
+    def setup(self, save=None, save_path=None, save_only_undetermined=None, plot=None, tmax=None, Nout=None):
         if save is not None:
             self.save = save
+        if save_only_undetermined:
+            self.save_only_undetermined = save_only_undetermined
         if save_path is not None:
             self.save_path = save_path
         if plot is not None:

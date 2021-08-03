@@ -54,4 +54,4 @@ def run(elem, variations, mmr: resonances.MMR, save=False, save_path="cache", ne
             with open('{}/ae-plane.csv'.format(save_path), 'a') as f:
                 np.savetxt(f, ae_data, delimiter=',')
 
-        print('Iteration {} has finished. Processed from {}. Starting the new one.'.format(j, j * dump))
+        resonances.logger.info('Iteration {} has finished. Processed from {}. Starting the new one.'.format(j, j * dump))

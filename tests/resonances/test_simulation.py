@@ -30,7 +30,7 @@ def test_solar_system():
 
 def test_add_body():
     sim = tools.create_test_simulation_for_solar_system()
-    elem = tools.get_body_elements_sample()
+    elem = tools.get_3body_elements_sample()
     mmr = resonances.ThreeBody('4J-2S-1')
 
     sim.add_body(elem, mmr)
@@ -68,6 +68,8 @@ def test_run():
     assert 10 == len(sim.bodies[0].axis)
     assert 10 == len(sim.bodies[0].ecc)
     assert sim.bodies[0].status is not None
+    assert sim.bodies[0].axis_filtered is not None
+    assert sim.bodies[0].angle_filtered is not None
 
     assert Path('cache/tests/data-10-asteroid.csv').exists() is True
     assert Path('cache/tests/10-asteroid.png').exists() is True
@@ -95,7 +97,7 @@ def test_shall_save_and_plot_body(saving_fixtures):
             save=saving_fixture['save'], plot=saving_fixture['plot'], save_only_undetermined=saving_fixture['undetermined']
         )
 
-        elem = tools.get_body_elements_sample()
+        elem = tools.get_3body_elements_sample()
         mmr = resonances.ThreeBody('4J-2S-1')
         sim.add_body(elem, mmr, name='asteroid')
         sim.add_body(elem, mmr, name='asteroid2')

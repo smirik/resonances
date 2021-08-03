@@ -43,3 +43,39 @@ The parameter `variations` in `json` file specifies the variations of initial da
 In total, the app will create `2*2+3*3+2*2=17` test particles. Of course, you may change these values to the appropriate (i.e. `100` points per interval).
 
 The results of the integration will be saved in `cache/simulation-shape` directory. The main files are `summary.csv` and `ae-plane.csv`. Note that the flag `save.only.undetermined` is set to `true`. Therefore, the data and the figures will be only for the bodies whose statuses are uncertain.
+
+## Study an asteroid
+
+If you want to know the list of the MMRs that a given asteroid might be in, you can use the console command `identify-resonances`:
+
+```bash
+poetry run identify-resonances 588
+```
+
+This command will find all possible two-body and three-body resonances for the asteroid with the number `588`. You may specify any asteroid number that is in the AstDyS catalogue.
+
+The command has an optional parameter `planets`, which might be involved in the MMR. For example, the following command will analyse only the resonances with Mars, Jupiter, and Saturn (and all their possible unique combinations):
+
+```bash
+poetry run ir 588 --planets="Mars, Jupiter, Saturn"
+```
+
+By default, the results are saved in `cache/identifier` directory.
+
+## Find asteroids in the resonance
+
+You might want to run the task, which is reversal to the previous one, --- to find asteroids in the given resonance:
+
+```bash
+poetry run asteroids-in-resonance 4J-2S-1
+```
+
+This task will automatically identify all possible resonant asteroids (the MMR: 4J-2S-1), integrate their orbits for 100,000 years, and run the identification procedure.
+
+However, it might be the case that the number of possible resonant asteroids is large. Thus, the execution time can also be very large. To limit the number of possible resonant asteroids, there is an option `--iterations`, which limits the number of iterations.
+
+Each iteration analyses `100` asteroids. If `iterations` is equal to `3`, then `300` asteroids only will be checked. So, this option allows limiting the results by first `100*N` objects.
+
+```bash
+poetry run asteroids-in-resonance 4J-2S-1 --iterations=3
+```

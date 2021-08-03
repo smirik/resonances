@@ -8,7 +8,7 @@ The module `resonances.libration` uses several metrics to resolve whether or not
 
 1. `pure`: this flag shows is there at least one period of circulation. Technically, it means that the resonant angle (limited by 2&pi; filter) should never break the limits of `0` and `2&pi` or be shifted by a constant.
 1. `overlapping`: the module calculates the frequencies of oscillations of the resonant angle and semi-major axis (see [Config](config.md) for the limits used by default). If there is a shared frequency within limits, then it signals that there might be a resonance.
-1. `max_libration_length`: it represents the longest period of libration of the resonant angle. Or, in other words, how long there was no circulation. For all resonant asteroids, this value should be high enough.
+1. `max_libration_length`: it represents the longest period of libration of the resonant angle. Or, in other words, how long there was no intersection of the borders (0 and 2&pi;). For all resonant asteroids, this value should be high enough.
 1. `monotony`: a very simple metric that calculates the percentage of the points when the value of the resonant angle for the current time is less than the same value for the previous step. If the resonant angle librates, it means that this value should be close to `0.5`.
 
 All these values are available for `Body` objects after the integration. They are available in the output file `summary.csv`. The time series (if the appropriate flag is set) are also stored in CSV files in the output directory.
@@ -57,3 +57,23 @@ How the app distinguishes different types of asteroids?
 
 1. `-1`: It looks like that there is no libration because there is no shared frequency of oscillation between resonant angle and semi-major axis. However, the behaviour of the resonant angle is not chaotic and thus needs to be manually verified.
 1. `-2`: There is a pure libration of the resonant angle. However, the frequency of oscillations does not correspond to the frequency of the oscillations of the semi-major axis. Thus, it requires manual verification.
+
+## Periodograms
+
+### The workflow
+
+The app builds periodograms for the resonant angle and semi-major axis of an object. If an asteroid is resonant, the frequencies of oscillations of these variables should match.
+
+However, both resonant angle and semi-major axis have a lot of short-term librations. Thus, they should be filtered to avoid false positives. The app filters the data before building periodograms.
+
+To filter the data, the app uses [scipy.signal.butter](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html) low-pass digital filter. The critical frequency is equal to the ratio of the cutoff variable and the Nyquist frequency. You can set the desired value of the cutoff in the config `libration.oscillation.filter.cutoff`; the default value is `0.0005`, which corresponds to the period of `2000` yrs. Hence, the filter will cut off everything below this value (or above in terms of frequencies). The config value `libration.oscillation.filter.order` sets up the default order of the filter.
+
+The Nyquist frequency is set as half of the sampling frequency, which is the ratio between the number of points to output (`integration.Nout`; by default, 1/100 of `integration.tmax`) and the integration time in years (`integration.tmax` divided by 2&pi; `100,000` by default).
+
+The filtering procedure uses [scipy.signal.filtfilt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.filtfilt.html) for the filter designed by scipy.signal.butter. The default method is Gustafsson’s one.
+
+Another complication appears after applying the filter: the values of the first and the last points (in time) might be 'damaged' because the filter smooths the data based on the historical values, which are not presented for the beginning and the end. Thus, it is a good idea to cut some points off to improve the accuracy of the identification of oscillations frequencies.
+
+To calculate the number of points to cut, the app uses the parameter `libration.period.min` (by default, `500`), which represents the number of years to remove from the beginning and end. To adjust it to other parameters, it is multiplied by the sampling frequency. Hence, there are no very low frequencies in the resulting data. If you do not want to cut these points, just set the parameter to `0`.
+
+### The usage

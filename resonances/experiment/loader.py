@@ -18,6 +18,8 @@ def create_simulation_from_json(json_file_src):
         sim.Nout = int(c_config['integration.Nout'])
     if 'integration.tmax' in c_config:
         sim.tmax = int(c_config['integration.tmax'])
+    if 'integration.dt' in c_config:
+        sim.dt = c_config['integration.dt']
 
     # @todo need to verify that data are full
     # Add checks for asteroids, resonances, Nout and stop, plot (or default values)
@@ -29,7 +31,7 @@ def create_simulation_from_json(json_file_src):
         # @todo validation
         for resonance in asteroid['resonances']:
             sim.add_body(
-                elem_or_num, resonances.ThreeBody(resonance['integers'], resonance['bodies']), '{}'.format(asteroid['elem']['label'])
+                elem_or_num, resonances.create_mmr(resonance['integers'], resonance['bodies']), '{}'.format(asteroid['elem']['label'])
             )
 
     return sim

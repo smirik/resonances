@@ -216,7 +216,7 @@ class libration:
         normal_cutoff = cutoff / nyq
         # Get the filter coefficients
         b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
-        y = signal.filtfilt(b, a, data)
+        y = signal.filtfilt(b, a, data, method="gust")
         return y
 
     @classmethod
@@ -225,29 +225,37 @@ class libration:
 
         librations = resonances.libration.circulation(sim.times / (2 * np.pi), body.angle)
         libration_metrics = resonances.libration.circulation_metrics(librations)
-
-        (frequency, power) = resonances.libration.periodogram(
-            sim.times / (2 * np.pi),
-            body.angle,
-            minimum_frequency=sim.periodogram_frequency_min,
-            maximum_frequency=sim.periodogram_frequency_max,
-        )
+        monotony = resonances.libration.monotony_estimation(body.angle)
 
         integration_time = round(sim.tmax / (2 * np.pi))
         fs = sim.Nout / integration_time  # sample rate, Hz || Nout/time, i.e. 10000/100000
         cutoff = sim.oscillations_cutoff  # should be a little bit more than needed
         nyq = 0.5 * fs  # Nyquist Frequency
         order = sim.oscillations_filter_order  # polynom order
-        axis = cls.butter_lowpass_filter(body.axis, cutoff, fs, order, nyq)
+        """
+        Do not take into account first N and last N points because of the filter applied.
+        There is no previous (or following) data for them. Thus, they mess the periodogram.
+        """
+        points_to_cut = round(sim.libration_period_min * fs)
+
+        angle_filtered = cls.butter_lowpass_filter(body.angle, cutoff, fs, order, nyq)
+        (frequency, power) = resonances.libration.periodogram(
+            sim.times[points_to_cut : len(angle_filtered) - points_to_cut] / (2 * np.pi),
+            angle_filtered[points_to_cut : len(angle_filtered) - points_to_cut],
+            minimum_frequency=sim.periodogram_frequency_min,
+            maximum_frequency=sim.periodogram_frequency_max,
+        )
+        axis_filtered = cls.butter_lowpass_filter(body.axis, cutoff, fs, order, nyq)
         (axis_frequency, axis_power) = resonances.libration.periodogram(
-            sim.times / (2 * np.pi), axis, minimum_frequency=sim.periodogram_frequency_min, maximum_frequency=sim.periodogram_frequency_max
+            sim.times[points_to_cut : len(axis_filtered) - points_to_cut] / (2 * np.pi),
+            axis_filtered[points_to_cut : len(axis_filtered) - points_to_cut],
+            minimum_frequency=sim.periodogram_frequency_min,
+            maximum_frequency=sim.periodogram_frequency_max,
         )
 
         angle_peaks_data = cls.find_peaks_with_position(frequency, power, height=sim.periodogram_soft)
         axis_peaks_data = cls.find_peaks_with_position(axis_frequency, axis_power, height=sim.periodogram_soft)
         overlapping = cls.overlap_list(angle_peaks_data['position'], axis_peaks_data['position'], delta=0)
-
-        monotony = resonances.libration.monotony_estimation(body.angle)
 
         body.status = cls.resolve(
             pure,
@@ -267,7 +275,8 @@ class libration:
             body.periodogram_power = power
             body.periodogram_peaks = angle_peaks_data
 
-            body.axis_filtered = axis
+            body.angle_filtered = angle_filtered
+            body.axis_filtered = axis_filtered
             body.axis_periodogram_frequency = axis_frequency
             body.axis_periodogram_power = axis_power
             body.axis_periodogram_peaks = axis_peaks_data
