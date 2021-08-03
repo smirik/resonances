@@ -10,7 +10,7 @@ def body(sim, body: resonances.Body):
     fig, axs = plt.subplots(6, 1, figsize=(10, 10))
 
     fig.suptitle(
-        "Object {}, resonance = {}, status = {}".format(body.name, body.mmr.to_short(), body.status),
+        "{}, resonance = {}, status = {}".format(body.name, body.mmr.to_short(), body.status),
         fontsize=14,
     )
 
@@ -18,7 +18,6 @@ def body(sim, body: resonances.Body):
     axs[0].set_xlim([0, sim.tmax_yrs])
     axs[0].xaxis.set_major_locator(plt.MultipleLocator(10000))
     axs[0].xaxis.set_minor_locator(plt.MultipleLocator(2000))
-    axs[0].set_title('{} - {} ({})'.format(body.name, body.mmr.to_short(), body.status))
     axs[0].plot(sim.times / (2 * np.pi), body.angle, linestyle='', marker=',')
 
     if body.angle_filtered is not None:  # pragma: no cover
@@ -37,7 +36,7 @@ def body(sim, body: resonances.Body):
         axs[2].plot(sim.times / (2 * np.pi), body.axis, linestyle='', marker=',')
     axs[2].sharex(axs[0])
 
-    axs[3].set_title('Periodograms (angle and axis)')
+    axs[3].set_title('Periodogram (resonant angle)')
 
     axs[3].set_xlim(0, 40000)
     # axs[2].set_ylim(0, 0.2)
@@ -53,6 +52,7 @@ def body(sim, body: resonances.Body):
         axs[3].plot(1.0 / body.periodogram_frequency[peaks], body.periodogram_power[peaks], 'x', color='orange')
         axs[3].plot(1.0 / body.periodogram_frequency, body.periodogram_power)
 
+    axs[3].set_title('Periodogram (semi-major axis)')
     axs[4].set_xlim(0, 40000)
     # axs[3].set_ylim(0, 0.2)
     axs[4].axhline(y=0.05, color='r', linestyle='--')
@@ -73,6 +73,7 @@ def body(sim, body: resonances.Body):
 
     axs[5].set_title('Eccentricity')
     axs[5].plot(sim.times / (2 * np.pi), body.ecc, linestyle='', marker=',')
+    axs[5].sharex(axs[0])
 
     plt.tight_layout()
 
