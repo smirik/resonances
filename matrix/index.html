@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="canonical" href="https://github.com/smirik/resonances/matrix/">
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Resonance Matrices - Mean-Motion Resonances</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" />
+
+  <link rel="stylesheet" href="../css/theme.css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Resonance Matrices";
+    var mkdocs_page_input_path = "matrix.md";
+    var mkdocs_page_url = "/smirik/resonances/matrix/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Mean-Motion Resonances</a>
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Getting Started</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../quick-start/">Quick start</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../install/">Installation and updates</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Features</span></p>
+                <ul class="current">
+                    <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations and Bodies</a>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../libration/">Libration module</a>
+                    </li>
+                    <li class="toctree-l1 current"><a class="reference internal current" href="./">Resonance Matrices</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#initialisation">Initialisation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#mix-with-astdys">Mix with AstDyS</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                    </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">Advanced</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../console/">Console commands</a>
+                    </li>
+                </ul>
+                <p class="caption"><span class="caption-text">About</span></p>
+                <ul>
+                    <li class="toctree-l1"><a class="reference internal" href="../about/">Copyright, license, references</a>
+                    </li>
+                </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Mean-Motion Resonances</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Features &raquo;</li>
+        
+      
+    
+    <li>Resonance Matrices</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/smirik/resonances/edit/master/docs/matrix.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  
+  <hr/>
+</div>
+
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="resonance-matrices">Resonance Matrices</h1>
+<p>The Resonance Matrices allows us to find the preliminary (theoretical) value of a resonant semi-major axis for the resonance. While for a two-body mean motion resonance the calculation follows obviously from the Third Kepler Law, it is not so straightforward for three-body mean motion resonances.</p>
+<p>This app calculates the value of the resonant semi-major axis for three-body resonance based on the paper: <em>Smirnov, E. A., Dovgalev, I. S. &amp; Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.</em> The algorithms are in the classes <code>TwoBody</code> and <code>ThreeBody</code>.</p>
+<h2 id="initialisation">Initialisation</h2>
+<p>When the app needs to know the value of the resonant semi-major axis for the first time, it calculates it and stores it in the file (the config items <code>matrix.3body.file</code> and <code>matrix.2body.file</code>). The files have the following structure:</p>
+<ol>
+<li>The number of an item</li>
+<li>The short notation of resonance (i.e. <code>4J-2S-1</code> or <code>1J-1</code>)</li>
+<li>The planet(s), one per column (i.e. <code>Jupiter</code> and <code>Saturn</code>)</li>
+<li>Two or three integers depending on the type of a MMR</li>
+<li>The order of a resonance</li>
+<li>The value of the resonant semi-major axis</li>
+</ol>
+<p>If the app generates the file, it will use it next time. If you need to recalculate the matrix, simply delete the output file.</p>
+<h2 id="usage">Usage</h2>
+<p>There are two classes, <code>ThreeBodyMatrix</code> and <code>TwoBodyMatrix</code>, responsible for building the resonant matrices. You might use any of them to find the possible resonances close to the given value of the semi-major axis.</p>
+<p>The following code will print the list of three-body MMRs close to the value <code>2.39</code> AU of the semi-major axis.</p>
+<pre><code class="language-python">from resonances.matrix.three_body_matrix import ThreeBodyMatrix
+
+mmrs = ThreeBodyMatrix.find_resonances(2.39, planets=['Jupiter', 'Saturn', 'Uranus'])
+for mmr in mmrs:
+    print(mmr.to_short())
+</code></pre>
+<p>Note that there is an optional parameter <code>planets</code> representing the array of the planets involved in the MMR. The app will try all possible configurations. In this particular case, there are three combinations: Jupiter and Saturn, Jupiter and Uranus, and Saturn and Uranus.</p>
+<p>If you omit this parameter, the app will use all possible combinations of all planets in the Solar System.</p>
+<p>The same workflow is for two-body MMRs. The following code will find all two-body MMRs with Jupiter near <code>5.2</code> AU (Trojans, actually):</p>
+<pre><code class="language-python">from resonances.matrix.two_body_matrix import TwoBodyMatrix
+
+mmrs = TwoBodyMatrix.find_resonances(5.2, planets=['Jupiter'])
+for mmr in mmrs:
+    print(mmr.to_short())
+</code></pre>
+<p>The method <code>find_resonance</code> has one more optional parameter <code>sigma</code> representing the maximum distance between the given value of the semi-major axis and the value of a resonant semi-major axis of a possible MMR.</p>
+<p>The following code will find all two-body MMRs with Jupiter between <code>4.2</code> and <code>6.2</code> AU:</p>
+<pre><code class="language-python">from resonances.matrix.two_body_matrix import TwoBodyMatrix
+
+mmrs = TwoBodyMatrix.find_resonances(5.2, planets=['Jupiter'], sigma=1.0)
+for mmr in mmrs:
+    print(mmr.to_short())
+</code></pre>
+<p>While sometimes it is useful to make <code>sigma</code> greater, the default value is <code>0.02</code>. For three-body MMRs, it is recommended to use <code>0.1</code> or <code>0.2</code> for the asteroids with high eccentricity and <code>0.05</code> otherwise.</p>
+<h3 id="mix-with-astdys">Mix with AstDyS</h3>
+<p>You might want to find all possible resonant asteroids for a given resonance. While you have to integrate them to confirm their status, you can get the possible candidates based only on the value of the semi-major axis. To perform this, there is a method <code>search_possible_resonant_asteroids</code> in <code>astdys</code> class.</p>
+<p>The following code will print the numbers of asteroids that might be in the three-body resonance <code>4J-2S-1</code>:</p>
+<pre><code class="language-python">import resonances
+
+from resonances.data.astdys import astdys
+df = astdys.search_possible_resonant_asteroids(resonances.create_mmr('4J-2S-1'))
+print(df['num'].tolist())
+</code></pre>
+<p>Note that the method <code>search_possible_resonant_asteroids</code> returns <a href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html">Pandas DataFrame</a>, not simply a list or a dict. The DataFrame consists of the number of an asteroid and its orbital elements. You can use <code>df.head()</code> to see its structure.</p>
+<p>You can easily combine this method with the Simulation to verify are these candidates in the resonance or not. An example of such implementation is described in <a href="../console/">Console commands</a>.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../config/" class="btn btn-neutral float-right" title="Config">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../libration/" class="btn btn-neutral" title="Libration module"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/smirik/resonances/" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../libration/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../config/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

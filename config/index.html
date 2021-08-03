@@ -59,6 +59,8 @@
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../libration/">Libration module</a>
                     </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../matrix/">Resonance Matrices</a>
+                    </li>
                     <li class="toctree-l1 current"><a class="reference internal current" href="./">Config</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#saving-options">Saving options</a>
@@ -66,10 +68,16 @@
     <li class="toctree-l2"><a class="reference internal" href="#libration-options">Libration options</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#integration-options">Integration options</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#access-to-the-parameters-of-rebound">Access to the parameters of rebound</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#astdys-options">AstDyS options</a>
+        </ul>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#access-to-the-parameters-of-rebound">Access to the parameters of rebound</a>
+    <li class="toctree-l2"><a class="reference internal" href="#astdys-and-catalogue-options">AstDyS and Catalogue options</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#matrices">Matrices</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#other">Other</a>
     </li>
     </ul>
                     </li>
@@ -156,6 +164,7 @@ if resonances.config.has('integration.dt'):
 <li><code>libration.periodogram.frequency.max</code> (float): the maximum frequency of the librations that will be taken into account. By default, <code>0.002</code>. Corresponds to the period of oscillations equal to <code>500</code> years.</li>
 <li><code>libration.periodogram.critical</code> (float): the critical value of the peaks on the periodograms that is counted as significant. By default, <code>0.1</code>.</li>
 <li><code>libration.periodogram.soft</code> (float): the <em>soft</em> critical value of the peaks on the periodograms that is counted as significant. Used when you <em>really</em> want to find some librations. By default, <code>0.05</code>.</li>
+<li><code>libration.period.min</code> (int): the number of years to remove from the beginning and end. If you want to disable the cut of these points, just set it to <code>0</code>. See <a href="../libration/">Libration section</a> for explanation!</li>
 <li><code>libration.period.critical</code> (int): the critical value of the maximum libration period used to identify is there libration or not. By default, <code>20000</code> years.</li>
 <li><code>libration.monotony.critical</code> (list): critical values for the metric <code>monotony</code>. By default, <code>[0.4, 0.6]</code>.</li>
 </ul>
@@ -169,13 +178,7 @@ if resonances.config.has('integration.dt'):
 <li><code>integration.integrator.corrector</code> (int): the parameter of the corrector for symplectic integrators. By default, <code>17</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a></li>
 <li><code>solar_system_file</code> (str): the name of the cache file used to store the initial data of the Sun, planets, and Pluto. It is used to speed up the creation of the simulation. By default, <code>cache/solar.bin</code>.</li>
 </ul>
-<h2 id="astdys-options">AstDyS options</h2>
-<ul>
-<li><code>astdys.catalog.url</code> (str): the URl of the AstDyS catalogue used to download at the first run.</li>
-<li><code>astdys.catalog</code> (str): if AstDyS catalogue is already downloaded, you may specify its location. By default, <code>cache/allnum.cat</code>.</li>
-<li><code>astdys.date</code> (str): the date of the data in AstDyS catalogue converted from MJD to the datetime format. By default, <code>2020-12-17 00:00</code>.</li>
-</ul>
-<h2 id="access-to-the-parameters-of-rebound">Access to the parameters of <code>rebound</code></h2>
+<h3 id="access-to-the-parameters-of-rebound">Access to the parameters of <code>rebound</code></h3>
 <p>Note that while <code>resonances</code> provides a wrapper for rebound integrators, you may invoke directly some properties or methods in rebound. You can access the simulation object of rebound directly as an attribute <code>sim.sim</code>:</p>
 <pre><code class="language-python">sim = resonances.Simulation()
 # ...
@@ -185,6 +188,36 @@ sim.sim.ri_whfast.corrector = 17
 sim.sim.dt = 0.01
 </code></pre>
 <p><code>resonances</code> will not override these values. It sets it only once through initialisation from config.</p>
+<h2 id="astdys-and-catalogue-options">AstDyS and Catalogue options</h2>
+<ul>
+<li><code>astdys.catalog.url</code> (str): the URl of the AstDyS catalogue used to download at the first run.</li>
+<li><code>astdys.catalog</code> (str): if AstDyS catalogue is already downloaded, you may specify its location. By default, <code>cache/allnum.cat</code>.</li>
+<li><code>astdys.date</code> (str): the date of the data in AstDyS catalogue converted from MJD to the datetime format. By default, <code>2020-12-17 00:00</code>.</li>
+<li><code>catalog</code> (str): the path of the file used to store the converted AstDyS catalogue.</li>
+<li><code>catalog.date</code> (str): the date of the current converted AstDyS catalogue.</li>
+</ul>
+<h2 id="matrices">Matrices</h2>
+<p>The mean motion resonance represents a commensurability between the frequencies of several bodies and an asteroid, which implies the oscillations of the resonant angle. The resonant angle has integer coefficients for every variable included. While there are almost no limitations on the values of these integers, the number of possible resonances is infinite. Thus, it should be somehow limited to avoid an infinite loop. These limitations are in <code>matrix.</code> section of the config.</p>
+<p>For more details, please see <a href="../matrix/">Matrix page</a> and the following papers (note that they have different approaches to setting up the limits):</p>
+<ol>
+<li>Smirnov, E. A., Dovgalev, I. S. &amp; Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.</li>
+<li>Smirnov, E. A. &amp; Shevchenko, I. I. Massive identification of asteroids in three-body resonances. Icarus 222, 220–228 (2013).</li>
+<li>
+<p>Nesvorný, D. &amp; Morbidelli, A. Three-Body Mean Motion Resonances and the Chaotic Structure of the Asteroid Belt. The Astronomical Journal 116, 3029–3037 (1998).</p>
+</li>
+<li>
+<p><code>matrix.3body.primary_max</code> (int): the maximum value of the integer for the first planet for three-body resonances. Should be always positive.</p>
+</li>
+<li><code>matrix.3body.coefficients_max</code> (int): the maximum value of the integer for the other planet and the asteroid in three-body resonance. Should be always positive.</li>
+<li><code>matrix.3body.max_order</code> (int): the maximum value of the order of the three-body mean motion resonance. The order is the absolute value of the sum of the integers for the mean longitudes. Should be always positive.</li>
+<li><code>matrix.3body.file</code> (str): the path to the file where the app dumps the calculated values of the corresponding semi-major axis.</li>
+<li><code>matrix.2body.*</code> (mixed): the same but for two-body resonances.</li>
+</ol>
+<h2 id="other">Other</h2>
+<ul>
+<li><code>log.file</code> (str): the path to the file where the app stores log data.</li>
+<li><code>log.level</code> (str): the default level what the app should store in the log file (options: <code>debug</code>, <code>info</code>, <code>warning</code>, <code>error</code>, <code>critical</code>). The default value is <code>info</code>.</li>
+</ul>
               
             </div>
           </div>
@@ -195,7 +228,7 @@ sim.sim.dt = 0.01
         <a href="../console/" class="btn btn-neutral float-right" title="Console commands">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../libration/" class="btn btn-neutral" title="Libration module"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../matrix/" class="btn btn-neutral" title="Resonance Matrices"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -225,7 +258,7 @@ sim.sim.dt = 0.01
         </span>
     
     
-      <span><a href="../libration/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../matrix/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
       <span><a href="../console/" style="color: #fcfcfc">Next &raquo;</a></span>

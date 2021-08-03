@@ -59,6 +59,8 @@
                     </li>
                     <li class="toctree-l1"><a class="reference internal" href="../libration/">Libration module</a>
                     </li>
+                    <li class="toctree-l1"><a class="reference internal" href="../matrix/">Resonance Matrices</a>
+                    </li>
                     <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
                     </li>
                 </ul>
@@ -71,6 +73,10 @@
     <li class="toctree-l2"><a class="reference internal" href="#identify-several-asteroids">Identify several asteroids</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#resonance-shape">Resonance shape</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#study-an-asteroid">Study an asteroid</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#find-asteroids-in-the-resonance">Find asteroids in the resonance</a>
     </li>
     </ul>
                     </li>
@@ -146,6 +152,24 @@
 </ol>
 <p>In total, the app will create <code>2*2+3*3+2*2=17</code> test particles. Of course, you may change these values to the appropriate (i.e. <code>100</code> points per interval).</p>
 <p>The results of the integration will be saved in <code>cache/simulation-shape</code> directory. The main files are <code>summary.csv</code> and <code>ae-plane.csv</code>. Note that the flag <code>save.only.undetermined</code> is set to <code>true</code>. Therefore, the data and the figures will be only for the bodies whose statuses are uncertain.</p>
+<h2 id="study-an-asteroid">Study an asteroid</h2>
+<p>If you want to know the list of the MMRs that a given asteroid might be in, you can use the console command <code>identify-resonances</code>:</p>
+<pre><code class="language-bash">poetry run identify-resonances 588
+</code></pre>
+<p>This command will find all possible two-body and three-body resonances for the asteroid with the number <code>588</code>. You may specify any asteroid number that is in the AstDyS catalogue.</p>
+<p>The command has an optional parameter <code>planets</code>, which might be involved in the MMR. For example, the following command will analyse only the resonances with Mars, Jupiter, and Saturn (and all their possible unique combinations):</p>
+<pre><code class="language-bash">poetry run ir 588 --planets=&quot;Mars, Jupiter, Saturn&quot;
+</code></pre>
+<p>By default, the results are saved in <code>cache/identifier</code> directory.</p>
+<h2 id="find-asteroids-in-the-resonance">Find asteroids in the resonance</h2>
+<p>You might want to run the task, which is reversal to the previous one, --- to find asteroids in the given resonance:</p>
+<pre><code class="language-bash">poetry run asteroids-in-resonance 4J-2S-1
+</code></pre>
+<p>This task will automatically identify all possible resonant asteroids (the MMR: 4J-2S-1), integrate their orbits for 100,000 years, and run the identification procedure.</p>
+<p>However, it might be the case that the number of possible resonant asteroids is large. Thus, the execution time can also be very large. To limit the number of possible resonant asteroids, there is an option <code>--iterations</code>, which limits the number of iterations.</p>
+<p>Each iteration analyses <code>100</code> asteroids. If <code>iterations</code> is equal to <code>3</code>, then <code>300</code> asteroids only will be checked. So, this option allows limiting the results by first <code>100*N</code> objects.</p>
+<pre><code class="language-bash">poetry run asteroids-in-resonance 4J-2S-1 --iterations=3
+</code></pre>
               
             </div>
           </div>
