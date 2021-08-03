@@ -53,8 +53,14 @@
                     <li class="toctree-l1 current"><a class="reference internal current" href="./">Installation and updates</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#poetry">Poetry</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#guide">Guide</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#through-pip">Through pip</a>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pip">PIP</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#jupyter-notebooks">Jupyter Notebooks</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#manual-installation">Manual installation</a>
     </li>
@@ -130,12 +136,46 @@
 <pre><code class="language-bash">poetry add resonances
 </code></pre>
 <p>It will install the package itself, as well as all dependencies.</p>
-<h2 id="through-pip">Through <code>pip</code></h2>
-<p>However, if you prefer manual installation, you need to perform the following steps:</p>
-<pre><code class="language-bash">pip install numpy, scipy, matplotlib, pandas, astropy, rebound
-pip install resonances
+<p>You might face some difficulties through the installation for a new project. Below is a detailed guide.</p>
+<h3 id="guide">Guide</h3>
+<p>A. Follow the instructions on the official website of <a href="https://python-poetry.org">poetry</a> and install it. Of course, python, pip, virtual environments and everything related should be already installed.
+B. Create a new project:</p>
+<pre><code class="language-bash">poetry new example
+cd example
 </code></pre>
-<p>Note that while <code>numpy</code>, <code>scipy</code>, <code>pandas</code>, and <code>mathplotlib</code> are quite common, the package also requires <a href="https://rebound.readthedocs.io/en/latest/">REBOUND integrator</a> and <a href="https://www.astropy.org">Astropy</a>.</p>
+<p>C. If you now run <code>poetry add resonances</code>, you might face the issue that <code>resonances</code> is not compatible with the default <code>python</code> version that poetry has created. It happens because scipy has a requirement for python <code>&lt;3.10</code>, whereas poetry has less explicit requirement <code>&lt;4</code>. To fix that, open <code>pyproject.toml</code> file and replace the version of python to <code>&gt;=3.7.1,&lt;3.10</code>:</p>
+<pre><code>[tool.poetry.dependencies]
+python = &quot;&gt;=3.7.1,&lt;3.10&quot;
+</code></pre>
+<p>D. Now you can add <code>resonances</code>:</p>
+<pre><code class="language-bash">poetry add resonances
+</code></pre>
+<p>E. Now you can run your first simulation. Create <code>test.py</code> in the root directory of your project and place the following code there:</p>
+<pre><code class="language-python">import resonances
+
+mmr = resonances.create_mmr('1J-1')
+sim = resonances.Simulation()
+sim.create_solar_system()
+sim.add_body(588, mmr, name='Asteroid 558')
+sim.dt=1.0
+sim.run()
+</code></pre>
+<p>Note that the first run might take a while because the app needs to download AstDyS catalogue and initial data for the Solar system. You can see the progress in <code>cache/resonances.log</code> file.</p>
+<p>F. Now you can see the results in <code>cache</code> folder.</p>
+<h2 id="pip">PIP</h2>
+<p>However, if you prefer manual installation, you need to perform the following steps:</p>
+<pre><code class="language-bash">pip install resonances
+</code></pre>
+<p>Note that while <code>numpy</code>, <code>scipy</code>, <code>pandas</code>, and <code>mathplotlib</code> are quite common, the package also requires <a href="https://rebound.readthedocs.io/en/latest/">REBOUND integrator</a> and <a href="https://www.astropy.org">Astropy</a>. While it should be handled automatically, if something goes wrong, please verify that these packages are installed.</p>
+<p>It is highly recommended to use <a href="https://docs.python.org/3/tutorial/venv.html">virtual environments</a> to avoid possible conflicts.</p>
+<p>After installation, you can create the file <code>test.py</code> with the same content as described in the previous section and run it:</p>
+<pre><code class="language-python">python test.py
+</code></pre>
+<h2 id="jupyter-notebooks">Jupyter Notebooks</h2>
+<p>Generally, it should work out of the box, just follow <a href="https://jakevdp.github.io/blog/2017/12/05/installing-python-packages-from-jupyter/">any guide</a> that explains how to add a package to <a href="https://jupyter.org">Jupyter Notebooks</a> and the instructions above.</p>
+<p>If you use virtual environment and <a href="https://code.visualstudio.com">VSCode</a>, do not forget to choose the right Python Kernel. Also, it is required to install <code>ipykernel</code> from the console (related to your virtual environment):</p>
+<pre><code class="language-bash">pip install ipykernel
+</code></pre>
 <h2 id="manual-installation">Manual installation</h2>
 <p>If for some reason, you want to launch the project from the source code, you need to download it from <code>github</code> and install dependencies through <code>poetry</code>:</p>
 <pre><code class="language-bash">git clone https://github.com/smirik/resonances.git
@@ -148,6 +188,8 @@ poetry install
 <p>Note that you have to install prior to these steps <code>python</code> (preferably, through <code>pyenv</code>) and set up a virtual environment for poetry.</p>
 <h2 id="updating">Updating</h2>
 <p>Use the same manager (<code>poetry</code> or <code>pip</code>) and its standard workflow to update.</p>
+<pre><code class="language-bash">poetry update
+</code></pre>
               
             </div>
           </div>
