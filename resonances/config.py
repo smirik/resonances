@@ -37,7 +37,7 @@ class config:
 
     @classmethod
     def static_init(cls):
-        config_file_dir = Path(__file__).parent.parent.resolve()
+        config_file_dir = Path(__file__).parent.resolve()
         config_file_path = '{}/config.json'.format(str(config_file_dir))
         config_file = Path(config_file_path)
 
