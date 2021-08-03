@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 import resonances.config
 
 
@@ -12,8 +13,11 @@ def static_init(cls):
 class logger:
     @classmethod
     def static_init(cls):
+        log_file_path = resonances.config.get('log.file')
+        log_dir = Path(log_file_path).parent.resolve()
+        Path(log_dir).mkdir(parents=True, exist_ok=True)
         logging.basicConfig(
-            filename=resonances.config.get('log.file'),
+            filename=log_file_path,
             encoding='utf-8',
             level=cls.get_logging_level(),
             format='%(asctime)s %(levelname)s: %(message)s',

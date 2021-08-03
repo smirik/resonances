@@ -97,8 +97,18 @@ def identifier():
 
 def asteroids_in_resonance():
     parser.add_argument('resonance', help='The resonance in a short notation like 4J-2S-1.', type=str)
+    parser.add_argument(
+        '--iterations',
+        help='The maximum number of iterations. One iteration consists of 100 asteroid candidates. Should be integer.',
+        type=int,
+    )
     args = parser.parse_args()
 
+    iterations = 1000
+    if args.iterations is not None:
+        iterations = args.iterations
+
     resonances.logger.info('Starting simulation "asteroids in resonance" for the resonance {}'.format(args.resonance))
-    finder.run(resonances.create_mmr(args.resonance))
+    resonances.logger.info('The number of iterations: {}'.format(iterations))
+    finder.run(resonances.create_mmr(args.resonance), dump=100, max_iterations=iterations)
     resonances.logger.info('Successfully ended.')

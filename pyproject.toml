@@ -24,7 +24,7 @@ simulation-shape = "resonances.experiment.console:calc_shape"
 ss = "resonances.experiment.console:calc_shape"
 identify-resonances = "resonances.experiment.console:identifier"
 ir = "resonances.experiment.console:identifier"
-asteroids-in-resonance = "resonances.experiment.console:finder"
+asteroids-in-resonance = "resonances.experiment.console:asteroids_in_resonance"
 ain = "resonances.experiment.console:asteroids_in_resonance"
 
 [tool.poetry.dev-dependencies]
