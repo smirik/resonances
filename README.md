@@ -21,6 +21,10 @@ The package:
 
 It actively uses [REBOUND integrator](https://rebound.readthedocs.io) maintained by Hanno Rein and others.
 
+## Installation
+
+To install resonances on your system, follow the instructions on the appropriate [installation guide](https://smirik.github.io/resonances/install/)
+
 ## Mean-motion resonances
 
 For those who are not familiar with the mean-motion resonances, here is the list of papers used to develop this package:
