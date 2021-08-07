@@ -14,28 +14,29 @@ You might face some difficulties through the installation for a new project. Bel
 
 ### Guide
 
-A. Follow the instructions on the official website of [poetry](https://python-poetry.org) and install it. Of course, python, pip, virtual environments and everything related should be already installed.
-B. Create a new project:
+**A.** Follow the instructions on the official website of [poetry](https://python-poetry.org) and install it. Of course, python, pip, virtual environments and everything related should be already installed.
+
+**B.** Create a new project:
 
 ```bash
 poetry new example
 cd example
 ```
 
-C. If you now run `poetry add resonances`, you might face the issue that `resonances` is not compatible with the default `python` version that poetry has created. It happens because scipy has a requirement for python `<3.10`, whereas poetry has less explicit requirement `<4`. To fix that, open `pyproject.toml` file and replace the version of python to `>=3.7.1,<3.10`:
+**C.** If you now run `poetry add resonances`, you might face the issue that `resonances` is not compatible with the default `python` version that poetry has created. It happens because scipy has a requirement for python `<3.10`, whereas poetry has less explicit requirement `<4`. To fix that, open `pyproject.toml` file and replace the version of python to `>=3.7.1,<3.10`:
 
 ```
 [tool.poetry.dependencies]
 python = ">=3.7.1,<3.10"
 ```
 
-D. Now you can add `resonances`:
+**D.** Now you can add `resonances`:
 
 ```bash
 poetry add resonances
 ```
 
-E. Now you can run your first simulation. Create `test.py` in the root directory of your project and place the following code there:
+**E.** Now you can run your first simulation. Create `test.py` in the root directory of your project and place the following code there:
 
 ```python
 import resonances
@@ -50,7 +51,7 @@ sim.run()
 
 Note that the first run might take a while because the app needs to download AstDyS catalogue and initial data for the Solar system. You can see the progress in `cache/resonances.log` file.
 
-F. Now you can see the results in `cache` folder.
+**F.** Now you can see the results in `cache` folder.
 
 ## PIP
 
