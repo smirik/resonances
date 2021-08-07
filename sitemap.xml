@@ -2,47 +2,47 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://github.com/smirik/resonances/</loc>
-         <lastmod>2021-08-03</lastmod>
+         <lastmod>2021-08-07</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/smirik/resonances/about/</loc>
-         <lastmod>2021-08-03</lastmod>
+         <lastmod>2021-08-07</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/smirik/resonances/config/</loc>
-         <lastmod>2021-08-03</lastmod>
+         <lastmod>2021-08-07</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/smirik/resonances/console/</loc>
-         <lastmod>2021-08-03</lastmod>
+         <lastmod>2021-08-07</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/smirik/resonances/core/</loc>
-         <lastmod>2021-08-03</lastmod>
+         <lastmod>2021-08-07</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/smirik/resonances/install/</loc>
-         <lastmod>2021-08-03</lastmod>
+         <lastmod>2021-08-07</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/smirik/resonances/libration/</loc>
-         <lastmod>2021-08-03</lastmod>
+         <lastmod>2021-08-07</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/smirik/resonances/matrix/</loc>
-         <lastmod>2021-08-03</lastmod>
+         <lastmod>2021-08-07</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/smirik/resonances/quick-start/</loc>
-         <lastmod>2021-08-03</lastmod>
+         <lastmod>2021-08-07</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>

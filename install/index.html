@@ -118,7 +118,7 @@
     <li>Installation and updates</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/smirik/resonances/edit/master/docs/install.md"
+        <a href="https://github.com/smirik/resonances/blob/master/docs/install.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -138,19 +138,19 @@
 <p>It will install the package itself, as well as all dependencies.</p>
 <p>You might face some difficulties through the installation for a new project. Below is a detailed guide.</p>
 <h3 id="guide">Guide</h3>
-<p>A. Follow the instructions on the official website of <a href="https://python-poetry.org">poetry</a> and install it. Of course, python, pip, virtual environments and everything related should be already installed.
-B. Create a new project:</p>
+<p><strong>A.</strong> Follow the instructions on the official website of <a href="https://python-poetry.org">poetry</a> and install it. Of course, python, pip, virtual environments and everything related should be already installed.</p>
+<p><strong>B.</strong> Create a new project:</p>
 <pre><code class="language-bash">poetry new example
 cd example
 </code></pre>
-<p>C. If you now run <code>poetry add resonances</code>, you might face the issue that <code>resonances</code> is not compatible with the default <code>python</code> version that poetry has created. It happens because scipy has a requirement for python <code>&lt;3.10</code>, whereas poetry has less explicit requirement <code>&lt;4</code>. To fix that, open <code>pyproject.toml</code> file and replace the version of python to <code>&gt;=3.7.1,&lt;3.10</code>:</p>
+<p><strong>C.</strong> If you now run <code>poetry add resonances</code>, you might face the issue that <code>resonances</code> is not compatible with the default <code>python</code> version that poetry has created. It happens because scipy has a requirement for python <code>&lt;3.10</code>, whereas poetry has less explicit requirement <code>&lt;4</code>. To fix that, open <code>pyproject.toml</code> file and replace the version of python to <code>&gt;=3.7.1,&lt;3.10</code>:</p>
 <pre><code>[tool.poetry.dependencies]
 python = &quot;&gt;=3.7.1,&lt;3.10&quot;
 </code></pre>
-<p>D. Now you can add <code>resonances</code>:</p>
+<p><strong>D.</strong> Now you can add <code>resonances</code>:</p>
 <pre><code class="language-bash">poetry add resonances
 </code></pre>
-<p>E. Now you can run your first simulation. Create <code>test.py</code> in the root directory of your project and place the following code there:</p>
+<p><strong>E.</strong> Now you can run your first simulation. Create <code>test.py</code> in the root directory of your project and place the following code there:</p>
 <pre><code class="language-python">import resonances
 
 mmr = resonances.create_mmr('1J-1')
@@ -161,7 +161,7 @@ sim.dt=1.0
 sim.run()
 </code></pre>
 <p>Note that the first run might take a while because the app needs to download AstDyS catalogue and initial data for the Solar system. You can see the progress in <code>cache/resonances.log</code> file.</p>
-<p>F. Now you can see the results in <code>cache</code> folder.</p>
+<p><strong>F.</strong> Now you can see the results in <code>cache</code> folder.</p>
 <h2 id="pip">PIP</h2>
 <p>However, if you prefer manual installation, you need to perform the following steps:</p>
 <pre><code class="language-bash">pip install resonances
