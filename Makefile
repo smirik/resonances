@@ -7,12 +7,12 @@ run-docs:
 	poetry run mkdocs serve
 
 publish-docs:
+	rm -f docs/cache/*
 	poetry run mkdocs gh-deploy
 
 publish-test:
 	poetry build
 	poetry config repositories.testpypi https://test.pypi.org/legacy/
-	# poetry config pypi-token.testpypi your-test-api-token
 	poetry publish -r testpypi
 
 publish:
