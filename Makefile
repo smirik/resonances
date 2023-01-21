@@ -18,6 +18,3 @@ publish-test:
 publish:
 	poetry publish --build
 
-set-token:
-	poetry config pypi-token.pypi your-api-token
-
