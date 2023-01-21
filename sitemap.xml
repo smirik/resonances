@@ -21,6 +21,16 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://github.com/smirik/resonances/core/</loc>
+         <lastmod>2023-01-21</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/smirik/resonances/dev/</loc>
+         <lastmod>2023-01-21</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://github.com/smirik/resonances/install/</loc>
          <lastmod>2023-01-21</lastmod>
          <changefreq>daily</changefreq>
@@ -32,6 +42,11 @@
     </url>
     <url>
          <loc>https://github.com/smirik/resonances/matrix/</loc>
+         <lastmod>2023-01-21</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/smirik/resonances/quick-start/</loc>
          <lastmod>2023-01-21</lastmod>
          <changefreq>daily</changefreq>
     </url>
