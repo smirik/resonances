@@ -23,11 +23,11 @@ poetry new example
 cd example
 ```
 
-**C.** If you now run `poetry add resonances`, you might face the issue that `resonances` is not compatible with the default `python` version that poetry has created. It happens because scipy has a requirement for python `<3.10`, whereas poetry has less explicit requirement `<4`. To fix that, open `pyproject.toml` file and replace the version of python to `>=3.7.1,<3.10`:
+**C.** If you now run `poetry add resonances`, you might face the issue that `resonances` is not compatible with the default `python` version that poetry has created. It happens because scipy has a requirement for python `<3.12`, whereas poetry has less explicit requirement `<4`. To fix that, open `pyproject.toml` file and replace the version of python to `>=3.8,<3.12`:
 
 ```
 [tool.poetry.dependencies]
-python = ">=3.7.1,<3.10"
+python = ">=3.8,<3.12"
 ```
 
 **D.** Now you can add `resonances`:
