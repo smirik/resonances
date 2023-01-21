@@ -116,7 +116,7 @@ class ThreeBody(MMR):
             a = util.axis_from_mean_motion(n)
 
             if a > ap:
-                la = la + (3 * np.pi / 2 * mp / (1.0 + mp) ** 1.5 * (ap ** 2 / a ** 3.5)) / const.DAYS_IN_YEAR
+                la = la + (3 * np.pi / 2 * mp / (1.0 + mp) ** 1.5 * (ap**2 / a**3.5)) / const.DAYS_IN_YEAR
             else:
                 la = la + (3 * np.pi / 2 * mp * (np.sqrt(a) / ap) ** 3) / const.DAYS_IN_YEAR
 

@@ -20,7 +20,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
+python = ">=3.8.1,<3.12"
 numpy = "^1.24.1"
 scipy = "^1.10.0"
 pandas = "^1.5.3"
@@ -42,13 +42,13 @@ asteroids-in-resonance = "resonances.experiment.console:asteroids_in_resonance"
 ain = "resonances.experiment.console:asteroids_in_resonance"
 
 [tool.poetry.dev-dependencies]
-black = {version = "^21.6b0", allow-prereleases = true}
-coverage = {extras = ["toml"], version = "^5.5"}
-flake8 = "^3.9.2"
-flake8-bugbear = "^21.4.3"
 pytest = "^7.2.1"
 mkdocs = "^1.4.2"
 mkdocs-jupyter = "^0.22.0"
+black = "^22.12.0"
+flake8 = "^6.0.0"
+flake8-bugbear = "^23.1.20"
+coverage = "^7.0.5"
 
 [tool.coverage.run]
 omit = [".*", "tests/*", "*/site-packages/*"]
