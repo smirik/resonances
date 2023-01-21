@@ -3,7 +3,7 @@ test:
 	poetry run black . --check
 	poetry run pytest -v tests/resonances
 
-docs:
+run-docs:
 	poetry run mkdocs serve
 
 publish-docs:
