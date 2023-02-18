@@ -18,7 +18,6 @@ class logger:
         Path(log_dir).mkdir(parents=True, exist_ok=True)
         logging.basicConfig(
             filename=log_file_path,
-            encoding='utf-8',
             level=cls.get_logging_level(),
             format='%(asctime)s %(levelname)s: %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S',
