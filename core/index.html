@@ -1613,8 +1613,8 @@ sim.save_only_undetermined = True</div>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<p>Here I define that I want to save some data but only for the objects that cannot be precisely identified (see <a href="libration.md">Libration section</a>; statuses lower than <code>0</code>), and I do not want to have any plots.</p>
-<p>Please be aware of <a href="config.md">default values</a> — it saves some space for each simulation. There is no need to override if you are OK with them.</p>
+<p>Here I define that I want to save some data but only for the objects that cannot be precisely identified (see <a href="../libration">Libration section</a>; statuses lower than <code>0</code>), and I do not want to have any plots.</p>
+<p>Please be aware of <a href="../config">default values</a> — it saves some space for each simulation. There is no need to override if you are OK with them.</p>
 <p>You may also want to change the output directory — just rewrite the config <code>sim.save_path</code>.</p>
 <p>You may add as many objects as you want. However, when the number of asteroids is very high, it might delay the integration process. The usual suggestion is to integrate 100-1000 objects simultaneously, but it depends on the computer's characteristics.</p>
 <p>Do not forget to specify the time interval and the number of output points. The default values are good for the resonances in the main belt but not for all possible scenarios. Note that the time used by <code>rebound</code> is in years divided to 2π.</p>
@@ -1787,7 +1787,7 @@ Lola
 <li><code>body.ecc</code> — the values of eccentricity.</li>
 <li><code>body.initial_data</code> — the dictionary of initial data. — <code>sim.times</code> — the list of times of integration.</li>
 </ul>
-<p>The body object also has information about the librations, frequencies of oscillations and so on (see <a href="libration.md">Libration module</a>).</p>
+<p>The body object also has information about the librations, frequencies of oscillations and so on (see <a href="../libration">Libration module</a>).</p>
 <p>Now you can manipulate these objects as you want. For example, you can plot <code>angle vs time</code>:</p>
 
 </div>
