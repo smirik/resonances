@@ -3,6 +3,9 @@ test:
 	poetry run black . --check
 	poetry run pytest -v tests/resonances
 
+test-only:
+	poetry run pytest -v tests/resonances
+
 run-docs:
 	poetry run mkdocs serve
 

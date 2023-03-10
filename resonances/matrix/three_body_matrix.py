@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 import pandas as pd
 import itertools
@@ -44,7 +45,7 @@ class ThreeBodyMatrix(Matrix):
         return df
 
     @classmethod
-    def find_resonances(cls, a, sigma=0.02, planets=None):
+    def find_resonances(cls, a, sigma=0.02, planets=None) -> List[resonances.MMR]:
         if cls.matrix is None:
             cls.load()
 

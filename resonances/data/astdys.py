@@ -41,6 +41,13 @@ class astdys:
         cls.catalog['num'] = cls.catalog['num'].astype(str)
 
     @classmethod
+    def rebuild(cls):
+        input_file = Path(resonances.config.get('astdys.catalog'))
+        if input_file.exists():
+            input_file.unlink()
+        cls.build()
+
+    @classmethod
     def build(cls):
         input_file = Path(resonances.config.get('astdys.catalog'))
         if not input_file.exists():

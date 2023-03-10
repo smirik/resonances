@@ -1,5 +1,6 @@
 # Temporary: no Jupyter notebooks in core directory
 ./*.ipynb
+tests/test_wip.py
 
 # Cache directory is needed but no files should be there
 cache/*
