@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "resonances"
-version = "0.2.4"
+version = "0.2.5"
 description = "Identification of mean-motion resonances"
 authors = ["Evgeny Smirnov <smirik@gmail.com>"]
 license = "MIT"
@@ -16,7 +16,7 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Astronomy',
     'Programming Language :: Python :: 3',
     'License :: OSI Approved :: MIT License',
-    'Operating System :: OS Independent'
+    'Operating System :: OS Independent',
 ]
 
 [tool.poetry.dependencies]
@@ -49,6 +49,9 @@ black = "^22.12.0"
 flake8 = "^6.0.0"
 flake8-bugbear = "^23.1.20"
 coverage = "^7.0.5"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.21.3"
 
 [tool.coverage.run]
 omit = [".*", "tests/*", "*/site-packages/*"]

@@ -12,6 +12,7 @@ nav:
         - "Getting Started":
                   - "Quick start": "quick-start.ipynb"
                   - "Installation and updates": "install.md"
+                  - "Examples": "examples.ipynb"
         - "Features":
                   - "Simulations and Bodies": core.ipynb
                   - "Libration module": libration.md

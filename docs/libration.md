@@ -7,9 +7,10 @@ There is no obvious algorithm how to identify whether or not the asteroid is in 
 The module `resonances.libration` uses several metrics to resolve whether or not an asteroid is resonant:
 
 1. `pure`: this flag shows is there at least one period of circulation. Technically, it means that the resonant angle (limited by 2&pi; filter) should never break the limits of `0` and `2&pi` or be shifted by a constant.
-1. `overlapping`: the module calculates the frequencies of oscillations of the resonant angle and semi-major axis (see [Config](config.md) for the limits used by default). If there is a shared frequency within limits, then it signals that there might be a resonance.
-1. `max_libration_length`: it represents the longest period of libration of the resonant angle. Or, in other words, how long there was no intersection of the borders (0 and 2&pi;). For all resonant asteroids, this value should be high enough.
-1. `monotony`: a very simple metric that calculates the percentage of the points when the value of the resonant angle for the current time is less than the same value for the previous step. If the resonant angle librates, it means that this value should be close to `0.5`.
+2. `overlapping`: the module calculates the frequencies of oscillations of the resonant angle and semi-major axis (see [Config](config.md) for the limits used by default). If there is a shared frequency within limits, then it signals that there might be a resonance.
+3. `max_libration_length`: it represents the longest period of libration of the resonant angle. Or, in other words, how long there was no intersection of the borders (0 and 2&pi;). For all resonant asteroids, this value should be high enough.
+4. `num_libration_periods`: it provides the number of intervals of librations within the boundaries. For example, if an asteroid is in a pure resonance, there are no periods of oscillations; hence, the number of libration periods is equal to `1`. If there is a slow circulation of the resonant argument with, let's say, three boundary crossing, the number of libration periods will equal `4`. Every time when there is a boundary crossing, this number is increased by one, except the case where there is apocentric libration or similar.
+5. `monotony`: a very simple metric that calculates the percentage of the points when the value of the resonant angle for the current time is less than the same value for the previous step. If the resonant angle librates, it means that this value should be close to `0.5`.
 
 All these values are available for `Body` objects after the integration. They are available in the output file `summary.csv`. The time series (if the appropriate flag is set) are also stored in CSV files in the output directory.
 

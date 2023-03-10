@@ -157,10 +157,10 @@ def test_get_simulation_summary():
     tools.add_test_asteroid_to_simulation(sim)
     sim.run()
 
-    data = sim.get_simulation_summary()
-    assert 1 == len(data)
-    assert 13 == len(data[0])
-    assert 'asteroid' == data[0][0]
+    df = sim.get_simulation_summary()
+    assert 1 == len(df)
+    assert 13 == len(df.columns)
+    assert 'asteroid' == df['name'].iloc[0]
 
 
 def test_list_of_planets():

@@ -36,8 +36,6 @@ def body(sim, body: resonances.Body):
         axs[2].plot(sim.times / (2 * np.pi), body.axis, linestyle='', marker=',')
     axs[2].sharex(axs[0])
 
-    axs[3].set_title('Periodogram (resonant angle)')
-
     axs[3].set_xlim(0, 40000)
     # axs[2].set_ylim(0, 0.2)
     axs[3].axhline(y=0.05, color='r', linestyle='--')
@@ -53,6 +51,7 @@ def body(sim, body: resonances.Body):
         axs[3].plot(1.0 / body.periodogram_frequency, body.periodogram_power)
 
     axs[3].set_title('Periodogram (semi-major axis)')
+    axs[4].set_title('Periodogram (the resonant angle)')
     axs[4].set_xlim(0, 40000)
     # axs[3].set_ylim(0, 0.2)
     axs[4].axhline(y=0.05, color='r', linestyle='--')

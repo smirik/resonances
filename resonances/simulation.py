@@ -200,7 +200,7 @@ class Simulation:
             df_data['a_periodogram'] = np.append(body.axis_periodogram_power, np.zeros(len_diff))
         return df_data
 
-    def get_simulation_summary(self):
+    def get_simulation_summary(self) -> pd.DataFrame:
         data = []
         for body in self.bodies:
             s = ', '.join('({:.0f}, {:.0f})'.format(left, right) for left, right in body.periodogram_peaks_overlapping)
@@ -221,11 +221,6 @@ class Simulation:
                     body.initial_data['M'],
                 ]
             )
-        return data
-
-    def save_simulation_summary(self):
-        self.check_or_create_save_path()
-        data = self.get_simulation_summary()
         df = pd.DataFrame(
             data,
             columns=[
@@ -244,8 +239,20 @@ class Simulation:
                 'M',
             ],
         )
-        df.to_csv('{}/summary.csv'.format(self.save_path), mode='a', header=False)
-        return data
+        return df
+
+    def save_simulation_summary(self) -> pd.DataFrame:
+        self.check_or_create_save_path()
+        df = self.get_simulation_summary()
+
+        summary_filename = '{}/summary.csv'.format(self.save_path)
+        summary_file = Path(summary_filename)
+        if summary_file.exists():
+            df.to_csv(summary_filename, mode='a', header=False, index=False)
+        else:
+            df.to_csv(summary_filename, mode='a', header=True, index=False)
+
+        return df
 
     def check_or_create_save_path(self):
         Path(self.save_path).mkdir(parents=True, exist_ok=True)
