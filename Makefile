@@ -10,7 +10,7 @@ run-docs:
 	poetry run mkdocs serve
 
 publish-docs:
-	rm -f docs/cache/*
+	rm -Rf docs/cache/*
 	poetry run mkdocs gh-deploy
 
 publish-test:
