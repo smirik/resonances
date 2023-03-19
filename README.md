@@ -31,10 +31,11 @@ For those who are not familiar with the mean-motion resonances, here is the list
 
 ### Papers about the automatic identification of resonant asteroids
 
-1. Smirnov, E. A. & Shevchenko, I. I. Massive identification of asteroids in three-body resonances. Icarus 222, 220–228 (2013).
-1. Smirnov, E. A., Dovgalev, I. S. & Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.
 1. Smirnov, E. A. & Dovgalev, I. S. Identification of Asteroids in Two-Body Resonances. Solar System Research 52, 347–354 (2018).
-1. Nesvorný, D. & Morbidelli, A. Three-Body Mean Motion Resonances and the Chaotic Structure of the Asteroid Belt. The Astronomical Journal 116, 3029–3037 (1998).
+2. Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing, 100707. https://doi.org/10.1016/j.ascom.2023.100707
+3. Smirnov, E. A. & Shevchenko, I. I. Massive identification of asteroids in three-body resonances. Icarus 222, 220–228 (2013).
+4. Smirnov, E. A., Dovgalev, I. S. & Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.
+5. Nesvorný, D. & Morbidelli, A. Three-Body Mean Motion Resonances and the Chaotic Structure of the Asteroid Belt. The Astronomical Journal 116, 3029–3037 (1998).
 
 ### Papers about mean-motion resonances
 
@@ -56,9 +57,17 @@ For those who are not familiar with the mean-motion resonances, here is the list
 
 Whenever you use this package, we are kindly asking you to refer to one of the following papers (please choose the appropriate):
 
-1. **The package itself**: to be published
-1. **The Libration module and automatic identification of librations**: to be published
-1. **Mass identification of mean-motion resonances:** Smirnov, E. A., Dovgalev, I. S. & Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.
+1. **The package itself**: 
+
+* Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing. https://doi.org/10.1016/j.ascom.2023.100707
+2. **The Libration module and automatic identification of librations**: 
+
+* Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing, 100707. https://doi.org/10.1016/j.ascom.2023.100707
+
+3. **Mass identification of mean-motion resonances:** 
+
+* Smirnov, E. A., & Dovgalev, I. S. (2018). Identification of Asteroids in Two-Body Resonances. Solar System Research, 52(4), 347–354. https://doi.org/10.1134/S0038094618040056 
+* Smirnov, E. A., Dovgalev, I. S. & Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.
 
 ## Authors
 
@@ -68,7 +77,7 @@ The authors of the package:
 
 ## Acknowledgement
 
-- Many thanks to the co-authors of the papers (prof. I. I. Shevchenko, I. Dovgalev Dr. E. Popova).
+- Many thanks to the co-authors of the papers (prof. I. I. Shevchenko, I. Dovgalev, and Dr. E. Popova).
 - The creators of [REBOUND integrator](https://rebound.readthedocs.io).
 - The creators of [Astropy](http://astropy.org).
 - The creators of `numpy`, `scipy`, `pandas`, and `matplotlib`.
