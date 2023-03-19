@@ -60,6 +60,21 @@ Whenever you use this package, we are kindly asking you to refer to one of the f
 1. **The package itself**: 
 
 * Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing. https://doi.org/10.1016/j.ascom.2023.100707
+
+```tex
+@article{Smirnov2023,
+  title    = {A new python package for identifying celestial bodies trapped in mean-motion resonances},
+  journal  = {Astronomy and Computing},
+  year     = {2023},
+  issn     = {2213-1337},
+  doi      = {https://doi.org/10.1016/j.ascom.2023.100707},
+  url      = {https://www.sciencedirect.com/science/article/pii/S2213133723000227},
+  author   = {E.A. Smirnov},
+  keywords = {Mean-motion resonances, Python, Identification, Asteroids},
+  abstract = {In this paper, a new open-source package ‘resonances’ written in python is introduced. It allows to find, analyse, and plot two-body and three-body mean-motion eccentricity-type resonances in the Solar and other planetary systems. The package has a better accuracy of the automatic identification procedure for resonant objects compared to previous studies. Furthermore, it has built-in integrations with AstDyS and NASA JPL catalogues. The code is extensively documented and tested with automatic tests. The package is available on GitHub under MIT Licence.}
+}
+```
+
 2. **The Libration module and automatic identification of librations**: 
 
 * Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing, 100707. https://doi.org/10.1016/j.ascom.2023.100707
