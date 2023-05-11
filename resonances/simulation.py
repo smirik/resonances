@@ -60,14 +60,18 @@ class Simulation:
         self.save_additional_data = resonances.config.get('save.additional.data')
         self.plot = resonances.config.get('plot')
 
+        self.initial_data_source = 'astdys'
+
     def create_solar_system(self):
         solar_file = Path(resonances.config.get('solar_system_file'))
-
         if solar_file.exists():
             self.sim = rebound.Simulation(resonances.config.get('solar_system_file'))
         else:
             self.sim = rebound.Simulation()
-            self.sim.add(self.list_of_planets(), date='2020-12-17 00:00')  # date of AstDyS current catalogue
+            if self.initial_data_source == 'astdys':
+                self.sim.add(self.list_of_planets(), date=f"{astdys.catalog_time()} 00:00")  # date of AstDyS current catalogue
+            else:
+                self.sim.add(self.list_of_planets())
             self.sim.save(resonances.config.get('solar_system_file'))
 
     def add_body(self, elem_or_num, mmr: resonances.MMR, name='asteroid'):

@@ -5,10 +5,10 @@ import urllib.request
 
 import resonances.config
 import resonances.logger
+from resonances.util import convert_mjd_to_date
 
 
 class astdys:
-
     catalog = None
 
     @classmethod
@@ -21,6 +21,14 @@ class astdys:
             return cls.catalog.loc[cls.catalog['num'] == num].to_dict('records')[0]
 
         return None
+
+    @classmethod
+    def catalog_time(cls):
+        if cls.catalog is None:
+            cls.load()
+
+        elems = cls.search(1)
+        return convert_mjd_to_date(elems['epoch'])
 
     @classmethod
     def search_possible_resonant_asteroids(cls, mmr, sigma=0.02):
@@ -83,5 +91,7 @@ class astdys:
         for col in deg_cols:
             cat[col] = cat[col].map(lambda x: float(x) * np.pi / 180)
 
-        cat.drop(cat.columns[[1, 8, 9, 10, 11]], axis=1, inplace=True)
+        column_to_move = 'epoch'
+        cat = cat[[col for col in cat.columns if col != column_to_move] + [column_to_move]]
+        cat.drop(cat.columns[[8, 9, 10]], axis=1, inplace=True)
         return cat
