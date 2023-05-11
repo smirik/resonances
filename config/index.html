@@ -59,6 +59,8 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="./">Config</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#simulation-properties">Simulation properties</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#saving-options">Saving options</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#libration-options">Libration options</a>
@@ -126,6 +128,17 @@ if resonances.config.has('integration.dt'):
     print('There is a config with the key = integration.dt')
     print(resonances.config.get('integration.dt'))
 </code></pre>
+<h2 id="simulation-properties">Simulation properties</h2>
+<p>A resonances Simulation object has several properties that can be defined before running.</p>
+<pre><code class="language-python">import resonances
+sim = resonances.Simulation()
+</code></pre>
+<ul>
+<li><code>sim.initial_data_source</code> (str): can have two options - <code>astdys</code> or <code>nasa</code>. It defines what source should be used to gather initial data for the asteroids if they are passed as numbers (without orbital elements). <strong>This is in progress</strong> and only <code>astdys</code> should be used at the moment.</li>
+<li><code>sim.save</code> (bool): whether or not save the result of the simulation (almost always should be <code>True</code>)</li>
+<li><code>sim.save_summary</code> (bool): save summary of the simulation as a dataframe (available through <code>get_simulation_summary()</code> method)</li>
+<li><code>sim.save_additional_data</code> (bool): whether or not to save periodogram data for the resonant angle and semi-major axis</li>
+</ul>
 <h2 id="saving-options">Saving options</h2>
 <ul>
 <li><code>save</code> (bool): if <code>true</code>, the results of the integration (including the plots) will be saved. If it is <code>false</code>, nothing will be saved. All options below work only if <code>save</code> is true.</li>
