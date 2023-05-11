@@ -33,7 +33,10 @@ def create_test_simulation_for_solar_system(
     save=False, plot=False, save_summary=False, save_additional_data=False, save_only_undetermined=False
 ):
     sim = resonances.Simulation()
-    sim.create_solar_system()
+
+    from resonances.util import convert_mjd_to_date
+
+    sim.create_solar_system(date=convert_mjd_to_date(60000.0))
 
     # create to speedup
     sim.tmax = 20

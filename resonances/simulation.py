@@ -3,6 +3,7 @@ import pandas as pd
 import rebound
 from pathlib import Path
 from typing import List
+import os
 
 import resonances
 from resonances.data.astdys import astdys
@@ -62,17 +63,23 @@ class Simulation:
 
         self.initial_data_source = 'astdys'
 
-    def create_solar_system(self):
-        solar_file = Path(resonances.config.get('solar_system_file'))
+    def solar_system_full_filename(self) -> str:
+        catalog_file = f"{os.getcwd()}/{resonances.config.get('solar_system_file')}"
+        return catalog_file
+
+    def create_solar_system(self, date: str = ''):
+        solar_file = Path(self.solar_system_full_filename())
         if solar_file.exists():
-            self.sim = rebound.Simulation(resonances.config.get('solar_system_file'))
+            self.sim = rebound.Simulation(self.solar_system_full_filename())
         else:
             self.sim = rebound.Simulation()
-            if self.initial_data_source == 'astdys':
+            if date != '':
+                self.sim.add(self.list_of_planets(), date=date)
+            elif self.initial_data_source == 'astdys':
                 self.sim.add(self.list_of_planets(), date=f"{astdys.catalog_time()} 00:00")  # date of AstDyS current catalogue
             else:
                 self.sim.add(self.list_of_planets())
-            self.sim.save(resonances.config.get('solar_system_file'))
+            self.sim.save(self.solar_system_full_filename())
 
     def add_body(self, elem_or_num, mmr: resonances.MMR, name='asteroid'):
         body = resonances.Body()

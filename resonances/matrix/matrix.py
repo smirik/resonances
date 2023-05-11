@@ -18,7 +18,7 @@ class Matrix:
 
     @classmethod
     def catalog_full_filename(cls) -> str:
-        catalog_file = Path(f"{os.getcwd()}/{resonances.config.get(cls.catalog_file)}")
+        catalog_file = f"{os.getcwd()}/{resonances.config.get(cls.catalog_file)}"
         return catalog_file
 
     @classmethod
