@@ -43,6 +43,11 @@ class MMR:
             return 'Neptune'
         raise Exception('Bad notation used. Only the following letter are available: R (for Mercury), V, E, M, J, S, U, N ')
 
+    def get_letter_from_planet_name(self, planet_name: str) -> str:
+        if 'Mercury' == planet_name:
+            return 'R'
+        return planet_name[0]
+
     @property
     def resonant_axis(self):
         if self._resonant_axis is None:

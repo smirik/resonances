@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import os
 import urllib.request
 
 import resonances.config
@@ -39,25 +40,36 @@ class astdys:
         return df
 
     @classmethod
+    def astdys_full_filename(cls) -> str:
+        filename = f"{os.getcwd()}/{resonances.config.get('astdys.catalog')}"
+        return filename
+
+    @classmethod
+    def catalog_full_filename(cls) -> str:
+        filename = f"{os.getcwd()}/{resonances.config.get('catalog')}"
+        return filename
+
+    @classmethod
     def load(cls):
+        filename = cls.catalog_full_filename()
         if cls.catalog is None:
-            output_file = Path(resonances.config.get('catalog'))
+            output_file = Path(filename)
             if not output_file.exists():
                 cls.build()
 
-        cls.catalog = pd.read_csv(resonances.config.get('catalog'))
+        cls.catalog = pd.read_csv(filename)
         cls.catalog['num'] = cls.catalog['num'].astype(str)
 
     @classmethod
     def rebuild(cls):
-        input_file = Path(resonances.config.get('astdys.catalog'))
+        input_file = Path(cls.astdys_full_filename())
         if input_file.exists():
             input_file.unlink()
         cls.build()
 
     @classmethod
     def build(cls):
-        input_file = Path(resonances.config.get('astdys.catalog'))
+        input_file = Path(cls.astdys_full_filename())
         if not input_file.exists():
             resonances.logger.info('Cannot find AstDyS catalog. Trying to download it...')
             try:
@@ -69,11 +81,11 @@ class astdys:
             resonances.logger.info('Successfully downloaded. Continue working...')
 
         cat = cls.transform_astdys_catalog()
-        cat.to_csv(resonances.config.get('catalog'), index=False)
+        cat.to_csv(cls.catalog_full_filename(), index=False)
 
     @classmethod
     def transform_astdys_catalog(cls):
-        catalog = pd.read_csv(resonances.config.get('astdys.catalog'), delim_whitespace=True, skiprows=5)
+        catalog = pd.read_csv(cls.astdys_full_filename(), delim_whitespace=True, skiprows=5)
         cat = catalog.rename(
             columns={
                 '!': 'num',

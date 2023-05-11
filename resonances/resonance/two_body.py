@@ -7,7 +7,6 @@ import rebound
 
 class TwoBody(MMR):
     def __init__(self, coeff, planets_names=None):
-
         if isinstance(coeff, str):
             coeff, planets_names = self.init_from_short_notation(coeff)
 
@@ -45,7 +44,7 @@ class TwoBody(MMR):
     def to_s(self):
         s = '{:d}{:.1}{:+d}{:+d}{:+d}'.format(
             int(self.coeff[0]),
-            self.planets_names[0],
+            self.get_letter_from_planet_name(self.planets_names[0]),
             int(self.coeff[1]),
             int(self.coeff[2]),
             int(self.coeff[3]),
@@ -55,7 +54,7 @@ class TwoBody(MMR):
     def to_short(self):
         s = '{:d}{:.1}{:+d}'.format(
             int(self.coeff[0]),
-            self.planets_names[0],
+            self.get_letter_from_planet_name(self.planets_names[0]),
             int(self.coeff[1]),
         )
         return s

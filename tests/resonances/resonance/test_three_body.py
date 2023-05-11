@@ -15,6 +15,12 @@ def test_full_create():
     assert 'Earth' in mmr.planets_names
     assert 'Mars' in mmr.planets_names
 
+    mmr = resonances.ThreeBody([4, -2, -1, 0, 0, -1], ['Mercury', 'Earth'])
+    assert 'Mercury' in mmr.planets_names
+    assert 'Earth' in mmr.planets_names
+    assert 'Mars' not in mmr.planets_names
+    assert 'Venus' not in mmr.planets_names
+
     with pytest.raises(Exception) as exception:
         mmr = resonances.ThreeBody([4, -2, -1, 0, 0, 0], ['Jupiter', 'Saturn'])
     assert 'Alembert' in str(exception.value)
@@ -36,6 +42,11 @@ def test_short_notation():
     assert 'Earth' in mmr.planets_names
     assert 'Jupiter' not in mmr.planets_names
     assert 'Saturn' not in mmr.planets_names
+
+    mmr = resonances.ThreeBody('4R-2E-1')
+    assert 'Mercury' in mmr.planets_names
+    assert 'Earth' in mmr.planets_names
+    assert 'Mars' not in mmr.planets_names
 
     mmr = resonances.ThreeBody('2J+2S-1')
     assert 2 == mmr.coeff[0]

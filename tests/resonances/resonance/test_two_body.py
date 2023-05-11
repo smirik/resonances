@@ -28,7 +28,12 @@ def test_short_notation():
     assert 2 == mmr.coeff[0]
     assert -1 == mmr.coeff[1]
     assert 'Mars' in mmr.planets_names
+    assert 'Mercury' not in mmr.planets_names
     assert 'Jupiter' not in mmr.planets_names
+
+    mmr = resonances.TwoBody('2R-1')
+    assert 'Mercury' in mmr.planets_names
+    assert 'Mars' not in mmr.planets_names
 
     mmr = resonances.TwoBody('2J+1')
     assert 2 == mmr.coeff[0]
@@ -48,6 +53,10 @@ def test_to_s_and_to_short():
     mmr = resonances.TwoBody([2, -1, 0, -1], ['Mars'])
     assert '2M-1+0-1' == mmr.to_s()
     assert '2M-1' == mmr.to_short()
+
+    mmr = resonances.TwoBody([2, -1, 0, -1], ['Mercury'])
+    assert '2R-1+0-1' == mmr.to_s()
+    assert '2R-1' == mmr.to_short()
 
     mmr = resonances.TwoBody('2J-1')
     assert '2J-1+0-1' == mmr.to_s()
