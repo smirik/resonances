@@ -19,6 +19,20 @@ if resonances.config.has('integration.dt'):
     print(resonances.config.get('integration.dt'))
 ```
 
+## Simulation properties
+
+A resonances Simulation object has several properties that can be defined before running.
+
+```python
+import resonances
+sim = resonances.Simulation()
+```
+
+- `sim.initial_data_source` (str): can have two options - `astdys` or `nasa`. It defines what source should be used to gather initial data for the asteroids if they are passed as numbers (without orbital elements). **This is in progress** and only `astdys` should be used at the moment.
+- `sim.save` (bool): whether or not save the result of the simulation (almost always should be `True`)
+- `sim.save_summary` (bool): save summary of the simulation as a dataframe (available through `get_simulation_summary()` method)
+- `sim.save_additional_data` (bool): whether or not to save periodogram data for the resonant angle and semi-major axis
+
 ## Saving options
 
 - `save` (bool): if `true`, the results of the integration (including the plots) will be saved. If it is `false`, nothing will be saved. All options below work only if `save` is true.

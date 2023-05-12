@@ -10,7 +10,7 @@ run-docs:
 	poetry run mkdocs serve
 
 publish-docs:
-	rm -f docs/cache/*
+	rm -Rf docs/cache/*
 	poetry run mkdocs gh-deploy
 
 publish-test:
@@ -21,3 +21,12 @@ publish-test:
 publish:
 	poetry publish --build
 
+clean:
+	rm -f cache/allnum.cat
+	rm -f cache/solar.bin
+	rm -f cache/*.csv
+	rm -f cache/*.png
+
+cache-clear:
+	rm -f cache/*.csv
+	rm -f cache/*.png

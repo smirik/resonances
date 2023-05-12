@@ -53,9 +53,9 @@ class ThreeBody(MMR):
     def to_s(self):
         s = '{:d}{:.1}{:+d}{:.1}{:+d}{:+d}{:+d}{:+d}'.format(
             int(self.coeff[0]),
-            self.planets_names[0],
+            self.get_letter_from_planet_name(self.planets_names[0]),
             int(self.coeff[1]),
-            self.planets_names[1],
+            self.get_letter_from_planet_name(self.planets_names[1]),
             int(self.coeff[2]),
             int(self.coeff[3]),
             int(self.coeff[4]),
@@ -66,9 +66,9 @@ class ThreeBody(MMR):
     def to_short(self):
         s = '{:d}{:.1}{:+d}{:.1}{:+d}'.format(
             int(self.coeff[0]),
-            self.planets_names[0],
+            self.get_letter_from_planet_name(self.planets_names[0]),
             int(self.coeff[1]),
-            self.planets_names[1],
+            self.get_letter_from_planet_name(self.planets_names[1]),
             int(self.coeff[2]),
         )
         return s

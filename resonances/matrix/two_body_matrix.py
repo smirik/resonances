@@ -6,7 +6,6 @@ from resonances.matrix.matrix import Matrix
 
 
 class TwoBodyMatrix(Matrix):
-
     catalog_file = 'matrix.2body.file'
 
     @classmethod
