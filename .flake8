@@ -14,4 +14,4 @@ exclude =
     .venv
     tests/test_wip.py
 per-file-ignores =
-    resonances/matrix/three_body_matrix.py:C901
+    resonances/matrix/three_body_matrix.py:B007
