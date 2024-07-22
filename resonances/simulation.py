@@ -60,6 +60,12 @@ class Simulation:
 
         self.save_additional_data = resonances.config.get('save.additional.data')
         self.plot = resonances.config.get('plot')
+        self.plot_path = resonances.config.get('plot.path')
+        if resonances.config.has('plot.only.identified'):
+            self.plot_only_identified = resonances.config.get('plot.only.identified')
+        else:
+            self.plot_only_identified = False
+        self.image_type = 'png'
 
         self.initial_data_source = 'astdys'
 
@@ -92,6 +98,9 @@ class Simulation:
                 body.mass = elem['mass']
         else:
             raise Exception('You can add body only by its number or all orbital elements')
+
+        if elem is None:
+            return None
 
         body.initial_data = elem
         body.name = name
@@ -171,7 +180,10 @@ class Simulation:
 
     def identify_librations(self):
         for body in self.bodies:
-            resonances.libration.body(self, body)
+            try:
+                resonances.libration.body(self, body)
+            except Exception as e:
+                print(f"Error identifying librations for {body.name}: {str(e)}")
 
     def shall_save_body(self, body: resonances.Body):
         if self.save:
@@ -183,13 +195,15 @@ class Simulation:
     def shall_plot_body(self, body: resonances.Body):
         if self.plot:
             return True
+        elif (self.plot_only_identified) and (body.status > 0):
+            return True
         elif (self.save_only_undetermined) and (body.status < 0):
             return True
         return False
 
     def plot_body(self, body: resonances.Body):
         self.check_or_create_save_path()
-        plot.body(self, body)
+        plot.body(self, body, image_type=self.image_type)
 
     def save_body(self, body: resonances.Body):
         self.check_or_create_save_path()
@@ -214,24 +228,28 @@ class Simulation:
     def get_simulation_summary(self) -> pd.DataFrame:
         data = []
         for body in self.bodies:
-            s = ', '.join('({:.0f}, {:.0f})'.format(left, right) for left, right in body.periodogram_peaks_overlapping)
-            data.append(
-                [
-                    body.name,
-                    body.status,
-                    body.libration_pure,
-                    body.libration_metrics['num_libration_periods'],
-                    body.libration_metrics['max_libration_length'],
-                    body.monotony,
-                    s,
-                    body.initial_data['a'],
-                    body.initial_data['e'],
-                    body.initial_data['inc'],
-                    body.initial_data['Omega'],
-                    body.initial_data['omega'],
-                    body.initial_data['M'],
-                ]
-            )
+            try:
+                s = ', '.join('({:.0f}, {:.0f})'.format(left, right) for left, right in body.periodogram_peaks_overlapping)
+                data.append(
+                    [
+                        body.name,
+                        body.status,
+                        body.libration_pure,
+                        body.libration_metrics['num_libration_periods'],
+                        body.libration_metrics['max_libration_length'],
+                        body.monotony,
+                        s,
+                        body.initial_data['a'],
+                        body.initial_data['e'],
+                        body.initial_data['inc'],
+                        body.initial_data['Omega'],
+                        body.initial_data['omega'],
+                        body.initial_data['M'],
+                    ]
+                )
+            except Exception as e:
+                print(f"Error getting summary for {body.name}: {str(e)}.\n\n{str(body)}")
+
         df = pd.DataFrame(
             data,
             columns=[
@@ -267,6 +285,7 @@ class Simulation:
 
     def check_or_create_save_path(self):
         Path(self.save_path).mkdir(parents=True, exist_ok=True)
+        Path(self.plot_path).mkdir(parents=True, exist_ok=True)
 
     def list_of_planets(self):
         planets = [

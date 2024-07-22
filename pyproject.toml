@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "resonances"
-version = "0.2.7"
+version = "0.3.0"
 description = "Identification of mean-motion resonances"
 authors = ["Evgeny Smirnov <smirik@gmail.com>"]
 license = "MIT"

@@ -4,7 +4,7 @@ import numpy as np
 import resonances.config
 
 
-def body(sim, body: resonances.Body):
+def body(sim, body: resonances.Body, image_type='png'):
     plt.style.use('default')
 
     fig, axs = plt.subplots(6, 1, figsize=(10, 10))
@@ -77,6 +77,6 @@ def body(sim, body: resonances.Body):
     plt.tight_layout()
 
     if sim.plot is True:  # pragma: no cover
-        plt.savefig('{}/{}-{}.png'.format(sim.save_path, body.index_in_simulation, body.name))
+        plt.savefig('{}/{}-{}.{}'.format(sim.plot_path, body.index_in_simulation, body.name, image_type))
     elif sim.plot == 'show':  # pragma: no cover
         plt.show()
