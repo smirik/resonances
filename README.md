@@ -31,6 +31,15 @@ sim.plot_only_identified = True
 
 If it is `true`, then the app will plot every resonant asteroid even if `plot` is `False`. If `plot` is `True`, this option is ignored.
 
+3. New finder module (easy resonance identification):
+
+```python
+import resonances
+
+sim = resonances.finder.find([463, 490], planets=['Mars', 'Jupiter', 'Saturn'])
+sim.run()
+```
+
 ## Features
 
 The package:
