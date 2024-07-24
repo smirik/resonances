@@ -17,3 +17,4 @@ from .resonance.libration import libration
 import resonances.resonance.plot
 
 import resonances.data.const
+import resonances.finder

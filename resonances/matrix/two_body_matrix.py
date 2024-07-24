@@ -40,7 +40,7 @@ class TwoBodyMatrix(Matrix):
         return df
 
     @classmethod
-    def find_resonances(cls, a, sigma=0.02, planets=None):
+    def find_resonances(cls, a, sigma=0.1, planets=None):
         if cls.matrix is None:
             cls.load()
 
