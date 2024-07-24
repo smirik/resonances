@@ -2,7 +2,8 @@ import numpy as np
 
 
 class MMR:
-    def __init__(self, coeff, planets_names=None):
+
+    def __init__(self, coeff, planets_names=None, index_of_planets=None):
         self.coeff = np.array(coeff)
         if self.coeff[0] <= 0:
             raise Exception("The primary coefficient of the resonance should be greater than 0. Given {}.".format(self.coeff[0]))
@@ -20,6 +21,10 @@ class MMR:
             self.planets_names = planets_names
 
         self._resonant_axis = None
+        self.index_of_planets = index_of_planets
+
+    def __str__(self):
+        return self.to_s()
 
     def number_of_bodies(self):
         return len(self.coeff) / 2

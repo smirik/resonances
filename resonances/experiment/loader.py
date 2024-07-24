@@ -7,11 +7,7 @@ def create_simulation_from_json(json_file_src):
         c_config = json.load(read_file)
 
     sim = resonances.Simulation()
-    sim.setup(
-        save=c_config['save'],
-        plot=c_config['plot'],
-        save_path=c_config['save_path'],
-    )
+    sim.save, sim.plot, sim.save_path = c_config['save'], c_config['plot'], c_config['save_path']
     sim.create_solar_system()
 
     if 'integration.Nout' in c_config:

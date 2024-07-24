@@ -1,6 +1,4 @@
 import resonances
-from resonances.matrix.three_body_matrix import ThreeBodyMatrix
-from resonances.matrix.two_body_matrix import TwoBodyMatrix
 from resonances.data.astdys import astdys
 
 
@@ -12,8 +10,8 @@ def find(asteroids, planets=None):
 
     for asteroid in asteroids:
         elem = astdys.search(asteroid)
-        mmrs = ThreeBodyMatrix.find_resonances(elem['a'], planets=planets)
-        mmrs2 = TwoBodyMatrix.find_resonances(elem['a'], planets=planets)
+        mmrs = resonances.ThreeBodyMatrix.find_resonances(elem['a'], planets=planets)
+        mmrs2 = resonances.TwoBodyMatrix.find_resonances(elem['a'], planets=planets)
         mmrs = mmrs + mmrs2
         for mmr in mmrs:
             resonances.logger.info('Adding a possible resonance: {}'.format(mmr.to_short()))

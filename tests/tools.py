@@ -48,8 +48,6 @@ def create_test_simulation_for_solar_system(
     sim.save_path = 'cache/tests'
     sim.save_summary = save_summary
     sim.save = save
-    sim.save_additional_data = save_additional_data
-    sim.save_only_undetermined = save_only_undetermined
     sim.plot = plot
 
     return sim

@@ -2,16 +2,20 @@ import numpy as np
 import pandas as pd
 import rebound
 from pathlib import Path
-from typing import List
 import os
+from typing import List
 
 import resonances
 from resonances.data.astdys import astdys
-from resonances.resonance import plot
+import datetime
 
 
 class Simulation:
-    def __init__(self):
+    def __init__(self, name=None):
+        self.name = name
+        if self.name is None:
+            self.name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
         self.planets = self.list_of_planets()
 
         self.times = []
@@ -50,24 +54,15 @@ class Simulation:
             self.integrator_corrector = None
 
         self.save = resonances.config.get('save')
-        self.save_path = resonances.config.get('save.path')
+        self.save_path = f"{resonances.config.get('save.path')}/{self.name}"
         self.save_summary = resonances.config.get('save.summary')
-        self.save_additional_data = resonances.config.get('save.additional.data')
-        if resonances.config.has('save.only.undetermined'):
-            self.save_only_undetermined = resonances.config.get('save.only.undetermined')
-        else:
-            self.save_only_undetermined = False
 
-        self.save_additional_data = resonances.config.get('save.additional.data')
         self.plot = resonances.config.get('plot')
-        self.plot_path = resonances.config.get('plot.path')
-        if resonances.config.has('plot.only.identified'):
-            self.plot_only_identified = resonances.config.get('plot.only.identified')
-        else:
-            self.plot_only_identified = False
-        self.image_type = 'png'
+        self.plot_save = resonances.config.get('plot.save', True)
+        self.plot_path = f"{resonances.config.get('plot.path')}/{self.name}/images"
 
-        self.initial_data_source = 'astdys'
+        self.image_type = resonances.config.get('plot.image_type', 'png')
+        self.data_source = resonances.config.get('plot.image_type', 'data.source')
 
     def solar_system_full_filename(self) -> str:
         catalog_file = f"{os.getcwd()}/{resonances.config.get('solar_system_file')}"
@@ -81,14 +76,20 @@ class Simulation:
             self.sim = rebound.Simulation()
             if date != '':
                 self.sim.add(self.list_of_planets(), date=date)
-            elif self.initial_data_source == 'astdys':
+            elif self.data_source == 'astdys':
                 self.sim.add(self.list_of_planets(), date=f"{astdys.catalog_time()} 00:00")  # date of AstDyS current catalogue
             else:
                 self.sim.add(self.list_of_planets())
             self.sim.save(self.solar_system_full_filename())
 
-    def add_body(self, elem_or_num, mmr: resonances.MMR, name='asteroid'):
+    def add_body(self, elem_or_num, mmr, name='asteroid'):
         body = resonances.Body()
+
+        if isinstance(mmr, str):
+            mmr = [mmr]
+
+        if len(mmr) == 0:
+            raise Exception('You have to provide at least one resonance')
 
         if isinstance(elem_or_num, int) or (isinstance(elem_or_num, str)):
             elem = astdys.search(elem_or_num)
@@ -104,8 +105,10 @@ class Simulation:
 
         body.initial_data = elem
         body.name = name
-        body.mmr = mmr
-        body.index_of_planets = self.get_index_of_planets(mmr.planets_names)
+        body.mmrs = mmr
+
+        for elem in body.mmrs:
+            elem.index_of_planets = self.get_index_of_planets(elem.planets_names)
         self.bodies.append(body)
 
     def add_bodies_to_simulation(self):
@@ -162,98 +165,100 @@ class Simulation:
                     tmp.l,
                     tmp.Omega + tmp.omega,
                 )
-                planets = []
-                for index in body.index_of_planets:
-                    planets.append(os[index - 1])
+                for mmr in body.mmrs:
+                    planets = []
+                    for index in mmr.index_of_planets:
+                        planets.append(os[index - 1])
 
-                body.angle[i] = body.mmr.calc_angle(os[body.index_in_simulation - 1], planets)
+                    body.angle(mmr)[i] = mmr.calc_angle(os[body.index_in_simulation - 1], planets)
 
         self.identify_librations()
+
         if self.save_summary:
             self.save_simulation_summary()
-        if self.save or self.plot or self.save_only_undetermined:
-            for body in self.bodies:
-                if self.shall_save_body(body):
-                    self.save_body(body)
-                if self.shall_plot_body(body):
-                    self.plot_body(body)
+
+        for body in self.bodies:
+            for mmr in body.mmrs:
+                if self.shall_save_body_in_mmr(body, mmr):
+                    self.save_body_in_mmr(body, mmr)
+                if self.shall_plot_body_in_mmr(body, mmr):
+                    self.plot_body_in_mmr(body, mmr)
 
     def identify_librations(self):
         for body in self.bodies:
             try:
                 resonances.libration.body(self, body)
             except Exception as e:
-                print(f"Error identifying librations for {body.name}: {str(e)}")
+                resonances.logger.error(f"Error identifying librations for {body.name}: {str(e)}")
+                raise e
 
-    def shall_save_body(self, body: resonances.Body):
-        if self.save:
+    def shall_save_body_in_mmr(self, body: resonances.Body, mmr: resonances.MMR):
+        return self.process_status(body, mmr, self.save)
+
+    def shall_plot_body_in_mmr(self, body: resonances.Body, mmr: resonances.MMR):
+        return self.process_status(body, mmr, self.plot)
+
+    def process_status(self, body: resonances.Body, mmr: resonances.MMR, variable):
+        if variable is None:
+            return False
+
+        if variable == 'all':
             return True
-        elif (self.save_only_undetermined) and (body.status < 0):
+
+        if (variable == 'resonant') and (body.statuses[mmr.to_s()] > 0):
             return True
+
+        if (variable == 'nonzero') and (body.statuses[mmr.to_s()] != 0):
+            return True
+
+        if (variable == 'candidates') and (body.statuses[mmr.to_s()] < 0):
+            return True
+
         return False
 
-    def shall_plot_body(self, body: resonances.Body):
-        if self.plot:
-            return True
-        elif (self.plot_only_identified) and (body.status > 0):
-            return True
-        elif (self.save_only_undetermined) and (body.status < 0):
-            return True
-        return False
-
-    def plot_body(self, body: resonances.Body):
+    def plot_body_in_mmr(self, body: resonances.Body, mmr: resonances.MMR):
         self.check_or_create_save_path()
-        plot.body(self, body, image_type=self.image_type)
+        resonances.resonance.plot.body(self, body, mmr, image_type=self.image_type)
 
-    def save_body(self, body: resonances.Body):
+    def save_body_in_mmr(self, body: resonances.Body, mmr: resonances.MMR):
         self.check_or_create_save_path()
-        df_data = self.get_body_data(body)
-        df = pd.DataFrame(data=df_data)
-        df.to_csv('{}/data-{}-{}.csv'.format(self.save_path, body.index_in_simulation, body.name))
-
-    def get_body_data(self, body: resonances.Body):
-        df_data = {
-            'times': self.times / (2 * np.pi),
-            'angle': body.angle,
-            'a': body.axis,
-            'e': body.ecc,
-        }
-        if self.save_additional_data and (body.periodogram_power is not None):
-            len_diff = len(body.angle) - len(body.periodogram_power)
-            df_data['periodogram'] = np.append(body.periodogram_power, np.zeros(len_diff))
-            df_data['a_filtered'] = body.axis_filtered
-            df_data['a_periodogram'] = np.append(body.axis_periodogram_power, np.zeros(len_diff))
-        return df_data
+        df_data = body.mmr_to_dict(mmr)
+        if df_data is not None:
+            df = pd.DataFrame(data=df_data)
+            df.to_csv('{}/data-{}-{}.csv'.format(self.save_path, body.name, mmr.to_s()))
 
     def get_simulation_summary(self) -> pd.DataFrame:
         data = []
         for body in self.bodies:
-            try:
-                s = ', '.join('({:.0f}, {:.0f})'.format(left, right) for left, right in body.periodogram_peaks_overlapping)
-                data.append(
-                    [
-                        body.name,
-                        body.status,
-                        body.libration_pure,
-                        body.libration_metrics['num_libration_periods'],
-                        body.libration_metrics['max_libration_length'],
-                        body.monotony,
-                        s,
-                        body.initial_data['a'],
-                        body.initial_data['e'],
-                        body.initial_data['inc'],
-                        body.initial_data['Omega'],
-                        body.initial_data['omega'],
-                        body.initial_data['M'],
-                    ]
-                )
-            except Exception as e:
-                print(f"Error getting summary for {body.name}: {str(e)}.\n\n{str(body)}")
+            for mmr in body.mmrs:
+                try:
+                    s = ', '.join('({:.0f}, {:.0f})'.format(left, right) for left, right in body.periodogram_peaks_overlapping[mmr.to_s()])
+                    data.append(
+                        [
+                            body.name,
+                            mmr.to_s(),
+                            body.statuses[mmr.to_s()],
+                            body.libration_pure[mmr.to_s()],
+                            body.libration_metrics[mmr.to_s()]['num_libration_periods'],
+                            body.libration_metrics[mmr.to_s()]['max_libration_length'],
+                            body.monotony[mmr.to_s()],
+                            s,
+                            body.initial_data['a'],
+                            body.initial_data['e'],
+                            body.initial_data['inc'],
+                            body.initial_data['Omega'],
+                            body.initial_data['omega'],
+                            body.initial_data['M'],
+                        ]
+                    )
+                except Exception as e:
+                    resonances.logger.error(f"Error getting summary for {body.name} and {mmr.to_s()}: {str(e)}.\n\n{str(body)}")
 
         df = pd.DataFrame(
             data,
             columns=[
                 'name',
+                'mmr',
                 'status',
                 'pure',
                 'num_libration_periods',
@@ -273,7 +278,6 @@ class Simulation:
     def save_simulation_summary(self) -> pd.DataFrame:
         self.check_or_create_save_path()
         df = self.get_simulation_summary()
-
         summary_filename = '{}/summary.csv'.format(self.save_path)
         summary_file = Path(summary_filename)
         if summary_file.exists():
@@ -308,20 +312,6 @@ class Simulation:
         for planet in planets_names:
             arr.append(self.planets.index(planet))
         return arr
-
-    def setup(self, save=None, save_path=None, save_only_undetermined=None, plot=None, tmax=None, Nout=None):
-        if save is not None:
-            self.save = save
-        if save_only_undetermined:
-            self.save_only_undetermined = save_only_undetermined
-        if save_path is not None:
-            self.save_path = save_path
-        if plot is not None:
-            self.plot = plot
-        if tmax is not None:
-            self.tmax = tmax
-        if Nout is not None:
-            self.Nout = int(Nout)
 
     @property
     def tmax(self):

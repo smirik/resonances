@@ -13,10 +13,12 @@ class config:
     config = None
 
     @classmethod
-    def get(cls, key):
+    def get(cls, key, default=None):
         try:
             value = cls.config[key]
         except KeyError:
+            if default is not None:
+                return default
             raise Exception('There is no config with key = {}. The full config: {}'.format(key, json.dumps(cls.config)))
         except Exception:
             raise

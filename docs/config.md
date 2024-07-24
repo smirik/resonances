@@ -28,10 +28,10 @@ import resonances
 sim = resonances.Simulation()
 ```
 
--   `sim.initial_data_source` (str): can have two options - `astdys` or `nasa`. It defines what source should be used to gather initial data for the asteroids if they are passed as numbers (without orbital elements). **This is in progress** and only `astdys` should be used at the moment.
--   `sim.save` (bool): whether or not save the result of the simulation (almost always should be `True`)
+-   `sim.data_source` (str): can have two options - `astdys` or `nasa`. It defines what source should be used to gather initial data for the asteroids if they are passed as numbers (without orbital elements). **This is in progress** and only `astdys` should be used at the moment.
+-   `sim.save` (string or None): whether or not save the result of the simulation. There are five options: `all`, `nonzero`, `resonant`, `candidates`, `None`. `nonzeri` will save all resonant cases and all cases that are unclear and require manual verification. `candidates` will save only those that require manual verification.
 -   `sim.save_summary` (bool): save summary of the simulation as a dataframe (available through `get_simulation_summary()` method)
--   `sim.save_additional_data` (bool): whether or not to save periodogram data for the resonant angle and semi-major axis
+-   `sim.data
 
 ## Saving options
 
@@ -40,8 +40,8 @@ sim = resonances.Simulation()
 -   `plot.path` (str): path to save plots.
 -   `save.summary` (bool): if `true`, then the app will create a file called `result.csv` where the results of the whole simulation (with some additional data) will be stored. In other words, it is a summary of the simulation and its result.
 -   `save.additional.data` (bool): if `true`, then for each object, the app will add additional information: filtered values of semi-major axis and periodograms data.
--   `save.only.undetermined` (bool): if `true`, then the data will be saved only for those objects whose statuses are lower than `0` (possible pure or transient librators). This option requires `save` to be `true` and takes into account the value of `save.additional.data`. It does not affect `save.summary`.
--   `plot` (bool): if `true`, then for each object, the app will create a plot containing angle, filtered axis, periodograms, and eccentricity. It works even if `save` is `false`. If `save.only.undetermined` is `true`, then the app will create figures **only** for the bodies with the negative statuses.
+-   `plot` (string or None): there are three options: `all`, `nonzero`, `resonant`, `candidates`, `None` (the same as for `sim.save`).
+-   `plot.save` (bool): save plot as a file (if true) or just show (if false)
 -   `plot.only.identified` (bool): if `true`, then the app will plot every resonant asteroid even if `plot` is `False`. If `plot` is `True`, this option is ignored.
 
 ## Libration options

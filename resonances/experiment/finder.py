@@ -17,7 +17,7 @@ def run(mmr: resonances.MMR, dump=100, max_iterations=1000, plot=False):
             break
 
         sim = resonances.Simulation()
-        sim.setup(save=True, save_path='cache/finder', plot=plot, save_only_undetermined=True)
+        sim.save, sim.save_path, sim.plot, sim.save_only_undetermined = False, 'cache/finder', plot, True
         sim.create_solar_system()
 
         # Find the number of calculations for a given step. It varies for the last one.
