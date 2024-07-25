@@ -41,7 +41,7 @@ sim = resonances.Simulation()
 -   `save.summary` (bool): if `true`, then the app will create a file called `result.csv` where the results of the whole simulation (with some additional data) will be stored. In other words, it is a summary of the simulation and its result.
 -   `save.additional.data` (bool): if `true`, then for each object, the app will add additional information: filtered values of semi-major axis and periodograms data.
 -   `plot` (string or None): there are three options: `all`, `nonzero`, `resonant`, `candidates`, `None` (the same as for `sim.save`).
--   `plot.save` (bool): save plot as a file (if true) or just show (if false)
+-   `plot.type` (str): `save` - save plot as a file, `show` - just show (if false), `both` - both options. Valid only for plots specified by `plot`.
 -   `plot.only.identified` (bool): if `true`, then the app will plot every resonant asteroid even if `plot` is `False`. If `plot` is `True`, this option is ignored.
 
 ## Libration options

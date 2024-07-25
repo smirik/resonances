@@ -1,10 +1,10 @@
+import astdys.util
 import resonances
+import astdys
 
 
 # 463 Lola
 def get_3body_elements_sample():
-    463, 0.63690730765078, 5.753528892504344, 6.136002589657356, 11.79, 60000.0
-
     return {
         "a": 2.398473292330785,
         "e": 0.22009324739445424,
@@ -29,14 +29,10 @@ def get_2body_elements_sample():
     }
 
 
-def create_test_simulation_for_solar_system(
-    save=False, plot=False, save_summary=False, save_additional_data=False, save_only_undetermined=False
-):
+def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=False):
     sim = resonances.Simulation()
 
-    from resonances.util import convert_mjd_to_date
-
-    sim.create_solar_system(date=convert_mjd_to_date(60000.0))
+    sim.create_solar_system(date=astdys.util.convert_mjd_to_date(60000.0))
 
     # create to speedup
     sim.tmax = 20
@@ -46,6 +42,7 @@ def create_test_simulation_for_solar_system(
     sim.integrator = 'whfast'
     sim.integrator_corrector = None
     sim.save_path = 'cache/tests'
+    sim.plot_path = 'cache/tests'
     sim.save_summary = save_summary
     sim.save = save
     sim.plot = plot
@@ -55,6 +52,6 @@ def create_test_simulation_for_solar_system(
 
 def add_test_asteroid_to_simulation(sim):
     elem = get_3body_elements_sample()
-    mmr = resonances.ThreeBody('4J-2S-1')
+    mmr = resonances.create_mmr('4J-2S-1')
     sim.add_body(elem, mmr, name='asteroid')
     return sim

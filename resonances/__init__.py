@@ -12,7 +12,6 @@ from resonances.matrix.three_body_matrix import ThreeBodyMatrix
 from resonances.matrix.two_body_matrix import TwoBodyMatrix
 from resonances.body import Body
 from .simulation import Simulation
-from resonances.data.astdys import astdys
 
 from .resonance.libration import libration
 

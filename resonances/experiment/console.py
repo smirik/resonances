@@ -5,11 +5,12 @@ import argparse
 import resonances
 from resonances.matrix.three_body_matrix import ThreeBodyMatrix
 from resonances.matrix.two_body_matrix import TwoBodyMatrix
-from resonances.data.astdys import astdys
 
 from resonances.experiment import shape
 from resonances.experiment import loader
 from resonances.experiment import finder
+
+import astdys
 
 parser = argparse.ArgumentParser(description='')
 

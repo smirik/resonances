@@ -1,10 +1,10 @@
-import resonances
-from resonances.data.astdys import astdys
 import math
+import astdys
+import resonances
 
 
 def run(mmr: resonances.MMR, dump=100, max_iterations=1000, plot=False):
-    df = astdys.search_possible_resonant_asteroids(mmr)
+    df = astdys.search_by_axis(mmr.resonant_axis)
     asteroids = df['num'].tolist()
 
     num_particles = len(asteroids)

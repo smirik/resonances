@@ -56,10 +56,10 @@ class Body:
             s += mmr.to_s() + ', '
         return s
 
-    def mmr_to_dict(self, mmr: MMR):
+    def mmr_to_dict(self, mmr: MMR, times: np.ndarray):
         try:
             df_data = {
-                'times': self.times / (2 * np.pi),
+                'times': times / (2 * np.pi),
                 'angle': self.angles[mmr.to_s()],
                 'a': self.axis,
                 'e': self.ecc,
@@ -69,7 +69,8 @@ class Body:
                 df_data['periodogram'] = np.append(self.periodogram_power[mmr.to_s()], np.zeros(len_diff))
                 df_data['a_filtered'] = self.axis_filtered
                 df_data['a_periodogram'] = np.append(self.axis_periodogram_power, np.zeros(len_diff))
-        except Exception:
+        except Exception as e:
+            raise e
             return None
         return df_data
 

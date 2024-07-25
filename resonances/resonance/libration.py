@@ -261,7 +261,6 @@ class libration:
             pure = resonances.libration.pure(body.angle(mmr))
 
             librations = resonances.libration.circulation(sim.times / (2 * np.pi), body.angle(mmr))
-            print(librations)
             libration_metrics = resonances.libration.circulation_metrics(librations)
             monotony = resonances.libration.monotony_estimation(body.angle(mmr))
 

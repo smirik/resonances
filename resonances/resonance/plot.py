@@ -11,7 +11,7 @@ def body(sim, body: resonances.Body, mmr: resonances.MMR, image_type='png'):
     fig, axs = plt.subplots(6, 1, figsize=(10, 10))
 
     fig.suptitle(
-        "{}, resonance = {}, status = {}".format(body.name, mmr.to_short(), body.status),
+        "{}, resonance = {}, status = {}".format(body.name, mmr.to_short(), body.statuses[mmr.to_s()]),
         fontsize=14,
     )
 
@@ -79,7 +79,8 @@ def body(sim, body: resonances.Body, mmr: resonances.MMR, image_type='png'):
 
     plt.tight_layout()
 
-    if sim.plot_save is True:
+    if sim.plot_type in ['both', 'save']:
         plt.savefig('{}/{}_{}.{}'.format(sim.plot_path, body.name, mmr.to_s(), image_type))
-    else:
+
+    if sim.plot_type in ['both', 'show']:
         plt.show()

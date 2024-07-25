@@ -21,6 +21,9 @@ publish-test:
 publish:
 	poetry publish --build
 
+coverage:
+	poetry run coverage report -m
+
 clean:
 	rm -f cache/allnum.cat
 	rm -f cache/solar.bin

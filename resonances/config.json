@@ -20,7 +20,7 @@
     "save.path": "cache",
     "plot.path": "cache",
     "plot": "resonant",
-    "plot.save": true,
+    "plot.type": "save",
     "plot.image_type": "png",
     "data.source": "astdys",
     "catalog": "cache/allnum.csv",

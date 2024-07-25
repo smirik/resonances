@@ -1,5 +1,5 @@
 import resonances
-from resonances.data.astdys import astdys
+import astdys
 from resonances.matrix.three_body_matrix import ThreeBodyMatrix
 from resonances.matrix.two_body_matrix import TwoBodyMatrix
 

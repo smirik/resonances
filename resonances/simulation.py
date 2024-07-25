@@ -6,7 +6,7 @@ import os
 from typing import List
 
 import resonances
-from resonances.data.astdys import astdys
+import astdys
 import datetime
 
 
@@ -58,11 +58,11 @@ class Simulation:
         self.save_summary = resonances.config.get('save.summary')
 
         self.plot = resonances.config.get('plot')
-        self.plot_save = resonances.config.get('plot.save', True)
+        self.plot_type = resonances.config.get('plot.type', 'both')
         self.plot_path = f"{resonances.config.get('plot.path')}/{self.name}/images"
 
         self.image_type = resonances.config.get('plot.image_type', 'png')
-        self.data_source = resonances.config.get('plot.image_type', 'data.source')
+        self.data_source = resonances.config.get('data.source', 'astdys')
 
     def solar_system_full_filename(self) -> str:
         catalog_file = f"{os.getcwd()}/{resonances.config.get('solar_system_file')}"
@@ -75,10 +75,14 @@ class Simulation:
         else:
             self.sim = rebound.Simulation()
             if date != '':
+                print('here')
                 self.sim.add(self.list_of_planets(), date=date)
             elif self.data_source == 'astdys':
+                print('adding solar')
+                print(f"{astdys.catalog_time()}")
                 self.sim.add(self.list_of_planets(), date=f"{astdys.catalog_time()} 00:00")  # date of AstDyS current catalogue
             else:
+                print('here3')
                 self.sim.add(self.list_of_planets())
             self.sim.save(self.solar_system_full_filename())
 
@@ -86,6 +90,9 @@ class Simulation:
         body = resonances.Body()
 
         if isinstance(mmr, str):
+            mmr = [resonances.create_mmr(mmr)]
+
+        if isinstance(mmr, resonances.MMR):
             mmr = [mmr]
 
         if len(mmr) == 0:
@@ -173,7 +180,9 @@ class Simulation:
                     body.angle(mmr)[i] = mmr.calc_angle(os[body.index_in_simulation - 1], planets)
 
         self.identify_librations()
+        self.save_data()
 
+    def save_data(self):
         if self.save_summary:
             self.save_simulation_summary()
 
@@ -222,7 +231,7 @@ class Simulation:
 
     def save_body_in_mmr(self, body: resonances.Body, mmr: resonances.MMR):
         self.check_or_create_save_path()
-        df_data = body.mmr_to_dict(mmr)
+        df_data = body.mmr_to_dict(mmr, self.times)
         if df_data is not None:
             df = pd.DataFrame(data=df_data)
             df.to_csv('{}/data-{}-{}.csv'.format(self.save_path, body.name, mmr.to_s()))

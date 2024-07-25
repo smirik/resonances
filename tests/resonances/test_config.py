@@ -9,11 +9,13 @@ def test_get_and_has():
     assert resonances.config.has('plot.path') is True
     assert 'cache' == resonances.config.get('plot.path')
 
+    print(resonances.config.get('plot'))
+    print('--endplot--')
     assert resonances.config.has('plot') is True
-    assert resonances.config.get('plot') is True
+    assert resonances.config.get('plot') == 'resonant'
 
     assert resonances.config.has('save') is True
-    assert resonances.config.get('save') is True
+    assert resonances.config.get('save') == 'resonant'
 
     assert resonances.config.has('save.summary') is True
     assert resonances.config.get('save.summary') is True

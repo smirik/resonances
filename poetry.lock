@@ -13,13 +13,13 @@ files = [
 
 [[package]]
 name = "astdys"
-version = "0.9.1"
+version = "0.9.2"
 description = "AstDyS wrapper in python"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "astdys-0.9.1-py3-none-any.whl", hash = "sha256:96bb03fd79c18b0cab31d43f6a964405eed95157fedabac0013337b6b58a774d"},
-    {file = "astdys-0.9.1.tar.gz", hash = "sha256:f73806e7d6f7cc838aca2f9a1e043349149be4cf23671cebb823b376f24a0286"},
+    {file = "astdys-0.9.2-py3-none-any.whl", hash = "sha256:b6f19f37c30930a173b84d90f2e9b36267a46a4211527789c3167201ab7e0629"},
+    {file = "astdys-0.9.2.tar.gz", hash = "sha256:ad02b0e1c679848cec8459cec700b85047885484b4a61d55295549addae40554"},
 ]
 
 [package.dependencies]
@@ -2283,13 +2283,13 @@ diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
 name = "pytest"
-version = "8.3.1"
+version = "8.3.2"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pytest-8.3.1-py3-none-any.whl", hash = "sha256:e9600ccf4f563976e2c99fa02c7624ab938296551f280835ee6516df8bc4ae8c"},
-    {file = "pytest-8.3.1.tar.gz", hash = "sha256:7e8e5c5abd6e93cb1cc151f23e57adc31fcf8cfd2a3ff2da63e23f732de35db6"},
+    {file = "pytest-8.3.2-py3-none-any.whl", hash = "sha256:4ba08f9ae7dcf84ded419494d229b48d0903ea6407b030eaec46df5e6a73bba5"},
+    {file = "pytest-8.3.2.tar.gz", hash = "sha256:c132345d12ce551242c87269de812483f5bcc87cdbb4722e48487ba194f9fdce"},
 ]
 
 [package.dependencies]
@@ -3029,4 +3029,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "b924c591858b24432c888be004f4e420d554ff9c17cd44c3253a97e9f6abc9f3"
+content-hash = "e412657912fa5951130a97bd7ad545d8f7736190da3c1711116c394c0141c7ff"
