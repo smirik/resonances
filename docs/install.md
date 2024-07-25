@@ -41,17 +41,13 @@ poetry add resonances
 ```python
 import resonances
 
-mmr = resonances.create_mmr('1J-1')
-sim = resonances.Simulation()
-sim.create_solar_system()
-sim.add_body(588, mmr, name='Asteroid 558')
-sim.dt=1.0
+sim = resonances.check(463, '4J-2S-1')
 sim.run()
 ```
 
 Note that the first run might take a while because the app needs to download AstDyS catalogue and initial data for the Solar system. You can see the progress in `cache/resonances.log` file.
 
-**F.** Now you can see the results in `cache` folder.
+**F.** Now you can see the results in `cache/%current_datetime%` folder.
 
 ## PIP
 
@@ -96,6 +92,8 @@ You may verify the installation by running tests:
 ```bash
 poetry run pytest -v tests
 ```
+
+or simply `make test`
 
 Note that you have to install prior to these steps `python` (preferably, through `pyenv`) and set up a virtual environment for poetry.
 

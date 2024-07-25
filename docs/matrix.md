@@ -67,12 +67,10 @@ The following code will print the numbers of asteroids that might be in the thre
 
 ```python
 import resonances
+import astdys
 
-from resonances.data.astdys import astdys
 df = astdys.search_by_axis(resonances.create_mmr('4J-2S-1').resonant_axis)
 print(df['num'].tolist())
 ```
 
 Note that the method `search_by_axis` returns [Pandas DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html), not simply a list or a dict. The DataFrame consists of the number of an asteroid and its orbital elements. You can use `df.head()` to see its structure.
-
-You can easily combine this method with the Simulation to verify are these candidates in the resonance or not. An example of such implementation is described in [Console commands](console.md).

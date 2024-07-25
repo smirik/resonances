@@ -21,7 +21,7 @@ if resonances.config.has('integration.dt'):
 
 ## Simulation properties
 
-A resonances Simulation object has several properties that can be defined before running.
+A resonances Simulation object has several properties that can be defined before running. They serve the same purpose as the config values (note that a comma is replaced with an underscore: instead of `plot.type`, the simulation object has `sim.plot_type`).
 
 ```python
 import resonances
@@ -29,20 +29,15 @@ sim = resonances.Simulation()
 ```
 
 -   `sim.data_source` (str): can have two options - `astdys` or `nasa`. It defines what source should be used to gather initial data for the asteroids if they are passed as numbers (without orbital elements). **This is in progress** and only `astdys` should be used at the moment.
--   `sim.save` (string or None): whether or not save the result of the simulation. There are five options: `all`, `nonzero`, `resonant`, `candidates`, `None`. `nonzeri` will save all resonant cases and all cases that are unclear and require manual verification. `candidates` will save only those that require manual verification.
--   `sim.save_summary` (bool): save summary of the simulation as a dataframe (available through `get_simulation_summary()` method)
--   `sim.data
 
 ## Saving options
 
 -   `save` (bool): if `true`, the results of the integration (including the plots) will be saved. If it is `false`, nothing will be saved. All options below work only if `save` is true.
--   `save.path` (str): path to save CSV files (for all CSV files).
+-   `save` (string or None): whether or not save the result of the simulation. There are five options: `all`, `nonzero`, `resonant`, `candidates`, `None`. `nonzero` will save all resonant cases and all cases that are unclear and require manual verification. `candidates` will save only those that require manual verification.
+-   `plot` : the same as for `sim.save`.
+-   `save_summary` (bool): save summary of the simulation as a dataframe (available through `get_simulation_summary()` method)
 -   `plot.path` (str): path to save plots.
--   `save.summary` (bool): if `true`, then the app will create a file called `result.csv` where the results of the whole simulation (with some additional data) will be stored. In other words, it is a summary of the simulation and its result.
--   `save.additional.data` (bool): if `true`, then for each object, the app will add additional information: filtered values of semi-major axis and periodograms data.
--   `plot` (string or None): there are three options: `all`, `nonzero`, `resonant`, `candidates`, `None` (the same as for `sim.save`).
 -   `plot.type` (str): `save` - save plot as a file, `show` - just show (if false), `both` - both options. Valid only for plots specified by `plot`.
--   `plot.only.identified` (bool): if `true`, then the app will plot every resonant asteroid even if `plot` is `False`. If `plot` is `True`, this option is ignored.
 
 ## Libration options
 
@@ -84,13 +79,13 @@ sim.sim.dt = 0.01
 
 `resonances` will not override these values. It sets it only once through initialisation from config.
 
-## AstDyS and Catalogue options
+<!-- ## AstDyS and Catalogue options
 
 -   `astdys.catalog.url` (str): the URl of the AstDyS catalogue used to download at the first run.
 -   `astdys.catalog` (str): if AstDyS catalogue is already downloaded, you may specify its location. By default, `cache/allnum.cat`.
 -   `astdys.date` (str): the date of the data in AstDyS catalogue converted from MJD to the datetime format. By default, `2020-12-17 00:00`.
 -   `catalog` (str): the path of the file used to store the converted AstDyS catalogue.
--   `catalog.date` (str): the date of the current converted AstDyS catalogue.
+-   `catalog.date` (str): the date of the current converted AstDyS catalogue. -->
 
 ## Matrices
 

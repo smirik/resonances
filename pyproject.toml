@@ -30,18 +30,9 @@ astropy = "^6.1.2"
 rebound = "^3.23.2"
 # rebound = "^4.4.2"
 astdys = ">=0.9.2"
-
-[tool.poetry.scripts]
-identify-asteroids = "resonances.experiment.console:asteroids"
-ia = "resonances.experiment.console:asteroids"
-identify-quick = "resonances.experiment.console:quick"
-iq = "resonances.experiment.console:quick"
-simulation-shape = "resonances.experiment.console:calc_shape"
-ss = "resonances.experiment.console:calc_shape"
-identify-resonances = "resonances.experiment.console:identifier"
-ir = "resonances.experiment.console:identifier"
-asteroids-in-resonance = "resonances.experiment.console:asteroids_in_resonance"
-ain = "resonances.experiment.console:asteroids_in_resonance"
+mkdocs = "1.4.2"
+mkdocs-jupyter = "0.22.0"
+lxml-html-clean = "^0.1.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^8.3.1"

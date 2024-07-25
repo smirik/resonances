@@ -12,7 +12,7 @@ The module `resonances.libration` uses several metrics to resolve whether or not
 4. `num_libration_periods`: it provides the number of intervals of librations within the boundaries. For example, if an asteroid is in a pure resonance, there are no periods of oscillations; hence, the number of libration periods is equal to `1`. If there is a slow circulation of the resonant argument with, let's say, three boundary crossing, the number of libration periods will equal `4`. Every time when there is a boundary crossing, this number is increased by one, except the case where there is apocentric libration or similar.
 5. `monotony`: a very simple metric that calculates the percentage of the points when the value of the resonant angle for the current time is less than the same value for the previous step. If the resonant angle librates, it means that this value should be close to `0.5`.
 
-All these values are available for `Body` objects after the integration. They are available in the output file `summary.csv`. The time series (if the appropriate flag is set) are also stored in CSV files in the output directory.
+All these values are available for `Body` objects after the integration. Note that these variables are often dictonaries where keys are resonances (because they depend on the resonance examined). They are available in the output file `summary.csv`. The time series (if the appropriate flag is set) are also stored in CSV files in the output directory.
 
 You may invoke or recalculate them in the following way:
 

@@ -3,7 +3,7 @@ import pandas as pd
 import rebound
 from pathlib import Path
 import os
-from typing import List
+from typing import List, Union
 
 import resonances
 import astdys
@@ -82,7 +82,7 @@ class Simulation:
                 self.sim.add(self.list_of_planets())
             self.sim.save(self.solar_system_full_filename())
 
-    def add_body(self, elem_or_num, mmr, name='asteroid'):
+    def add_body(self, elem_or_num, mmr: Union[str, resonances.MMR, List[resonances.MMR]], name='asteroid'):
         body = resonances.Body()
 
         if isinstance(mmr, str):
