@@ -12,7 +12,7 @@ def run_around_tests():
     resonances.config.set('plot.type', None)
     Path('cache/tests').mkdir(parents=True, exist_ok=True)
     yield
-    resonances.config.set('plot', 'resonant')
+    resonances.config.set('plot', 'nonzero')
     resonances.config.set('plot.type', 'save')
     shutil.rmtree('cache/tests')
 

@@ -28,9 +28,6 @@ def find(asteroids: Union[int, str, List[Union[int, str]]], planets=None) -> res
         sim.add_body(elem, mmrs, f"{asteroid}")
         resonances.logger.info('Adding a possible resonance for an asteroid {} - {}'.format(asteroid, ', '.join(map(str, elems.values()))))
 
-    # default settings
-    sim.dt = 1
-    sim.plot = 'nonzero'
     return sim
 
 
@@ -50,9 +47,6 @@ def check(asteroids: Union[int, str, List[Union[int, str]]], mmr: Union[resonanc
         sim.add_body(elem, mmr, f"{asteroid}")
         resonances.logger.info('Adding a possible resonance for an asteroid {} - {}'.format(asteroid, mmr.to_s()))
 
-    # default settings
-    sim.dt = 1
-    sim.plot = 'nonzero'
     return sim
 
 
@@ -71,8 +65,6 @@ def find_asteroids_in_mmr(mmr: Union[resonances.MMR, str], sigma=0.1, per_iterat
     for i, chunk in enumerate(chunks):
         sim = resonances.Simulation()
         sim.create_solar_system()
-        sim.dt = 1
-        sim.plot = 'nonzero'
         if save_path is not None:
             sim.save_path = save_path
             sim.plot_path = plot_path
