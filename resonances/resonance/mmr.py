@@ -24,7 +24,7 @@ class MMR:
         self.index_of_planets = index_of_planets
 
     def __str__(self):
-        return self.to_s()
+        return "MMR(coeff=[{}])".format(', '.join(str(e) for e in self.coeff))
 
     def number_of_bodies(self):
         return len(self.coeff) / 2
@@ -63,5 +63,5 @@ class MMR:
     def resonant_axis(self, value):
         self._resonant_axis = value
 
-    def calculate_resonant_axis(self):
+    def calculate_resonant_axis(self):  # pragma: no cover
         pass

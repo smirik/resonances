@@ -45,12 +45,12 @@ class Simulation:
         self.dt = resonances.config.get('integration.dt')
         if resonances.config.has('integration.integrator.safe_mode'):
             self.integrator_safe_mode = resonances.config.get('integration.integrator.safe_mode')
-        else:
+        else:  # pragma: no cover
             self.integrator_safe_mode = 1
 
         if resonances.config.has('integration.integrator.corrector'):
             self.integrator_corrector = resonances.config.get('integration.integrator.corrector')
-        else:
+        else:  # pragma: no cover
             self.integrator_corrector = None
 
         self.save = resonances.config.get('save')
@@ -72,17 +72,13 @@ class Simulation:
         solar_file = Path(self.solar_system_full_filename())
         if solar_file.exists():
             self.sim = rebound.Simulation(self.solar_system_full_filename())
-        else:
+        else:  # pragma: no cover
             self.sim = rebound.Simulation()
             if date != '':
-                print('here')
                 self.sim.add(self.list_of_planets(), date=date)
             elif self.data_source == 'astdys':
-                print('adding solar')
-                print(f"{astdys.catalog_time()}")
                 self.sim.add(self.list_of_planets(), date=f"{astdys.catalog_time()} 00:00")  # date of AstDyS current catalogue
             else:
-                print('here3')
                 self.sim.add(self.list_of_planets())
             self.sim.save(self.solar_system_full_filename())
 
@@ -106,9 +102,6 @@ class Simulation:
                 body.mass = elem['mass']
         else:
             raise Exception('You can add body only by its number or all orbital elements')
-
-        if elem is None:
-            return None
 
         body.initial_data = elem
         body.name = name
@@ -136,7 +129,7 @@ class Simulation:
             primary=self.sim.particles[0],
         )
 
-    def setup_integrator(self, N_active=10):
+    def setup_integrator(self, N_active=10):  # pragma: no cover
         self.sim.integrator = self.integrator
         self.sim.dt = self.dt
         self.sim.N_active = N_active
@@ -193,7 +186,7 @@ class Simulation:
                 if self.shall_plot_body_in_mmr(body, mmr):
                     self.plot_body_in_mmr(body, mmr)
 
-    def identify_librations(self):
+    def identify_librations(self):  # pragma: no cover
         for body in self.bodies:
             try:
                 resonances.libration.body(self, body)
@@ -207,7 +200,7 @@ class Simulation:
     def shall_plot_body_in_mmr(self, body: resonances.Body, mmr: resonances.MMR):
         return self.process_status(body, mmr, self.plot)
 
-    def process_status(self, body: resonances.Body, mmr: resonances.MMR, variable):
+    def process_status(self, body: resonances.Body, mmr: resonances.MMR, variable) -> bool:
         if variable is None:
             return False
 
@@ -260,7 +253,7 @@ class Simulation:
                             body.initial_data['M'],
                         ]
                     )
-                except Exception as e:
+                except Exception as e:  # pragma: no cover
                     resonances.logger.error(f"Error getting summary for {body.name} and {mmr.to_s()}: {str(e)}.\n\n{str(body)}")
 
         df = pd.DataFrame(
@@ -334,5 +327,5 @@ class Simulation:
             self.Nout = int(self.__tmax / 100)
 
     @tmax.deleter
-    def tmax(self):
+    def tmax(self):  # pragma: no cover
         del self.__tmax

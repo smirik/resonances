@@ -46,6 +46,28 @@ def test_add_body():
     sim.add_body('7', mmr)  # add from astdys
     assert 3 == len(sim.bodies)
 
+    sim.add_body(1, '4J-2S-1')
+    assert 4 == len(sim.bodies)
+
+    elem['mass'] = 2.0
+    sim.add_body(elem, '5J-2S-2')
+    assert 5 == len(sim.bodies)
+    assert 2.0 == sim.bodies[4].initial_data['mass']
+
+    exception_text = 'You can add body only by its number or all orbital elements'
+    try:
+        sim.add_body(None, '5J-2S-2')
+        assert False, exception_text
+    except Exception as e:
+        assert str(e) == exception_text
+
+    exception_text = 'You have to provide at least one resonance'
+    try:
+        sim.add_body(2, [])
+        assert False, exception_text
+    except Exception as e:
+        assert str(e) == exception_text
+
 
 def test_add_bodies_to_simulation():
     sim = tools.create_test_simulation_for_solar_system()
@@ -60,8 +82,6 @@ def test_run():
     sim = tools.create_test_simulation_for_solar_system()
     tools.add_test_asteroid_to_simulation(sim)
     mmr = sim.bodies[0].mmrs[0]
-    print(sim.save_path)
-    print(sim.plot_path)
     sim.save = 'all'
     sim.plot = 'all'
     sim.save_summary = True
@@ -158,3 +178,49 @@ def test_get_index_of_planets(planets_and_indexes):
         planets_names = data[0]
         planets_indexes = data[1]
         assert all([a == b for a, b in zip(planets_indexes, sim.get_index_of_planets(planets_names))])
+
+
+def test_process_status():
+    sim = tools.create_test_simulation_for_solar_system()
+
+    body = resonances.Body()
+    mmr = resonances.create_mmr('4J-2S-1')
+    body.statuses[mmr.to_s()] = 2
+    sim.save = 'all'
+    assert True == sim.process_status(body, mmr, sim.save)
+    sim.save = 'resonant'
+    assert True == sim.process_status(body, mmr, sim.save)
+    sim.save = 'nonzero'
+    assert True == sim.process_status(body, mmr, sim.save)
+    sim.save = 'candidates'
+    assert False == sim.process_status(body, mmr, sim.save)
+
+    body.statuses[mmr.to_s()] = 0
+    sim.save = 'all'
+    assert True == sim.process_status(body, mmr, sim.save)
+    sim.save = 'resonant'
+    assert False == sim.process_status(body, mmr, sim.save)
+    sim.save = 'nonzero'
+    assert False == sim.process_status(body, mmr, sim.save)
+    sim.save = 'candidates'
+    assert False == sim.process_status(body, mmr, sim.save)
+
+    body.statuses[mmr.to_s()] = -2
+    sim.save = 'all'
+    assert True == sim.process_status(body, mmr, sim.save)
+    sim.save = 'resonant'
+    assert False == sim.process_status(body, mmr, sim.save)
+    sim.save = 'nonzero'
+    assert True == sim.process_status(body, mmr, sim.save)
+    sim.save = 'candidates'
+    assert True == sim.process_status(body, mmr, sim.save)
+
+    body.statuses[mmr.to_s()] = 0
+    sim.save = None
+    assert False == sim.process_status(body, mmr, sim.save)
+    sim.save = 'resonant'
+    assert False == sim.process_status(body, mmr, sim.save)
+    sim.save = 'nonzero'
+    assert False == sim.process_status(body, mmr, sim.save)
+    sim.save = 'candidates'
+    assert False == sim.process_status(body, mmr, sim.save)

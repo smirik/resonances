@@ -22,6 +22,7 @@ publish:
 	poetry publish --build
 
 coverage:
+	poetry run coverage run -m pytest -v tests/resonances
 	poetry run coverage report -m
 
 clean:

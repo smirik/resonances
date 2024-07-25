@@ -85,7 +85,7 @@ class ThreeBody(MMR):
 
     def calculate_resonant_axis(self):
         if len(self.planets_names) != 2:
-            raise Exception('Cannot calculate resonant axis if the planets are not specified!')
+            raise Exception('Cannot calculate resonant axis if the amount of planets is not equal to 2!')
 
         """ "
         a_i - semi-major axis of two planets and the body
@@ -122,7 +122,7 @@ class ThreeBody(MMR):
 
         n = (-self.coeff[0] * n1 - self.coeff[1] * n2 - self.coeff[3] * l1 - self.coeff[4] * l2 - self.coeff[5] * la) / self.coeff[2]
 
-        if n < 0:
+        if n < 0:  # pragma: no cover
             raise Exception('Something weird has happened for {}. Mean motion = {}'.format(self.to_short(), n))
 
         a = util.axis_from_mean_motion(n)

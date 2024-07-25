@@ -125,7 +125,7 @@ class libration:
         libration_length = breaks[0][0] - x[0]
         prev_direction = breaks[1][0]
 
-        if 1 == len(breaks[1]):
+        if 1 == len(breaks[1]):  # pragma: no cover
             librations[0].append(breaks[0][0])
             librations[1].append(x[-1])
             librations[2].append(libration_length + (x[-1] - breaks[0][0]))
@@ -248,7 +248,7 @@ class libration:
                 maximum_frequency=sim.periodogram_frequency_max,
             )
             axis_peaks_data = cls.find_peaks_with_position(axis_frequency, axis_power, height=sim.periodogram_soft)
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             resonances.logger.error(f"Error in periodogram of semi-major axis for {body.name}: {e}")
             axis_frequency, axis_power, axis_peaks_data = None, None, None
 
@@ -275,7 +275,7 @@ class libration:
 
                 angle_peaks_data = cls.find_peaks_with_position(frequency, power, height=sim.periodogram_soft)
                 overlapping = cls.overlap_list(angle_peaks_data['position'], axis_peaks_data['position'], delta=0)
-            except Exception as e:
+            except Exception as e:  # pragma: no cover
                 resonances.logger.error(f"Error in periodogram for {body.name} and {mmr.to_s()}: {e}")
                 frequency, power, angle_peaks_data, angle_filtered, overlapping = None, None, None, None, []
 

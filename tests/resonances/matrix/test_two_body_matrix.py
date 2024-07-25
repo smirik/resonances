@@ -33,6 +33,13 @@ def test_build():
     asteroid = df.loc[(df['mmr'] == '11J-5')].iloc[0]
     assert 3.0766 == pytest.approx(asteroid['a'], 0.01)
 
+    TwoBodyMatrix.planets = []  # testing empty states
+    df = TwoBodyMatrix.build()
+    assert isinstance(df, pd.DataFrame) is True
+    assert 0 != len(df.loc[df['planet'] == 'Mars'])
+
+    TwoBodyMatrix.planets = ['Jupiter']
+
 
 def test_dump():
     TwoBodyMatrix.planets = ['Jupiter']  # for performance
@@ -64,6 +71,12 @@ def test_find_resonances():
     mmrs_list = [mmr.to_short() for mmr in mmrs]
     assert '1J-1' not in mmrs_list
 
+    mmrs = TwoBodyMatrix.find_resonances(3.97, sigma=0.1)
+    mmrs_list = [mmr.to_short() for mmr in mmrs]
+    assert '3J-2' in mmrs_list
+    assert '1J-1' not in mmrs_list
+
+    TwoBodyMatrix.matrix = None
     mmrs = TwoBodyMatrix.find_resonances(3.97, sigma=0.1)
     mmrs_list = [mmr.to_short() for mmr in mmrs]
     assert '3J-2' in mmrs_list

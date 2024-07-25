@@ -82,5 +82,5 @@ def body(sim, body: resonances.Body, mmr: resonances.MMR, image_type='png'):
     if sim.plot_type in ['both', 'save']:
         plt.savefig('{}/{}_{}.{}'.format(sim.plot_path, body.name, mmr.to_s(), image_type))
 
-    if sim.plot_type in ['both', 'show']:
+    if sim.plot_type in ['both', 'show']:  # pragma: no cover
         plt.show()

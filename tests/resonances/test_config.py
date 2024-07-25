@@ -9,8 +9,6 @@ def test_get_and_has():
     assert resonances.config.has('plot.path') is True
     assert 'cache' == resonances.config.get('plot.path')
 
-    print(resonances.config.get('plot'))
-    print('--endplot--')
     assert resonances.config.has('plot') is True
     assert resonances.config.get('plot') == 'resonant'
 
@@ -27,6 +25,23 @@ def test_get_and_has():
     assert 'cache/allnum.csv' == resonances.config.get('catalog')
 
     assert resonances.config.has('This is the house that Jack built') is False
+
+
+def test_default():
+    assert resonances.config.get('This is the house that Jack built', 'John Galt') == 'John Galt'
+
+    exception_text = 'There is no config with key = This is the house that Jack built'
+    try:
+        resonances.config.get('This is the house that Jack built')
+        assert False, exception_text
+    except Exception as e:
+        assert exception_text in str(e)
+
+    try:
+        resonances.config.set('This is the house that Jack built', 'hello')
+        assert False, exception_text
+    except Exception as e:
+        assert exception_text in str(e)
 
 
 def test_set():

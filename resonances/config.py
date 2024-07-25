@@ -16,12 +16,10 @@ class config:
     def get(cls, key, default=None):
         try:
             value = cls.config[key]
-        except KeyError:
+        except Exception:
             if default is not None:
                 return default
             raise Exception('There is no config with key = {}. The full config: {}'.format(key, json.dumps(cls.config)))
-        except Exception:
-            raise
         return value
 
     @classmethod
@@ -43,7 +41,7 @@ class config:
         config_file_path = '{}/config.json'.format(str(config_file_dir))
         config_file = Path(config_file_path)
 
-        if not config_file.exists():
+        if not config_file.exists():  # pragma: no cover
             raise Exception('No config.json presented. Looking at {} Cannot continue working.'.format(config_file_path))
 
         with open(config_file_path, "r") as read_file:

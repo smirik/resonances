@@ -110,6 +110,21 @@ def test_calculate_axis():
     mmr = resonances.ThreeBody('4J-2S-1')
     assert 2.3981 == pytest.approx(mmr.resonant_axis, rel=0.1)
 
+    exception_text = 'You must specify three integers only for a short notation, i.e., 4J-2S-1.'
+    try:
+        mmr = resonances.ThreeBody('4J-2S-1N-0')
+        assert False, exception_text
+    except Exception as e:
+        assert exception_text in str(e)
+
+    mmr.planets_names = ['Jupiter', 'Saturn', 'Neptune']
+    exception_text = 'Cannot calculate resonant axis if the amount of planets is not equal to 2!'
+    try:
+        axis = mmr.calculate_resonant_axis()
+        assert False, exception_text
+    except Exception as e:
+        assert exception_text in str(e)
+
 
 def test_calc_angle():
     mmr = resonances.ThreeBody('4J-2S-1')

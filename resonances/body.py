@@ -1,5 +1,6 @@
 import numpy as np
 from .resonance.mmr import MMR
+from .logger import logger
 from typing import List
 
 
@@ -70,7 +71,7 @@ class Body:
                 df_data['a_filtered'] = self.axis_filtered
                 df_data['a_periodogram'] = np.append(self.axis_periodogram_power, np.zeros(len_diff))
         except Exception as e:
-            raise e
+            logger.error(f'Error in mmr_to_dict for body={self.name} and mmr={mmr.to_s()}: {e}')
             return None
         return df_data
 
