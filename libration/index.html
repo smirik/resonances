@@ -51,7 +51,7 @@
               </ul>
               <p class="caption"><span class="caption-text">Features</span></p>
               <ul class="current">
-                  <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations and Bodies</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations, Bodies, MMRs</a>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="./">Libration module</a>
     <ul class="current">
@@ -78,11 +78,6 @@
                   <li class="toctree-l1"><a class="reference internal" href="../matrix/">Resonance Matrices</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
-                  </li>
-              </ul>
-              <p class="caption"><span class="caption-text">Advanced</span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../console/">Console commands</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">About</span></p>
@@ -126,7 +121,7 @@
 <li><code>num_libration_periods</code>: it provides the number of intervals of librations within the boundaries. For example, if an asteroid is in a pure resonance, there are no periods of oscillations; hence, the number of libration periods is equal to <code>1</code>. If there is a slow circulation of the resonant argument with, let's say, three boundary crossing, the number of libration periods will equal <code>4</code>. Every time when there is a boundary crossing, this number is increased by one, except the case where there is apocentric libration or similar.</li>
 <li><code>monotony</code>: a very simple metric that calculates the percentage of the points when the value of the resonant angle for the current time is less than the same value for the previous step. If the resonant angle librates, it means that this value should be close to <code>0.5</code>.</li>
 </ol>
-<p>All these values are available for <code>Body</code> objects after the integration. They are available in the output file <code>summary.csv</code>. The time series (if the appropriate flag is set) are also stored in CSV files in the output directory.</p>
+<p>All these values are available for <code>Body</code> objects after the integration. Note that these variables are often dictonaries where keys are resonances (because they depend on the resonance examined). They are available in the output file <code>summary.csv</code>. The time series (if the appropriate flag is set) are also stored in CSV files in the output directory.</p>
 <p>You may invoke or recalculate them in the following way:</p>
 <pre><code class="language-python">sim = resonances.Simulation()
 # ...
@@ -202,7 +197,7 @@ body.axis_periodogram_peaks
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../core/" class="btn btn-neutral float-left" title="Simulations and Bodies"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../core/" class="btn btn-neutral float-left" title="Simulations, Bodies, MMRs"><span class="icon icon-circle-arrow-left"></span> Previous</a>
         <a href="../matrix/" class="btn btn-neutral float-right" title="Resonance Matrices">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 

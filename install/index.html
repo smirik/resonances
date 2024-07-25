@@ -67,18 +67,13 @@
               </ul>
               <p class="caption"><span class="caption-text">Features</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations and Bodies</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations, Bodies, MMRs</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../libration/">Libration module</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../matrix/">Resonance Matrices</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
-                  </li>
-              </ul>
-              <p class="caption"><span class="caption-text">Advanced</span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../console/">Console commands</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">About</span></p>
@@ -134,15 +129,11 @@ python = &quot;&gt;=3.8,&lt;3.12&quot;
 <p><strong>E.</strong> Now you can run your first simulation. Create <code>test.py</code> in the root directory of your project and place the following code there:</p>
 <pre><code class="language-python">import resonances
 
-mmr = resonances.create_mmr('1J-1')
-sim = resonances.Simulation()
-sim.create_solar_system()
-sim.add_body(588, mmr, name='Asteroid 558')
-sim.dt=1.0
+sim = resonances.check(463, '4J-2S-1')
 sim.run()
 </code></pre>
 <p>Note that the first run might take a while because the app needs to download AstDyS catalogue and initial data for the Solar system. You can see the progress in <code>cache/resonances.log</code> file.</p>
-<p><strong>F.</strong> Now you can see the results in <code>cache</code> folder.</p>
+<p><strong>F.</strong> Now you can see the results in <code>cache/%current_datetime%</code> folder.</p>
 <h2 id="pip">PIP</h2>
 <p>However, if you prefer manual installation, you need to perform the following steps:</p>
 <pre><code class="language-bash">pip install resonances
@@ -166,6 +157,7 @@ poetry install
 <p>You may verify the installation by running tests:</p>
 <pre><code class="language-bash">poetry run pytest -v tests
 </code></pre>
+<p>or simply <code>make test</code></p>
 <p>Note that you have to install prior to these steps <code>python</code> (preferably, through <code>pyenv</code>) and set up a virtual environment for poetry.</p>
 <h2 id="updating">Updating</h2>
 <p>Use the same manager (<code>poetry</code> or <code>pip</code>) and its standard workflow to update.</p>

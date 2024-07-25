@@ -51,7 +51,7 @@
               </ul>
               <p class="caption"><span class="caption-text">Features</span></p>
               <ul class="current">
-                  <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations and Bodies</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations, Bodies, MMRs</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../libration/">Libration module</a>
                   </li>
@@ -68,11 +68,6 @@
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
-                  </li>
-              </ul>
-              <p class="caption"><span class="caption-text">Advanced</span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../console/">Console commands</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">About</span></p>
@@ -147,16 +142,15 @@ for mmr in mmrs:
 </code></pre>
 <p>While sometimes it is useful to make <code>sigma</code> greater, the default value is <code>0.02</code>. For three-body MMRs, it is recommended to use <code>0.1</code> or <code>0.2</code> for the asteroids with high eccentricity and <code>0.05</code> otherwise.</p>
 <h3 id="mix-with-astdys">Mix with AstDyS</h3>
-<p>You might want to find all possible resonant asteroids for a given resonance. While you have to integrate them to confirm their status, you can get the possible candidates based only on the value of the semi-major axis. To perform this, there is a method <code>search_possible_resonant_asteroids</code> in <code>astdys</code> class.</p>
+<p>You might want to find all possible resonant asteroids for a given resonance. While you have to integrate them to confirm their status, you can get the possible candidates based only on the value of the semi-major axis. To perform this, there is a method <code>search_by_axis</code> in <code>astdys</code> class.</p>
 <p>The following code will print the numbers of asteroids that might be in the three-body resonance <code>4J-2S-1</code>:</p>
 <pre><code class="language-python">import resonances
+import astdys
 
-from resonances.data.astdys import astdys
-df = astdys.search_possible_resonant_asteroids(resonances.create_mmr('4J-2S-1'))
+df = astdys.search_by_axis(resonances.create_mmr('4J-2S-1').resonant_axis)
 print(df['num'].tolist())
 </code></pre>
-<p>Note that the method <code>search_possible_resonant_asteroids</code> returns <a href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html">Pandas DataFrame</a>, not simply a list or a dict. The DataFrame consists of the number of an asteroid and its orbital elements. You can use <code>df.head()</code> to see its structure.</p>
-<p>You can easily combine this method with the Simulation to verify are these candidates in the resonance or not. An example of such implementation is described in <a href="../console/">Console commands</a>.</p>
+<p>Note that the method <code>search_by_axis</code> returns <a href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html">Pandas DataFrame</a>, not simply a list or a dict. The DataFrame consists of the number of an asteroid and its orbital elements. You can use <code>df.head()</code> to see its structure.</p>
               
             </div>
           </div><footer>
