@@ -117,13 +117,19 @@ class libration:
         if 0 == len(breaks[1]):  # full interval is a libration
             return [[x[0]], [x[len(y) - 1]], [x[-1] - x[0]]]
 
-        breaks_diff = np.diff(breaks[0])
-
         librations = [[], [], []]  # start, stop, length
+
+        breaks_diff = np.diff(breaks[0])
 
         libration_start = x[0]
         libration_length = breaks[0][0] - x[0]
         prev_direction = breaks[1][0]
+
+        if 1 == len(breaks[1]):  # pragma: no cover
+            librations[0].append(breaks[0][0])
+            librations[1].append(x[-1])
+            librations[2].append(libration_length + (x[-1] - breaks[0][0]))
+            return librations
 
         for i in range(1, len(breaks[0])):
             curr_direction = breaks[1][i]
@@ -221,11 +227,6 @@ class libration:
 
     @classmethod
     def body(cls, sim, body: resonances.Body):
-        pure = resonances.libration.pure(body.angle)
-
-        librations = resonances.libration.circulation(sim.times / (2 * np.pi), body.angle)
-        libration_metrics = resonances.libration.circulation_metrics(librations)
-        monotony = resonances.libration.monotony_estimation(body.angle)
 
         integration_time = round(sim.tmax / (2 * np.pi))
         fs = sim.Nout / integration_time  # sample rate, Hz || Nout/time, i.e. 10000/100000
@@ -238,54 +239,69 @@ class libration:
         """
         points_to_cut = round(sim.libration_period_min * fs)
 
-        angle_filtered = cls.butter_lowpass_filter(body.angle, cutoff, fs, order, nyq)
-        (frequency, power) = resonances.libration.periodogram(
-            sim.times[points_to_cut : len(angle_filtered) - points_to_cut] / (2 * np.pi),
-            angle_filtered[points_to_cut : len(angle_filtered) - points_to_cut],
-            minimum_frequency=sim.periodogram_frequency_min,
-            maximum_frequency=sim.periodogram_frequency_max,
-        )
         axis_filtered = cls.butter_lowpass_filter(body.axis, cutoff, fs, order, nyq)
-        (axis_frequency, axis_power) = resonances.libration.periodogram(
-            sim.times[points_to_cut : len(axis_filtered) - points_to_cut] / (2 * np.pi),
-            axis_filtered[points_to_cut : len(axis_filtered) - points_to_cut],
-            minimum_frequency=sim.periodogram_frequency_min,
-            maximum_frequency=sim.periodogram_frequency_max,
-        )
+        try:
+            (axis_frequency, axis_power) = resonances.libration.periodogram(
+                sim.times[points_to_cut : len(axis_filtered) - points_to_cut] / (2 * np.pi),
+                axis_filtered[points_to_cut : len(axis_filtered) - points_to_cut],
+                minimum_frequency=sim.periodogram_frequency_min,
+                maximum_frequency=sim.periodogram_frequency_max,
+            )
+            axis_peaks_data = cls.find_peaks_with_position(axis_frequency, axis_power, height=sim.periodogram_soft)
+        except Exception as e:  # pragma: no cover
+            resonances.logger.error(f"Error in periodogram of semi-major axis for {body.name}: {e}")
+            axis_frequency, axis_power, axis_peaks_data = None, None, None
 
-        angle_peaks_data = cls.find_peaks_with_position(frequency, power, height=sim.periodogram_soft)
-        axis_peaks_data = cls.find_peaks_with_position(axis_frequency, axis_power, height=sim.periodogram_soft)
-        overlapping = cls.overlap_list(angle_peaks_data['position'], axis_peaks_data['position'], delta=0)
+        body.axis_filtered = axis_filtered
+        body.axis_periodogram_frequency = axis_frequency
+        body.axis_periodogram_power = axis_power
+        body.axis_periodogram_peaks = axis_peaks_data
 
-        body.status = cls.resolve(
-            pure,
-            overlapping,
-            libration_metrics['max_libration_length'],
-            sim.libration_period_critical,
-            monotony,
-            sim.libration_monotony_critical,
-        )
+        for mmr in body.mmrs:
+            pure = resonances.libration.pure(body.angle(mmr))
 
-        if sim.shall_save_body(body):
-            body.librations = librations
-            body.libration_metrics = libration_metrics
-            body.libration_pure = pure
+            librations = resonances.libration.circulation(sim.times / (2 * np.pi), body.angle(mmr))
+            libration_metrics = resonances.libration.circulation_metrics(librations)
+            monotony = resonances.libration.monotony_estimation(body.angle(mmr))
 
-            body.periodogram_frequency = frequency
-            body.periodogram_power = power
-            body.periodogram_peaks = angle_peaks_data
+            try:
+                angle_filtered = cls.butter_lowpass_filter(body.angle(mmr), cutoff, fs, order, nyq)
+                (frequency, power) = resonances.libration.periodogram(
+                    sim.times[points_to_cut : len(angle_filtered) - points_to_cut] / (2 * np.pi),
+                    angle_filtered[points_to_cut : len(angle_filtered) - points_to_cut],
+                    minimum_frequency=sim.periodogram_frequency_min,
+                    maximum_frequency=sim.periodogram_frequency_max,
+                )
 
-            body.angle_filtered = angle_filtered
-            body.axis_filtered = axis_filtered
-            body.axis_periodogram_frequency = axis_frequency
-            body.axis_periodogram_power = axis_power
-            body.axis_periodogram_peaks = axis_peaks_data
+                angle_peaks_data = cls.find_peaks_with_position(frequency, power, height=sim.periodogram_soft)
+                overlapping = cls.overlap_list(angle_peaks_data['position'], axis_peaks_data['position'], delta=0)
+            except Exception as e:  # pragma: no cover
+                resonances.logger.error(f"Error in periodogram for {body.name} and {mmr.to_s()}: {e}")
+                frequency, power, angle_peaks_data, angle_filtered, overlapping = None, None, None, None, []
 
-            body.periodogram_peaks_overlapping = overlapping
+            body.statuses[mmr.to_s()] = cls.resolve(
+                pure,
+                overlapping,
+                libration_metrics['max_libration_length'],
+                sim.libration_period_critical,
+                monotony,
+                sim.libration_monotony_critical,
+            )
 
-            body.monotony = monotony
+            body.librations[mmr.to_s()] = librations
+            body.libration_metrics[mmr.to_s()] = libration_metrics
+            body.libration_pure[mmr.to_s()] = pure
 
-        return body.status
+            body.periodogram_frequency[mmr.to_s()] = frequency
+            body.periodogram_power[mmr.to_s()] = power
+            body.periodogram_peaks[mmr.to_s()] = angle_peaks_data
+
+            body.angles_filtered[mmr.to_s()] = angle_filtered
+            body.periodogram_peaks_overlapping[mmr.to_s()] = overlapping
+
+            body.monotony[mmr.to_s()] = monotony
+
+        return body.statuses
 
     @classmethod
     def resolve(cls, pure, overlapping, max_libration_length, libration_period_critical, monotony, libration_monotony_critical):

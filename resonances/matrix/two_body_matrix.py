@@ -13,7 +13,7 @@ class TwoBodyMatrix(Matrix):
         primary_max = resonances.config.get('matrix.2body.primary_max')
         m_max = resonances.config.get('matrix.2body.coefficients_max')
         q_max = resonances.config.get('matrix.2body.max_order')
-        if cls.planets is None:
+        if (cls.planets is None) or (len(cls.planets) == 0):
             planets = resonances.data.const.SOLAR_SYSTEM
         else:
             planets = cls.planets
@@ -32,7 +32,7 @@ class TwoBodyMatrix(Matrix):
                     try:
                         axis = mmr.resonant_axis
                         data.append([mmr.to_short(), planet, m1, m, abs(p), axis])
-                    except Exception:
+                    except Exception:  # pragma: no cover
                         continue
 
         df = pd.DataFrame(data, columns=['mmr', 'planet', 'm1', 'm', 'q', 'a'])
@@ -40,7 +40,7 @@ class TwoBodyMatrix(Matrix):
         return df
 
     @classmethod
-    def find_resonances(cls, a, sigma=0.02, planets=None):
+    def find_resonances(cls, a, sigma=0.1, planets=None):
         if cls.matrix is None:
             cls.load()
 

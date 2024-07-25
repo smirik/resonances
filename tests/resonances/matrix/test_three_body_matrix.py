@@ -35,6 +35,13 @@ def test_build():
     asteroid = df.loc[(df['mmr'] == '3J-2S-1')].iloc[0]
     assert 3.0801 == pytest.approx(asteroid['a'], 0.01)
 
+    ThreeBodyMatrix.planets = []  # testing empty states
+    df = ThreeBodyMatrix.build()
+    assert isinstance(df, pd.DataFrame) is True
+    assert 0 != len(df.loc[df['planet1'] == 'Mars'])
+
+    ThreeBodyMatrix.planets = ['Jupiter', 'Saturn']  # for performance
+
 
 def test_dump():
     ThreeBodyMatrix.planets = ['Jupiter', 'Saturn']  # for performance
@@ -70,3 +77,17 @@ def test_find_resonances():
     mmrs_list = [mmr.to_short() for mmr in mmrs]
     assert '5J-2S-2' in mmrs_list
     assert '4J-2S-1' not in mmrs_list
+
+    ThreeBodyMatrix.matrix = None
+    mmrs = ThreeBodyMatrix.find_resonances(3.17, sigma=0.1)
+    mmrs_list = [mmr.to_short() for mmr in mmrs]
+    assert '5J-2S-2' in mmrs_list
+    assert '4J-2S-1' not in mmrs_list
+
+
+def test_recreate():
+    assert Path('cache/tests/mmr-3body-test.csv').is_file() is False
+    ThreeBodyMatrix.load()
+    assert Path('cache/tests/mmr-3body-test.csv').is_file() is True
+    ThreeBodyMatrix.load()
+    assert Path('cache/tests/mmr-3body-test.csv').is_file() is True

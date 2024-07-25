@@ -1,10 +1,10 @@
-import resonances
-from resonances.data.astdys import astdys
 import math
+import astdys
+import resonances
 
 
 def run(mmr: resonances.MMR, dump=100, max_iterations=1000, plot=False):
-    df = astdys.search_possible_resonant_asteroids(mmr)
+    df = astdys.search_by_axis(mmr.resonant_axis)
     asteroids = df['num'].tolist()
 
     num_particles = len(asteroids)
@@ -17,7 +17,7 @@ def run(mmr: resonances.MMR, dump=100, max_iterations=1000, plot=False):
             break
 
         sim = resonances.Simulation()
-        sim.setup(save=True, save_path='cache/finder', plot=plot, save_only_undetermined=True)
+        sim.save, sim.save_path, sim.plot, sim.save_only_undetermined = False, 'cache/finder', plot, True
         sim.create_solar_system()
 
         # Find the number of calculations for a given step. It varies for the last one.

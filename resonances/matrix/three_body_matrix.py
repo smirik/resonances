@@ -16,7 +16,7 @@ class ThreeBodyMatrix(Matrix):
         primary_max = resonances.config.get('matrix.3body.primary_max')
         m_max = resonances.config.get('matrix.3body.coefficients_max')
         q_max = resonances.config.get('matrix.3body.max_order')
-        if cls.planets is None:
+        if (cls.planets is None) or (len(cls.planets) == 0):
             planets = resonances.data.const.SOLAR_SYSTEM
         else:
             planets = cls.planets

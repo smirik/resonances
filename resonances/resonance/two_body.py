@@ -61,7 +61,7 @@ class TwoBody(MMR):
 
     def calculate_resonant_axis(self):
         if len(self.planets_names) != 1:
-            raise Exception('Cannot calculate resonant axis if the planet is not specified!')
+            raise Exception('Cannot calculate resonant axis if the only planet is not specified!')
 
         planet_axis = const.PLANETS_AXIS[self.planets_names[0]]
         axis = planet_axis * (((self.coeff[1] / self.coeff[0]) ** (2.0)) ** (1.0 / 3))

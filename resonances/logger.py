@@ -10,7 +10,7 @@ def static_init(cls):
 
 
 @static_init
-class logger:
+class logger:  # pragma: no cover
     @classmethod
     def static_init(cls):
         log_file_path = resonances.config.get('log.file')

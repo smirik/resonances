@@ -61,18 +61,16 @@ While sometimes it is useful to make `sigma` greater, the default value is `0.02
 
 ### Mix with AstDyS
 
-You might want to find all possible resonant asteroids for a given resonance. While you have to integrate them to confirm their status, you can get the possible candidates based only on the value of the semi-major axis. To perform this, there is a method `search_possible_resonant_asteroids` in `astdys` class.
+You might want to find all possible resonant asteroids for a given resonance. While you have to integrate them to confirm their status, you can get the possible candidates based only on the value of the semi-major axis. To perform this, there is a method `search_by_axis` in `astdys` class.
 
 The following code will print the numbers of asteroids that might be in the three-body resonance `4J-2S-1`:
 
 ```python
 import resonances
+import astdys
 
-from resonances.data.astdys import astdys
-df = astdys.search_possible_resonant_asteroids(resonances.create_mmr('4J-2S-1'))
+df = astdys.search_by_axis(resonances.create_mmr('4J-2S-1').resonant_axis)
 print(df['num'].tolist())
 ```
 
-Note that the method `search_possible_resonant_asteroids` returns [Pandas DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html), not simply a list or a dict. The DataFrame consists of the number of an asteroid and its orbital elements. You can use `df.head()` to see its structure.
-
-You can easily combine this method with the Simulation to verify are these candidates in the resonance or not. An example of such implementation is described in [Console commands](console.md).
+Note that the method `search_by_axis` returns [Pandas DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html), not simply a list or a dict. The DataFrame consists of the number of an asteroid and its orbital elements. You can use `df.head()` to see its structure.
