@@ -84,7 +84,7 @@ def test_angle():
     exception_text = 'The angle for the resonance {} does not exist in the body {}.'.format(mmr.to_s(), body.name)
     try:
         body.angle(mmr)
-        assert False, exception_text
+        raise AssertionError(exception_text)
     except Exception as e:
         assert str(e) == exception_text
 

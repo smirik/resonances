@@ -57,14 +57,14 @@ def test_add_body():
     exception_text = 'You can add body only by its number or all orbital elements'
     try:
         sim.add_body(None, '5J-2S-2')
-        assert False, exception_text
+        raise AssertionError(exception_text)
     except Exception as e:
         assert str(e) == exception_text
 
     exception_text = 'You have to provide at least one resonance'
     try:
         sim.add_body(2, [])
-        assert False, exception_text
+        raise AssertionError(exception_text)
     except Exception as e:
         assert str(e) == exception_text
 
@@ -187,40 +187,40 @@ def test_process_status():
     mmr = resonances.create_mmr('4J-2S-1')
     body.statuses[mmr.to_s()] = 2
     sim.save = 'all'
-    assert True == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is True
     sim.save = 'resonant'
-    assert True == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is True
     sim.save = 'nonzero'
-    assert True == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is True
     sim.save = 'candidates'
-    assert False == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is False
 
     body.statuses[mmr.to_s()] = 0
     sim.save = 'all'
-    assert True == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is True
     sim.save = 'resonant'
-    assert False == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is False
     sim.save = 'nonzero'
-    assert False == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is False
     sim.save = 'candidates'
-    assert False == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is False
 
     body.statuses[mmr.to_s()] = -2
     sim.save = 'all'
-    assert True == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is True
     sim.save = 'resonant'
-    assert False == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is False
     sim.save = 'nonzero'
-    assert True == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is True
     sim.save = 'candidates'
-    assert True == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is True
 
     body.statuses[mmr.to_s()] = 0
     sim.save = None
-    assert False == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is False
     sim.save = 'resonant'
-    assert False == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is False
     sim.save = 'nonzero'
-    assert False == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is False
     sim.save = 'candidates'
-    assert False == sim.process_status(body, mmr, sim.save)
+    assert sim.process_status(body, mmr, sim.save) is False

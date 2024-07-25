@@ -89,7 +89,7 @@ def test_calculate_axis():
     exception_text = 'You must specify two integers only for a short notation, i.e., 2J-1.'
     try:
         mmr = resonances.TwoBody('1J-2S-0')
-        assert False, exception_text
+        raise AssertionError(exception_text)
     except Exception as e:
         assert exception_text in str(e)
 
@@ -97,7 +97,7 @@ def test_calculate_axis():
     exception_text = 'Cannot calculate resonant axis if the only planet is not specified!'
     try:
         axis = mmr.calculate_resonant_axis()
-        assert False, exception_text
+        raise AssertionError(exception_text)
     except Exception as e:
         assert exception_text in str(e)
 
