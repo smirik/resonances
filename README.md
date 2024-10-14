@@ -11,6 +11,12 @@ For more information, [read the documentation](https://smirik.github.io/resonanc
 
 ## What's new
 
+### October 2024
+
+1. The `resonances.find` method now accepts extra parameters: `name`, `sigma2`, and `sigma3`, [see the documentation](https://smirik.github.io/resonances/).
+2. Fixed bug with wrong titles on the plots (periodograms for the resonant angle and semi-major axis).
+3. Fixed bug when adding an asteroid that has no relevant MMRs (previously it caused exception).
+
 ### July 2024
 
 1. Now you can choose the type of the output image: it could be either ` pdf`` or  `png`.

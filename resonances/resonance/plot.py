@@ -53,8 +53,8 @@ def body(sim, body: resonances.Body, mmr: resonances.MMR, image_type='png'):
         axs[3].plot(1.0 / body.periodogram_frequency[mmr.to_s()][peaks], body.periodogram_power[mmr.to_s()][peaks], 'x', color='orange')
         axs[3].plot(1.0 / body.periodogram_frequency[mmr.to_s()], body.periodogram_power[mmr.to_s()])
 
-    axs[3].set_title('Periodogram (semi-major axis)')
-    axs[4].set_title('Periodogram (the resonant angle)')
+    axs[3].set_title('Periodogram (the resonant angle)')
+    axs[4].set_title('Periodogram (semi-major axis)')
     axs[4].set_xlim(0, 40000)
     # axs[3].set_ylim(0, 0.2)
     axs[4].axhline(y=0.05, color='r', linestyle='--')

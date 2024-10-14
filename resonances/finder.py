@@ -13,8 +13,10 @@ def convert_input_to_list(asteroids: Union[int, str, List[Union[int, str]]]) -> 
     return asteroids
 
 
-def find(asteroids: Union[int, str, List[Union[int, str]]], planets=None) -> resonances.Simulation:
-    sim = resonances.Simulation()
+def find(
+    asteroids: Union[int, str, List[Union[int, str]]], planets=None, name: str = None, sigma2: float = 0.1, sigma3: float = 0.02
+) -> resonances.Simulation:
+    sim = resonances.Simulation(name=name)
     sim.create_solar_system()
 
     asteroids = convert_input_to_list(asteroids)
@@ -22,11 +24,16 @@ def find(asteroids: Union[int, str, List[Union[int, str]]], planets=None) -> res
     elems = astdys.search(asteroids)
     for asteroid in asteroids:
         elem = elems[asteroid]
-        mmrs = resonances.ThreeBodyMatrix.find_resonances(elem['a'], planets=planets)
-        mmrs2 = resonances.TwoBodyMatrix.find_resonances(elem['a'], planets=planets)
+        mmrs = resonances.ThreeBodyMatrix.find_resonances(elem['a'], planets=planets, sigma=sigma3)
+        mmrs2 = resonances.TwoBodyMatrix.find_resonances(elem['a'], planets=planets, sigma=sigma2)
         mmrs = mmrs + mmrs2
-        sim.add_body(elem, mmrs, f"{asteroid}")
-        resonances.logger.info('Adding a possible resonance for an asteroid {} - {}'.format(asteroid, ', '.join(map(str, elems.values()))))
+        if len(mmrs) > 0:
+            sim.add_body(elem, mmrs, f"{asteroid}")
+            resonances.logger.info(
+                'Adding a possible resonance for an asteroid {} - {}'.format(asteroid, ', '.join(map(str, elems.values())))
+            )
+        else:
+            resonances.logger.warning('No resonances found for an asteroid {}'.format(asteroid))
 
     return sim
 

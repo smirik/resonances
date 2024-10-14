@@ -143,7 +143,7 @@ class Simulation:
 
         self.sim.move_to_com()
 
-    def run(self):
+    def run(self, progress=False):
         self.add_bodies_to_simulation()
         for body in self.bodies:
             body.setup_vars_for_simulation(self.Nout)
@@ -153,7 +153,13 @@ class Simulation:
 
         ps = self.sim.particles
 
-        for i, time in enumerate(self.times):
+        iterations = list(enumerate(self.times))
+        if progress:
+            import tqdm
+
+            iterations = tqdm.tqdm(iterations, total=len(iterations))
+
+        for i, time in iterations:
             self.sim.integrate(time)
             os = self.sim.calculate_orbits(primary=ps[0])
 
