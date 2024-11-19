@@ -32,7 +32,7 @@ rebound = "^3.23.2"
 astdys = ">=0.9.2"
 mkdocs = "1.4.2"
 mkdocs-jupyter = "0.22.0"
-lxml-html-clean = "^0.1.1"
+lxml-html-clean = ">=0.1.1,<0.5.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^8.3.1"
