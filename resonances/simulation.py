@@ -9,9 +9,11 @@ import resonances
 import astdys
 import datetime
 
+import resonances.horizons
+
 
 class Simulation:
-    def __init__(self, name=None):
+    def __init__(self, name=None, date: str = None):
         self.name = name
         if self.name is None:
             self.name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -40,6 +42,7 @@ class Simulation:
         self.sim = None
 
         self.Nout = None
+        self.date = None
         self.tmax = resonances.config.get('integration.tmax')
         self.integrator = resonances.config.get('integration.integrator')
         self.dt = resonances.config.get('integration.dt')
@@ -68,21 +71,58 @@ class Simulation:
         catalog_file = f"{os.getcwd()}/{resonances.config.get('solar_system_file')}"
         return catalog_file
 
-    def create_solar_system(self, date: str = ''):
+    def create_solar_system(self, date: str = None):
         solar_file = Path(self.solar_system_full_filename())
         if solar_file.exists():
             self.sim = rebound.Simulation(self.solar_system_full_filename())
         else:  # pragma: no cover
             self.sim = rebound.Simulation()
-            if date != '':
+            if date is not None:
                 self.sim.add(self.list_of_planets(), date=date)
+            elif self.date is not None:
+                self.sim.add(self.list_of_planets(), date=self.date)
             elif self.data_source == 'astdys':
                 self.sim.add(self.list_of_planets(), date=f"{astdys.catalog_time()} 00:00")  # date of AstDyS current catalogue
             else:
                 self.sim.add(self.list_of_planets())
             self.sim.save(self.solar_system_full_filename())
 
-    def add_body(self, elem_or_num, mmr: Union[str, resonances.MMR, List[resonances.MMR]], name='asteroid'):
+    def add_body(self, elem_or_num, mmr: Union[str, resonances.MMR, List[resonances.MMR]], name='asteroid', source='nasa'):
+        """
+        Add a celestial body to the simulation with its corresponding mean motion resonance(s).
+        Parameters
+        ----------
+        elem_or_num : Union[int, str, dict]
+            Either an integer/string representing the asteroid's number,
+            or a dictionary containing orbital elements with optional mass.
+            If dictionary, must contain keys: 'a', 'e', 'inc', 'Omega', 'omega', 'M'
+            Optional key: 'mass'
+        mmr : Union[str, resonances.MMR, List[resonances.MMR]]
+            Mean motion resonance(s) to analyze for this body. Can be:
+            - String representation of MMR (e.g. "4J-2S-1")
+            - Single MMR object
+            - List of MMR objects
+            At least one resonance must be provided.
+        name : str, optional
+            Name identifier for the body. Defaults to 'asteroid'.
+        source : str, optional
+            Source of orbital elements data. Two options are available: 'nasa' or 'astdys'. Defaults to 'nasa'.
+        Raises
+        ------
+        Exception
+            If no resonances are provided or if elem_or_num is invalid type.
+        Notes
+        -----
+        - If elem_or_num is an ID, orbital elements are fetched from NASA catalog
+        - If elem_or_num is a dict, it must contain all required orbital elements
+        - Added body is stored in self.bodies list
+        - For each MMR, planet indices in simulation are calculated and stored
+
+        Examples
+        --------
+        >>> sim.add_body(1, "4J-2S-1", name="Asteroid 1", source="nasa")  # Add by NASA id
+        >>> sim.add_body({"a": 3.2, "e": 0.1, "omega": 0.1, "Omega": 0.1, "M": 0.1}, "3J-1")  # Add by orbital elements
+        """
         body = resonances.Body()
 
         if isinstance(mmr, str):
@@ -95,7 +135,10 @@ class Simulation:
             raise Exception('You have to provide at least one resonance')
 
         if isinstance(elem_or_num, int) or (isinstance(elem_or_num, str)):
-            elem = astdys.search(elem_or_num)
+            if source == 'astdys':
+                elem = astdys.search(elem_or_num)
+            else:
+                elem = resonances.horizons.get_body_keplerian_elements(elem_or_num, self.sim)
         elif isinstance(elem_or_num, dict):
             elem = elem_or_num
             if 'mass' in elem:

@@ -149,6 +149,12 @@ def test_saving_summary():
     assert Path('cache/tests/summary.csv').exists() is False
 
 
+def test_add_body_astdys():
+    sim = tools.create_test_simulation_for_solar_system(save=True)
+    sim.add_body('1', resonances.create_mmr('4J-2S-1'), name='asteroid', source='astdys')
+    assert 'asteroid' == sim.bodies[0].name
+
+
 def test_get_simulation_summary():
     sim = tools.create_test_simulation_for_solar_system(save=True)
     tools.add_test_asteroid_to_simulation(sim)

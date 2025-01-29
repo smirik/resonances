@@ -50,7 +50,7 @@ def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=F
     return sim
 
 
-def add_test_asteroid_to_simulation(sim):
+def add_test_asteroid_to_simulation(sim: resonances.Simulation):
     elem = get_3body_elements_sample()
     mmr = resonances.create_mmr('4J-2S-1')
     sim.add_body(elem, mmr, name='asteroid')
