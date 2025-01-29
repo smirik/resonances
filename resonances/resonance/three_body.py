@@ -29,6 +29,9 @@ class ThreeBody(MMR):
         )
         return angle
 
+    def order(self):
+        return abs((0 - self.coeff[0] - self.coeff[1] - self.coeff[2]))
+
     def init_from_short_notation(self, s):
         tmp = re.split('-|\\+', s)
         if 3 != len(tmp):
