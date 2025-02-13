@@ -1,7 +1,7 @@
 import datetime
 from typing import Union
 import rebound.horizons
-from rebound.units import units_convert_particle, check_units, convert_G, hash_to_unit
+from rebound.units import units_convert_particle, hash_to_unit
 
 
 def get_body_keplerian_elements(s, sim: rebound.Simulation, date: Union[str, datetime.datetime], G=1) -> dict:

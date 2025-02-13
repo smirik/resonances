@@ -1,7 +1,6 @@
 import resonances
 import astdys
 from resonances.matrix.three_body_matrix import ThreeBodyMatrix
-from resonances.matrix.two_body_matrix import TwoBodyMatrix
 from .tools import set_fast_integrator, reset_fast_integrator
 
 

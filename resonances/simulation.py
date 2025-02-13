@@ -16,7 +16,7 @@ from resonances.config import config as c
 
 
 class Simulation:
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         name=None,
         date: Union[str, datetime.datetime] = None,
@@ -48,11 +48,9 @@ class Simulation:
             if self.source == 'astdys':
                 if self.date.strftime("%Y-%m-%d %H:%M:%S") != astdys.datetime().strftime("%Y-%m-%d %H:%M:%S"):
                     resonances.logger.error(
-                        f"Date specified by the user is not the same as the catalog time, which might cause some issues: {self.date.strftime('%Y-%m-%d %H:%M:%S')} != {astdys.catalog_time()}"
+                        "Date specified by the user is not the same as the catalog time, which may cause issues: "
+                        f"{self.date.strftime('%Y-%m-%d %H:%M:%S')} != {astdys.catalog_time()}"
                     )
-                    # raise Exception(
-                    #     f"Date specified by the user is not the same as the catalog time, which might cause some issues: {self.date.strftime('%Y-%m-%d %H:%M:%S')} != {astdys.catalog_time()}"
-                    # )
         elif source == 'astdys':
             self.date = astdys.datetime()
         else:

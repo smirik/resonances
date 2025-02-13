@@ -42,6 +42,6 @@ def datetime_from_string(date: Union[str, datetime.datetime]) -> datetime.dateti
             try:
                 tmp = datetime.datetime.strptime(date, f)
                 return tmp
-            except:
+            except ValueError:
                 continue
         raise AttributeError("An error occured while calculating the date. Use one of ".join(formats))

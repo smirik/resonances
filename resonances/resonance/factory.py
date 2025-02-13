@@ -2,7 +2,7 @@ import re
 import resonances
 
 
-def create_mmr(coeff, planets_names=None):
+def create_mmr(coeff, planets_names=None):  # noqa: C901
     """Create Mean Motion Resonance (MMR) object(s) based on the input format.
     This function serves as a factory method for creating MMR objects. It supports multiple input formats
     and provides a universal interface for MMR creation.
