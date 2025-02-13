@@ -1,3 +1,4 @@
+import datetime
 import numpy as np
 import pandas as pd
 import rebound
@@ -7,8 +8,9 @@ from typing import List, Union
 
 import resonances
 import astdys
-import datetime
 
+import resonances.data
+import resonances.data.util
 import resonances.horizons
 
 
@@ -16,54 +18,58 @@ class Simulation:
     def __init__(
         self,
         name=None,
-        date: str = None,
+        date: Union[str, datetime.datetime] = None,
         source='nasa',
-        tmax=None,
-        integrator=None,
-        dt=None,
-        save=None,
-        save_path=None,
-        save_summary=None,
-        plot=None,
-        plot_path=None,
-        plot_type=None,
-        image_type=None,
+        tmax: int = 628319,
+        integrator: str = 'ias15',
+        integrator_safe_mode: str = None,
+        integrator_corrector: str = None,
+        dt: float = 0.1,
+        save='nonzero',
+        save_path='cache',
+        save_summary=True,
+        plot='nonzero',
+        plot_path='cache',
+        plot_type='save',
+        image_type='png',
     ):
         self.name = name
         if self.name is None:
             self.name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.Nout = None
 
-        if date is not None:
-            self.date = date
-            if date != astdys.catalog_time():
-                resonances.logger.warning(
-                    f"Date specified by the user is not the same as the catalog time, which might cause some issues: {date} != {astdys.catalog_time()}"
-                )
-        elif source == 'astdys':
-            self.date = f"{astdys.catalog_time()} 00:00"
-        else:
-            self.date = datetime.datetime.now().strftime("%Y-%m-%d 00:00")
-
-        self.tmax = tmax if tmax is not None else resonances.config.get('integration.tmax')
-        self.integrator = integrator if integrator is not None else resonances.config.get('integration.integrator')
-        self.dt = dt if dt is not None else resonances.config.get('integration.dt')
-
-        if resonances.config.has('integration.integrator.corrector'):
-            self.integrator_corrector = resonances.config.get('integration.integrator.corrector')
-        else:  # pragma: no cover
-            self.integrator_corrector = None
-
-        self.save = save if save is not None else resonances.config.get('save')
-        self.save_path = save_path if save_path is not None else f"{resonances.config.get('save.path')}/{self.name}"
-        self.save_summary = save_summary if save_summary is not None else resonances.config.get('save.summary')
-
-        self.plot = plot if plot is not None else resonances.config.get('plot')
-        self.plot_type = plot_type if plot_type is not None else resonances.config.get('plot.type', 'both')
-        self.plot_path = plot_path if plot_path is not None else f"{resonances.config.get('plot.path')}/{self.name}/images"
-
-        self.image_type = image_type if image_type is not None else resonances.config.get('plot.image_type', 'png')
         self.source = source
+
+        if date is not None:
+            self.date = resonances.data.util.datetime_from_string(date)
+            if self.source == 'astdys':
+                if self.date.strftime("%Y-%m-%d %H:%M:%S") != astdys.datetime().strftime("%Y-%m-%d %H:%M:%S"):
+                    resonances.logger.error(
+                        f"Date specified by the user is not the same as the catalog time, which might cause some issues: {self.date.strftime('%Y-%m-%d %H:%M:%S')} != {astdys.catalog_time()}"
+                    )
+                    # raise Exception(
+                    #     f"Date specified by the user is not the same as the catalog time, which might cause some issues: {self.date.strftime('%Y-%m-%d %H:%M:%S')} != {astdys.catalog_time()}"
+                    # )
+        elif source == 'astdys':
+            self.date = astdys.datetime()
+        else:
+            self.date = datetime.datetime.now()
+
+        self.tmax = tmax
+        self.integrator = integrator
+        self.dt = dt
+
+        self.integrator_corrector = integrator_corrector
+
+        self.save = save
+        self.save_path = save_path if save_path != 'cache' else f"./cache/{self.name}"
+        self.save_summary = save_summary
+
+        self.plot = plot
+        self.plot_type = plot_type
+        self.plot_path = plot_path if plot_path != 'cache' else f"./cache/{self.name}/images"
+
+        self.image_type = image_type
 
         self.planets = self.list_of_planets()
 
@@ -71,7 +77,10 @@ class Simulation:
         self.bodies: List[resonances.Body] = []
         self.particles = []
 
-        self.bodies_date = resonances.config.get('catalog.date')
+        if self.source == 'astdys':
+            self.bodies_date = astdys.datetime()
+        else:
+            self.bodies_date = self.date
 
         # Libration and filtering settings
         self.oscillations_cutoff = resonances.config.get('libration.oscillation.filter.cutoff')
@@ -88,13 +97,13 @@ class Simulation:
 
         self.sim = None
 
-        if resonances.config.has('integration.integrator.safe_mode'):
-            self.integrator_safe_mode = resonances.config.get('integration.integrator.safe_mode')
+        if integrator_safe_mode is not None:
+            self.integrator_safe_mode = integrator_safe_mode
         else:  # pragma: no cover
             self.integrator_safe_mode = 1
 
     def solar_system_full_filename(self) -> str:
-        timestamp = int(datetime.datetime.strptime(self.date, "%Y-%m-%d %H:%M").timestamp())
+        timestamp = int(self.date.timestamp())
         catalog_file = f"{os.getcwd()}/cache/solar_{timestamp}.bin"
         return catalog_file
 
@@ -190,7 +199,7 @@ class Simulation:
             if self.source == 'astdys':
                 elem = astdys.search(elem_or_num)
             else:
-                elem = resonances.horizons.get_body_keplerian_elements(elem_or_num, self.sim)
+                elem = resonances.horizons.get_body_keplerian_elements(elem_or_num, self.sim, date=self.date)
         elif isinstance(elem_or_num, dict):
             elem = elem_or_num
         else:

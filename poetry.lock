@@ -13,13 +13,13 @@ files = [
 
 [[package]]
 name = "astdys"
-version = "0.9.2"
+version = "0.9.3"
 description = "AstDyS wrapper in python"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "astdys-0.9.2-py3-none-any.whl", hash = "sha256:b6f19f37c30930a173b84d90f2e9b36267a46a4211527789c3167201ab7e0629"},
-    {file = "astdys-0.9.2.tar.gz", hash = "sha256:ad02b0e1c679848cec8459cec700b85047885484b4a61d55295549addae40554"},
+    {file = "astdys-0.9.3-py3-none-any.whl", hash = "sha256:2a0ace77e85f31af0a6602c62808239691b8f80265e0cd39b04f8b8c589d447a"},
+    {file = "astdys-0.9.3.tar.gz", hash = "sha256:6411f8876a80382b220ee5b0caf37aa7ee7ac477821a57ec98bfa52c714bdcc9"},
 ]
 
 [package.dependencies]
@@ -3043,4 +3043,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "0e6cfde468d6d8d70f16aad9d3f8bc58429fb710c9479b3bc79947e74b27cf1a"
+content-hash = "e25547b27443f3e4fc9ab7ce6d0b0f434bc182e3d0f2c7dceeefb4866cea4ab4"

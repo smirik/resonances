@@ -5,7 +5,7 @@ from resonances.finder import convert_input_to_list
 def test_convert_input_to_list():
     # Test case 1: asteroids as an integer
     asteroids = 1
-    expected_output = ['1']
+    expected_output = [1]
     assert convert_input_to_list(asteroids) == expected_output
 
     asteroids = '2'
@@ -13,7 +13,7 @@ def test_convert_input_to_list():
     assert convert_input_to_list(asteroids) == expected_output
 
     asteroids = [1, 2, 3]
-    expected_output = ['1', '2', '3']
+    expected_output = [1, 2, 3]
     assert convert_input_to_list(asteroids) == expected_output
 
     asteroids = ['4', '5', '6']
@@ -21,7 +21,7 @@ def test_convert_input_to_list():
     assert convert_input_to_list(asteroids) == expected_output
 
     asteroids = [7, '8', 9, '10']
-    expected_output = ['7', '8', '9', '10']
+    expected_output = [7, '8', 9, '10']
     assert convert_input_to_list(asteroids) == expected_output
 
     asteroids = []

@@ -151,7 +151,8 @@ def test_saving_summary():
 
 def test_add_body_astdys():
     sim = tools.create_test_simulation_for_solar_system(save=True)
-    sim.add_body('1', resonances.create_mmr('4J-2S-1'), name='asteroid', source='astdys')
+    sim.source = 'astdys'
+    sim.add_body('1', resonances.create_mmr('4J-2S-1'), name='asteroid')
     assert 'asteroid' == sim.bodies[0].name
 
 

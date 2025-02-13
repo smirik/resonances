@@ -1,6 +1,7 @@
 import resonances
 import astdys
 from typing import Union, List
+from datetime import datetime
 
 import resonances.horizons
 
@@ -8,19 +9,22 @@ import resonances.horizons
 def convert_input_to_list(asteroids: Union[int, str, List[Union[int, str]]]) -> List[str]:
     if isinstance(asteroids, str) or isinstance(asteroids, int):
         asteroids = [asteroids]
+    elif asteroids is None:
+        asteroids = []
     return asteroids
 
 
 def find(
     asteroids: Union[int, str, List[Union[int, str]]], planets=None, name: str = None, sigma2: float = 0.1, sigma3: float = 0.02
 ) -> resonances.Simulation:
-    sim = resonances.Simulation(name=name)
+    now = datetime.now()
+    sim = resonances.Simulation(name=name, date=now)
     sim.create_solar_system(force=True)
 
     asteroids = convert_input_to_list(asteroids)
 
     for asteroid in asteroids:
-        elem = resonances.horizons.get_body_keplerian_elements(asteroid, sim=sim.sim)
+        elem = resonances.horizons.get_body_keplerian_elements(asteroid, sim=sim.sim, date=now)
         mmrs = find_resonances(elem['a'], planets=planets, sigma2=sigma2, sigma3=sigma3)
         if len(mmrs) > 0:
             sim.add_body(elem, mmrs, f"{asteroid}")

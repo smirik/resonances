@@ -11,7 +11,7 @@ def test_add_body_nasa():
 
 def test_horizon():
     sim = tools.create_test_simulation_for_solar_system(save=True)
-    elem = resonances.horizons.get_body_keplerian_elements('Hektor', sim.sim)
+    elem = resonances.horizons.get_body_keplerian_elements('Hektor', sim.sim, '2025-01-01')
     assert 'a' in elem
     assert 'e' in elem
     assert 'inc' in elem
