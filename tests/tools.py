@@ -30,9 +30,8 @@ def get_2body_elements_sample():
 
 
 def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=False):
-    sim = resonances.Simulation()
-
-    sim.create_solar_system(date=astdys.util.convert_mjd_to_date(60000.0))
+    sim = resonances.Simulation(date=astdys.util.convert_mjd_to_date(60000.0))
+    sim.create_solar_system()
 
     # create to speedup
     sim.tmax = 20

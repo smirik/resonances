@@ -2,7 +2,10 @@ import rebound.horizons
 from rebound.units import units_convert_particle, check_units, convert_G, hash_to_unit
 
 
-def get_body_keplerian_elements(s: str, sim: rebound.Simulation, G=1) -> dict:
+def get_body_keplerian_elements(s, sim: rebound.Simulation, G=1) -> dict:
+    if isinstance(s, int):
+        s = str(s) + ';'
+
     p: rebound.Particle = rebound.horizons.getParticle(s)
     units_convert_particle(
         p,

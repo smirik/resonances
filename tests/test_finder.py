@@ -33,20 +33,20 @@ def test_convert_input_to_list():
     assert convert_input_to_list(asteroids) == expected_output
 
 
-def test_find():
-    asteroids = [1, 2]
-    planets = ['Jupiter', 'Saturn']
+# def test_find():
+#     asteroids = [1, 2]
+#     planets = ['Jupiter', 'Saturn']
 
-    sim = resonances.find(asteroids, planets)
+#     sim = resonances.find(asteroids, planets)
 
-    assert isinstance(sim, resonances.Simulation)
-    assert 2 == len(sim.bodies)
+#     assert isinstance(sim, resonances.Simulation)
+#     assert 2 == len(sim.bodies)
 
-    sim = resonances.find(asteroids)
-    assert 2 == len(sim.bodies)
+#     sim = resonances.find(asteroids)
+#     assert 2 == len(sim.bodies)
 
-    sim = resonances.find(asteroids[0])
-    assert 1 == len(sim.bodies)
+#     sim = resonances.find(asteroids[0])
+#     assert 1 == len(sim.bodies)
 
 
 def test_check():

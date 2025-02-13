@@ -28,7 +28,7 @@ import resonances
 sim = resonances.Simulation()
 ```
 
--   `sim.data_source` (str): can have two options - `astdys` or `nasa`. It defines what source should be used to gather initial data for the asteroids if they are passed as numbers (without orbital elements). **This is in progress** and only `astdys` should be used at the moment.
+-   `sim.source` (str): can have two options - `astdys` or `nasa`. It defines what source should be used to gather initial data for the asteroids if they are passed as numbers (without orbital elements).
 
 ## Saving options
 

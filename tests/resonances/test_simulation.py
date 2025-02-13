@@ -61,7 +61,7 @@ def test_add_body():
     except Exception as e:
         assert str(e) == exception_text
 
-    exception_text = 'You have to provide at least one resonance'
+    exception_text = 'If input is a list, it should contain a string representation of MMRs, MMR objects, or coefficients.'
     try:
         sim.add_body(2, [])
         raise AssertionError(exception_text)
