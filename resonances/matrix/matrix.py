@@ -18,8 +18,18 @@ class Matrix:
 
     @classmethod
     def catalog_full_filename(cls) -> str:
-        catalog_file = f"{os.getcwd()}/{resonances.config.get(cls.catalog_file)}"
-        return catalog_file
+        """
+        If the config value is an absolute path (starts with '/'), use it as is.
+        Otherwise, interpret it relative to the current working directory.
+        """
+        filename = resonances.config.get(cls.catalog_file)
+        path_obj = Path(filename)
+
+        # If it's not already absolute, prepend current working directory
+        if not path_obj.is_absolute():
+            path_obj = Path(os.getcwd()) / path_obj
+
+        return str(path_obj)
 
     @classmethod
     def load(cls, reload=False):

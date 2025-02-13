@@ -8,12 +8,12 @@ import tests.tools as tools
 
 @pytest.fixture(autouse=True)
 def run_around_tests():
-    resonances.config.set('plot', None)
-    resonances.config.set('plot.type', None)
+    resonances.config.set('PLOT_MODE', None)
+    resonances.config.set('PLOT_TYPE', None)
     Path('cache/tests').mkdir(parents=True, exist_ok=True)
     yield
-    resonances.config.set('plot', 'nonzero')
-    resonances.config.set('plot.type', 'save')
+    resonances.config.set('PLOT_MODE', 'nonzero')
+    resonances.config.set('PLOT_TYPE', 'save')
     shutil.rmtree('cache/tests')
 
 

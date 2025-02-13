@@ -13,7 +13,7 @@ def static_init(cls):
 class logger:  # pragma: no cover
     @classmethod
     def static_init(cls):
-        log_file_path = resonances.config.get('log.file')
+        log_file_path = resonances.config.get('LOG_FILE')
         log_dir = Path(log_file_path).parent.resolve()
         Path(log_dir).mkdir(parents=True, exist_ok=True)
         logging.basicConfig(
@@ -25,7 +25,7 @@ class logger:  # pragma: no cover
 
     @classmethod
     def get_logging_level(cls):
-        config_level = resonances.config.get('log.level')
+        config_level = resonances.config.get('LOG_LEVEL')
         if 'debug' == config_level:
             return logging.DEBUG
         elif 'warning' == config_level:

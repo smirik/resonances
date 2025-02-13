@@ -2,9 +2,11 @@ import resonances
 import astdys
 from resonances.matrix.three_body_matrix import ThreeBodyMatrix
 from resonances.matrix.two_body_matrix import TwoBodyMatrix
+from .tools import set_fast_integrator, reset_fast_integrator
 
 
 def test_find():
+    set_fast_integrator()
     sim = resonances.find(463, ['Jupiter', 'Saturn'], sigma3=0.1)
     sim.run()
 
@@ -13,44 +15,32 @@ def test_find():
     assert 2 == summary.loc[summary['mmr'] == '4J-2S-1+0+0-1', 'status'].values[0]
     assert 0 == summary.loc[summary['mmr'] == '5J-4S-1+0+0+0', 'status'].values[0]
 
+    reset_fast_integrator()
+
 
 def test_trojans():
+    set_fast_integrator()
     asteroids = [624, 588, 617]
 
-    sim = resonances.Simulation()
-    sim.create_solar_system()
-
-    num = 624
-
-    mmrs = TwoBodyMatrix.find_resonances(5.27, sigma=0.1, planets=['Jupiter'])
-    for mmr in mmrs:
-        for asteroid in asteroids:
-            sim.add_body(asteroid, mmr, name=asteroid)
-            print(f"asteroid={asteroid}, MMR={mmr.to_short()}")
-
-    sim.dt = 1
-    sim.plot = False
+    sim = resonances.find(asteroids, ['Jupiter'])
     sim.run()
     summary = sim.get_simulation_summary()
-    print(summary)
-    assert 2 == summary.loc[(summary['mmr'] == '1J-1+0+0') and (summary['name'] == '624'), 'status'].values[0]
-    assert 0 == summary.loc[(summary['mmr'] == '1J+1+0-2') and (summary['name'] == '624'), 'status'].values[0]
 
-    assert 2 == summary.loc[(summary['mmr'] == '1J-1+0+0') and (summary['name'] == '588'), 'status'].values[0]
-    assert 0 == summary.loc[(summary['mmr'] == '1J+1+0-2') and (summary['name'] == '588'), 'status'].values[0]
+    assert 2 == summary.loc[(summary['mmr'] == '1J-1+0+0') & (summary['name'] == '624'), 'status'].iloc[0]
+    assert 0 == summary.loc[(summary['mmr'] == '1J+1+0-2') & (summary['name'] == '624'), 'status'].iloc[0]
 
-    assert 2 == summary.loc[(summary['mmr'] == '1J-1+0+0') and (summary['name'] == '617'), 'status'].values[0]
-    assert 0 == summary.loc[(summary['mmr'] == '1J+1+0-2') and (summary['name'] == '617'), 'status'].values[0]
+    assert 2 == summary.loc[(summary['mmr'] == '1J-1+0+0') & (summary['name'] == '588'), 'status'].iloc[0]
+    assert 0 == summary.loc[(summary['mmr'] == '1J+1+0-2') & (summary['name'] == '588'), 'status'].iloc[0]
 
-    # assert 2 == summary.loc[summary['name'] == '624, resonance=1J-1', 'status'].values[0]
-    # assert 0 == summary.loc[summary['name'] == '624, resonance=1J+1', 'status'].values[0]
-    # assert 2 == summary.loc[summary['name'] == '588, resonance=1J-1', 'status'].values[0]
-    # assert 0 == summary.loc[summary['name'] == '588, resonance=1J+1', 'status'].values[0]
-    # assert 2 == summary.loc[summary['name'] == '617, resonance=1J-1', 'status'].values[0]
-    # assert 0 == summary.loc[summary['name'] == '617, resonance=1J+1', 'status'].values[0]
+    assert 2 == summary.loc[(summary['mmr'] == '1J-1+0+0') & (summary['name'] == '617'), 'status'].iloc[0]
+    assert 0 == summary.loc[(summary['mmr'] == '1J+1+0-2') & (summary['name'] == '617'), 'status'].iloc[0]
+
+    reset_fast_integrator()
 
 
 def test_3body():
+    set_fast_integrator()
+
     asteroids = [463]
 
     sim = resonances.Simulation()
@@ -63,12 +53,11 @@ def test_3body():
     for mmr in mmrs:
         for asteroid in asteroids:
             sim.add_body(num, mmr, name='{}, resonance={}'.format(str(asteroid), mmr.to_short()))
-            print(f"asteroid={asteroid}, MMR={mmr.to_short()}")
 
-    sim.dt = 1
-    sim.plot = False
     sim.run()
     summary = sim.get_simulation_summary()
 
     assert 2 == summary.loc[summary['name'] == '463, resonance=4J-2S-1', 'status'].values[0]
     assert 0 == summary.loc[summary['name'] == '463, resonance=5J-4S-1', 'status'].values[0]
+
+    reset_fast_integrator()

@@ -18,8 +18,8 @@ def find(
     asteroids: Union[int, str, List[Union[int, str]]], planets=None, name: str = None, sigma2: float = 0.1, sigma3: float = 0.02
 ) -> resonances.Simulation:
     now = datetime.now()
-    sim = resonances.Simulation(name=name, date=now)
-    sim.create_solar_system(force=True)
+    sim = resonances.Simulation(name=name)
+    sim.create_solar_system()
 
     asteroids = convert_input_to_list(asteroids)
 
@@ -41,7 +41,7 @@ def check(asteroids: Union[int, str, List[Union[int, str]]], mmr: Union[resonanc
     if isinstance(mmr, str):
         mmr = resonances.create_mmr(mmr)
 
-    sim = resonances.Simulation(plot='all')
+    sim = resonances.Simulation()
     sim.create_solar_system()
 
     asteroids = convert_input_to_list(asteroids)

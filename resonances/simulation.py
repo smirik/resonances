@@ -12,6 +12,7 @@ import astdys
 import resonances.data
 import resonances.data.util
 import resonances.horizons
+from resonances.config import config as c
 
 
 class Simulation:
@@ -19,19 +20,19 @@ class Simulation:
         self,
         name=None,
         date: Union[str, datetime.datetime] = None,
-        source='nasa',
-        tmax: int = 628319,
-        integrator: str = 'ias15',
-        integrator_safe_mode: str = None,
-        integrator_corrector: str = None,
-        dt: float = 0.1,
-        save='nonzero',
-        save_path='cache',
-        save_summary=True,
-        plot='nonzero',
-        plot_path='cache',
-        plot_type='save',
-        image_type='png',
+        source=None,
+        tmax=None,
+        integrator: str = None,
+        integrator_safe_mode: int = None,
+        integrator_corrector: int = None,
+        dt: float = None,
+        save: str = None,
+        save_path: str = None,
+        save_summary: bool = None,
+        plot: str = None,
+        plot_path: str = None,
+        plot_type: str = None,
+        image_type: str = None,
     ):
         self.name = name
         if self.name is None:
@@ -39,6 +40,8 @@ class Simulation:
         self.Nout = None
 
         self.source = source
+        if self.source is None:
+            self.source = c.get('DATA_SOURCE')
 
         if date is not None:
             self.date = resonances.data.util.datetime_from_string(date)
@@ -53,23 +56,52 @@ class Simulation:
         elif source == 'astdys':
             self.date = astdys.datetime()
         else:
-            self.date = datetime.datetime.now()
+            self.date = datetime.datetime.combine(datetime.datetime.today(), datetime.time.min)
 
-        self.tmax = tmax
+        if tmax is None:
+            self.tmax = int(c.get('INTEGRATION_TMAX'))
+        else:
+            self.tmax = tmax
+
         self.integrator = integrator
+        if self.integrator is None:
+            self.integrator = c.get('INTEGRATION_INTEGRATOR')
+
         self.dt = dt
+        if self.dt is None:
+            self.dt = float(c.get('INTEGRATION_DT'))
 
         self.integrator_corrector = integrator_corrector
+        if self.integrator_corrector is None:
+            self.integrator_corrector = int(c.get('INTEGRATION_CORRECTOR'))
 
         self.save = save
-        self.save_path = save_path if save_path != 'cache' else f"./cache/{self.name}"
+        if self.save is None:
+            self.save = c.get('SAVE_MODE')
+
+        self.save_path = save_path
+        if self.save_path is None:
+            self.save_path = c.get('SAVE_PATH')
+
         self.save_summary = save_summary
+        if self.save_summary is None:
+            self.save_summary = bool(c.get('SAVE_SUMMARY'))
 
         self.plot = plot
+        if self.plot is None:
+            self.plot = c.get('PLOT_MODE')
+
         self.plot_type = plot_type
-        self.plot_path = plot_path if plot_path != 'cache' else f"./cache/{self.name}/images"
+        if self.plot_type is None:
+            self.plot_type = c.get('PLOT_TYPE')
+
+        self.plot_path = plot_path
+        if self.plot_path is None:
+            self.plot_path = c.get('PLOT_PATH')
 
         self.image_type = image_type
+        if self.image_type is None:
+            self.image_type = c.get('PLOT_IMAGE_TYPE')
 
         self.planets = self.list_of_planets()
 
@@ -83,17 +115,18 @@ class Simulation:
             self.bodies_date = self.date
 
         # Libration and filtering settings
-        self.oscillations_cutoff = resonances.config.get('libration.oscillation.filter.cutoff')
-        self.oscillations_filter_order = resonances.config.get('libration.oscillation.filter.order')
+        self.oscillations_cutoff = float(resonances.config.get('LIBRATION_FILTER_CUTOFF'))
+        self.oscillations_filter_order = int(resonances.config.get('LIBRATION_FILTER_ORDER'))
 
-        self.periodogram_frequency_min = resonances.config.get('libration.periodogram.frequency.min')
-        self.periodogram_frequency_max = resonances.config.get('libration.periodogram.frequency.max')
-        self.periodogram_critical = resonances.config.get('libration.periodogram.critical')
-        self.periodogram_soft = resonances.config.get('libration.periodogram.soft')
+        self.periodogram_frequency_min = float(resonances.config.get('LIBRATION_FREQ_MIN'))
+        self.periodogram_frequency_max = float(resonances.config.get('LIBRATION_FREQ_MAX'))
+        self.periodogram_critical = float(resonances.config.get('LIBRATION_CRITICAL'))
+        self.periodogram_soft = float(resonances.config.get('LIBRATION_SOFT'))
 
-        self.libration_period_critical = resonances.config.get('libration.period.critical')
-        self.libration_monotony_critical = resonances.config.get('libration.monotony.critical')
-        self.libration_period_min = resonances.config.get('libration.period.min')
+        self.libration_period_critical = int(resonances.config.get('LIBRATION_PERIOD_CRITICAL'))
+        self.libration_monotony_critical = [float(x.strip()) for x in resonances.config.get('LIBRATION_MONOTONY_CRITICAL').split(",")]
+
+        self.libration_period_min = int(resonances.config.get('LIBRATION_PERIOD_MIN'))
 
         self.sim = None
 

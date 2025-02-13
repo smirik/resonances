@@ -1,73 +1,40 @@
 import resonances
-from resonances.finder import convert_input_to_list
+from .tools import set_fast_integrator, reset_fast_integrator
 
 
-def test_convert_input_to_list():
-    # Test case 1: asteroids as an integer
-    asteroids = 1
-    expected_output = [1]
-    assert convert_input_to_list(asteroids) == expected_output
+def test_find():
+    asteroids = [463, 490]
+    planets = ['Jupiter', 'Saturn']
 
-    asteroids = '2'
-    expected_output = ['2']
-    assert convert_input_to_list(asteroids) == expected_output
+    set_fast_integrator()
 
-    asteroids = [1, 2, 3]
-    expected_output = [1, 2, 3]
-    assert convert_input_to_list(asteroids) == expected_output
+    sim = resonances.find(asteroids, planets)
 
-    asteroids = ['4', '5', '6']
-    expected_output = ['4', '5', '6']
-    assert convert_input_to_list(asteroids) == expected_output
-
-    asteroids = [7, '8', 9, '10']
-    expected_output = [7, '8', 9, '10']
-    assert convert_input_to_list(asteroids) == expected_output
-
-    asteroids = []
-    expected_output = []
-    assert convert_input_to_list(asteroids) == expected_output
-
-    asteroids = None
-    expected_output = []
-    assert convert_input_to_list(asteroids) == expected_output
-
-
-# def test_find():
-#     asteroids = [1, 2]
-#     planets = ['Jupiter', 'Saturn']
-
-#     sim = resonances.find(asteroids, planets)
-
-#     assert isinstance(sim, resonances.Simulation)
-#     assert 2 == len(sim.bodies)
-
-#     sim = resonances.find(asteroids)
-#     assert 2 == len(sim.bodies)
-
-#     sim = resonances.find(asteroids[0])
-#     assert 1 == len(sim.bodies)
-
-
-def test_check():
-    asteroids = [1, 2, '3', 4]
-    mmr = resonances.create_mmr('2J-1')
-
-    sim = resonances.check(asteroids, mmr)
-    assert isinstance(sim, resonances.Simulation)
-    assert 4 == len(sim.bodies)
-
-    asteroids = [1, 2]
-    sim = resonances.check(asteroids, '2J-1')
     assert isinstance(sim, resonances.Simulation)
     assert 2 == len(sim.bodies)
 
+    sim.run()
+    summary = sim.get_simulation_summary()
+    status463 = summary.loc[(summary['name'] == '463') & (summary['mmr'] == '4J-2S-1+0+0-1'), 'status'].iloc[0]
+    status490 = summary.loc[(summary['name'] == '490') & (summary['mmr'] == '5J-2S-2+0+0-1'), 'status'].iloc[0]
 
-def test_find_resonances():
-    mmrs = resonances.find_resonances(a=2.39)
+    assert 2 == status463
+    assert 1 == status490
 
-    mmrs_s = []
-    for mmr in mmrs:
-        mmrs_s.append(mmr.to_short())
+    reset_fast_integrator()
 
-    assert '4J-2S-1' in mmrs_s
+
+def test_check():
+    set_fast_integrator()
+
+    sim = resonances.check(463, '4J-2S-1')
+    assert isinstance(sim, resonances.Simulation)
+    assert 1 == len(sim.bodies)
+
+    sim.run()
+
+    summary = sim.get_simulation_summary()
+    status = summary.loc[(summary['name'] == '463') & (summary['mmr'] == '4J-2S-1+0+0-1'), 'status'].iloc[0]
+    assert 2 == status
+
+    reset_fast_integrator()

@@ -3,26 +3,26 @@ import pytest
 
 
 def test_get_and_has():
-    assert resonances.config.has('save.path') is True
-    assert 'cache' == resonances.config.get('save.path')
+    assert resonances.config.has('SAVE_PATH') is True
+    assert 'cache' == resonances.config.get('SAVE_PATH')
 
-    assert resonances.config.has('plot.path') is True
-    assert 'cache' == resonances.config.get('plot.path')
+    assert resonances.config.has('PLOT_PATH') is True
+    assert 'cache' == resonances.config.get('PLOT_PATH')
 
-    assert resonances.config.has('save') is True
-    assert resonances.config.get('save') == 'nonzero'
+    assert resonances.config.has('SAVE_MODE') is True
+    assert resonances.config.get('SAVE_MODE') == 'nonzero'
 
-    assert resonances.config.has('plot') is True
-    assert resonances.config.get('plot') == 'nonzero'
+    assert resonances.config.has('PLOT_MODE') is True
+    assert resonances.config.get('PLOT_MODE') == 'nonzero'
 
-    assert resonances.config.has('save.summary') is True
-    assert resonances.config.get('save.summary') is True
+    assert bool(resonances.config.has('SAVE_SUMMARY')) is True
+    assert bool(resonances.config.get('SAVE_SUMMARY')) is True
 
-    assert resonances.config.has('integration.dt')
-    assert 0.1 == resonances.config.get('integration.dt')
+    assert resonances.config.has('INTEGRATION_DT')
+    assert 1.0 == float(resonances.config.get('INTEGRATION_DT'))
 
-    assert resonances.config.has('catalog') is True
-    assert 'cache/allnum.csv' == resonances.config.get('catalog')
+    assert resonances.config.has('CATALOG_PATH') is True
+    assert 'cache/allnum.csv' == resonances.config.get('CATALOG_PATH')
 
     assert resonances.config.has('This is the house that Jack built') is False
 
@@ -46,9 +46,9 @@ def test_default():
 
 def test_set():
     catalog = 'cache/allnum.csv'
-    assert catalog == resonances.config.get('catalog')
-    resonances.config.set('catalog', 'tests/fixtures/small.csv')
-    assert 'tests/fixtures/small.csv' == resonances.config.get('catalog')
+    assert catalog == resonances.config.get('CATALOG_PATH')
+    resonances.config.set('CATALOG_PATH', 'tests/fixtures/small.csv')
+    assert 'tests/fixtures/small.csv' == resonances.config.get('CATALOG_PATH')
 
 
 def test_config_exception():

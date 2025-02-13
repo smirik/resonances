@@ -28,8 +28,8 @@ def test_resolve():
     overlapping = [[100, 102]]
     empty = []
 
-    lib_crit = resonances.config.get('libration.period.critical')
-    mon_crit = resonances.config.get('libration.monotony.critical')
+    lib_crit = float(resonances.config.get('LIBRATION_PERIOD_CRITICAL'))
+    mon_crit = [float(x.strip()) for x in resonances.config.get('LIBRATION_MONOTONY_CRITICAL').split(",")]
 
     # pure libration with libration for both angle and axis at the same frequency
     assert 2 == resonances.libration.resolve(True, overlapping, 100000, lib_crit, 0.5, mon_crit)

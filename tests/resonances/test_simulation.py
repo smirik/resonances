@@ -16,10 +16,12 @@ def run_around_tests():
 
 
 def test_init():
-    resonances.config.set('integration.tmax', 100)
+    tmax_default = resonances.config.get('INTEGRATION_TMAX')
+    resonances.config.set('INTEGRATION_TMAX', 100)
     sim = resonances.Simulation()
     sim.Nout = 10
     sim.tmax_yrs = 100 / (2 * np.pi)
+    resonances.config.set('INTEGRATION_TMAX', tmax_default)
 
 
 def test_solar_system():
