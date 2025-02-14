@@ -2,7 +2,6 @@ import pytest
 import resonances
 import resonances.horizons
 import tests.tools as tools
-from pathlib import Path
 
 
 def test_add_body_nasa():
