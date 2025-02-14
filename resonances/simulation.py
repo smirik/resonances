@@ -5,6 +5,7 @@ import rebound
 from pathlib import Path
 import os
 from typing import List, Union
+import tqdm
 
 import resonances
 import astdys
@@ -135,7 +136,8 @@ class Simulation:
 
     def solar_system_full_filename(self) -> str:
         timestamp = int(self.date.timestamp())
-        catalog_file = f"{os.getcwd()}/cache/solar_{timestamp}.bin"
+        catalog_file = f"{os.getcwd()}/{c.get('SOLAR_SYSTEM_FILE')}"
+        catalog_file = catalog_file.replace('.bin', f'-{timestamp}.bin')
         return catalog_file
 
     def create_solar_system(self, force=False):
@@ -280,9 +282,7 @@ class Simulation:
         ps = self.sim.particles
 
         iterations = list(enumerate(self.times))
-        if progress:
-            import tqdm
-
+        if progress:  # pragma: no cover
             iterations = tqdm.tqdm(iterations, total=len(iterations))
 
         for i, time in iterations:

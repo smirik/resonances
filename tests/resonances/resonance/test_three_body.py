@@ -2,6 +2,17 @@ import resonances
 import pytest
 
 
+def test_order():
+    mmr = resonances.ThreeBody('4J-2S-1')
+    assert 1 == mmr.order()
+
+    mmr = resonances.ThreeBody('3J-2S-1')
+    assert 0 == mmr.order()
+
+    mmr = resonances.ThreeBody('6J-1S-1')
+    assert 4 == mmr.order()
+
+
 def test_full_create():
     mmr = resonances.ThreeBody([4, -2, -1, 0, 0, -1])
     assert 4 == mmr.coeff[0]

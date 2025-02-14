@@ -2,6 +2,17 @@ import resonances
 import pytest
 
 
+def test_order():
+    mmr = resonances.TwoBody('4J-1')
+    assert 3 == mmr.order()
+
+    mmr = resonances.TwoBody('1J-1')
+    assert 0 == mmr.order()
+
+    mmr = resonances.TwoBody('1J+1')
+    assert 2 == mmr.order()
+
+
 def test_full_create():
     mmr = resonances.TwoBody([2, -1, 0, -1])
     assert 2 == mmr.coeff[0]

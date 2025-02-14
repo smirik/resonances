@@ -38,7 +38,7 @@ class libration:
     @classmethod
     def monotony_estimation(cls, data, crit=np.pi) -> float:
         if len(data) <= 1:  # it can be the case for testing purposes mostly
-            return 1.0
+            return 0.0
         num = 0
         prev = data[0]
         for elem in data:

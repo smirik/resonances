@@ -49,7 +49,7 @@ coverage = "^7.6.0"
 ipykernel = "^6.21.3"
 
 [tool.coverage.run]
-omit = [".*", "tests/resonances/*", "*/site-packages/*"]
+omit = [".*", "tests/*", "*/site-packages/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/resonances"]

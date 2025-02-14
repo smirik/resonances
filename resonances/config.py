@@ -44,13 +44,13 @@ class config:
         user_env_path = Path.cwd() / ".env"
 
         # 1. Load defaults from your package's .env.dist
-        if not package_env_path.exists():
+        if not package_env_path.exists():  # pragma: no cover
             raise FileNotFoundError(f"Missing .env.dist at: {package_env_path}")
         default_config = dotenv_values(package_env_path)
 
         # 2. Load user-local .env if available
         user_config = {}
-        if user_env_path.exists():
+        if user_env_path.exists():  # pragma: no cover
             user_config = dotenv_values(user_env_path)
 
         # 3. Get actual environment variables

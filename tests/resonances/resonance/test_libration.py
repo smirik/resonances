@@ -52,6 +52,9 @@ def test_monotony_estimation():
     data = [1, 2, 3, 4, 5]
     assert 0.0 == resonances.libration.monotony_estimation(data)
 
+    data = [1, 2, 3, 4, 5]
+    assert 0.0 == resonances.libration.monotony_estimation(data)
+
     data = [5, 4, 3, 2, 1]
     assert 1.0 == resonances.libration.monotony_estimation(data)
 
@@ -63,3 +66,6 @@ def test_monotony_estimation():
 
     data = [1, 2, 3, 4, 5, 6, 1, 6, 1, 6, 1]
     assert 0.2 == resonances.libration.monotony_estimation(data)
+
+    data = [1]
+    assert 0.0 == resonances.libration.monotony_estimation(data)
