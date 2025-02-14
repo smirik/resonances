@@ -456,7 +456,7 @@ class Simulation:
         self.__tmax = value
         self.tmax_yrs = self.__tmax / (2 * np.pi)
         if self.Nout is None:
-            self.Nout = int(self.__tmax / 100)
+            self.Nout = abs(int(self.__tmax / 100))  # abs for backward integration case
 
     @tmax.deleter
     def tmax(self):  # pragma: no cover
