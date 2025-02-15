@@ -11,6 +11,15 @@ For more information, [read the documentation](https://smirik.github.io/resonanc
 
 ## What's new
 
+### February 2025
+
+1. `create_mmr` method now supports variaty of options: string, a list of strings, an object, a list of objects.
+2. `Simulation` constructor got many new parameters allowing to change the settings directly when instantiating.
+3. Instead of `config.json`, `.env.dist` is now used. Furthermore, a developer can specify `.env` in the directory, which will overwrite the default parameters or just use environment variables.
+4. MMRs now have `order` function.
+5. Added full support for backward integration (`dt=-1.0`, `tmax=-600000`).
+6. Minor updates to graphs.
+
 ### October 2024
 
 1. The `resonances.find` method now accepts extra parameters: `name`, `sigma2`, and `sigma3`, [see the documentation](https://smirik.github.io/resonances/).
