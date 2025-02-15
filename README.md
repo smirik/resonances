@@ -13,12 +13,14 @@ For more information, [read the documentation](https://smirik.github.io/resonanc
 
 ### February 2025
 
+1. Full support for `nasa` Horizon source of the initial data.
+1. `find` and `check` methods for quick identification of the resonant status of objects.
 1. `create_mmr` method now supports variaty of options: string, a list of strings, an object, a list of objects.
-2. `Simulation` constructor got many new parameters allowing to change the settings directly when instantiating.
-3. Instead of `config.json`, `.env.dist` is now used. Furthermore, a developer can specify `.env` in the directory, which will overwrite the default parameters or just use environment variables.
-4. MMRs now have `order` function.
-5. Added full support for backward integration (`dt=-1.0`, `tmax=-600000`).
-6. Minor updates to graphs.
+1. `Simulation` constructor got many new parameters allowing to change the settings directly when instantiating.
+1. Instead of `config.json`, `.env.dist` is now used. Furthermore, a developer can specify `.env` in the directory, which will overwrite the default parameters or just use environment variables.
+1. MMRs now have `order` function.
+1. Added full support for backward integration (`dt=-1.0`, `tmax=-600000`).
+1. Minor updates to graphs.
 
 ### October 2024
 
