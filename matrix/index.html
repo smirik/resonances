@@ -104,7 +104,7 @@
 <p>The Resonance Matrices allows us to find the preliminary (theoretical) value of a resonant semi-major axis for the resonance. While for a two-body mean motion resonance the calculation follows obviously from the Third Kepler Law, it is not so straightforward for three-body mean motion resonances.</p>
 <p>This app calculates the value of the resonant semi-major axis for three-body resonance based on the paper: <em>Smirnov, E. A., Dovgalev, I. S. &amp; Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.</em> The algorithms are in the classes <code>TwoBody</code> and <code>ThreeBody</code>.</p>
 <h2 id="initialisation">Initialisation</h2>
-<p>When the app needs to know the value of the resonant semi-major axis for the first time, it calculates it and stores it in the file (the config items <code>matrix.3body.file</code> and <code>matrix.2body.file</code>). The files have the following structure:</p>
+<p>When the app needs to know the value of the resonant semi-major axis for the first time, it calculates it and stores it in the file (the config items <code>MATRIX_3BODY_FILE</code> and <code>MATRIX_2BODY_FILE</code>). The files have the following structure:</p>
 <ol>
 <li>The number of an item</li>
 <li>The short notation of resonance (i.e. <code>4J-2S-1</code> or <code>1J-1</code>)</li>

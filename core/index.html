@@ -1600,6 +1600,7 @@ sim.add_body('463', mmr, name='Lola')</div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <p>Note, if AstDyS catalogue is already downloaded, the package <strong>will not check</strong> whether it is updated. On the contrary, it will use the old version. However, the <code>astdys</code> component has a special method `rebuild' that updates the catalogue. Hence, one might use this method for the final run.</p>
+<p>Or you can simply delete the downloaded and converted files...</p>
 
 </div>
 </div>
@@ -1680,7 +1681,7 @@ Successfully downloaded. Continue working...
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[9]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
         
         
         <div class="CodeMirror cm-s-jupyter">
@@ -1695,11 +1696,11 @@ Successfully downloaded. Continue working...
                 </div>
             </clipboard-copy>
         </div>
-            <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">sim</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="s1">&#39;nonzero&#39;</span> <span class="c1"># other options: &#39;resonant&#39; (only resonant), &#39;nonzero&#39; (resonant and candidates), None (do not save anything)</span>
+            <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">sim</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="s1">&#39;nonzero&#39;</span> <span class="c1"># other options: &#39;resonant&#39; (only resonant), &#39;nonzero&#39; (resonant and candidates), None (do not save anything), &#39;all&#39;</span>
 <span class="n">sim</span><span class="o">.</span><span class="n">plot</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># the same as above</span>
 <span class="n">sim</span><span class="o">.</span><span class="n">plot_type</span> <span class="o">=</span> <span class="s1">&#39;save&#39;</span> <span class="c1"># other options: &#39;show&#39; (show the plot), &#39;save&#39; (save the plot), &#39;both&#39;, and None (do not plot anything)</span>
 </pre></div>
-<div id="cell-9" class="clipboard-copy-txt">sim.save = 'nonzero' # other options: 'resonant' (only resonant), 'nonzero' (resonant and candidates), None (do not save anything)
+<div id="cell-9" class="clipboard-copy-txt">sim.save = 'nonzero' # other options: 'resonant' (only resonant), 'nonzero' (resonant and candidates), None (do not save anything), 'all'
 sim.plot = None # the same as above
 sim.plot_type = 'save' # other options: 'show' (show the plot), 'save' (save the plot), 'both', and None (do not plot anything)</div>
     
@@ -1719,7 +1720,7 @@ sim.plot_type = 'save' # other options: 'show' (show the plot), 'save' (save the
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
 <p>Here I define that I want to save only the resonant asteroids or those that cannot be precisely identified (see <a href="../libration">Libration section</a>; statuses lower than <code>0</code>) and do not plot anything.</p>
 <p>Please be aware of <a href="../config">default values</a> — it saves some space for each simulation. There is no need to override if you are OK with them.</p>
-<p>You may also want to change the output directory — just rewrite the config <code>sim.save_path</code> and <code>sim.plot_path</code> after initialisation or make <code>config.json</code> file.</p>
+<p>You may also want to change the output directory — just rewrite the config <code>sim.save_path</code> and <code>sim.plot_path</code> after initialisation or make <code>.env</code> file or set the environment variable up.</p>
 <p>You may add as many objects as you want. However, when the number of asteroids is very high, it might delay the integration process. The usual suggestion is to integrate 100-1000 objects simultaneously, but it depends on the computer's characteristics.</p>
 <p>Do not forget to specify the time interval and the number of output points. The default values are good for the resonances in the main belt but not for all possible scenarios. Note that the time used by <code>rebound</code> is in years divided to 2π.</p>
 

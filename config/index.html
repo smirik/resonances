@@ -59,8 +59,6 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="./">Config</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#simulation-properties">Simulation properties</a>
-    </li>
     <li class="toctree-l2"><a class="reference internal" href="#saving-options">Saving options</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#libration-options">Libration options</a>
@@ -70,6 +68,8 @@
     <li class="toctree-l3"><a class="reference internal" href="#access-to-the-parameters-of-rebound">Access to the parameters of rebound</a>
     </li>
         </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#astdys-and-catalogue-options">AstDyS and Catalogue options</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#matrices">Matrices</a>
     </li>
@@ -109,8 +109,29 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="config">Config</h1>
-<p>All default config values are stored in <code>config.json</code> file in the source code. It is not recommended to change anything there.</p>
+<p>All default config values are stored in a file called .env.dist in the source code. It is not recommended to change anything in that file directly.</p>
 <p>If you need to change a specific config value, you can do it in the following way:</p>
+<p>If you need to change a specific config value, you have several options:</p>
+<ol>
+<li>Create a <code>.env</code> file in your working directory to override selected variables.</li>
+<li>Set environment variables directly in your system or through your shell.</li>
+<li>Modify some of the parameters when creating a Simulation (use IDE hint to see all available options):</li>
+</ol>
+<pre><code class="language-python">import resonances
+
+sim = resonances.Simulation(name='test', integrator='whfast', save='all', save_path='output/my_lovely_folder')
+</code></pre>
+<p>A resonances.Simulation object has several properties that mirror these config values. Note that in Python code I usually use underscore notation (e.g., plot_type). This could be done after instantiating the object:</p>
+<pre><code class="language-python">import resonances
+
+sim = resonances.Simulation(...)
+# for example
+sim.save_path = 'output/another_lovely_folder'
+sim.plot = 'nonzero'
+</code></pre>
+<ol>
+<li>Set or update them at runtime in Python with:</li>
+</ol>
 <pre><code class="language-python">import resonances
 resonances.config.set(KEY, VALUE)
 resonances.config.set('integration.dt', 0.01)
@@ -121,48 +142,48 @@ if resonances.config.has('integration.dt'):
     print('There is a config with the key = integration.dt')
     print(resonances.config.get('integration.dt'))
 </code></pre>
-<h2 id="simulation-properties">Simulation properties</h2>
-<p>A resonances Simulation object has several properties that can be defined before running. They serve the same purpose as the config values (note that a comma is replaced with an underscore: instead of <code>plot.type</code>, the simulation object has <code>sim.plot_type</code>).</p>
-<pre><code class="language-python">import resonances
-sim = resonances.Simulation()
-</code></pre>
-<ul>
-<li><code>sim.data_source</code> (str): can have two options - <code>astdys</code> or <code>nasa</code>. It defines what source should be used to gather initial data for the asteroids if they are passed as numbers (without orbital elements). <strong>This is in progress</strong> and only <code>astdys</code> should be used at the moment.</li>
-</ul>
+<p>Under the hood, resonances reads configuration in the following priority:</p>
+<ol>
+<li>Parameters when instantiating the Simulation object.</li>
+<li><code>.env</code> file.</li>
+<li>Environment variables.</li>
+<li>The defaults in .env.dist.</li>
+</ol>
 <h2 id="saving-options">Saving options</h2>
+<p>Below is the list of options. When lowercase is used, it refers to the arguments of the constructor of Simulation. When uppercase is used, it refers to the <code>.env.dist</code>.</p>
 <ul>
-<li><code>save</code> (bool): if <code>true</code>, the results of the integration (including the plots) will be saved. If it is <code>false</code>, nothing will be saved. All options below work only if <code>save</code> is true.</li>
-<li><code>save</code> (string or None): whether or not save the result of the simulation. There are five options: <code>all</code>, <code>nonzero</code>, <code>resonant</code>, <code>candidates</code>, <code>None</code>. <code>nonzero</code> will save all resonant cases and all cases that are unclear and require manual verification. <code>candidates</code> will save only those that require manual verification.</li>
-<li><code>plot</code> : the same as for <code>sim.save</code>.</li>
-<li><code>save_summary</code> (bool): save summary of the simulation as a dataframe (available through <code>get_simulation_summary()</code> method)</li>
-<li><code>plot.path</code> (str): path to save plots.</li>
-<li><code>plot.type</code> (str): <code>save</code> - save plot as a file, <code>show</code> - just show (if false), <code>both</code> - both options. Valid only for plots specified by <code>plot</code>.</li>
+<li><code>save</code>/<code>SAVE_MODE</code> (string or None): whether or not save the result of the simulation. There are five options: <code>all</code>, <code>nonzero</code>, <code>resonant</code>, <code>candidates</code>, <code>None</code>. <code>nonzero</code> will save all resonant cases and all cases that are unclear and require manual verification (<code>status != 0</code>). <code>candidates</code> will save only those that require manual verification (<code>status &lt; 0</code>). <code>resonant</code> will save only resonant objects (<code>status&gt;0</code>).</li>
+<li><code>save_path</code>/<code>SAVE_PATH</code>: directory where to save the output CSV files (data only). If you do not specify <code>save_path</code> when creating Simulation object, it will use <code>SAVE_PATH</code> with a sub-directory based on the current timestamp. In other words, unless explicitly specified, the app will create a subdirectory in <code>SAVE_PATH</code> to differentiate multiple runs.</li>
+<li><code>plot</code>/<code>PLOT_MODE</code> : the same as for <code>sim.save</code> but for graphs.</li>
+<li><code>save_summary</code>/<code>SAVE_SUMMARY</code> (bool): save summary of the simulation as a dataframe (available through <code>get_simulation_summary()</code> method)</li>
+<li><code>plot_path</code>/<code>PLOT_PATH</code> (str): the same as <code>save_path</code>.</li>
+<li><code>plot_type</code>/<code>PLOT_TYPE</code> (str): determines what to do with graphs. <code>save</code> - only save graphs as files (default), <code>show</code> - just show (if false), <code>both</code> - both options. Valid only for plots specified by <code>plot</code>. In other words, if you set <code>plot</code> as <code>None</code>, no graphs will be plotted.</li>
 </ul>
 <h2 id="libration-options">Libration options</h2>
 <p>See <a href="../libration/">Libration section</a> for explanation!</p>
 <ul>
-<li><code>libration.oscillation.filter.cutoff</code> (float): used to cutoff the frequencies that are higher that this value. By default, it is set to <code>0.001</code>, which means that all oscillations with periods lower than <code>1000</code> (effectively, <code>500</code>) will be removed by the filter.</li>
-<li><code>libration.oscillation.filter.order</code> (int): used for <code>butter</code> filter. By default, <code>2</code>,</li>
-<li><code>libration.periodogram.frequency.min</code> (float): the minimal frequency of the librations that will be taken into account. By default, <code>0.00001</code>. Corresponds to the period of oscillations equal to <code>100000</code> years.</li>
-<li><code>libration.periodogram.frequency.max</code> (float): the maximum frequency of the librations that will be taken into account. By default, <code>0.002</code>. Corresponds to the period of oscillations equal to <code>500</code> years.</li>
-<li><code>libration.periodogram.critical</code> (float): the critical value of the peaks on the periodograms that is counted as significant. By default, <code>0.1</code>.</li>
-<li><code>libration.periodogram.soft</code> (float): the <em>soft</em> critical value of the peaks on the periodograms that is counted as significant. Used when you <em>really</em> want to find some librations. By default, <code>0.05</code>.</li>
-<li><code>libration.period.min</code> (int): the number of years to remove from the beginning and end. If you want to disable the cut of these points, just set it to <code>0</code>. See <a href="../libration/">Libration section</a> for explanation!</li>
-<li><code>libration.period.critical</code> (int): the critical value of the maximum libration period used to identify is there libration or not. By default, <code>20000</code> years.</li>
-<li><code>libration.monotony.critical</code> (list): critical values for the metric <code>monotony</code>. By default, <code>[0.4, 0.6]</code>.</li>
+<li><code>LIBRATION_FILTER_CUTOFF</code> (float): used to cutoff the frequencies that are higher that this value. By default, it is set to <code>0.0005</code>, which means that all oscillations with periods lower than <code>500</code> will be removed by the filter.</li>
+<li><code>LIBRATION_FILTER_ORDER</code> (int): used for <code>butter</code> filter. By default, <code>2</code>,</li>
+<li><code>LIBRATION_FREQ_MIN</code> (float): the minimal frequency of the librations that will be taken into account. By default, <code>0.00001</code>. Corresponds to the period of oscillations equal to <code>100000</code> years.</li>
+<li><code>LIBRATION_FREQ_MAX</code> (float): the maximum frequency of the librations that will be taken into account. By default, <code>0.002</code>. Corresponds to the period of oscillations equal to <code>500</code> years.</li>
+<li><code>LIBRATION_CRITICAL</code> (float): the critical value of the peaks on the periodograms that is counted as significant. By default, <code>0.1</code>.</li>
+<li><code>LIBRATION_SOFT</code> (float): the <em>soft</em> critical value of the peaks on the periodograms that is counted as significant. Used when you <em>really</em> want to find some librations. By default, <code>0.05</code>.</li>
+<li><code>LIBRATION_PERIOD_MIN</code> (int): the number of years to remove from the beginning and end. If you want to disable the cut of these points, just set it to <code>0</code>. See <a href="../libration/">Libration section</a> for explanation!</li>
+<li><code>LIBRATION_PERIOD_CRITICAL</code> (int): the critical value of the maximum libration period used to identify is there libration or not. By default, <code>20000</code> years.</li>
+<li><code>LIBRATION_MONOTONY_CRITICAL</code> (list): critical values for the metric <code>monotony</code>. By default, <code>[0.4, 0.6]</code>.</li>
 </ul>
 <h2 id="integration-options">Integration options</h2>
 <p>See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a> for explanation of the integrator's settings.</p>
 <ul>
-<li><code>integration.tmax</code> (int): the end of the integration. Please note that <code>rebound</code> does not use years as time steps but years divided into 2&pi;. Therefore, if you want to integrate for 1000 years, the value <code>integration.tmax</code> should be set to <code>1000*2&amp;pi;</code> ~ <code>6283</code>. By default, <code>628319</code> (approx. 100000 years).</li>
-<li><code>integration.dt</code> (float): the step of the integration (or the initial step for some integrators). By default, <code>0.1</code>.</li>
-<li><code>integration.integrator</code> (string): the default integrator from rebound. By default, <code>SABA(10,6,4)</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a>.</li>
-<li><code>integration.integrator.safe_mode</code> (int): the parameter of the integration. By default, <code>0</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a></li>
-<li><code>integration.integrator.corrector</code> (int): the parameter of the corrector for symplectic integrators. By default, <code>17</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a></li>
-<li><code>solar_system_file</code> (str): the name of the cache file used to store the initial data of the Sun, planets, and Pluto. It is used to speed up the creation of the simulation. By default, <code>cache/solar.bin</code>.</li>
+<li><code>tmax</code>/<code>INTEGRATION_TMAX</code> (int): the end of the integration. Please note that <code>rebound</code> does not use years as time steps but years divided into 2&pi;. Therefore, if you want to integrate for 1000 years, the value <code>INTEGRATION_TMAX</code> should be set to <code>1000*2&amp;pi;</code> ~ <code>6283</code>. By default, <code>628319</code> (approx. 100000 years). Note that you can integrate backwards. In this case, <code>INTEGRATION_TMAX</code> can be set to <code>-628319</code>.</li>
+<li><code>dt</code>/<code>INTEGRATION_DT</code> (float): the step of the integration (or the initial step for some integrators). By default, <code>0.1</code>.</li>
+<li><code>integrator</code>/<code>INTEGRATION_INTEGRATOR</code> (string): the default integrator from rebound. By default, <code>SABA(10,6,4)</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a>.</li>
+<li><code>integrator_safe_mode</code>/<code>INTEGRATION_SAFE_MODE</code> (int): the parameter of the integration. By default, <code>0</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a></li>
+<li><code>integrator_corrector</code>/<code>INTEGRATION_CORRECTOR</code> (int): the parameter of the corrector for symplectic integrators. By default, <code>17</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a></li>
+<li><code>SOLAR_SYSTEM_FILE</code> (str): the name of the cache file used to store the initial data of the Sun, planets, and Pluto. It is used to speed up the creation of the simulation. By default, <code>cache/solar.bin</code>. Note that in order to avoid issues with initial date&amp;time, the app will automatically add postfix equals to the current timestamp, i.e., <code>cache/solar_12345.bin</code>.</li>
 </ul>
 <h3 id="access-to-the-parameters-of-rebound">Access to the parameters of <code>rebound</code></h3>
-<p>Note that while <code>resonances</code> provides a wrapper for rebound integrators, you may invoke directly some properties or methods in rebound. You can access the simulation object of rebound directly as an attribute <code>sim.sim</code>:</p>
+<p>While resonances wraps many Rebound integrator settings, you can still manipulate Rebound directly. You can access the simulation object of rebound directly as an attribute <code>sim.sim</code>:</p>
 <pre><code class="language-python">sim = resonances.Simulation()
 # ...
 # set rebound value for whfast corrector
@@ -170,36 +191,34 @@ sim.sim.N_active = 10
 sim.sim.ri_whfast.corrector = 17
 sim.sim.dt = 0.01
 </code></pre>
-<p><code>resonances</code> will not override these values. It sets it only once through initialisation from config.</p>
-<!-- ## AstDyS and Catalogue options
-
--   `astdys.catalog.url` (str): the URl of the AstDyS catalogue used to download at the first run.
--   `astdys.catalog` (str): if AstDyS catalogue is already downloaded, you may specify its location. By default, `cache/allnum.cat`.
--   `astdys.date` (str): the date of the data in AstDyS catalogue converted from MJD to the datetime format. By default, `2020-12-17 00:00`.
--   `catalog` (str): the path of the file used to store the converted AstDyS catalogue.
--   `catalog.date` (str): the date of the current converted AstDyS catalogue. -->
-
+<p><code>resonances</code> will not override these values if Simulation has been already instantiated. It sets it only once through initialisation from config.</p>
+<h2 id="astdys-and-catalogue-options">AstDyS and Catalogue options</h2>
+<ul>
+<li><code>source</code>/<code>DATA_SOURCE</code> (str): which source to use for the initial data. By default, it is set to <code>nasa</code>. Could be <code>astdys</code>. Note that the planet's data will be always taken from NASA Horizon.</li>
+<li><code>ASTDYS_URL</code> (str): the URl of the AstDyS catalogue used to download at the first run.</li>
+<li><code>ASTDYS_CATALOG</code> (str): if AstDyS catalogue is already downloaded, you may specify its location. By default, <code>cache/allnum.cat</code>.</li>
+<li><code>CATALOG_PATH</code> (str): the path of the file used to store the converted AstDyS catalogue (in csv).</li>
+</ul>
 <h2 id="matrices">Matrices</h2>
-<p>The mean motion resonance represents a commensurability between the frequencies of several bodies and an asteroid, which implies the oscillations of the resonant angle. The resonant angle has integer coefficients for every variable included. While there are almost no limitations on the values of these integers, the number of possible resonances is infinite. Thus, it should be somehow limited to avoid an infinite loop. These limitations are in <code>matrix.</code> section of the config.</p>
+<p>The mean motion resonance represents a commensurability between the frequencies of several bodies and an asteroid, which implies the oscillations of the resonant angle. The resonant angle has integer coefficients for every variable included. While there are almost no limitations on the values of these integers, the number of possible resonances is infinite. Thus, it should be somehow limited to avoid an infinite loop. These limitations are in <code>MATRIX_</code> section of the config.</p>
 <p>For more details, please see <a href="../matrix/">Matrix page</a> and the following papers (note that they have different approaches to setting up the limits):</p>
 <ol>
 <li>Smirnov, E. A., Dovgalev, I. S. &amp; Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.</li>
 <li>Smirnov, E. A. &amp; Shevchenko, I. I. Massive identification of asteroids in three-body resonances. Icarus 222, 220–228 (2013).</li>
-<li>
-<p>Nesvorný, D. &amp; Morbidelli, A. Three-Body Mean Motion Resonances and the Chaotic Structure of the Asteroid Belt. The Astronomical Journal 116, 3029–3037 (1998).</p>
-</li>
-<li>
-<p><code>matrix.3body.primary_max</code> (int): the maximum value of the integer for the first planet for three-body resonances. Should be always positive.</p>
-</li>
-<li><code>matrix.3body.coefficients_max</code> (int): the maximum value of the integer for the other planet and the asteroid in three-body resonance. Should be always positive.</li>
-<li><code>matrix.3body.max_order</code> (int): the maximum value of the order of the three-body mean motion resonance. The order is the absolute value of the sum of the integers for the mean longitudes. Should be always positive.</li>
-<li><code>matrix.3body.file</code> (str): the path to the file where the app dumps the calculated values of the corresponding semi-major axis.</li>
-<li><code>matrix.2body.*</code> (mixed): the same but for two-body resonances.</li>
+<li>Nesvorný, D. &amp; Morbidelli, A. Three-Body Mean Motion Resonances and the Chaotic Structure of the Asteroid Belt. The Astronomical Journal 116, 3029–3037 (1998).</li>
 </ol>
+<p><strong>Important:</strong> If you have change any of the values below, <strong>DELETE</strong> manually the generated csv-files (e.g., <code>cache/mmr-3body.csv</code>) to force the app to regenerate the matrices. Otherwise, the app will simply use old generated files.</p>
+<ul>
+<li><code>MATRIX_3BODY_PRIMARY_MAX</code> (int): the maximum value of the integer for the first planet for three-body resonances. Should be always positive. Default is <code>8</code>.</li>
+<li><code>MATRIX_3BODY_COEF_MAX</code> (int): the maximum absolute value of the integer for the other planet and the asteroid in three-body resonance. Should be always positive.</li>
+<li><code>MATRIX_3BODY_ORDER_MAX</code> (int): the maximum value of the order of the three-body mean motion resonance. The order is the absolute value of the sum of the integers for the mean longitudes. Should be always positive.</li>
+<li><code>MATRIX_3BODY_FILE</code> (str): the path to the file where the app dumps the calculated values of the corresponding semi-major axis. You can review the generated CSV file and make modifications if needed. The default option is <code>cache/mmr-3body.csv</code>.</li>
+<li><code>MATRIX_2BODY_*</code> (mixed): the same but for two-body resonances.</li>
+</ul>
 <h2 id="other">Other</h2>
 <ul>
-<li><code>log.file</code> (str): the path to the file where the app stores log data.</li>
-<li><code>log.level</code> (str): the default level what the app should store in the log file (options: <code>debug</code>, <code>info</code>, <code>warning</code>, <code>error</code>, <code>critical</code>). The default value is <code>info</code>.</li>
+<li><code>LOG_FILE</code> (str): the path to the file where the app stores log data.</li>
+<li><code>LOG_LEVEL</code> (str): the default level what the app should store in the log file (options: <code>debug</code>, <code>info</code>, <code>warning</code>, <code>error</code>, <code>critical</code>). The default value is <code>info</code>.</li>
 </ul>
               
             </div>

@@ -69,8 +69,6 @@
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#the-workflow">The workflow</a>
     </li>
-    <li class="toctree-l3"><a class="reference internal" href="#the-usage">The usage</a>
-    </li>
         </ul>
     </li>
     </ul>
@@ -192,7 +190,6 @@ body.axis_periodogram_peaks
 <p>The filtering procedure uses <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.filtfilt.html">scipy.signal.filtfilt</a> for the filter designed by scipy.signal.butter. The default method is Gustafsson’s one.</p>
 <p>Another complication appears after applying the filter: the values of the first and the last points (in time) might be 'damaged' because the filter smooths the data based on the historical values, which are not presented for the beginning and the end. Thus, it is a good idea to cut some points off to improve the accuracy of the identification of oscillations frequencies.</p>
 <p>To calculate the number of points to cut, the app uses the parameter <code>libration.period.min</code> (by default, <code>500</code>), which represents the number of years to remove from the beginning and end. To adjust it to other parameters, it is multiplied by the sampling frequency. Hence, there are no very low frequencies in the resulting data. If you do not want to cut these points, just set the parameter to <code>0</code>.</p>
-<h3 id="the-usage">The usage</h3>
               
             </div>
           </div><footer>
