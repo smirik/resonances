@@ -2,8 +2,6 @@
 
 `resonances` is an open-source package dedicated to the identification of mean-motion resonances of small bodies. Many examples are for the Solar system; however, you might use the package for any possible planetary system, including exoplanets. For now, the package supports only eccentricity-type resonances. However, it will be improved in the future.
 
-**Note:** while this app has many functional and integration tests built in, it is still in the dev stage. Hence, it might include some inconsistencies. So, any community help is appreciated!
-
 ## Features
 
 The package:
@@ -11,6 +9,7 @@ The package:
 -   can automatically identify two-body and three-body mean-motion resonance in the Solar system,
 -   accurately differentiates different types of resonances (pure, transient, uncertain),
 -   provides an interface for mass tasks (i.e. find resonant areas in a planetary system),
+-   has integration with NASA Horizon (through rebound) and AstDyS catalog,
 -   can plot time series and periodograms,
 -   and, yeah, it is well tested ;)
 
@@ -41,6 +40,7 @@ For those who are not familiar with the mean-motion resonances, here is the list
 
 ### Books
 
+1. Valerio Carruba, Evgeny Smirnov, Dagmara Oszkiewicz. Machine Learning for Small Bodies in the Solar System. (Elsevier, 2024). https://doi.org/10.1016/C2023-0-51021-3
 1. Murray, C. D. & Dermott, S. F. Solar system dynamics. (Cambridge Univ. Press, 2012).
 1. Morbidelli, A. Modern celestial mechanics: aspects of solar system dynamics. (2002).
 
