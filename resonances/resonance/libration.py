@@ -36,7 +36,9 @@ class libration:
         return False
 
     @classmethod
-    def monotony_estimation(cls, data, crit=np.pi):
+    def monotony_estimation(cls, data, crit=np.pi) -> float:
+        if len(data) <= 1:  # it can be the case for testing purposes mostly
+            return 0.0
         num = 0
         prev = data[0]
         for elem in data:
@@ -227,8 +229,7 @@ class libration:
 
     @classmethod
     def body(cls, sim, body: resonances.Body):
-
-        integration_time = round(sim.tmax / (2 * np.pi))
+        integration_time = abs(round(sim.tmax / (2 * np.pi)))  # abs for backward integration
         fs = sim.Nout / integration_time  # sample rate, Hz || Nout/time, i.e. 10000/100000
         cutoff = sim.oscillations_cutoff  # should be a little bit more than needed
         nyq = 0.5 * fs  # Nyquist Frequency

@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Smirnov
+    given-names: Evgeny
+    orcid: https://orcid.org/0000-0001-8264-8668
+title: "resonances python package"
+version: 0.3.1
+identifiers:
+  - type: doi
+    value: 10.1016/j.ascom.2023.100707
+date-released: 2023-03-18

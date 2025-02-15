@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "resonances"
-version = "0.3.0"
+version = "0.4.0"
 description = "Identification of mean-motion resonances"
 authors = ["Evgeny Smirnov <smirik@gmail.com>"]
 license = "MIT"
@@ -29,10 +29,12 @@ seaborn = "^0.13.2"
 astropy = "^6.1.2"
 rebound = "^3.23.2"
 # rebound = "^4.4.2"
-astdys = ">=0.9.2"
+astdys = ">=0.9.3"
 mkdocs = "1.4.2"
 mkdocs-jupyter = "0.22.0"
-lxml-html-clean = "^0.1.1"
+lxml-html-clean = ">=0.1.1,<0.5.0"
+tqdm = "^4.66.5"
+python-dotenv = "^1.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^8.3.1"
@@ -47,11 +49,14 @@ coverage = "^7.6.0"
 ipykernel = "^6.21.3"
 
 [tool.coverage.run]
-omit = [".*", "tests/resonances/*", "*/site-packages/*"]
+omit = [".*", "tests/*", "*/site-packages/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/resonances"]
-
+filterwarnings = [
+    "ignore::DeprecationWarning:rebound",
+    "ignore::RuntimeWarning:rebound.horizons",
+]
 [tool.coverage.report]
 fail_under = 80
 omit = [".*", "tests/resonances/*", "*/site-packages/*"]

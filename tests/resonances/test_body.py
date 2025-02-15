@@ -59,7 +59,6 @@ def test_mmr_to_dict():
     body.periodogram_power[mmr.to_s()] = np.array([0, 1, 2, 3, 4])
 
     result = body.mmr_to_dict(mmr, times)
-    print(result)
 
     assert isinstance(result, dict)
     assert len(result['angle']) == len(times)

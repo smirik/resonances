@@ -1,20 +1,107 @@
+import datetime
 import numpy as np
 import pandas as pd
 import rebound
 from pathlib import Path
 import os
 from typing import List, Union
+import tqdm
 
 import resonances
 import astdys
-import datetime
+
+import resonances.data
+import resonances.data.util
+import resonances.horizons
+from resonances.config import config as c
 
 
 class Simulation:
-    def __init__(self, name=None):
+    def __init__(  # noqa: C901
+        self,
+        name=None,
+        date: Union[str, datetime.datetime] = None,
+        source=None,
+        tmax=None,
+        integrator: str = None,
+        integrator_safe_mode: int = None,
+        integrator_corrector: int = None,
+        dt: float = None,
+        save: str = None,
+        save_path: str = None,
+        save_summary: bool = None,
+        plot: str = None,
+        plot_path: str = None,
+        plot_type: str = None,
+        image_type: str = None,
+    ):
         self.name = name
         if self.name is None:
             self.name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.Nout = None
+
+        self.source = source
+        if self.source is None:
+            self.source = c.get('DATA_SOURCE')
+
+        if date is not None:
+            self.date = resonances.data.util.datetime_from_string(date)
+            if self.source == 'astdys':
+                if self.date.strftime("%Y-%m-%d %H:%M:%S") != astdys.datetime().strftime("%Y-%m-%d %H:%M:%S"):
+                    resonances.logger.error(
+                        "Date specified by the user is not the same as the catalog time, which may cause issues: "
+                        f"{self.date.strftime('%Y-%m-%d %H:%M:%S')} != {astdys.catalog_time()}"
+                    )
+        elif source == 'astdys':
+            self.date = astdys.datetime()
+        else:
+            self.date = datetime.datetime.combine(datetime.datetime.today(), datetime.time.min)
+
+        if tmax is None:
+            self.tmax = int(c.get('INTEGRATION_TMAX'))
+        else:
+            self.tmax = tmax
+
+        self.integrator = integrator
+        if self.integrator is None:
+            self.integrator = c.get('INTEGRATION_INTEGRATOR')
+
+        self.dt = dt
+        if self.dt is None:
+            self.dt = float(c.get('INTEGRATION_DT'))
+
+        self.integrator_corrector = integrator_corrector
+        if self.integrator_corrector is None:
+            self.integrator_corrector = int(c.get('INTEGRATION_CORRECTOR'))
+
+        self.save = save
+        if self.save is None:
+            self.save = c.get('SAVE_MODE')
+
+        now = datetime.datetime.now()
+        self.save_path = save_path
+        if self.save_path is None:
+            self.save_path = f"{c.get('SAVE_PATH')}/{now.strftime('%Y-%m-%d_%H:%M:%S')}"
+
+        self.save_summary = save_summary
+        if self.save_summary is None:
+            self.save_summary = bool(c.get('SAVE_SUMMARY'))
+
+        self.plot = plot
+        if self.plot is None:
+            self.plot = c.get('PLOT_MODE')
+
+        self.plot_type = plot_type
+        if self.plot_type is None:
+            self.plot_type = c.get('PLOT_TYPE')
+
+        self.plot_path = plot_path
+        if self.plot_path is None:
+            self.plot_path = f"{c.get('PLOT_PATH')}/{now.strftime('%Y-%m-%d_%H:%M:%S')}"
+
+        self.image_type = image_type
+        if self.image_type is None:
+            self.image_type = c.get('PLOT_IMAGE_TYPE')
 
         self.planets = self.list_of_planets()
 
@@ -22,86 +109,115 @@ class Simulation:
         self.bodies: List[resonances.Body] = []
         self.particles = []
 
-        self.bodies_date = resonances.config.get('catalog.date')
+        if self.source == 'astdys':
+            self.bodies_date = astdys.datetime()
+        else:
+            self.bodies_date = self.date
 
         # Libration and filtering settings
-        self.oscillations_cutoff = resonances.config.get('libration.oscillation.filter.cutoff')
-        self.oscillations_filter_order = resonances.config.get('libration.oscillation.filter.order')
+        self.oscillations_cutoff = float(resonances.config.get('LIBRATION_FILTER_CUTOFF'))
+        self.oscillations_filter_order = int(resonances.config.get('LIBRATION_FILTER_ORDER'))
 
-        self.periodogram_frequency_min = resonances.config.get('libration.periodogram.frequency.min')
-        self.periodogram_frequency_max = resonances.config.get('libration.periodogram.frequency.max')
-        self.periodogram_critical = resonances.config.get('libration.periodogram.critical')
-        self.periodogram_soft = resonances.config.get('libration.periodogram.soft')
+        self.periodogram_frequency_min = float(resonances.config.get('LIBRATION_FREQ_MIN'))
+        self.periodogram_frequency_max = float(resonances.config.get('LIBRATION_FREQ_MAX'))
+        self.periodogram_critical = float(resonances.config.get('LIBRATION_CRITICAL'))
+        self.periodogram_soft = float(resonances.config.get('LIBRATION_SOFT'))
 
-        self.libration_period_critical = resonances.config.get('libration.period.critical')
-        self.libration_monotony_critical = resonances.config.get('libration.monotony.critical')
-        self.libration_period_min = resonances.config.get('libration.period.min')
+        self.libration_period_critical = int(resonances.config.get('LIBRATION_PERIOD_CRITICAL'))
+        self.libration_monotony_critical = [float(x.strip()) for x in resonances.config.get('LIBRATION_MONOTONY_CRITICAL').split(",")]
+
+        self.libration_period_min = int(resonances.config.get('LIBRATION_PERIOD_MIN'))
 
         self.sim = None
 
-        self.Nout = None
-        self.tmax = resonances.config.get('integration.tmax')
-        self.integrator = resonances.config.get('integration.integrator')
-        self.dt = resonances.config.get('integration.dt')
-        if resonances.config.has('integration.integrator.safe_mode'):
-            self.integrator_safe_mode = resonances.config.get('integration.integrator.safe_mode')
+        if integrator_safe_mode is not None:
+            self.integrator_safe_mode = integrator_safe_mode
         else:  # pragma: no cover
             self.integrator_safe_mode = 1
 
-        if resonances.config.has('integration.integrator.corrector'):
-            self.integrator_corrector = resonances.config.get('integration.integrator.corrector')
-        else:  # pragma: no cover
-            self.integrator_corrector = None
-
-        self.save = resonances.config.get('save')
-        self.save_path = f"{resonances.config.get('save.path')}/{self.name}"
-        self.save_summary = resonances.config.get('save.summary')
-
-        self.plot = resonances.config.get('plot')
-        self.plot_type = resonances.config.get('plot.type', 'both')
-        self.plot_path = f"{resonances.config.get('plot.path')}/{self.name}/images"
-
-        self.image_type = resonances.config.get('plot.image_type', 'png')
-        self.data_source = resonances.config.get('data.source', 'astdys')
-
     def solar_system_full_filename(self) -> str:
-        catalog_file = f"{os.getcwd()}/{resonances.config.get('solar_system_file')}"
+        timestamp = int(self.date.timestamp())
+        catalog_file = f"{os.getcwd()}/{c.get('SOLAR_SYSTEM_FILE')}"
+        catalog_file = catalog_file.replace('.bin', f'-{timestamp}.bin')
         return catalog_file
 
-    def create_solar_system(self, date: str = ''):
+    def create_solar_system(self, force=False):
+        """
+        Creates or loads the Solar System to rebound Simulation.
+        This method either loads an existing Solar System simulation from a file or creates a new one
+        if the file doesn't exist or if forced to do so. The simulation includes major planets based
+        on the specified date or default configuration.
+
+        Parameters
+        ----------
+        force : bool, optional
+            If True, forces creation of new simulation even if file exists. Defaults to False.
+        Returns
+        -------
+        None
+            Updates self.sim with the created/loaded REBOUND simulation.
+        Notes
+        -----
+        - If a saved simulation file exists and force=False, loads from file
+        - Otherwise creates new simulation with planets at specified date
+        - Saves newly created simulation to file for future use
+        """
+
         solar_file = Path(self.solar_system_full_filename())
-        if solar_file.exists():
+        if solar_file.exists() and not force:
             self.sim = rebound.Simulation(self.solar_system_full_filename())
-        else:  # pragma: no cover
+        else:
             self.sim = rebound.Simulation()
-            if date != '':
-                self.sim.add(self.list_of_planets(), date=date)
-            elif self.data_source == 'astdys':
-                self.sim.add(self.list_of_planets(), date=f"{astdys.catalog_time()} 00:00")  # date of AstDyS current catalogue
-            else:
-                self.sim.add(self.list_of_planets())
+            self.sim.add(self.list_of_planets(), date=self.date)
             self.sim.save(self.solar_system_full_filename())
 
     def add_body(self, elem_or_num, mmr: Union[str, resonances.MMR, List[resonances.MMR]], name='asteroid'):
+        """
+        Add a celestial body to the simulation with its corresponding mean motion resonance(s).
+        Parameters
+        ----------
+        elem_or_num : Union[int, str, dict]
+            Either an integer/string representing the asteroid's number,
+            or a dictionary containing orbital elements with optional mass.
+            If dictionary, must contain keys: 'a', 'e', 'inc', 'Omega', 'omega', 'M'
+            Optional key: 'mass'
+        mmr : Union[str, resonances.MMR, List[resonances.MMR]]
+            Mean motion resonance(s) to analyze for this body. Can be:
+            - String representation of MMR (e.g. "4J-2S-1")
+            - Single MMR object
+            - List of MMR objects
+            At least one resonance must be provided.
+        name : str, optional
+            Name identifier for the body. Defaults to 'asteroid'.
+        source : str, optional
+            Source of orbital elements data. Two options are available: 'nasa' or 'astdys'. Defaults to 'nasa'.
+        Raises
+        ------
+        Exception
+            If no resonances are provided or if elem_or_num is invalid type.
+        Notes
+        -----
+        - If elem_or_num is an ID, orbital elements are fetched from NASA catalog
+        - If elem_or_num is a dict, it must contain all required orbital elements
+        - Added body is stored in self.bodies list
+        - For each MMR, planet indices in simulation are calculated and stored
+
+        Examples
+        --------
+        >>> sim.add_body(1, "4J-2S-1", name="Asteroid 1", source="nasa")  # Add by NASA id
+        >>> sim.add_body({"a": 3.2, "e": 0.1, "omega": 0.1, "Omega": 0.1, "M": 0.1}, "3J-1")  # Add by orbital elements
+        """
         body = resonances.Body()
 
-        if isinstance(mmr, str):
+        if isinstance(mmr, list):
+            mmr = resonances.create_mmr(mmr)
+        else:
             mmr = [resonances.create_mmr(mmr)]
 
-        if isinstance(mmr, resonances.MMR):
-            mmr = [mmr]
+        elem = self.get_body_elements(elem_or_num)
 
-        if len(mmr) == 0:
-            raise Exception('You have to provide at least one resonance')
-
-        if isinstance(elem_or_num, int) or (isinstance(elem_or_num, str)):
-            elem = astdys.search(elem_or_num)
-        elif isinstance(elem_or_num, dict):
-            elem = elem_or_num
-            if 'mass' in elem:
-                body.mass = elem['mass']
-        else:
-            raise Exception('You can add body only by its number or all orbital elements')
+        if 'mass' in elem:
+            body.mass = elem['mass']
 
         body.initial_data = elem
         body.name = name
@@ -109,7 +225,20 @@ class Simulation:
 
         for elem in body.mmrs:
             elem.index_of_planets = self.get_index_of_planets(elem.planets_names)
+
         self.bodies.append(body)
+
+    def get_body_elements(self, elem_or_num: int) -> dict:
+        if isinstance(elem_or_num, int) or (isinstance(elem_or_num, str)):
+            if self.source == 'astdys':
+                elem = astdys.search(elem_or_num)
+            else:
+                elem = resonances.horizons.get_body_keplerian_elements(elem_or_num, self.sim, date=self.date)
+        elif isinstance(elem_or_num, dict):
+            elem = elem_or_num
+        else:
+            raise Exception('You can add body only by its number or all orbital elements')
+        return elem
 
     def add_bodies_to_simulation(self):
         for body in self.bodies:
@@ -143,7 +272,7 @@ class Simulation:
 
         self.sim.move_to_com()
 
-    def run(self):
+    def run(self, progress=False):
         self.add_bodies_to_simulation()
         for body in self.bodies:
             body.setup_vars_for_simulation(self.Nout)
@@ -153,7 +282,11 @@ class Simulation:
 
         ps = self.sim.particles
 
-        for i, time in enumerate(self.times):
+        iterations = list(enumerate(self.times))
+        if progress:  # pragma: no cover
+            iterations = tqdm.tqdm(iterations, total=len(iterations))
+
+        for i, time in iterations:
             self.sim.integrate(time)
             os = self.sim.calculate_orbits(primary=ps[0])
 
@@ -324,7 +457,7 @@ class Simulation:
         self.__tmax = value
         self.tmax_yrs = self.__tmax / (2 * np.pi)
         if self.Nout is None:
-            self.Nout = int(self.__tmax / 100)
+            self.Nout = abs(int(self.__tmax / 100))  # abs for backward integration case
 
     @tmax.deleter
     def tmax(self):  # pragma: no cover

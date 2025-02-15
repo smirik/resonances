@@ -1,8 +1,14 @@
 # Installation
 
+The fastest way:
+
+```bash
+pip install resonances
+```
+
 ## Poetry
 
-The best way to install `resonances` package is through [poetry](https://python-poetry.org), which is the dependency manager for python. In this case, you only need to write:
+The _best_ way to install `resonances` package is through [poetry](https://python-poetry.org), which is the dependency manager for python. In this case, you only need to write:
 
 ```bash
 poetry add resonances

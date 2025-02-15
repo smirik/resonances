@@ -30,9 +30,8 @@ def get_2body_elements_sample():
 
 
 def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=False):
-    sim = resonances.Simulation()
-
-    sim.create_solar_system(date=astdys.util.convert_mjd_to_date(60000.0))
+    sim = resonances.Simulation(date=astdys.util.convert_mjd_to_datetime(60000))
+    sim.create_solar_system()
 
     # create to speedup
     sim.tmax = 20
@@ -50,8 +49,26 @@ def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=F
     return sim
 
 
-def add_test_asteroid_to_simulation(sim):
+def add_test_asteroid_to_simulation(sim: resonances.Simulation):
     elem = get_3body_elements_sample()
     mmr = resonances.create_mmr('4J-2S-1')
     sim.add_body(elem, mmr, name='asteroid')
     return sim
+
+
+def set_fast_integrator():
+    resonances.config.set('INTEGRATION_INTEGRATOR', 'whfast')
+    resonances.config.set('INTEGRATION_DT', 1.0)
+    resonances.config.set('INTEGRATION_SAFE_MODE', 0)
+    resonances.config.set('INTEGRATION_CORRECTOR', 11)
+    resonances.config.set('PLOT_MODE', None)
+    resonances.config.set('SAVE_MODE', None)
+
+
+def reset_fast_integrator():
+    resonances.config.set('INTEGRATION_INTEGRATOR', 'SABA(10,6,4)')
+    resonances.config.set('INTEGRATION_DT', 1.0)
+    resonances.config.set('INTEGRATION_SAFE_MODE', 0)
+    resonances.config.set('INTEGRATION_CORRECTOR', 17)
+    resonances.config.set('PLOT_MODE', 'nonzero')
+    resonances.config.set('SAVE_MODE', 'nonzero')

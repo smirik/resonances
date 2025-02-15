@@ -6,7 +6,7 @@ This app calculates the value of the resonant semi-major axis for three-body res
 
 ## Initialisation
 
-When the app needs to know the value of the resonant semi-major axis for the first time, it calculates it and stores it in the file (the config items `matrix.3body.file` and `matrix.2body.file`). The files have the following structure:
+When the app needs to know the value of the resonant semi-major axis for the first time, it calculates it and stores it in the file (the config items `MATRIX_3BODY_FILE` and `MATRIX_2BODY_FILE`). The files have the following structure:
 
 1. The number of an item
 1. The short notation of resonance (i.e. `4J-2S-1` or `1J-1`)

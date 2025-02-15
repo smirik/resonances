@@ -1,5 +1,6 @@
-import json
 from pathlib import Path
+from dotenv import dotenv_values
+import os
 
 
 def static_init(cls):
@@ -10,39 +11,54 @@ def static_init(cls):
 
 @static_init
 class config:
-    config = None
+    config = {}
 
     @classmethod
     def get(cls, key, default=None):
         try:
             value = cls.config[key]
-        except Exception:
+        except KeyError:
             if default is not None:
                 return default
-            raise Exception('There is no config with key = {}. The full config: {}'.format(key, json.dumps(cls.config)))
+            raise Exception(f'There is no config with key = {key}. The full config: {cls.config}')
         return value
 
     @classmethod
     def has(cls, key):
-        if key in cls.config:
-            return True
-        return False
+        return key in cls.config
 
     @classmethod
     def set(cls, key, value):
         if not cls.has(key):
-            raise Exception('There is no config with key = {}. The full config: {}'.format(key, json.dumps(cls.config)))
-
+            raise Exception(f'There is no config with key = {key}. The full config: {cls.config}')
         cls.config[key] = value
 
     @classmethod
     def static_init(cls):
-        config_file_dir = Path(__file__).parent.resolve()
-        config_file_path = '{}/config.json'.format(str(config_file_dir))
-        config_file = Path(config_file_path)
+        """
+        1) Load default values from .env.dist (in the package).
+        2) Override with real OS environment variables.
+        2) Override them with .env (in current working directory), if present.
+        """
+        package_env_path = Path(__file__).parent / ".env.dist"
+        user_env_path = Path.cwd() / ".env"
 
-        if not config_file.exists():  # pragma: no cover
-            raise Exception('No config.json presented. Looking at {} Cannot continue working.'.format(config_file_path))
+        # 1. Load defaults from your package's .env.dist
+        if not package_env_path.exists():  # pragma: no cover
+            raise FileNotFoundError(f"Missing .env.dist at: {package_env_path}")
+        default_config = dotenv_values(package_env_path)
 
-        with open(config_file_path, "r") as read_file:
-            cls.config = json.load(read_file)
+        # 2. Load user-local .env if available
+        user_config = {}
+        if user_env_path.exists():  # pragma: no cover
+            user_config = dotenv_values(user_env_path)
+
+        # 3. Get actual environment variables
+        # (os.environ is a live mapping; turn it into a dict copy here)
+        env_vars = dict(os.environ)
+
+        # Merge them: left to right means the rightmost wins in conflicts
+        #   default_config  <  env_vars < user_config
+        merged = {**user_config, **default_config, **env_vars, **user_config}
+
+        cls.config = merged

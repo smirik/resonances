@@ -28,8 +28,8 @@ def test_resolve():
     overlapping = [[100, 102]]
     empty = []
 
-    lib_crit = resonances.config.get('libration.period.critical')
-    mon_crit = resonances.config.get('libration.monotony.critical')
+    lib_crit = float(resonances.config.get('LIBRATION_PERIOD_CRITICAL'))
+    mon_crit = [float(x.strip()) for x in resonances.config.get('LIBRATION_MONOTONY_CRITICAL').split(",")]
 
     # pure libration with libration for both angle and axis at the same frequency
     assert 2 == resonances.libration.resolve(True, overlapping, 100000, lib_crit, 0.5, mon_crit)
@@ -52,6 +52,9 @@ def test_monotony_estimation():
     data = [1, 2, 3, 4, 5]
     assert 0.0 == resonances.libration.monotony_estimation(data)
 
+    data = [1, 2, 3, 4, 5]
+    assert 0.0 == resonances.libration.monotony_estimation(data)
+
     data = [5, 4, 3, 2, 1]
     assert 1.0 == resonances.libration.monotony_estimation(data)
 
@@ -63,3 +66,6 @@ def test_monotony_estimation():
 
     data = [1, 2, 3, 4, 5, 6, 1, 6, 1, 6, 1]
     assert 0.2 == resonances.libration.monotony_estimation(data)
+
+    data = [1]
+    assert 0.0 == resonances.libration.monotony_estimation(data)

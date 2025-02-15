@@ -9,7 +9,7 @@ from resonances.matrix.three_body_matrix import ThreeBodyMatrix
 
 @pytest.fixture(autouse=True)
 def run_around_tests():
-    resonances.config.set('matrix.3body.file', 'cache/tests/mmr-3body-test.csv')
+    resonances.config.set(ThreeBodyMatrix.catalog_file, 'cache/tests/mmr-3body-test.csv')
     Path('cache/tests').mkdir(parents=True, exist_ok=True)
     yield
     shutil.rmtree('cache/tests')

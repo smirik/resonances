@@ -1,4 +1,4 @@
-__version__ = '0.1.1'
+__version__ = '0.4.0'
 import logging
 
 from .config import config
@@ -21,3 +21,4 @@ import resonances.resonance.plot
 from resonances.finder import find
 from resonances.finder import check
 from resonances.finder import find_asteroids_in_mmr
+from resonances.finder import find_resonances

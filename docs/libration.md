@@ -76,5 +76,3 @@ The filtering procedure uses [scipy.signal.filtfilt](https://docs.scipy.org/doc/
 Another complication appears after applying the filter: the values of the first and the last points (in time) might be 'damaged' because the filter smooths the data based on the historical values, which are not presented for the beginning and the end. Thus, it is a good idea to cut some points off to improve the accuracy of the identification of oscillations frequencies.
 
 To calculate the number of points to cut, the app uses the parameter `libration.period.min` (by default, `500`), which represents the number of years to remove from the beginning and end. To adjust it to other parameters, it is multiplied by the sampling frequency. Hence, there are no very low frequencies in the resulting data. If you do not want to cut these points, just set the parameter to `0`.
-
-### The usage
