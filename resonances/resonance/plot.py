@@ -79,8 +79,8 @@ def body(sim, body: resonances.Body, mmr: resonances.MMR, image_type='png'):
     axs[5].plot(sim.times / (2 * np.pi), body.ecc, linestyle='', marker=',', color='black')
     axs[5].sharex(axs[0])
 
-    axs[0].set_ylabel(r"$\sigma$ (deg)", fontsize=12)
-    axs[1].set_ylabel(r"$\sigma_f$ (deg)", fontsize=12)
+    axs[0].set_ylabel(r"$\sigma$ (rad)", fontsize=12)
+    axs[1].set_ylabel(r"$\sigma_f$ (rad)", fontsize=12)
     axs[2].set_ylabel(r"$a_f$ (AU)", fontsize=12)
     axs[3].set_ylabel(r"$p_{\sigma}$", fontsize=12)
     axs[4].set_ylabel(r"$p_{a}$", fontsize=12)

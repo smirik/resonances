@@ -129,11 +129,11 @@ def test_simulation_init():
     assert sim.dt == float(resonances.config.get('INTEGRATION_DT'))
     assert sim.integrator_corrector == int(resonances.config.get('INTEGRATION_CORRECTOR'))
     assert sim.save == resonances.config.get('SAVE_MODE')
-    assert sim.save_path == resonances.config.get('SAVE_PATH')
+    assert resonances.config.get('SAVE_PATH') in sim.save_path
     assert sim.save_summary == bool(resonances.config.get('SAVE_SUMMARY'))
     assert sim.plot == resonances.config.get('PLOT_MODE')
     assert sim.plot_type == resonances.config.get('PLOT_TYPE')
-    assert sim.plot_path == resonances.config.get('PLOT_PATH')
+    assert resonances.config.get('PLOT_PATH') in sim.plot_path
     assert sim.image_type == resonances.config.get('PLOT_IMAGE_TYPE')
     assert sim.integrator_safe_mode == 1
     assert len(sim.planets) == 10  # Sun + 9 planets

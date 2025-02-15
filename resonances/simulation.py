@@ -78,9 +78,10 @@ class Simulation:
         if self.save is None:
             self.save = c.get('SAVE_MODE')
 
+        now = datetime.datetime.now()
         self.save_path = save_path
         if self.save_path is None:
-            self.save_path = c.get('SAVE_PATH')
+            self.save_path = f"{c.get('SAVE_PATH')}/{now.strftime('%Y-%m-%d_%H:%M:%S')}"
 
         self.save_summary = save_summary
         if self.save_summary is None:
@@ -96,7 +97,7 @@ class Simulation:
 
         self.plot_path = plot_path
         if self.plot_path is None:
-            self.plot_path = c.get('PLOT_PATH')
+            self.plot_path = f"{c.get('PLOT_PATH')}/{now.strftime('%Y-%m-%d_%H:%M:%S')}"
 
         self.image_type = image_type
         if self.image_type is None:

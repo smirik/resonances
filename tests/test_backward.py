@@ -1,4 +1,3 @@
-import time
 import resonances
 from .tools import set_fast_integrator, reset_fast_integrator
 
