@@ -69,7 +69,7 @@ def find_asteroids_in_mmr(
     num_chunks = len(chunks)
     data = []
     for i, chunk in enumerate(chunks):
-        sim = resonances.Simulation(name=name, source='astdys', date=astdys.catalog_time)
+        sim = resonances.Simulation(name=name, source='astdys', date=resonances.datetime_from_string(astdys.catalog_time))
         sim.create_solar_system()
 
         resonances.logger.info(f"Iteration {i+1}/{num_chunks}: Going to process a chunk of {len(chunk)} asteroids.")
