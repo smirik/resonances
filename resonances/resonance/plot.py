@@ -93,3 +93,5 @@ def body(sim, body: resonances.Body, mmr: resonances.MMR, image_type='png'):
 
     if sim.plot_type in ['both', 'show']:  # pragma: no cover
         plt.show()
+
+    plt.close(fig)  # Prevents display in Jupyter Notebook
