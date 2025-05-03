@@ -412,6 +412,10 @@ class Simulation:
 
     def save_simulation_summary(self) -> pd.DataFrame:
         self.check_or_create_save_path()
+        # Save simulation details
+        self.save_configuration_details()
+
+        # Save summary to CSV
         df = self.get_simulation_summary()
         summary_filename = '{}/summary.csv'.format(self.save_path)
         summary_file = Path(summary_filename)
@@ -421,6 +425,43 @@ class Simulation:
             df.to_csv(summary_filename, mode='a', header=True, index=False)
 
         return df
+
+    def save_configuration_details(self):
+        self.check_or_create_save_path()
+
+        with open(f"{self.save_path}/simulation.cfg", "w") as f:
+            f.write(f"Simulation Configuration\n")
+            f.write(f"========================\n")
+            f.write(f"Name: {self.name}\n")
+            f.write(f"Date: {self.date}\n")
+            f.write(f"Source: {self.source}\n")
+            f.write(f"Number of bodies: {len(self.bodies)}\n")
+            f.write(f"========================\n")
+
+            f.write(f"Tmax: {self.tmax}\n")
+            f.write(f"Integrator: {self.integrator}\n")
+            f.write(f"Integrator safe mode: {self.integrator_safe_mode}\n")
+            f.write(f"Integrator corrector: {self.integrator_corrector}\n")
+            f.write(f"dt: {self.dt}\n")
+            f.write(f"Save: {self.save}\n")
+            f.write(f"Save path: {self.save_path}\n")
+            f.write(f"Save summary: {self.save_summary}\n")
+            f.write(f"Plot: {self.plot}\n")
+            f.write(f"Plot path: {self.plot_path}\n")
+            f.write(f"Plot type: {self.plot_type}\n")
+            f.write(f"Image type: {self.image_type}\n")
+
+            f.write(f"\n\n Configuration values (default):\n")
+            f.write(f"========================\n")
+
+            for key, value in c.config.items():
+                f.write(f"{key}: {value}\n")
+
+            f.write(f"\n\n Bodies :\n")
+            f.write(f"========================\n")
+            for body in self.bodies:
+                f.write(f"\n\n Body: {body.name}, mmrs = {', '.join([mmr.to_short() for mmr in body.mmrs])}\n")
+            f.write(f"========================\n")
 
     def check_or_create_save_path(self):
         Path(self.save_path).mkdir(parents=True, exist_ok=True)
