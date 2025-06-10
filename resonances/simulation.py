@@ -169,7 +169,7 @@ class Simulation:
         else:
             self.sim = rebound.Simulation()
             self.sim.add(self.list_of_planets(), date=self.date)
-            self.sim.save(self.solar_system_full_filename())
+            self.sim.save_to_file(self.solar_system_full_filename())
 
     def add_body(self, elem_or_num, mmr: Union[str, resonances.MMR, List[resonances.MMR]], name='asteroid'):
         """
@@ -288,7 +288,7 @@ class Simulation:
 
         for i, time in iterations:
             self.sim.integrate(time)
-            os = self.sim.calculate_orbits(primary=ps[0])
+            os = self.sim.orbits(primary=ps[0])
 
             for body in self.bodies:
                 tmp = os[body.index_in_simulation - 1]  # ? -1 because Sun is not in os
@@ -430,13 +430,13 @@ class Simulation:
         self.check_or_create_save_path()
 
         with open(f"{self.save_path}/simulation.cfg", "w") as f:
-            f.write(f"Simulation Configuration\n")
-            f.write(f"========================\n")
+            f.write("Simulation Configuration\n")
+            f.write("========================\n")
             f.write(f"Name: {self.name}\n")
             f.write(f"Date: {self.date}\n")
             f.write(f"Source: {self.source}\n")
             f.write(f"Number of bodies: {len(self.bodies)}\n")
-            f.write(f"========================\n")
+            f.write("========================\n")
 
             f.write(f"Tmax: {self.tmax}\n")
             f.write(f"Integrator: {self.integrator}\n")
@@ -451,17 +451,17 @@ class Simulation:
             f.write(f"Plot type: {self.plot_type}\n")
             f.write(f"Image type: {self.image_type}\n")
 
-            f.write(f"\n\n Configuration values (default):\n")
-            f.write(f"========================\n")
+            f.write("\n\n Configuration values (default):\n")
+            f.write("========================\n")
 
             for key, value in c.config.items():
                 f.write(f"{key}: {value}\n")
 
-            f.write(f"\n\n Bodies :\n")
-            f.write(f"========================\n")
+            f.write("\n\n Bodies :\n")
+            f.write("========================\n")
             for body in self.bodies:
                 f.write(f"\n\n Body: {body.name}, mmrs = {', '.join([mmr.to_short() for mmr in body.mmrs])}\n")
-            f.write(f"========================\n")
+            f.write("========================\n")
 
     def check_or_create_save_path(self):
         Path(self.save_path).mkdir(parents=True, exist_ok=True)
