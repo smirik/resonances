@@ -1,37 +1,27 @@
 import datetime
 from typing import Union
-import rebound
-from rebound.units import units_convert_particle, hash_to_unit
+from astropy.time import Time
+from astroquery.jplhorizons import Horizons
+import numpy as np
 
 
-def get_body_keplerian_elements(s, sim: rebound.Simulation, date: Union[str, datetime.datetime], G=1) -> dict:
+def get_body_keplerian_elements(s, date: Union[str, datetime.datetime]) -> dict:
     if isinstance(s, int):
         s = str(s) + ';'
 
-    temp_sim = rebound.Simulation()
-    # Use the same units as the main simulation
-    temp_sim.units = sim.units
-    temp_sim.add("Sun")
-    temp_sim.add(s, date=date)
-    p: rebound.Particle = temp_sim.particles[1]
+    t = Time(date)
+    jd = t.jd
 
-    units_convert_particle(
-        p,
-        'km',
-        's',
-        'kg',
-        hash_to_unit(sim.python_unit_l),
-        hash_to_unit(sim.python_unit_t),
-        hash_to_unit(sim.python_unit_m),
-    )
+    obj = Horizons(id=s, location='500@10', epochs=jd)
+    elems = obj.elements()
 
-    orbit = p.orbit(primary=sim.particles[0], G=G)
     elem = {
-        'a': orbit.a,
-        'e': orbit.e,
-        'inc': orbit.inc,
-        'Omega': orbit.Omega,
-        'omega': orbit.omega,
-        'M': orbit.M,
+        'a': elems['a'][0],
+        'e': elems['e'][0],
+        'inc': np.radians(elems['incl'][0]),
+        'omega': np.radians(elems['w'][0]),
+        'Omega': np.radians(elems['Omega'][0]),
+        'M': np.radians(elems['M'][0]),
     }
+
     return elem

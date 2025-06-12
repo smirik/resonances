@@ -24,7 +24,7 @@ def find(
     asteroids = convert_input_to_list(asteroids)
 
     for asteroid in asteroids:
-        elem = resonances.horizons.get_body_keplerian_elements(asteroid, sim=sim.sim, date=now)
+        elem = resonances.horizons.get_body_keplerian_elements(asteroid, date=now)
         mmrs = find_resonances(elem['a'], planets=planets, sigma2=sigma2, sigma3=sigma3)
         if len(mmrs) > 0:
             sim.add_body(elem, mmrs, f"{asteroid}")

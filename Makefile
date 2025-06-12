@@ -1,9 +1,12 @@
-test:
+install:
+	pip uninstall resonances -y && poetry install
+
+test: install
 	poetry run flake8 --count
 	poetry run black . --check
 	poetry run pytest -v tests/resonances
 
-test-only:
+test-only: install
 	poetry run pytest -v tests/resonances
 
 run-docs:
@@ -21,7 +24,7 @@ publish-test:
 publish:
 	poetry publish --build
 
-coverage:
+coverage: install
 	poetry run coverage run -m pytest -v tests/resonances
 	poetry run coverage report -m
 

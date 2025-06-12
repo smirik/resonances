@@ -233,7 +233,7 @@ class Simulation:
             if self.source == 'astdys':
                 elem = astdys.search(elem_or_num)
             else:
-                elem = resonances.horizons.get_body_keplerian_elements(elem_or_num, self.sim, date=self.date)
+                elem = resonances.horizons.get_body_keplerian_elements(elem_or_num, date=self.date)
         elif isinstance(elem_or_num, dict):
             elem = elem_or_num
         else:
