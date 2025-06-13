@@ -4,7 +4,7 @@ install:
 test: install
 	poetry run flake8 --count
 	poetry run black . --check
-	poetry run pytest -v tests/resonances
+	poetry run pytest -v tests
 
 test-only: install
 	poetry run pytest -v tests/resonances

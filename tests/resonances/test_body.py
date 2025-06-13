@@ -54,7 +54,17 @@ def test_mmr_to_dict():
     body.periodogram_peaks[mmr.to_s()] = np.array([0, 1, 2, 3, 4])
 
     result = body.mmr_to_dict(mmr, times)
-    assert result is None
+    assert result is not None
+    assert 'angle' in result
+    assert result['a'] is None
+    assert result['e'] is None
+    assert result['inc'] is None
+    assert result['Omega'] is None
+    assert result['omega'] is None
+    assert result['M'] is None
+    assert result['longitude'] is None
+    assert result['varpi'] is None
+    assert isinstance(result['angle'], np.ndarray)
 
     body.periodogram_power[mmr.to_s()] = np.array([0, 1, 2, 3, 4])
 
