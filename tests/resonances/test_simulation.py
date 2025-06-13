@@ -248,6 +248,58 @@ def test_add_body():
         assert str(e) == exception_text
 
 
+def test_add_bodies():
+    sim = tools.create_test_simulation_for_solar_system()
+    mmr = resonances.ThreeBody('4J-2S-1')
+
+    # Test with prefix
+    body_list = ['1', '2', '3']
+    prefix = 'Asteroid'
+    initial_body_count = len(sim.bodies)
+
+    sim.add_bodies(body_list, mmr, prefix=prefix)
+
+    # Verify correct number of bodies were added
+    assert len(sim.bodies) == initial_body_count + len(body_list)
+
+    # Verify each body has correct name with prefix
+    for i, body_id in enumerate(body_list):
+        body = sim.bodies[initial_body_count + i]
+        expected_name = f"{prefix}_{body_id}"
+        assert body.name == expected_name
+
+        # Verify MMR is correctly assigned
+        assert len(body.mmrs) == 1
+        assert np.array_equal(body.mmrs[0].coeff, mmr.coeff)
+        assert body.mmrs[0].to_s() == mmr.to_s()
+
+    # Test with MMR as string
+    sim2 = tools.create_test_simulation_for_solar_system()
+    body_list2 = ['4', '5']
+    prefix2 = 'TestBody'
+
+    sim2.add_bodies(body_list2, '4J-2S-1', prefix=prefix2)
+
+    assert len(sim2.bodies) == len(body_list2)
+    for i, body_id in enumerate(body_list2):
+        body = sim2.bodies[i]
+        expected_name = f"{prefix2}_{body_id}"
+        assert body.name == expected_name
+        assert body.mmrs[0].to_s() == '4J-2S-1+0+0-1'  # Full MMR string representation
+
+    # Test without prefix (should use None)
+    sim3 = tools.create_test_simulation_for_solar_system()
+    body_list3 = ['6', '7']
+
+    sim3.add_bodies(body_list3, mmr)
+
+    assert len(sim3.bodies) == len(body_list3)
+    for i, body_id in enumerate(body_list3):
+        body = sim3.bodies[i]
+        expected_name = f"{body_id}"  # When prefix is None, f"{None}_{body}" results in "None_{body}"
+        assert body.name == expected_name
+
+
 def test_add_bodies_to_simulation():
     sim = tools.create_test_simulation_for_solar_system()
     tools.add_test_asteroid_to_simulation(sim)

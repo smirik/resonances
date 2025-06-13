@@ -228,6 +228,33 @@ class Simulation:
 
         self.bodies.append(body)
 
+    def add_bodies(self, bodies: List[str], mmr: Union[str, resonances.MMR], prefix: str = None):
+        """
+        Add multiple celestial bodies to the simulation.
+
+        Parameters
+        ----------
+        bodies : List[str]
+            List of body identifiers
+        mmr : Union[str, resonances.MMR]
+            Mean motion resonance(s) to analyze for this body. Can be:
+            - String representation of MMR (e.g. "4J-2S-1")
+            - Single MMR object
+        prefix : str, optional
+            Prefix to add to the body name. Defaults to None.
+
+        Examples
+        --------
+        >>> sim.add_bodies(['463', '2348', '2487'], "4J-2S-1", prefix="Asteroid")
+        """
+        if prefix is None:
+            prefix = ""
+        else:
+            prefix = f"{prefix}_"
+
+        for body in bodies:
+            self.add_body(body, mmr, f"{prefix}{body}")
+
     def get_body_elements(self, elem_or_num: int) -> dict:
         if isinstance(elem_or_num, int) or (isinstance(elem_or_num, str)):
             if self.source == 'astdys':
