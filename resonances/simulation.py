@@ -292,9 +292,13 @@ class Simulation:
 
             for body in self.bodies:
                 tmp = os[body.index_in_simulation - 1]  # ? -1 because Sun is not in os
-                body.axis[i], body.ecc[i], body.longitude[i], body.varpi[i] = (
+                body.axis[i], body.ecc[i], body.inc[i], body.Omega[i], body.omega[i], body.M[i], body.longitude[i], body.varpi[i] = (
                     tmp.a,
                     tmp.e,
+                    tmp.inc,
+                    tmp.Omega,
+                    tmp.omega,
+                    tmp.M,
                     tmp.l,
                     tmp.Omega + tmp.omega,
                 )
@@ -361,6 +365,108 @@ class Simulation:
         if df_data is not None:
             df = pd.DataFrame(data=df_data)
             df.to_csv('{}/data-{}-{}.csv'.format(self.save_path, body.name, mmr.to_s()))
+        self.save_periodogram_data(body, mmr)
+
+    def save_periodogram_data(self, body: resonances.Body, mmr: resonances.MMR):
+        """
+        Save periodogram data for both resonant angle and semi-major axis.
+        Since periodogram data has different scales than time series data,
+        it's saved in separate files.
+        """
+        # Save resonant angle periodogram
+        if body.periodogram_frequency.get(mmr.to_s()) is not None and body.periodogram_power.get(mmr.to_s()) is not None:
+
+            self._save_single_periodogram(
+                frequency=body.periodogram_frequency[mmr.to_s()],
+                power=body.periodogram_power[mmr.to_s()],
+                peaks_data=body.periodogram_peaks.get(mmr.to_s()),
+                body_name=body.name,
+                mmr_str=mmr.to_s(),
+                data_type="angle",
+            )
+
+        # Save semi-major axis periodogram
+        if body.axis_periodogram_frequency is not None and body.axis_periodogram_power is not None:
+
+            self._save_single_periodogram(
+                frequency=body.axis_periodogram_frequency,
+                power=body.axis_periodogram_power,
+                peaks_data=body.axis_periodogram_peaks,
+                body_name=body.name,
+                mmr_str=mmr.to_s(),
+                data_type="axis",
+            )
+
+        # Save overlapping peaks information
+        if body.periodogram_peaks_overlapping.get(mmr.to_s()):
+            overlapping_data = []
+            for left, right in body.periodogram_peaks_overlapping[mmr.to_s()]:
+                overlapping_data.append({'left_boundary': left, 'right_boundary': right, 'center_period': (left + right) / 2})
+
+            if overlapping_data:
+                df_overlapping = pd.DataFrame(overlapping_data)
+                df_overlapping.to_csv(
+                    '{}/data-{}-{}-periodogram-overlapping.csv'.format(self.save_path, body.name, mmr.to_s()), index=False
+                )
+
+    def _save_single_periodogram(self, frequency, power, peaks_data, body_name, mmr_str, data_type):
+        """
+        Helper method to save a single periodogram (either angle or axis) and its peaks.
+
+        Parameters
+        ----------
+        frequency : np.ndarray
+            Frequency array from periodogram
+        power : np.ndarray
+            Power array from periodogram
+        peaks_data : dict or None
+            Dictionary containing peaks information with 'peaks' and 'position' keys
+        body_name : str
+            Name of the body
+        mmr_str : str
+            String representation of the MMR
+        data_type : str
+            Type of data ("angle" or "axis") for filename generation
+        """
+        periodogram_data = {'frequency': frequency, 'power': power, 'period': 1.0 / frequency}  # Add period for convenience
+
+        # Add peak information if available
+        if peaks_data is not None and 'peaks' in peaks_data and peaks_data['peaks'].size > 0:
+
+            peaks = peaks_data['peaks']
+            peak_frequencies = frequency[peaks]
+            peak_powers = power[peaks]
+
+            # Create arrays to mark peaks (1 for peak, 0 for non-peak)
+            is_peak = np.zeros(len(frequency))
+            is_peak[peaks] = 1
+            periodogram_data['is_peak'] = is_peak
+
+            # Save peak positions separately for easy access
+            peak_positions = peaks_data.get('position', [])
+            if peak_positions:
+                peak_info = []
+                for i, (left, right) in enumerate(peak_positions):
+                    if i < len(peak_frequencies):
+                        peak_info.append(
+                            {
+                                'peak_frequency': peak_frequencies[i],
+                                'peak_power': peak_powers[i],
+                                'peak_period': 1.0 / peak_frequencies[i],
+                                'left_boundary': left,
+                                'right_boundary': right,
+                            }
+                        )
+
+                if peak_info:
+                    peaks_df = pd.DataFrame(peak_info)
+                    peaks_df.to_csv(
+                        '{}/data-{}-{}-periodogram-{}-peaks.csv'.format(self.save_path, body_name, mmr_str, data_type), index=False
+                    )
+
+        # Save main periodogram data
+        df_periodogram = pd.DataFrame(periodogram_data)
+        df_periodogram.to_csv('{}/data-{}-{}-periodogram-{}.csv'.format(self.save_path, body_name, mmr_str, data_type), index=False)
 
     def get_simulation_summary(self) -> pd.DataFrame:
         data = []
@@ -461,6 +567,27 @@ class Simulation:
             f.write("========================\n")
             for body in self.bodies:
                 f.write(f"\n\n Body: {body.name}, mmrs = {', '.join([mmr.to_short() for mmr in body.mmrs])}\n")
+
+            f.write("\n\n Output Files Description:\n")
+            f.write("========================\n")
+            f.write("The simulation generates several types of output files:\n\n")
+            f.write("1. Time Series Data (data-{body}-{mmr}.csv):\n")
+            f.write("   - Contains time-indexed data from 0 to tmax\n")
+            f.write("   - Columns: times, angle, a (semi-major axis), e (eccentricity)\n")
+            f.write("   - Optional: angle_filtered, a_filtered (if filtering was applied)\n\n")
+            f.write("2. Periodogram Data:\n")
+            f.write("   - data-{body}-{mmr}-periodogram-angle.csv: Periodogram of resonant angle\n")
+            f.write("   - data-{body}-{mmr}-periodogram-axis.csv: Periodogram of semi-major axis\n")
+            f.write("   - Columns: frequency, power, period, is_peak (1 for peaks, 0 otherwise)\n\n")
+            f.write("3. Peak Information:\n")
+            f.write("   - data-{body}-{mmr}-periodogram-angle-peaks.csv: Detailed peak info for resonant angle\n")
+            f.write("   - data-{body}-{mmr}-periodogram-axis-peaks.csv: Detailed peak info for semi-major axis\n")
+            f.write("   - Columns: peak_frequency, peak_power, peak_period, left_boundary, right_boundary\n\n")
+            f.write("4. Overlapping Peaks:\n")
+            f.write("   - data-{body}-{mmr}-periodogram-overlapping.csv: Peaks that overlap between angle and axis\n")
+            f.write("   - Columns: left_boundary, right_boundary, center_period\n\n")
+            f.write("5. Summary (summary.csv):\n")
+            f.write("   - One row per body-mmr combination with analysis results\n")
             f.write("========================\n")
 
     def check_or_create_save_path(self):

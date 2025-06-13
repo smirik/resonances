@@ -16,6 +16,10 @@ class Body:
         self.times = None
         self.axis = None
         self.ecc = None
+        self.inc = None
+        self.Omega = None
+        self.omega = None
+        self.M = None
         self.longitude = None
         self.varpi = None
 
@@ -64,19 +68,31 @@ class Body:
                 'angle': self.angles[mmr.to_s()],
                 'a': self.axis,
                 'e': self.ecc,
+                'inc': self.inc,
+                'Omega': self.Omega,
+                'omega': self.omega,
+                'M': self.M,
+                'longitude': self.longitude,
+                'varpi': self.varpi,
             }
-            if self.periodogram_power is not None:
-                len_diff = len(self.angles[mmr.to_s()]) - len(self.periodogram_power[mmr.to_s()])
-                df_data['periodogram'] = np.append(self.periodogram_power[mmr.to_s()], np.zeros(len_diff))
+
+            if self.angles_filtered.get(mmr.to_s()) is not None:
+                df_data['angle_filtered'] = self.angles_filtered[mmr.to_s()]
+
+            if self.axis_filtered is not None:
                 df_data['a_filtered'] = self.axis_filtered
-                df_data['a_periodogram'] = np.append(self.axis_periodogram_power, np.zeros(len_diff))
+
         except Exception as e:
             logger.error(f'Error in mmr_to_dict function for body={self.name} and mmr={mmr.to_s()}: {e}')
             return None
         return df_data
 
     def setup_vars_for_simulation(self, num):
-        self.axis, self.ecc, self.longitude, self.varpi = (
+        self.axis, self.ecc, self.inc, self.Omega, self.omega, self.M, self.longitude, self.varpi = (
+            np.zeros(num),
+            np.zeros(num),
+            np.zeros(num),
+            np.zeros(num),
             np.zeros(num),
             np.zeros(num),
             np.zeros(num),
