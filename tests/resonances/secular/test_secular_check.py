@@ -25,12 +25,15 @@ def test_secular_check_nu6():
     assert 0 == abs(status760)
 
 
-# def test_secular_check_other_resonances():
-#     resonance_5507 = GeneralSecularResonance(
-#         coeffs={'varpi': [1, -2, 1]},  # [body_coeff, saturn_coeff, jupiter_coeff]
-#         planet_names=['Saturn', 'Jupiter'],
-#         resonance_name='g-2g6+g5',
-#     )
+def test_secular_check_other_resonances():
+    resonance_5507 = GeneralSecularResonance(
+        coeffs={'varpi': [1, -2, 1]},  # [body_coeff, saturn_coeff, jupiter_coeff]
+        planet_names=['Saturn', 'Jupiter'],
+        resonance_name='g-2g6+g5',
+    )
+    assert resonance_5507.to_s() == 'g-2g6+g5'
+
+
 #     sim = resonances.secular_finder.check(
 #         asteroids=[5507],
 #         secular_resonance=resonance_5507,
