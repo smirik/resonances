@@ -28,7 +28,7 @@ class BodyManager:
         elif isinstance(elem_or_num, dict):
             return elem_or_num
         else:
-            raise Exception('You can add body only by its number or all orbital elements')
+            raise ValueError('You can add body only by its number or all orbital elements')
 
     def add_body_with_mmr(self, elem_or_num, mmr: Union[str, resonances.MMR, List[resonances.MMR]], name='asteroid'):
         """Add a body with mean-motion resonance(s)."""
