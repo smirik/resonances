@@ -226,6 +226,10 @@ class GeneralSecularResonance(SecularResonance):
         super().__init__(resonance_name, planet_names[0])
         self.planets_names = planet_names
 
+    def to_s(self):
+        """String representation of the general secular resonance."""
+        return self.resonance_type
+
     def calc_angle(self, body, planets):
         """
         Calculate the general secular resonance angle.
