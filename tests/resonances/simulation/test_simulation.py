@@ -185,10 +185,10 @@ def test_data_manager_methods():
     sim.bodies[1].statuses[mmr.to_s()] = -1
 
     # Test data manager methods directly
-    assert sim.data_manager.should_save_body_mmr(sim.bodies[0], mmr) is True
-    assert sim.data_manager.should_plot_body_mmr(sim.bodies[0], mmr) is True
-    assert sim.data_manager.should_save_body_mmr(sim.bodies[1], mmr) is True
-    assert sim.data_manager.should_plot_body_mmr(sim.bodies[1], mmr) is False
+    assert sim.data_manager.should_save_body(sim.bodies[0], mmr) is True
+    assert sim.data_manager.should_plot_body(sim.bodies[0], mmr) is True
+    assert sim.data_manager.should_save_body(sim.bodies[1], mmr) is True
+    assert sim.data_manager.should_plot_body(sim.bodies[1], mmr) is False
 
 
 def test_saving_summary():
@@ -238,15 +238,19 @@ def test_get_index_of_planets():
     assert len(indices) == 2
 
 
-def test_data_manager_process_status():
-    """Test data manager process status method."""
-    sim = tools.create_test_simulation_for_solar_system()
+def test_data_manager_universal_methods():
+    """Test data manager universal methods."""
+    sim = tools.create_test_simulation_for_solar_system(save='all', plot='resonant')
 
     body = resonances.Body()
     mmr = resonances.create_mmr('4J-2S-1')
     body.statuses[mmr.to_s()] = 2
 
-    # Test data manager process status
-    assert sim.data_manager.process_status(body, mmr, 'all') is True
-    assert sim.data_manager.process_status(body, mmr, 'resonant') is True
-    assert sim.data_manager.process_status(body, mmr, 'candidates') is False
+    # Test universal methods
+    assert sim.data_manager.should_save_body(body, mmr) is True
+    assert sim.data_manager.should_plot_body(body, mmr) is True
+
+    # Test with negative status (candidate)
+    body.statuses[mmr.to_s()] = -1
+    assert sim.data_manager.should_save_body(body, mmr) is True  # save='all'
+    assert sim.data_manager.should_plot_body(body, mmr) is False  # plot='resonant' and status=-1

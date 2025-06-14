@@ -4,11 +4,12 @@ import logging
 from .config import config
 from .logger import logger
 
-from .resonance.three_body import ThreeBody
-from .resonance.two_body import TwoBody
-from .resonance.mmr import MMR
 from .resonance.factory import create_mmr
-from .resonance.secular import (
+from .resonance import (
+    Resonance,
+    MMR,
+    ThreeBody,
+    TwoBody,
     SecularResonance,
     Nu6Resonance,
     Nu5Resonance,
@@ -30,4 +31,6 @@ from resonances.finder import find
 from resonances.finder import check
 from resonances.finder import find_asteroids_in_mmr
 from resonances.finder import find_resonances
+from resonances.secular_finder import check as secular_check
+from resonances.secular_finder import analyze_secular_resonance
 from resonances.data.util import datetime_from_string

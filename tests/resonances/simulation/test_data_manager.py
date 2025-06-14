@@ -43,6 +43,14 @@ class TestDataManager:
         assert self.data_manager._process_status(-1, 'candidates') is True
         assert self.data_manager._process_status(-2, 'candidates') is True
 
+    def test_process_status_nonzero(self):
+        """Test process status with 'nonzero' mode."""
+        assert self.data_manager._process_status(2, 'nonzero') is True
+        assert self.data_manager._process_status(1, 'nonzero') is True
+        assert self.data_manager._process_status(0, 'nonzero') is False
+        assert self.data_manager._process_status(-1, 'nonzero') is True
+        assert self.data_manager._process_status(-2, 'nonzero') is True
+
     def test_process_status_none(self):
         """Test process status with None mode."""
         assert self.data_manager._process_status(2, None) is False
@@ -56,24 +64,43 @@ class TestDataManager:
         # Should be called twice - once for save_path, once for plot_path
         assert mock_mkdir.call_count == 2
 
-    def test_should_save_body_mmr(self):
-        """Test should save body MMR decision."""
-        # Create mock body and MMR
+    def test_should_save_body(self):
+        """Test should save body decision."""
+        # Create mock body and resonance
         mock_body = Mock()
-        mock_body.statuses = {'test_mmr': 2}
+        mock_body.statuses = {'test_resonance': 2}
 
-        mock_mmr = Mock()
-        mock_mmr.to_s.return_value = 'test_mmr'
+        mock_resonance = Mock()
+        mock_resonance.to_s.return_value = 'test_resonance'
 
         # Test with different save modes
         self.config.save = 'all'
-        assert self.data_manager.should_save_body_mmr(mock_body, mock_mmr) is True
+        assert self.data_manager.should_save_body(mock_body, mock_resonance) is True
 
         self.config.save = 'resonant'
-        assert self.data_manager.should_save_body_mmr(mock_body, mock_mmr) is True
+        assert self.data_manager.should_save_body(mock_body, mock_resonance) is True
 
         self.config.save = None
-        assert self.data_manager.should_save_body_mmr(mock_body, mock_mmr) is False
+        assert self.data_manager.should_save_body(mock_body, mock_resonance) is False
+
+    def test_should_plot_body(self):
+        """Test should plot body decision."""
+        # Create mock body and resonance
+        mock_body = Mock()
+        mock_body.statuses = {'test_resonance': 2}
+
+        mock_resonance = Mock()
+        mock_resonance.to_s.return_value = 'test_resonance'
+
+        # Test with different plot modes
+        self.config.plot = 'all'
+        assert self.data_manager.should_plot_body(mock_body, mock_resonance) is True
+
+        self.config.plot = 'resonant'
+        assert self.data_manager.should_plot_body(mock_body, mock_resonance) is True
+
+        self.config.plot = None
+        assert self.data_manager.should_plot_body(mock_body, mock_resonance) is False
 
 
 if __name__ == '__main__':

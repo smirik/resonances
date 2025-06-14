@@ -222,6 +222,20 @@ class libration:
     @classmethod
     def butter_lowpass_filter(cls, data, cutoff, fs, order, nyq):
         normal_cutoff = cutoff / nyq
+        # Ensure normalized cutoff frequency is valid for Butterworth filter (0 < Wn < 1)
+        if normal_cutoff >= 1.0:
+            # For secular resonances with very long integration times, adjust cutoff
+            normal_cutoff = 0.99  # Use maximum allowable value
+            resonances.logger.warning(
+                f"Cutoff frequency ({cutoff}) >= Nyquist frequency ({nyq}). "
+                f"Adjusting normalized cutoff to {normal_cutoff} for filter stability."
+            )
+        elif normal_cutoff <= 0.0:
+            normal_cutoff = 0.01  # Use minimum allowable value
+            resonances.logger.warning(
+                f"Cutoff frequency ({cutoff}) <= 0. " f"Adjusting normalized cutoff to {normal_cutoff} for filter stability."
+            )
+
         # Get the filter coefficients
         b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
         y = signal.filtfilt(b, a, data, method="gust")
@@ -258,15 +272,17 @@ class libration:
         body.axis_periodogram_power = axis_power
         body.axis_periodogram_peaks = axis_peaks_data
 
-        for mmr in body.mmrs:
-            pure = resonances.libration.pure(body.angle(mmr))
+        all_resonances = body.mmrs + body.secular_resonances
+        # for mmr in body.mmrs:
+        for resonance in all_resonances:
+            pure = resonances.libration.pure(body.angle(resonance))
 
-            librations = resonances.libration.circulation(sim.times / (2 * np.pi), body.angle(mmr))
+            librations = resonances.libration.circulation(sim.times / (2 * np.pi), body.angle(resonance))
             libration_metrics = resonances.libration.circulation_metrics(librations)
-            monotony = resonances.libration.monotony_estimation(body.angle(mmr))
+            monotony = resonances.libration.monotony_estimation(body.angle(resonance))
 
             try:
-                angle_filtered = cls.butter_lowpass_filter(body.angle(mmr), cutoff, fs, order, nyq)
+                angle_filtered = cls.butter_lowpass_filter(body.angle(resonance), cutoff, fs, order, nyq)
                 (frequency, power) = resonances.libration.periodogram(
                     sim.times[points_to_cut : len(angle_filtered) - points_to_cut] / (2 * np.pi),
                     angle_filtered[points_to_cut : len(angle_filtered) - points_to_cut],
@@ -277,10 +293,10 @@ class libration:
                 angle_peaks_data = cls.find_peaks_with_position(frequency, power, height=sim.config.periodogram_soft)
                 overlapping = cls.overlap_list(angle_peaks_data['position'], axis_peaks_data['position'], delta=0)
             except Exception as e:  # pragma: no cover
-                resonances.logger.error(f"Error in periodogram for {body.name} and {mmr.to_s()}: {e}")
+                resonances.logger.error(f"Error in periodogram for {body.name} and {resonance.to_s()}: {e}")
                 frequency, power, angle_peaks_data, angle_filtered, overlapping = None, None, None, None, []
 
-            body.statuses[mmr.to_s()] = cls.resolve(
+            body.statuses[resonance.to_s()] = cls.resolve(
                 pure,
                 overlapping,
                 libration_metrics['max_libration_length'],
@@ -289,18 +305,18 @@ class libration:
                 sim.config.libration_monotony_critical,
             )
 
-            body.librations[mmr.to_s()] = librations
-            body.libration_metrics[mmr.to_s()] = libration_metrics
-            body.libration_pure[mmr.to_s()] = pure
+            body.librations[resonance.to_s()] = librations
+            body.libration_metrics[resonance.to_s()] = libration_metrics
+            body.libration_pure[resonance.to_s()] = pure
 
-            body.periodogram_frequency[mmr.to_s()] = frequency
-            body.periodogram_power[mmr.to_s()] = power
-            body.periodogram_peaks[mmr.to_s()] = angle_peaks_data
+            body.periodogram_frequency[resonance.to_s()] = frequency
+            body.periodogram_power[resonance.to_s()] = power
+            body.periodogram_peaks[resonance.to_s()] = angle_peaks_data
 
-            body.angles_filtered[mmr.to_s()] = angle_filtered
-            body.periodogram_peaks_overlapping[mmr.to_s()] = overlapping
+            body.angles_filtered[resonance.to_s()] = angle_filtered
+            body.periodogram_peaks_overlapping[resonance.to_s()] = overlapping
 
-            body.monotony[mmr.to_s()] = monotony
+            body.monotony[resonance.to_s()] = monotony
 
         return body.statuses
 

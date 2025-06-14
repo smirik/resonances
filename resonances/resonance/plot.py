@@ -10,17 +10,13 @@ def body(sim, body: resonances.Body, resonance, image_type='png'):  # noqa: C901
 
     fig, axs = plt.subplots(6, 1, figsize=(10, 10))
 
-    # Handle both MMR and secular resonances
-    if hasattr(resonance, 'to_short'):  # MMR
-        resonance_name = resonance.to_short()
-        resonance_key = resonance.to_s()
-        status = body.statuses.get(resonance_key, 0)
+    resonance_key = resonance.to_s()
+    status = body.statuses.get(resonance_key, 0)
+    resonance_name = resonance.to_short()
+    if isinstance(resonance, resonances.MMR):
         angle_data = body.angle(resonance)
         angles_filtered = body.angles_filtered.get(resonance_key, None)
-    else:  # Secular resonance
-        resonance_name = resonance.to_s()
-        resonance_key = resonance.to_s()
-        status = body.secular_statuses.get(resonance_key, 0)
+    elif isinstance(resonance, resonances.SecularResonance):
         angle_data = body.secular_angles.get(resonance_key, None)
         angles_filtered = body.secular_angles_filtered.get(resonance_key, None) if hasattr(body, 'secular_angles_filtered') else None
 

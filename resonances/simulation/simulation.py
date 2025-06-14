@@ -103,19 +103,10 @@ class Simulation:
     # Integration methods
     def run(self, progress=False):
         """Run the complete simulation."""
-        # Setup times
         self.times = np.linspace(0.0, self.config.tmax, self.Nout)
-
-        # Add bodies to simulation
         self.body_manager.add_bodies_to_simulation(self.integration_engine.sim)
-
-        # Run integration
         self.integration_engine.run_integration(self.bodies, self.times, progress)
-
-        # Analyze librations
         self.identify_librations()
-
-        # Save data
         self.data_manager.save_data(self.bodies, self.times, self)
 
     def identify_librations(self):

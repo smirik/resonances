@@ -17,7 +17,7 @@ class SimulationConfig:
         self._setup_integration_params(kwargs)
         self._setup_save_params(kwargs)
         self._setup_plot_params(kwargs)
-        self._setup_libration_params()
+        self._setup_libration_params(kwargs)
 
     def _setup_date(self, date, source):
         """Setup date and source configuration."""
@@ -55,17 +55,23 @@ class SimulationConfig:
         now = datetime.datetime.now()
         self.plot_path = kwargs.get('plot_path', f"{c.get('PLOT_PATH')}/{now.strftime('%Y-%m-%d_%H:%M:%S')}")
 
-    def _setup_libration_params(self):
+    def _setup_libration_params(self, kwargs):
         """Setup libration analysis parameters."""
-        self.oscillations_cutoff = float(resonances.config.get('LIBRATION_FILTER_CUTOFF'))
-        self.oscillations_filter_order = int(resonances.config.get('LIBRATION_FILTER_ORDER'))
-        self.periodogram_frequency_min = float(resonances.config.get('LIBRATION_FREQ_MIN'))
-        self.periodogram_frequency_max = float(resonances.config.get('LIBRATION_FREQ_MAX'))
-        self.periodogram_critical = float(resonances.config.get('LIBRATION_CRITICAL'))
-        self.periodogram_soft = float(resonances.config.get('LIBRATION_SOFT'))
-        self.libration_period_critical = int(resonances.config.get('LIBRATION_PERIOD_CRITICAL'))
-        self.libration_monotony_critical = [float(x.strip()) for x in resonances.config.get('LIBRATION_MONOTONY_CRITICAL').split(",")]
-        self.libration_period_min = int(resonances.config.get('LIBRATION_PERIOD_MIN'))
+        self.oscillations_cutoff = kwargs.get('oscillations_cutoff', float(resonances.config.get('LIBRATION_FILTER_CUTOFF')))
+        self.oscillations_filter_order = kwargs.get('oscillations_filter_order', int(resonances.config.get('LIBRATION_FILTER_ORDER')))
+        self.periodogram_frequency_min = kwargs.get('periodogram_frequency_min', float(resonances.config.get('LIBRATION_FREQ_MIN')))
+        self.periodogram_frequency_max = kwargs.get('periodogram_frequency_max', float(resonances.config.get('LIBRATION_FREQ_MAX')))
+        self.periodogram_critical = kwargs.get('periodogram_critical', float(resonances.config.get('LIBRATION_CRITICAL')))
+        self.periodogram_soft = kwargs.get('periodogram_soft', float(resonances.config.get('LIBRATION_SOFT')))
+        self.libration_period_critical = kwargs.get('libration_period_critical', int(resonances.config.get('LIBRATION_PERIOD_CRITICAL')))
+
+        # Handle libration_monotony_critical specially since it's a list
+        if 'libration_monotony_critical' in kwargs:
+            self.libration_monotony_critical = kwargs['libration_monotony_critical']
+        else:
+            self.libration_monotony_critical = [float(x.strip()) for x in resonances.config.get('LIBRATION_MONOTONY_CRITICAL').split(",")]
+
+        self.libration_period_min = kwargs.get('libration_period_min', int(resonances.config.get('LIBRATION_PERIOD_MIN')))
 
     @property
     def tmax(self):

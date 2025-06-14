@@ -1,6 +1,6 @@
 import numpy as np
-from .resonance.mmr import MMR
-from .resonance.secular import SecularResonance
+
+from resonances.resonance import Resonance, MMR, SecularResonance
 from .logger import logger
 from typing import List, Union
 
@@ -34,7 +34,6 @@ class Body:
         # Secular resonances data
         self.secular_resonances: List[SecularResonance] = []
         self.secular_angles = {}  # For secular resonance angles
-        self.secular_statuses = {}
 
         # Libration and filtering data (shared between MMR and secular)
         self.librations = {}
@@ -149,7 +148,7 @@ class Body:
         for secular in self.secular_resonances:
             self.secular_angles[secular.to_s()] = np.zeros(num)
 
-    def angle(self, resonance: Union[MMR, SecularResonance]) -> np.ndarray:
+    def angle(self, resonance: Resonance) -> np.ndarray:
         """
         Get angle array for either MMR or secular resonance.
         """
@@ -173,14 +172,9 @@ class Body:
 
     def status(self, resonance: Union[MMR, SecularResonance]):
         """
-        Get resonance status (works for both MMR and secular).
+        Get resonance status
         """
-        if isinstance(resonance, MMR):
-            return self.statuses[resonance.to_s()]
-        elif isinstance(resonance, SecularResonance):
-            return self.secular_statuses[resonance.to_s()]
-        else:
-            raise ValueError(f"Unknown resonance type: {type(resonance)}")
+        return self.statuses[resonance.to_s()]
 
     def in_pure_resonance(self, resonance: Union[MMR, SecularResonance]):
         """

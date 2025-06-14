@@ -11,21 +11,13 @@ class DataManager:
     def __init__(self, config: SimulationConfig):
         self.config = config
 
-    def should_save_body_mmr(self, body: resonances.Body, mmr: resonances.MMR):
+    def should_save_body(self, body: resonances.Body, resonance: resonances.Resonance):
         """Check if body MMR data should be saved."""
-        return self._process_status(body.statuses.get(mmr.to_s(), 0), self.config.save)
+        return self._process_status(body.statuses.get(resonance.to_s(), 0), self.config.save)
 
-    def should_plot_body_mmr(self, body: resonances.Body, mmr: resonances.MMR):
+    def should_plot_body(self, body: resonances.Body, resonance: resonances.Resonance):
         """Check if body MMR should be plotted."""
-        return self._process_status(body.statuses.get(mmr.to_s(), 0), self.config.plot)
-
-    def should_save_body_secular(self, body: resonances.Body, secular: resonances.SecularResonance):
-        """Check if body secular data should be saved."""
-        return self._process_status(body.secular_statuses.get(secular.to_s(), 0), self.config.save)
-
-    def should_plot_body_secular(self, body: resonances.Body, secular: resonances.SecularResonance):
-        """Check if body secular should be plotted."""
-        return self._process_status(body.secular_statuses.get(secular.to_s(), 0), self.config.plot)
+        return self._process_status(body.statuses.get(resonance.to_s(), 0), self.config.plot)
 
     def _process_status(self, status: int, mode: str) -> bool:
         """Process status against mode to determine if action should be taken."""
@@ -52,55 +44,33 @@ class DataManager:
             self.save_simulation_summary(bodies)
 
         for body in bodies:
-            # Save MMR data
-            for mmr in body.mmrs:
-                if self.should_save_body_mmr(body, mmr):
-                    self.save_body_in_mmr(body, mmr, times)
-                if self.should_plot_body_mmr(body, mmr):
-                    self.plot_body_in_mmr(body, mmr, simulation)
+            for resonance in body.mmrs + body.secular_resonances:
+                if self.should_save_body(body, resonance):
+                    self.save_body(body, resonance, times)
+                if self.should_plot_body(body, resonance):
+                    self.plot_body(body, resonance, simulation)
 
-            # Save secular resonance data
-            for secular in body.secular_resonances:
-                if self.should_save_body_secular(body, secular):
-                    self.save_body_in_secular(body, secular, times)
-                if self.should_plot_body_secular(body, secular):
-                    self.plot_body_in_secular(body, secular, simulation)
-
-    def save_body_in_mmr(self, body: resonances.Body, mmr: resonances.MMR, times):
+    def save_body(self, body: resonances.Body, resonance: resonances.Resonance, times):
         """Save MMR data for a body."""
         self.ensure_save_path_exists()
 
-        # Save time series data
-        df_data = body.mmr_to_dict(mmr, times)
+        if isinstance(resonance, resonances.MMR):
+            df_data = body.mmr_to_dict(resonance, times)
+        elif isinstance(resonance, resonances.SecularResonance):
+            df_data = body.secular_to_dict(resonance, times)
+        else:
+            raise ValueError(f"Unknown resonance type: {type(resonance)}")
+
         if df_data is not None:
             df = pd.DataFrame(data=df_data)
-            df.to_csv(f'{self.config.save_path}/data-{body.name}-{mmr.to_s()}.csv')
+            df.to_csv(f'{self.config.save_path}/data-{body.name}-{resonance.to_s()}.csv')
 
-        # Save periodogram data
-        self._save_periodogram_data(body, mmr.to_s(), body.name)
+        self._save_periodogram_data(body, resonance.to_s(), body.name)
 
-    def save_body_in_secular(self, body: resonances.Body, secular: resonances.SecularResonance, times):
-        """Save secular resonance data for a body."""
-        self.ensure_save_path_exists()
-
-        # Save time series data
-        df_data = body.secular_to_dict(secular, times)
-        if df_data is not None:
-            df = pd.DataFrame(data=df_data)
-            df.to_csv(f'{self.config.save_path}/data-{body.name}-{secular.to_s()}.csv')
-
-        # Save periodogram data for secular resonances
-        self._save_periodogram_data(body, secular.to_s(), body.name)
-
-    def plot_body_in_mmr(self, body: resonances.Body, mmr: resonances.MMR, simulation=None):
+    def plot_body(self, body: resonances.Body, resonance: resonances.Resonance, simulation=None):
         """Plot MMR data for a body."""
         self.ensure_save_path_exists()
-        resonances.resonance.plot.body(simulation, body, mmr, image_type=self.config.image_type)
-
-    def plot_body_in_secular(self, body: resonances.Body, secular: resonances.SecularResonance, simulation=None):
-        """Plot secular resonance data for a body."""
-        self.ensure_save_path_exists()
-        resonances.resonance.plot.body(simulation, body, secular, image_type=self.config.image_type)
+        resonances.resonance.plot.body(simulation, body, resonance, image_type=self.config.image_type)
 
     def _save_periodogram_data(self, body: resonances.Body, resonance_key: str, body_name: str):
         """Save periodogram data for a resonance."""
@@ -127,11 +97,8 @@ class DataManager:
     def save_simulation_summary(self, bodies):
         """Save simulation summary."""
         self.ensure_save_path_exists()
-
-        # Save configuration details
         self.save_configuration_details(bodies)
 
-        # Generate and save summary
         df = self.get_simulation_summary(bodies)
         summary_filename = f'{self.config.save_path}/summary.csv'
 
@@ -148,22 +115,21 @@ class DataManager:
         data = []
 
         for body in bodies:
-            # Add MMR data
-            for mmr in body.mmrs:
+            for resonance in body.mmrs + body.secular_resonances:
                 try:
                     overlapping_str = ', '.join(
-                        f'({left:.0f}, {right:.0f})' for left, right in body.periodogram_peaks_overlapping.get(mmr.to_s(), [])
+                        f'({left:.0f}, {right:.0f})' for left, right in body.periodogram_peaks_overlapping.get(resonance.to_s(), [])
                     )
                     data.append(
                         [
                             body.name,
-                            mmr.to_s(),
-                            'MMR',
-                            body.statuses.get(mmr.to_s(), 0),
-                            body.libration_pure.get(mmr.to_s(), False),
-                            body.libration_metrics.get(mmr.to_s(), {}).get('num_libration_periods', 0),
-                            body.libration_metrics.get(mmr.to_s(), {}).get('max_libration_length', 0),
-                            body.monotony.get(mmr.to_s(), 0),
+                            resonance.to_s(),
+                            ('MMR' if isinstance(resonance, resonances.MMR) else 'Secular'),
+                            body.statuses.get(resonance.to_s(), 0),
+                            body.libration_pure.get(resonance.to_s(), False),
+                            body.libration_metrics.get(resonance.to_s(), {}).get('num_libration_periods', 0),
+                            body.libration_metrics.get(resonance.to_s(), {}).get('max_libration_length', 0),
+                            body.monotony.get(resonance.to_s(), 0),
                             overlapping_str,
                             body.initial_data['a'],
                             body.initial_data['e'],
@@ -174,35 +140,60 @@ class DataManager:
                         ]
                     )
                 except Exception as e:
-                    resonances.logger.error(f"Error getting MMR summary for {body.name}: {e}")
+                    resonances.logger.error(f"Error getting resonance summary for {body.name}: {e}")
 
-            # Add secular resonance data
-            for secular in body.secular_resonances:
-                try:
-                    overlapping_str = ', '.join(
-                        f'({left:.0f}, {right:.0f})' for left, right in body.periodogram_peaks_overlapping.get(secular.to_s(), [])
-                    )
-                    data.append(
-                        [
-                            body.name,
-                            secular.to_s(),
-                            'Secular',
-                            body.secular_statuses.get(secular.to_s(), 0),
-                            body.libration_pure.get(secular.to_s(), False),
-                            body.libration_metrics.get(secular.to_s(), {}).get('num_libration_periods', 0),
-                            body.libration_metrics.get(secular.to_s(), {}).get('max_libration_length', 0),
-                            body.monotony.get(secular.to_s(), 0),
-                            overlapping_str,
-                            body.initial_data['a'],
-                            body.initial_data['e'],
-                            body.initial_data['inc'],
-                            body.initial_data['Omega'],
-                            body.initial_data['omega'],
-                            body.initial_data['M'],
-                        ]
-                    )
-                except Exception as e:
-                    resonances.logger.error(f"Error getting secular summary for {body.name}: {e}")
+            # for mmr in body.mmrs:
+            #     try:
+            #         overlapping_str = ', '.join(
+            #             f'({left:.0f}, {right:.0f})' for left, right in body.periodogram_peaks_overlapping.get(mmr.to_s(), [])
+            #         )
+            #         data.append(
+            #             [
+            #                 body.name,
+            #                 mmr.to_s(),
+            #                 'MMR',
+            #                 body.statuses.get(mmr.to_s(), 0),
+            #                 body.libration_pure.get(mmr.to_s(), False),
+            #                 body.libration_metrics.get(mmr.to_s(), {}).get('num_libration_periods', 0),
+            #                 body.libration_metrics.get(mmr.to_s(), {}).get('max_libration_length', 0),
+            #                 body.monotony.get(mmr.to_s(), 0),
+            #                 overlapping_str,
+            #                 body.initial_data['a'],
+            #                 body.initial_data['e'],
+            #                 body.initial_data['inc'],
+            #                 body.initial_data['Omega'],
+            #                 body.initial_data['omega'],
+            #                 body.initial_data['M'],
+            #             ]
+            #         )
+            #     except Exception as e:
+            #         resonances.logger.error(f"Error getting MMR summary for {body.name}: {e}")
+            # for secular in body.secular_resonances:
+            #     try:
+            #         overlapping_str = ', '.join(
+            #             f'({left:.0f}, {right:.0f})' for left, right in body.periodogram_peaks_overlapping.get(secular.to_s(), [])
+            #         )
+            #         data.append(
+            #             [
+            #                 body.name,
+            #                 secular.to_s(),
+            #                 'Secular',
+            #                 body.statuses.get(secular.to_s(), 0),
+            #                 body.libration_pure.get(secular.to_s(), False),
+            #                 body.libration_metrics.get(secular.to_s(), {}).get('num_libration_periods', 0),
+            #                 body.libration_metrics.get(secular.to_s(), {}).get('max_libration_length', 0),
+            #                 body.monotony.get(secular.to_s(), 0),
+            #                 overlapping_str,
+            #                 body.initial_data['a'],
+            #                 body.initial_data['e'],
+            #                 body.initial_data['inc'],
+            #                 body.initial_data['Omega'],
+            #                 body.initial_data['omega'],
+            #                 body.initial_data['M'],
+            #             ]
+            #         )
+            #     except Exception as e:
+            #         resonances.logger.error(f"Error getting secular summary for {body.name}: {e}")
 
         return pd.DataFrame(
             data,
@@ -238,13 +229,3 @@ class DataManager:
             f.write(f"Tmax: {self.config.tmax}\n")
             f.write(f"Integrator: {self.config.integrator}\n")
             f.write(f"dt: {self.config.dt}\n")
-
-    # Backward compatibility methods
-    def process_status(self, body: resonances.Body, resonance, mode: str):
-        """Process status for backward compatibility."""
-        if isinstance(resonance, resonances.MMR):
-            return self._process_status(body.statuses.get(resonance.to_s(), 0), mode)
-        elif isinstance(resonance, resonances.SecularResonance):
-            return self._process_status(body.secular_statuses.get(resonance.to_s(), 0), mode)
-        else:
-            return False

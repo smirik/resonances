@@ -1,7 +1,8 @@
 import rebound
+from resonances.resonance.resonance import Resonance
 
 
-class SecularResonance:
+class SecularResonance(Resonance):
     """
     Base class for secular resonances.
 

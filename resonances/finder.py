@@ -3,15 +3,8 @@ import astdys
 from typing import Union, List
 from datetime import datetime
 
+from resonances.data.util import convert_input_to_list
 import resonances.horizons
-
-
-def convert_input_to_list(asteroids: Union[int, str, List[Union[int, str]]]) -> List[str]:
-    if isinstance(asteroids, str) or isinstance(asteroids, int):
-        asteroids = [asteroids]
-    elif asteroids is None:
-        asteroids = []
-    return asteroids
 
 
 def find(
