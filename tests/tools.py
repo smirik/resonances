@@ -34,17 +34,17 @@ def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=F
     sim.create_solar_system()
 
     # create to speedup
-    sim.tmax = 20
-    sim.dt = 1
+    sim.config.tmax = 20
+    sim.config.dt = 1
     sim.Nout = 10
-    sim.libration_period_min = 1
-    sim.integrator = 'whfast'
-    sim.integrator_corrector = None
-    sim.save_path = 'cache/tests'
-    sim.plot_path = 'cache/tests'
-    sim.save_summary = save_summary
-    sim.save = save
-    sim.plot = plot
+    sim.config.libration_period_min = 1
+    sim.config.integrator = 'whfast'
+    sim.config.integrator_corrector = None
+    sim.config.save_path = 'cache/tests'
+    sim.config.plot_path = 'cache/tests'
+    sim.config.save_summary = save_summary
+    sim.config.save = save
+    sim.config.plot = plot
 
     return sim
 

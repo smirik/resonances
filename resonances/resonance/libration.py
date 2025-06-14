@@ -229,26 +229,26 @@ class libration:
 
     @classmethod
     def body(cls, sim, body: resonances.Body):
-        integration_time = abs(round(sim.tmax / (2 * np.pi)))  # abs for backward integration
+        integration_time = abs(round(sim.config.tmax / (2 * np.pi)))  # abs for backward integration
         fs = sim.Nout / integration_time  # sample rate, Hz || Nout/time, i.e. 10000/100000
-        cutoff = sim.oscillations_cutoff  # should be a little bit more than needed
+        cutoff = sim.config.oscillations_cutoff  # should be a little bit more than needed
         nyq = 0.5 * fs  # Nyquist Frequency
-        order = sim.oscillations_filter_order  # polynom order
+        order = sim.config.oscillations_filter_order  # polynom order
         """
         Do not take into account first N and last N points because of the filter applied.
         There is no previous (or following) data for them. Thus, they mess the periodogram.
         """
-        points_to_cut = round(sim.libration_period_min * fs)
+        points_to_cut = round(sim.config.libration_period_min * fs)
 
         axis_filtered = cls.butter_lowpass_filter(body.axis, cutoff, fs, order, nyq)
         try:
             (axis_frequency, axis_power) = resonances.libration.periodogram(
                 sim.times[points_to_cut : len(axis_filtered) - points_to_cut] / (2 * np.pi),
                 axis_filtered[points_to_cut : len(axis_filtered) - points_to_cut],
-                minimum_frequency=sim.periodogram_frequency_min,
-                maximum_frequency=sim.periodogram_frequency_max,
+                minimum_frequency=sim.config.periodogram_frequency_min,
+                maximum_frequency=sim.config.periodogram_frequency_max,
             )
-            axis_peaks_data = cls.find_peaks_with_position(axis_frequency, axis_power, height=sim.periodogram_soft)
+            axis_peaks_data = cls.find_peaks_with_position(axis_frequency, axis_power, height=sim.config.periodogram_soft)
         except Exception as e:  # pragma: no cover
             resonances.logger.error(f"Error in periodogram of semi-major axis for {body.name}: {e}")
             axis_frequency, axis_power, axis_peaks_data = None, None, None
@@ -270,11 +270,11 @@ class libration:
                 (frequency, power) = resonances.libration.periodogram(
                     sim.times[points_to_cut : len(angle_filtered) - points_to_cut] / (2 * np.pi),
                     angle_filtered[points_to_cut : len(angle_filtered) - points_to_cut],
-                    minimum_frequency=sim.periodogram_frequency_min,
-                    maximum_frequency=sim.periodogram_frequency_max,
+                    minimum_frequency=sim.config.periodogram_frequency_min,
+                    maximum_frequency=sim.config.periodogram_frequency_max,
                 )
 
-                angle_peaks_data = cls.find_peaks_with_position(frequency, power, height=sim.periodogram_soft)
+                angle_peaks_data = cls.find_peaks_with_position(frequency, power, height=sim.config.periodogram_soft)
                 overlapping = cls.overlap_list(angle_peaks_data['position'], axis_peaks_data['position'], delta=0)
             except Exception as e:  # pragma: no cover
                 resonances.logger.error(f"Error in periodogram for {body.name} and {mmr.to_s()}: {e}")
@@ -284,9 +284,9 @@ class libration:
                 pure,
                 overlapping,
                 libration_metrics['max_libration_length'],
-                sim.libration_period_critical,
+                sim.config.libration_period_critical,
                 monotony,
-                sim.libration_monotony_critical,
+                sim.config.libration_monotony_critical,
             )
 
             body.librations[mmr.to_s()] = librations

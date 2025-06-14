@@ -40,7 +40,7 @@ def test_body():
     body.axis_filtered = None
     resonances.resonance.plot.body(sim, body, mmr)
 
-    sim.plot_type = 'save'
+    sim.config.plot_type = 'save'
     resonances.resonance.plot.body(sim, body, mmr)
     file_path = 'cache/tests/asteroid_4J-2S-1+0+0-1.png'
     assert Path(file_path).is_file() is True
@@ -48,7 +48,7 @@ def test_body():
     os.remove(file_path)
     assert Path(file_path).is_file() is False
 
-    sim.plot_type = None
+    sim.config.plot_type = None
     resonances.resonance.plot.body(sim, body, mmr)
     file_path = 'cache/tests/asteroid_4J-2S-1+0+0-1.png'
     assert Path(file_path).is_file() is False

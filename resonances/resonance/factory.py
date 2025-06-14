@@ -10,22 +10,22 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
     Args:
         coeff: Input that defines the resonance(s). Can be:
             - An MMR instance (returned as-is)
-            - A string in format "2J-1" (two-body) or "4M-2J-1" (three-body)
+            - A string in format "2J-1" (two-body) or "4M-2J-1" (three-body) for MMR
             - A list of coefficients: 4 elements for two-body or 6 elements for three-body resonance
-            - A list of strings, each in format "2J-1" or "4M-2J-1"
+            - A list of strings, each in format "2J-1", "4M-2J-1"
             - A list of MMR objects (returned as-is)
         planets_names (list, optional): List of planet names when using coefficient list format.
             Defaults to None.
     Returns:
-        resonances.MMR or list[resonances.MMR]: A single MMR object or list of MMR objects
+        resonances.MMR or list: A single MMR object or list of MMR objects
     Raises:
         Exception: If the input format is invalid or the number of coefficients doesn't match
             required format (2 or 3 bodies)
     Examples:
-        >>> create_mmr("2J-1")  # Creates two-body resonance from string
-        >>> create_mmr([1, 2, -3, 4])  # Creates two-body resonance from coefficients
-        >>> create_mmr("4M-2J-1")  # Creates three-body resonance from string
-        >>> create_mmr(['4J-2S-1', '1J-1'])  # Creates list of resonances from strings
+        >>> create_mmr("2J-1")  # Creates two-body MMR from string
+        >>> create_mmr([1, 2, -3, 4])  # Creates two-body MMR from coefficients
+        >>> create_mmr("4M-2J-1")  # Creates three-body MMR from string
+        >>> create_mmr(['4J-2S-1', '1J-1'])  # Creates list of MMRs
         >>> create_mmr(existing_mmr)  # Returns existing MMR instance as-is
         >>> create_mmr([mmr1, mmr2])  # Returns list of MMR instances as-is
     """
@@ -53,6 +53,7 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
             )
 
     if isinstance(coeff, str):
+        # Parse as MMR string
         tmp = re.split('-|\\+', coeff)
         size = len(tmp)
         if 3 == size:
@@ -62,7 +63,7 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
         else:
             raise Exception(
                 """Cannot create a resonance because the notation is wrong.
-                 It should have either two or three bodies, i.e. 2J-1 or 4M-2J-1. Given {}.""".format(
+                 It should have either two or three bodies (i.e. 2J-1 or 4M-2J-1) for MMR. Given {}.""".format(
                     coeff
                 )
             )
@@ -70,3 +71,69 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
     raise Exception(
         'The argument should be either a string if you use the short notation (i.e. 2J-1) or a list containing 2 or 3 elements.'
     )
+
+
+def create_secular_resonance(secular_type, planets_names=None):
+    """Create Secular Resonance object based on the input format.
+
+    This function serves as a factory method for creating secular resonance objects.
+
+    Args:
+        secular_type: Input that defines the secular resonance. Can be:
+            - A SecularResonance instance (returned as-is)
+            - A string in format "nu6", "nu5", "nu16" for specific secular resonances
+            - A list of strings, each representing a secular resonance type
+            - A list of SecularResonance objects (returned as-is)
+        planets_names (list, optional): List of planet names for custom resonances.
+            Defaults to None.
+
+    Returns:
+        resonances.SecularResonance or list: A single SecularResonance object or list of objects
+
+    Raises:
+        Exception: If the input format is invalid or the secular resonance type is unknown
+
+    Examples:
+        >>> create_secular_resonance("nu6")  # Creates ν₆ secular resonance
+        >>> create_secular_resonance("nu5")  # Creates ν₅ secular resonance
+        >>> create_secular_resonance("nu16") # Creates ν₁₆ secular resonance
+        >>> create_secular_resonance(['nu6', 'nu5'])  # Creates list of secular resonances
+        >>> create_secular_resonance(existing_secular)  # Returns existing instance as-is
+        >>> create_secular_resonance([sec1, sec2])  # Returns list of instances as-is
+    """
+
+    if isinstance(secular_type, resonances.SecularResonance):
+        return secular_type
+
+    if isinstance(secular_type, list):
+        if len(secular_type) == 0:
+            raise Exception(
+                'If input is a list, it should contain string representations of secular resonances or SecularResonance objects.'
+            )
+        if isinstance(secular_type[0], resonances.SecularResonance):
+            return secular_type
+        if isinstance(secular_type[0], str):
+            return [create_secular_resonance(s) for s in secular_type]
+        else:
+            raise Exception('List elements must be either strings or SecularResonance objects.')
+
+    if isinstance(secular_type, str):
+        secular_lower = secular_type.lower()
+
+        # Map string inputs to specific secular resonance classes
+        if secular_lower == 'nu6':
+            return resonances.Nu6Resonance()
+        elif secular_lower == 'nu5':
+            return resonances.Nu5Resonance()
+        elif secular_lower == 'nu16':
+            return resonances.Nu16Resonance()
+        else:
+            # For custom secular resonances, try to create a general one
+            # This could be extended in the future for more complex secular resonances
+            raise Exception(
+                f"Unknown secular resonance type: {secular_type}. "
+                f"Supported types are: 'nu6', 'nu5', 'nu16'. "
+                f"For custom secular resonances, use the appropriate class directly."
+            )
+
+    raise Exception('The argument should be either a string (i.e. "nu6") or a SecularResonance object.')

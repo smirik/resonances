@@ -42,7 +42,7 @@ def test_str():
     body.mass = 1.0
     body.type = 'asteroid'
 
-    assert 'Body(type=asteroid, name=463, mass=1.0)\n Resonances: 4J-2S-1+0+0-1, ' == str(body)
+    assert 'Body(type=asteroid, name=463, mass=1.0)\nMMR Resonances: 4J-2S-1+0+0-1, \n' == str(body)
 
 
 def test_mmr_to_dict():

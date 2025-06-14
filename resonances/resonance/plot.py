@@ -5,28 +5,44 @@ import resonances.config
 import resonances
 
 
-def body(sim, body: resonances.Body, mmr: resonances.MMR, image_type='png'):
+def body(sim, body: resonances.Body, resonance, image_type='png'):
     plt.style.use('default')
 
     fig, axs = plt.subplots(6, 1, figsize=(10, 10))
 
+    # Handle both MMR and secular resonances
+    if hasattr(resonance, 'to_short'):  # MMR
+        resonance_name = resonance.to_short()
+        resonance_key = resonance.to_s()
+        status = body.statuses.get(resonance_key, 0)
+        angle_data = body.angle(resonance)
+        angles_filtered = body.angles_filtered.get(resonance_key, None)
+    else:  # Secular resonance
+        resonance_name = resonance.to_s()
+        resonance_key = resonance.to_s()
+        status = body.secular_statuses.get(resonance_key, 0)
+        angle_data = body.secular_angles.get(resonance_key, None)
+        angles_filtered = body.secular_angles_filtered.get(resonance_key, None) if hasattr(body, 'secular_angles_filtered') else None
+
     fig.suptitle(
-        "{}, resonance = {}, status = {}".format(body.name, mmr.to_short(), body.statuses[mmr.to_s()]),
+        "{}, resonance = {}, status = {}".format(body.name, resonance_name, status),
         fontsize=14,
     )
 
     axs[0].set_title('Resonant angle')
-    axs[0].set_xlim([0, sim.tmax_yrs])
+    axs[0].set_xlim([0, sim.config.tmax_yrs])
     axs[0].xaxis.set_major_locator(plt.MultipleLocator(10000))
     axs[0].xaxis.set_minor_locator(plt.MultipleLocator(2000))
-    axs[0].plot(sim.times / (2 * np.pi), body.angle(mmr), linestyle='', marker=',', color='black')
+    if angle_data is not None:
+        axs[0].plot(sim.times / (2 * np.pi), angle_data, linestyle='', marker=',', color='black')
 
-    if body.angles_filtered[mmr.to_s()] is not None:  # pragma: no cover
+    if angles_filtered is not None:  # pragma: no cover
         axs[1].set_title('Filtered resonant angle')
-        axs[1].plot(sim.times / (2 * np.pi), body.angles_filtered[mmr.to_s()], linestyle='', marker=',', color='black')
+        axs[1].plot(sim.times / (2 * np.pi), angles_filtered, linestyle='', marker=',', color='black')
     else:
         axs[1].set_title('Again resonant angle (no filtered available)')
-        axs[1].plot(sim.times / (2 * np.pi), body.angle(mmr), linestyle='', marker=',', color='black')
+        if angle_data is not None:
+            axs[1].plot(sim.times / (2 * np.pi), angle_data, linestyle='', marker=',', color='black')
     axs[1].sharex(axs[0])
 
     if body.axis_filtered is not None:  # pragma: no cover
@@ -42,18 +58,22 @@ def body(sim, body: resonances.Body, mmr: resonances.MMR, image_type='png'):
     axs[3].axhline(y=0.05, color='r', linestyle='--')
     axs[3].axhline(y=0.1, color='g', linestyle='--')
     if (
-        (body.periodogram_peaks[mmr.to_s()] is not None)
-        and ('peaks' in body.periodogram_peaks[mmr.to_s()])
-        and (body.periodogram_peaks[mmr.to_s()]['peaks'].size)
+        (body.periodogram_peaks.get(resonance_key) is not None)
+        and ('peaks' in body.periodogram_peaks[resonance_key])
+        and (body.periodogram_peaks[resonance_key]['peaks'].size)
     ):  # pragma: no cover
-        peaks = body.periodogram_peaks[mmr.to_s()]['peaks']
-        for peak_width in body.periodogram_peaks[mmr.to_s()]['position']:
+        peaks = body.periodogram_peaks[resonance_key]['peaks']
+        for peak_width in body.periodogram_peaks[resonance_key]['position']:
             axs[3].axvline(x=peak_width[0], color='gray', linestyle="dashed")
             axs[3].axvline(x=peak_width[1], color='gray', linestyle='--')
         axs[3].plot(
-            1.0 / body.periodogram_frequency[mmr.to_s()][peaks], body.periodogram_power[mmr.to_s()][peaks], 'x', color='blue', markersize=10
+            1.0 / body.periodogram_frequency[resonance_key][peaks],
+            body.periodogram_power[resonance_key][peaks],
+            'x',
+            color='blue',
+            markersize=10,
         )
-        axs[3].plot(1.0 / body.periodogram_frequency[mmr.to_s()], body.periodogram_power[mmr.to_s()], color='black')
+        axs[3].plot(1.0 / body.periodogram_frequency[resonance_key], body.periodogram_power[resonance_key], color='black')
 
     axs[3].set_title('Periodogram (the resonant angle)')
     axs[4].set_title('Periodogram (semi-major axis)')
@@ -88,10 +108,10 @@ def body(sim, body: resonances.Body, mmr: resonances.MMR, image_type='png'):
 
     plt.tight_layout()
 
-    if sim.plot_type in ['both', 'save']:
-        plt.savefig('{}/{}_{}.{}'.format(sim.plot_path, body.name, mmr.to_s(), image_type))
+    if sim.config.plot_type in ['both', 'save']:
+        plt.savefig('{}/{}_{}.{}'.format(sim.config.plot_path, body.name, resonance_key, image_type))
 
-    if sim.plot_type in ['both', 'show']:  # pragma: no cover
+    if sim.config.plot_type in ['both', 'show']:  # pragma: no cover
         plt.show()
 
     plt.close(fig)  # Prevents display in Jupyter Notebook
