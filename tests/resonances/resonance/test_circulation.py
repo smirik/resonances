@@ -68,7 +68,8 @@ def test_circulation_and_circulation_metrics():
     assert 7.0 == data[1][0]
     assert 4.0 == data[2][0]
 
-    # Breaks at the indexes 1, 4, 7 but their direction are opposites. Therefore, it is apocentric libration; hence, the whole interval is a libration.
+    # Breaks at the indexes 1, 4, 7 but their direction are opposites.
+    # Therefore, it is apocentric libration; hence, the whole interval is a libration.
     #    0  1  2  3  4   5   6   7
     x = [0, 3, 4, 5, 6, 10, 11, 13]
     y = [-3, 3, 2, 3, -3, -2, -2, 2]

@@ -1,6 +1,3 @@
-import numpy as np
-import re
-from resonances.data import const
 import rebound
 
 

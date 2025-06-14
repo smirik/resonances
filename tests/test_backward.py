@@ -12,7 +12,10 @@ def test_backward_integration():
     """
     # Create simulation with backward integration parameters
     sim = resonances.Simulation(
-        tmax=-600000, dt=-1.0, save='all', save_summary=True  # Negative time for backward integration  # Negative timestep
+        tmax=-600000,
+        dt=-1.0,
+        save='all',
+        save_summary=True,  # Negative time for backward integration  # Negative timestep
     )
 
     # Create solar system first

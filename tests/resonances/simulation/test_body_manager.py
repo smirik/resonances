@@ -9,8 +9,7 @@ This module tests the BodyManager class.
 import pytest
 from unittest.mock import Mock, patch
 
-import resonances
-from resonances.simulation import SimulationConfig, BodyManager
+from resonances.simulation import BodyManager, SimulationConfig
 
 
 class TestBodyManager:
@@ -54,7 +53,7 @@ class TestBodyManager:
 
     def test_get_body_elements_invalid(self):
         """Test error handling for invalid element input."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             self.body_manager.get_body_elements([1, 2, 3])  # Invalid type
 
     @patch('resonances.create_mmr')

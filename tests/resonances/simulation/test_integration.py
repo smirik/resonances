@@ -56,20 +56,21 @@ class TestIntegrationEngine:
         # Verify simulation was loaded from file
         mock_simulation.assert_called_once()
 
-    def test_setup_integrator_whfast(self):
-        """Test integrator setup for WHFAST."""
+    def test_setup_integrator_saba_alternative(self):
+        """Test integrator setup for SABA with different parameters."""
         # Create mock simulation
         mock_sim = Mock()
-        mock_sim.ri_whfast = Mock()
+        mock_sim.ri_saba = Mock()
         self.engine.sim = mock_sim
-        self.config.integrator = 'whfast'
+        self.config.integrator = 'SABA(8,6,4)'
         self.config.dt = 0.05
+        self.config.integrator_safe_mode = 1
 
         self.engine.setup_integrator()
 
-        assert mock_sim.integrator == 'whfast'
+        assert mock_sim.integrator == 'SABA(8,6,4)'
         assert mock_sim.dt == 0.05
-        assert mock_sim.ri_whfast.safe_mode == 0
+        assert mock_sim.ri_saba.safe_mode == 1
         mock_sim.move_to_com.assert_called_once()
 
     def test_setup_integrator_saba(self):

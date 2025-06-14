@@ -9,7 +9,6 @@ This module tests the integration between simulation components.
 import pytest
 from unittest.mock import Mock, patch
 
-import resonances
 from resonances.simulation import SimulationConfig, BodyManager, IntegrationEngine, DataManager
 
 
@@ -17,8 +16,16 @@ from resonances.simulation import SimulationConfig, BodyManager, IntegrationEngi
 def sample_simulation_data():
     """Provide sample simulation data for testing."""
     return {
-        'config': {'name': 'test_simulation', 'tmax': 62831, 'integrator': 'SABA(10,6,4)', 'dt': 5.0},  # 10,000 years in simulation units
-        'body_data': {'name': 'test_asteroid', 'elements': {'a': 2.5, 'e': 0.1, 'inc': 0.1, 'Omega': 0.1, 'omega': 0.1, 'M': 0.1}},
+        'config': {
+            'name': 'test_simulation',
+            'tmax': 62831,
+            'integrator': 'SABA(10,6,4)',
+            'dt': 5.0,
+        },  # 10,000 years in simulation units
+        'body_data': {
+            'name': 'test_asteroid',
+            'elements': {'a': 2.5, 'e': 0.1, 'inc': 0.1, 'Omega': 0.1, 'omega': 0.1, 'M': 0.1},
+        },
     }
 
 

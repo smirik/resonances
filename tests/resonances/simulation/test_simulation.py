@@ -1,15 +1,12 @@
-import datetime
-import astdys
-import numpy as np
-import pandas as pd
-import rebound
+#!/usr/bin/env python3
+import datetime  # noqa: F401 - used in patches
+import astdys  # noqa: F401 - used in patches
+import rebound  # noqa: F401 - used in patches
 import tests.tools as tools
-import shutil
+import shutil  # noqa: F401 - used in fixtures
 from pathlib import Path
 import pytest
-import os
 from unittest.mock import Mock, patch
-import tempfile
 
 import resonances
 from resonances.simulation import Simulation
@@ -72,8 +69,8 @@ def test_identify_librations_exception():
     sim = tools.create_test_simulation_for_solar_system()
     tools.add_test_asteroid_to_simulation(sim)
 
-    with patch('resonances.libration.body', side_effect=Exception("Test error")):
-        with pytest.raises(Exception):
+    with patch('resonances.libration.body', side_effect=RuntimeError("Test error")):
+        with pytest.raises(RuntimeError):
             sim.identify_librations()
 
 
@@ -170,7 +167,6 @@ def test_add_bodies_to_simulation():
 def test_run():
     sim = tools.create_test_simulation_for_solar_system()
     tools.add_test_asteroid_to_simulation(sim)
-    mmr = sim.bodies[0].mmrs[0]
     sim.config.save = 'all'
     sim.config.plot = 'all'
     sim.config.save_summary = True
@@ -189,10 +185,10 @@ def test_data_manager_methods():
     sim.bodies[1].statuses[mmr.to_s()] = -1
 
     # Test data manager methods directly
-    assert sim.data_manager.should_save_body_mmr(sim.bodies[0], mmr) == True
-    assert sim.data_manager.should_plot_body_mmr(sim.bodies[0], mmr) == True
-    assert sim.data_manager.should_save_body_mmr(sim.bodies[1], mmr) == True
-    assert sim.data_manager.should_plot_body_mmr(sim.bodies[1], mmr) == False
+    assert sim.data_manager.should_save_body_mmr(sim.bodies[0], mmr) is True
+    assert sim.data_manager.should_plot_body_mmr(sim.bodies[0], mmr) is True
+    assert sim.data_manager.should_save_body_mmr(sim.bodies[1], mmr) is True
+    assert sim.data_manager.should_plot_body_mmr(sim.bodies[1], mmr) is False
 
 
 def test_saving_summary():

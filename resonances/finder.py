@@ -15,7 +15,11 @@ def convert_input_to_list(asteroids: Union[int, str, List[Union[int, str]]]) -> 
 
 
 def find(
-    asteroids: Union[int, str, List[Union[int, str]]], planets=None, name: str = None, sigma2: float = 0.1, sigma3: float = 0.02
+    asteroids: Union[int, str, List[Union[int, str]]],
+    planets=None,
+    name: str = None,
+    sigma2: float = 0.1,
+    sigma3: float = 0.02,
 ) -> resonances.Simulation:
     now = datetime.now()
     sim = resonances.Simulation(name=name)

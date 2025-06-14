@@ -5,7 +5,7 @@ import resonances.config
 import resonances
 
 
-def body(sim, body: resonances.Body, resonance, image_type='png'):
+def body(sim, body: resonances.Body, resonance, image_type='png'):  # noqa: C901
     plt.style.use('default')
 
     fig, axs = plt.subplots(6, 1, figsize=(10, 10))
@@ -31,8 +31,24 @@ def body(sim, body: resonances.Body, resonance, image_type='png'):
 
     axs[0].set_title('Resonant angle')
     axs[0].set_xlim([0, sim.config.tmax_yrs])
-    axs[0].xaxis.set_major_locator(plt.MultipleLocator(10000))
-    axs[0].xaxis.set_minor_locator(plt.MultipleLocator(2000))
+
+    # Adaptive tick spacing based on simulation length
+    tmax_years = sim.config.tmax_yrs
+    if tmax_years <= 50000:  # Short simulations (MMRs)
+        major_tick = 10000
+        minor_tick = 2000
+    elif tmax_years <= 200000:  # Medium simulations
+        major_tick = 50000
+        minor_tick = 10000
+    elif tmax_years <= 500000:  # Long simulations
+        major_tick = 100000
+        minor_tick = 20000
+    else:  # Very long simulations (secular resonances)
+        major_tick = 200000
+        minor_tick = 50000
+
+    axs[0].xaxis.set_major_locator(plt.MultipleLocator(major_tick))
+    axs[0].xaxis.set_minor_locator(plt.MultipleLocator(minor_tick))
     if angle_data is not None:
         axs[0].plot(sim.times / (2 * np.pi), angle_data, linestyle='', marker=',', color='black')
 
@@ -90,7 +106,13 @@ def body(sim, body: resonances.Body, resonance, image_type='png'):
         for peak_width in body.axis_periodogram_peaks['position']:
             axs[4].axvline(x=peak_width[0], color='gray', linestyle="dashed")
             axs[4].axvline(x=peak_width[1], color='gray', linestyle='--')
-        axs[4].plot(1.0 / body.axis_periodogram_frequency[peaks], body.axis_periodogram_power[peaks], 'x', color='blue', markersize=10)
+        axs[4].plot(
+            1.0 / body.axis_periodogram_frequency[peaks],
+            body.axis_periodogram_power[peaks],
+            'x',
+            color='blue',
+            markersize=10,
+        )
         axs[4].plot(1.0 / body.axis_periodogram_frequency, body.axis_periodogram_power, color='black')
 
         axs[4].sharex(axs[3])

@@ -56,7 +56,10 @@ class BodyManager:
         self.bodies.append(body)
 
     def add_body_with_secular(
-        self, elem_or_num, secular: Union[str, resonances.SecularResonance, List[resonances.SecularResonance]], name='asteroid'
+        self,
+        elem_or_num,
+        secular: Union[str, resonances.SecularResonance, List[resonances.SecularResonance]],
+        name='asteroid',
     ):
         """Add a body with secular resonance(s)."""
         body = resonances.Body()

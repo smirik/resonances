@@ -47,9 +47,8 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
             return resonances.TwoBody(coeff, planets_names)
         else:
             raise Exception(
-                'Cannot create a resonance because the number of coefficients is wrong. It should be equal to 2 or 3. Given {}.'.format(
-                    len(coeff)
-                )
+                'Cannot create a resonance because the number of coefficients is wrong. '
+                'It should be equal to 2 or 3. Given {}.'.format(len(coeff))
             )
 
     if isinstance(coeff, str):

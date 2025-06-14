@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Union
+from typing import List
 
 import resonances
 from .config import SimulationConfig
@@ -33,7 +33,7 @@ class Simulation:
         """Create or load the Solar System simulation."""
         self.integration_engine.create_solar_system(force)
 
-    def add_body(self, elem_or_num, resonance, name='asteroid'):
+    def add_body(self, elem_or_num, resonance, name='asteroid'):  # noqa: C901
         """Add a celestial body with mixed resonance types."""
         # Parse mixed resonance types
         mmr_list = []

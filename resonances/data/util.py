@@ -14,7 +14,8 @@ def mean_motion_from_axis(a):
 def datetime_from_string(date: Union[str, datetime.datetime]) -> datetime.datetime:
     """
     Convert string to datetime object.
-    This function is based on the REBOUND package date conversion utilities. It converts a date string to a datetime object using various format patterns.
+    This function is based on the REBOUND package date conversion utilities.
+    It converts a date string to a datetime object using various format patterns.
     Args:
         date (Union[str, datetime.datetime]): Input date either as string or datetime object.
         Accepted string formats are:
