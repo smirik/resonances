@@ -33,7 +33,7 @@ astropy = "^7.1.0"
 astroquery = "^0.4.10"
 rebound = "^4.4.8"
 # rebound = "^4.4.2"
-astdys = ">=0.9.3"
+astdys = ">=0.9.4"
 # Utilities
 tqdm = "^4.67.1"
 python-dotenv = "^1.1.0"
