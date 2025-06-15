@@ -170,19 +170,20 @@ def test_create_resonance():
     # Test that unsupported secular resonance strings raise an exception
     # (even though detect_resonance_type detects them as secular,
     # create_secular_resonance doesn't support creating them from strings)
-    with pytest.raises(Exception, match='Unknown secular resonance type'):
+    with pytest.raises(Exception, match='Unknown variable'):
         create_resonance('g1')
 
-    with pytest.raises(Exception, match='Unknown secular resonance type'):
+    with pytest.raises(Exception, match='Unknown variable'):
         create_resonance('s2')
 
-    # Test complex secular patterns that detect_resonance_type recognizes
-    # but create_secular_resonance cannot create from strings
-    with pytest.raises(Exception, match='Unknown secular resonance type'):
-        create_resonance('g-g5')
+    # Test complex secular patterns that are now supported through SecularMatrix
+    secular_complex = create_resonance('g-g5')
+    assert isinstance(secular_complex, Nu5Resonance)
+    assert secular_complex.type == 'secular'
 
-    with pytest.raises(Exception, match='Unknown secular resonance type'):
-        create_resonance('g-2*g5+g6')
+    secular_complex2 = create_resonance('g-2*g5+g6')
+    assert isinstance(secular_complex2, GeneralSecularResonance)
+    assert secular_complex2.type == 'secular'
 
     # Test invalid input type
     with pytest.raises(Exception, match='should be either a valid secular resonance'):

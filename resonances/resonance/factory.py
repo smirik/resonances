@@ -3,7 +3,7 @@ from typing import Union
 
 from resonances.resonance.mmr import MMR
 from resonances.resonance.resonance import Resonance
-from resonances.resonance.secular import Nu16Resonance, Nu5Resonance, Nu6Resonance, SecularResonance
+from resonances.resonance.secular import Nu16Resonance, Nu5Resonance, Nu6Resonance, SecularResonance, GeneralSecularResonance
 from resonances.resonance.three_body import ThreeBody
 from resonances.resonance.two_body import TwoBody
 
@@ -78,7 +78,30 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
     )
 
 
-def create_secular_resonance(secular_type, planets_names=None):
+def _handle_known_formulas(secular_type: str):
+    """Handle known mathematical formulas and specific secular resonance types."""
+    secular_lower = secular_type.lower()
+
+    # Map string inputs to specific secular resonance classes
+    if secular_lower == 'nu6':
+        return Nu6Resonance()
+    elif secular_lower == 'nu5':
+        return Nu5Resonance()
+    elif secular_lower == 'nu16':
+        return Nu16Resonance()
+
+    # Check for known mathematical formulas first
+    if secular_type == 'g-g5':
+        return Nu5Resonance()
+    elif secular_type == 'g-g6':
+        return Nu6Resonance()
+    elif secular_type == 's-s6':
+        return Nu16Resonance()
+
+    return None
+
+
+def create_secular_resonance(secular_type):
     """Create Secular Resonance object based on the input format.
 
     This function serves as a factory method for creating secular resonance objects.
@@ -87,6 +110,7 @@ def create_secular_resonance(secular_type, planets_names=None):
         secular_type: Input that defines the secular resonance. Can be:
             - A SecularResonance instance (returned as-is)
             - A string in format "nu6", "nu5", "nu16" for specific secular resonances
+            - A string in mathematical format like "g-g5", "2*g-g5-g6", etc.
             - A list of strings, each representing a secular resonance type
             - A list of SecularResonance objects (returned as-is)
         planets_names (list, optional): List of planet names for custom
@@ -102,6 +126,8 @@ def create_secular_resonance(secular_type, planets_names=None):
         >>> create_secular_resonance("nu6")  # Creates ν₆ secular resonance
         >>> create_secular_resonance("nu5")  # Creates ν₅ secular resonance
         >>> create_secular_resonance("nu16") # Creates ν₁₆ secular resonance
+        >>> create_secular_resonance("g-g5") # Creates secular resonance from formula
+        >>> create_secular_resonance("2*g-g5-g6") # Creates complex secular resonance
         >>> create_secular_resonance(['nu6', 'nu5'])  # Creates list of secular resonances
         >>> create_secular_resonance(existing_secular)  # Returns existing instance as-is
         >>> create_secular_resonance([sec1, sec2])  # Returns list of instances as-is
@@ -110,38 +136,17 @@ def create_secular_resonance(secular_type, planets_names=None):
     if isinstance(secular_type, SecularResonance):
         return secular_type
 
-    if isinstance(secular_type, list):
-        if len(secular_type) == 0:
-            raise Exception(
-                'If input is a list, it should contain string representations of secular resonances or SecularResonance objects.'
-            )
-        if isinstance(secular_type[0], SecularResonance):
-            return secular_type
-        if isinstance(secular_type[0], str):
-            return [create_secular_resonance(s) for s in secular_type]
-        else:
-            raise Exception('List elements must be either strings or SecularResonance objects.')
-
     if isinstance(secular_type, str):
-        secular_lower = secular_type.lower()
-
-        # Map string inputs to specific secular resonance classes
-        if secular_lower == 'nu6':
-            return Nu6Resonance()
-        elif secular_lower == 'nu5':
-            return Nu5Resonance()
-        elif secular_lower == 'nu16':
-            return Nu16Resonance()
+        known_resonance = _handle_known_formulas(secular_type)
+        if known_resonance is not None:
+            return known_resonance
         else:
-            # For custom secular resonances, try to create a general one
-            # This could be extended in the future for more complex secular resonances
-            raise Exception(
-                f"Unknown secular resonance type: {secular_type}. "
-                f"Supported types are: 'nu6', 'nu5', 'nu16'. "
-                f"For custom secular resonances, use the appropriate class directly."
-            )
+            return GeneralSecularResonance(formula=secular_type)
 
-    raise Exception('The argument should be either a string (i.e. "nu6") or a SecularResonance object.')
+    if isinstance(secular_type, list):
+        return [create_secular_resonance(s) for s in secular_type]
+
+    raise Exception('The argument should be either a string (i.e. "nu6" or "g-g5") or a SecularResonance object.')
 
 
 def detect_resonance_type(resonance: Union[Resonance, str]) -> str:
@@ -158,8 +163,7 @@ def detect_resonance_type(resonance: Union[Resonance, str]) -> str:
             return 'secular'
         else:
             return 'mmr'
-    else:
-        raise Exception('The argument should be either a string (i.e. "nu6") or a Resonance object.')
+    raise Exception('The argument should be either a string (i.e. "nu6") or a Resonance object.')
 
 
 def create_resonance(resonance: Union[Resonance, str]) -> Resonance:
@@ -173,5 +177,4 @@ def create_resonance(resonance: Union[Resonance, str]) -> Resonance:
             return create_secular_resonance(resonance)
         else:
             raise Exception(f'Unknown resonance type: {res_type}')
-    else:
-        raise Exception('The argument should be either a valid secular resonance (i.e. "nu6") or a Resonance object.')
+    raise Exception('The argument should be either a valid secular resonance (i.e. "nu6") or a Resonance object.')
