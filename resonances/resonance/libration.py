@@ -244,7 +244,7 @@ class libration:
     @classmethod
     def body(cls, sim, body: resonances.Body):
         integration_time = abs(round(sim.config.tmax / (2 * np.pi)))  # abs for backward integration
-        fs = sim.Nout / integration_time  # sample rate, Hz || Nout/time, i.e. 10000/100000
+        fs = sim.config.Nout / integration_time  # sample rate, Hz || Nout/time, i.e. 10000/100000
         cutoff = sim.config.oscillations_cutoff  # should be a little bit more than needed
         nyq = 0.5 * fs  # Nyquist Frequency
         order = sim.config.oscillations_filter_order  # polynom order

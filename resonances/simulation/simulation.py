@@ -23,7 +23,6 @@ class Simulation:
         self.data_manager = DataManager(self.config)
 
         self.times = []
-        self.Nout = abs(int(self.config.tmax / 100))
 
     @property
     def bodies(self):
@@ -103,7 +102,7 @@ class Simulation:
     # Integration methods
     def run(self, progress=False):
         """Run the complete simulation."""
-        self.times = np.linspace(0.0, self.config.tmax, self.Nout)
+        self.times = np.linspace(0.0, self.config.tmax, self.config.Nout)
         self.body_manager.add_bodies_to_simulation(self.integration_engine.sim)
         self.integration_engine.run_integration(self.bodies, self.times, progress)
         self.identify_librations()

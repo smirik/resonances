@@ -9,6 +9,7 @@ def test_find():
     set_fast_integrator()
 
     sim = resonances.find(asteroids, planets)
+    sim.config.tmax = 200000
     sim.config.save = 'none'
     sim.config.plot = 'none'
 
@@ -30,6 +31,7 @@ def test_check():
     set_fast_integrator()
 
     sim = resonances.check(463, '4J-2S-1')
+    sim.config.tmax = 200000
     assert isinstance(sim, resonances.Simulation)
     assert 1 == len(sim.bodies)
 

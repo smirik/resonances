@@ -67,8 +67,7 @@ def check(
         sim.add_body(asteroid, secular_resonance, name=f"{asteroid}")
         resonances.logger.info('Adding asteroid {} for secular resonance {}'.format(asteroid, secular_resonance))
 
-    # Configure integration parameters
-    sim.Nout = nout
+    sim.config.Nout = nout
 
     return sim
 

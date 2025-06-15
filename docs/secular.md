@@ -330,7 +330,7 @@ sim = resonances.Simulation(
 )
 
 # Set reasonable number of output points
-sim.Nout = 10000  # 10,000 points over 10 Myr = 1,000 year resolution
+sim.config.Nout = 10000  # 10,000 points over 10 Myr = 1,000 year resolution
 ```
 
 ### Parallel Analysis

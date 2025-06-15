@@ -36,7 +36,7 @@ def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=F
     # create to speedup
     sim.config.tmax = 20
     sim.config.dt = 1
-    sim.Nout = 10
+    sim.config.Nout = 10
     sim.config.libration_period_min = 1
     sim.config.integrator = 'whfast'
     sim.config.integrator_corrector = None
@@ -57,10 +57,11 @@ def add_test_asteroid_to_simulation(sim: resonances.Simulation):
 
 
 def set_fast_integrator():
-    resonances.config.set('INTEGRATION_INTEGRATOR', 'whfast')
-    resonances.config.set('INTEGRATION_DT', 1.0)
-    resonances.config.set('INTEGRATION_SAFE_MODE', 0)
-    resonances.config.set('INTEGRATION_CORRECTOR', 11)
+    resonances.config.set('INTEGRATION_INTEGRATOR', 'SABA(10,6,4)')
+    resonances.config.set('INTEGRATION_DT', 5.0)
+    resonances.config.set('INTEGRATION_TMAX', 200000)
+    resonances.config.set('SAVE_PATH', 'cache/tests')
+    resonances.config.set('PLOT_PATH', 'cache/tests')
     resonances.config.set('PLOT_MODE', None)
     resonances.config.set('SAVE_MODE', None)
 
@@ -68,7 +69,10 @@ def set_fast_integrator():
 def reset_fast_integrator():
     resonances.config.set('INTEGRATION_INTEGRATOR', 'SABA(10,6,4)')
     resonances.config.set('INTEGRATION_DT', 1.0)
+    resonances.config.set('INTEGRATION_TMAX', 628319)
     resonances.config.set('INTEGRATION_SAFE_MODE', 0)
     resonances.config.set('INTEGRATION_CORRECTOR', 17)
+    resonances.config.set('SAVE_PATH', 'cache')
+    resonances.config.set('PLOT_PATH', 'cache')
     resonances.config.set('PLOT_MODE', 'nonzero')
     resonances.config.set('SAVE_MODE', 'nonzero')

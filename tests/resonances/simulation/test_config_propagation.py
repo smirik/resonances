@@ -185,14 +185,14 @@ class TestConfigurationPropagation:
         mock_body.mass = 0.0
 
         # Mock the arrays that will be updated during integration
-        mock_body.axis = np.zeros(sim.Nout)
-        mock_body.ecc = np.zeros(sim.Nout)
-        mock_body.inc = np.zeros(sim.Nout)
-        mock_body.Omega = np.zeros(sim.Nout)
-        mock_body.omega = np.zeros(sim.Nout)
-        mock_body.M = np.zeros(sim.Nout)
-        mock_body.longitude = np.zeros(sim.Nout)
-        mock_body.varpi = np.zeros(sim.Nout)
+        mock_body.axis = np.zeros(sim.config.Nout)
+        mock_body.ecc = np.zeros(sim.config.Nout)
+        mock_body.inc = np.zeros(sim.config.Nout)
+        mock_body.Omega = np.zeros(sim.config.Nout)
+        mock_body.omega = np.zeros(sim.config.Nout)
+        mock_body.M = np.zeros(sim.config.Nout)
+        mock_body.longitude = np.zeros(sim.config.Nout)
+        mock_body.varpi = np.zeros(sim.config.Nout)
 
         sim.body_manager.bodies = [mock_body]
 
@@ -211,7 +211,7 @@ class TestConfigurationPropagation:
         mock_sim.orbits.return_value = [mock_orbit]  # Mock orbit for the body
 
         # Set up Nout for short test
-        sim.Nout = 5
+        sim.config.Nout = 5
 
         # Run the simulation
         sim.run()
@@ -219,7 +219,7 @@ class TestConfigurationPropagation:
         # Verify that setup_integrator was called and parameters were set
         # Note: We can't directly verify mock_sim properties here since they're set in setup_integrator
         # But we can verify that integration was attempted
-        assert mock_sim.integrate.call_count == sim.Nout
+        assert mock_sim.integrate.call_count == sim.config.Nout
 
     def test_config_isolation_between_simulations(self):
         """Test that different simulation instances have isolated configurations."""
@@ -288,14 +288,14 @@ class TestConfigurationPropagation:
         sim = Simulation(tmax=12566)  # 2000 * 2π ≈ 12566
 
         expected_nout = abs(int(12566 / 100))
-        assert sim.Nout == expected_nout
+        assert sim.config.Nout == expected_nout
 
         # Test with different tmax
         sim.config.tmax = 31415  # 5000 * 2π ≈ 31415
-        sim.Nout = abs(int(sim.config.tmax / 100))
+        sim.config.Nout = abs(int(sim.config.tmax / 100))
 
         expected_nout = abs(int(31415 / 100))
-        assert sim.Nout == expected_nout
+        assert sim.config.Nout == expected_nout
 
 
 if __name__ == '__main__':

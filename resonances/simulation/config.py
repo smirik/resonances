@@ -83,6 +83,7 @@ class SimulationConfig:
         """Set integration time maximum and calculate related values."""
         self.__tmax = value
         self.tmax_yrs = self.__tmax / (2 * np.pi)
+        self.Nout = abs(int(self.tmax / 100))
 
     @tmax.deleter
     def tmax(self):

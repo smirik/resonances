@@ -93,7 +93,7 @@ def test_simulation_init():
     # Test default initialization
     sim = Simulation()
     assert sim.config.name.startswith('20')  # Current date format
-    assert sim.Nout == 6283
+    assert sim.config.Nout == 6283
     assert sim.config.source == resonances.config.get('DATA_SOURCE')
 
     # Test custom initialization

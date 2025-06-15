@@ -12,22 +12,19 @@ def test_backward_integration():
     """
     # Create simulation with backward integration parameters
     sim = resonances.Simulation(
-        tmax=-600000,
-        dt=-1.0,
+        tmax=-200000,
+        name='backward',
         save='all',
-        save_summary=True,  # Negative time for backward integration  # Negative timestep
+        plot_path='cache/tests',
+        save_path='cache/tests',
+        integrator='SABA(10,6,4)',
+        dt=-5.0,
+        save_summary=True,
     )
 
-    # Create solar system first
     sim.create_solar_system()
-
-    # Add a test asteroid
     tools.add_test_asteroid_to_simulation(sim)
-
-    # Run the backward integration
     sim.run(progress=True)
-
-    # Verify the simulation ran successfully by checking the summary
     summary = sim.data_manager.get_simulation_summary(sim.bodies)
     assert len(summary) > 0
     assert 'name' in summary.columns
