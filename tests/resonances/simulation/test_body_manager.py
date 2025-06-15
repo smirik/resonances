@@ -56,20 +56,21 @@ class TestBodyManager:
         with pytest.raises(ValueError):
             self.body_manager.get_body_elements([1, 2, 3])  # Invalid type
 
-    @patch('resonances.create_mmr')
+    @patch('resonances.create_resonance')
     @patch.object(BodyManager, 'get_body_elements')
-    def test_add_body_with_mmr(self, mock_get_elements, mock_create_mmr):
+    def test_add_body_with_mmr(self, mock_get_elements, mock_create_resonance):
         """Test adding a body with MMR."""
         # Setup mocks
         mock_elements = {'a': 2.5, 'e': 0.1, 'inc': 0.1, 'Omega': 0.1, 'omega': 0.1, 'M': 0.1}
         mock_get_elements.return_value = mock_elements
 
         mock_mmr = Mock()
+        mock_mmr.type = 'mmr'
         mock_mmr.planets_names = ['Jupiter', 'Saturn']
-        mock_create_mmr.return_value = mock_mmr
+        mock_create_resonance.return_value = mock_mmr
 
-        # Test adding body
-        self.body_manager.add_body_with_mmr(463, "4J-2S-1", "test_asteroid")
+        # Test adding body with the new unified method
+        self.body_manager.add_body(463, "4J-2S-1", "test_asteroid")
 
         # Verify body was added
         assert len(self.body_manager.bodies) == 1
@@ -79,20 +80,21 @@ class TestBodyManager:
         assert len(body.mmrs) == 1
         assert body.mmrs[0] == mock_mmr
 
-    @patch('resonances.create_secular_resonance')
+    @patch('resonances.create_resonance')
     @patch.object(BodyManager, 'get_body_elements')
-    def test_add_body_with_secular(self, mock_get_elements, mock_create_secular):
+    def test_add_body_with_secular(self, mock_get_elements, mock_create_resonance):
         """Test adding a body with secular resonance."""
         # Setup mocks
         mock_elements = {'a': 2.5, 'e': 0.1, 'inc': 0.1, 'Omega': 0.1, 'omega': 0.1, 'M': 0.1}
         mock_get_elements.return_value = mock_elements
 
         mock_secular = Mock()
+        mock_secular.type = 'secular'
         mock_secular.planets_names = ['Saturn']
-        mock_create_secular.return_value = mock_secular
+        mock_create_resonance.return_value = mock_secular
 
-        # Test adding body
-        self.body_manager.add_body_with_secular(463, "nu6", "test_asteroid")
+        # Test adding body with the new unified method
+        self.body_manager.add_body(463, "nu6", "test_asteroid")
 
         # Verify body was added
         assert len(self.body_manager.bodies) == 1

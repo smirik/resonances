@@ -27,6 +27,10 @@ class SecularResonance(Resonance):
         self.planets_names = [planet_name]
         self.index_of_planets = None
 
+    @property
+    def type(self) -> str:
+        return 'secular'
+
     def calc_angle(self, body, planets):
         """
         Calculate the secular resonance angle.
@@ -267,36 +271,36 @@ class GeneralSecularResonance(SecularResonance):
         return rebound.mod2pi(angle)
 
 
-def create_secular_resonance(resonance_str):
-    """
-    Factory function to create secular resonance objects.
+# def create_secular_resonance(resonance_str):
+#     """
+#     Factory function to create secular resonance objects.
 
-    Parameters
-    ----------
-    resonance_str : str
-        String representation of the secular resonance
+#     Parameters
+#     ----------
+#     resonance_str : str
+#         String representation of the secular resonance
 
-    Returns
-    -------
-    SecularResonance
-        The appropriate secular resonance object
+#     Returns
+#     -------
+#     SecularResonance
+#         The appropriate secular resonance object
 
-    Examples
-    --------
-    >>> create_secular_resonance('nu6')
-    Nu6Resonance()
-    >>> create_secular_resonance('nu5')
-    Nu5Resonance()
-    >>> create_secular_resonance('nu16')
-    Nu16Resonance()
-    """
-    resonance_str = resonance_str.lower().strip()
+#     Examples
+#     --------
+#     >>> create_secular_resonance('nu6')
+#     Nu6Resonance()
+#     >>> create_secular_resonance('nu5')
+#     Nu5Resonance()
+#     >>> create_secular_resonance('nu16')
+#     Nu16Resonance()
+#     """
+#     resonance_str = resonance_str.lower().strip()
 
-    if resonance_str == 'nu6':
-        return Nu6Resonance()
-    elif resonance_str == 'nu5':
-        return Nu5Resonance()
-    elif resonance_str == 'nu16':
-        return Nu16Resonance()
-    else:
-        raise ValueError(f"Unknown secular resonance: {resonance_str}")
+#     if resonance_str == 'nu6':
+#         return Nu6Resonance()
+#     elif resonance_str == 'nu5':
+#         return Nu5Resonance()
+#     elif resonance_str == 'nu16':
+#         return Nu16Resonance()
+#     else:
+#         raise ValueError(f"Unknown secular resonance: {resonance_str}")

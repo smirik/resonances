@@ -30,56 +30,33 @@ class BodyManager:
         else:
             raise ValueError('You can add body only by its number or all orbital elements')
 
-    def add_body_with_mmr(self, elem_or_num, mmr: Union[str, resonances.MMR, List[resonances.MMR]], name='asteroid'):
-        """Add a body with mean-motion resonance(s)."""
+    def add_body(self, elem_or_num, resonance: resonances.Resonance, name='asteroid'):
         body = resonances.Body()
 
-        # Convert string/single MMR to list
-        if isinstance(mmr, list):
-            mmr_list = [resonances.create_mmr(m) if isinstance(m, str) else m for m in mmr]
+        if isinstance(resonance, list):
+            resonances_list = [resonances.create_resonance(res) for res in resonance]
         else:
-            mmr_list = [resonances.create_mmr(mmr) if isinstance(mmr, str) else mmr]
+            resonances_list = [resonances.create_resonance(resonance)]
 
-        # Get orbital elements
         elem = self.get_body_elements(elem_or_num)
 
-        # Setup body
         body.initial_data = elem
         body.name = name
-        body.mmrs = mmr_list
-        body.mass = elem.get('mass', 0.0)
 
-        # Setup planet indices for MMRs
-        for mmr_elem in body.mmrs:
-            mmr_elem.index_of_planets = self.get_index_of_planets(mmr_elem.planets_names)
+        mmrs_list = []
+        secular_list = []
 
-        self.bodies.append(body)
-
-    def add_body_with_secular(
-        self,
-        elem_or_num,
-        secular: Union[str, resonances.SecularResonance, List[resonances.SecularResonance]],
-        name='asteroid',
-    ):
-        """Add a body with secular resonance(s)."""
-        body = resonances.Body()
-
-        # Convert string/single secular to list
-        if isinstance(secular, list):
-            secular_list = [resonances.create_secular_resonance(s) if isinstance(s, str) else s for s in secular]
-        else:
-            secular_list = [resonances.create_secular_resonance(secular) if isinstance(secular, str) else secular]
-
-        # Get orbital elements
-        elem = self.get_body_elements(elem_or_num)
-
-        # Setup body
-        body.initial_data = elem
-        body.name = name
+        for res in resonances_list:
+            if res.type == 'mmr':
+                mmrs_list.append(res)
+            elif res.type == 'secular':
+                secular_list.append(res)
+        body.mmrs = mmrs_list
         body.secular_resonances = secular_list
         body.mass = elem.get('mass', 0.0)
 
-        # Setup planet indices for secular resonances
+        for mmr_elem in body.mmrs:
+            mmr_elem.index_of_planets = self.get_index_of_planets(mmr_elem.planets_names)
         for secular_elem in body.secular_resonances:
             secular_elem.index_of_planets = self.get_index_of_planets(secular_elem.planets_names)
 

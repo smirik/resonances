@@ -16,6 +16,8 @@ from .resonance import (
     Nu16Resonance,
     GeneralSecularResonance,
     create_secular_resonance,
+    detect_resonance_type,
+    create_resonance,
 )
 from resonances.matrix.three_body_matrix import ThreeBodyMatrix
 from resonances.matrix.two_body_matrix import TwoBodyMatrix

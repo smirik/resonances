@@ -47,23 +47,24 @@ class TestSimulationIntegration:
         assert data_manager.config == config
 
     @patch('resonances.horizons.get_body_keplerian_elements')
-    @patch('resonances.create_mmr')
-    def test_end_to_end_mmr_workflow(self, mock_create_mmr, mock_get_elements, sample_simulation_data):
+    @patch('resonances.create_resonance')
+    def test_end_to_end_mmr_workflow(self, mock_create_resonance, mock_get_elements, sample_simulation_data):
         """Test end-to-end workflow with MMR."""
         # Setup mocks
         mock_get_elements.return_value = sample_simulation_data['body_data']['elements']
 
         mock_mmr = Mock()
+        mock_mmr.type = 'mmr'
         mock_mmr.planets_names = ['Jupiter', 'Saturn']
         mock_mmr.to_s.return_value = '4J-2S-1'
-        mock_create_mmr.return_value = mock_mmr
+        mock_create_resonance.return_value = mock_mmr
 
         # Create components
         config = SimulationConfig(**sample_simulation_data['config'])
         body_manager = BodyManager(config)
 
-        # Add body with MMR
-        body_manager.add_body_with_mmr(463, "4J-2S-1", "test_asteroid")
+        # Add body with MMR using the new unified method
+        body_manager.add_body(463, "4J-2S-1", "test_asteroid")
 
         # Verify workflow
         assert len(body_manager.bodies) == 1

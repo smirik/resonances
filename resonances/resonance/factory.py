@@ -1,5 +1,11 @@
 import re
-import resonances
+from typing import Union
+
+from resonances.resonance.mmr import MMR
+from resonances.resonance.resonance import Resonance
+from resonances.resonance.secular import Nu16Resonance, Nu5Resonance, Nu6Resonance, SecularResonance
+from resonances.resonance.three_body import ThreeBody
+from resonances.resonance.two_body import TwoBody
 
 
 def create_mmr(coeff, planets_names=None):  # noqa: C901
@@ -17,7 +23,7 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
         planets_names (list, optional): List of planet names when using coefficient list format.
             Defaults to None.
     Returns:
-        resonances.MMR or list: A single MMR object or list of MMR objects
+        MMR or list: A single MMR object or list of MMR objects
     Raises:
         Exception: If the input format is invalid or the number of coefficients doesn't match
             required format (2 or 3 bodies)
@@ -30,21 +36,21 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
         >>> create_mmr([mmr1, mmr2])  # Returns list of MMR instances as-is
     """
 
-    if isinstance(coeff, resonances.MMR):
+    if isinstance(coeff, MMR):
         return coeff
 
     if isinstance(coeff, list):
         if len(coeff) == 0:
             raise Exception('If input is a list, it should contain a string representation of MMRs, MMR objects, or coefficients.')
-        if isinstance(coeff[0], resonances.MMR):
+        if isinstance(coeff[0], MMR):
             return coeff
         if isinstance(coeff[0], str):
             return [create_mmr(c) for c in coeff]
         size = len(coeff)
         if 6 == size:
-            return resonances.ThreeBody(coeff, planets_names)
+            return ThreeBody(coeff, planets_names)
         elif 4 == size:
-            return resonances.TwoBody(coeff, planets_names)
+            return TwoBody(coeff, planets_names)
         else:
             raise Exception(
                 'Cannot create a resonance because the number of coefficients is wrong. '
@@ -56,9 +62,9 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
         tmp = re.split('-|\\+', coeff)
         size = len(tmp)
         if 3 == size:
-            return resonances.ThreeBody(coeff)
+            return ThreeBody(coeff)
         elif 2 == size:
-            return resonances.TwoBody(coeff)
+            return TwoBody(coeff)
         else:
             raise Exception(
                 """Cannot create a resonance because the notation is wrong.
@@ -83,11 +89,11 @@ def create_secular_resonance(secular_type, planets_names=None):
             - A string in format "nu6", "nu5", "nu16" for specific secular resonances
             - A list of strings, each representing a secular resonance type
             - A list of SecularResonance objects (returned as-is)
-        planets_names (list, optional): List of planet names for custom resonances.
+        planets_names (list, optional): List of planet names for custom
             Defaults to None.
 
     Returns:
-        resonances.SecularResonance or list: A single SecularResonance object or list of objects
+        SecularResonance or list: A single SecularResonance object or list of objects
 
     Raises:
         Exception: If the input format is invalid or the secular resonance type is unknown
@@ -101,7 +107,7 @@ def create_secular_resonance(secular_type, planets_names=None):
         >>> create_secular_resonance([sec1, sec2])  # Returns list of instances as-is
     """
 
-    if isinstance(secular_type, resonances.SecularResonance):
+    if isinstance(secular_type, SecularResonance):
         return secular_type
 
     if isinstance(secular_type, list):
@@ -109,7 +115,7 @@ def create_secular_resonance(secular_type, planets_names=None):
             raise Exception(
                 'If input is a list, it should contain string representations of secular resonances or SecularResonance objects.'
             )
-        if isinstance(secular_type[0], resonances.SecularResonance):
+        if isinstance(secular_type[0], SecularResonance):
             return secular_type
         if isinstance(secular_type[0], str):
             return [create_secular_resonance(s) for s in secular_type]
@@ -121,11 +127,11 @@ def create_secular_resonance(secular_type, planets_names=None):
 
         # Map string inputs to specific secular resonance classes
         if secular_lower == 'nu6':
-            return resonances.Nu6Resonance()
+            return Nu6Resonance()
         elif secular_lower == 'nu5':
-            return resonances.Nu5Resonance()
+            return Nu5Resonance()
         elif secular_lower == 'nu16':
-            return resonances.Nu16Resonance()
+            return Nu16Resonance()
         else:
             # For custom secular resonances, try to create a general one
             # This could be extended in the future for more complex secular resonances
@@ -136,3 +142,36 @@ def create_secular_resonance(secular_type, planets_names=None):
             )
 
     raise Exception('The argument should be either a string (i.e. "nu6") or a SecularResonance object.')
+
+
+def detect_resonance_type(resonance: Union[Resonance, str]) -> str:
+    if isinstance(resonance, Resonance):
+        return resonance.type
+    elif isinstance(resonance, str):
+        if (
+            (resonance.lower() in ['nu6', 'nu5', 'nu16'])
+            or resonance.startswith('g')
+            or resonance.startswith('s')
+            or resonance.startswith('2g')
+            or resonance.startswith('2s')
+        ):
+            return 'secular'
+        else:
+            return 'mmr'
+    else:
+        raise Exception('The argument should be either a string (i.e. "nu6") or a Resonance object.')
+
+
+def create_resonance(resonance: Union[Resonance, str]) -> Resonance:
+    if isinstance(resonance, Resonance):
+        return resonance
+    elif isinstance(resonance, str):
+        res_type = detect_resonance_type(resonance)
+        if res_type == 'mmr':
+            return create_mmr(resonance)
+        elif res_type == 'secular':
+            return create_secular_resonance(resonance)
+        else:
+            raise Exception(f'Unknown resonance type: {res_type}')
+    else:
+        raise Exception('The argument should be either a valid secular resonance (i.e. "nu6") or a Resonance object.')
