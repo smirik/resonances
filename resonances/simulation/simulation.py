@@ -32,7 +32,9 @@ class Simulation:
         """Create or load the Solar System simulation."""
         self.integration_engine.create_solar_system(force)
 
-    def add_body(self, elem_or_num, resonance: Union[resonances.Resonance, list[resonances.Resonance]], name='asteroid'):  # noqa: C901
+    def add_body(
+        self, elem_or_num, resonance: Union[resonances.Resonance, str, list[resonances.Resonance], list[str]], name='asteroid'
+    ):  # noqa: C901
         """Add a celestial body with any resonances."""
         self.body_manager.add_body(elem_or_num, resonance, name)
 

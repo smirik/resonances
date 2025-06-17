@@ -30,7 +30,7 @@ class BodyManager:
         else:
             raise ValueError('You can add body only by its number or all orbital elements')
 
-    def add_body(self, elem_or_num, resonance: Union[resonances.Resonance, list[resonances.Resonance]], name='asteroid'):
+    def add_body(self, elem_or_num, resonance: Union[resonances.Resonance, str, list[resonances.Resonance], list[str]], name='asteroid'):
         body = resonances.Body()
 
         if isinstance(resonance, list):

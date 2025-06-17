@@ -7,15 +7,10 @@ from resonances.data.util import convert_input_to_list
 
 def check(
     asteroids: Union[int, str, List[Union[int, str]]],
-    secular_resonance: str,
+    secular_resonance: str | list[str] | resonances.SecularResonance | list[resonances.SecularResonance],
     name: str = None,
     integration_years: int = 1000000,
-    integrator: str = 'SABA(10,6,4)',
-    dt: float = 5.0,
-    nout: int = 10000,
-    oscillations_cutoff: float = 0.00005,
-    plot: str = 'all',
-    save: str = 'all',
+    **kwargs,
 ) -> resonances.Simulation:
     """
     Check asteroids for secular resonance using SABA integrator.
@@ -28,7 +23,7 @@ def check(
     asteroids : Union[int, str, List[Union[int, str]]]
         Asteroid ID(s) to check
     secular_resonance : str
-        Secular resonance to check (e.g., 'nu6', 'nu16')
+        Secular resonance to check (e.g., 'nu6', 'nu16', 'g-g6', or any formula)
     name : str, optional
         Name for the simulation
     integration_years : int, default=1000000
@@ -46,28 +41,24 @@ def check(
         Configured simulation ready to run
     """
 
-    # Create simulation with proper configuration for secular resonances
+    libration_period_min = kwargs.pop('libration_period_min', 10000)
+    libration_period_critical = kwargs.pop('libration_period_critical', integration_years * 0.2)
+
     sim = resonances.Simulation(
-        name=name or f"secular_check_{secular_resonance}",
+        name=name or "secular_check",
         tmax=int(integration_years * 2 * np.pi),
-        integrator=integrator,
-        dt=dt,
-        save=save,
-        plot=plot,
-        oscillations_cutoff=oscillations_cutoff,
-        libration_period_min=10000,
-        libration_period_critical=integration_years * 0.2,
+        libration_period_min=libration_period_min,
+        libration_period_critical=libration_period_critical,
+        **kwargs,
     )
 
     sim.create_solar_system()
     asteroids = convert_input_to_list(asteroids)
 
-    # Add each asteroid with the secular resonance
     for asteroid in asteroids:
         sim.add_body(asteroid, secular_resonance, name=f"{asteroid}")
         resonances.logger.info('Adding asteroid {} for secular resonance {}'.format(asteroid, secular_resonance))
-
-    sim.config.Nout = nout
+    sim.config.Nout = kwargs.get('Nout', 10000)
 
     return sim
 
