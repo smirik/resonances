@@ -1,4 +1,3 @@
-import pytest
 import resonances.secular_finder
 import numpy as np
 
@@ -20,7 +19,7 @@ class TestSecularFinderCheck:
         }
 
         # Call check function with these parameters as kwargs
-        sim = resonances.secular_finder.check(asteroids=759, secular_resonance='nu6', integration_years=200000, **old_params)
+        sim = resonances.secular_finder.check(asteroids=759, resonance='nu6', integration_years=200000, **old_params)
 
         # Verify that the simulation object has the parameters correctly set
         assert sim.config.integrator == old_params['integrator']
@@ -52,7 +51,7 @@ class TestSecularFinderCheck:
         }
 
         sim = resonances.secular_finder.check(
-            asteroids=760, secular_resonance='g-g6', name="custom_secular_test", integration_years=100000, **custom_params
+            asteroids=760, resonance='g-g6', name="custom_secular_test", integration_years=100000, **custom_params
         )
 
         # Verify custom parameters were applied
@@ -72,7 +71,7 @@ class TestSecularFinderCheck:
         # Test the libration parameters that are explicitly handled in the check function
         sim = resonances.secular_finder.check(
             asteroids=[759, 760],
-            secular_resonance='nu6',
+            resonance='nu6',
             integration_years=200000,
             libration_period_min=5000,
             libration_period_critical=40000,
@@ -94,7 +93,7 @@ class TestSecularFinderCheck:
             # Omitting dt, Nout, oscillations_cutoff, plot intentionally
         }
 
-        sim = resonances.secular_finder.check(asteroids=1222, secular_resonance='nu16', integration_years=150000, **partial_params)
+        sim = resonances.secular_finder.check(asteroids=1222, resonance='nu16', integration_years=150000, **partial_params)
 
         # Verify specified parameters were applied
         assert sim.config.integrator == partial_params['integrator']
@@ -115,7 +114,7 @@ class TestSecularFinderCheck:
             'dt': 2.5,
         }
 
-        sim = resonances.secular_finder.check(asteroids=759, secular_resonance='nu6', integration_years=100000, **test_params)
+        sim = resonances.secular_finder.check(asteroids=759, resonance='nu6', integration_years=100000, **test_params)
 
         # Verify integration engine has reference to same config object
         assert sim.integration_engine.config is sim.config

@@ -34,18 +34,45 @@ def find(
     return sim
 
 
-def check(asteroids: Union[int, str, List[Union[int, str]]], mmr: Union[resonances.MMR, str]) -> resonances.Simulation:
-    if isinstance(mmr, str):
-        mmr = resonances.create_mmr(mmr)
+def check(
+    asteroids: Union[int, str, List[Union[int, str]]],
+    resonance: Union[resonances.MMR, str],
+    name: str = None,
+    **kwargs,
+) -> resonances.Simulation:
+    """
+    Check asteroids for mean motion resonance (MMR).
 
-    sim = resonances.Simulation()
+    Parameters:
+    -----------
+    asteroids : Union[int, str, List[Union[int, str]]]
+        Asteroid ID(s) to check
+    resonance : Union[resonances.MMR, str]
+        Mean motion resonance to check (e.g., '3J-2S-1', '2J-1S-1', etc.)
+    name : str, optional
+        Name for the simulation
+    **kwargs
+        Additional parameters passed to Simulation constructor (integrator, dt, tmax, etc.)
+
+    Returns:
+    --------
+    resonances.Simulation
+        Configured simulation ready to run
+    """
+    if isinstance(resonance, str):
+        resonance = resonances.create_mmr(resonance)
+
+    sim = resonances.Simulation(name=name or "mmr_check", **kwargs)
     sim.create_solar_system()
 
     asteroids = convert_input_to_list(asteroids)
 
     for asteroid in asteroids:
-        sim.add_body(asteroid, mmr, name=f"{asteroid}")
-        resonances.logger.info('Adding a possible resonance for an asteroid {} - {}'.format(asteroid, mmr.to_s()))
+        sim.add_body(asteroid, resonance, name=f"{asteroid}")
+        resonances.logger.info('Adding a possible resonance for an asteroid {} - {}'.format(asteroid, resonance.to_s()))
+
+    # Override Nout if provided in kwargs (after simulation creation to override automatic calculation)
+    sim.config.Nout = kwargs.get('Nout', sim.config.Nout)
 
     return sim
 

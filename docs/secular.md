@@ -57,7 +57,7 @@ print(f"Body has {len(body.secular_resonances)} secular resonances")
 
 sim = resonances.secular_finder.check(
     asteroids=[759],
-    secular_resonance='nu6',
+    resonance='nu6',
     integration_years=1000000,
     oscillations_cutoff=0.0005,
     plot='all',

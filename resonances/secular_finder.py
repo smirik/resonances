@@ -7,7 +7,7 @@ from resonances.data.util import convert_input_to_list
 
 def check(
     asteroids: Union[int, str, List[Union[int, str]]],
-    secular_resonance: str | list[str] | resonances.SecularResonance | list[resonances.SecularResonance],
+    resonance: str | list[str] | resonances.SecularResonance | list[resonances.SecularResonance],
     name: str = None,
     integration_years: int = 1000000,
     **kwargs,
@@ -22,7 +22,7 @@ def check(
     -----------
     asteroids : Union[int, str, List[Union[int, str]]]
         Asteroid ID(s) to check
-    secular_resonance : str
+    resonance : str
         Secular resonance to check (e.g., 'nu6', 'nu16', 'g-g6', or any formula)
     name : str, optional
         Name for the simulation
@@ -56,8 +56,8 @@ def check(
     asteroids = convert_input_to_list(asteroids)
 
     for asteroid in asteroids:
-        sim.add_body(asteroid, secular_resonance, name=f"{asteroid}")
-        resonances.logger.info('Adding asteroid {} for secular resonance {}'.format(asteroid, secular_resonance))
+        sim.add_body(asteroid, resonance, name=f"{asteroid}")
+        resonances.logger.info('Adding asteroid {} for secular resonance {}'.format(asteroid, resonance))
     sim.config.Nout = kwargs.get('Nout', 10000)
 
     return sim

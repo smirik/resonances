@@ -47,7 +47,7 @@ poetry add resonances
 ```python
 import resonances
 
-sim = resonances.check(463, '4J-2S-1')
+sim = resonances.check(463, resonance='4J-2S-1')
 sim.run()
 ```
 

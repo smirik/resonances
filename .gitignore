@@ -1,3 +1,5 @@
+manuscript
+
 # Temporary: no Jupyter notebooks in core directory
 ./*.ipynb
 tests/test_wip.py
