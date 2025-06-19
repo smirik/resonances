@@ -272,6 +272,24 @@ class libration:
         body.axis_periodogram_power = axis_power
         body.axis_periodogram_peaks = axis_peaks_data
 
+        try:
+            (eccentricity_frequency, eccentricity_power) = resonances.libration.periodogram(
+                sim.times[points_to_cut : len(body.ecc) - points_to_cut] / (2 * np.pi),
+                body.ecc[points_to_cut : len(body.ecc) - points_to_cut],
+                minimum_frequency=sim.config.periodogram_frequency_min,
+                maximum_frequency=sim.config.periodogram_frequency_max,
+            )
+            eccentricity_peaks_data = cls.find_peaks_with_position(
+                eccentricity_frequency, eccentricity_power, height=sim.config.periodogram_soft
+            )
+        except Exception as e:  # pragma: no cover
+            resonances.logger.error(f"Error in periodogram of eccentricity for {body.name}: {e}")
+            eccentricity_frequency, eccentricity_power, eccentricity_peaks_data = None, None, None
+
+        body.eccentricity_periodogram_frequency = eccentricity_frequency
+        body.eccentricity_periodogram_power = eccentricity_power
+        body.eccentricity_periodogram_peaks = eccentricity_peaks_data
+
         all_resonances = body.mmrs + body.secular_resonances
         # for mmr in body.mmrs:
         for resonance in all_resonances:
@@ -297,6 +315,7 @@ class libration:
                 frequency, power, angle_peaks_data, angle_filtered, overlapping = None, None, None, None, []
 
             body.statuses[resonance.to_s()] = cls.resolve(
+                resonance,
                 pure,
                 overlapping,
                 libration_metrics['max_libration_length'],
@@ -321,23 +340,35 @@ class libration:
         return body.statuses
 
     @classmethod
-    def resolve(cls, pure, overlapping, max_libration_length, libration_period_critical, monotony, libration_monotony_critical):
+    def resolve(cls, resonance, pure, overlapping, max_libration_length, libration_period_critical, monotony, libration_monotony_critical):
+        from resonances.resonance.secular import SecularResonance
+
         status = 0
-        if pure and (len(overlapping) > 0):
-            status = 2  # pure libration
-        elif pure:
-            # seems to be pure but libration periods of axis and resonant angle are different
-            # need manual check
-            status = -2
-        elif (len(overlapping) > 0) and (max_libration_length > libration_period_critical):
-            status = 1  # transient resonance
-        elif (
-            (max_libration_length > libration_period_critical)
-            and (monotony >= libration_monotony_critical[0])
-            and (monotony <= libration_monotony_critical[1])
-        ):
-            # Looks like chaotic but has long stable period and acceptable monotony
-            # need to verify manually
-            status = -1
-        # No resonance
+
+        # Special logic for SecularResonance
+        if isinstance(resonance, SecularResonance):
+            if pure:
+                status = 2
+            elif max_libration_length > libration_period_critical:
+                status = 1
+            else:
+                status = 0
+        else:
+            if pure and (len(overlapping) > 0):
+                status = 2  # pure libration
+            elif pure:
+                # seems to be pure but libration periods of axis and resonant angle are different
+                # need manual check
+                status = -2
+            elif (len(overlapping) > 0) and (max_libration_length > libration_period_critical):
+                status = 1  # transient resonance
+            elif (
+                (max_libration_length > libration_period_critical)
+                and (monotony >= libration_monotony_critical[0])
+                and (monotony <= libration_monotony_critical[1])
+            ):
+                # Looks like chaotic but has long stable period and acceptable monotony
+                # need to verify manually
+                status = -1
+            # No resonance
         return status

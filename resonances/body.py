@@ -53,6 +53,10 @@ class Body:
         self.axis_periodogram_power = None
         self.axis_periodogram_peaks = None
 
+        self.eccentricity_periodogram_frequency = None
+        self.eccentricity_periodogram_power = None
+        self.eccentricity_periodogram_peaks = None
+
         self.periodogram_peaks_overlapping = {}
 
         self.monotony = {}
