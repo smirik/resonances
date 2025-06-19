@@ -34,5 +34,4 @@ from resonances.finder import check
 from resonances.finder import find_asteroids_in_mmr
 from resonances.finder import find_resonances
 from resonances.secular_finder import check as secular_check
-from resonances.secular_finder import analyze_secular_resonance
 from resonances.data.util import datetime_from_string

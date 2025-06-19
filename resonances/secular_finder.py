@@ -3,6 +3,7 @@ import numpy as np
 from typing import Union, List
 
 from resonances.data.util import convert_input_to_list
+from resonances.matrix.secular_matrix import SecularMatrix
 
 
 def check(
@@ -63,51 +64,77 @@ def check(
     return sim
 
 
-def analyze_secular_resonance(sim: resonances.Simulation, asteroid_index: int = 0) -> dict:
+def find(
+    asteroids: Union[int, str, List[Union[int, str]]],
+    formulas: Union[str, List[str]] = None,
+    order: int = None,
+    name: str = None,
+    integration_years: int = 1000000,
+    **kwargs,
+) -> resonances.Simulation:
     """
-    Analyze the results of a secular resonance simulation.
+    Find secular resonances for asteroids using SecularMatrix.
+
+    This function automatically identifies all secular resonances (or specified ones)
+    for the given asteroids. It uses SecularMatrix.build() to get the resonances
+    and creates a simulation with all of them.
 
     Parameters:
     -----------
-    sim : resonances.Simulation
-        Completed simulation
-    asteroid_index : int, default=0
-        Index of asteroid to analyze (for multi-asteroid simulations)
+    asteroids : Union[int, str, List[Union[int, str]]]
+        Asteroid ID(s) to check for secular resonances
+    formulas : Union[str, List[str]], optional
+        Specific secular resonance formulas to check (e.g., ['g-g5', 'g-g6']).
+        If None, will find all available resonances or those of specified order.
+    order : int, optional
+        Order of secular resonances to include (e.g., 2 for linear, 4 for nonlinear).
+        Ignored if formulas is specified.
+    name : str, optional
+        Name for the simulation
+    integration_years : int, default=1000000
+        Integration time in years (minimum 1 Myr recommended for secular resonances)
+    **kwargs
+        Additional parameters passed to Simulation constructor (integrator, dt, etc.)
 
     Returns:
     --------
-    dict
-        Analysis results including libration status
+    resonances.Simulation
+        Configured simulation ready to run with all found secular resonances
     """
 
-    if not sim.bodies or len(sim.bodies) <= asteroid_index:
-        raise ValueError(f"No body found at index {asteroid_index}")
+    secular_resonances = SecularMatrix.build(formulas=formulas, order=order)
 
-    body = sim.bodies[asteroid_index]
+    if len(secular_resonances) == 0:
+        resonances.logger.warning(f'No secular resonances found for formulas={formulas}, order={order}')
+        return resonances.Simulation(name=name or "secular_find")
 
-    if not body.secular_resonances:
-        return {'is_librating': False, 'error': 'No secular resonances found'}
+    libration_period_min = kwargs.pop('libration_period_min', 10000)
+    libration_period_critical = kwargs.pop('libration_period_critical', integration_years * 0.2)
 
-    try:
-        secular_res = body.secular_resonances[0]
-        angles = body.secular_angles[secular_res.to_s()]
-        # Calculate angle statistics
-        angle_range = np.max(angles) - np.min(angles)
-        angle_mean = np.mean(angles)
-        # More sophisticated libration criterion:
-        # - If angle range < 2π (360°), check if it's significantly less than full circulation
-        # - Consider libration if angle range < 3π/2 (270°) to be more permissive
-        is_librating = bool(angle_range < (3 * np.pi / 2))
+    # Remove tmax from kwargs if present to avoid conflict, integration_years takes precedence
+    kwargs.pop('tmax', None)
 
-        return {
-            'is_librating': is_librating,
-            'angle_range_deg': np.degrees(angle_range),
-            'angle_mean_deg': np.degrees(angle_mean),
-            'angle_range_rad': angle_range,
-            'secular_resonance': secular_res.to_s(),
-            'semi_major_axis_mean': np.mean(body.axis),
-            'eccentricity_mean': np.mean(body.ecc),
-        }
+    sim = resonances.Simulation(
+        name=name or "secular_find",
+        tmax=int(integration_years * 2 * np.pi),
+        libration_period_min=libration_period_min,
+        libration_period_critical=libration_period_critical,
+        **kwargs,
+    )
+    sim.create_solar_system()
 
-    except Exception as e:
-        return {'is_librating': False, 'error': str(e)}
+    asteroids = convert_input_to_list(asteroids)
+
+    for asteroid in asteroids:
+        sim.add_body(asteroid, secular_resonances, name=f"{asteroid}")
+        resonances.logger.info(
+            'Adding asteroid {} for {} secular resonances: {}'.format(
+                asteroid,
+                len(secular_resonances),
+                ', '.join([res.to_s() for res in secular_resonances[:5]]) + ('...' if len(secular_resonances) > 5 else ''),
+            )
+        )
+
+    sim.config.Nout = kwargs.get('Nout', sim.config.Nout)
+
+    return sim
