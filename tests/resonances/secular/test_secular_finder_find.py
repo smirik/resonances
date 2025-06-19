@@ -1,7 +1,25 @@
 import resonances.secular_finder
 import resonances
 import numpy as np
+import pytest
 from resonances.matrix.secular_matrix import SecularMatrix
+
+from tests.resonances.secular import BASIC_CONFIG
+
+
+@pytest.fixture(autouse=True)
+def setup_test_config():
+    """Setup test configuration before each test and restore after."""
+    original_save_path = resonances.config.get('SAVE_PATH')
+    original_plot_path = resonances.config.get('PLOT_PATH')
+
+    resonances.config.set('SAVE_PATH', 'cache/tests')
+    resonances.config.set('PLOT_PATH', 'cache/tests')
+
+    yield
+
+    resonances.config.set('SAVE_PATH', original_save_path)
+    resonances.config.set('PLOT_PATH', original_plot_path)
 
 
 class TestSecularFinderFind:
@@ -14,14 +32,7 @@ class TestSecularFinderFind:
         sim = resonances.secular_finder.find(
             asteroids=759,
             name="test_759_all_secular",
-            integration_years=200000,
-            integrator='whfast',
-            dt=1.0,
-            save='all',
-            plot='all',
-            oscillations_cutoff=0.0005,
-            libration_period_min=10000,
-            libration_period_critical=200000 * 0.2,
+            **BASIC_CONFIG,
         )
 
         # Verify simulation setup

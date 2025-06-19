@@ -1,5 +1,21 @@
+import pytest
 import resonances
 from tests import tools
+
+
+@pytest.fixture(autouse=True)
+def setup_test_config():
+    """Setup test configuration before each test and restore after."""
+    original_save_path = resonances.config.get('SAVE_PATH')
+    original_plot_path = resonances.config.get('PLOT_PATH')
+
+    resonances.config.set('SAVE_PATH', 'cache/tests')
+    resonances.config.set('PLOT_PATH', 'cache/tests')
+
+    yield
+
+    resonances.config.set('SAVE_PATH', original_save_path)
+    resonances.config.set('PLOT_PATH', original_plot_path)
 
 
 def test_backward_integration():
@@ -15,11 +31,8 @@ def test_backward_integration():
         tmax=-200000,
         name='backward',
         save='all',
-        plot_path='cache/tests',
-        save_path='cache/tests',
         integrator='SABA(10,6,4)',
         dt=-5.0,
-        save_summary=True,
     )
 
     sim.create_solar_system()

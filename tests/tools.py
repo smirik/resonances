@@ -1,4 +1,6 @@
+import datetime
 import astdys.util
+import pytest
 import resonances
 import astdys
 
@@ -29,8 +31,28 @@ def get_2body_elements_sample():
     }
 
 
+@pytest.fixture(autouse=True)
+def setup_test_config():
+    """Setup test configuration before each test and restore after."""
+    original_save_path = resonances.config.get('SAVE_PATH')
+    original_plot_path = resonances.config.get('PLOT_PATH')
+
+    resonances.config.set('SAVE_PATH', 'cache/tests')
+    resonances.config.set('PLOT_PATH', 'cache/tests')
+
+    yield
+
+    resonances.config.set('SAVE_PATH', original_save_path)
+    resonances.config.set('PLOT_PATH', original_plot_path)
+
+
 def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=False):
-    sim = resonances.Simulation(date=astdys.util.convert_mjd_to_datetime(60000))
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    sim = resonances.Simulation(
+        date=astdys.util.convert_mjd_to_datetime(60000),
+        save_path=f'cache/tests/test_simulation_{timestamp}',
+        plot_path=f'cache/tests/test_simulation_{timestamp}',
+    )
     sim.create_solar_system()
 
     # create to speedup
@@ -40,8 +62,6 @@ def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=F
     sim.config.libration_period_min = 1
     sim.config.integrator = 'whfast'
     sim.config.integrator_corrector = None
-    sim.config.save_path = 'cache/tests'
-    sim.config.plot_path = 'cache/tests'
     sim.config.save_summary = save_summary
     sim.config.save = save
     sim.config.plot = plot

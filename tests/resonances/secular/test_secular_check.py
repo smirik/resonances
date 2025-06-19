@@ -2,6 +2,24 @@ from resonances.resonance.secular import GeneralSecularResonance
 import resonances.secular_finder
 import resonances
 import numpy as np
+import pytest
+
+from tests.resonances.secular import BASIC_CONFIG
+
+
+@pytest.fixture(autouse=True)
+def setup_test_config():
+    """Setup test configuration before each test and restore after."""
+    original_save_path = resonances.config.get('SAVE_PATH')
+    original_plot_path = resonances.config.get('PLOT_PATH')
+
+    resonances.config.set('SAVE_PATH', 'cache/tests')
+    resonances.config.set('PLOT_PATH', 'cache/tests')
+
+    yield
+
+    resonances.config.set('SAVE_PATH', original_save_path)
+    resonances.config.set('PLOT_PATH', original_plot_path)
 
 
 def test_secular_check_nu6():
@@ -10,10 +28,7 @@ def test_secular_check_nu6():
     sim = resonances.secular_finder.check(
         asteroids=[759, 1222, 760],
         resonance='nu6',
-        integration_years=200000,
-        oscillations_cutoff=0.0005,
-        plot='all',
-        save='all',
+        **BASIC_CONFIG,
     )
 
     sim.run(progress=True)
@@ -39,13 +54,7 @@ def test_general_secular_resonance():
     sim = resonances.Simulation(
         name="test_secular_check_general_nu6",
         tmax=int(200000 * 2 * np.pi),
-        integrator='whfast',
-        dt=1.0,
-        save='all',
-        plot='all',
-        oscillations_cutoff=0.0005,
-        libration_period_min=10000,
-        libration_period_critical=200000 * 0.2,
+        **BASIC_CONFIG,
     )
     sim.create_solar_system()
     asteroids = [759, 760, 1222]
@@ -85,14 +94,7 @@ def test_pluto_kozai_resonance():
     print(f"Testing Pluto with Kozai resonance: {kozai_resonance.to_s()}")
     sim = resonances.Simulation(
         name="test_pluto_kozai",
-        tmax=int(200000 * 2 * np.pi),
-        integrator='whfast',
-        dt=1.0,
-        save='all',
-        plot='all',
-        oscillations_cutoff=0.0005,
-        libration_period_min=50000,
-        libration_period_critical=1000000 * 0.2,
+        **BASIC_CONFIG,
     )
     sim.create_solar_system()
     sim.add_body(134340, kozai_resonance, name="Pluto")

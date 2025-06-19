@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+from pathlib import Path
 
 import resonances.config
 import resonances
@@ -152,6 +153,8 @@ def body(sim, body: resonances.Body, resonance, image_type='png'):  # noqa: C901
     plt.tight_layout()
 
     if sim.config.plot_type in ['both', 'save']:
+        # Ensure the plot directory exists before saving
+        Path(sim.config.plot_path).mkdir(parents=True, exist_ok=True)
         plt.savefig('{}/{}_{}.{}'.format(sim.config.plot_path, body.name, resonance_key, image_type))
 
     if sim.config.plot_type in ['both', 'show']:  # pragma: no cover

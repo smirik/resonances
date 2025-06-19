@@ -26,13 +26,96 @@ class libration:
         return True
 
     @classmethod
-    def pure(cls, y):  # not working for librations that are not around 0 or +/- np.pi
+    def is_pure_apocentric(cls, y):
+        """
+        Enhanced pure libration detection for apocentric libration around 0/2π.
+        This method checks if the angle stays within bounds when accounting for
+        the 2π periodicity of angles.
+        """
+        if len(y) <= 1:
+            return True
+
+        # For apocentric libration, we need to handle the wrapping more carefully
+        # Convert angles to a consistent range and track the cumulative movement
+        y_normalized = np.array(y) % (2 * np.pi)
+
+        # Check if the excursion pattern is consistent with libration
+        # Calculate the range of motion, accounting for wrapping
+        min_angle = np.min(y_normalized)
+        max_angle = np.max(y_normalized)
+
+        # For apocentric libration around 2π/0, we expect either:
+        # 1. All values clustered around 0 (small range near 0)
+        # 2. All values clustered around 2π (small range near 2π)
+        # 3. Values spanning the 0/2π boundary (wrapping case)
+
+        # Case 3: Check for wrapping (values both near 0 and near 2π)
+        has_near_zero = np.any(y_normalized <= np.pi / 2)  # within π/2 of 0
+        has_near_2pi = np.any(y_normalized >= 3 * np.pi / 2)  # within π/2 of 2π
+
+        if has_near_zero and has_near_2pi:
+            # This is the wrapping case - need to check if total span is < π
+            # when accounting for wrapping
+
+            # Compute wrapped range by finding the largest gap
+            sorted_angles = np.sort(y_normalized)
+            gaps = np.diff(sorted_angles)
+            # Add the wraparound gap
+            wraparound_gap = (sorted_angles[0] + 2 * np.pi) - sorted_angles[-1]
+            all_gaps = np.append(gaps, wraparound_gap)
+
+            largest_gap = np.max(all_gaps)
+            total_span = 2 * np.pi - largest_gap
+
+            return total_span <= np.pi  # Libration if span <= π
+        else:
+            # Non-wrapping case: check if range is reasonable for libration
+            angle_range = max_angle - min_angle
+            return angle_range <= np.pi
+
+    @classmethod
+    def is_apocentric_libration(cls, y, threshold=1.5):
+        """
+        Detect apocentric libration by checking if most values are near 0 or 2π.
+        This specifically handles cases where the libration center is around the
+        0/2π boundary.
+        """
+        if len(y) == 0:
+            return False
+
+        # Convert to [0, 2π] range
+        y_normalized = np.array(y) % (2 * np.pi)
+
+        # Count points near 0 or 2π (within threshold of the boundaries)
+        near_zero = np.sum(y_normalized <= threshold)
+        near_2pi = np.sum(y_normalized >= (2 * np.pi - threshold))
+
+        # Check if most points (>60%) are near the boundaries
+        # Also check for concentration pattern - most points should be near one boundary
+        total_near_boundary = near_zero + near_2pi
+        boundary_fraction = total_near_boundary / len(y)
+
+        # Additional check: if there's a clear concentration around one boundary
+        dominant_boundary = max(near_zero, near_2pi) / len(y) > 0.4
+
+        return boundary_fraction > 0.6 or dominant_boundary
+
+    @classmethod
+    def pure(cls, y):
         flag1 = cls.is_pure(y)
         if flag1:
             return True
+
         flag2 = cls.is_pure(cls.shift(y))
         if flag2:
             return True
+
+        if cls.is_apocentric_libration(y):
+            # For apocentric libration, use the enhanced pure detection
+            flag3 = cls.is_pure_apocentric(y)
+            if flag3:
+                return True
+
         return False
 
     @classmethod
@@ -350,7 +433,22 @@ class libration:
             if pure:
                 status = 2
             elif max_libration_length > libration_period_critical:
-                status = 1
+                # For secular resonances, we need more nuanced classification
+                # Check if this is wide/chaotic libration that should still be considered trapped
+
+                # Very long stability periods (>5x critical) suggest strong trapping
+                # even if not perfectly pure
+                stability_factor = max_libration_length / libration_period_critical
+
+                # Monotony in acceptable range suggests quasi-periodic behavior
+                mono_ok = monotony >= libration_monotony_critical[0] and monotony <= libration_monotony_critical[1]
+
+                if stability_factor >= 4.99 and mono_ok:
+                    # This suggests wide libration or chaotic libration
+                    # that's still effectively trapped
+                    status = 2  # Classify as pure (trapped)
+                else:
+                    status = 1  # Transient
             else:
                 status = 0
         else:
