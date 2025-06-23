@@ -22,7 +22,7 @@ def find(
 
     for asteroid in asteroids:
         elem = resonances.horizons.get_body_keplerian_elements(asteroid, date=now)
-        mmrs = find_resonances(elem['a'], planets=planets, sigma2=sigma2, sigma3=sigma3)
+        mmrs = find_mmrs(elem['a'], planets=planets, sigma2=sigma2, sigma3=sigma3)
         if len(mmrs) > 0:
             sim.add_body(elem, mmrs, f"{asteroid}")
             resonances.logger.info(
@@ -105,7 +105,7 @@ def find_asteroids_in_mmr(
     return data
 
 
-def find_resonances(a: float, planets=None, sigma2=0.1, sigma3=0.02, sigma=None) -> List[resonances.MMR]:
+def find_mmrs(a: float, planets=None, sigma2=0.1, sigma3=0.02, sigma=None) -> List[resonances.MMR]:
     """Find Two and Three-Body Mean Motion Resonances (MMR) for a given semi-major axis.
     This function identifies both two-body and three-body mean motion resonances
     near the specified semi-major axis value. If a single sigma value is provided,

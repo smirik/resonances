@@ -55,7 +55,7 @@ body = sim.bodies[0]
 print(f"Added body: {body.name}")
 print(f"Body has {len(body.secular_resonances)} secular resonances")
 
-sim = resonances.secular_finder.check(
+sim = resonances.check(
     asteroids=[759],
     resonance='nu6',
     integration_years=1000000,

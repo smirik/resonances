@@ -1,5 +1,5 @@
 from resonances.resonance.secular import GeneralSecularResonance
-import resonances.secular_finder
+import resonances.finder.secular_finder
 import resonances
 import numpy as np
 import pytest
@@ -25,7 +25,7 @@ def setup_test_config():
 def test_secular_check_nu6():
     """Test that asteroid 759 shows libration in nu6 secular resonance."""
 
-    sim = resonances.secular_finder.check(
+    sim = resonances.finder.secular_finder.check(
         asteroids=[759, 1222, 760],
         resonance='nu6',
         **BASIC_CONFIG,

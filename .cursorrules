@@ -1,0 +1,31 @@
+# Cursor Rules for Resonances Project
+
+## Code Quality and Testing
+
+- Always run black, flake8, and tests at the end of any code changes to ensure:
+  - Code formatting is consistent (black)
+  - Code quality standards are met (flake8)
+  - All functionality works correctly (pytest)
+- Run these commands in sequence:
+  ```bash
+  poetry run black . --check
+  poetry run flake8 --count
+  poetry run pytest tests/ -v
+  ```
+
+## Project Structure
+
+- For business logic components, use the pattern: lib/{component}, where {component} is the relevant component (e.g., chat, auth, etc.)
+- Follow the established directory structure under resonances/
+
+## Testing
+
+- Maintain comprehensive test coverage
+- All tests must pass before considering work complete
+- Run full test suite to ensure no regressions
+
+## Code Style
+
+- Use black for code formatting
+- Follow flake8 linting rules
+- Maintain type hints where appropriate

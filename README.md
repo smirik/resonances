@@ -59,7 +59,7 @@ If it is `true`, then the app will plot every resonant asteroid even if `plot` i
 ```python
 import resonances
 
-sim = resonances.finder.find([463, 490], planets=['Mars', 'Jupiter', 'Saturn'])
+sim = resonances.find([463, 490], planets=['Mars', 'Jupiter', 'Saturn'])
 sim.run()
 ```
 

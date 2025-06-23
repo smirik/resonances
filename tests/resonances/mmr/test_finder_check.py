@@ -1,4 +1,4 @@
-import resonances.finder
+import resonances.finder.mmr_finder
 
 
 class TestFinderCheck:
@@ -19,7 +19,7 @@ class TestFinderCheck:
         }
 
         # Call check function with these parameters as kwargs
-        sim = resonances.finder.check(asteroids=463, resonance='4J-2S-1', **params)
+        sim = resonances.finder.mmr_finder.check(asteroids=463, resonance='4J-2S-1', **params)
 
         # Verify that the simulation object has the parameters correctly set
         assert sim.config.integrator == params['integrator']
@@ -39,7 +39,7 @@ class TestFinderCheck:
 
         custom_name = "test_mmr_simulation"
 
-        sim = resonances.finder.check(
+        sim = resonances.finder.mmr_finder.check(
             asteroids=463,
             resonance='4J-2S-1',
             name=custom_name,
@@ -57,7 +57,7 @@ class TestFinderCheck:
 
         asteroids = [463, 1222, 759]
 
-        sim = resonances.finder.check(
+        sim = resonances.finder.mmr_finder.check(
             asteroids=asteroids,
             resonance='3J-2S-1',
             name="multi_asteroid_test",
@@ -74,7 +74,7 @@ class TestFinderCheck:
     def test_check_function_string_resonance(self):
         """Test that string resonance parameter is correctly converted to MMR object."""
 
-        sim = resonances.finder.check(asteroids=463, resonance='4J-2S-1', name="string_resonance_test")
+        sim = resonances.finder.mmr_finder.check(asteroids=463, resonance='4J-2S-1', name="string_resonance_test")
 
         # Verify that the resonance was added
         assert len(sim.bodies) == 1
@@ -87,7 +87,7 @@ class TestFinderCheck:
 
         mmr = resonances.create_mmr('3J-2S-1')
 
-        sim = resonances.finder.check(asteroids=463, resonance=mmr, name="mmr_object_test")
+        sim = resonances.finder.mmr_finder.check(asteroids=463, resonance=mmr, name="mmr_object_test")
 
         # Verify that the resonance was added
         assert len(sim.bodies) == 1
@@ -104,7 +104,7 @@ class TestFinderCheck:
             # Omitting dt, tmax, Nout, oscillations_cutoff, plot intentionally
         }
 
-        sim = resonances.finder.check(asteroids=463, resonance='2J-1S-1', **partial_params)
+        sim = resonances.finder.mmr_finder.check(asteroids=463, resonance='2J-1S-1', **partial_params)
 
         # Verify specified parameters were applied
         assert sim.config.integrator == partial_params['integrator']
@@ -125,7 +125,7 @@ class TestFinderCheck:
             'dt': 2.5,
         }
 
-        sim = resonances.finder.check(asteroids=463, resonance='4J-2S-1', **test_params)
+        sim = resonances.finder.mmr_finder.check(asteroids=463, resonance='4J-2S-1', **test_params)
 
         # Verify integration engine has reference to same config object
         assert sim.integration_engine.config is sim.config

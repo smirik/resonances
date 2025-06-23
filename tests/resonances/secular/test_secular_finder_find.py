@@ -1,4 +1,4 @@
-import resonances.secular_finder
+import resonances.finder.secular_finder
 import resonances
 import numpy as np
 import pytest
@@ -29,7 +29,7 @@ class TestSecularFinderFind:
         """Test finding all secular resonances for asteroid 759 (equivalent to old test_759_all_secular_resonances)."""
 
         # Use find method to get all secular resonances
-        sim = resonances.secular_finder.find(
+        sim = resonances.finder.secular_finder.find(
             asteroids=759,
             name="test_759_all_secular",
             **BASIC_CONFIG,
@@ -72,7 +72,7 @@ class TestSecularFinderFind:
     def test_find_specific_formulas(self):
         """Test finding specific secular resonance formulas."""
 
-        sim = resonances.secular_finder.find(
+        sim = resonances.finder.secular_finder.find(
             asteroids=[759, 760],
             formulas=['g-g5', 'g-g6'],
             name="test_specific_formulas",
@@ -99,7 +99,7 @@ class TestSecularFinderFind:
     def test_find_by_order(self):
         """Test finding secular resonances by order."""
 
-        sim = resonances.secular_finder.find(
+        sim = resonances.finder.secular_finder.find(
             asteroids=463,
             order=2,
             name="test_order_2",
@@ -131,7 +131,7 @@ class TestSecularFinderFind:
             'save': 'nonzero',
         }
 
-        sim = resonances.secular_finder.find(asteroids=759, formulas=['g-g6'], name="test_kwargs", **params)
+        sim = resonances.finder.secular_finder.find(asteroids=759, formulas=['g-g6'], name="test_kwargs", **params)
 
         # Verify parameters were applied (except tmax which is overridden by integration_years)
         assert sim.config.integrator == params['integrator']
@@ -148,7 +148,7 @@ class TestSecularFinderFind:
         """Test behavior when no resonances are found."""
 
         # This should not happen in practice, but test the edge case
-        sim = resonances.secular_finder.find(asteroids=759, formulas=['nonexistent_formula'], name="test_no_resonances")
+        sim = resonances.finder.secular_finder.find(asteroids=759, formulas=['nonexistent_formula'], name="test_no_resonances")
 
         # Should return a simulation with no bodies
         assert sim.config.name == "test_no_resonances"
@@ -159,7 +159,7 @@ class TestSecularFinderFind:
 
         asteroids = [759, 1222, 760]
 
-        sim = resonances.secular_finder.find(
+        sim = resonances.finder.secular_finder.find(
             asteroids=asteroids,
             order=2,
             name="test_multiple_asteroids",
@@ -182,7 +182,7 @@ class TestSecularFinderFind:
             'dt': 2.5,
         }
 
-        sim = resonances.secular_finder.find(asteroids=759, formulas=['g-g5'], **test_params)
+        sim = resonances.finder.secular_finder.find(asteroids=759, formulas=['g-g5'], **test_params)
 
         # Verify integration engine has reference to same config object
         assert sim.integration_engine.config is sim.config
