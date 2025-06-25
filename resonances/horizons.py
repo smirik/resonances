@@ -6,7 +6,7 @@ import numpy as np
 
 
 def get_body_keplerian_elements(s, date: Union[str, datetime.datetime]) -> dict:
-    if isinstance(s, int):
+    if isinstance(s, int) or isinstance(s, float):
         s = str(s) + ';'
 
     t = Time(date)
