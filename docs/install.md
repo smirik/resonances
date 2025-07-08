@@ -110,3 +110,13 @@ Use the same manager (`poetry` or `pip`) and its standard workflow to update.
 ```bash
 poetry update
 ```
+
+## Common issues
+
+An error when retrieving data from JPL Horizons (SSL certificate issue):
+
+```bash
+pip install --upgrade certifi
+```
+
+It will install the latest version of `certifi` package, which is required by `astroquery` to work properly.

@@ -251,7 +251,21 @@ class GeneralSecularResonance(SecularResonance):
         import re
 
         # Initialize coefficients
-        coeffs = {'g': 0.0, 's': 0.0, 'g5': 0.0, 'g6': 0.0, 'g7': 0.0, 'g8': 0.0, 's5': 0.0, 's6': 0.0, 's7': 0.0, 's8': 0.0}
+        coeffs = {
+            'g': 0.0,
+            's': 0.0,
+            'g4': 0.0,
+            's4': 0.0,
+            'g5': 0.0,
+            'g6': 0.0,
+            'g7': 0.0,
+            'g8': 0.0,
+            's4': 0.0,
+            's5': 0.0,
+            's6': 0.0,
+            's7': 0.0,
+            's8': 0.0,
+        }
 
         # Handle special cases first
         if '2(g-g6)+(s-s6)' in formula:
@@ -305,6 +319,8 @@ class GeneralSecularResonance(SecularResonance):
         """Determine which planets are involved based on coefficients."""
         planet_names = []
         planet_mapping = {
+            'g4': 'Mars',
+            's4': 'Mars',
             'g5': 'Jupiter',
             's5': 'Jupiter',
             'g6': 'Saturn',
@@ -315,7 +331,7 @@ class GeneralSecularResonance(SecularResonance):
             's8': 'Neptune',
         }
 
-        for freq in ['g5', 'g6', 'g7', 'g8', 's5', 's6', 's7', 's8']:
+        for freq in ['g4', 'g5', 'g6', 'g7', 'g8', 's4', 's5', 's6', 's7', 's8']:
             if coeffs[freq] != 0:
                 planet = planet_mapping[freq]
                 if planet not in planet_names:
@@ -332,7 +348,9 @@ class GeneralSecularResonance(SecularResonance):
         """Build longitude of perihelion coefficients."""
         varpi_coeffs = [coeffs['g']]  # Body coefficient
         for planet in planet_names:
-            if planet == 'Jupiter':
+            if planet == 'Mars':
+                varpi_coeffs.append(coeffs['g4'])
+            elif planet == 'Jupiter':
                 varpi_coeffs.append(coeffs['g5'])
             elif planet == 'Saturn':
                 varpi_coeffs.append(coeffs['g6'])
@@ -349,6 +367,8 @@ class GeneralSecularResonance(SecularResonance):
         """Build longitude of ascending node coefficients."""
         omega_coeffs = [coeffs['s']]  # Body coefficient
         for planet in planet_names:
+            if planet == 'Mars':
+                omega_coeffs.append(coeffs['s4'])
             if planet == 'Jupiter':
                 omega_coeffs.append(coeffs['s5'])
             elif planet == 'Saturn':

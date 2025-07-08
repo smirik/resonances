@@ -20,7 +20,7 @@ def body(sim, body: resonances.Body, resonance, image_type='png'):  # noqa: C901
         angles_filtered = body.angles_filtered.get(resonance_key, None)
     elif isinstance(resonance, resonances.SecularResonance):
         angle_data = body.secular_angles.get(resonance_key, None)
-        angles_filtered = body.secular_angles_filtered.get(resonance_key, None) if hasattr(body, 'secular_angles_filtered') else None
+        angles_filtered = body.angles_filtered.get(resonance_key, None) if hasattr(body, 'angles_filtered') else None
 
     fig.suptitle(
         "{}, resonance = {}, status = {}".format(body.name, resonance_name, status),
@@ -69,7 +69,7 @@ def body(sim, body: resonances.Body, resonance, image_type='png'):  # noqa: C901
     axs[3].plot(sim.times / (2 * np.pi), body.ecc, linestyle='', marker=',', color='black')
     axs[3].sharex(axs[0])
 
-    axs[4].set_xlim(0, abs(tmax_years) / 2)
+    axs[4].set_xlim(0, abs(tmax_years))
     # axs[4].set_ylim(0, 0.2)
     axs[4].axhline(y=0.05, color='r', linestyle='--')
     axs[4].axhline(y=0.1, color='g', linestyle='--')
@@ -93,7 +93,7 @@ def body(sim, body: resonances.Body, resonance, image_type='png'):  # noqa: C901
 
     axs[4].set_title('Periodogram (the resonant angle)')
     axs[5].set_title('Periodogram (semi-major axis)')
-    axs[5].set_xlim(0, abs(tmax_years) / 2)
+    axs[5].set_xlim(0, abs(tmax_years))
     # axs[5].set_ylim(0, 0.2)
     axs[5].axhline(y=0.05, color='r', linestyle='--')
     axs[5].axhline(y=0.1, color='g', linestyle='--')
@@ -118,7 +118,7 @@ def body(sim, body: resonances.Body, resonance, image_type='png'):  # noqa: C901
         axs[5].sharex(axs[4])
 
     axs[6].set_title('Periodogram (eccentricity)')
-    axs[6].set_xlim(0, abs(tmax_years) / 2)
+    axs[6].set_xlim(0, abs(tmax_years))
     # axs[6].set_ylim(0, 0.2)
     axs[6].axhline(y=0.05, color='r', linestyle='--')
     axs[6].axhline(y=0.1, color='g', linestyle='--')
