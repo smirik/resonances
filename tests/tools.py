@@ -1,4 +1,6 @@
+import datetime
 import astdys.util
+import pytest
 import resonances
 import astdys
 
@@ -29,22 +31,40 @@ def get_2body_elements_sample():
     }
 
 
+@pytest.fixture(autouse=True)
+def setup_test_config():
+    """Setup test configuration before each test and restore after."""
+    original_save_path = resonances.config.get('SAVE_PATH')
+    original_plot_path = resonances.config.get('PLOT_PATH')
+
+    resonances.config.set('SAVE_PATH', 'cache/tests')
+    resonances.config.set('PLOT_PATH', 'cache/tests')
+
+    yield
+
+    resonances.config.set('SAVE_PATH', original_save_path)
+    resonances.config.set('PLOT_PATH', original_plot_path)
+
+
 def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=False):
-    sim = resonances.Simulation(date=astdys.util.convert_mjd_to_datetime(60000))
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    sim = resonances.Simulation(
+        date=astdys.util.convert_mjd_to_datetime(60000),
+        save_path=f'cache/tests/test_simulation_{timestamp}',
+        plot_path=f'cache/tests/test_simulation_{timestamp}',
+    )
     sim.create_solar_system()
 
     # create to speedup
-    sim.tmax = 20
-    sim.dt = 1
-    sim.Nout = 10
-    sim.libration_period_min = 1
-    sim.integrator = 'whfast'
-    sim.integrator_corrector = None
-    sim.save_path = 'cache/tests'
-    sim.plot_path = 'cache/tests'
-    sim.save_summary = save_summary
-    sim.save = save
-    sim.plot = plot
+    sim.config.tmax = 20
+    sim.config.dt = 1
+    sim.config.Nout = 10
+    sim.config.libration_period_min = 1
+    sim.config.integrator = 'whfast'
+    sim.config.integrator_corrector = None
+    sim.config.save_summary = save_summary
+    sim.config.save = save
+    sim.config.plot = plot
 
     return sim
 
@@ -57,10 +77,11 @@ def add_test_asteroid_to_simulation(sim: resonances.Simulation):
 
 
 def set_fast_integrator():
-    resonances.config.set('INTEGRATION_INTEGRATOR', 'whfast')
-    resonances.config.set('INTEGRATION_DT', 1.0)
-    resonances.config.set('INTEGRATION_SAFE_MODE', 0)
-    resonances.config.set('INTEGRATION_CORRECTOR', 11)
+    resonances.config.set('INTEGRATION_INTEGRATOR', 'SABA(10,6,4)')
+    resonances.config.set('INTEGRATION_DT', 5.0)
+    resonances.config.set('INTEGRATION_TMAX', 200000)
+    resonances.config.set('SAVE_PATH', 'cache/tests')
+    resonances.config.set('PLOT_PATH', 'cache/tests')
     resonances.config.set('PLOT_MODE', None)
     resonances.config.set('SAVE_MODE', None)
 
@@ -68,7 +89,10 @@ def set_fast_integrator():
 def reset_fast_integrator():
     resonances.config.set('INTEGRATION_INTEGRATOR', 'SABA(10,6,4)')
     resonances.config.set('INTEGRATION_DT', 1.0)
+    resonances.config.set('INTEGRATION_TMAX', 628319)
     resonances.config.set('INTEGRATION_SAFE_MODE', 0)
     resonances.config.set('INTEGRATION_CORRECTOR', 17)
+    resonances.config.set('SAVE_PATH', 'cache')
+    resonances.config.set('PLOT_PATH', 'cache')
     resonances.config.set('PLOT_MODE', 'nonzero')
     resonances.config.set('SAVE_MODE', 'nonzero')

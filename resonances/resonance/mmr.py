@@ -1,7 +1,8 @@
 import numpy as np
+from resonances.resonance.resonance import Resonance
 
 
-class MMR:
+class MMR(Resonance):
 
     def __init__(self, coeff, planets_names=None, index_of_planets=None):
         self.coeff = np.array(coeff)
@@ -22,6 +23,10 @@ class MMR:
 
         self._resonant_axis = None
         self.index_of_planets = index_of_planets
+
+    @property
+    def type(self) -> str:
+        return 'mmr'
 
     def __str__(self):
         return "MMR(coeff=[{}])".format(', '.join(str(e) for e in self.coeff))

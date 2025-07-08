@@ -26,13 +26,96 @@ class libration:
         return True
 
     @classmethod
-    def pure(cls, y):  # not working for librations that are not around 0 or +/- np.pi
+    def is_pure_apocentric(cls, y):
+        """
+        Enhanced pure libration detection for apocentric libration around 0/2π.
+        This method checks if the angle stays within bounds when accounting for
+        the 2π periodicity of angles.
+        """
+        if len(y) <= 1:
+            return True
+
+        # For apocentric libration, we need to handle the wrapping more carefully
+        # Convert angles to a consistent range and track the cumulative movement
+        y_normalized = np.array(y) % (2 * np.pi)
+
+        # Check if the excursion pattern is consistent with libration
+        # Calculate the range of motion, accounting for wrapping
+        min_angle = np.min(y_normalized)
+        max_angle = np.max(y_normalized)
+
+        # For apocentric libration around 2π/0, we expect either:
+        # 1. All values clustered around 0 (small range near 0)
+        # 2. All values clustered around 2π (small range near 2π)
+        # 3. Values spanning the 0/2π boundary (wrapping case)
+
+        # Case 3: Check for wrapping (values both near 0 and near 2π)
+        has_near_zero = np.any(y_normalized <= np.pi / 2)  # within π/2 of 0
+        has_near_2pi = np.any(y_normalized >= 3 * np.pi / 2)  # within π/2 of 2π
+
+        if has_near_zero and has_near_2pi:
+            # This is the wrapping case - need to check if total span is < π
+            # when accounting for wrapping
+
+            # Compute wrapped range by finding the largest gap
+            sorted_angles = np.sort(y_normalized)
+            gaps = np.diff(sorted_angles)
+            # Add the wraparound gap
+            wraparound_gap = (sorted_angles[0] + 2 * np.pi) - sorted_angles[-1]
+            all_gaps = np.append(gaps, wraparound_gap)
+
+            largest_gap = np.max(all_gaps)
+            total_span = 2 * np.pi - largest_gap
+
+            return total_span <= np.pi  # Libration if span <= π
+        else:
+            # Non-wrapping case: check if range is reasonable for libration
+            angle_range = max_angle - min_angle
+            return angle_range <= np.pi
+
+    @classmethod
+    def is_apocentric_libration(cls, y, threshold=1.5):
+        """
+        Detect apocentric libration by checking if most values are near 0 or 2π.
+        This specifically handles cases where the libration center is around the
+        0/2π boundary.
+        """
+        if len(y) == 0:
+            return False
+
+        # Convert to [0, 2π] range
+        y_normalized = np.array(y) % (2 * np.pi)
+
+        # Count points near 0 or 2π (within threshold of the boundaries)
+        near_zero = np.sum(y_normalized <= threshold)
+        near_2pi = np.sum(y_normalized >= (2 * np.pi - threshold))
+
+        # Check if most points (>60%) are near the boundaries
+        # Also check for concentration pattern - most points should be near one boundary
+        total_near_boundary = near_zero + near_2pi
+        boundary_fraction = total_near_boundary / len(y)
+
+        # Additional check: if there's a clear concentration around one boundary
+        dominant_boundary = max(near_zero, near_2pi) / len(y) > 0.4
+
+        return boundary_fraction > 0.6 or dominant_boundary
+
+    @classmethod
+    def pure(cls, y):
         flag1 = cls.is_pure(y)
         if flag1:
             return True
+
         flag2 = cls.is_pure(cls.shift(y))
         if flag2:
             return True
+
+        if cls.is_apocentric_libration(y):
+            # For apocentric libration, use the enhanced pure detection
+            flag3 = cls.is_pure_apocentric(y)
+            if flag3:
+                return True
+
         return False
 
     @classmethod
@@ -222,6 +305,20 @@ class libration:
     @classmethod
     def butter_lowpass_filter(cls, data, cutoff, fs, order, nyq):
         normal_cutoff = cutoff / nyq
+        # Ensure normalized cutoff frequency is valid for Butterworth filter (0 < Wn < 1)
+        if normal_cutoff >= 1.0:
+            # For secular resonances with very long integration times, adjust cutoff
+            normal_cutoff = 0.99  # Use maximum allowable value
+            resonances.logger.warning(
+                f"Cutoff frequency ({cutoff}) >= Nyquist frequency ({nyq}). "
+                f"Adjusting normalized cutoff to {normal_cutoff} for filter stability."
+            )
+        elif normal_cutoff <= 0.0:
+            normal_cutoff = 0.01  # Use minimum allowable value
+            resonances.logger.warning(
+                f"Cutoff frequency ({cutoff}) <= 0. " f"Adjusting normalized cutoff to {normal_cutoff} for filter stability."
+            )
+
         # Get the filter coefficients
         b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
         y = signal.filtfilt(b, a, data, method="gust")
@@ -229,26 +326,26 @@ class libration:
 
     @classmethod
     def body(cls, sim, body: resonances.Body):
-        integration_time = abs(round(sim.tmax / (2 * np.pi)))  # abs for backward integration
-        fs = sim.Nout / integration_time  # sample rate, Hz || Nout/time, i.e. 10000/100000
-        cutoff = sim.oscillations_cutoff  # should be a little bit more than needed
+        integration_time = abs(round(sim.config.tmax / (2 * np.pi)))  # abs for backward integration
+        fs = sim.config.Nout / integration_time  # sample rate, Hz || Nout/time, i.e. 10000/100000
+        cutoff = sim.config.oscillations_cutoff  # should be a little bit more than needed
         nyq = 0.5 * fs  # Nyquist Frequency
-        order = sim.oscillations_filter_order  # polynom order
+        order = sim.config.oscillations_filter_order  # polynom order
         """
         Do not take into account first N and last N points because of the filter applied.
         There is no previous (or following) data for them. Thus, they mess the periodogram.
         """
-        points_to_cut = round(sim.libration_period_min * fs)
+        points_to_cut = round(sim.config.libration_period_min * fs)
 
         axis_filtered = cls.butter_lowpass_filter(body.axis, cutoff, fs, order, nyq)
         try:
             (axis_frequency, axis_power) = resonances.libration.periodogram(
                 sim.times[points_to_cut : len(axis_filtered) - points_to_cut] / (2 * np.pi),
                 axis_filtered[points_to_cut : len(axis_filtered) - points_to_cut],
-                minimum_frequency=sim.periodogram_frequency_min,
-                maximum_frequency=sim.periodogram_frequency_max,
+                minimum_frequency=sim.config.periodogram_frequency_min,
+                maximum_frequency=sim.config.periodogram_frequency_max,
             )
-            axis_peaks_data = cls.find_peaks_with_position(axis_frequency, axis_power, height=sim.periodogram_soft)
+            axis_peaks_data = cls.find_peaks_with_position(axis_frequency, axis_power, height=sim.config.periodogram_soft)
         except Exception as e:  # pragma: no cover
             resonances.logger.error(f"Error in periodogram of semi-major axis for {body.name}: {e}")
             axis_frequency, axis_power, axis_peaks_data = None, None, None
@@ -258,70 +355,118 @@ class libration:
         body.axis_periodogram_power = axis_power
         body.axis_periodogram_peaks = axis_peaks_data
 
-        for mmr in body.mmrs:
-            pure = resonances.libration.pure(body.angle(mmr))
+        try:
+            (eccentricity_frequency, eccentricity_power) = resonances.libration.periodogram(
+                sim.times[points_to_cut : len(body.ecc) - points_to_cut] / (2 * np.pi),
+                body.ecc[points_to_cut : len(body.ecc) - points_to_cut],
+                minimum_frequency=sim.config.periodogram_frequency_min,
+                maximum_frequency=sim.config.periodogram_frequency_max,
+            )
+            eccentricity_peaks_data = cls.find_peaks_with_position(
+                eccentricity_frequency, eccentricity_power, height=sim.config.periodogram_soft
+            )
+        except Exception as e:  # pragma: no cover
+            resonances.logger.error(f"Error in periodogram of eccentricity for {body.name}: {e}")
+            eccentricity_frequency, eccentricity_power, eccentricity_peaks_data = None, None, None
 
-            librations = resonances.libration.circulation(sim.times / (2 * np.pi), body.angle(mmr))
+        body.eccentricity_periodogram_frequency = eccentricity_frequency
+        body.eccentricity_periodogram_power = eccentricity_power
+        body.eccentricity_periodogram_peaks = eccentricity_peaks_data
+
+        all_resonances = body.mmrs + body.secular_resonances
+        # for mmr in body.mmrs:
+        for resonance in all_resonances:
+            pure = resonances.libration.pure(body.angle(resonance))
+
+            librations = resonances.libration.circulation(sim.times / (2 * np.pi), body.angle(resonance))
             libration_metrics = resonances.libration.circulation_metrics(librations)
-            monotony = resonances.libration.monotony_estimation(body.angle(mmr))
+            monotony = resonances.libration.monotony_estimation(body.angle(resonance))
 
             try:
-                angle_filtered = cls.butter_lowpass_filter(body.angle(mmr), cutoff, fs, order, nyq)
+                angle_filtered = cls.butter_lowpass_filter(body.angle(resonance), cutoff, fs, order, nyq)
                 (frequency, power) = resonances.libration.periodogram(
                     sim.times[points_to_cut : len(angle_filtered) - points_to_cut] / (2 * np.pi),
                     angle_filtered[points_to_cut : len(angle_filtered) - points_to_cut],
-                    minimum_frequency=sim.periodogram_frequency_min,
-                    maximum_frequency=sim.periodogram_frequency_max,
+                    minimum_frequency=sim.config.periodogram_frequency_min,
+                    maximum_frequency=sim.config.periodogram_frequency_max,
                 )
 
-                angle_peaks_data = cls.find_peaks_with_position(frequency, power, height=sim.periodogram_soft)
+                angle_peaks_data = cls.find_peaks_with_position(frequency, power, height=sim.config.periodogram_soft)
                 overlapping = cls.overlap_list(angle_peaks_data['position'], axis_peaks_data['position'], delta=0)
             except Exception as e:  # pragma: no cover
-                resonances.logger.error(f"Error in periodogram for {body.name} and {mmr.to_s()}: {e}")
+                resonances.logger.error(f"Error in periodogram for {body.name} and {resonance.to_s()}: {e}")
                 frequency, power, angle_peaks_data, angle_filtered, overlapping = None, None, None, None, []
 
-            body.statuses[mmr.to_s()] = cls.resolve(
+            body.statuses[resonance.to_s()] = cls.resolve(
+                resonance,
                 pure,
                 overlapping,
                 libration_metrics['max_libration_length'],
-                sim.libration_period_critical,
+                sim.config.libration_period_critical,
                 monotony,
-                sim.libration_monotony_critical,
+                sim.config.libration_monotony_critical,
             )
 
-            body.librations[mmr.to_s()] = librations
-            body.libration_metrics[mmr.to_s()] = libration_metrics
-            body.libration_pure[mmr.to_s()] = pure
+            body.librations[resonance.to_s()] = librations
+            body.libration_metrics[resonance.to_s()] = libration_metrics
+            body.libration_pure[resonance.to_s()] = pure
 
-            body.periodogram_frequency[mmr.to_s()] = frequency
-            body.periodogram_power[mmr.to_s()] = power
-            body.periodogram_peaks[mmr.to_s()] = angle_peaks_data
+            body.periodogram_frequency[resonance.to_s()] = frequency
+            body.periodogram_power[resonance.to_s()] = power
+            body.periodogram_peaks[resonance.to_s()] = angle_peaks_data
 
-            body.angles_filtered[mmr.to_s()] = angle_filtered
-            body.periodogram_peaks_overlapping[mmr.to_s()] = overlapping
+            body.angles_filtered[resonance.to_s()] = angle_filtered
+            body.periodogram_peaks_overlapping[resonance.to_s()] = overlapping
 
-            body.monotony[mmr.to_s()] = monotony
+            body.monotony[resonance.to_s()] = monotony
 
         return body.statuses
 
     @classmethod
-    def resolve(cls, pure, overlapping, max_libration_length, libration_period_critical, monotony, libration_monotony_critical):
+    def resolve(cls, resonance, pure, overlapping, max_libration_length, libration_period_critical, monotony, libration_monotony_critical):
+        from resonances.resonance.secular import SecularResonance
+
         status = 0
-        if pure and (len(overlapping) > 0):
-            status = 2  # pure libration
-        elif pure:
-            # seems to be pure but libration periods of axis and resonant angle are different
-            # need manual check
-            status = -2
-        elif (len(overlapping) > 0) and (max_libration_length > libration_period_critical):
-            status = 1  # transient resonance
-        elif (
-            (max_libration_length > libration_period_critical)
-            and (monotony >= libration_monotony_critical[0])
-            and (monotony <= libration_monotony_critical[1])
-        ):
-            # Looks like chaotic but has long stable period and acceptable monotony
-            # need to verify manually
-            status = -1
-        # No resonance
+
+        # Special logic for SecularResonance
+        if isinstance(resonance, SecularResonance):
+            if pure:
+                status = 2
+            elif max_libration_length > libration_period_critical:
+                # For secular resonances, we need more nuanced classification
+                # Check if this is wide/chaotic libration that should still be considered trapped
+
+                # Very long stability periods (>5x critical) suggest strong trapping
+                # even if not perfectly pure
+                stability_factor = max_libration_length / libration_period_critical
+
+                # Monotony in acceptable range suggests quasi-periodic behavior
+                mono_ok = monotony >= libration_monotony_critical[0] and monotony <= libration_monotony_critical[1]
+
+                if stability_factor >= 4.99 and mono_ok:
+                    # This suggests wide libration or chaotic libration
+                    # that's still effectively trapped
+                    status = 2  # Classify as pure (trapped)
+                else:
+                    status = 1  # Transient
+            else:
+                status = 0
+        else:
+            if pure and (len(overlapping) > 0):
+                status = 2  # pure libration
+            elif pure:
+                # seems to be pure but libration periods of axis and resonant angle are different
+                # need manual check
+                status = -2
+            elif (len(overlapping) > 0) and (max_libration_length > libration_period_critical):
+                status = 1  # transient resonance
+            elif (
+                (max_libration_length > libration_period_critical)
+                and (monotony >= libration_monotony_critical[0])
+                and (monotony <= libration_monotony_critical[1])
+            ):
+                # Looks like chaotic but has long stable period and acceptable monotony
+                # need to verify manually
+                status = -1
+            # No resonance
         return status

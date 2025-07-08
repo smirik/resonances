@@ -47,7 +47,7 @@ poetry add resonances
 ```python
 import resonances
 
-sim = resonances.check(463, '4J-2S-1')
+sim = resonances.check(463, resonance='4J-2S-1')
 sim.run()
 ```
 
@@ -110,3 +110,13 @@ Use the same manager (`poetry` or `pip`) and its standard workflow to update.
 ```bash
 poetry update
 ```
+
+## Common issues
+
+An error when retrieving data from JPL Horizons (SSL certificate issue):
+
+```bash
+pip install --upgrade certifi
+```
+
+It will install the latest version of `certifi` package, which is required by `astroquery` to work properly.

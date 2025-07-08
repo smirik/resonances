@@ -1,20 +1,7 @@
 from pathlib import Path
-import shutil
-import pytest
 import resonances
 import os
 import tests.tools as tools
-
-
-@pytest.fixture(autouse=True)
-def run_around_tests():
-    resonances.config.set('PLOT_MODE', None)
-    resonances.config.set('PLOT_TYPE', None)
-    Path('cache/tests').mkdir(parents=True, exist_ok=True)
-    yield
-    resonances.config.set('PLOT_MODE', 'nonzero')
-    resonances.config.set('PLOT_TYPE', 'save')
-    shutil.rmtree('cache/tests')
 
 
 def test_simple_run():
@@ -40,15 +27,15 @@ def test_body():
     body.axis_filtered = None
     resonances.resonance.plot.body(sim, body, mmr)
 
-    sim.plot_type = 'save'
+    sim.config.plot_type = 'save'
     resonances.resonance.plot.body(sim, body, mmr)
-    file_path = 'cache/tests/asteroid_4J-2S-1+0+0-1.png'
+    file_path = f"{sim.config.save_path}/asteroid_4J-2S-1+0+0-1.png"
     assert Path(file_path).is_file() is True
 
     os.remove(file_path)
     assert Path(file_path).is_file() is False
 
-    sim.plot_type = None
+    sim.config.plot_type = None
     resonances.resonance.plot.body(sim, body, mmr)
-    file_path = 'cache/tests/asteroid_4J-2S-1+0+0-1.png'
+    file_path = f"{sim.config.save_path}/asteroid_4J-2S-1+0+0-1.png"
     assert Path(file_path).is_file() is False

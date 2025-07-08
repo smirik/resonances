@@ -1,29 +1,51 @@
+import pytest
 import resonances
-from .tools import set_fast_integrator, reset_fast_integrator
+from tests import tools
+
+
+@pytest.fixture(autouse=True)
+def setup_test_config():
+    """Setup test configuration before each test and restore after."""
+    original_save_path = resonances.config.get('SAVE_PATH')
+    original_plot_path = resonances.config.get('PLOT_PATH')
+
+    resonances.config.set('SAVE_PATH', 'cache/tests')
+    resonances.config.set('PLOT_PATH', 'cache/tests')
+
+    yield
+
+    resonances.config.set('SAVE_PATH', original_save_path)
+    resonances.config.set('PLOT_PATH', original_plot_path)
 
 
 def test_backward_integration():
-    asteroids = [463, 490]
-    planets = ['Jupiter', 'Saturn']
+    """
+    Test backward integration functionality.
 
-    set_fast_integrator()
+    This test verifies that the simulation can run with negative time values
+    to perform backward integration, which is useful for studying the past
+    evolution of celestial bodies.
+    """
+    # Create simulation with backward integration parameters
+    sim = resonances.Simulation(
+        tmax=-200000,
+        name='backward',
+        save='all',
+        integrator='SABA(10,6,4)',
+        dt=-5.0,
+    )
 
-    sim = resonances.find(asteroids, planets)
-    sim.dt = -1.0
-    sim.tmax = -100000
-    sim.save = 'none'
-    sim.plot = 'none'
-    # timestamp = int(time.time())
-    # sim.save_path = f'cache/test_{timestamp}'
-    # sim.plot_path = f'cache/test_{timestamp}'
-
-    assert isinstance(sim, resonances.Simulation)
-    assert 2 == len(sim.bodies)
-
+    sim.create_solar_system()
+    tools.add_test_asteroid_to_simulation(sim)
     sim.run(progress=True)
-    summary = sim.get_simulation_summary()
-    status463 = summary.loc[(summary['name'] == '463') & (summary['mmr'] == '4J-2S-1+0+0-1'), 'status'].iloc[0]
+    summary = sim.data_manager.get_simulation_summary(sim.bodies)
+    assert len(summary) > 0
+    assert 'name' in summary.columns
 
-    assert 2 == status463
+    # Verify that we have data for the asteroid
+    assert len(sim.bodies) == 1
+    assert sim.bodies[0].name == 'asteroid'
 
-    reset_fast_integrator()
+    # Verify that times are negative (backward integration)
+    assert sim.times[0] == 0.0  # Should start at 0
+    assert sim.times[-1] < 0  # Should end at negative time

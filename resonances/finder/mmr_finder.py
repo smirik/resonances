@@ -3,19 +3,16 @@ import astdys
 from typing import Union, List
 from datetime import datetime
 
+from resonances.data.util import convert_input_to_list
 import resonances.horizons
 
 
-def convert_input_to_list(asteroids: Union[int, str, List[Union[int, str]]]) -> List[str]:
-    if isinstance(asteroids, str) or isinstance(asteroids, int):
-        asteroids = [asteroids]
-    elif asteroids is None:
-        asteroids = []
-    return asteroids
-
-
 def find(
-    asteroids: Union[int, str, List[Union[int, str]]], planets=None, name: str = None, sigma2: float = 0.1, sigma3: float = 0.02
+    asteroids: Union[int, str, List[Union[int, str]]],
+    planets=None,
+    name: str = None,
+    sigma2: float = 0.1,
+    sigma3: float = 0.02,
 ) -> resonances.Simulation:
     now = datetime.now()
     sim = resonances.Simulation(name=name)
@@ -24,8 +21,8 @@ def find(
     asteroids = convert_input_to_list(asteroids)
 
     for asteroid in asteroids:
-        elem = resonances.horizons.get_body_keplerian_elements(asteroid, sim=sim.sim, date=now)
-        mmrs = find_resonances(elem['a'], planets=planets, sigma2=sigma2, sigma3=sigma3)
+        elem = resonances.horizons.get_body_keplerian_elements(asteroid, date=now)
+        mmrs = find_mmrs(elem['a'], planets=planets, sigma2=sigma2, sigma3=sigma3)
         if len(mmrs) > 0:
             sim.add_body(elem, mmrs, f"{asteroid}")
             resonances.logger.info(
@@ -37,18 +34,45 @@ def find(
     return sim
 
 
-def check(asteroids: Union[int, str, List[Union[int, str]]], mmr: Union[resonances.MMR, str]) -> resonances.Simulation:
-    if isinstance(mmr, str):
-        mmr = resonances.create_mmr(mmr)
+def check(
+    asteroids: Union[int, str, List[Union[int, str]]],
+    resonance: Union[resonances.MMR, str],
+    name: str = None,
+    **kwargs,
+) -> resonances.Simulation:
+    """
+    Check asteroids for mean motion resonance (MMR).
 
-    sim = resonances.Simulation()
+    Parameters:
+    -----------
+    asteroids : Union[int, str, List[Union[int, str]]]
+        Asteroid ID(s) to check
+    resonance : Union[resonances.MMR, str]
+        Mean motion resonance to check (e.g., '3J-2S-1', '2J-1S-1', etc.)
+    name : str, optional
+        Name for the simulation
+    **kwargs
+        Additional parameters passed to Simulation constructor (integrator, dt, tmax, etc.)
+
+    Returns:
+    --------
+    resonances.Simulation
+        Configured simulation ready to run
+    """
+    if isinstance(resonance, str):
+        resonance = resonances.create_mmr(resonance)
+
+    sim = resonances.Simulation(name=name or "mmr_check", **kwargs)
     sim.create_solar_system()
 
     asteroids = convert_input_to_list(asteroids)
 
     for asteroid in asteroids:
-        sim.add_body(asteroid, mmr, name=f"{asteroid}")
-        resonances.logger.info('Adding a possible resonance for an asteroid {} - {}'.format(asteroid, mmr.to_s()))
+        sim.add_body(asteroid, resonance, name=f"{asteroid}")
+        resonances.logger.info('Adding a possible resonance for an asteroid {} - {}'.format(asteroid, resonance.to_s()))
+
+    # Override Nout if provided in kwargs (after simulation creation to override automatic calculation)
+    sim.config.Nout = kwargs.get('Nout', sim.config.Nout)
 
     return sim
 
@@ -69,7 +93,7 @@ def find_asteroids_in_mmr(
     num_chunks = len(chunks)
     data = []
     for i, chunk in enumerate(chunks):
-        sim = resonances.Simulation(name=name, source='astdys', date=astdys.catalog_time)
+        sim = resonances.Simulation(name=name, source='astdys', date=resonances.datetime_from_string(astdys.catalog_time))
         sim.create_solar_system()
 
         resonances.logger.info(f"Iteration {i+1}/{num_chunks}: Going to process a chunk of {len(chunk)} asteroids.")
@@ -81,7 +105,7 @@ def find_asteroids_in_mmr(
     return data
 
 
-def find_resonances(a: float, planets=None, sigma2=0.1, sigma3=0.02, sigma=None) -> List[resonances.MMR]:
+def find_mmrs(a: float, planets=None, sigma2=0.1, sigma3=0.02, sigma=None) -> List[resonances.MMR]:
     """Find Two and Three-Body Mean Motion Resonances (MMR) for a given semi-major axis.
     This function identifies both two-body and three-body mean motion resonances
     near the specified semi-major axis value. If a single sigma value is provided,

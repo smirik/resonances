@@ -42,7 +42,7 @@ def test_str():
     body.mass = 1.0
     body.type = 'asteroid'
 
-    assert 'Body(type=asteroid, name=463, mass=1.0)\n Resonances: 4J-2S-1+0+0-1, ' == str(body)
+    assert 'Body(type=asteroid, name=463, mass=1.0)\nMMR Resonances: 4J-2S-1+0+0-1, \n' == str(body)
 
 
 def test_mmr_to_dict():
@@ -54,7 +54,17 @@ def test_mmr_to_dict():
     body.periodogram_peaks[mmr.to_s()] = np.array([0, 1, 2, 3, 4])
 
     result = body.mmr_to_dict(mmr, times)
-    assert result is None
+    assert result is not None
+    assert 'angle' in result
+    assert result['a'] is None
+    assert result['e'] is None
+    assert result['inc'] is None
+    assert result['Omega'] is None
+    assert result['omega'] is None
+    assert result['M'] is None
+    assert result['longitude'] is None
+    assert result['varpi'] is None
+    assert isinstance(result['angle'], np.ndarray)
 
     body.periodogram_power[mmr.to_s()] = np.array([0, 1, 2, 3, 4])
 

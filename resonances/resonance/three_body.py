@@ -39,7 +39,10 @@ class ThreeBody(MMR):
 
         first_letter = tmp[0][len(tmp[0]) - 1]
         second_letter = tmp[1][len(tmp[1]) - 1]
-        planets_names = [self.get_planet_name_from_letter(first_letter), self.get_planet_name_from_letter(second_letter)]
+        planets_names = [
+            self.get_planet_name_from_letter(first_letter),
+            self.get_planet_name_from_letter(second_letter),
+        ]
 
         coeff1 = int(str.replace(tmp[0], first_letter, ''))
         coeff2 = int(str.replace(tmp[1], second_letter, ''))
@@ -123,9 +126,11 @@ class ThreeBody(MMR):
             else:
                 la = la + (3 * np.pi / 2 * mp * (np.sqrt(a) / ap) ** 3) / const.DAYS_IN_YEAR
 
-        n = (-self.coeff[0] * n1 - self.coeff[1] * n2 - self.coeff[3] * l1 - self.coeff[4] * l2 - self.coeff[5] * la) / self.coeff[2]
+        n = (-self.coeff[0] * n1 - self.coeff[1] * n2 - self.coeff[3] * l1 - self.coeff[4] * l2 - self.coeff[5] * la) / self.coeff[
+            2
+        ]  # noqa: B950
 
-        if n < 0:  # pragma: no cover
+        if n < 0:
             raise Exception('Something weird has happened for {}. Mean motion = {}'.format(self.to_short(), n))
 
         a = util.axis_from_mean_motion(n)
@@ -166,7 +171,7 @@ class ThreeBody(MMR):
     #     eps = (a1 - a) / a1
     #     l = k / (2 * np.pi) * np.sqrt(a / a1) * (eps ** 2) * n1
 
-    #     n = (-self.coeff[0] * n1 - self.coeff[1] * n2 - self.coeff[3] * l1 - self.coeff[4] * l2 - self.coeff[5] * l) / self.coeff[2]
+    #     n = (-self.coeff[0] * n1 - self.coeff[1] * n2 - self.coeff[3] * l1 - self.coeff[4] * l2 - self.coeff[5] * l) / self.coeff[2] # noqa: B950
 
     #     if n < 0:
     #         raise Exception('Something weird has happened for {}. Mean motion = {}'.format(self.to_short(), n))

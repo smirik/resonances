@@ -1,7 +1,37 @@
 import pytest
 import resonances
 import datetime
-from resonances.data.util import datetime_from_string
+from resonances.data.util import convert_input_to_list, datetime_from_string
+
+
+def test_convert_input_to_list():
+    asteroids = 1
+    expected_output = [1]
+    assert convert_input_to_list(asteroids) == expected_output
+
+    asteroids = '2'
+    expected_output = ['2']
+    assert convert_input_to_list(asteroids) == expected_output
+
+    asteroids = [1, 2, 3]
+    expected_output = [1, 2, 3]
+    assert convert_input_to_list(asteroids) == expected_output
+
+    asteroids = ['4', '5', '6']
+    expected_output = ['4', '5', '6']
+    assert convert_input_to_list(asteroids) == expected_output
+
+    asteroids = [7, '8', 9, '10']
+    expected_output = [7, '8', 9, '10']
+    assert convert_input_to_list(asteroids) == expected_output
+
+    asteroids = []
+    expected_output = []
+    assert convert_input_to_list(asteroids) == expected_output
+
+    asteroids = None
+    expected_output = []
+    assert convert_input_to_list(asteroids) == expected_output
 
 
 def test_axis_from_mean_motion_and_back():

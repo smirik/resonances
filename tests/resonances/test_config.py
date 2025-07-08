@@ -55,3 +55,32 @@ def test_config_exception():
     with pytest.raises(Exception) as exception:
         resonances.config.get('This is the house that Jack built')
         assert 'no config' in str(exception.value)
+
+
+def test_planetary_frequencies():
+    """Test that fundamental planetary frequencies are available in config"""
+    # Test g values
+    assert resonances.config.has('g5') is True
+    assert float(resonances.config.get('g5')) == 4.25749319
+
+    assert resonances.config.has('g6') is True
+    assert float(resonances.config.get('g6')) == 28.24552984
+
+    assert resonances.config.has('g7') is True
+    assert float(resonances.config.get('g7')) == 3.08675577
+
+    assert resonances.config.has('g8') is True
+    assert float(resonances.config.get('g8')) == 0.67255084
+
+    # Test s values
+    assert resonances.config.has('s5') is True
+    assert float(resonances.config.get('s5')) == 0
+
+    assert resonances.config.has('s6') is True
+    assert float(resonances.config.get('s6')) == -26.34496354
+
+    assert resonances.config.has('s7') is True
+    assert float(resonances.config.get('s7')) == -2.99266093
+
+    assert resonances.config.has('s8') is True
+    assert float(resonances.config.get('s8')) == -0.69251386
