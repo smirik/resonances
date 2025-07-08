@@ -60,6 +60,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#updating">Updating</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#common-issues">Common issues</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../examples/">Examples</a>
@@ -132,7 +134,7 @@ python = &quot;&gt;=3.8,&lt;3.12&quot;
 <p><strong>E.</strong> Now you can run your first simulation. Create <code>test.py</code> in the root directory of your project and place the following code there:</p>
 <pre><code class="language-python">import resonances
 
-sim = resonances.check(463, '4J-2S-1')
+sim = resonances.check(463, resonance='4J-2S-1')
 sim.run()
 </code></pre>
 <p>Note that the first run might take a while because the app needs to download AstDyS catalogue and initial data for the Solar system. You can see the progress in <code>cache/resonances.log</code> file.</p>
@@ -166,6 +168,11 @@ poetry install
 <p>Use the same manager (<code>poetry</code> or <code>pip</code>) and its standard workflow to update.</p>
 <pre><code class="language-bash">poetry update
 </code></pre>
+<h2 id="common-issues">Common issues</h2>
+<p>An error when retrieving data from JPL Horizons (SSL certificate issue):</p>
+<pre><code class="language-bash">pip install --upgrade certifi
+</code></pre>
+<p>It will install the latest version of <code>certifi</code> package, which is required by <code>astroquery</code> to work properly.</p>
               
             </div>
           </div><footer>

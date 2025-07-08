@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://github.com/smirik/resonances/secular/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Secular Resonances - Mean-Motion Resonances</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Secular Resonances";
+        var mkdocs_page_input_path = "secular.md";
+        var mkdocs_page_url = "/smirik/resonances/secular/";
+      </script>
+    
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Mean-Motion Resonances
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../quick-start/">Quick Start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../install/">Installation and updates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../examples/">Examples</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Features</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations, Bodies, MMRs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../libration/">Libration module</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../matrix/">Resonance Matrices</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">About</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../about/">Copyright, license, references</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Mean-Motion Resonances</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+      <li>Secular Resonances</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/smirik/resonances/blob/master/docs/secular.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="secular-resonances">Secular Resonances</h1>
+<p>This guide shows how to work with secular resonances in the resonances library. Examples assume familiarity with secular resonance theory and asteroid dynamics.</p>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="creating-individual-secular-resonances">Creating Individual Secular Resonances</h3>
+<pre><code class="language-python">import resonances
+
+# Create specific secular resonances
+nu6 = resonances.create_secular_resonance('nu6')      # ν₆ resonance (g-g₆)
+nu5 = resonances.create_secular_resonance('nu5')      # ν₅ resonance (g-g₅)
+nu16 = resonances.create_secular_resonance('nu16')    # ν₁₆ resonance (s-s₆)
+
+# Create from mathematical formulas
+nu6_formula = resonances.create_secular_resonance('g-g6')
+nu5_formula = resonances.create_secular_resonance('g-g5')
+nu16_formula = resonances.create_secular_resonance('s-s6')
+
+# Create nonlinear resonances
+nonlinear = resonances.create_secular_resonance('2g-g5-g6')
+complex_res = resonances.create_secular_resonance('g+s-s7-g5')
+</code></pre>
+<h3 id="building-multiple-resonances">Building Multiple Resonances</h3>
+<pre><code class="language-python">from resonances.matrix.secular_matrix import SecularMatrix
+
+# Build specific resonances
+resonances_list = SecularMatrix.build(['g-g5', 'g-g6', 's-s6'])
+
+# Build all resonances of a specific order
+order2_resonances = SecularMatrix.build(order=2)  # Linear resonances
+order4_resonances = SecularMatrix.build(order=4)  # Nonlinear resonances of order 4
+
+# Build all available resonances
+all_resonances = SecularMatrix.build()
+</code></pre>
+<h2 id="example-asteroid-759-vinifera-6-resonance">Example: Asteroid 759 Vinifera (ν₆ Resonance)</h2>
+<pre><code class="language-python">import resonances
+
+# Create the ν₆ resonance
+nu6 = resonances.create_secular_resonance('nu6')
+# Set up simulation with Vinifera
+sim = resonances.Simulation()
+sim.add_body(759, nu6, name='Vinifera')
+# Access the body
+body = sim.bodies[0]
+print(f&quot;Added body: {body.name}&quot;)
+print(f&quot;Body has {len(body.secular_resonances)} secular resonances&quot;)
+
+sim = resonances.check(
+    asteroids=[759],
+    resonance='nu6',
+    integration_years=1000000,
+    oscillations_cutoff=0.0005,
+    plot='all',
+    save='all',
+)# Configure simulation
+sim.run(progress=True)
+
+print(f&quot;Simulation completed for {sim.bodies[0].name}&quot;)
+print(f&quot;Resonance: {sim.bodies[0].secular_resonances[0].to_s()}&quot;)
+</code></pre>
+<h2 id="nonlinear-secular-resonances">Nonlinear Secular Resonances</h2>
+<pre><code class="language-python">import resonances
+
+# High-order resonances
+high_order = resonances.GeneralSecularResonance(formula='g+s-s7-g5')
+kozai_type = resonances.GeneralSecularResonance(formula='2g-2s')
+
+# Mixed frequency resonances
+mixed = resonances.GeneralSecularResonance(formula='g-g5+s7-s6')
+complex_mixed = resonances.GeneralSecularResonance(formula='2g-s7-s6')
+
+# Special case with parentheses
+special = resonances.GeneralSecularResonance(formula='2(g-g6)+(s-s6)')
+</code></pre>
+<h2 id="custom-planetary-frequencies">Custom Planetary Frequencies</h2>
+<p>You can customize planetary frequencies by creating a <code>.env</code> file in your project directory:</p>
+<pre><code class="language-bash"># .env file
+g5=4.25749319
+g6=28.24552984
+g7=3.08675577
+g8=0.67255084
+s5=0.0
+s6=-26.34496354
+s7=-2.99266093
+s8=-0.69251386
+</code></pre>
+<p>The frequencies will be loaded automatically when you import the resonances library.</p>
+<pre><code class="language-python">from resonances.matrix.secular_resonances import load_planetary_frequencies
+
+# Load current frequencies
+frequencies = load_planetary_frequencies()
+print(&quot;Current planetary frequencies (arcsec/yr):&quot;)
+for freq, value in frequencies.items():
+    print(f&quot;  {freq}: {value}&quot;)
+</code></pre>
+<h2 id="references">References</h2>
+<p>For theoretical background on secular resonances, see:</p>
+<ol>
+<li><strong>Murray, C. D. &amp; Dermott, S. F.</strong> Solar System Dynamics. Cambridge University Press (1999).</li>
+<li><strong>Morbidelli, A.</strong> Modern Celestial Mechanics: Aspects of Solar System Dynamics. Taylor &amp; Francis (2002).</li>
+<li><strong>Knežević, Z. &amp; Milani, A.</strong> Proper element catalogs and asteroid families. Astronomy &amp; Astrophysics (2003).</li>
+</ol>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/smirik/resonances" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
