@@ -255,7 +255,6 @@ class GeneralSecularResonance(SecularResonance):
             'g': 0.0,
             's': 0.0,
             'g4': 0.0,
-            's4': 0.0,
             'g5': 0.0,
             'g6': 0.0,
             'g7': 0.0,
