@@ -42,14 +42,18 @@ def check(
         Configured simulation ready to run
     """
 
-    libration_period_min = kwargs.pop('libration_period_min', 10000)
+    libration_period_min = kwargs.pop('libration_period_min', 20000)
     libration_period_critical = kwargs.pop('libration_period_critical', integration_years * 0.2)
+    periodogram_frequency_min = kwargs.pop('periodogram_frequency_min', 0.000001)
+    periodogram_frequency_max = kwargs.pop('periodogram_frequency_max', 0.0002)
 
     sim = resonances.Simulation(
         name=name or "secular_check",
         tmax=int(integration_years * 2 * np.pi),
         libration_period_min=libration_period_min,
         libration_period_critical=libration_period_critical,
+        periodogram_frequency_min=periodogram_frequency_min,
+        periodogram_frequency_max=periodogram_frequency_max,
         **kwargs,
     )
 
