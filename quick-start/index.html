@@ -71,6 +71,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../matrix/">Resonance Matrices</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../output/">Output Files</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
                   </li>
               </ul>
@@ -609,9 +611,11 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-2">import warnings
+
 warnings.filterwarnings("ignore")</div>
 </div>
 </div>
@@ -639,12 +643,12 @@ warnings.filterwarnings("ignore")</div>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">resonances</span>
 
-<span class="n">sim</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="mi">463</span><span class="p">,</span> <span class="s1">'4J-2S-1'</span><span class="p">,</span> <span class="n">plot_type</span><span class="o">=</span><span class="s2">"both"</span><span class="p">)</span> <span class="c1"># plot_type to 'both' to display in the notebook</span>
+<span class="n">sim</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="mi">463</span><span class="p">,</span> <span class="s1">'4J-2S-1'</span><span class="p">,</span> <span class="n">plot_type</span><span class="o">=</span><span class="s2">"both"</span><span class="p">)</span>  <span class="c1"># plot_type to 'both' to display in the notebook</span>
 <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-3">import resonances
 
-sim = resonances.check(463, '4J-2S-1', plot_type="both") # plot_type to 'both' to display in the notebook
+sim = resonances.check(463, '4J-2S-1', plot_type="both")  # plot_type to 'both' to display in the notebook
 sim.run()</div>
 </div>
 </div>
@@ -1429,19 +1433,11 @@ sim.add_body(elems, ['1J-1', '4J-2S-1'], name='624 Hektor')</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">sim</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">secular_check</span><span class="p">(</span>
-    <span class="n">asteroids</span><span class="o">=</span><span class="p">[</span><span class="mi">759</span><span class="p">,</span> <span class="mi">1222</span><span class="p">,</span> <span class="mi">760</span><span class="p">],</span>
-    <span class="n">resonance</span><span class="o">=</span><span class="s1">'nu6'</span><span class="p">,</span>
-    <span class="n">plot_type</span><span class="o">=</span><span class="s2">"both"</span>
-<span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">sim</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">secular_check</span><span class="p">(</span><span class="n">asteroids</span><span class="o">=</span><span class="p">[</span><span class="mi">759</span><span class="p">,</span> <span class="mi">1222</span><span class="p">,</span> <span class="mi">760</span><span class="p">],</span> <span class="n">resonance</span><span class="o">=</span><span class="s1">'nu6'</span><span class="p">,</span> <span class="n">plot_type</span><span class="o">=</span><span class="s2">"both"</span><span class="p">)</span>
 
 <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-14">sim = resonances.secular_check(
-    asteroids=[759, 1222, 760],
-    resonance='nu6',
-    plot_type="both"
-)
+<div class="clipboard-copy-txt" id="cell-14">sim = resonances.secular_check(asteroids=[759, 1222, 760], resonance='nu6', plot_type="both")
 
 sim.run(progress=True)</div>
 </div>

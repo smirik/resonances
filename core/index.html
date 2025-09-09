@@ -59,6 +59,8 @@
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../matrix/">Resonance Matrices</a>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../output/">Output Files</a>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
                   </li>
               </ul>
@@ -816,6 +818,7 @@ except Exception as exception:
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">resonances</span>
+
 <span class="n">mmr</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">create_resonance</span><span class="p">(</span><span class="s1">'4J-2S-1'</span><span class="p">)</span>
 <span class="n">sec</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">create_resonance</span><span class="p">(</span><span class="s1">'nu6'</span><span class="p">)</span>
 <span class="n">gsr</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">create_resonance</span><span class="p">(</span><span class="s1">'g-g6'</span><span class="p">)</span>
@@ -825,6 +828,7 @@ except Exception as exception:
 <span class="nb">print</span><span class="p">(</span><span class="n">gsr</span><span class="o">.</span><span class="n">to_s</span><span class="p">())</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-6">import resonances
+
 mmr = resonances.create_resonance('4J-2S-1')
 sec = resonances.create_resonance('nu6')
 gsr = resonances.create_resonance('g-g6')
@@ -967,7 +971,7 @@ sim.add_body('463', mmr, name='Lola')</div>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>By default, the package uses as initial date the date of AstDyS Catalogue, which is equal at the moment $\mathrm{MJD} = 60400$. This value is stored in Config object: <code>catalog.date</code> (for more details, see <a href="../config">the corresponding section</a>). When you add a body to the simulation, the date is set automatically based on the default value. You can manipulate this config value to set another initial date. However, you would have to adjust all bodies' data to the new epoch. For planets, <code>rebound</code> performs this automatically.</p>
+<p>By default, the package uses as initial date the date of AstDyS Catalogue. This value is stored in Config object: <code>catalog.date</code> (for more details, see <a href="../config">the corresponding section</a>). When you add a body to the simulation, the date is set automatically based on the default value. You can manipulate this config value to set another initial date. However, you would have to adjust all bodies' data to the new epoch. For planets, <code>rebound</code> performs this automatically.</p>
 </div>
 </div>
 </div>
@@ -1003,9 +1007,11 @@ sim.add_body('463', mmr, name='Lola')</div>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">astdys</span>
+
 <span class="n">astdys</span><span class="o">.</span><span class="n">rebuild</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-9">import astdys
+
 astdys.rebuild()</div>
 </div>
 </div>
@@ -1056,13 +1062,13 @@ Successfully downloaded. Continue working...
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">sim</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="s1">'nonzero'</span> <span class="c1"># other options: 'resonant' (only resonant), 'nonzero' (resonant and candidates), None (do not save anything), 'all'</span>
-<span class="n">sim</span><span class="o">.</span><span class="n">plot</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># the same as above</span>
-<span class="n">sim</span><span class="o">.</span><span class="n">plot_type</span> <span class="o">=</span> <span class="s1">'save'</span> <span class="c1"># other options: 'show' (show the plot), 'save' (save the plot), 'both', and None (do not plot anything)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">sim</span><span class="o">.</span><span class="n">save</span> <span class="o">=</span> <span class="s1">'nonzero'</span>  <span class="c1"># other options: 'resonant' (only resonant), 'nonzero' (resonant and candidates), None (do not save anything), 'all'</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">plot</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># the same as above</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">plot_type</span> <span class="o">=</span> <span class="s1">'save'</span>  <span class="c1"># other options: 'show' (show the plot), 'save' (save the plot), 'both', and None (do not plot anything)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-10">sim.save = 'nonzero' # other options: 'resonant' (only resonant), 'nonzero' (resonant and candidates), None (do not save anything), 'all'
-sim.plot = None # the same as above
-sim.plot_type = 'save' # other options: 'show' (show the plot), 'save' (save the plot), 'both', and None (do not plot anything)</div>
+<div class="clipboard-copy-txt" id="cell-10">sim.save = 'nonzero'  # other options: 'resonant' (only resonant), 'nonzero' (resonant and candidates), None (do not save anything), 'all'
+sim.plot = None  # the same as above
+sim.plot_type = 'save'  # other options: 'show' (show the plot), 'save' (save the plot), 'both', and None (do not plot anything)</div>
 </div>
 </div>
 </div>
@@ -1246,11 +1252,13 @@ Lola
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
 <span class="n">body</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">bodies</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">times</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">mmr</span><span class="p">))</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-14">import matplotlib.pyplot as plt
+
 body = sim.bodies[1]
 plt.figure(figsize=(6, 2))
 plt.plot(sim.times, body.angle(mmr))</div>
@@ -1308,12 +1316,14 @@ plt.plot(sim.times, body.angle(mmr))</div>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">times</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">body</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">mmr</span><span class="p">),</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">''</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">','</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">times</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">body</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">mmr</span><span class="p">),</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">''</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">','</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-15">import numpy as np
+
 plt.figure(figsize=(6, 2))
-plt.plot(sim.times/(2*np.pi), body.angle(mmr), linestyle='', marker=',')</div>
+plt.plot(sim.times / (2 * np.pi), body.angle(mmr), linestyle='', marker=',')</div>
 </div>
 </div>
 </div>
