@@ -35,12 +35,12 @@ class SimulationConfig:
         self.tmax = kwargs.get('tmax', int(c.get('INTEGRATION_TMAX')))
         self.integrator = kwargs.get('integrator', c.get('INTEGRATION_INTEGRATOR'))
         self.dt = kwargs.get('dt', float(c.get('INTEGRATION_DT')))
-        self.integrator_corrector = kwargs.get('integrator_corrector', int(c.get('INTEGRATION_CORRECTOR')))
-        self.integrator_safe_mode = kwargs.get('integrator_safe_mode', 1)
+        self.integration_corrector = kwargs.get('integration_corrector', int(c.get('INTEGRATION_CORRECTOR')))
+        self.integration_safe_mode = kwargs.get('integration_safe_mode', 1)
 
     def _setup_save_params(self, kwargs):
         """Setup save and output parameters."""
-        self.save = kwargs.get('save', c.get('SAVE_MODE'))
+        self.save = kwargs.get('save', c.get('SAVE'))
         self.save_summary = kwargs.get('save_summary', bool(c.get('SAVE_SUMMARY')))
 
         now = datetime.datetime.now()
@@ -48,7 +48,7 @@ class SimulationConfig:
 
     def _setup_plot_params(self, kwargs):
         """Setup plotting parameters."""
-        self.plot = kwargs.get('plot', c.get('PLOT_MODE'))
+        self.plot = kwargs.get('plot', c.get('PLOT'))
         self.plot_type = kwargs.get('plot_type', c.get('PLOT_TYPE'))
         self.image_type = kwargs.get('image_type', c.get('PLOT_IMAGE_TYPE'))
 

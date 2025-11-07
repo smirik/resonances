@@ -25,13 +25,13 @@ class TestCoreConfigValidation:
         This is the core issue - are constructor parameters actually used?
         """
         # Create simulation with specific parameters
-        sim = Simulation(integrator='SABA(10,6,4)', dt=3.14159, integrator_corrector=17, integrator_safe_mode=0, tmax=50000)
+        sim = Simulation(integrator='SABA(10,6,4)', dt=3.14159, integration_corrector=17, integration_safe_mode=0, tmax=50000)
 
         # Verify parameters are in config
         assert sim.config.integrator == 'SABA(10,6,4)'
         assert sim.config.dt == 3.14159
-        assert sim.config.integrator_corrector == 17
-        assert sim.config.integrator_safe_mode == 0
+        assert sim.config.integration_corrector == 17
+        assert sim.config.integration_safe_mode == 0
         assert sim.config.tmax == 50000
 
         # Verify integration engine has reference to same config
@@ -45,7 +45,7 @@ class TestCoreConfigValidation:
         This tests the critical path where config should affect REBOUND.
         """
         # Test SABA integrator
-        sim_saba = Simulation(integrator='SABA(8,6,4)', dt=2.5, integrator_safe_mode=1)
+        sim_saba = Simulation(integrator='SABA(8,6,4)', dt=2.5, integration_safe_mode=1)
 
         # Mock REBOUND simulation
         mock_sim_saba = Mock()
@@ -62,7 +62,7 @@ class TestCoreConfigValidation:
         mock_sim_saba.move_to_com.assert_called_once()
 
         # Test SABA integrator (second instance)
-        sim_saba2 = Simulation(integrator='SABA(10,6,4)', dt=0.01, integrator_safe_mode=0)
+        sim_saba2 = Simulation(integrator='SABA(10,6,4)', dt=0.01, integration_safe_mode=0)
 
         # Mock REBOUND simulation
         mock_sim_saba2 = Mock()
@@ -93,12 +93,12 @@ class TestCoreConfigValidation:
         # Change config
         sim.config.integrator = 'SABA(10,6,4)'
         sim.config.dt = 0.05
-        sim.config.integrator_safe_mode = 0
+        sim.config.integration_safe_mode = 0
 
         # Verify integration engine sees changes
         assert sim.integration_engine.config.integrator == 'SABA(10,6,4)'
         assert sim.integration_engine.config.dt == 0.05
-        assert sim.integration_engine.config.integrator_safe_mode == 0
+        assert sim.integration_engine.config.integration_safe_mode == 0
 
     def test_multiple_simulations_isolated_configs(self):
         """
@@ -130,7 +130,7 @@ class TestCoreConfigValidation:
         config_params = {
             'integrator': 'SABA(10,6,4)',
             'dt': 0.123,
-            'integrator_safe_mode': 1,
+            'integration_safe_mode': 1,
             'tmax': 31415,
             'save': 'resonant',
             'plot': 'all',
@@ -160,7 +160,7 @@ class TestCoreConfigValidation:
         # Verify critical parameters were applied to REBOUND
         assert mock_sim.integrator == config_params['integrator']
         assert mock_sim.dt == config_params['dt']
-        assert mock_sim.ri_saba.safe_mode == config_params['integrator_safe_mode']
+        assert mock_sim.ri_saba.safe_mode == config_params['integration_safe_mode']
 
     def test_config_parameter_types_preserved(self):
         """
@@ -169,7 +169,7 @@ class TestCoreConfigValidation:
         sim = Simulation(
             tmax=10000,
             dt=1.5,
-            integrator_safe_mode=1,
+            integration_safe_mode=1,
             save_summary=True,
             integrator='SABA(10,6,4)',  # int  # float  # int  # bool  # str
         )
@@ -177,7 +177,7 @@ class TestCoreConfigValidation:
         # Verify types are preserved appropriately
         assert isinstance(sim.config.tmax, (int, float))  # May be converted to float
         assert isinstance(sim.config.dt, float)
-        assert isinstance(sim.config.integrator_safe_mode, int)
+        assert isinstance(sim.config.integration_safe_mode, int)
         assert isinstance(sim.config.save_summary, bool)
         assert isinstance(sim.config.integrator, str)
 
@@ -185,7 +185,7 @@ class TestCoreConfigValidation:
         """
         TEST 7: Verify setup_integrator consistently uses config parameters.
         """
-        sim = Simulation(integrator='SABA(10,6,4)', dt=1.23, integrator_safe_mode=0)
+        sim = Simulation(integrator='SABA(10,6,4)', dt=1.23, integration_safe_mode=0)
 
         # Track calls to verify consistency
         mock_sim = Mock()
@@ -209,12 +209,12 @@ class TestCoreConfigValidation:
         This test explicitly shows the problem would occur if config wasn't used.
         """
         # Create simulation with non-default parameters
-        sim = Simulation(integrator='SABA(8,6,4)', dt=7.5, integrator_safe_mode=0)  # Non-default  # Non-default  # Non-default
+        sim = Simulation(integrator='SABA(8,6,4)', dt=7.5, integration_safe_mode=0)  # Non-default  # Non-default  # Non-default
 
         # These should NOT be default values if config is working
         assert sim.config.integrator != 'IAS15'  # Default would be IAS15
         assert sim.config.dt != 1.0  # Default would be 1.0
-        assert sim.config.integrator_safe_mode != 1  # Default would be 1
+        assert sim.config.integration_safe_mode != 1  # Default would be 1
 
         # Integration engine should use the custom values
         mock_sim = Mock()

@@ -42,10 +42,10 @@ class IntegrationEngine:
 
         if 'whfast' == self.config.integrator.lower():
             self.sim.ri_whfast.safe_mode = 0
-            if self.config.integrator_corrector is not None:
-                self.sim.ri_whfast.corrector = self.config.integrator_corrector
+            if self.config.integration_corrector is not None:
+                self.sim.ri_whfast.corrector = self.config.integration_corrector
         elif 'SABA' in self.config.integrator:
-            self.sim.ri_saba.safe_mode = self.config.integrator_safe_mode
+            self.sim.ri_saba.safe_mode = self.config.integration_safe_mode
 
         self.sim.move_to_com()
 

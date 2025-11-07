@@ -50,7 +50,7 @@ def test_astdys_catalog_mismatch():
 
 def test_integrator_safe_mode_default():
     sim = Simulation()
-    assert sim.config.integrator_safe_mode == 1
+    assert sim.config.integration_safe_mode == 1
 
 
 def test_get_simulation_summary_exception():

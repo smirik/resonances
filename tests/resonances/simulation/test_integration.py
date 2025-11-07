@@ -64,7 +64,7 @@ class TestIntegrationEngine:
         self.engine.sim = mock_sim
         self.config.integrator = 'SABA(8,6,4)'
         self.config.dt = 0.05
-        self.config.integrator_safe_mode = 1
+        self.config.integration_safe_mode = 1
 
         self.engine.setup_integrator()
 

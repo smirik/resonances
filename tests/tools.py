@@ -61,7 +61,7 @@ def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=F
     sim.config.Nout = 10
     sim.config.libration_period_min = 1
     sim.config.integrator = 'whfast'
-    sim.config.integrator_corrector = None
+    sim.config.integration_corrector = None
     sim.config.save_summary = save_summary
     sim.config.save = save
     sim.config.plot = plot
@@ -82,8 +82,8 @@ def set_fast_integrator():
     resonances.config.set('INTEGRATION_TMAX', 200000)
     resonances.config.set('SAVE_PATH', 'cache/tests')
     resonances.config.set('PLOT_PATH', 'cache/tests')
-    resonances.config.set('PLOT_MODE', None)
-    resonances.config.set('SAVE_MODE', None)
+    resonances.config.set('PLOT', None)
+    resonances.config.set('SAVE', None)
 
 
 def reset_fast_integrator():
@@ -94,5 +94,5 @@ def reset_fast_integrator():
     resonances.config.set('INTEGRATION_CORRECTOR', 17)
     resonances.config.set('SAVE_PATH', 'cache')
     resonances.config.set('PLOT_PATH', 'cache')
-    resonances.config.set('PLOT_MODE', 'nonzero')
-    resonances.config.set('SAVE_MODE', 'nonzero')
+    resonances.config.set('PLOT', 'nonzero')
+    resonances.config.set('SAVE', 'nonzero')

@@ -13,9 +13,10 @@ def find(
     name: str = None,
     sigma2: float = 0.1,
     sigma3: float = 0.02,
+    **kwargs,
 ) -> resonances.Simulation:
     now = datetime.now()
-    sim = resonances.Simulation(name=name)
+    sim = resonances.Simulation(name=name, **kwargs)
     sim.create_solar_system()
 
     asteroids = convert_input_to_list(asteroids)

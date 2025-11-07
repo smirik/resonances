@@ -9,11 +9,11 @@ def test_get_and_has():
     assert resonances.config.has('PLOT_PATH') is True
     assert 'cache' == resonances.config.get('PLOT_PATH')
 
-    assert resonances.config.has('SAVE_MODE') is True
-    assert resonances.config.get('SAVE_MODE') == 'nonzero'
+    assert resonances.config.has('SAVE') is True
+    assert resonances.config.get('SAVE') == 'nonzero'
 
-    assert resonances.config.has('PLOT_MODE') is True
-    assert resonances.config.get('PLOT_MODE') == 'nonzero'
+    assert resonances.config.has('PLOT') is True
+    assert resonances.config.get('PLOT') == 'nonzero'
 
     assert bool(resonances.config.has('SAVE_SUMMARY')) is True
     assert bool(resonances.config.get('SAVE_SUMMARY')) is True
