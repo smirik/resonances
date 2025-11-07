@@ -128,8 +128,8 @@ sim = resonances.Simulation(name='test', integrator='whfast', save='all', save_p
 
 sim = resonances.Simulation(...)
 # for example
-sim.save_path = 'output/another_lovely_folder'
-sim.plot = 'nonzero'
+sim.config.save_path = 'output/another_lovely_folder'
+sim.config.plot = 'nonzero'
 </code></pre>
 <ol>
 <li>Set or update them at runtime in Python with:</li>
@@ -154,9 +154,9 @@ if resonances.config.has('integration.dt'):
 <h2 id="saving-options">Saving options</h2>
 <p>Below is the list of options. When lowercase is used, it refers to the arguments of the constructor of Simulation. When uppercase is used, it refers to the <code>.env.dist</code>.</p>
 <ul>
-<li><code>save</code>/<code>SAVE_MODE</code> (string or None): whether or not save the result of the simulation. There are five options: <code>all</code>, <code>nonzero</code>, <code>resonant</code>, <code>candidates</code>, <code>None</code>. <code>nonzero</code> will save all resonant cases and all cases that are unclear and require manual verification (<code>status != 0</code>). <code>candidates</code> will save only those that require manual verification (<code>status &lt; 0</code>). <code>resonant</code> will save only resonant objects (<code>status&gt;0</code>).</li>
+<li><code>save</code>/<code>SAVE</code> (string or None): whether or not save the result of the simulation. There are five options: <code>all</code>, <code>nonzero</code>, <code>resonant</code>, <code>candidates</code>, <code>None</code>. <code>nonzero</code> will save all resonant cases and all cases that are unclear and require manual verification (<code>status != 0</code>). <code>candidates</code> will save only those that require manual verification (<code>status &lt; 0</code>). <code>resonant</code> will save only resonant objects (<code>status&gt;0</code>).</li>
 <li><code>save_path</code>/<code>SAVE_PATH</code>: directory where to save the output CSV files (data only). If you do not specify <code>save_path</code> when creating Simulation object, it will use <code>SAVE_PATH</code> with a sub-directory based on the current timestamp. In other words, unless explicitly specified, the app will create a subdirectory in <code>SAVE_PATH</code> to differentiate multiple runs.</li>
-<li><code>plot</code>/<code>PLOT_MODE</code> : the same as for <code>sim.save</code> but for graphs.</li>
+<li><code>plot</code>/<code>PLOT</code> : the same as for <code>sim.save</code> but for graphs.</li>
 <li><code>save_summary</code>/<code>SAVE_SUMMARY</code> (bool): save summary of the simulation as a dataframe (available through <code>get_simulation_summary()</code> method)</li>
 <li><code>plot_path</code>/<code>PLOT_PATH</code> (str): the same as <code>save_path</code>.</li>
 <li><code>plot_type</code>/<code>PLOT_TYPE</code> (str): determines what to do with graphs. <code>save</code> - only save graphs as files (default), <code>show</code> - just show (if false), <code>both</code> - both options. Valid only for plots specified by <code>plot</code>. In other words, if you set <code>plot</code> as <code>None</code>, no graphs will be plotted.</li>
@@ -180,8 +180,8 @@ if resonances.config.has('integration.dt'):
 <li><code>tmax</code>/<code>INTEGRATION_TMAX</code> (int): the end of the integration. Please note that <code>rebound</code> does not use years as time steps but years divided into 2&pi;. Therefore, if you want to integrate for 1000 years, the value <code>INTEGRATION_TMAX</code> should be set to <code>1000*2&amp;pi;</code> ~ <code>6283</code>. By default, <code>628319</code> (approx. 100000 years). Note that you can integrate backwards. In this case, <code>INTEGRATION_TMAX</code> can be set to <code>-628319</code>.</li>
 <li><code>dt</code>/<code>INTEGRATION_DT</code> (float): the step of the integration (or the initial step for some integrators). By default, <code>0.1</code>.</li>
 <li><code>integrator</code>/<code>INTEGRATION_INTEGRATOR</code> (string): the default integrator from rebound. By default, <code>SABA(10,6,4)</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a>.</li>
-<li><code>integrator_safe_mode</code>/<code>INTEGRATION_SAFE_MODE</code> (int): the parameter of the integration. By default, <code>0</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a></li>
-<li><code>integrator_corrector</code>/<code>INTEGRATION_CORRECTOR</code> (int): the parameter of the corrector for symplectic integrators. By default, <code>17</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a></li>
+<li><code>integration_safe_mode</code>/<code>INTEGRATION_SAFE_MODE</code> (int): the parameter of the integration. By default, <code>0</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a></li>
+<li><code>integration_corrector</code>/<code>INTEGRATION_CORRECTOR</code> (int): the parameter of the corrector for symplectic integrators. By default, <code>17</code>. See <a href="https://rebound.readthedocs.io/en/latest/integrators.html">rebound documentation</a></li>
 <li><code>SOLAR_SYSTEM_FILE</code> (str): the name of the cache file used to store the initial data of the Sun, planets, and Pluto. It is used to speed up the creation of the simulation. By default, <code>cache/solar.bin</code>. Note that in order to avoid issues with initial date&amp;time, the app will automatically add postfix equals to the current timestamp, i.e., <code>cache/solar_12345.bin</code>.</li>
 </ul>
 <h3 id="access-to-the-parameters-of-rebound">Access to the parameters of <code>rebound</code></h3>
