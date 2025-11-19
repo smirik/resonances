@@ -15,12 +15,8 @@ def body(sim, body: resonances.Body, resonance, image_type='png'):  # noqa: C901
     resonance_key = resonance.to_s()
     status = body.statuses.get(resonance_key, 0)
     resonance_name = resonance.to_short()
-    if isinstance(resonance, resonances.MMR):
-        angle_data = body.angle(resonance)
-        angles_filtered = body.angles_filtered.get(resonance_key, None)
-    elif isinstance(resonance, resonances.SecularResonance):
-        angle_data = body.secular_angles.get(resonance_key, None)
-        angles_filtered = body.angles_filtered.get(resonance_key, None) if hasattr(body, 'angles_filtered') else None
+    angle_data = body.angle(resonance)
+    angles_filtered = body.angles_filtered.get(resonance_key, None)
 
     fig.suptitle(
         "{}, resonance = {}, status = {}".format(body.name, resonance_name, status),

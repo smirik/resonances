@@ -45,14 +45,18 @@ class BodyManager:
 
         mmrs_list = []
         secular_list = []
+        lidov_kozai_list = []
 
         for res in resonances_list:
             if res.type == 'mmr':
                 mmrs_list.append(res)
             elif res.type == 'secular':
                 secular_list.append(res)
+            elif res.type == 'lidov_kozai':
+                lidov_kozai_list.append(res)
         body.mmrs = mmrs_list
         body.secular_resonances = secular_list
+        body.lidov_kozai_resonances = lidov_kozai_list
         body.mass = elem.get('mass', 0.0)
 
         for mmr_elem in body.mmrs:

@@ -6,6 +6,7 @@ from resonances.resonance.resonance import Resonance
 from resonances.resonance.secular import Nu16Resonance, Nu5Resonance, Nu6Resonance, SecularResonance, GeneralSecularResonance
 from resonances.resonance.three_body import ThreeBody
 from resonances.resonance.two_body import TwoBody
+from resonances.resonance.lidov_kozai import LidovKozaiResonance
 
 
 def create_mmr(coeff, planets_names=None):  # noqa: C901
@@ -153,12 +154,16 @@ def detect_resonance_type(resonance: Union[Resonance, str]) -> str:
     if isinstance(resonance, Resonance):
         return resonance.type
     elif isinstance(resonance, str):
+        normalized = resonance.lower()
+        normalized_base = normalized.split(':', 1)[0]
+        if normalized_base in ['lk', 'lkr', 'lidov-kozai', 'lidov_kozai', 'lidovkozai', 'lidov', 'kozai']:
+            return 'lidov_kozai'
         if (
-            (resonance.lower() in ['nu6', 'nu5', 'nu16'])
-            or resonance.startswith('g')
-            or resonance.startswith('s')
-            or resonance.startswith('2g')
-            or resonance.startswith('2s')
+            (normalized in ['nu6', 'nu5', 'nu16'])
+            or normalized.startswith('g')
+            or normalized.startswith('s')
+            or normalized.startswith('2g')
+            or normalized.startswith('2s')
         ):
             return 'secular'
         else:
@@ -175,6 +180,11 @@ def create_resonance(resonance: Union[Resonance, str]) -> Resonance:
             return create_mmr(resonance)
         elif res_type == 'secular':
             return create_secular_resonance(resonance)
+        elif res_type == 'lidov_kozai':
+            identifier = resonance.split(':', 1)[1].strip() if ':' in resonance else resonance.strip()
+            if identifier.lower() in ['lk', 'lkr', 'lidov-kozai', 'lidov_kozai', 'lidovkozai', 'kozai']:
+                identifier = 'LK'
+            return LidovKozaiResonance(identifier=identifier or 'LK')
         else:
             raise Exception(f'Unknown resonance type: {res_type}')
     raise Exception('The argument should be either a valid secular resonance (i.e. "nu6") or a Resonance object.')

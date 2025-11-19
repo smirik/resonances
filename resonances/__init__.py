@@ -10,6 +10,8 @@ from .resonance import (
     MMR,
     ThreeBody,
     TwoBody,
+    LidovKozaiResonance,
+    LidovKozaiParameters,
     SecularResonance,
     Nu6Resonance,
     Nu5Resonance,

@@ -8,6 +8,7 @@ The package:
 
 - can automatically identify two-body and three-body mean-motion resonance in the Solar system,
 - can identify secular resonances (linear and non-linear),
+- can model Lidov–Kozai dynamics (argument-of-pericenter libration with the `c1/c2` diagnostics),
 - accurately differentiates different types of resonances (pure, transient, uncertain),
 - provides an interface for mass tasks (i.e. find resonant areas in a planetary system),
 - has integration with NASA Horizon (through astroquery package) and AstDyS catalog,

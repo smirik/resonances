@@ -97,3 +97,7 @@ class IntegrationEngine:
         for secular in body.secular_resonances:
             planets = [orbits[idx - 1] for idx in secular.index_of_planets]
             body.angle(secular)[time_index] = secular.calc_angle(orbit, planets)
+
+        # Calculate Lidov-Kozai resonant angle (argument of pericenter)
+        for lidov in body.lidov_kozai_resonances:
+            body.angle(lidov)[time_index] = lidov.calc_angle(orbit, None)

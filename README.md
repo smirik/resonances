@@ -11,6 +11,11 @@ For more information, [read the documentation](https://smirik.github.io/resonanc
 
 ## What's new
 
+### July 2025
+
+1. **Lidov–Kozai Resonances:** Introduced the `LidovKozaiResonance` class with analytic `c1/c2` diagnostics so the argument of pericenter can be tracked exactly like MMRs and secular resonances.
+1. **Summary Enhancements:** `summary.csv` now includes the Lidov–Kozai invariants (`c1`, `c2`) so you can immediately verify if an object satisfies the classical libration criteria (`c1 ≤ 3/5`, `c2 < 0`).
+
 ### June 2025
 
 1. **Clean Architecture Implementation**: The `Simulation` class has been completely refactored into a clean, component-based architecture without backward compatibility concerns. The main `simulation.py` file has been reduced by **67%** (from 613 to 204 lines) by removing unnecessary setters/getters and moving specialized functionality into dedicated components: `SimulationConfig`, `BodyManager`, `IntegrationEngine`, and `DataManager`.
@@ -71,6 +76,7 @@ The package:
 - accurately differentiates different types of resonances (pure, transient, uncertain),
 - provides an interface for mass tasks (i.e. find resonant areas in a planetary system),
 - can plot time series and periodograms,
+- can identify Lidov–Kozai resonances and exports the conserved `c1/c2` parameters,
 - and, yeah, it is well tested ;)
 
 It actively uses [REBOUND integrator](https://rebound.readthedocs.io) maintained by Hanno Rein and others.

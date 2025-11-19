@@ -44,7 +44,7 @@ class DataManager:
             self.save_simulation_summary(bodies)
 
         for body in bodies:
-            for resonance in body.mmrs + body.secular_resonances:
+            for resonance in body.mmrs + body.secular_resonances + body.lidov_kozai_resonances:
                 if self.should_save_body(body, resonance):
                     self.save_body(body, resonance, times)
                 if self.should_plot_body(body, resonance):
@@ -58,6 +58,8 @@ class DataManager:
             df_data = body.mmr_to_dict(resonance, times)
         elif isinstance(resonance, resonances.SecularResonance):
             df_data = body.secular_to_dict(resonance, times)
+        elif isinstance(resonance, resonances.LidovKozaiResonance):
+            df_data = body.lidov_kozai_to_dict(resonance, times)
         else:
             raise ValueError(f"Unknown resonance type: {type(resonance)}")
 
@@ -115,16 +117,31 @@ class DataManager:
         data = []
 
         for body in bodies:
-            for resonance in body.mmrs + body.secular_resonances:
+            for resonance in body.mmrs + body.secular_resonances + body.lidov_kozai_resonances:
                 try:
                     overlapping_str = ', '.join(
                         f'({left:.0f}, {right:.0f})' for left, right in body.periodogram_peaks_overlapping.get(resonance.to_s(), [])
                     )
+                    res_type = 'MMR'
+                    c1_value = None
+                    c2_value = None
+                    c_value = None
+
+                    if isinstance(resonance, resonances.SecularResonance):
+                        res_type = 'Secular'
+                    elif isinstance(resonance, resonances.LidovKozaiResonance):
+                        res_type = 'Lidov-Kozai'
+                        c1_value, c2_value, c_value = resonances.LidovKozaiParameters.evaluate(
+                            body.initial_data['e'],
+                            body.initial_data['inc'],
+                            body.initial_data['omega'],
+                        )
+
                     data.append(
                         [
                             body.name,
                             resonance.to_s(),
-                            ('MMR' if isinstance(resonance, resonances.MMR) else 'Secular'),
+                            res_type,
                             body.statuses.get(resonance.to_s(), 0),
                             body.libration_pure.get(resonance.to_s(), False),
                             body.libration_metrics.get(resonance.to_s(), {}).get('num_libration_periods', 0),
@@ -137,6 +154,9 @@ class DataManager:
                             body.initial_data['Omega'],
                             body.initial_data['omega'],
                             body.initial_data['M'],
+                            c1_value,
+                            c2_value,
+                            c_value,
                         ]
                     )
                 except Exception as e:
@@ -213,6 +233,9 @@ class DataManager:
                 'Omega',
                 'omega',
                 'M',
+                'c1',
+                'c2',
+                'c',
             ],
         )
 

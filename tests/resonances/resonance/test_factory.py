@@ -4,6 +4,7 @@ from resonances.resonance.three_body import ThreeBody
 from resonances.resonance.two_body import TwoBody
 from resonances.resonance.mmr import MMR
 from resonances.resonance.secular import Nu6Resonance, Nu5Resonance, Nu16Resonance, GeneralSecularResonance
+from resonances import LidovKozaiResonance
 from resonances.resonance.factory import create_mmr, detect_resonance_type, create_resonance, create_secular_resonance
 
 
@@ -81,6 +82,10 @@ def test_detect_resonance_type():
     assert detect_resonance_type('2g-2s') == 'secular'  # starts with '2g'
     assert detect_resonance_type('2s-2g') == 'secular'  # starts with '2s'
 
+    # Test Lidov-Kozai identifiers
+    assert detect_resonance_type('lk') == 'lidov_kozai'
+    assert detect_resonance_type('Lidov-Kozai') == 'lidov_kozai'
+
     # Test patterns that behave based on their starting characters
     assert detect_resonance_type('g5-g6') == 'secular'  # starts with 'g' (even though it's g5)
     assert detect_resonance_type('2*g-2*s') == 'mmr'  # starts with '2*', not '2g'
@@ -94,6 +99,8 @@ def test_detect_resonance_type():
     secular_obj = create_secular_resonance('nu6')
     assert detect_resonance_type(secular_obj) == 'secular'
 
+    lidov_obj = LidovKozaiResonance()
+    assert detect_resonance_type(lidov_obj) == 'lidov_kozai'
     # Test with GeneralSecularResonance object
     general_secular = GeneralSecularResonance(
         coeffs={'varpi': [1, -2, 1]},  # [body_coeff, saturn_coeff, jupiter_coeff]
@@ -157,6 +164,10 @@ def test_create_resonance():
     returned_secular = create_resonance(existing_secular)
     assert returned_secular is existing_secular
 
+    existing_lidov = LidovKozaiResonance('LK-test')
+    returned_lidov = create_resonance(existing_lidov)
+    assert returned_lidov is existing_lidov
+
     # Test returning GeneralSecularResonance as-is
     general_secular = GeneralSecularResonance(
         coeffs={'varpi': [1, -2, 1]},
@@ -184,6 +195,14 @@ def test_create_resonance():
     secular_complex2 = create_resonance('g-2*g5+g6')
     assert isinstance(secular_complex2, GeneralSecularResonance)
     assert secular_complex2.type == 'secular'
+
+    lidov = create_resonance('lk')
+    assert isinstance(lidov, LidovKozaiResonance)
+    assert lidov.type == 'lidov_kozai'
+    assert lidov.identifier == 'LK'
+    custom_lidov = create_resonance('lk:Jupiter')
+    assert isinstance(custom_lidov, LidovKozaiResonance)
+    assert custom_lidov.identifier == 'Jupiter'
 
     # Test invalid input type
     with pytest.raises(Exception, match='should be either a valid secular resonance'):

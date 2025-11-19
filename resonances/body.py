@@ -1,6 +1,6 @@
 import numpy as np
 
-from resonances.resonance import Resonance, MMR, SecularResonance
+from resonances.resonance import Resonance, MMR, SecularResonance, LidovKozaiResonance
 from .logger import logger
 from typing import List, Union
 
@@ -34,6 +34,10 @@ class Body:
         # Secular resonances data
         self.secular_resonances: List[SecularResonance] = []
         self.secular_angles = {}  # For secular resonance angles
+
+        # Lidov-Kozai resonance data
+        self.lidov_kozai_resonances: List[LidovKozaiResonance] = []
+        self.lidov_kozai_angles = {}
 
         # Libration and filtering data (shared between MMR and secular)
         self.librations = {}
@@ -104,6 +108,35 @@ class Body:
             return None
         return df_data
 
+    def lidov_kozai_to_dict(self, resonance: LidovKozaiResonance, times: np.ndarray):
+        """
+        Convert Lidov–Kozai resonance data to dictionary format for saving.
+        """
+        try:
+            df_data = {
+                'times': times / (2 * np.pi),
+                'angle': self.lidov_kozai_angles[resonance.to_s()],
+                'a': self.axis,
+                'e': self.ecc,
+                'inc': self.inc,
+                'Omega': self.Omega,
+                'omega': self.omega,
+                'M': self.M,
+                'longitude': self.longitude,
+                'varpi': self.varpi,
+            }
+
+            if self.angles_filtered.get(resonance.to_s()) is not None:
+                df_data['angle_filtered'] = self.angles_filtered[resonance.to_s()]
+
+            if self.axis_filtered is not None:
+                df_data['a_filtered'] = self.axis_filtered
+
+        except Exception as e:
+            logger.error(f'Error in lidov_kozai_to_dict for body={self.name} and resonance={resonance.to_s()}: {e}')
+            return None
+        return df_data
+
     def secular_to_dict(self, secular: SecularResonance, times: np.ndarray):
         """
         Convert secular resonance data to dictionary format for saving.
@@ -147,26 +180,30 @@ class Body:
         # Setup MMR angles
         for mmr in self.mmrs:
             self.angles[mmr.to_s()] = np.zeros(num)
-
         # Setup secular resonance angles
         for secular in self.secular_resonances:
             self.secular_angles[secular.to_s()] = np.zeros(num)
+        # Setup Lidov-Kozai resonance angles
+        for lidov in self.lidov_kozai_resonances:
+            self.lidov_kozai_angles[lidov.to_s()] = np.zeros(num)
 
     def angle(self, resonance: Resonance) -> np.ndarray:
         """
-        Get angle array for either MMR or secular resonance.
+        Get angle array for any supported resonance.
         """
         try:
             if isinstance(resonance, MMR):
                 return self.angles[resonance.to_s()]
             elif isinstance(resonance, SecularResonance):
                 return self.secular_angles[resonance.to_s()]
+            elif isinstance(resonance, LidovKozaiResonance):
+                return self.lidov_kozai_angles[resonance.to_s()]
             else:
                 raise ValueError(f"Unknown resonance type: {type(resonance)}")
         except Exception:
             raise Exception('The angle for the resonance {} does not exist in the body {}.'.format(resonance.to_s(), self.name))
 
-    def in_resonance(self, resonance: Union[MMR, SecularResonance]):
+    def in_resonance(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]):
         """
         Check if body is in resonance (works for both MMR and secular).
         """
@@ -174,13 +211,13 @@ class Body:
             return True
         return False
 
-    def status(self, resonance: Union[MMR, SecularResonance]):
+    def status(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]):
         """
         Get resonance status
         """
         return self.statuses[resonance.to_s()]
 
-    def in_pure_resonance(self, resonance: Union[MMR, SecularResonance]):
+    def in_pure_resonance(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]):
         """
         Check if body is in pure resonance (works for both MMR and secular).
         """
