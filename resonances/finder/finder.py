@@ -2,13 +2,14 @@ import resonances
 from typing import Union, List
 
 from resonances.data.util import convert_input_to_list
-from . import mmr_finder, secular_finder
+from . import mmr_finder, secular_finder, lidov_kozai_finder
 
 
 def _categorize_resonances(resonance_list):
     """Helper function to categorize resonances by type."""
     mmr_resonances = []
     secular_resonances = []
+    lidov_kozai_resonances = []
 
     for res in resonance_list:
         res_type = resonances.detect_resonance_type(res)
@@ -16,10 +17,12 @@ def _categorize_resonances(resonance_list):
             mmr_resonances.append(res)
         elif res_type == 'secular':
             secular_resonances.append(res)
+        elif res_type == 'lidov_kozai':
+            lidov_kozai_resonances.append(res)
         else:
             raise ValueError(f"Unknown resonance type: {res_type}")
 
-    return mmr_resonances, secular_resonances
+    return mmr_resonances, secular_resonances, lidov_kozai_resonances
 
 
 def _create_mmr_simulation(asteroids, mmr_resonances, name, **kwargs):
@@ -38,7 +41,24 @@ def _create_mmr_simulation(asteroids, mmr_resonances, name, **kwargs):
     return mmr_sim
 
 
-ResonanceType = Union[resonances.MMR, resonances.SecularResonance, str, List[Union[resonances.MMR, resonances.SecularResonance, str]]]
+def _create_lidov_kozai_simulation(asteroids, lidov_resonances, name, **kwargs):
+    """Helper function to create Lidov–Kozai simulation."""
+    resonance_to_use = lidov_resonances[0] if len(lidov_resonances) == 1 else lidov_resonances
+    return lidov_kozai_finder.check(
+        asteroids=asteroids,
+        resonance=resonance_to_use,
+        name=name or "lidov_kozai_check",
+        **kwargs,
+    )
+
+
+ResonanceType = Union[
+    resonances.MMR,
+    resonances.SecularResonance,
+    resonances.LidovKozaiResonance,
+    str,
+    List[Union[resonances.MMR, resonances.SecularResonance, resonances.LidovKozaiResonance, str]],
+]
 
 
 def check(
@@ -79,7 +99,7 @@ def check(
         resonance = [resonance]
 
     # Categorize resonances by type
-    mmr_resonances, secular_resonances = _categorize_resonances(resonance)
+    mmr_resonances, secular_resonances, lidov_kozai_resonances = _categorize_resonances(resonance)
     simulations = []
 
     # Create MMR simulation if we have MMR resonances
@@ -97,6 +117,10 @@ def check(
             **kwargs,
         )
         simulations.append(secular_sim)
+
+    if lidov_kozai_resonances:
+        lidov_sim = _create_lidov_kozai_simulation(asteroids, lidov_kozai_resonances, name, **kwargs)
+        simulations.append(lidov_sim)
 
     # Return single simulation if only one type, otherwise return list
     return simulations[0] if len(simulations) == 1 else simulations

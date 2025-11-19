@@ -222,6 +222,9 @@ def test_get_simulation_summary():
     assert len(summary) > 0
     assert 'name' in summary.columns
     assert 'resonance' in summary.columns
+    assert 'c1' in summary.columns
+    assert 'c2' in summary.columns
+    assert 'c' in summary.columns
 
 
 def test_list_of_planets():

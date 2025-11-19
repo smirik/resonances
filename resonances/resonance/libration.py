@@ -373,7 +373,7 @@ class libration:
         body.eccentricity_periodogram_power = eccentricity_power
         body.eccentricity_periodogram_peaks = eccentricity_peaks_data
 
-        all_resonances = body.mmrs + body.secular_resonances
+        all_resonances = body.mmrs + body.secular_resonances + body.lidov_kozai_resonances
         # for mmr in body.mmrs:
         for resonance in all_resonances:
             pure = resonances.libration.pure(body.angle(resonance))

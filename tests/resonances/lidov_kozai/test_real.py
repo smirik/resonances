@@ -1,0 +1,51 @@
+import numpy as np
+
+import resonances
+
+LK_ASTEROIDS = [
+    (1373, 2),
+    (3040, 2),
+    (15527, 0),
+]
+
+LK_SIMULATION_CONFIG = dict(
+    tmax=int(100000 * 2 * np.pi),
+    integrator='whfast',
+    dt=1.0,
+    Nout=5000,
+    save=None,
+    plot=None,
+    save_summary=False,
+    libration_period_min=1000,
+    libration_period_critical=20000,
+    periodogram_frequency_min=1e-5,
+    periodogram_frequency_max=0.002,
+)
+
+
+def test_real_lidov_kozai_statuses():
+    resonance_name = resonances.LidovKozaiResonance().to_s()
+    sim = resonances.Simulation(name='test_lidov_kozai_real', source='astdys', **LK_SIMULATION_CONFIG)
+    sim.create_solar_system()
+
+    for asteroid, _ in LK_ASTEROIDS:
+        sim.add_body(asteroid, resonances.LidovKozaiResonance(), name=str(asteroid))
+
+    sim.run(progress=False)
+
+    summary = sim.data_manager.get_simulation_summary(sim.bodies)
+    assert not summary.empty
+
+    for asteroid, expected_status in LK_ASTEROIDS:
+        row = summary.loc[(summary['name'] == str(asteroid)) & (summary['resonance'] == resonance_name)]
+        assert not row.empty
+        status = int(row['status'].iloc[0])
+
+        if expected_status == 0:
+            assert status == 0
+        else:
+            assert abs(status) == expected_status
+
+        assert row['c1'].notna().all()
+        assert row['c2'].notna().all()
+        assert row['c'].notna().all()

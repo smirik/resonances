@@ -76,7 +76,7 @@ The package:
 - accurately differentiates different types of resonances (pure, transient, uncertain),
 - provides an interface for mass tasks (i.e. find resonant areas in a planetary system),
 - can plot time series and periodograms,
-- can identify Lidov–Kozai resonances and exports the conserved `c1/c2` parameters,
+- can identify Lidov–Kozai resonances and exports the conserved `c1/c2` parameters (see the [Lidov–Kozai notebook](docs/lidov-kozai.ipynb)),
 - and, yeah, it is well tested ;)
 
 It actively uses [REBOUND integrator](https://rebound.readthedocs.io) maintained by Hanno Rein and others.
