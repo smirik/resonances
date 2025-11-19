@@ -24,6 +24,7 @@ For those who are not familiar with the mean-motion resonances, here is the list
 ### Papers about the automatic identification of resonant asteroids
 
 1. Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing, 100707. [https://doi.org/10.1016/j.ascom.2023.100707](https://doi.org/10.1016/j.ascom.2023.100707)
+1. Smirnov, E. A. (2026). Implementation of secular resonance support in the open-source python package “resonances.” Astronomy and Computing, 54, 101022.
 1. Smirnov, E. A. & Shevchenko, I. I. Massive identification of asteroids in three-body resonances. Icarus 222, 220–228 (2013).
 1. Smirnov, E. A., Dovgalev, I. S. & Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.
 1. Smirnov, E. A. & Dovgalev, I. S. Identification of Asteroids in Two-Body Resonances. Solar System Research 52, 347–354 (2018).
@@ -33,6 +34,9 @@ For those who are not familiar with the mean-motion resonances, here is the list
 
 1. Smirnov, E. A. & Shevchenko, I. I. Massive Identification of Asteroids in Three-Body Resonances. Icarus 222, 220–228 (2013).
 1. Smirnov, E. A., Dovgalev, I. S. & Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.
+1. Smirnov, E. (2025a). A highly resonant Neptunian region: A systematic search for two-body and three-body mean-motion resonances. Icarus, 436, 116584. https://doi.org/10.1016/j.icarus.2025.116584
+1. Smirnov, E. (2025b). Chaotic diffusion and transient resonance captures of the near-Earth asteroid 2024 YR4. Astronomy & Astrophysics, 699. https://doi.org/10.1051/0004-6361/202554489
+1. Smirnov, E., & Milić Žitnik, I. (2025). High-order mean-motion resonances in the main belt. Astronomy & Astrophysics, 703, A237. https://doi.org/10.1051/0004-6361/202557400
 1. Nesvorný, D. & Morbidelli, A. Three-Body Mean Motion Resonances and the Chaotic Structure of the Asteroid Belt. The Astronomical Journal 116, 3029–3037 (1998).
 1. Murray, N. & Holman, M. Diffusive chaos in the outer asteroid belt. The Astronomical Journal 114, 1246 (1997).
 1. Murray, N., Holman, M. & Potter, M. On the Origin of Chaos in the Asteroid Belt. The Astronomical Journal 116, 2583–2589 (1998).
@@ -74,6 +78,22 @@ Whenever you use this package, we are kindly asking you to refer to one of the f
 **The Libration module and automatic identification of librations**:
 
 - Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing, 100707. https://doi.org/10.1016/j.ascom.2023.100707
+
+**Secular resonances support**
+
+- Smirnov, E. A. (2026). Implementation of secular resonance support in the open-source python package “resonances.” Astronomy and Computing, 54, 101022.
+
+```tex
+@article{Smirnov2026,
+  title = {Implementation of Secular Resonance Support in the Open-Source Python Package ``Resonances''},
+  author = {Smirnov, Evgeny A},
+  year = 2026,
+  journal = {Astronomy and Computing},
+  volume = {54},
+  pages = {101022},
+  langid = {english}
+}
+```
 
 **Mass identification of mean-motion resonances:**
 

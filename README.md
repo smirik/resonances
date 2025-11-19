@@ -11,10 +11,14 @@ For more information, [read the documentation](https://smirik.github.io/resonanc
 
 ## What's new
 
-### July 2025
+### November 2025
 
 1. **Lidov–Kozai Resonances:** Introduced the `LidovKozaiResonance` class with analytic `c1/c2` diagnostics so the argument of pericenter can be tracked exactly like MMRs and secular resonances.
 1. **Summary Enhancements:** `summary.csv` now includes the Lidov–Kozai invariants (`c1`, `c2`) so you can immediately verify if an object satisfies the classical libration criteria (`c1 ≤ 3/5`, `c2 < 0`).
+
+### September 2025
+
+1. Secular resonances are now supported. See the [Secular notebook](docs/secular.md) for more information.
 
 ### June 2025
 
@@ -73,6 +77,7 @@ sim.run()
 The package:
 
 - can automatically identify two-body and three-body mean-motion resonance in the Solar system,
+- can automatically identify secular resonances in the Solar system,
 - accurately differentiates different types of resonances (pure, transient, uncertain),
 - provides an interface for mass tasks (i.e. find resonant areas in a planetary system),
 - can plot time series and periodograms,
@@ -89,13 +94,20 @@ To install resonances on your system, follow the instructions on the appropriate
 
 For those who are not familiar with the mean-motion resonances, here is the list of papers used to develop this package:
 
+### Papers to cite:
+
+1. Secular resonance support: Smirnov, E. A. (2026). Implementation of secular resonance support in the open-source python package “resonances.” Astronomy and Computing, 54, 101022.
+1. MMRs and package itself: 2. Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing, 100707. https://doi.org/10.1016/j.ascom.2023.100707
+1. Three-body MMRs identification procedure: Smirnov, E. A. & Shevchenko, I. I. Massive identification of asteroids in three-body resonances. Icarus 222, 220–228 (2013).
+1. Two-body MMRs identification procedure and periodograms: Smirnov, E. A. & Dovgalev, I. S. Identification of Asteroids in Two-Body Resonances. Solar System Research 52, 347–354 (2018).
+
 ### Papers about the automatic identification of resonant asteroids
 
+1. Smirnov, E., & Milić Žitnik, I. (2025). High-order mean-motion resonances in the main belt. Astronomy & Astrophysics, 703, A237. https://doi.org/10.1051/0004-6361/202557400
 1. Smirnov, E. A. & Dovgalev, I. S. Identification of Asteroids in Two-Body Resonances. Solar System Research 52, 347–354 (2018).
-2. Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing, 100707. https://doi.org/10.1016/j.ascom.2023.100707
-3. Smirnov, E. A. & Shevchenko, I. I. Massive identification of asteroids in three-body resonances. Icarus 222, 220–228 (2013).
-4. Smirnov, E. A., Dovgalev, I. S. & Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.
-5. Nesvorný, D. & Morbidelli, A. Three-Body Mean Motion Resonances and the Chaotic Structure of the Asteroid Belt. The Astronomical Journal 116, 3029–3037 (1998).
+1. Smirnov, E. A. & Shevchenko, I. I. Massive identification of asteroids in three-body resonances. Icarus 222, 220–228 (2013).
+1. Smirnov, E. A., Dovgalev, I. S. & Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.
+1. Nesvorný, D. & Morbidelli, A. Three-Body Mean Motion Resonances and the Chaotic Structure of the Asteroid Belt. The Astronomical Journal 116, 3029–3037 (1998).
 
 ### Papers about mean-motion resonances
 
@@ -107,6 +119,9 @@ For those who are not familiar with the mean-motion resonances, here is the list
 1. Murray, N. & Holman, M. Diffusive chaos in the outer asteroid belt. The Astronomical Journal 114, 1246 (1997).
 1. Murray, N., Holman, M. & Potter, M. On the Origin of Chaos in the Asteroid Belt. The Astronomical Journal 116, 2583–2589 (1998).
 1. Shevchenko, I. I. On the Lyapunov exponents of the asteroidal motion subject to resonances and encounters. Proc. IAU 2, 15–30 (2006).
+1. Smirnov, E. (2025a). A highly resonant Neptunian region: A systematic search for two-body and three-body mean-motion resonances. Icarus, 436, 116584. https://doi.org/10.1016/j.icarus.2025.116584
+1. Smirnov, E. (2025b). Chaotic diffusion and transient resonance captures of the near-Earth asteroid 2024 YR4. Astronomy & Astrophysics, 699. https://doi.org/10.1051/0004-6361/202554489
+1. Smirnov, E., & Milić Žitnik, I. (2025). High-order mean-motion resonances in the main belt. Astronomy & Astrophysics, 703, A237. https://doi.org/10.1051/0004-6361/202557400
 
 ### Books
 
@@ -139,10 +154,84 @@ Whenever you use this package, we are kindly asking you to refer to one of the f
 
 - Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing, 100707. https://doi.org/10.1016/j.ascom.2023.100707
 
+```tex
+@article{Smirnov2023,
+  title    = {A new python package for identifying celestial bodies trapped in mean-motion resonances},
+  journal  = {Astronomy and Computing},
+  year     = {2023},
+  issn     = {2213-1337},
+  doi      = {https://doi.org/10.1016/j.ascom.2023.100707},
+  url      = {https://www.sciencedirect.com/science/article/pii/S2213133723000227},
+  author   = {E.A. Smirnov},
+  keywords = {Mean-motion resonances, Python, Identification, Asteroids},
+  abstract = {In this paper, a new open-source package ‘resonances’ written in python is introduced. It allows to find, analyse, and plot two-body and three-body mean-motion eccentricity-type resonances in the Solar and other planetary systems. The package has a better accuracy of the automatic identification procedure for resonant objects compared to previous studies. Furthermore, it has built-in integrations with AstDyS and NASA JPL catalogues. The code is extensively documented and tested with automatic tests. The package is available on GitHub under MIT Licence.}
+}
+```
+
 3. **Mass identification of mean-motion resonances:**
 
 - Smirnov, E. A., & Dovgalev, I. S. (2018). Identification of Asteroids in Two-Body Resonances. Solar System Research, 52(4), 347–354. https://doi.org/10.1134/S0038094618040056
 - Smirnov, E. A., Dovgalev, I. S. & Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.
+- Smirnov, E. A. & Dovgalev, I. S. Identification of Asteroids in Two-Body Resonances. Solar System Research 52, 347–354 (2018).
+
+```tex
+@article{Smirnov2013a,
+  title = {Massive Identification of Asteroids in Three-Body Resonances},
+  author = {Smirnov, Evgeny A. and Shevchenko, Ivan I.},
+  year = 2013,
+  month = jan,
+  journal = {Icarus},
+  volume = {222},
+  number = {1},
+  eprint = {1206.1451},
+  pages = {220--228},
+  publisher = {Elsevier Inc.},
+  issn = {00191035},
+  doi = {10.1016/j.icarus.2012.10.034},
+  archiveprefix = {arXiv},
+  keywords = {Asteroids,Celestial mechanics,Dynamics,important}
+}
+
+@article{Smirnov2017a,
+  title = {Asteroids in Three-Body Mean Motion Resonances with Planets},
+  author = {Smirnov, E.A. and Dovgalev, I.S. and Popova, E.A.},
+  year = 2017,
+  journal = {Icarus},
+  volume = {304},
+  issn = {10902643},
+  doi = {10.1016/j.icarus.2017.09.032},
+  keywords = {Asteroids,Dynamics,important,Kuiper belt,Orbital,Resonances}
+}
+
+@article{Smirnov2018,
+  title = {Identification of {{Asteroids}} in {{Two-Body Resonances}}},
+  author = {Smirnov, E. A. and Dovgalev, I. S.},
+  year = 2018,
+  month = jul,
+  journal = {Solar System Research},
+  volume = {52},
+  number = {4},
+  pages = {347--354},
+  issn = {0038-0946},
+  doi = {10.1134/S0038094618040056}
+}
+```
+
+4. **Secular resonances support**
+
+- Smirnov, E. A. (2026). Implementation of secular resonance support in the open-source python package “resonances.” Astronomy and Computing, 54, 101022.
+
+```tex
+@article{Smirnov2026,
+  title = {Implementation of Secular Resonance Support in the Open-Source Python Package ``Resonances''},
+  author = {Smirnov, Evgeny A},
+  year = 2026,
+  journal = {Astronomy and Computing},
+  volume = {54},
+  pages = {101022},
+  langid = {english}
+}
+```
 
 ## Authors
 
