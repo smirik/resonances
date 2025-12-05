@@ -34,6 +34,8 @@ class Body:
         # Secular resonances data
         self.secular_resonances: List[SecularResonance] = []
         self.secular_angles = {}  # For secular resonance angles
+        self.secular_angles_osculating = {}
+        self.secular_angles_proper = {}
 
         # Lidov-Kozai resonance data
         self.lidov_kozai_resonances: List[LidovKozaiResonance] = []
@@ -182,7 +184,9 @@ class Body:
             self.angles[mmr.to_s()] = np.zeros(num)
         # Setup secular resonance angles
         for secular in self.secular_resonances:
-            self.secular_angles[secular.to_s()] = np.zeros(num)
+            arr = np.zeros(num)
+            self.secular_angles[secular.to_s()] = arr
+            self.secular_angles_osculating[secular.to_s()] = arr
         # Setup Lidov-Kozai resonance angles
         for lidov in self.lidov_kozai_resonances:
             self.lidov_kozai_angles[lidov.to_s()] = np.zeros(num)

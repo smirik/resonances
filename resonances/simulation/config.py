@@ -19,6 +19,10 @@ class SimulationConfig:
         self._setup_plot_params(kwargs)
         self._setup_libration_params(kwargs)
 
+        self.secular_angle_mode = kwargs.get('secular_angle_mode', c.get('SECULAR_ANGLE_MODE'))
+        if self.secular_angle_mode not in ['osculating', 'proper']:
+            raise ValueError(f"Invalid secular angle mode: {self.secular_angle_mode}. Valid modes are 'osculating' and 'proper'.")
+
     def _setup_date(self, date, source):
         """Setup date and source configuration."""
         self.source = source or c.get('DATA_SOURCE')

@@ -7,6 +7,10 @@ from .body_manager import BodyManager
 from .integration import IntegrationEngine
 from .data_manager import DataManager
 
+from resonances.secular.proper_angle import build_proper_angle_series
+from resonances.matrix.secular_resonances import load_planetary_frequencies
+from resonances.resonance.secular import SecularResonance
+
 
 class Simulation:
     """
@@ -61,7 +65,30 @@ class Simulation:
         """Identify librations for all bodies."""
         for body in self.bodies:
             try:
+                if self.config.secular_angle_mode == 'proper':
+                    self._rebuild_proper_secular_angles(body)
                 resonances.libration.body(self, body)
             except Exception as e:
                 resonances.logger.error(f"Error identifying librations for {body.name}: {e}")
                 raise
+
+    def _rebuild_proper_secular_angles(self, body: resonances.Body):
+        freq_map = load_planetary_frequencies()
+        for secular in body.secular_resonances:
+            if not isinstance(secular, SecularResonance):
+                continue
+            try:
+                existing = body.secular_angles.get(secular.to_s())
+                if existing is not None:
+                    body.secular_angles_osculating[secular.to_s()] = existing.copy()
+                proper_angle = build_proper_angle_series(
+                    self.times,
+                    body,
+                    secular,
+                    planetary_freqs=freq_map,
+                    existing_angle=existing,
+                )
+                body.secular_angles_proper[secular.to_s()] = proper_angle
+                body.secular_angles[secular.to_s()] = proper_angle
+            except Exception as exc:
+                resonances.logger.warning(f"Failed to build proper secular angle for {body.name} / {secular.to_s()}: {exc}")

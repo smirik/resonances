@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 import pandas as pd
-import numpy as np
 
 from astdys import astdys as astdys_catalog
 
