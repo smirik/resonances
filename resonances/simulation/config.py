@@ -30,7 +30,7 @@ class SimulationConfig:
         if date is not None:
             self.date = resonances.data.util.datetime_from_string(date)
         elif source == 'astdys':
-            self.date = astdys.datetime()
+            self.date = astdys.get_catalog_datetime()
         else:
             self.date = datetime.datetime.combine(datetime.datetime.today(), datetime.time.min)
 
@@ -107,4 +107,4 @@ class SimulationConfig:
 
     def get_bodies_date(self):
         """Get the date to use for body elements."""
-        return astdys.datetime() if self.source == 'astdys' else self.date
+        return astdys.get_catalog_datetime() if self.source == 'astdys' else self.date

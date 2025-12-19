@@ -81,7 +81,7 @@ class SecularResonanceFinder:
 
         # Iterate over all numbered asteroids in AstDyS
 
-        catalog = astdys.astdys.catalog()
+        catalog = astdys.get_catalog()
         if limit:
             catalog = catalog.head(limit)
         count = 0

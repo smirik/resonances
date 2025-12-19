@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import pandas as pd
 
-from astdys import astdys as astdys_catalog
+import astdys
 
 from resonances.resonance.lidov_kozai import LidovKozaiParameters
 
@@ -28,7 +28,8 @@ class LidovKozaiMatrix:
         catalog_type : str
             AstDyS catalog type (default: 'osculating').
         """
-        astdys_catalog.set_type(catalog_type)
+
+        astdys.set_type(catalog_type)
 
         if not cls.CACHE_FILE.exists() or force:
             df = cls._generate_dataframe()
@@ -44,8 +45,8 @@ class LidovKozaiMatrix:
         Build dataframe with c1, c2, c for every asteroid in the catalog.
         """
         # Ensure catalog is loaded
-        astdys_catalog.search(1)
-        catalog_df = astdys_catalog.catalog().reset_index().copy()
+        astdys.search(1)
+        catalog_df = astdys.get_catalog().reset_index().copy()
 
         ecc = catalog_df['e'].to_numpy(dtype=float)
         inc = catalog_df['inc'].to_numpy(dtype=float)

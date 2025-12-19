@@ -10,7 +10,7 @@ LK_ASTEROIDS = [
 
 LK_SIMULATION_CONFIG = dict(
     tmax=int(100000 * 2 * np.pi),
-    integrator='whfast',
+    integrator='SABA(10,6,4)',
     dt=1.0,
     Nout=5000,
     save=None,

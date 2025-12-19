@@ -2,7 +2,6 @@ import datetime
 import astdys.util
 import pytest
 import resonances
-import astdys
 
 
 # 463 Lola
