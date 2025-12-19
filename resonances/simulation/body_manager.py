@@ -61,8 +61,6 @@ class BodyManager:
 
         for mmr_elem in body.mmrs:
             mmr_elem.index_of_planets = self.get_index_of_planets(mmr_elem.planets_names)
-        for secular_elem in body.secular_resonances:
-            secular_elem.index_of_planets = self.get_index_of_planets(secular_elem.planets_names)
 
         self.bodies.append(body)
 

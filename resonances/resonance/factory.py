@@ -3,7 +3,7 @@ from typing import Union
 
 from resonances.resonance.mmr import MMR
 from resonances.resonance.resonance import Resonance
-from resonances.resonance.secular import Nu16Resonance, Nu5Resonance, Nu6Resonance, SecularResonance, GeneralSecularResonance
+from resonances.resonance.secular import SecularResonance
 from resonances.resonance.three_body import ThreeBody
 from resonances.resonance.two_body import TwoBody
 from resonances.resonance.lidov_kozai import LidovKozaiResonance

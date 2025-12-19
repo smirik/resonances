@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 from resonances.matrix.secular_resonances import SECULAR_RESONANCES
 from resonances.resonance.factory import create_secular_resonance
-from resonances.resonance.secular import SecularResonance, GeneralSecularResonance
+from resonances.resonance.secular import SecularResonance
 
 
 class SecularMatrix:
