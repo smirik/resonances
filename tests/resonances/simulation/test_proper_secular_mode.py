@@ -1,7 +1,7 @@
 import numpy as np
 
 from resonances import Body, Simulation
-from resonances.resonance.secular import GeneralSecularResonance
+from resonances.resonance.secular import SecularResonance
 
 
 def test_simulation_rebuilds_proper_secular_angles():
@@ -9,7 +9,7 @@ def test_simulation_rebuilds_proper_secular_angles():
     sim.times = np.linspace(0, 100, 200)
 
     body = Body()
-    resonance = GeneralSecularResonance(formula='g-g6+s-s6')
+    resonance = SecularResonance('g-g6+s-s6')
     body.secular_resonances.append(resonance)
     body.setup_vars_for_simulation(len(sim.times))
 

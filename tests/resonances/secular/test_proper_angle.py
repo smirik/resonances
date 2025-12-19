@@ -1,6 +1,6 @@
 import numpy as np
 
-from resonances.resonance.secular import GeneralSecularResonance
+from resonances.resonance.secular import SecularResonance
 import resonances.secular.proper_angle as proper_angle
 
 
@@ -44,7 +44,7 @@ def test_proper_angle_reconstruction_matches_synthetic_series():
     omega = varpi_true - Omega_true
 
     body = DummyBody(ecc, inc, Omega, omega)
-    resonance = GeneralSecularResonance(formula='g-g6+s-s6')
+    resonance = SecularResonance('g-g6+s-s6')
 
     # Use simplified planetary frequencies so reconstruction is predictable
     planetary_freqs = {'g6': np.rad2deg(0.03) * 3600.0, 's6': np.rad2deg(-0.015) * 3600.0}

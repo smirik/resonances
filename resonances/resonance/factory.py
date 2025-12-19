@@ -3,7 +3,7 @@ from typing import Union
 
 from resonances.resonance.mmr import MMR
 from resonances.resonance.resonance import Resonance
-from resonances.resonance.secular import SecularResonance
+from resonances.resonance.secular import SECULAR_RESONANCE_ALIASES, SecularResonance
 from resonances.resonance.three_body import ThreeBody
 from resonances.resonance.two_body import TwoBody
 from resonances.resonance.lidov_kozai import LidovKozaiResonance
@@ -79,29 +79,6 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
     )
 
 
-def _handle_known_formulas(secular_type: str):
-    """Handle known mathematical formulas and specific secular resonance types."""
-    secular_lower = secular_type.lower()
-
-    # Map string inputs to specific secular resonance classes
-    if secular_lower == 'nu6':
-        return Nu6Resonance()
-    elif secular_lower == 'nu5':
-        return Nu5Resonance()
-    elif secular_lower == 'nu16':
-        return Nu16Resonance()
-
-    # Check for known mathematical formulas first
-    if secular_type == 'g-g5':
-        return Nu5Resonance()
-    elif secular_type == 'g-g6':
-        return Nu6Resonance()
-    elif secular_type == 's-s6':
-        return Nu16Resonance()
-
-    return None
-
-
 def create_secular_resonance(secular_type):
     """Create Secular Resonance object based on the input format.
 
@@ -110,8 +87,8 @@ def create_secular_resonance(secular_type):
     Args:
         secular_type: Input that defines the secular resonance. Can be:
             - A SecularResonance instance (returned as-is)
-            - A string in format "nu6", "nu5", "nu16" for specific secular resonances
-            - A string in mathematical format like "g-g5", "2*g-g5-g6", etc.
+            - A string in format "nu6", "nu5", "nu16"
+            - A string in mathematical format like "g-g5", "2g-g5-g6", "2(g-g6)+(s-s6)", etc.
             - A list of strings, each representing a secular resonance type
             - A list of SecularResonance objects (returned as-is)
         planets_names (list, optional): List of planet names for custom
@@ -138,11 +115,9 @@ def create_secular_resonance(secular_type):
         return secular_type
 
     if isinstance(secular_type, str):
-        known_resonance = _handle_known_formulas(secular_type)
-        if known_resonance is not None:
-            return known_resonance
-        else:
-            return GeneralSecularResonance(formula=secular_type)
+        secular_lower = secular_type.lower()
+        formula = SECULAR_RESONANCE_ALIASES.get(secular_lower, secular_type)
+        return SecularResonance(formula=formula)
 
     if isinstance(secular_type, list):
         return [create_secular_resonance(s) for s in secular_type]

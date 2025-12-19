@@ -68,6 +68,10 @@ def _design_lowpass_filter(
     kind_out : {'fir', 'iir'}
         Filter implementation type.
     """
+    if cutoff_period_years <= 0:
+        # Treat non-positive cutoff as "no filtering" (identity FIR).
+        return np.array([1.0], dtype=float), 'fir'
+
     # normalized cutoff frequency: x0 = f_c / f_s = dt / T_c
     x0 = dt_years / cutoff_period_years
 
@@ -184,6 +188,84 @@ def _planetary_frequency(planet_name, kind, freq_map):
     return np.deg2rad(freq_map[label] / 3600.0)
 
 
+def _frequency_label_to_rad_per_year(label: str, freq_map: dict) -> float:
+    if label not in freq_map:
+        raise ValueError(f"Missing planetary frequency {label} in configuration")
+    # freq_map values are in arcsec/yr -> convert to rad/yr
+    return np.deg2rad(freq_map[label] / 3600.0)
+
+
+def build_planetary_longitudes_by_index(times_years, indices, planetary_freqs):
+    """
+    Build simple linear secular longitudes for planets using configured frequencies.
+
+    Parameters
+    ----------
+    times_years : array-like
+        Time array in years.
+    indices : iterable[int]
+        Secular indices (e.g. 5, 6, 7, 8).
+    planetary_freqs : dict
+        Map of planetary frequencies (g_i, s_i) in arcsec/yr.
+
+    Returns
+    -------
+    varpi_planets : dict[int, ndarray]
+    Omega_planets : dict[int, ndarray]
+    """
+    varpi_planets: dict[int, np.ndarray] = {}
+    Omega_planets: dict[int, np.ndarray] = {}
+
+    for idx in indices:
+        g = _frequency_label_to_rad_per_year(f"g{idx}", planetary_freqs)
+        s = _frequency_label_to_rad_per_year(f"s{idx}", planetary_freqs)
+        varpi_planets[idx] = (g * times_years) % (2.0 * np.pi)
+        Omega_planets[idx] = (s * times_years) % (2.0 * np.pi)
+
+    return varpi_planets, Omega_planets
+
+
+def _build_angle_series_from_terms(*, times_years, varpi_mean, Omega_mean, terms, planetary_freqs) -> np.ndarray:
+    indices = sorted({t.index for t in terms if t.index is not None})
+    varpi_planets, Omega_planets = build_planetary_longitudes_by_index(times_years, indices, planetary_freqs)
+
+    angle = np.zeros_like(times_years, dtype=float)
+    for term in terms:
+        if term.mode == "g":
+            series = varpi_mean if term.index is None else varpi_planets[term.index]
+        elif term.mode == "s":
+            series = Omega_mean if term.index is None else Omega_planets[term.index]
+        else:
+            raise ValueError(f"Unsupported secular term mode: {term.mode!r}")
+        angle += term.coefficient * series
+
+    return angle
+
+
+def _build_angle_series_legacy(*, times_years, varpi_mean, Omega_mean, resonance, planetary_freqs) -> np.ndarray:
+    varpi_planets, Omega_planets = build_planetary_longitudes(
+        times_years,
+        resonance.planets_names,
+        planetary_freqs,
+    )
+
+    angle = np.zeros_like(times_years, dtype=float)
+
+    # Build linear combination of varpi's
+    if "varpi" in resonance.coeffs:
+        angle += resonance.coeffs["varpi"][0] * varpi_mean
+        for coeff, planet_long in zip(resonance.coeffs["varpi"][1:], varpi_planets):
+            angle += coeff * planet_long
+
+    # Build linear combination of Omega's
+    if "Omega" in resonance.coeffs:
+        angle += resonance.coeffs["Omega"][0] * Omega_mean
+        for coeff, planet_long in zip(resonance.coeffs["Omega"][1:], Omega_planets):
+            angle += coeff * planet_long
+
+    return angle
+
+
 def build_proper_angle_series(
     times,
     body,
@@ -249,9 +331,11 @@ def calc_proper_angle_series(
     omega, Omega, ecc, inc : array-like
         Osculating elements at given times (angles in radians).
     resonance : object
-        Must have:
-        - planets_names: list of planet names (for planetary secular terms),
-        - coeffs: dict with keys 'varpi' and/or 'Omega', each a list of coefficients.
+        Either:
+        - a modern secular resonance with `resonance.formula.terms` (from `SecularResonanceFormula`), or
+        - a legacy secular resonance with:
+          - `planets_names`: list of planet names (for forced terms),
+          - `coeffs`: dict with keys 'varpi' and/or 'Omega', each a list of coefficients.
     existing_angle : array-like or None
         If provided, phase of the resulting series is shifted so that angle[0] matches existing_angle[0].
     cutoff_period_years : float
@@ -298,26 +382,25 @@ def calc_proper_angle_series(
     varpi_mean = np.mod(np.arctan2(h_f, k_f), 2.0 * np.pi)
     Omega_mean = np.mod(np.arctan2(p_f, q_f), 2.0 * np.pi)
 
-    # Planetary secular longitudes (linear model with g_i, s_i)
-    varpi_planets, Omega_planets = build_planetary_longitudes(
-        times_years,
-        resonance.planets_names,
-        planetary_freqs,
-    )
+    # New secular resonance model: parse from a SecularResonanceFormula-like object.
+    if hasattr(resonance, "formula") and hasattr(resonance.formula, "terms"):
+        angle = _build_angle_series_from_terms(
+            times_years=times_years,
+            varpi_mean=varpi_mean,
+            Omega_mean=Omega_mean,
+            terms=resonance.formula.terms,
+            planetary_freqs=planetary_freqs,
+        )
 
-    angle = np.zeros_like(times, dtype=float)
-
-    # Build linear combination of varpi's
-    if 'varpi' in resonance.coeffs:
-        angle += resonance.coeffs['varpi'][0] * varpi_mean
-        for coeff, planet_long in zip(resonance.coeffs['varpi'][1:], varpi_planets):
-            angle += coeff * planet_long
-
-    # Build linear combination of Omega's
-    if 'Omega' in resonance.coeffs:
-        angle += resonance.coeffs['Omega'][0] * Omega_mean
-        for coeff, planet_long in zip(resonance.coeffs['Omega'][1:], Omega_planets):
-            angle += coeff * planet_long
+    # Backward-compatible model: resonance.coeffs / resonance.planets_names (legacy API).
+    else:
+        angle = _build_angle_series_legacy(
+            times_years=times_years,
+            varpi_mean=varpi_mean,
+            Omega_mean=Omega_mean,
+            resonance=resonance,
+            planetary_freqs=planetary_freqs,
+        )
 
     angle = np.mod(angle, 2.0 * np.pi)
 

@@ -38,7 +38,7 @@ def test_resolve():
 
     class MockSecularResonance(resonances.resonance.secular.SecularResonance):
         def __init__(self):
-            super().__init__('test', 'Jupiter')
+            super().__init__('g-g5')
 
     mmr = MockMMR()
 

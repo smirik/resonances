@@ -75,15 +75,15 @@ print(f"Resonance: {sim.bodies[0].secular_resonances[0].to_s()}")
 import resonances
 
 # High-order resonances
-high_order = resonances.GeneralSecularResonance(formula='g+s-s7-g5')
-kozai_type = resonances.GeneralSecularResonance(formula='2g-2s')
+high_order = resonances.create_secular_resonance('g+s-s7-g5')
+kozai_type = resonances.create_secular_resonance('2g-2s')
 
 # Mixed frequency resonances
-mixed = resonances.GeneralSecularResonance(formula='g-g5+s7-s6')
-complex_mixed = resonances.GeneralSecularResonance(formula='2g-s7-s6')
+mixed = resonances.create_secular_resonance('g-g5+s7-s6')
+complex_mixed = resonances.create_secular_resonance('2g-s7-s6')
 
 # Special case with parentheses
-special = resonances.GeneralSecularResonance(formula='2(g-g6)+(s-s6)')
+special = resonances.create_secular_resonance('2(g-g6)+(s-s6)')
 ```
 
 ## Custom Planetary Frequencies

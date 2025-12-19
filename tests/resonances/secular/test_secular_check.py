@@ -1,8 +1,8 @@
-from resonances.resonance.secular import GeneralSecularResonance
 import resonances.finder.secular_finder
 import resonances
 import numpy as np
 import pytest
+from resonances.resonance.secular import SecularResonance
 
 from tests.resonances.secular import BASIC_CONFIG
 
@@ -34,22 +34,22 @@ def test_secular_check_nu6():
     sim.run(progress=True)
     print(sim.bodies[0].secular_resonances[0].to_s())
     summary = sim.data_manager.get_simulation_summary(sim.bodies)
-    status759 = summary.loc[(summary['name'] == '759') & (summary['resonance'] == 'nu6_Saturn'), 'status'].iloc[0]
-    status1222 = summary.loc[(summary['name'] == '1222') & (summary['resonance'] == 'nu6_Saturn'), 'status'].iloc[0]
-    status760 = summary.loc[(summary['name'] == '760') & (summary['resonance'] == 'nu6_Saturn'), 'status'].iloc[0]
+    status759 = summary.loc[(summary['name'] == '759') & (summary['resonance'] == 'g-g6'), 'status'].iloc[0]
+    status1222 = summary.loc[(summary['name'] == '1222') & (summary['resonance'] == 'g-g6'), 'status'].iloc[0]
+    status760 = summary.loc[(summary['name'] == '760') & (summary['resonance'] == 'g-g6'), 'status'].iloc[0]
     assert 2 == abs(status759)
     assert 2 == abs(status1222)
     assert 0 == abs(status760)
 
 
 def test_general_secular_resonance():
-    """Test that asteroid 759 shows libration in nu6 secular resonance using GeneralSecularResonance with g-g6 formula."""
+    """Test that asteroid 759 shows libration in g-g6 secular resonance."""
 
-    general_nu6 = GeneralSecularResonance(formula='g-g6')
-    assert isinstance(general_nu6, GeneralSecularResonance), f"Expected GeneralSecularResonance, got {type(general_nu6)}"
+    general_nu6 = SecularResonance('g-g6')
+    assert isinstance(general_nu6, SecularResonance), f"Expected SecularResonance, got {type(general_nu6)}"
     print(f"Resonance formula: {general_nu6.to_s()}")
 
-    resonance_5507 = GeneralSecularResonance(formula='g-2g6+g5')
+    resonance_5507 = SecularResonance('g-2g6+g5')
 
     sim = resonances.Simulation(
         name="test_secular_check_general_nu6",
@@ -60,9 +60,9 @@ def test_general_secular_resonance():
     asteroids = [759, 760, 1222]
     for asteroid in asteroids:
         sim.add_body(asteroid, general_nu6, name=f"{asteroid}")
-        print(f"Added asteroid {asteroid} with GeneralSecularResonance")
+        print(f"Added asteroid {asteroid} with SecularResonance")
     sim.add_body(5507, [resonance_5507, general_nu6], name="5507")
-    print("Added asteroid 5507 with GeneralSecularResonance")
+    print("Added asteroid 5507 with SecularResonance")
     sim.run(progress=True)
 
     summary = sim.data_manager.get_simulation_summary(sim.bodies)
@@ -90,7 +90,7 @@ def test_general_secular_resonance():
 def test_pluto_kozai_resonance():
     """Test that Pluto (134340) shows circulation in Kozai resonance (2g-2s)."""
 
-    kozai_resonance = GeneralSecularResonance(formula='2g-2s')
+    kozai_resonance = SecularResonance('2g-2s')
     print(f"Testing Pluto with Kozai resonance: {kozai_resonance.to_s()}")
     sim = resonances.Simulation(
         name="test_pluto_kozai",

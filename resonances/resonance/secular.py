@@ -64,7 +64,7 @@ class SecularResonance(Resonance):
         return rebound.mod2pi(angle)
 
     def to_s(self) -> str:
-        return f"SecularResonance({self.formula_str})"
+        return self.formula_str
 
     def to_short(self) -> str:
         return self.formula_str
@@ -75,3 +75,10 @@ class SecularResonance(Resonance):
         sum |coefficients|.
         """
         return sum(abs(t.coefficient) for t in self.formula.terms)
+
+
+SECULAR_RESONANCE_ALIASES: dict[str, str] = {
+    'nu5': 'g-g5',
+    'nu6': 'g-g6',
+    'nu16': 's-s6',
+}

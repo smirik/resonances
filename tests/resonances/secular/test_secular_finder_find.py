@@ -59,15 +59,15 @@ class TestSecularFinderFind:
 
         print(f"\nResonances with non-zero status: {non_zero_resonances}")
 
-        # Verify nu6_Saturn shows expected behavior
+        # Verify g-g6 shows expected behavior
         nu6_status = None
         for resonance_name, status in non_zero_resonances:
-            if resonance_name == 'nu6_Saturn':
+            if resonance_name == 'g-g6':
                 nu6_status = status
                 break
 
-        assert nu6_status is not None, "Expected nu6_Saturn to have non-zero status, but it was not found"
-        assert abs(nu6_status) == 2, f"Expected |status| = 2 for nu6_Saturn, got {abs(nu6_status)}"
+        assert nu6_status is not None, "Expected g-g6 to have non-zero status"
+        assert abs(nu6_status) == 2, f"Expected |status| = 2 for g-g6, got {abs(nu6_status)}"
 
     def test_find_specific_formulas(self):
         """Test finding specific secular resonance formulas."""
@@ -90,11 +90,9 @@ class TestSecularFinderFind:
         # Check that only specified resonances were added
         for body in sim.bodies:
             assert len(body.secular_resonances) == 2
-            # The g-g5 and g-g6 formulas create Nu5Resonance and Nu6Resonance objects
-            # which have resonance_type 'nu5' and 'nu6' respectively
-            resonance_types = [res.resonance_type for res in body.secular_resonances]
-            assert 'nu5' in resonance_types  # g-g5 creates Nu5Resonance
-            assert 'nu6' in resonance_types  # g-g6 creates Nu6Resonance
+            resonance_formulas = [res.to_short() for res in body.secular_resonances]
+            assert 'g-g5' in resonance_formulas
+            assert 'g-g6' in resonance_formulas
 
     def test_find_by_order(self):
         """Test finding secular resonances by order."""

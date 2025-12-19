@@ -3,7 +3,7 @@ import pytest
 from resonances.resonance.three_body import ThreeBody
 from resonances.resonance.two_body import TwoBody
 from resonances.resonance.mmr import MMR
-from resonances.resonance.secular import Nu6Resonance, Nu5Resonance, Nu16Resonance, GeneralSecularResonance
+from resonances.resonance.secular import SecularResonance
 from resonances import LidovKozaiResonance
 from resonances.resonance.factory import create_mmr, detect_resonance_type, create_resonance, create_secular_resonance
 
@@ -101,20 +101,12 @@ def test_detect_resonance_type():
 
     lidov_obj = LidovKozaiResonance()
     assert detect_resonance_type(lidov_obj) == 'lidov_kozai'
-    # Test with GeneralSecularResonance object
-    general_secular = GeneralSecularResonance(
-        coeffs={'varpi': [1, -2, 1]},  # [body_coeff, saturn_coeff, jupiter_coeff]
-        planets_names=['Saturn', 'Jupiter'],
-        resonance_name='g-2g6+g5',
-    )
+    # Test with secular resonance object
+    general_secular = SecularResonance('g-2g6+g5')
     assert detect_resonance_type(general_secular) == 'secular'
 
-    # Test another GeneralSecularResonance with different pattern
-    complex_secular = GeneralSecularResonance(
-        coeffs={'varpi': [2, -1, -1]},
-        planets_names=['Saturn', 'Jupiter'],
-        resonance_name='2*g-g5-g6',
-    )
+    # Test another secular resonance with different pattern
+    complex_secular = SecularResonance('2g-g5-g6')
     assert detect_resonance_type(complex_secular) == 'secular'
 
     # Test invalid input type
@@ -139,21 +131,25 @@ def test_create_resonance():
 
     # Test creating secular resonance from string
     secular = create_resonance('nu6')
-    assert isinstance(secular, Nu6Resonance)
+    assert isinstance(secular, SecularResonance)
     assert secular.type == 'secular'
+    assert secular.to_short() == 'g-g6'
 
     secular5 = create_resonance('nu5')
-    assert isinstance(secular5, Nu5Resonance)
+    assert isinstance(secular5, SecularResonance)
     assert secular5.type == 'secular'
+    assert secular5.to_short() == 'g-g5'
 
     secular16 = create_resonance('nu16')
-    assert isinstance(secular16, Nu16Resonance)
+    assert isinstance(secular16, SecularResonance)
     assert secular16.type == 'secular'
+    assert secular16.to_short() == 's-s6'
 
     # Test case insensitive
     secular_case = create_resonance('Nu6')
-    assert isinstance(secular_case, Nu6Resonance)
+    assert isinstance(secular_case, SecularResonance)
     assert secular_case.type == 'secular'
+    assert secular_case.to_short() == 'g-g6'
 
     # Test returning existing resonance objects as-is
     existing_mmr = create_mmr('2J-1')
@@ -168,33 +164,28 @@ def test_create_resonance():
     returned_lidov = create_resonance(existing_lidov)
     assert returned_lidov is existing_lidov
 
-    # Test returning GeneralSecularResonance as-is
-    general_secular = GeneralSecularResonance(
-        coeffs={'varpi': [1, -2, 1]},
-        planets_names=['Saturn', 'Jupiter'],
-        resonance_name='g-2g6+g5',
-    )
+    # Test returning SecularResonance as-is
+    general_secular = SecularResonance('g-2g6+g5')
     returned_general = create_resonance(general_secular)
     assert returned_general is general_secular
     assert returned_general.type == 'secular'
 
-    # Test that unsupported secular resonance strings raise an exception
-    # (even though detect_resonance_type detects them as secular,
-    # create_secular_resonance doesn't support creating them from strings)
-    with pytest.raises(Exception, match='Unknown variable'):
+    # Unsupported forced indices should raise.
+    with pytest.raises(ValueError, match='unsupported forced index'):
         create_resonance('g1')
 
-    with pytest.raises(Exception, match='Unknown variable'):
+    with pytest.raises(ValueError, match='unsupported forced index'):
         create_resonance('s2')
 
-    # Test complex secular patterns that are now supported through SecularMatrix
+    # Test complex secular patterns that are supported through the formula parser
     secular_complex = create_resonance('g-g5')
-    assert isinstance(secular_complex, Nu5Resonance)
+    assert isinstance(secular_complex, SecularResonance)
     assert secular_complex.type == 'secular'
+    assert secular_complex.to_short() == 'g-g5'
 
-    secular_complex2 = create_resonance('g-2*g5+g6')
-    assert isinstance(secular_complex2, GeneralSecularResonance)
-    assert secular_complex2.type == 'secular'
+    # '*' notation is intentionally not supported for secular formulas.
+    with pytest.raises(ValueError, match='illegal character'):
+        create_resonance('g-2*g5+g6')
 
     lidov = create_resonance('lk')
     assert isinstance(lidov, LidovKozaiResonance)

@@ -1,7 +1,7 @@
 import pytest
 from resonances.matrix.secular_matrix import SecularMatrix
 from resonances.matrix.secular_resonances import SECULAR_RESONANCES, get_available_secular_resonance_formulas, get_available_orders
-from resonances.resonance.secular import SecularResonance, Nu5Resonance, Nu6Resonance, Nu16Resonance, GeneralSecularResonance
+from resonances.resonance.secular import SecularResonance
 from resonances.resonance.factory import create_secular_resonance
 
 
@@ -38,56 +38,38 @@ class TestSecularMatrix:
         assert 6 in orders
 
     def test_parse_simple_formulas(self):
-        """Test parsing simple formulas with GeneralSecularResonance."""
-        # Test g-g5
-        res = GeneralSecularResonance(formula='g-g5')
-        assert res.resonance_type == 'g-g5'
-
-        # Test g-g6
-        res = GeneralSecularResonance(formula='g-g6')
-        assert res.resonance_type == 'g-g6'
-
-        # Test s-s6
-        res = GeneralSecularResonance(formula='s-s6')
-        assert res.resonance_type == 's-s6'
+        """Test that simple formulas can be instantiated."""
+        assert SecularResonance('g-g5').to_short() == 'g-g5'
+        assert SecularResonance('g-g6').to_short() == 'g-g6'
+        assert SecularResonance('s-s6').to_short() == 's-s6'
 
     def test_parse_complex_formulas(self):
-        """Test parsing complex formulas with GeneralSecularResonance."""
-        # Test 2g-g5-g6
-        res = GeneralSecularResonance(formula='2g-g5-g6')
-        assert res.resonance_type == '2g-g5-g6'
-
-        # Test g+s-s7-g5
-        res = GeneralSecularResonance(formula='g+s-s7-g5')
-        assert res.resonance_type == 'g+s-s7-g5'
-
-        # Test -g+s+g5-s7
-        res = GeneralSecularResonance(formula='-g+s+g5-s7')
-        assert res.resonance_type == '-g+s+g5-s7'
+        """Test that complex formulas can be instantiated."""
+        assert SecularResonance('2g-g5-g6').to_short() == '2g-g5-g6'
+        assert SecularResonance('g+s-s7-g5').to_short() == 'g+s-s7-g5'
+        assert SecularResonance('-g+s+g5-s7').to_short() == '-g+s+g5-s7'
 
     def test_parse_special_formulas(self):
-        """Test parsing special formulas with GeneralSecularResonance."""
-        # Test the special case: 2(g-g6)+(s-s6)
-        res = GeneralSecularResonance(formula='2(g-g6)+(s-s6)')
-        assert res.resonance_type == '2(g-g6)+(s-s6)'
+        """Test instantiating formulas with parentheses."""
+        res = SecularResonance('2(g-g6)+(s-s6)')
+        assert res.to_short() == '2(g-g6)+(s-s6)'
 
     def test_build_specific_formulas(self):
         """Test building specific formulas."""
         # Test single formula
         resonances = SecularMatrix.build('g-g5')
         assert len(resonances) == 1
-        assert isinstance(resonances[0], Nu5Resonance)
+        assert resonances[0].to_short() == 'g-g5'
 
         # Test multiple formulas
         resonances = SecularMatrix.build(['g-g5', 'g-g6'])
         assert len(resonances) == 2
-        assert isinstance(resonances[0], Nu5Resonance)
-        assert isinstance(resonances[1], Nu6Resonance)
+        assert [r.to_short() for r in resonances] == ['g-g5', 'g-g6']
 
         # Test complex formula
         resonances = SecularMatrix.build('g+s-s7-g5')
         assert len(resonances) == 1
-        assert isinstance(resonances[0], GeneralSecularResonance)
+        assert resonances[0].to_short() == 'g+s-s7-g5'
 
     def test_build_by_order(self):
         """Test building resonances by order."""
@@ -110,44 +92,34 @@ class TestSecularMatrix:
         for res in all_resonances:
             assert isinstance(res, SecularResonance)
 
-    def test_old_way_general_resonance(self):
-        """Test creating GeneralSecularResonance with old coefficients way."""
-        # Test old way using coefficients
-        coeffs = {
-            'varpi': [1.0, -1.0],  # Body coefficient, Jupiter coefficient
-        }
-        planets_names = ['Jupiter']
-
-        res = GeneralSecularResonance(coeffs=coeffs, planets_names=planets_names, resonance_name='test_resonance')
-        assert res.resonance_type == 'test_resonance'
-        assert 'Jupiter' in res.planets_names
-        assert res.coeffs == coeffs
-
     def test_create_known_resonances(self):
         """Test creating known resonances returns correct types."""
         # Test nu5 (g-g5)
         res = create_secular_resonance('g-g5')
-        assert isinstance(res, Nu5Resonance)
+        assert isinstance(res, SecularResonance)
+        assert res.to_short() == 'g-g5'
 
         # Test nu6 (g-g6)
         res = create_secular_resonance('g-g6')
-        assert isinstance(res, Nu6Resonance)
+        assert isinstance(res, SecularResonance)
+        assert res.to_short() == 'g-g6'
 
         # Test nu16 (s-s6)
         res = create_secular_resonance('s-s6')
-        assert isinstance(res, Nu16Resonance)
+        assert isinstance(res, SecularResonance)
+        assert res.to_short() == 's-s6'
 
     def test_create_general_resonances(self):
         """Test creating general resonances from complex formulas."""
         # Test complex formula
         res = create_secular_resonance('g+s-s7-g5')
-        assert isinstance(res, GeneralSecularResonance)
-        assert res.resonance_type == 'g+s-s7-g5'
+        assert isinstance(res, SecularResonance)
+        assert res.to_short() == 'g+s-s7-g5'
 
         # Test another complex formula
         res = create_secular_resonance('2g-s7-s6')
-        assert isinstance(res, GeneralSecularResonance)
-        assert res.resonance_type == '2g-s7-s6'
+        assert isinstance(res, SecularResonance)
+        assert res.to_short() == '2g-s7-s6'
 
     def test_formula_consistency(self):
         """Test that all formulas in SECULAR_RESONANCES can be built."""
@@ -189,24 +161,6 @@ class TestSecularMatrix:
         assert res.type == 'secular'
         assert hasattr(res, 'calc_angle')
         assert hasattr(res, 'to_s')
-
-    def test_both_ways_constructor(self):
-        """Test that GeneralSecularResonance supports both construction ways."""
-        # New way - with formula
-        res1 = GeneralSecularResonance(formula='g-g5')
-        assert res1.resonance_type == 'g-g5'
-
-        # Old way - with coefficients
-        coeffs = {'varpi': [1.0, -1.0]}
-        planets_names = ['Jupiter']
-        res2 = GeneralSecularResonance(coeffs=coeffs, planets_names=planets_names)
-        assert res2.planets_names == ['Jupiter']
-
-        # Both should have the same interface
-        assert hasattr(res1, 'calc_angle')
-        assert hasattr(res2, 'calc_angle')
-        assert res1.type == 'secular'
-        assert res2.type == 'secular'
 
     def test_planetary_frequencies_loading(self):
         """Test that planetary frequencies are loaded correctly."""
