@@ -2,7 +2,8 @@ import numpy as np
 from scipy import signal
 from astropy.timeseries import LombScargle
 
-import resonances.config
+from resonances.logger import logger
+from resonances.body import Body
 
 
 class libration:
@@ -309,15 +310,13 @@ class libration:
         if normal_cutoff >= 1.0:
             # For secular resonances with very long integration times, adjust cutoff
             normal_cutoff = 0.99  # Use maximum allowable value
-            resonances.logger.warning(
+            logger.warning(
                 f"Cutoff frequency ({cutoff}) >= Nyquist frequency ({nyq}). "
                 f"Adjusting normalized cutoff to {normal_cutoff} for filter stability."
             )
         elif normal_cutoff <= 0.0:
             normal_cutoff = 0.01  # Use minimum allowable value
-            resonances.logger.warning(
-                f"Cutoff frequency ({cutoff}) <= 0. " f"Adjusting normalized cutoff to {normal_cutoff} for filter stability."
-            )
+            logger.warning(f"Cutoff frequency ({cutoff}) <= 0. " f"Adjusting normalized cutoff to {normal_cutoff} for filter stability.")
 
         # Get the filter coefficients
         b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
@@ -325,7 +324,7 @@ class libration:
         return y
 
     @classmethod
-    def body(cls, sim, body: resonances.Body):
+    def body(cls, sim, body: Body):
         integration_time = abs(round(sim.config.tmax / (2 * np.pi)))  # abs for backward integration
         fs = sim.config.Nout / integration_time  # sample rate, Hz || Nout/time, i.e. 10000/100000
         cutoff = sim.config.oscillations_cutoff  # should be a little bit more than needed
@@ -339,7 +338,7 @@ class libration:
 
         axis_filtered = cls.butter_lowpass_filter(body.axis, cutoff, fs, order, nyq)
         try:
-            (axis_frequency, axis_power) = resonances.libration.periodogram(
+            (axis_frequency, axis_power) = cls.periodogram(
                 sim.times[points_to_cut : len(axis_filtered) - points_to_cut] / (2 * np.pi),
                 axis_filtered[points_to_cut : len(axis_filtered) - points_to_cut],
                 minimum_frequency=sim.config.periodogram_frequency_min,
@@ -347,7 +346,7 @@ class libration:
             )
             axis_peaks_data = cls.find_peaks_with_position(axis_frequency, axis_power, height=sim.config.periodogram_soft)
         except Exception as e:  # pragma: no cover
-            resonances.logger.error(f"Error in periodogram of semi-major axis for {body.name}: {e}")
+            logger.error(f"Error in periodogram of semi-major axis for {body.name}: {e}")
             axis_frequency, axis_power, axis_peaks_data = None, None, None
 
         body.axis_filtered = axis_filtered
@@ -356,7 +355,7 @@ class libration:
         body.axis_periodogram_peaks = axis_peaks_data
 
         try:
-            (eccentricity_frequency, eccentricity_power) = resonances.libration.periodogram(
+            (eccentricity_frequency, eccentricity_power) = cls.periodogram(
                 sim.times[points_to_cut : len(body.ecc) - points_to_cut] / (2 * np.pi),
                 body.ecc[points_to_cut : len(body.ecc) - points_to_cut],
                 minimum_frequency=sim.config.periodogram_frequency_min,
@@ -366,7 +365,7 @@ class libration:
                 eccentricity_frequency, eccentricity_power, height=sim.config.periodogram_soft
             )
         except Exception as e:  # pragma: no cover
-            resonances.logger.error(f"Error in periodogram of eccentricity for {body.name}: {e}")
+            logger.error(f"Error in periodogram of eccentricity for {body.name}: {e}")
             eccentricity_frequency, eccentricity_power, eccentricity_peaks_data = None, None, None
 
         body.eccentricity_periodogram_frequency = eccentricity_frequency
@@ -376,15 +375,15 @@ class libration:
         all_resonances = body.mmrs + body.secular_resonances + body.lidov_kozai_resonances
         # for mmr in body.mmrs:
         for resonance in all_resonances:
-            pure = resonances.libration.pure(body.angle(resonance))
+            pure = cls.pure(body.angle(resonance))
 
-            librations = resonances.libration.circulation(sim.times / (2 * np.pi), body.angle(resonance))
-            libration_metrics = resonances.libration.circulation_metrics(librations)
-            monotony = resonances.libration.monotony_estimation(body.angle(resonance))
+            librations = cls.circulation(sim.times / (2 * np.pi), body.angle(resonance))
+            libration_metrics = cls.circulation_metrics(librations)
+            monotony = cls.monotony_estimation(body.angle(resonance))
 
             try:
                 angle_filtered = cls.butter_lowpass_filter(body.angle(resonance), cutoff, fs, order, nyq)
-                (frequency, power) = resonances.libration.periodogram(
+                (frequency, power) = cls.periodogram(
                     sim.times[points_to_cut : len(angle_filtered) - points_to_cut] / (2 * np.pi),
                     angle_filtered[points_to_cut : len(angle_filtered) - points_to_cut],
                     minimum_frequency=sim.config.periodogram_frequency_min,
@@ -394,7 +393,7 @@ class libration:
                 angle_peaks_data = cls.find_peaks_with_position(frequency, power, height=sim.config.periodogram_soft)
                 overlapping = cls.overlap_list(angle_peaks_data['position'], axis_peaks_data['position'], delta=0)
             except Exception as e:  # pragma: no cover
-                resonances.logger.error(f"Error in periodogram for {body.name} and {resonance.to_s()}: {e}")
+                logger.error(f"Error in periodogram for {body.name} and {resonance.to_s()}: {e}")
                 frequency, power, angle_peaks_data, angle_filtered, overlapping = None, None, None, None, []
 
             body.statuses[resonance.to_s()] = cls.resolve(

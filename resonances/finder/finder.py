@@ -1,18 +1,26 @@
 from datetime import datetime
+from typing import List, Union
 
 import numpy as np
-import resonances
-from typing import Union, List
 
 from resonances.data.util import convert_input_to_list
+from resonances.horizons import get_body_keplerian_elements
+from resonances.logger import logger
+from resonances.mmr.mmr import MMR
 from resonances.mmr.mmr_finder import find_mmrs
+from resonances.secular.secular_resonance_finder import SecularResonanceFinder
+from resonances.secular.secular_resonance import SecularResonance
+from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
+from resonances.simulation.simulation import Simulation
+from resonances.resonance.factory import detect_resonance_type
+
 
 ResonanceType = Union[
-    resonances.MMR,
-    resonances.SecularResonance,
-    resonances.LidovKozaiResonance,
+    MMR,
+    SecularResonance,
+    LidovKozaiResonance,
     str,
-    List[Union[resonances.MMR, resonances.SecularResonance, resonances.LidovKozaiResonance, str]],
+    List[Union[MMR, SecularResonance, LidovKozaiResonance, str]],
 ]
 
 
@@ -21,7 +29,7 @@ def check(
     resonance: ResonanceType,
     name: str = None,
     **kwargs,
-) -> Union[resonances.Simulation, List[resonances.Simulation]]:
+) -> Union[Simulation, List[Simulation]]:
     """
     Universal check function for MMR, secular, and Lidov-Kozai resonances.
 
@@ -57,7 +65,7 @@ def check(
 
     params = setup_secular_parameters(kwargs, shouldSearchSecular)
 
-    sim = resonances.Simulation(name=name or "resonance_find", secular_angle_mode=secular_angle_mode, **params, **kwargs)
+    sim = Simulation(name=name or "resonance_find", secular_angle_mode=secular_angle_mode, **params, **kwargs)
     sim.create_solar_system()
     for asteroid in asteroids:
         sim.add_body(asteroid, mmr_resonances + secular_resonances + lidov_kozai_resonances, name=f"{asteroid}")
@@ -73,7 +81,7 @@ def find(
     formulas: Union[str, List[str]] = None,
     type: str | List[str] = None,
     **kwargs,
-) -> Union[resonances.Simulation, List[resonances.Simulation]]:
+) -> Union[Simulation, List[Simulation]]:
     """
     Universal find function for both MMR and secular resonances.
 
@@ -122,7 +130,7 @@ def find(
     elems = {}
 
     for asteroid in asteroids:
-        elem = resonances.horizons.get_body_keplerian_elements(asteroid, date=now)
+        elem = get_body_keplerian_elements(asteroid, date=now)
         elems[asteroid] = elem
         resonances_dict[asteroid] = []
         if shouldSearchMMR:
@@ -130,27 +138,27 @@ def find(
             resonances_dict[asteroid] = mmrs
         if shouldSearchSecular:
             if formulas is None:
-                finder = resonances.SecularResonanceFinder()
+                finder = SecularResonanceFinder()
                 secular_resonances = finder.find_secular_resonances(asteroid=asteroid)
                 resonances_dict[asteroid].extend(secular_resonances.values())
             else:
-                secular_resonances = [resonances.SecularResonance(formula) for formula in formulas]
+                secular_resonances = [SecularResonance(formula) for formula in formulas]
                 resonances_dict[asteroid].extend(secular_resonances)
         if shouldSearchLidovKozai:
-            resonances_dict[asteroid].append(resonances.LidovKozaiResonance())
+            resonances_dict[asteroid].append(LidovKozaiResonance())
 
     secular_angle_mode = kwargs.pop('secular_angle_mode', 'proper' if shouldSearchSecular else "osculating")
     params = setup_secular_parameters(kwargs, shouldSearchSecular)
-    sim = resonances.Simulation(name=name or "resonance_find", secular_angle_mode=secular_angle_mode, **params, **kwargs)
+    sim = Simulation(name=name or "resonance_find", secular_angle_mode=secular_angle_mode, **params, **kwargs)
     sim.create_solar_system()
 
     for asteroid_name, kepler_elements in elems.items():
         res_list = resonances_dict[asteroid_name]
         if len(res_list) == 0:
-            resonances.logger.warning(f'No resonances found for an asteroid {asteroid_name}')
+            logger.warning(f'No resonances found for an asteroid {asteroid_name}')
             continue
         sim.add_body(kepler_elements, res_list, name=f"{asteroid_name}")
-        resonances.logger.info(
+        logger.info(
             'Adding a possible resonance for an asteroid {} - {}'.format(
                 asteroid_name,
                 [elem.to_s() for elem in res_list],
@@ -167,7 +175,7 @@ def _categorize_resonances(resonance_list):
     lidov_kozai_resonances = []
 
     for res in resonance_list:
-        res_type = resonances.detect_resonance_type(res)
+        res_type = detect_resonance_type(res)
         if res_type == 'mmr':
             mmr_resonances.append(res)
         elif res_type == 'secular':

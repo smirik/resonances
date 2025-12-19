@@ -1,4 +1,4 @@
-import resonances
+from resonances.config import config
 import pandas as pd
 from pathlib import Path
 import os
@@ -22,7 +22,7 @@ class Matrix:
         If the config value is an absolute path (starts with '/'), use it as is.
         Otherwise, interpret it relative to the current working directory.
         """
-        filename = resonances.config.get(cls.catalog_file)
+        filename = config.get(cls.catalog_file)
         path_obj = Path(filename)
 
         # If it's not already absolute, prepend current working directory

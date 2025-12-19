@@ -1,6 +1,9 @@
 import numpy as np
 
-from resonances.resonance import Resonance, MMR, SecularResonance, LidovKozaiResonance
+from resonances.resonance.resonance import Resonance
+from resonances.mmr.mmr import MMR
+from resonances.secular.secular_resonance import SecularResonance
+from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
 from .logger import logger
 from typing import List, Union
 

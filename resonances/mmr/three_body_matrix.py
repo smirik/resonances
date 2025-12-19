@@ -1,13 +1,14 @@
-from typing import List, TYPE_CHECKING
+from typing import List
 import numpy as np
 import pandas as pd
 import itertools
 
-import resonances
+from resonances.config import config
+from resonances.data import const
+from resonances.resonance.factory import create_mmr
+from .three_body import ThreeBody
 from resonances.matrix.matrix import Matrix
 
-if TYPE_CHECKING:
-    from resonances.mmr.mmr import MMR
 
 
 class ThreeBodyMatrix(Matrix):
@@ -17,11 +18,11 @@ class ThreeBodyMatrix(Matrix):
     @classmethod
     # flake8: noqa: C901
     def build(cls):
-        primary_max = int(resonances.config.get('MATRIX_3BODY_PRIMARY_MAX'))
-        m_max = int(resonances.config.get('MATRIX_3BODY_COEF_MAX'))
-        q_max = int(resonances.config.get('MATRIX_3BODY_ORDER_MAX'))
+        primary_max = int(config.get('MATRIX_3BODY_PRIMARY_MAX'))
+        m_max = int(config.get('MATRIX_3BODY_COEF_MAX'))
+        q_max = int(config.get('MATRIX_3BODY_ORDER_MAX'))
         if (cls.planets is None) or (len(cls.planets) == 0):
-            planets = resonances.data.const.SOLAR_SYSTEM
+            planets = const.SOLAR_SYSTEM
         else:
             planets = cls.planets
         pairs = list(itertools.combinations(planets, 2))
@@ -37,7 +38,7 @@ class ThreeBodyMatrix(Matrix):
                         p = 0 - (m1 + m2 + m)
                         if abs(p) > q_max:
                             continue
-                        mmr = resonances.ThreeBody([m1, m2, m, 0, 0, p], [planet1, planet2])
+                        mmr = ThreeBody([m1, m2, m, 0, 0, p], [planet1, planet2])
                         try:
                             axis = mmr.resonant_axis
                             data.append([mmr.to_short(), planet1, planet2, m1, m2, m, abs(p), axis])
@@ -65,5 +66,5 @@ class ThreeBodyMatrix(Matrix):
 
         mmrs = []
         for mmr in df['mmr'].tolist():
-            mmrs.append(resonances.create_mmr(mmr))
+            mmrs.append(create_mmr(mmr))
         return mmrs

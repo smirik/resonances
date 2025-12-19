@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
 
-import resonances
+from resonances.config import config
+from resonances.data import const
+from resonances.resonance.factory import create_mmr
+from .two_body import TwoBody
 from resonances.matrix.matrix import Matrix
 
 
@@ -10,11 +13,11 @@ class TwoBodyMatrix(Matrix):
 
     @classmethod
     def build(cls):
-        primary_max = int(resonances.config.get('MATRIX_2BODY_PRIMARY_MAX'))
-        m_max = int(resonances.config.get('MATRIX_2BODY_COEF_MAX'))
-        q_max = int(resonances.config.get('MATRIX_2BODY_ORDER_MAX'))
+        primary_max = int(config.get('MATRIX_2BODY_PRIMARY_MAX'))
+        m_max = int(config.get('MATRIX_2BODY_COEF_MAX'))
+        q_max = int(config.get('MATRIX_2BODY_ORDER_MAX'))
         if (cls.planets is None) or (len(cls.planets) == 0):
-            planets = resonances.data.const.SOLAR_SYSTEM
+            planets = const.SOLAR_SYSTEM
         else:
             planets = cls.planets
         data = []
@@ -28,7 +31,7 @@ class TwoBodyMatrix(Matrix):
                     p = 0 - (m1 + m)
                     if abs(p) > q_max:
                         continue
-                    mmr = resonances.TwoBody([m1, m, 0, p], [planet])
+                    mmr = TwoBody([m1, m, 0, p], [planet])
                     try:
                         axis = mmr.resonant_axis
                         data.append([mmr.to_short(), planet, m1, m, abs(p), axis])
@@ -51,5 +54,5 @@ class TwoBodyMatrix(Matrix):
 
         mmrs = []
         for mmr in df['mmr'].tolist():
-            mmrs.append(resonances.create_mmr(mmr))
+            mmrs.append(create_mmr(mmr))
         return mmrs

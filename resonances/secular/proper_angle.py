@@ -341,7 +341,7 @@ def calc_proper_angle_series(
         Cutoff period T_c: variations with periods << T_c are filtered out.
     planetary_freqs : dict or None
         Map of planetary frequencies (g_i, s_i) in arcsec/yr.
-        If None, loaded via load_planetary_frequencies().
+        If None, loaded via config.
     filter_kind : {'quinn', 'firwin', 'butter'}
         Which low-pass filter family to use.
     M, beta, butter_order : see _design_lowpass_filter.

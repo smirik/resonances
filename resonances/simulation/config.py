@@ -1,10 +1,10 @@
 import datetime
 import numpy as np
 
-import resonances
 import astdys
-import resonances.data.util
+from resonances.data.util import datetime_from_string
 from resonances.config import config as c
+from resonances.logger import logger
 import os
 
 
@@ -29,7 +29,7 @@ class SimulationConfig:
         self.source = source or c.get('DATA_SOURCE')
 
         if date is not None:
-            self.date = resonances.data.util.datetime_from_string(date)
+            self.date = datetime_from_string(date)
         elif source == 'astdys':
             astdys.set_type("osculating")
             self.date = astdys.get_catalog_datetime()
@@ -43,6 +43,8 @@ class SimulationConfig:
             self.tmax = int(integration_years * 2 * np.pi)
         else:
             self.tmax = kwargs.get('tmax', int(c.get('INTEGRATION_TMAX')))
+        if 'Nout' in kwargs and kwargs['Nout'] is not None:
+            self.Nout = int(kwargs['Nout'])
         self.integrator = kwargs.get('integrator', c.get('INTEGRATION_INTEGRATOR'))
         self.dt = kwargs.get('dt', float(c.get('INTEGRATION_DT')))
         self.integration_corrector = kwargs.get('integration_corrector', int(c.get('INTEGRATION_CORRECTOR')))
@@ -60,7 +62,7 @@ class SimulationConfig:
             save_path = f"{c.get('SAVE_PATH')}/{self.name}"
             if os.path.exists(save_path):
                 save_path += f"_{now.strftime('%Y-%m-%d_%H-%M-%S')}"
-                resonances.logger.info(f"Save path already exists. Using new path: {save_path}")
+                logger.info(f"Save path already exists. Using new path: {save_path}")
             self.save_path = save_path
 
     def _setup_plot_params(self, kwargs):
@@ -75,26 +77,26 @@ class SimulationConfig:
             plot_path = f"{c.get('PLOT_PATH')}/{self.name}"
             if os.path.exists(plot_path):
                 plot_path += f"_{now.strftime('%Y-%m-%d_%H-%M-%S')}"
-                resonances.logger.info(f"Plot path already exists. Using new path: {plot_path}")
+                logger.info(f"Plot path already exists. Using new path: {plot_path}")
             self.plot_path = plot_path
 
     def _setup_libration_params(self, kwargs):
         """Setup libration analysis parameters."""
-        self.oscillations_cutoff = kwargs.get('oscillations_cutoff', float(resonances.config.get('LIBRATION_FILTER_CUTOFF')))
-        self.oscillations_filter_order = kwargs.get('oscillations_filter_order', int(resonances.config.get('LIBRATION_FILTER_ORDER')))
-        self.periodogram_frequency_min = kwargs.get('periodogram_frequency_min', float(resonances.config.get('LIBRATION_FREQ_MIN')))
-        self.periodogram_frequency_max = kwargs.get('periodogram_frequency_max', float(resonances.config.get('LIBRATION_FREQ_MAX')))
-        self.periodogram_critical = kwargs.get('periodogram_critical', float(resonances.config.get('LIBRATION_CRITICAL')))
-        self.periodogram_soft = kwargs.get('periodogram_soft', float(resonances.config.get('LIBRATION_SOFT')))
-        self.libration_period_critical = kwargs.get('libration_period_critical', int(resonances.config.get('LIBRATION_PERIOD_CRITICAL')))
+        self.oscillations_cutoff = kwargs.get('oscillations_cutoff', float(c.get('LIBRATION_FILTER_CUTOFF')))
+        self.oscillations_filter_order = kwargs.get('oscillations_filter_order', int(c.get('LIBRATION_FILTER_ORDER')))
+        self.periodogram_frequency_min = kwargs.get('periodogram_frequency_min', float(c.get('LIBRATION_FREQ_MIN')))
+        self.periodogram_frequency_max = kwargs.get('periodogram_frequency_max', float(c.get('LIBRATION_FREQ_MAX')))
+        self.periodogram_critical = kwargs.get('periodogram_critical', float(c.get('LIBRATION_CRITICAL')))
+        self.periodogram_soft = kwargs.get('periodogram_soft', float(c.get('LIBRATION_SOFT')))
+        self.libration_period_critical = kwargs.get('libration_period_critical', int(c.get('LIBRATION_PERIOD_CRITICAL')))
 
         # Handle libration_monotony_critical specially since it's a list
         if 'libration_monotony_critical' in kwargs:
             self.libration_monotony_critical = kwargs['libration_monotony_critical']
         else:
-            self.libration_monotony_critical = [float(x.strip()) for x in resonances.config.get('LIBRATION_MONOTONY_CRITICAL').split(",")]
+            self.libration_monotony_critical = [float(x.strip()) for x in c.get('LIBRATION_MONOTONY_CRITICAL').split(",")]
 
-        self.libration_period_min = kwargs.get('libration_period_min', int(resonances.config.get('LIBRATION_PERIOD_MIN')))
+        self.libration_period_min = kwargs.get('libration_period_min', int(c.get('LIBRATION_PERIOD_MIN')))
 
     @property
     def tmax(self):

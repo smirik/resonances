@@ -58,6 +58,7 @@ omit = [".*", "tests/*", "*/site-packages/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/resonances"]
+addopts = ["--import-mode=importlib"]
 markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
 filterwarnings = [
     "ignore::DeprecationWarning:rebound",

@@ -3,11 +3,10 @@ import numpy as np
 import math
 from pathlib import Path
 
-import resonances.config
-import resonances
+from resonances.body import Body
 
 
-def body(sim, body: resonances.Body, resonance, image_type='png'):  # noqa: C901
+def body(sim, body: Body, resonance, image_type='png'):  # noqa: C901
     plt.style.use('default')
 
     fig, axs = plt.subplots(7, 1, figsize=(10, 12))

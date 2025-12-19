@@ -1,5 +1,4 @@
 __version__ = '1.0.0'
-import logging
 import warnings
 
 warnings.filterwarnings(
@@ -9,6 +8,8 @@ warnings.filterwarnings(
 )
 
 from .finder.finder import find, check
+from .resonance.factory import create_mmr, create_resonance, create_secular_resonance, detect_resonance_type
+from .resonance.libration import libration
 
 from .lidov_kozai.lidov_kozai_matrix import LidovKozaiMatrix
 from .lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, LidovKozaiParameters
@@ -27,6 +28,7 @@ from .secular.secular_resonance import SecularResonance
 from .simulation.simulation import Simulation
 
 from .body import Body
-from .config import Config
+from .config import config as Config
+from .config import config
 from .horizons import get_body_keplerian_elements
 from .logger import logger

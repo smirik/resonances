@@ -1,11 +1,11 @@
 import pytest
-from resonances.matrix.secular_resonances import load_planetary_frequencies
+from resonances.data.const import PLANETARY_FREQUENCIES
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.secular.secular_resonance_finder import SecularResonanceFinder
 
 
 def test_find_secular_resonances_from_proper_freqs():
-    freqs = load_planetary_frequencies()
+    freqs = PLANETARY_FREQUENCIES.copy()
     proper_freqs = {"g": freqs["g6"], "s": freqs["s6"]}
 
     finder = SecularResonanceFinder()

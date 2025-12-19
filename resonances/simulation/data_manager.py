@@ -1,8 +1,13 @@
 import pandas as pd
 from pathlib import Path
 
-import resonances
 from .config import SimulationConfig
+from resonances.body import Body
+from resonances.logger import logger
+from resonances.mmr.mmr import MMR
+from resonances.secular.secular_resonance import SecularResonance
+from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, LidovKozaiParameters
+from resonances.resonance.plot import body as plot_body
 
 
 class DataManager:
@@ -11,11 +16,11 @@ class DataManager:
     def __init__(self, config: SimulationConfig):
         self.config = config
 
-    def should_save_body(self, body: resonances.Body, resonance: resonances.Resonance):
+    def should_save_body(self, body: Body, resonance):
         """Check if body MMR data should be saved."""
         return self._process_status(body.statuses.get(resonance.to_s(), 0), self.config.save)
 
-    def should_plot_body(self, body: resonances.Body, resonance: resonances.Resonance):
+    def should_plot_body(self, body: Body, resonance):
         """Check if body MMR should be plotted."""
         return self._process_status(body.statuses.get(resonance.to_s(), 0), self.config.plot)
 
@@ -53,15 +58,15 @@ class DataManager:
                 if self.should_plot_body(body, resonance):
                     self.plot_body(body, resonance, simulation)
 
-    def save_body(self, body: resonances.Body, resonance: resonances.Resonance, times):
+    def save_body(self, body: Body, resonance, times):
         """Save MMR data for a body."""
         self.ensure_save_path_exists()
 
-        if isinstance(resonance, resonances.MMR):
+        if isinstance(resonance, MMR):
             df_data = body.mmr_to_dict(resonance, times)
-        elif isinstance(resonance, resonances.SecularResonance):
+        elif isinstance(resonance, SecularResonance):
             df_data = body.secular_to_dict(resonance, times)
-        elif isinstance(resonance, resonances.LidovKozaiResonance):
+        elif isinstance(resonance, LidovKozaiResonance):
             df_data = body.lidov_kozai_to_dict(resonance, times)
         else:
             raise ValueError(f"Unknown resonance type: {type(resonance)}")
@@ -72,12 +77,12 @@ class DataManager:
 
         self._save_periodogram_data(body, resonance.to_s(), body.name)
 
-    def plot_body(self, body: resonances.Body, resonance: resonances.Resonance, simulation=None):
+    def plot_body(self, body: Body, resonance, simulation=None):
         """Plot MMR data for a body."""
         self.ensure_save_path_exists()
-        resonances.resonance.plot.body(simulation, body, resonance, image_type=self.config.image_type)
+        plot_body(simulation, body, resonance, image_type=self.config.image_type)
 
-    def _save_periodogram_data(self, body: resonances.Body, resonance_key: str, body_name: str):
+    def _save_periodogram_data(self, body: Body, resonance_key: str, body_name: str):
         """Save periodogram data for a resonance."""
         # Save resonant angle periodogram
         if body.periodogram_frequency.get(resonance_key) is not None:
@@ -138,11 +143,11 @@ class DataManager:
                     c2_value = None
                     c_value = None
 
-                    if isinstance(resonance, resonances.SecularResonance):
+                    if isinstance(resonance, SecularResonance):
                         res_type = 'Secular'
-                    elif isinstance(resonance, resonances.LidovKozaiResonance):
+                    elif isinstance(resonance, LidovKozaiResonance):
                         res_type = 'Lidov-Kozai'
-                        c1_value, c2_value, c_value = resonances.LidovKozaiParameters.evaluate(
+                        c1_value, c2_value, c_value = LidovKozaiParameters.evaluate(
                             body.initial_data['e'],
                             body.initial_data['inc'],
                             body.initial_data['omega'],
@@ -171,7 +176,7 @@ class DataManager:
                         ]
                     )
                 except Exception as e:
-                    resonances.logger.error(f"Error getting resonance summary for {body.name}: {e}")
+                    logger.error(f"Error getting resonance summary for {body.name}: {e}")
 
             # for mmr in body.mmrs:
             #     try:

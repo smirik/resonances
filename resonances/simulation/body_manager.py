@@ -1,9 +1,9 @@
 from typing import List, Union
 
-import resonances
 import astdys
-import resonances.horizons
 from .config import SimulationConfig
+from resonances.body import Body
+from resonances.resonance.resonance import Resonance
 
 
 class BodyManager:
@@ -11,7 +11,7 @@ class BodyManager:
 
     def __init__(self, config: SimulationConfig):
         self.config = config
-        self.bodies: List[resonances.Body] = []
+        self.bodies: List[Body] = []
         self.planets = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
 
     def get_index_of_planets(self, planets_names):
@@ -24,14 +24,18 @@ class BodyManager:
             if self.config.source == 'astdys':
                 return astdys.search(elem_or_num)
             else:
+                import resonances
+
                 return resonances.horizons.get_body_keplerian_elements(elem_or_num, date=self.config.date)
         elif isinstance(elem_or_num, dict):
             return elem_or_num
         else:
             raise ValueError('You can add body only by its number or all orbital elements')
 
-    def add_body(self, elem_or_num, resonance: Union[resonances.Resonance, str, list[resonances.Resonance], list[str]], name='asteroid'):
-        body = resonances.Body()
+    def add_body(self, elem_or_num, resonance: Union[Resonance, str, list[Resonance], list[str]], name='asteroid'):
+        body = Body()
+
+        import resonances
 
         if isinstance(resonance, list):
             resonances_list = [resonances.create_resonance(res) for res in resonance]
@@ -69,7 +73,7 @@ class BodyManager:
         for body in self.bodies:
             self._add_body_to_simulation(body, sim)
 
-    def _add_body_to_simulation(self, body: resonances.Body, sim):
+    def _add_body_to_simulation(self, body: Body, sim):
         """Add a single body to the REBOUND simulation."""
         body.index_in_simulation = len(sim.particles)
         sim.add(

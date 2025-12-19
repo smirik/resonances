@@ -1,7 +1,6 @@
 import numpy as np
 from typing import List, Union
 
-import resonances
 from .config import SimulationConfig
 from .body_manager import BodyManager
 from .integration import IntegrationEngine
@@ -9,6 +8,9 @@ from .data_manager import DataManager
 
 from resonances.secular.proper_angle import build_proper_angle_series
 from resonances.secular.secular_resonance import SecularResonance
+from resonances.resonance.resonance import Resonance
+from resonances.body import Body
+from resonances.logger import logger
 
 
 class Simulation:
@@ -35,9 +37,7 @@ class Simulation:
         """Create or load the Solar System simulation."""
         self.integration_engine.create_solar_system(force)
 
-    def add_body(
-        self, elem_or_num, resonance: Union[resonances.Resonance, str, list[resonances.Resonance], list[str]], name='asteroid'
-    ):  # noqa: C901
+    def add_body(self, elem_or_num, resonance: Union[Resonance, str, list[Resonance], list[str]], name='asteroid'):  # noqa: C901
         """Add a celestial body with any resonances."""
         self.body_manager.add_body(elem_or_num, resonance, name)
 
@@ -62,16 +62,18 @@ class Simulation:
 
     def identify_librations(self):
         """Identify librations for all bodies."""
+        import resonances
+
         for body in self.bodies:
             try:
                 if self.config.secular_angle_mode == 'proper':
                     self._rebuild_proper_secular_angles(body)
                 resonances.libration.body(self, body)
             except Exception as e:
-                resonances.logger.error(f"Error identifying librations for {body.name}: {e}")
+                logger.error(f"Error identifying librations for {body.name}: {e}")
                 raise
 
-    def _rebuild_proper_secular_angles(self, body: resonances.Body):
+    def _rebuild_proper_secular_angles(self, body: Body):
         for secular in body.secular_resonances:
             if not isinstance(secular, SecularResonance):
                 continue
@@ -89,4 +91,4 @@ class Simulation:
                 body.secular_angles_proper[secular.to_s()] = proper_angle
                 body.secular_angles[secular.to_s()] = proper_angle
             except Exception as exc:
-                resonances.logger.warning(f"Failed to build proper secular angle for {body.name} / {secular.to_s()}: {exc}")
+                logger.warning(f"Failed to build proper secular angle for {body.name} / {secular.to_s()}: {exc}")

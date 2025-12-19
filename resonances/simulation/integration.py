@@ -5,9 +5,9 @@ import tqdm
 import numpy as np
 
 import rebound
-import resonances
 from resonances.config import config as c
 from .config import SimulationConfig
+from resonances.body import Body
 from rebound import hash as h
 
 
@@ -60,7 +60,7 @@ class IntegrationEngine:
 
         self.sim.move_to_com()
 
-    def run_integration(self, bodies: List[resonances.Body], times, progress=False):
+    def run_integration(self, bodies: List[Body], times, progress=False):
         """Run the numerical integration."""
         # Setup bodies for simulation
         for body in bodies:
@@ -107,7 +107,7 @@ class IntegrationEngine:
                 }
             )
 
-    def _update_body_data(self, body: resonances.Body, orbits, time_index):
+    def _update_body_data(self, body: Body, orbits, time_index):
         """Update body orbital data and calculate resonant angles."""
         # Get orbital elements
         orbit = orbits[body.index_in_simulation - 1]  # -1 because Sun is not in orbits
