@@ -72,7 +72,6 @@ def check(
 def find(
     asteroids: Union[int, str, List[Union[int, str]]],
     formulas: Union[str, List[str]] = None,
-    order: int = None,
     name: str = None,
     integration_years: int = 1000000,
     **kwargs,
@@ -90,9 +89,6 @@ def find(
     formulas : Union[str, List[str]], optional
         Specific secular resonance formulas to check (e.g., ['g-g5', 'g-g6']).
         If None, will find all available resonances or those of specified order.
-    order : int, optional
-        Order of secular resonances to include (e.g., 2 for linear, 4 for nonlinear).
-        Ignored if formulas is specified.
     name : str, optional
         Name for the simulation
     integration_years : int, default=1000000
@@ -106,9 +102,6 @@ def find(
         Configured simulation ready to run with all found secular resonances
     """
 
-    if order is not None:
-        resonances.logger.warning("order argument is ignored; using provided formulas or all SECULAR_FORMULAS.")
-
     if formulas is None:
         formulas = SECULAR_FORMULAS
     elif isinstance(formulas, str):
@@ -117,7 +110,7 @@ def find(
     secular_resonances = [SecularResonance(formula) for formula in formulas]
 
     if len(secular_resonances) == 0:
-        resonances.logger.warning(f'No secular resonances found for formulas={formulas}, order={order}')
+        resonances.logger.warning(f'No secular resonances found for formulas={formulas}')
         return resonances.Simulation(name=name or "secular_find")
 
     libration_period_min = kwargs.pop('libration_period_min', 10000)

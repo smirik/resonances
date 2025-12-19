@@ -44,6 +44,23 @@ def test_secular_check_nu6():
 
 
 @pytest.mark.slow
+def test_secular_find_nu6():
+    """Test that asteroid 759 shows libration in nu6 secular resonance."""
+    sim = resonances.finder.secular_finder.find(
+        asteroids=[759, 1222],
+        resonance='nu6',
+        **BASIC_CONFIG,
+    )
+    sim.run(progress=True)
+    print(sim.bodies[0].secular_resonances[0].to_s())
+    summary = sim.data_manager.get_simulation_summary(sim.bodies)
+    status759 = summary.loc[(summary['name'] == '759') & (summary['resonance'] == 'g-g6'), 'status'].iloc[0]
+    status1222 = summary.loc[(summary['name'] == '1222') & (summary['resonance'] == 'g-g6'), 'status'].iloc[0]
+    assert 2 == abs(status759)
+    assert 2 == abs(status1222)
+
+
+@pytest.mark.slow
 def test_general_secular_resonance():
     """Test that asteroid 759 shows libration in g-g6 secular resonance."""
 
