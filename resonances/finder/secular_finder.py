@@ -3,7 +3,8 @@ import numpy as np
 from typing import Union, List
 
 from resonances.data.util import convert_input_to_list
-from resonances.secular.secular_matrix import SecularMatrix
+from resonances.secular.const import SECULAR_FORMULAS
+from resonances.secular.secular_resonance import SecularResonance
 
 
 def check(
@@ -77,11 +78,10 @@ def find(
     **kwargs,
 ) -> resonances.Simulation:
     """
-    Find secular resonances for asteroids using SecularMatrix.
+    Find secular resonances for asteroids using SECULAR_FORMULAS.
 
     This function automatically identifies all secular resonances (or specified ones)
-    for the given asteroids. It uses SecularMatrix.build() to get the resonances
-    and creates a simulation with all of them.
+    for the given asteroids and creates a simulation with all of them.
 
     Parameters:
     -----------
@@ -106,7 +106,15 @@ def find(
         Configured simulation ready to run with all found secular resonances
     """
 
-    secular_resonances = SecularMatrix.build(formulas=formulas, order=order)
+    if order is not None:
+        resonances.logger.warning("order argument is ignored; using provided formulas or all SECULAR_FORMULAS.")
+
+    if formulas is None:
+        formulas = SECULAR_FORMULAS
+    elif isinstance(formulas, str):
+        formulas = [formulas]
+
+    secular_resonances = [SecularResonance(formula) for formula in formulas]
 
     if len(secular_resonances) == 0:
         resonances.logger.warning(f'No secular resonances found for formulas={formulas}, order={order}')

@@ -19,6 +19,8 @@ from .resonance import (
 )
 from resonances.mmr.three_body_matrix import ThreeBodyMatrix
 from resonances.mmr.two_body_matrix import TwoBodyMatrix
+from resonances.lidov_kozai.lidov_kozai_matrix import LidovKozaiMatrix
+from resonances.secular import SECULAR_FORMULAS, SecularResonanceFinder
 from resonances.body import Body
 from .simulation import Simulation
 

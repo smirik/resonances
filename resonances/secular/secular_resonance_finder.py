@@ -5,6 +5,7 @@ import pandas as pd
 import astdys
 
 from resonances.matrix.secular_resonances import load_planetary_frequencies
+from resonances.secular.const import SECULAR_FORMULAS
 from resonances.secular.secular_resonance import SecularResonance
 
 
@@ -16,13 +17,12 @@ class SecularResonanceFinder:
 
     def __init__(
         self,
-        resonance: SecularResonance,
         threshold: float = 0.4,  # arcsec / yr
         threshold_negative: float = None,
         threshold_positive: float = None,
     ):
-        self.resonance = resonance
         self.threshold = threshold
+        self.resonance = None
 
         if (
             (threshold_negative is None)
@@ -41,13 +41,13 @@ class SecularResonanceFinder:
         # Ensure AstDyS is in synthetic proper elements mode
         astdys.set_type("synthetic")
 
-    def _evaluate_divisor(self, proper_g: float, proper_s: float) -> float:
+    def _evaluate_divisor(self, proper_g: float, proper_s: float, resonance: SecularResonance) -> float:
         """
         Evaluate the secular divisor numerically (arcsec/yr).
         """
         value = 0.0
 
-        for term in self.resonance.formula.terms:
+        for term in resonance.formula.terms:
             if term.mode == "g":
                 if term.index is None:
                     freq = proper_g
@@ -67,7 +67,80 @@ class SecularResonanceFinder:
 
         return value
 
-    def find_candidates(self, limit=None, limit_candidates=None) -> pd.DataFrame:
+    def _matches_threshold(self, divisor: float) -> bool:
+        if self.threshold_negative is None:
+            return abs(divisor) < self.threshold
+        return self.threshold_negative < divisor < self.threshold_positive
+
+    def find_secular_resonances(
+        self,
+        asteroid: int | str | None = None,
+        proper_freqs: Dict[str, float] | None = None,
+    ) -> Dict[str, SecularResonance]:
+        """
+        Find all secular resonances satisfied by the provided asteroid or proper frequencies.
+
+        Parameters
+        ----------
+        asteroid : str or int, optional
+            Asteroid name(s) to query in the AstDyS synthetic catalog.
+        proper_freqs : dict, optional
+            Explicit proper frequencies with keys "g" and "s".
+
+        Returns
+        -------
+        dict
+            Mapping formula string -> SecularResonance instance.
+        """
+        if proper_freqs is not None:
+            proper_g = proper_freqs.get("g", proper_freqs.get("proper_g"))
+            proper_s = proper_freqs.get("s", proper_freqs.get("proper_s"))
+            if proper_g is None or proper_s is None:
+                raise ValueError("proper_freqs must contain 'g' and 's' values.")
+        else:
+            if asteroid is None:
+                raise ValueError("Provide either asteroid or proper_freqs.")
+            row = astdys.search(str(asteroid))
+            if row is None:
+                raise ValueError(f"Asteroid {asteroid} not found in AstDyS catalog of sythetic proper elements.")
+            proper_g = row.get("g")
+            proper_s = row.get("s")
+            if proper_g is None or proper_s is None:
+                raise ValueError(f"Proper frequencies 'g' and 's' not found for the given asteroid {asteroid}.")
+
+        results: Dict[str, SecularResonance] = {}
+        for formula in SECULAR_FORMULAS:
+            resonance = SecularResonance(formula)
+            divisor = self._evaluate_divisor(proper_g, proper_s, resonance=resonance)
+            if self._matches_threshold(divisor):
+                results[formula] = resonance
+
+        return results
+
+    def find_secular_resonances_for_asteroids(
+        self,
+        asteroids: List[int | str],
+    ) -> Dict[int | str, Dict[str, SecularResonance]]:
+        """
+        Find all secular resonances satisfied by the provided list of asteroids.
+
+        Parameters
+        ----------
+        asteroids : list of str
+            List of asteroid names to query in the AstDyS synthetic catalog.
+
+        Returns
+        -------
+        dict
+            Mapping asteroid name -> (mapping formula string -> SecularResonance instance).
+        """
+        all_results: Dict[int | str, Dict[str, SecularResonance]] = {}
+        for asteroid in asteroids:
+            results = self.find_secular_resonances(asteroid=str(asteroid))
+            all_results[str(asteroid)] = results
+        return all_results
+
+    def find_candidates(self, resonance: SecularResonance, limit=None, limit_candidates=None) -> pd.DataFrame:
         """
         Find asteroids satisfying |divisor| < threshold.
 
@@ -80,7 +153,6 @@ class SecularResonanceFinder:
         records: List[dict] = []
 
         # Iterate over all numbered asteroids in AstDyS
-
         catalog = astdys.get_catalog()
         if limit:
             catalog = catalog.head(limit)
@@ -95,15 +167,9 @@ class SecularResonanceFinder:
             if proper_g is None or proper_s is None:
                 continue
 
-            divisor = self._evaluate_divisor(proper_g, proper_s)
+            divisor = self._evaluate_divisor(proper_g, proper_s, resonance)
 
-            if (
-                (self.threshold_negative is None)
-                and (abs(divisor) < self.threshold)
-                or (self.threshold_negative is not None)
-                and (self.threshold_positive is not None)
-                and (self.threshold_negative < divisor < self.threshold_positive)
-            ):
+            if self._matches_threshold(divisor):
                 count += 1
                 if limit_candidates and count > limit_candidates:
                     break
