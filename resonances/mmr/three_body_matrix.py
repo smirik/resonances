@@ -10,7 +10,6 @@ from .three_body import ThreeBody
 from resonances.matrix.matrix import Matrix
 
 
-
 class ThreeBodyMatrix(Matrix):
 
     catalog_file = 'MATRIX_3BODY_FILE'

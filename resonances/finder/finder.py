@@ -1,8 +1,6 @@
 from datetime import datetime
 from typing import List, Union
 
-import numpy as np
-
 from resonances.data.util import convert_input_to_list
 from resonances.horizons import get_body_keplerian_elements
 from resonances.logger import logger
