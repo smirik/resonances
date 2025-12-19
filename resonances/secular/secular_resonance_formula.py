@@ -32,7 +32,10 @@ class SecularResonanceFormula:
         pattern = re.compile(r'([+-]?\d*)\(([^()]+)\)')
 
         while '(' in expr:
-            expr = pattern.sub(self._expand_match, expr)
+            new_expr = pattern.sub(self._expand_match, expr)
+            if new_expr == expr:
+                raise ValueError(f"Invalid secular formula (unmatched parentheses): {self.formula!r}")
+            expr = new_expr
 
         return expr
 
@@ -53,11 +56,30 @@ class SecularResonanceFormula:
         return ''.join(expanded)
 
     def parse(self):
-        expr = self._expand_parentheses(self.formula)
+        expr = re.sub(r"\s+", "", self.formula)
+        expr = self._expand_parentheses(expr)
 
-        tokens = re.finditer(r'([+-]?)(\d*)([gs])(\d*)', expr)
+        if not expr:
+            raise ValueError("Invalid secular formula: empty expression")
 
+        allowed = set("+-0123456789gs")
+        illegal_chars = sorted({c for c in expr if c not in allowed})
+        if illegal_chars:
+            raise ValueError(f"Invalid secular formula {self.formula!r}: illegal character(s) {illegal_chars!r}")
+
+        token_re = re.compile(r'([+-]?)(\d*)([gs])(\d*)')
+        tokens = list(token_re.finditer(expr))
+
+        if not tokens:
+            raise ValueError(f"Invalid secular formula {self.formula!r}: no terms found")
+
+        last_end = 0
         for token in tokens:
+            if token.start() != last_end:
+                bad = expr[last_end : token.start()]
+                raise ValueError(f"Invalid secular formula {self.formula!r}: unexpected token {bad!r}")
+            last_end = token.end()
+
             sign, coeff, mode, index = token.groups()
 
             sign = -1 if sign == '-' else 1
@@ -66,9 +88,15 @@ class SecularResonanceFormula:
 
             if index:
                 index = int(index)
+                if index not in (4, 5, 6, 7, 8):
+                    raise ValueError(f"Invalid secular formula {self.formula!r}: unsupported forced index {index}")
                 term_type = TermType.FORCED
             else:
                 index = None
                 term_type = TermType.PROPER
 
             self.terms.append(ResonanceTerm(mode=mode, coefficient=coefficient, index=index, term_type=term_type))
+
+        if last_end != len(expr):
+            bad = expr[last_end:]
+            raise ValueError(f"Invalid secular formula {self.formula!r}: unexpected trailing token {bad!r}")

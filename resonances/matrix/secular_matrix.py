@@ -22,7 +22,7 @@ class SecularMatrix:
             else:
                 # Try to parse as a custom formula
                 try:
-                    resonances.append(GeneralSecularResonance(formula=formula))
+                    resonances.append(create_secular_resonance(formula))
                 except Exception as e:
                     print(f"Warning: Could not create resonance for formula '{formula}': {e}")
         return resonances
