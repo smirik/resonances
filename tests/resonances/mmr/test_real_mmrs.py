@@ -1,7 +1,7 @@
 import pytest
 import resonances
 import astdys
-from resonances.matrix.three_body_matrix import ThreeBodyMatrix
+from resonances.mmr.three_body_matrix import ThreeBodyMatrix
 from tests.tools import reset_fast_integrator, set_fast_integrator
 
 

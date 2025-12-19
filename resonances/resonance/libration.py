@@ -424,7 +424,7 @@ class libration:
 
     @classmethod
     def resolve(cls, resonance, pure, overlapping, max_libration_length, libration_period_critical, monotony, libration_monotony_critical):
-        from resonances.resonance.secular import SecularResonance
+        from resonances.secular.secular_resonance import SecularResonance
 
         status = 0
 

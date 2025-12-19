@@ -8,7 +8,7 @@ from .integration import IntegrationEngine
 from .data_manager import DataManager
 
 from resonances.secular.proper_angle import build_proper_angle_series
-from resonances.resonance.secular import SecularResonance
+from resonances.secular.secular_resonance import SecularResonance
 
 
 class Simulation:

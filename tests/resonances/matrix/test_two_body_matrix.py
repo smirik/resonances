@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 
 import resonances
-from resonances.matrix.two_body_matrix import TwoBodyMatrix
+from resonances.mmr.two_body_matrix import TwoBodyMatrix
 
 
 @pytest.fixture(autouse=True)

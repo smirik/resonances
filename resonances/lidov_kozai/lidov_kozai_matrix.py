@@ -5,7 +5,7 @@ import pandas as pd
 
 import astdys
 
-from resonances.resonance.lidov_kozai import LidovKozaiParameters
+from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiParameters
 
 
 class LidovKozaiMatrix:

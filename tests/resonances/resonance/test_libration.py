@@ -36,7 +36,7 @@ def test_resolve():
         def __init__(self):
             pass
 
-    class MockSecularResonance(resonances.resonance.secular.SecularResonance):
+    class MockSecularResonance(resonances.secular.secular_resonance.SecularResonance):
         def __init__(self):
             super().__init__('g-g5')
 

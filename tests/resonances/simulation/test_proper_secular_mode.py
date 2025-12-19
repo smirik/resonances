@@ -1,7 +1,7 @@
 import numpy as np
 
 from resonances import Body, Simulation
-from resonances.resonance.secular import SecularResonance
+from resonances.secular.secular_resonance import SecularResonance
 
 
 def test_simulation_rebuilds_proper_secular_angles():

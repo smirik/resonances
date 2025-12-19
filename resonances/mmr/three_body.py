@@ -1,6 +1,6 @@
 import numpy as np
 import re
-from resonances.resonance.mmr import MMR
+from resonances.mmr.mmr import MMR
 import resonances.data.util as util
 from resonances.data import const
 import rebound

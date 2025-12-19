@@ -27,7 +27,7 @@ complex_res = resonances.create_secular_resonance('g+s-s7-g5')
 ### Building Multiple Resonances
 
 ```python
-from resonances.matrix.secular_matrix import SecularMatrix
+from resonances.secular.secular_matrix import SecularMatrix
 
 # Build specific resonances
 resonances_list = SecularMatrix.build(['g-g5', 'g-g6', 's-s6'])

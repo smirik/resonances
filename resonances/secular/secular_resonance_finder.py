@@ -5,7 +5,7 @@ import pandas as pd
 import astdys
 
 from resonances.matrix.secular_resonances import load_planetary_frequencies
-from resonances.resonance.secular import SecularResonance
+from resonances.secular.secular_resonance import SecularResonance
 
 
 class SecularResonanceFinder:

@@ -1,12 +1,12 @@
 import re
 from typing import Union
 
-from resonances.resonance.mmr import MMR
+from resonances.mmr.mmr import MMR
 from resonances.resonance.resonance import Resonance
-from resonances.resonance.secular import SECULAR_RESONANCE_ALIASES, SecularResonance
-from resonances.resonance.three_body import ThreeBody
-from resonances.resonance.two_body import TwoBody
-from resonances.resonance.lidov_kozai import LidovKozaiResonance
+from resonances.secular.secular_resonance import SECULAR_RESONANCE_ALIASES, SecularResonance
+from resonances.mmr.three_body import ThreeBody
+from resonances.mmr.two_body import TwoBody
+from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
 
 
 def create_mmr(coeff, planets_names=None):  # noqa: C901

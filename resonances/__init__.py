@@ -17,8 +17,8 @@ from .resonance import (
     detect_resonance_type,
     create_resonance,
 )
-from resonances.matrix.three_body_matrix import ThreeBodyMatrix
-from resonances.matrix.two_body_matrix import TwoBodyMatrix
+from resonances.mmr.three_body_matrix import ThreeBodyMatrix
+from resonances.mmr.two_body_matrix import TwoBodyMatrix
 from resonances.body import Body
 from .simulation import Simulation
 

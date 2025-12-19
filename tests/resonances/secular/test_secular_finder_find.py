@@ -2,7 +2,7 @@ import resonances.finder.secular_finder
 import resonances
 import numpy as np
 import pytest
-from resonances.matrix.secular_matrix import SecularMatrix
+from resonances.secular.secular_matrix import SecularMatrix
 
 from tests.resonances.secular import BASIC_CONFIG
 

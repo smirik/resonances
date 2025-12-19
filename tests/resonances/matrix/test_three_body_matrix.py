@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 
 import resonances
-from resonances.matrix.three_body_matrix import ThreeBodyMatrix
+from resonances.mmr.three_body_matrix import ThreeBodyMatrix
 
 
 @pytest.fixture(autouse=True)

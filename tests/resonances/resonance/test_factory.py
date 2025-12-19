@@ -1,9 +1,9 @@
 import pytest
 
-from resonances.resonance.three_body import ThreeBody
-from resonances.resonance.two_body import TwoBody
-from resonances.resonance.mmr import MMR
-from resonances.resonance.secular import SecularResonance
+from resonances.mmr.three_body import ThreeBody
+from resonances.mmr.two_body import TwoBody
+from resonances.mmr.mmr import MMR
+from resonances.secular.secular_resonance import SecularResonance
 from resonances import LidovKozaiResonance
 from resonances.resonance.factory import create_mmr, detect_resonance_type, create_resonance, create_secular_resonance
 

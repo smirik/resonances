@@ -1,6 +1,6 @@
 import numpy as np
 
-from resonances.resonance.secular import SecularResonance
+from resonances.secular.secular_resonance import SecularResonance
 import resonances.secular.proper_angle as proper_angle
 
 

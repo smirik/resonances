@@ -3,7 +3,7 @@ import numpy as np
 from typing import Union, List
 
 from resonances.data.util import convert_input_to_list
-from resonances.matrix.secular_matrix import SecularMatrix
+from resonances.secular.secular_matrix import SecularMatrix
 
 
 def check(

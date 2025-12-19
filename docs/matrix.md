@@ -24,7 +24,7 @@ There are two classes, `ThreeBodyMatrix` and `TwoBodyMatrix`, responsible for bu
 The following code will print the list of three-body MMRs close to the value `2.39` AU of the semi-major axis.
 
 ```python
-from resonances.matrix.three_body_matrix import ThreeBodyMatrix
+from resonances.mmr.three_body_matrix import ThreeBodyMatrix
 
 mmrs = ThreeBodyMatrix.find_resonances(2.39, planets=['Jupiter', 'Saturn', 'Uranus'])
 for mmr in mmrs:
@@ -38,7 +38,7 @@ If you omit this parameter, the app will use all possible combinations of all pl
 The same workflow is for two-body MMRs. The following code will find all two-body MMRs with Jupiter near `5.2` AU (Trojans, actually):
 
 ```python
-from resonances.matrix.two_body_matrix import TwoBodyMatrix
+from resonances.mmr.two_body_matrix import TwoBodyMatrix
 
 mmrs = TwoBodyMatrix.find_resonances(5.2, planets=['Jupiter'])
 for mmr in mmrs:
@@ -50,7 +50,7 @@ The method `find_resonance` has one more optional parameter `sigma` representing
 The following code will find all two-body MMRs with Jupiter between `4.2` and `6.2` AU:
 
 ```python
-from resonances.matrix.two_body_matrix import TwoBodyMatrix
+from resonances.mmr.two_body_matrix import TwoBodyMatrix
 
 mmrs = TwoBodyMatrix.find_resonances(5.2, planets=['Jupiter'], sigma=1.0)
 for mmr in mmrs:

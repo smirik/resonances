@@ -1,7 +1,7 @@
 import math
 import pytest
 
-from resonances.resonance.secular import SecularResonance
+from resonances.secular.secular_resonance import SecularResonance
 
 # ============================================================
 # Dummy orbit class (minimal interface needed by calc_angle)

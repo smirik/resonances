@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import itertools
@@ -6,12 +6,16 @@ import itertools
 import resonances
 from resonances.matrix.matrix import Matrix
 
+if TYPE_CHECKING:
+    from resonances.mmr.mmr import MMR
+
 
 class ThreeBodyMatrix(Matrix):
 
     catalog_file = 'MATRIX_3BODY_FILE'
 
     @classmethod
+    # flake8: noqa: C901
     def build(cls):
         primary_max = int(resonances.config.get('MATRIX_3BODY_PRIMARY_MAX'))
         m_max = int(resonances.config.get('MATRIX_3BODY_COEF_MAX'))
@@ -45,7 +49,7 @@ class ThreeBodyMatrix(Matrix):
         return df
 
     @classmethod
-    def find_resonances(cls, a, sigma=0.02, planets=None) -> List[resonances.MMR]:
+    def find_resonances(cls, a, sigma=0.02, planets=None) -> List["MMR"]:
         if cls.matrix is None:
             cls.load()
 

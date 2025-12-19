@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "resonances"
-version = "0.6.0"
+version = "1.0.0"
 description = "Identification of mean-motion resonances"
 authors = ["Evgeny Smirnov <smirik@gmail.com>"]
 license = "MIT"
@@ -58,6 +58,7 @@ omit = [".*", "tests/*", "*/site-packages/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/resonances"]
+markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
 filterwarnings = [
     "ignore::DeprecationWarning:rebound",
     "ignore::RuntimeWarning:rebound.horizons",

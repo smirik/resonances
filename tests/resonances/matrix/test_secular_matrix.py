@@ -1,7 +1,7 @@
 import pytest
-from resonances.matrix.secular_matrix import SecularMatrix
+from resonances.secular.secular_matrix import SecularMatrix
 from resonances.matrix.secular_resonances import SECULAR_RESONANCES, get_available_secular_resonance_formulas, get_available_orders
-from resonances.resonance.secular import SecularResonance
+from resonances.secular.secular_resonance import SecularResonance
 from resonances.resonance.factory import create_secular_resonance
 
 

@@ -1,6 +1,6 @@
 import pytest
 from resonances.resonance.factory import create_secular_resonance
-from resonances.resonance.secular import SecularResonance
+from resonances.secular.secular_resonance import SecularResonance
 
 
 class TestFactoryIntegration:

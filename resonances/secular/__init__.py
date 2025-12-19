@@ -1,1 +1,3 @@
 from .proper_angle import non_singular_elements, quinn_fir_coeffs, build_planetary_longitudes, build_proper_angle_series
+from .secular_resonance import SecularResonance, SECULAR_RESONANCE_ALIASES
+from .secular_matrix import SecularMatrix
