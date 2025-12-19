@@ -1,42 +1,7 @@
-from typing import List, Union
-
-import astdys
-
-from resonances.data.util import datetime_from_string
+from typing import List
 from resonances.mmr.mmr import MMR
-from resonances.resonance.factory import create_mmr
-from resonances.simulation.simulation import Simulation
-from resonances.logger import logger
 from .three_body_matrix import ThreeBodyMatrix
 from .two_body_matrix import TwoBodyMatrix
-
-
-def find_asteroids_in_mmr(
-    mmr: Union[MMR, str],
-    sigma=0.1,
-    per_iteration: int = 500,
-    name: str = None,
-):  # pragma: no cover
-    if isinstance(mmr, str):
-        mmr = create_mmr(mmr)
-
-    df = astdys.search_by_axis(mmr.resonant_axis, sigma=sigma)
-    numbers = df.index.astype(str).tolist()
-    chunks = [numbers[i : i + per_iteration] for i in range(0, len(numbers), per_iteration)]
-
-    num_chunks = len(chunks)
-    data = []
-    for i, chunk in enumerate(chunks):
-        sim = Simulation(name=name, source='astdys', date=datetime_from_string(astdys.catalog_time))
-        sim.create_solar_system()
-
-        logger.info(f"Iteration {i+1}/{num_chunks}: Going to process a chunk of {len(chunk)} asteroids.")
-        for asteroid in chunk:
-            sim.add_body(df.loc[asteroid].to_dict(), mmr, f"{asteroid}")
-        sim.run()
-        data.append(sim.get_simulation_summary())
-
-    return data
 
 
 def find_mmrs(a: float, planets=None, sigma2=0.1, sigma3=0.02, sigma=None) -> List[MMR]:

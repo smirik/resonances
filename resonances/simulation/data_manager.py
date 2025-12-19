@@ -178,59 +178,6 @@ class DataManager:
                 except Exception as e:
                     logger.error(f"Error getting resonance summary for {body.name}: {e}")
 
-            # for mmr in body.mmrs:
-            #     try:
-            #         overlapping_str = ', '.join(
-            #             f'({left:.0f}, {right:.0f})' for left, right in body.periodogram_peaks_overlapping.get(mmr.to_s(), [])
-            #         )
-            #         data.append(
-            #             [
-            #                 body.name,
-            #                 mmr.to_s(),
-            #                 'MMR',
-            #                 body.statuses.get(mmr.to_s(), 0),
-            #                 body.libration_pure.get(mmr.to_s(), False),
-            #                 body.libration_metrics.get(mmr.to_s(), {}).get('num_libration_periods', 0),
-            #                 body.libration_metrics.get(mmr.to_s(), {}).get('max_libration_length', 0),
-            #                 body.monotony.get(mmr.to_s(), 0),
-            #                 overlapping_str,
-            #                 body.initial_data['a'],
-            #                 body.initial_data['e'],
-            #                 body.initial_data['inc'],
-            #                 body.initial_data['Omega'],
-            #                 body.initial_data['omega'],
-            #                 body.initial_data['M'],
-            #             ]
-            #         )
-            #     except Exception as e:
-            #         resonances.logger.error(f"Error getting MMR summary for {body.name}: {e}")
-            # for secular in body.secular_resonances:
-            #     try:
-            #         overlapping_str = ', '.join(
-            #             f'({left:.0f}, {right:.0f})' for left, right in body.periodogram_peaks_overlapping.get(secular.to_s(), [])
-            #         )
-            #         data.append(
-            #             [
-            #                 body.name,
-            #                 secular.to_s(),
-            #                 'Secular',
-            #                 body.statuses.get(secular.to_s(), 0),
-            #                 body.libration_pure.get(secular.to_s(), False),
-            #                 body.libration_metrics.get(secular.to_s(), {}).get('num_libration_periods', 0),
-            #                 body.libration_metrics.get(secular.to_s(), {}).get('max_libration_length', 0),
-            #                 body.monotony.get(secular.to_s(), 0),
-            #                 overlapping_str,
-            #                 body.initial_data['a'],
-            #                 body.initial_data['e'],
-            #                 body.initial_data['inc'],
-            #                 body.initial_data['Omega'],
-            #                 body.initial_data['omega'],
-            #                 body.initial_data['M'],
-            #             ]
-            #         )
-            #     except Exception as e:
-            #         resonances.logger.error(f"Error getting secular summary for {body.name}: {e}")
-
         return pd.DataFrame(
             data,
             columns=[

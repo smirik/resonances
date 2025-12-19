@@ -241,30 +241,6 @@ def _build_angle_series_from_terms(*, times_years, varpi_mean, Omega_mean, terms
     return angle
 
 
-def _build_angle_series_legacy(*, times_years, varpi_mean, Omega_mean, resonance, planetary_freqs) -> np.ndarray:
-    varpi_planets, Omega_planets = build_planetary_longitudes(
-        times_years,
-        resonance.planets_names,
-        planetary_freqs,
-    )
-
-    angle = np.zeros_like(times_years, dtype=float)
-
-    # Build linear combination of varpi's
-    if "varpi" in resonance.coeffs:
-        angle += resonance.coeffs["varpi"][0] * varpi_mean
-        for coeff, planet_long in zip(resonance.coeffs["varpi"][1:], varpi_planets):
-            angle += coeff * planet_long
-
-    # Build linear combination of Omega's
-    if "Omega" in resonance.coeffs:
-        angle += resonance.coeffs["Omega"][0] * Omega_mean
-        for coeff, planet_long in zip(resonance.coeffs["Omega"][1:], Omega_planets):
-            angle += coeff * planet_long
-
-    return angle
-
-
 def build_proper_angle_series(
     times,
     body,
@@ -320,7 +296,7 @@ def calc_proper_angle_series(
     - applies a chosen low-pass filter (Quinn FIR / firwin FIR / Butterworth IIR),
       with cutoff defined by `cutoff_period_years`,
     - reconstructs secular (mean) longitudes varpi_mean, Omega_mean,
-    - builds the critical angle using resonance.coeffs and planetary secular frequencies,
+    - builds the critical angle using resonance.formula and planetary secular frequencies,
     - optionally aligns phase with an existing angle time series.
 
     Parameters
@@ -330,11 +306,7 @@ def calc_proper_angle_series(
     omega, Omega, ecc, inc : array-like
         Osculating elements at given times (angles in radians).
     resonance : object
-        Either:
-        - a modern secular resonance with `resonance.formula.terms` (from `SecularResonanceFormula`), or
-        - a legacy secular resonance with:
-          - `planets_names`: list of planet names (for forced terms),
-          - `coeffs`: dict with keys 'varpi' and/or 'Omega', each a list of coefficients.
+        A secular resonance with `resonance.formula.terms` (from `SecularResonanceFormula`).
     existing_angle : array-like or None
         If provided, phase of the resulting series is shifted so that angle[0] matches existing_angle[0].
     cutoff_period_years : float
@@ -381,25 +353,13 @@ def calc_proper_angle_series(
     varpi_mean = np.mod(np.arctan2(h_f, k_f), 2.0 * np.pi)
     Omega_mean = np.mod(np.arctan2(p_f, q_f), 2.0 * np.pi)
 
-    # New secular resonance model: parse from a SecularResonanceFormula-like object.
-    if hasattr(resonance, "formula") and hasattr(resonance.formula, "terms"):
-        angle = _build_angle_series_from_terms(
-            times_years=times_years,
-            varpi_mean=varpi_mean,
-            Omega_mean=Omega_mean,
-            terms=resonance.formula.terms,
-            planetary_freqs=planetary_freqs,
-        )
-
-    # Backward-compatible model: resonance.coeffs / resonance.planets_names (legacy API).
-    else:
-        angle = _build_angle_series_legacy(
-            times_years=times_years,
-            varpi_mean=varpi_mean,
-            Omega_mean=Omega_mean,
-            resonance=resonance,
-            planetary_freqs=planetary_freqs,
-        )
+    angle = _build_angle_series_from_terms(
+        times_years=times_years,
+        varpi_mean=varpi_mean,
+        Omega_mean=Omega_mean,
+        terms=resonance.formula.terms,
+        planetary_freqs=planetary_freqs,
+    )
 
     angle = np.mod(angle, 2.0 * np.pi)
 
