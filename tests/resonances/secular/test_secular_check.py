@@ -22,6 +22,7 @@ def setup_test_config():
     resonances.config.set('PLOT_PATH', original_plot_path)
 
 
+@pytest.mark.slow
 def test_secular_check_nu6():
     """Test that asteroid 759 shows libration in nu6 secular resonance."""
 
@@ -42,6 +43,7 @@ def test_secular_check_nu6():
     assert 0 == abs(status760)
 
 
+@pytest.mark.slow
 def test_general_secular_resonance():
     """Test that asteroid 759 shows libration in g-g6 secular resonance."""
 
@@ -87,6 +89,7 @@ def test_general_secular_resonance():
     assert 2 != abs(status5507_nu6), f"Expected |status5507| in nu6 = 2, got {abs(status5507_nu6)}"
 
 
+@pytest.mark.slow
 def test_pluto_kozai_resonance():
     """Test that Pluto (134340) shows circulation in Kozai resonance (2g-2s)."""
 

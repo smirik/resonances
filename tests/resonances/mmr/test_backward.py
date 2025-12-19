@@ -18,6 +18,7 @@ def setup_test_config():
     resonances.config.set('PLOT_PATH', original_plot_path)
 
 
+@pytest.mark.slow
 def test_backward_integration():
     """
     Test backward integration functionality.

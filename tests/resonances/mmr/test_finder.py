@@ -1,7 +1,9 @@
+import pytest
 import resonances
-from .tools import set_fast_integrator, reset_fast_integrator
+from tests.tools import reset_fast_integrator, set_fast_integrator
 
 
+@pytest.mark.slow
 def test_find():
     asteroids = [463, 490]
     planets = ['Jupiter', 'Saturn']
@@ -25,6 +27,7 @@ def test_find():
     reset_fast_integrator()
 
 
+@pytest.mark.slow
 def test_check():
     set_fast_integrator()
 

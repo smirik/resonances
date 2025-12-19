@@ -1,9 +1,11 @@
+import pytest
 import resonances
 import astdys
 from resonances.matrix.three_body_matrix import ThreeBodyMatrix
-from .tools import set_fast_integrator, reset_fast_integrator
+from tests.tools import reset_fast_integrator, set_fast_integrator
 
 
+@pytest.mark.slow
 def test_find():
     set_fast_integrator()
 
@@ -17,6 +19,7 @@ def test_find():
     reset_fast_integrator()
 
 
+@pytest.mark.slow
 def test_trojans():
     set_fast_integrator()
     asteroids = [624, 588, 617]
@@ -37,6 +40,7 @@ def test_trojans():
     reset_fast_integrator()
 
 
+@pytest.mark.slow
 def test_3body():
     set_fast_integrator()
 

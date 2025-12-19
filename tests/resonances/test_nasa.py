@@ -6,6 +6,7 @@ from astroquery.jplhorizons import Horizons
 from astropy.table import Table
 
 
+@pytest.mark.slow
 def test_astroquery():
     obj = Horizons(id='Hektor', location='500@10', epochs=2458133.33546)
     elems = obj.elements()
@@ -22,11 +23,13 @@ def test_astroquery():
     assert 'M' in elems.keys()
 
 
+@pytest.mark.slow
 def test_add_body_nasa():
     sim = tools.create_test_simulation_for_solar_system(save=True)
     sim.add_body('99942', resonances.create_mmr('7E-6'), name='Apophis')
 
 
+@pytest.mark.slow
 def test_horizon():
     elem = resonances.horizons.get_body_keplerian_elements('Hektor', '2025-01-01')
     assert elem['a'] > 5.0

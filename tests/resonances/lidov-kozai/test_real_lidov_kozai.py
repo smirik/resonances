@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import resonances
 
@@ -23,6 +24,7 @@ LK_SIMULATION_CONFIG = dict(
 )
 
 
+@pytest.mark.slow
 def test_real_lidov_kozai_statuses():
     resonance_name = resonances.LidovKozaiResonance().to_s()
     sim = resonances.Simulation(name='test_lidov_kozai_real', source='astdys', **LK_SIMULATION_CONFIG)

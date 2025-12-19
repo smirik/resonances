@@ -7,7 +7,13 @@ test: install
 	poetry run pytest -v tests
 
 test-only: install
-	poetry run pytest -v tests/resonances
+	poetry run pytest -v tests
+
+test-fast: install
+	poetry run pytest -v -m "not slow" tests
+
+test-slow: install
+	poetry run pytest -v -m "slow" tests
 
 run-docs:
 	poetry run mkdocs serve

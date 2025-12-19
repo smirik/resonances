@@ -25,6 +25,7 @@ def setup_test_config():
 class TestSecularFinderFind:
     """Test the secular_finder.find function."""
 
+    @pytest.mark.slow
     def test_find_all_secular_resonances(self):
         """Test finding all secular resonances for asteroid 759 (equivalent to old test_759_all_secular_resonances)."""
 
@@ -69,6 +70,7 @@ class TestSecularFinderFind:
         assert nu6_status is not None, "Expected g-g6 to have non-zero status"
         assert abs(nu6_status) == 2, f"Expected |status| = 2 for g-g6, got {abs(nu6_status)}"
 
+    @pytest.mark.slow
     def test_find_specific_formulas(self):
         """Test finding specific secular resonance formulas."""
 
@@ -94,6 +96,7 @@ class TestSecularFinderFind:
             assert 'g-g5' in resonance_formulas
             assert 'g-g6' in resonance_formulas
 
+    @pytest.mark.slow
     def test_find_by_order(self):
         """Test finding secular resonances by order."""
 
@@ -117,6 +120,7 @@ class TestSecularFinderFind:
         expected_order2 = SecularMatrix.build(order=2)
         assert len(body.secular_resonances) == len(expected_order2)
 
+    @pytest.mark.slow
     def test_find_kwargs_propagation(self):
         """Test that kwargs parameters are correctly propagated to simulation."""
 
@@ -142,6 +146,7 @@ class TestSecularFinderFind:
         expected_tmax = int(1000000 * 2 * np.pi)
         assert sim.config.tmax == expected_tmax
 
+    @pytest.mark.slow
     def test_find_no_resonances_found(self):
         """Test behavior when no resonances are found."""
 
@@ -152,6 +157,7 @@ class TestSecularFinderFind:
         assert sim.config.name == "test_no_resonances"
         assert len(sim.bodies) == 0
 
+    @pytest.mark.slow
     def test_find_multiple_asteroids(self):
         """Test finding resonances for multiple asteroids."""
 
@@ -172,6 +178,7 @@ class TestSecularFinderFind:
         for body in sim.bodies:
             assert len(body.secular_resonances) == expected_resonances
 
+    @pytest.mark.slow
     def test_find_integration_engine_config_reference(self):
         """Test that integration engine maintains reference to the same config object."""
 
