@@ -112,14 +112,10 @@ def find(
         List of simulations if both types searched
     """
 
-    shouldSearchMMR = type is None or 'mmr' in (type if isinstance(type, list) else [type])
-    shouldSearchSecular = type is None or 'secular' in (type if isinstance(type, list) else [type])
-    shouldSearchLidovKozai = (
-        type is None
-        or 'lidov_kozai' in (type if isinstance(type, list) else [type])
-        or 'lk' in (type if isinstance(type, list) else [type])
-        or 'lkr' in (type if isinstance(type, list) else [type])
-    )
+    type_list = type if isinstance(type, list) else ([type] if type is not None else [])
+    shouldSearchMMR = type is None or 'mmr' in type_list
+    shouldSearchSecular = ('secular' in type_list) or (formulas is not None)
+    shouldSearchLidovKozai = 'lidov_kozai' in type_list or 'lk' in type_list or 'lkr' in type_list
 
     asteroids = convert_input_to_list(asteroids)
     formulas = convert_input_to_list(formulas) if formulas is not None else None
@@ -140,7 +136,9 @@ def find(
                 secular_resonances = finder.find_secular_resonances(asteroid=asteroid)
                 resonances_dict[asteroid].extend(secular_resonances.values())
             else:
-                secular_resonances = [SecularResonance(formula) for formula in formulas]
+                from resonances.resonance.factory import create_secular_resonance
+
+                secular_resonances = [create_secular_resonance(formula) for formula in formulas]
                 resonances_dict[asteroid].extend(secular_resonances)
         if shouldSearchLidovKozai:
             resonances_dict[asteroid].append(LidovKozaiResonance())

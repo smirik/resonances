@@ -63,6 +63,7 @@ markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
 filterwarnings = [
     "ignore::DeprecationWarning:rebound",
     "ignore::RuntimeWarning:rebound.horizons",
+    "ignore::RuntimeWarning:rebound",
 ]
 
 [tool.coverage.report]
