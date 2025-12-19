@@ -8,11 +8,11 @@ from resonances.data.util import convert_input_to_list
 from resonances.mmr.mmr_finder import find_mmrs
 
 ResonanceType = Union[
-    resonances.MMR,
-    resonances.SecularResonance,
-    resonances.LidovKozaiResonance,
+    "resonances.MMR",
+    "resonances.SecularResonance",
+    "resonances.LidovKozaiResonance",
     str,
-    List[Union[resonances.MMR, resonances.SecularResonance, resonances.LidovKozaiResonance, str]],
+    List[Union["resonances.MMR", "resonances.SecularResonance", "resonances.LidovKozaiResonance", str]],
 ]
 
 
@@ -21,7 +21,7 @@ def check(
     resonance: ResonanceType,
     name: str = None,
     **kwargs,
-) -> Union[resonances.Simulation, List[resonances.Simulation]]:
+) -> Union["resonances.Simulation", List["resonances.Simulation"]]:
     """
     Universal check function for MMR, secular, and Lidov-Kozai resonances.
 
@@ -40,7 +40,7 @@ def check(
 
     Returns:
     --------
-    Union[resonances.Simulation, List[resonances.Simulation]]
+    Union["resonances.Simulation", List["resonances.Simulation"]]
         Single simulation if all resonances are same type,
         List of simulations if mixed types
     """
@@ -73,7 +73,7 @@ def find(
     formulas: Union[str, List[str]] = None,
     type: str | List[str] = None,
     **kwargs,
-) -> Union[resonances.Simulation, List[resonances.Simulation]]:
+) -> Union["resonances.Simulation", List["resonances.Simulation"]]:
     """
     Universal find function for both MMR and secular resonances.
 
@@ -101,7 +101,7 @@ def find(
 
     Returns:
     --------
-    Union[resonances.Simulation, List[resonances.Simulation]]
+    Union["resonances.Simulation", List["resonances.Simulation"]]
         Single simulation if single type search,
         List of simulations if both types searched
     """

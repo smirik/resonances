@@ -8,7 +8,7 @@ import resonances.horizons
 
 
 def find_asteroids_in_mmr(
-    mmr: Union[resonances.MMR, str],
+    mmr: Union["resonances.MMR", str],
     sigma=0.1,
     per_iteration: int = 500,
     name: str = None,
@@ -35,7 +35,7 @@ def find_asteroids_in_mmr(
     return data
 
 
-def find_mmrs(a: float, planets=None, sigma2=0.1, sigma3=0.02, sigma=None) -> List[resonances.MMR]:
+def find_mmrs(a: float, planets=None, sigma2=0.1, sigma3=0.02, sigma=None) -> List["resonances.MMR"]:
     """Find Two and Three-Body Mean Motion Resonances (MMR) for a given semi-major axis.
     This function identifies both two-body and three-body mean motion resonances
     near the specified semi-major axis value. If a single sigma value is provided,
