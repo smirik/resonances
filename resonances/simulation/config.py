@@ -5,6 +5,7 @@ import resonances
 import astdys
 import resonances.data.util
 from resonances.config import config as c
+import os
 
 
 class SimulationConfig:
@@ -37,7 +38,11 @@ class SimulationConfig:
 
     def _setup_integration_params(self, kwargs):
         """Setup integration parameters."""
-        self.tmax = kwargs.get('tmax', int(c.get('INTEGRATION_TMAX')))
+        integration_years = kwargs.get('integration_years', None)
+        if integration_years is not None:
+            self.tmax = int(integration_years * 2 * np.pi)
+        else:
+            self.tmax = kwargs.get('tmax', int(c.get('INTEGRATION_TMAX')))
         self.integrator = kwargs.get('integrator', c.get('INTEGRATION_INTEGRATOR'))
         self.dt = kwargs.get('dt', float(c.get('INTEGRATION_DT')))
         self.integration_corrector = kwargs.get('integration_corrector', int(c.get('INTEGRATION_CORRECTOR')))
@@ -50,7 +55,13 @@ class SimulationConfig:
         self.save_planets = kwargs.get('save_planets', bool(c.get('SAVE_PLANETS') == 'True'))
 
         now = datetime.datetime.now()
-        self.save_path = kwargs.get('save_path', f"{c.get('SAVE_PATH')}/{now.strftime('%Y-%m-%d_%H:%M:%S')}")
+        self.save_path = kwargs.get('save_path', None)
+        if self.save_path is None:
+            save_path = f"{c.get('SAVE_PATH')}/{self.name}"
+            if os.path.exists(save_path):
+                save_path += f"_{now.strftime('%Y-%m-%d_%H-%M-%S')}"
+                resonances.logger.info(f"Save path already exists. Using new path: {save_path}")
+            self.save_path = save_path
 
     def _setup_plot_params(self, kwargs):
         """Setup plotting parameters."""
@@ -59,7 +70,13 @@ class SimulationConfig:
         self.image_type = kwargs.get('image_type', c.get('PLOT_IMAGE_TYPE'))
 
         now = datetime.datetime.now()
-        self.plot_path = kwargs.get('plot_path', f"{c.get('PLOT_PATH')}/{now.strftime('%Y-%m-%d_%H:%M:%S')}")
+        self.plot_path = kwargs.get('plot_path', None)
+        if self.plot_path is None:
+            plot_path = f"{c.get('PLOT_PATH')}/{self.name}"
+            if os.path.exists(plot_path):
+                plot_path += f"_{now.strftime('%Y-%m-%d_%H-%M-%S')}"
+                resonances.logger.info(f"Plot path already exists. Using new path: {plot_path}")
+            self.plot_path = plot_path
 
     def _setup_libration_params(self, kwargs):
         """Setup libration analysis parameters."""

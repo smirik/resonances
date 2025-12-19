@@ -1,8 +1,7 @@
 import numpy as np
 from numpy import i0 as bessi0  # modified Bessel I0
 from scipy.signal import firwin, butter, filtfilt
-
-from resonances.matrix.secular_resonances import load_planetary_frequencies
+from resonances.data.const import PLANETARY_FREQUENCIES
 
 
 def non_singular_elements(eccentricity, inclination, Omega, varpi):
@@ -353,7 +352,7 @@ def calc_proper_angle_series(
         Time series of the secular critical angle in [0, 2π).
     """
     if planetary_freqs is None:
-        planetary_freqs = load_planetary_frequencies()
+        planetary_freqs = PLANETARY_FREQUENCIES
 
     times = np.asarray(times)
     times_years = times / (2.0 * np.pi)

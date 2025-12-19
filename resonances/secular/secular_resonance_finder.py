@@ -4,8 +4,8 @@ from typing import Dict, List
 import pandas as pd
 import astdys
 
-from resonances.matrix.secular_resonances import load_planetary_frequencies
-from resonances.secular.const import SECULAR_FORMULAS
+from resonances.logger import logger
+from resonances.data.const import PLANETARY_FREQUENCIES, SECULAR_FORMULAS
 from resonances.secular.secular_resonance import SecularResonance
 
 
@@ -18,8 +18,8 @@ class SecularResonanceFinder:
     def __init__(
         self,
         threshold: float = 0.4,  # arcsec / yr
-        threshold_negative: float = None,
-        threshold_positive: float = None,
+        threshold_negative: float = -6.0,
+        threshold_positive: float = 3.0,
     ):
         self.threshold = threshold
         self.resonance = None
@@ -36,7 +36,7 @@ class SecularResonanceFinder:
         self.threshold_positive = threshold_positive
 
         # Load planetary secular frequencies (arcsec/yr)
-        self.planetary_freqs: Dict[str, float] = load_planetary_frequencies()
+        self.planetary_freqs: Dict[str, float] = PLANETARY_FREQUENCIES
 
         # Ensure AstDyS is in synthetic proper elements mode
         astdys.set_type("synthetic")
@@ -102,7 +102,8 @@ class SecularResonanceFinder:
                 raise ValueError("Provide either asteroid or proper_freqs.")
             row = astdys.search(str(asteroid))
             if row is None:
-                raise ValueError(f"Asteroid {asteroid} not found in AstDyS catalog of sythetic proper elements.")
+                logger.warning(f"Asteroid {asteroid} not found in AstDyS catalog.")
+                return {}
             proper_g = row.get("g")
             proper_s = row.get("s")
             if proper_g is None or proper_s is None:
