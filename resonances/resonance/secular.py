@@ -19,13 +19,8 @@ class SecularResonance(Resonance):
         ----------
         resonance_type : str
             Type of secular resonance ('nu6', 'nu5', 'nu16', etc.)
-        planet_name : str
-            Name of the planet involved in the resonance
         """
         self.resonance_type = resonance_type
-        self.planet_name = planet_name
-        self.planets_names = [planet_name]
-        self.index_of_planets = None
 
     @property
     def type(self) -> str:
@@ -194,7 +189,7 @@ class GeneralSecularResonance(SecularResonance):
     coefficients for different orbital elements, or by providing a mathematical formula.
     """
 
-    def __init__(self, coeffs=None, planet_names=None, resonance_name=None, formula=None):
+    def __init__(self, coeffs=None, planets_names=None, resonance_name=None, formula=None):
         """
         Initialize a general secular resonance.
 
@@ -205,33 +200,32 @@ class GeneralSecularResonance(SecularResonance):
             {'varpi': [c1, c2], 'Omega': [c3, c4]}
             where c1, c2 are coefficients for body and planet longitude of perihelion
             and c3, c4 are coefficients for body and planet longitude of node
-        planet_names : list, optional
+        planets_names : list, optional
             List of planet names involved
         resonance_name : str, optional
             Custom name for the resonance
         formula : str, optional
             Mathematical formula like 'g-g5', '2g-g5-g6', etc.
-            If provided, coeffs and planet_names will be calculated automatically
+            If provided, coeffs and planets_names will be calculated automatically
         """
         if formula is not None:
             parsed_coeffs = self._parse_formula(formula)
             resonance_params = self._coeffs_to_resonance_params(parsed_coeffs, formula)
 
             self.coeffs = resonance_params['coeffs']
-            self.planet_names = resonance_params['planet_names']
+            self.planets_names = resonance_params['planets_names']
             resonance_name = formula
         else:
-            if coeffs is None or planet_names is None:
-                raise ValueError("Either 'formula' or both 'coeffs' and 'planet_names' must be provided")
+            if coeffs is None or planets_names is None:
+                raise ValueError("Either 'formula' or both 'coeffs' and 'planets_names' must be provided")
 
             self.coeffs = coeffs
-            self.planet_names = planet_names
+            self.planets_names = planets_names
 
             if resonance_name is None:
                 resonance_name = "custom_secular"
 
-        super().__init__(resonance_name, ','.join([p[0] for p in planet_names]) if planet_names else 'Unknown')
-        self.planets_names = self.planet_names
+        super().__init__(resonance_name, ','.join([p[0] for p in planets_names]) if planets_names else 'Unknown')
 
     @staticmethod
     def _parse_formula(formula: str) -> dict:
@@ -270,6 +264,13 @@ class GeneralSecularResonance(SecularResonance):
         if '2(g-g6)+(s-s6)' in formula:
             coeffs['g'] = 2.0
             coeffs['g6'] = -2.0
+            coeffs['s'] = 1.0
+            coeffs['s6'] = -1.0
+            return coeffs
+
+        if '3(g-g6)+(s-s6)' in formula:
+            coeffs['g'] = 3.0
+            coeffs['g6'] = -3.0
             coeffs['s'] = 1.0
             coeffs['s6'] = -1.0
             return coeffs
@@ -314,9 +315,9 @@ class GeneralSecularResonance(SecularResonance):
         return coeffs
 
     @staticmethod
-    def _determine_planet_names(coeffs: dict) -> list:
+    def _determine_planets_names(coeffs: dict) -> list:
         """Determine which planets are involved based on coefficients."""
-        planet_names = []
+        planets_names = []
         planet_mapping = {
             'g4': 'Mars',
             's4': 'Mars',
@@ -333,20 +334,20 @@ class GeneralSecularResonance(SecularResonance):
         for freq in ['g4', 'g5', 'g6', 'g7', 'g8', 's4', 's5', 's6', 's7', 's8']:
             if coeffs[freq] != 0:
                 planet = planet_mapping[freq]
-                if planet not in planet_names:
-                    planet_names.append(planet)
+                if planet not in planets_names:
+                    planets_names.append(planet)
 
         # If no planets are involved, assume Jupiter and Saturn (most common)
-        if not planet_names:
-            planet_names = ['Jupiter', 'Saturn']
+        if not planets_names:
+            planets_names = ['Jupiter', 'Saturn']
 
-        return planet_names
+        return planets_names
 
     @staticmethod
-    def _build_varpi_coeffs(coeffs: dict, planet_names: list) -> list:
+    def _build_varpi_coeffs(coeffs: dict, planets_names: list) -> list:
         """Build longitude of perihelion coefficients."""
         varpi_coeffs = [coeffs['g']]  # Body coefficient
-        for planet in planet_names:
+        for planet in planets_names:
             if planet == 'Mars':
                 varpi_coeffs.append(coeffs['g4'])
             elif planet == 'Jupiter':
@@ -362,10 +363,10 @@ class GeneralSecularResonance(SecularResonance):
         return varpi_coeffs
 
     @staticmethod
-    def _build_omega_coeffs(coeffs: dict, planet_names: list) -> list:
+    def _build_omega_coeffs(coeffs: dict, planets_names: list) -> list:
         """Build longitude of ascending node coefficients."""
         omega_coeffs = [coeffs['s']]  # Body coefficient
-        for planet in planet_names:
+        for planet in planets_names:
             if planet == 'Mars':
                 omega_coeffs.append(coeffs['s4'])
             if planet == 'Jupiter':
@@ -398,22 +399,22 @@ class GeneralSecularResonance(SecularResonance):
             Parameters for GeneralSecularResonance constructor
         """
         # Determine which planets are involved
-        planet_names = GeneralSecularResonance._determine_planet_names(coeffs)
+        planets_names = GeneralSecularResonance._determine_planets_names(coeffs)
 
         # Build coefficients dictionary for GeneralSecularResonance
         resonance_coeffs = {}
 
         # Longitude of perihelion coefficients (varpi = Omega + omega)
-        varpi_coeffs = GeneralSecularResonance._build_varpi_coeffs(coeffs, planet_names)
+        varpi_coeffs = GeneralSecularResonance._build_varpi_coeffs(coeffs, planets_names)
         if any(c != 0 for c in varpi_coeffs):
             resonance_coeffs['varpi'] = varpi_coeffs
 
         # Longitude of ascending node coefficients (Omega)
-        omega_coeffs = GeneralSecularResonance._build_omega_coeffs(coeffs, planet_names)
+        omega_coeffs = GeneralSecularResonance._build_omega_coeffs(coeffs, planets_names)
         if any(c != 0 for c in omega_coeffs):
             resonance_coeffs['Omega'] = omega_coeffs
 
-        return {'coeffs': resonance_coeffs, 'planet_names': planet_names, 'resonance_name': formula}
+        return {'coeffs': resonance_coeffs, 'planets_names': planets_names, 'resonance_name': formula}
 
     def to_s(self):
         """String representation of the general secular resonance."""

@@ -104,7 +104,7 @@ def test_detect_resonance_type():
     # Test with GeneralSecularResonance object
     general_secular = GeneralSecularResonance(
         coeffs={'varpi': [1, -2, 1]},  # [body_coeff, saturn_coeff, jupiter_coeff]
-        planet_names=['Saturn', 'Jupiter'],
+        planets_names=['Saturn', 'Jupiter'],
         resonance_name='g-2g6+g5',
     )
     assert detect_resonance_type(general_secular) == 'secular'
@@ -112,7 +112,7 @@ def test_detect_resonance_type():
     # Test another GeneralSecularResonance with different pattern
     complex_secular = GeneralSecularResonance(
         coeffs={'varpi': [2, -1, -1]},
-        planet_names=['Saturn', 'Jupiter'],
+        planets_names=['Saturn', 'Jupiter'],
         resonance_name='2*g-g5-g6',
     )
     assert detect_resonance_type(complex_secular) == 'secular'
@@ -171,7 +171,7 @@ def test_create_resonance():
     # Test returning GeneralSecularResonance as-is
     general_secular = GeneralSecularResonance(
         coeffs={'varpi': [1, -2, 1]},
-        planet_names=['Saturn', 'Jupiter'],
+        planets_names=['Saturn', 'Jupiter'],
         resonance_name='g-2g6+g5',
     )
     returned_general = create_resonance(general_secular)

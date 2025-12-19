@@ -116,11 +116,11 @@ class TestSecularMatrix:
         coeffs = {
             'varpi': [1.0, -1.0],  # Body coefficient, Jupiter coefficient
         }
-        planet_names = ['Jupiter']
+        planets_names = ['Jupiter']
 
-        res = GeneralSecularResonance(coeffs=coeffs, planet_names=planet_names, resonance_name='test_resonance')
+        res = GeneralSecularResonance(coeffs=coeffs, planets_names=planets_names, resonance_name='test_resonance')
         assert res.resonance_type == 'test_resonance'
-        assert 'Jupiter' in res.planet_names
+        assert 'Jupiter' in res.planets_names
         assert res.coeffs == coeffs
 
     def test_create_known_resonances(self):
@@ -198,9 +198,9 @@ class TestSecularMatrix:
 
         # Old way - with coefficients
         coeffs = {'varpi': [1.0, -1.0]}
-        planet_names = ['Jupiter']
-        res2 = GeneralSecularResonance(coeffs=coeffs, planet_names=planet_names)
-        assert res2.planet_names == ['Jupiter']
+        planets_names = ['Jupiter']
+        res2 = GeneralSecularResonance(coeffs=coeffs, planets_names=planets_names)
+        assert res2.planets_names == ['Jupiter']
 
         # Both should have the same interface
         assert hasattr(res1, 'calc_angle')

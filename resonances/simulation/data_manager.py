@@ -43,6 +43,9 @@ class DataManager:
         if self.config.save_summary:
             self.save_simulation_summary(bodies)
 
+        if simulation and simulation.integration_engine.planets_data is not None and self.config.save_planets:
+            self.save_planets(times, simulation.integration_engine.planets_data)
+
         for body in bodies:
             for resonance in body.mmrs + body.secular_resonances + body.lidov_kozai_resonances:
                 if self.should_save_body(body, resonance):
@@ -95,6 +98,14 @@ class DataManager:
 
             df = pd.DataFrame(periodogram_data)
             df.to_csv(f'{self.config.save_path}/data-{body_name}-{resonance_key}-periodogram-axis.csv', index=False)
+
+    def save_planets(self, times, planets_data):
+        """Save planetary data."""
+        self.ensure_save_path_exists()
+
+        for planet, data in planets_data.items():
+            df = pd.DataFrame(data=data)
+            df.to_csv(f'{self.config.save_path}/data-planet-{planet}.csv', index=False)
 
     def save_simulation_summary(self, bodies):
         """Save simulation summary."""

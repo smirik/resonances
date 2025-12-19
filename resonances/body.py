@@ -163,6 +163,9 @@ class Body:
             if self.axis_filtered is not None:
                 df_data['a_filtered'] = self.axis_filtered
 
+            df_data["angle_osculating"] = self.secular_angles_osculating[secular.to_s()]
+            df_data["angle_proper"] = self.secular_angles_proper[secular.to_s()]
+
         except Exception as e:
             logger.error(f'Error in secular_to_dict function for body={self.name} and secular={secular.to_s()}: {e}')
             return None

@@ -45,7 +45,8 @@ class SimulationConfig:
     def _setup_save_params(self, kwargs):
         """Setup save and output parameters."""
         self.save = kwargs.get('save', c.get('SAVE'))
-        self.save_summary = kwargs.get('save_summary', bool(c.get('SAVE_SUMMARY')))
+        self.save_summary = kwargs.get('save_summary', bool(c.get('SAVE_SUMMARY') == 'True'))
+        self.save_planets = kwargs.get('save_planets', bool(c.get('SAVE_PLANETS') == 'True'))
 
         now = datetime.datetime.now()
         self.save_path = kwargs.get('save_path', f"{c.get('SAVE_PATH')}/{now.strftime('%Y-%m-%d_%H:%M:%S')}")

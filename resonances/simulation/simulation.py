@@ -8,7 +8,6 @@ from .integration import IntegrationEngine
 from .data_manager import DataManager
 
 from resonances.secular.proper_angle import build_proper_angle_series
-from resonances.matrix.secular_resonances import load_planetary_frequencies
 from resonances.resonance.secular import SecularResonance
 
 
@@ -73,7 +72,6 @@ class Simulation:
                 raise
 
     def _rebuild_proper_secular_angles(self, body: resonances.Body):
-        freq_map = load_planetary_frequencies()
         for secular in body.secular_resonances:
             if not isinstance(secular, SecularResonance):
                 continue
@@ -82,11 +80,11 @@ class Simulation:
                 if existing is not None:
                     body.secular_angles_osculating[secular.to_s()] = existing.copy()
                 proper_angle = build_proper_angle_series(
-                    self.times,
-                    body,
-                    secular,
-                    planetary_freqs=freq_map,
+                    times=self.times,
+                    body=body,
+                    resonance=secular,
                     existing_angle=existing,
+                    cutoff_period_years=700_000.0,
                 )
                 body.secular_angles_proper[secular.to_s()] = proper_angle
                 body.secular_angles[secular.to_s()] = proper_angle

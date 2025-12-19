@@ -84,4 +84,5 @@ class BodyManager:
             M=body.initial_data['M'],
             date=self.config.get_bodies_date(),
             primary=sim.particles[0],
+            hash=body.name,
         )

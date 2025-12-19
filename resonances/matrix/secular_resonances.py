@@ -7,7 +7,7 @@ from the literature and helper functions for working with them.
 
 from typing import Dict
 from resonances.config import config
-
+import numpy as np
 
 # Complete list of secular resonance formulas from the literature
 # Order is calculated as the sum of absolute values of integer coefficients
@@ -103,6 +103,27 @@ def load_planetary_frequencies() -> Dict[str, float]:
         's6': float(config.get('s6', -26.34496354)),
         's7': float(config.get('s7', -2.99266093)),
         's8': float(config.get('s8', -0.69251386)),
+    }
+
+
+def load_planetary_frequencies_per_planet() -> Dict[str, Dict[str, float]]:
+    """
+    Load planetary frequencies per planet from configuration.
+
+    Returns
+    -------
+    dict
+        Dictionary mapping planet names to their frequency dictionaries IN RADIANS/yr
+    """
+    freqs = load_planetary_frequencies()
+
+    for freq in freqs:
+        freqs[freq] = np.deg2rad(freqs[freq] / 3600.0)
+    return {
+        'Jupiter': {'g': freqs['g5'], 's': freqs['s5']},
+        'Saturn': {'g': freqs['g6'], 's': freqs['s6']},
+        'Uranus': {'g': freqs['g7'], 's': freqs['s7']},
+        'Neptune': {'g': freqs['g8'], 's': freqs['s8']},
     }
 
 

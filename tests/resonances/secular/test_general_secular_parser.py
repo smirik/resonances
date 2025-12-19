@@ -29,4 +29,4 @@ def test_general_secular_parse_formula(formula, expected, planets):
             assert value == 0.0, f"Formula {formula}: unexpected non-zero coefficient for {key}"
 
     # Planet list should match expectations derived from the coefficients.
-    assert res.planet_names == planets, f"Formula {formula}: planet list mismatch"
+    assert res.planets_names == planets, f"Formula {formula}: planet list mismatch"

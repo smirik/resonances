@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import i0 as bessi0  # modified Bessel I0
+from scipy.signal import firwin, butter, filtfilt
 
 from resonances.matrix.secular_resonances import load_planetary_frequencies
 
@@ -30,21 +31,135 @@ def quinn_fir_coeffs(M=80, x0=0.024, beta=10.0):
     return d
 
 
-def apply_fir(signal, coeffs):
+def _design_lowpass_filter(
+    kind: str,
+    dt_years: float,
+    cutoff_period_years: float,
+    M: int = 80,
+    beta: float = 10.0,
+    butter_order: int = 4,
+):
     """
-    Apply symmetric FIR filter via convolution, keeping array length.
+    Design a low-pass filter used to smooth non-singular elements.
+
+    Parameters
+    ----------
+    kind : {'quinn', 'firwin', 'butter'}
+        Filter family:
+        - 'quinn'  : original Quinn FIR (as in SWIFT).
+        - 'firwin' : FIR via scipy.signal.firwin (Kaiser window).
+        - 'butter' : Butterworth IIR + filtfilt (zero-phase).
+    dt_years : float
+        Mean time step in years.
+    cutoff_period_years : float
+        Cutoff period T_c (years). Frequencies with periods << T_c are suppressed.
+    M : int
+        Half-length of FIR kernel (2*M+1 taps) for FIR filters.
+    beta : float
+        Kaiser window beta for FIR filters.
+    butter_order : int
+        Order of the Butterworth filter.
+
+    Returns
+    -------
+    filt : ndarray or (b, a)
+        If kind_out == 'fir': filt is FIR kernel (impulse response).
+        If kind_out == 'iir': filt is (b, a) IIR coefficients.
+    kind_out : {'fir', 'iir'}
+        Filter implementation type.
     """
-    return np.convolve(signal, coeffs, mode='same')
+    # normalized cutoff frequency: x0 = f_c / f_s = dt / T_c
+    x0 = dt_years / cutoff_period_years
+
+    if kind == 'quinn':
+        coeffs = quinn_fir_coeffs(M=M, x0=x0, beta=beta)
+        return coeffs, 'fir'
+
+    elif kind == 'firwin':
+        numtaps = 2 * M + 1
+        # firwin cutoff normalized to Nyquist (0..1), where 1 = f_N = f_s/2.
+        # Our x0 = f_c / f_s -> cutoff_firwin = f_c / f_N = 2 * x0.
+        cutoff = 2.0 * x0
+        if not (0.0 < cutoff < 1.0):
+            raise ValueError(
+                f"Invalid normalized cutoff for firwin: 2*x0 = {cutoff:.4g} " "(must be in (0,1)). Check dt_years / cutoff_period_years."
+            )
+
+        coeffs = firwin(
+            numtaps=numtaps,
+            cutoff=cutoff,
+            window=("kaiser", beta),
+            pass_zero="lowpass",
+            scale=True,  # unity gain at DC (approximately)
+        )
+        # Ensure exact unity gain at DC (sum of taps = 1)
+        coeffs /= coeffs.sum()
+        return coeffs, 'fir'
+
+    elif kind == 'butter':
+        # Butterworth also uses normalized cutoff to Nyquist (0..1)
+        Wn = 2.0 * x0
+        if not (0.0 < Wn < 1.0):
+            raise ValueError(
+                f"Invalid normalized cutoff for butter: Wn = {Wn:.4g} " "(must be in (0,1)). Check dt_years / cutoff_period_years."
+            )
+        b, a = butter(butter_order, Wn, btype="lowpass", analog=False)
+        return (b, a), 'iir'
+
+    else:
+        raise ValueError(f"Unknown filter kind '{kind}'. Use 'quinn', 'firwin' or 'butter'.")
 
 
-def build_planetary_longitudes(times_years, planet_names, planetary_freqs):
+def apply_filter(signal, filt, fkind: str, skip=True):
+    """
+    Apply a pre-designed low-pass filter to a 1D signal.
+
+    Parameters
+    ----------
+    signal : array-like
+        Input time series.
+    filt : ndarray or (b, a)
+        - If fkind == 'fir': FIR kernel coefficients (impulse response).
+        - If fkind == 'iir': (b, a) coefficients of an IIR filter.
+    fkind : {'fir', 'iir'}
+        Filter implementation type ('fir' or 'iir').
+
+    Returns
+    -------
+    filtered : ndarray
+        Filtered time series (same length as signal).
+    """
+    signal = np.asarray(signal)
+    if skip:
+        return signal
+
+    if fkind == 'fir':
+        coeffs = np.asarray(filt)
+        return np.convolve(signal, coeffs, mode='same')
+
+    if fkind == 'iir':
+        b, a = filt
+        # filtfilt -> zero-phase, same length, symmetric extension at boundaries
+        return filtfilt(b, a, signal)
+
+    raise ValueError(f"Unknown filter implementation kind '{fkind}'")
+
+
+# def apply_fir(signal, coeffs):
+#     """
+#     Apply symmetric FIR filter via convolution, keeping array length.
+#     """
+#     return np.convolve(signal, coeffs, mode='same')
+
+
+def build_planetary_longitudes(times_years, planets_names, planetary_freqs):
     """
     Build simple linear secular longitudes for planets using configured frequencies.
     Phases are set so that varpi/Omega are zero at t=0; a later shift aligns with existing_angle.
     """
     varpi_planets = []
     Omega_planets = []
-    for planet in planet_names:
+    for planet in planets_names:
         g = _planetary_frequency(planet, 'varpi', planetary_freqs)
         s = _planetary_frequency(planet, 'Omega', planetary_freqs)
         varpi_planets.append((g * times_years) % (2.0 * np.pi))
@@ -69,15 +184,89 @@ def _planetary_frequency(planet_name, kind, freq_map):
     return np.deg2rad(freq_map[label] / 3600.0)
 
 
-def _build_secular_longitudes(times_years, freq, phase):
-    return (freq * times_years + phase) % (2.0 * np.pi)
+def build_proper_angle_series(
+    times,
+    body,
+    resonance,
+    existing_angle=None,
+    cutoff_period_years=50_000.0,
+    planetary_freqs=None,
+    filter_kind: str = 'quinn',
+    M: int = 80,
+    beta: float = 10.0,
+    butter_order: int = 4,
+):
+    """
+    Convenience wrapper: use body.* attributes.
+    """
+    return calc_proper_angle_series(
+        times=times,
+        omega=body.omega,
+        Omega=body.Omega,
+        ecc=body.ecc,
+        inc=body.inc,
+        resonance=resonance,
+        existing_angle=existing_angle,
+        cutoff_period_years=cutoff_period_years,
+        planetary_freqs=planetary_freqs,
+        filter_kind=filter_kind,
+        M=M,
+        beta=beta,
+        butter_order=butter_order,
+    )
 
 
-def build_proper_angle_series(times, body, resonance, planetary_freqs=None, existing_angle=None, cutoff_period_years=50_000.0):
+def calc_proper_angle_series(
+    times,
+    omega,
+    Omega,
+    ecc,
+    inc,
+    resonance,
+    existing_angle=None,
+    cutoff_period_years=50_000.0,
+    planetary_freqs=None,
+    filter_kind: str = 'quinn',
+    M: int = 80,
+    beta: float = 10.0,
+    butter_order: int = 4,
+):
     """
     Construct a filtered secular critical angle time series for a given resonance.
-    Keeps multi-Myr structure by low-pass filtering non-singular elements
-    using the Quinn FIR filter (as in SWIFT).
+
+    The method:
+    - converts osculating elements to non-singular (k, h, q, p),
+    - applies a chosen low-pass filter (Quinn FIR / firwin FIR / Butterworth IIR),
+      with cutoff defined by `cutoff_period_years`,
+    - reconstructs secular (mean) longitudes varpi_mean, Omega_mean,
+    - builds the critical angle using resonance.coeffs and planetary secular frequencies,
+    - optionally aligns phase with an existing angle time series.
+
+    Parameters
+    ----------
+    times : array-like
+        Times in "radians" such that 2π corresponds to 1 year.
+    omega, Omega, ecc, inc : array-like
+        Osculating elements at given times (angles in radians).
+    resonance : object
+        Must have:
+        - planets_names: list of planet names (for planetary secular terms),
+        - coeffs: dict with keys 'varpi' and/or 'Omega', each a list of coefficients.
+    existing_angle : array-like or None
+        If provided, phase of the resulting series is shifted so that angle[0] matches existing_angle[0].
+    cutoff_period_years : float
+        Cutoff period T_c: variations with periods << T_c are filtered out.
+    planetary_freqs : dict or None
+        Map of planetary frequencies (g_i, s_i) in arcsec/yr.
+        If None, loaded via load_planetary_frequencies().
+    filter_kind : {'quinn', 'firwin', 'butter'}
+        Which low-pass filter family to use.
+    M, beta, butter_order : see _design_lowpass_filter.
+
+    Returns
+    -------
+    angle : ndarray
+        Time series of the secular critical angle in [0, 2π).
     """
     if planetary_freqs is None:
         planetary_freqs = load_planetary_frequencies()
@@ -85,29 +274,46 @@ def build_proper_angle_series(times, body, resonance, planetary_freqs=None, exis
     times = np.asarray(times)
     times_years = times / (2.0 * np.pi)
 
-    varpi = body.Omega + body.omega
-    k, h, q, p = non_singular_elements(body.ecc, body.inc, body.Omega, varpi)
+    varpi = Omega + omega
+    k, h, q, p = non_singular_elements(ecc, inc, Omega, varpi)
 
     dt_years = np.mean(np.diff(times_years))
-    x0 = dt_years / cutoff_period_years  # normalized cutoff freq = dt / T_c
-    coeffs = quinn_fir_coeffs(x0=x0)
-    k_f = apply_fir(k, coeffs)
-    h_f = apply_fir(h, coeffs)
-    q_f = apply_fir(q, coeffs)
-    p_f = apply_fir(p, coeffs)
 
+    # Design and apply low-pass filter to (k, h, q, p)
+    filt, fkind = _design_lowpass_filter(
+        kind=filter_kind,
+        dt_years=dt_years,
+        cutoff_period_years=cutoff_period_years,
+        M=M,
+        beta=beta,
+        butter_order=butter_order,
+    )
+
+    k_f = apply_filter(k, filt, fkind, skip=True)
+    h_f = apply_filter(h, filt, fkind, skip=True)
+    q_f = apply_filter(q, filt, fkind, skip=True)
+    p_f = apply_filter(p, filt, fkind, skip=True)
+
+    # Reconstruct secular longitudes of the body
     varpi_mean = np.mod(np.arctan2(h_f, k_f), 2.0 * np.pi)
     Omega_mean = np.mod(np.arctan2(p_f, q_f), 2.0 * np.pi)
 
-    varpi_planets, Omega_planets = build_planetary_longitudes(times_years, resonance.planet_names, planetary_freqs)
+    # Planetary secular longitudes (linear model with g_i, s_i)
+    varpi_planets, Omega_planets = build_planetary_longitudes(
+        times_years,
+        resonance.planets_names,
+        planetary_freqs,
+    )
 
     angle = np.zeros_like(times, dtype=float)
 
+    # Build linear combination of varpi's
     if 'varpi' in resonance.coeffs:
         angle += resonance.coeffs['varpi'][0] * varpi_mean
         for coeff, planet_long in zip(resonance.coeffs['varpi'][1:], varpi_planets):
             angle += coeff * planet_long
 
+    # Build linear combination of Omega's
     if 'Omega' in resonance.coeffs:
         angle += resonance.coeffs['Omega'][0] * Omega_mean
         for coeff, planet_long in zip(resonance.coeffs['Omega'][1:], Omega_planets):
@@ -115,6 +321,7 @@ def build_proper_angle_series(times, body, resonance, planetary_freqs=None, exis
 
     angle = np.mod(angle, 2.0 * np.pi)
 
+    # Optional phase alignment with an existing time series
     if existing_angle is not None and len(existing_angle) > 0:
         offset = (existing_angle[0] - angle[0]) % (2.0 * np.pi)
         angle = (angle + offset) % (2.0 * np.pi)

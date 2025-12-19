@@ -2,11 +2,13 @@ import os
 from pathlib import Path
 from typing import List
 import tqdm
+import numpy as np
 
 import rebound
 import resonances
 from resonances.config import config as c
 from .config import SimulationConfig
+from rebound import hash as h
 
 
 class IntegrationEngine:
@@ -15,6 +17,15 @@ class IntegrationEngine:
     def __init__(self, config: SimulationConfig):
         self.config = config
         self.sim = None
+        self.planets = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+
+        self.hash_to_planets = {}
+
+        self.planets_data = {}
+        for planet in self.planets:
+            planet_cuid = h(planet).value
+            self.hash_to_planets[planet_cuid] = planet
+            self.planets_data[planet] = []
 
     def create_solar_system(self, force=False):
         """Create or load the Solar System REBOUND simulation."""
@@ -24,8 +35,8 @@ class IntegrationEngine:
             self.sim = rebound.Simulation(str(solar_file))
         else:
             self.sim = rebound.Simulation()
-            planets = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
-            self.sim.add(planets, date=self.config.date)
+            for planet in self.planets:
+                self.sim.add(planet, date=self.config.date, hash=planet)
             self.sim.save_to_file(str(solar_file))
 
     def _solar_system_filename(self) -> str:
@@ -70,9 +81,31 @@ class IntegrationEngine:
             self.sim.integrate(time)
             os = self.sim.orbits(primary=ps[0])
 
+            if self.config.save_planets:
+                self._store_planets(time, os)
+
             # Update body data
             for body in bodies:
                 self._update_body_data(body, os, i)
+
+    def _store_planets(self, time, os):
+        planets_without_sun = self.planets.copy()
+        planets_without_sun.remove('Sun')
+        for i, planet in enumerate(planets_without_sun):
+            planet_hash = h(planet).value
+            self.planets_data[self.hash_to_planets[planet_hash]].append(
+                {
+                    'times': time / (2 * np.pi),
+                    'a': os[i].a,
+                    'e': os[i].e,
+                    'inc': os[i].inc,
+                    'Omega': os[i].Omega,
+                    'omega': os[i].omega,
+                    'M': os[i].M,
+                    'l': os[i].l,
+                    'varpi': os[i].Omega + os[i].omega,
+                }
+            )
 
     def _update_body_data(self, body: resonances.Body, orbits, time_index):
         """Update body orbital data and calculate resonant angles."""
