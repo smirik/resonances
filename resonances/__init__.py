@@ -27,6 +27,8 @@ from .secular.secular_resonance import SecularResonance
 
 from .simulation.simulation import Simulation
 
+from .plotting import Plotter, PlotConfig, Panel, StyleConfig, get_preset
+
 from .body import Body
 from .config import config
 from .horizons import get_body_keplerian_elements

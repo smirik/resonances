@@ -71,6 +71,7 @@ class SimulationConfig:
         self.plot = kwargs.get('plot', c.get('PLOT'))
         self.plot_type = kwargs.get('plot_type', c.get('PLOT_TYPE'))
         self.image_type = kwargs.get('image_type', c.get('PLOT_IMAGE_TYPE'))
+        self.plot_config = kwargs.get('plot_config', None)  # Optional plot configuration
 
         now = datetime.datetime.now()
         self.plot_path = kwargs.get('plot_path', None)

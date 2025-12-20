@@ -1,4 +1,4 @@
-from resonances.resonance.plot import round_to_nice_value
+from resonances.plotting.plotter import round_to_nice_value
 
 
 class TestRoundToNiceValue:

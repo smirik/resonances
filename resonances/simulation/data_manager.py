@@ -6,10 +6,9 @@ from pathlib import Path
 from .config import SimulationConfig
 from resonances.body import Body
 from resonances.logger import logger
-from resonances.mmr.mmr import MMR
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, LidovKozaiParameters
-from resonances.resonance.plot import body as plot_body
+from resonances.plotting import Plotter
 
 
 class DataManager:
@@ -109,9 +108,11 @@ class DataManager:
     def plot_body(self, body: Body, simulation=None):
         """Plot MMR data for a body."""
         self.ensure_save_path_exists()
+        config = self.config.plot_config if self.config.plot_config is not None else 'full'
         for resonance in body.resonances():
             if self.should_plot_body(body, resonance):
-                plot_body(simulation, body, resonance, image_type=self.config.image_type)
+                plot_filename = f'{self.config.plot_path}/{body.name}-{resonance.to_s()}.{self.config.image_type}'
+                Plotter.from_body(body, resonance, simulation).configure(config).plot().save(plot_filename)
 
     def save_planets(self, times, planets_data):
         """Save planetary data."""
