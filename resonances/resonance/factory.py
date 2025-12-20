@@ -134,7 +134,7 @@ def detect_resonance_type(resonance: Union[Resonance, str]) -> str:
         if normalized_base in ['lk', 'lkr', 'lidov-kozai', 'lidov_kozai', 'lidovkozai', 'lidov', 'kozai']:
             return 'lidov_kozai'
         if (
-            (normalized in ['nu6', 'nu5', 'nu16'])
+            (normalized in SECULAR_RESONANCE_ALIASES.keys())
             or normalized.startswith('g')
             or normalized.startswith('s')
             or normalized.startswith('2g')

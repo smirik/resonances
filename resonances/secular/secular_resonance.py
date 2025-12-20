@@ -81,4 +81,10 @@ SECULAR_RESONANCE_ALIASES: dict[str, str] = {
     'nu5': 'g-g5',
     'nu6': 'g-g6',
     'nu16': 's-s6',
+    'z1': 'g-g6+s-s6',
+    'z2': '2g-2g6+s-s6',
+    'z3': '3g-3g6+s-s6',
+    'z4': '4g-4g6+s-s6',
+    '2nu6-nu5': 'g-2g6+g5',
+    '3nu6-2nu5': 'g-3g6+2g5',
 }
