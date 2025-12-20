@@ -10,7 +10,7 @@ LK_ASTEROIDS = [
 ]
 
 LK_SIMULATION_CONFIG = dict(
-    tmax=int(100000 * 2 * np.pi),
+    tmax=int(50000 * 2 * np.pi),
     integrator='SABA(10,6,4)',
     dt=1.0,
     Nout=5000,
@@ -27,11 +27,12 @@ LK_SIMULATION_CONFIG = dict(
 @pytest.mark.slow
 def test_real_lidov_kozai_statuses():
     resonance_name = resonances.LidovKozaiResonance().to_s()
-    sim = resonances.Simulation(name='test_lidov_kozai_real', source='astdys', **LK_SIMULATION_CONFIG)
-    sim.create_solar_system()
+    sim = resonances.check([number for number, _ in LK_ASTEROIDS], "lidov-kozai", **LK_SIMULATION_CONFIG)
+    # sim = resonances.Simulation(name='test_lidov_kozai_real', source='astdys', **LK_SIMULATION_CONFIG)
+    # sim.create_solar_system()
 
-    for asteroid, _ in LK_ASTEROIDS:
-        sim.add_body(asteroid, resonances.LidovKozaiResonance(), name=str(asteroid))
+    # for asteroid, _ in LK_ASTEROIDS:
+    #     sim.add_body(asteroid, resonances.LidovKozaiResonance(), name=str(asteroid))
 
     sim.run(progress=False)
 

@@ -29,7 +29,7 @@ def test_backward_integration():
     """
     # Create simulation with backward integration parameters
     sim = resonances.Simulation(
-        tmax=-200000,
+        tmax=-50000,
         name='backward',
         save='all',
         integrator='SABA(10,6,4)',

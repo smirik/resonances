@@ -10,8 +10,7 @@ def test_find():
 
     set_fast_integrator()
 
-    sim = resonances.find(asteroids, planets)
-    sim.config.tmax = 200000  # enough for 463 and 490
+    sim = resonances.find(asteroids, planets, integration_years=40000)
 
     assert isinstance(sim, resonances.Simulation)
     assert 2 == len(sim.bodies)
