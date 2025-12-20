@@ -233,6 +233,10 @@ class BatchManager:
         # Automatically extract all public config attributes
         kwargs = {key: value for key, value in vars(self.config).items() if not key.startswith('_')}  # Skip private/protected attributes
 
+        # Explicitly include properties (vars() doesn't include them)
+        # tmax is a property with a backing field, so we need to include it explicitly
+        kwargs["tmax"] = self.config.tmax
+
         # Override batch_enabled to prevent recursive batching in workers
         kwargs["batch_enabled"] = False
 
