@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from resonances.config import config
+from datetime import datetime
 
 
 def static_init(cls):
@@ -22,6 +23,10 @@ class logger:  # pragma: no cover
             format='%(asctime)s %(levelname)s: %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S',
         )
+
+    @classmethod
+    def get_current_time(cls):
+        return datetime.now()
 
     @classmethod
     def get_logging_level(cls):

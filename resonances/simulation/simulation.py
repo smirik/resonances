@@ -30,6 +30,18 @@ class Simulation:
         self.data_manager = DataManager(self.config)
         self.batch_manager = BatchManager(self.config)
 
+        self.running_time = {
+            "start": None,
+            "adding_bodies_started": None,
+            "integration_started": None,
+            "integration_finished": None,
+            "librations_identified": None,
+            "bodies_saved": None,
+            "stop": None,
+        }
+
+        self.running_time["start"] = logger.get_current_time()
+
         self.times = []
 
     @property
@@ -62,12 +74,17 @@ class Simulation:
             self._run_batched(progress)
         else:
             self._run_single(progress)
+        self.running_time["stop"] = logger.get_current_time()
 
     def _run_single(self, progress=False):
         """Run single-batch execution (original behavior)."""
+        self.running_time["adding_bodies_started"] = logger.get_current_time()
         self.body_manager.add_bodies_to_simulation(self.integration_engine.sim)
+        self.running_time["integration_started"] = logger.get_current_time()
         self.integration_engine.run_integration(self.bodies, self.times, progress)
+        self.running_time["integration_finished"] = logger.get_current_time()
         self.identify_librations()
+        self.running_time["librations_identified"] = logger.get_current_time()
         self.data_manager.save_data(self.bodies, self.times, self)
 
     def _run_batched(self, progress=False):
