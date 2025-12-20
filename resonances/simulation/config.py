@@ -19,6 +19,7 @@ class SimulationConfig:
         self._setup_save_params(kwargs)
         self._setup_plot_params(kwargs)
         self._setup_libration_params(kwargs)
+        self._setup_batch_params(kwargs)
 
         self.secular_angle_mode = kwargs.get('secular_angle_mode', c.get('SECULAR_ANGLE_MODE'))
         if self.secular_angle_mode not in ['osculating', 'proper']:
@@ -128,3 +129,19 @@ class SimulationConfig:
     def get_bodies_date(self):
         """Get the date to use for body elements."""
         return astdys.get_catalog_datetime() if self.source == 'astdys' else self.date
+
+    def _setup_batch_params(self, kwargs):
+        """Setup batch processing parameters."""
+        self.batch_enabled = kwargs.get('batch_enabled', c.get('BATCH_ENABLED', 'True') == 'True')
+        self.batch_threshold = kwargs.get('batch_threshold', int(c.get('BATCH_THRESHOLD', 100)))
+
+        # Handle batch_size (can be None or empty string from config)
+        batch_size_val = kwargs.get('batch_size', c.get('BATCH_SIZE', None))
+        if batch_size_val is not None and batch_size_val != '':
+            self.batch_size = int(batch_size_val)
+        else:
+            self.batch_size = None
+
+        self.n_cores = kwargs.get('n_cores', int(c.get('BATCH_N_CORES', 1)))
+        self.stop_on_failure = kwargs.get('stop_on_failure', True)
+        self.resume_enabled = kwargs.get('resume_enabled', True)

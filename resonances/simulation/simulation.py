@@ -5,6 +5,7 @@ from .config import SimulationConfig
 from .body_manager import BodyManager
 from .integration import IntegrationEngine
 from .data_manager import DataManager
+from .batch_manager import BatchManager
 
 from resonances.secular.proper_angle import build_proper_angle_series
 from resonances.secular.secular_resonance import SecularResonance
@@ -26,6 +27,7 @@ class Simulation:
         self.body_manager = BodyManager(self.config)
         self.integration_engine = IntegrationEngine(self.config)
         self.data_manager = DataManager(self.config)
+        self.batch_manager = BatchManager(self.config)
 
         self.times = []
 
@@ -51,14 +53,25 @@ class Simulation:
         for body in bodies:
             self.add_body(body, resonance, f"{prefix}{body}")
 
-    # Integration methods
     def run(self, progress=False):
-        """Run the complete simulation."""
+        """Run the complete simulation with optional batching."""
         self.times = np.linspace(0.0, self.config.tmax, self.config.Nout)
+
+        if self.batch_manager.should_batch(len(self.bodies)):
+            self._run_batched(progress)
+        else:
+            self._run_single(progress)
+
+    def _run_single(self, progress=False):
+        """Run single-batch execution (original behavior)."""
         self.body_manager.add_bodies_to_simulation(self.integration_engine.sim)
         self.integration_engine.run_integration(self.bodies, self.times, progress)
         self.identify_librations()
         self.data_manager.save_data(self.bodies, self.times, self)
+
+    def _run_batched(self, progress=False):
+        """Run batched execution with multi-core support."""
+        self.batch_manager.execute_batches(self, self.bodies, self.times, progress)
 
     def identify_librations(self):
         """Identify librations for all bodies."""

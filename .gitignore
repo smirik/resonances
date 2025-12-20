@@ -1,5 +1,6 @@
 manuscript
 experiments
+output
 
 # Temporary: no Jupyter notebooks in core directory
 ./*.ipynb
