@@ -18,8 +18,8 @@ class SecularResonanceFinder:
     def __init__(
         self,
         threshold: float = 0.4,  # arcsec / yr
-        threshold_negative: float = -6.0,
-        threshold_positive: float = 3.0,
+        threshold_negative: float = None,
+        threshold_positive: float = None,
     ):
         self.threshold = threshold
         self.resonance = None
