@@ -12,6 +12,7 @@ from resonances.secular.secular_resonance import SecularResonance
 from resonances.resonance.resonance import Resonance
 from resonances.body import Body
 from resonances.logger import logger
+from resonances.resonance.libration import libration
 
 
 class Simulation:
@@ -75,13 +76,11 @@ class Simulation:
 
     def identify_librations(self):
         """Identify librations for all bodies."""
-        import resonances
-
         for body in self.bodies:
             try:
                 if self.config.secular_angle_mode == 'proper':
                     self._rebuild_proper_secular_angles(body)
-                resonances.libration.body(self, body)
+                libration.body(self, body)
             except Exception as e:
                 logger.error(f"Error identifying librations for {body.name}: {e}")
                 raise

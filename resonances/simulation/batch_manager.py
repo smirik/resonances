@@ -73,7 +73,7 @@ class BatchManager:
             batch_data = []
 
             for body in batch_bodies:
-                resonances = body.mmrs + body.secular_resonances + body.lidov_kozai_resonances
+                resonances = body.resonances()
                 body_dict = {
                     "elem_or_num": body.initial_data,
                     "resonances": resonances,

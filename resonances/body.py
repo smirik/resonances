@@ -87,87 +87,80 @@ class Body:
                 s += sec.to_s() + ', '
         return s
 
-    def mmr_to_dict(self, mmr: MMR, times: np.ndarray):
+    def resonances(self) -> List[Resonance]:
+        return self.mmrs + self.secular_resonances + self.lidov_kozai_resonances
+
+    def keplerian_elements_to_dict(self) -> dict:
+        df_data = {
+            'a': self.axis,
+            'e': self.ecc,
+            'inc': self.inc,
+            'Omega': self.Omega,
+            'omega': self.omega,
+            'M': self.M,
+            'longitude': self.longitude,
+            'varpi': self.varpi,
+        }
+        if self.axis_filtered is not None:
+            df_data['a_filtered'] = self.axis_filtered
+        return df_data
+
+    def resonance_to_dict(self, resonance: Resonance):
+        if isinstance(resonance, MMR):
+            return self.mmr_to_dict(resonance)
+        elif isinstance(resonance, SecularResonance):
+            return self.secular_to_dict(resonance)
+        elif isinstance(resonance, LidovKozaiResonance):
+            return self.lidov_kozai_to_dict(resonance)
+        else:
+            logger.error(f'Unknown resonance type in resonance_to_dct for body={self.name} and resonance={resonance.to_s()}')
+            return None
+
+    def mmr_to_dict(self, mmr: MMR) -> dict:
         try:
             df_data = {
-                'times': times / (2 * np.pi),
-                'angle': self.angles[mmr.to_s()],
-                'a': self.axis,
-                'e': self.ecc,
-                'inc': self.inc,
-                'Omega': self.Omega,
-                'omega': self.omega,
-                'M': self.M,
-                'longitude': self.longitude,
-                'varpi': self.varpi,
+                mmr.to_s() + '_angle': self.angles[mmr.to_s()],
             }
 
             if self.angles_filtered.get(mmr.to_s()) is not None:
-                df_data['angle_filtered'] = self.angles_filtered[mmr.to_s()]
-
-            if self.axis_filtered is not None:
-                df_data['a_filtered'] = self.axis_filtered
+                df_data[mmr.to_s() + '_angle_filtered'] = self.angles_filtered[mmr.to_s()]
 
         except Exception as e:
             logger.error(f'Error in mmr_to_dict function for body={self.name} and mmr={mmr.to_s()}: {e}')
             return None
         return df_data
 
-    def lidov_kozai_to_dict(self, resonance: LidovKozaiResonance, times: np.ndarray):
+    def lidov_kozai_to_dict(self, resonance: LidovKozaiResonance) -> dict:
         """
         Convert Lidov–Kozai resonance data to dictionary format for saving.
         """
         try:
             df_data = {
-                'times': times / (2 * np.pi),
-                'angle': self.lidov_kozai_angles[resonance.to_s()],
-                'a': self.axis,
-                'e': self.ecc,
-                'inc': self.inc,
-                'Omega': self.Omega,
-                'omega': self.omega,
-                'M': self.M,
-                'longitude': self.longitude,
-                'varpi': self.varpi,
+                resonance.to_s() + '_angle': self.lidov_kozai_angles[resonance.to_s()],
             }
 
             if self.angles_filtered.get(resonance.to_s()) is not None:
-                df_data['angle_filtered'] = self.angles_filtered[resonance.to_s()]
-
-            if self.axis_filtered is not None:
-                df_data['a_filtered'] = self.axis_filtered
+                df_data[resonance.to_s() + '_angle_filtered'] = self.angles_filtered[resonance.to_s()]
 
         except Exception as e:
             logger.error(f'Error in lidov_kozai_to_dict for body={self.name} and resonance={resonance.to_s()}: {e}')
             return None
         return df_data
 
-    def secular_to_dict(self, secular: SecularResonance, times: np.ndarray):
+    def secular_to_dict(self, secular: SecularResonance) -> dict:
         """
         Convert secular resonance data to dictionary format for saving.
         """
         try:
             df_data = {
-                'times': times / (2 * np.pi),
-                'angle': self.secular_angles[secular.to_s()],
-                'a': self.axis,
-                'e': self.ecc,
-                'inc': self.inc,
-                'Omega': self.Omega,
-                'omega': self.omega,
-                'M': self.M,
-                'longitude': self.longitude,
-                'varpi': self.varpi,
+                secular.to_s() + '_angle': self.secular_angles[secular.to_s()],
             }
 
             if self.secular_angles_filtered.get(secular.to_s()) is not None:
-                df_data['angle_filtered'] = self.secular_angles_filtered[secular.to_s()]
+                df_data[secular.to_s() + '_angle_filtered'] = self.secular_angles_filtered[secular.to_s()]
 
-            if self.axis_filtered is not None:
-                df_data['a_filtered'] = self.axis_filtered
-
-            df_data["angle_osculating"] = self.secular_angles_osculating[secular.to_s()]
-            df_data["angle_proper"] = self.secular_angles_proper[secular.to_s()]
+            df_data[secular.to_s() + "_angle_osculating"] = self.secular_angles_osculating[secular.to_s()]
+            df_data[secular.to_s() + "_angle_proper"] = self.secular_angles_proper[secular.to_s()]
 
         except Exception as e:
             logger.error(f'Error in secular_to_dict function for body={self.name} and secular={secular.to_s()}: {e}')

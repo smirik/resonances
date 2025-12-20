@@ -114,8 +114,8 @@ def find(
 
     type_list = type if isinstance(type, list) else ([type] if type is not None else [])
     shouldSearchMMR = type is None or 'mmr' in type_list
-    shouldSearchSecular = ('secular' in type_list) or (formulas is not None)
-    shouldSearchLidovKozai = 'lidov_kozai' in type_list or 'lk' in type_list or 'lkr' in type_list
+    shouldSearchSecular = type is None or ('secular' in type_list) or (formulas is not None)
+    shouldSearchLidovKozai = type is None or 'lidov_kozai' in type_list or 'lk' in type_list or 'lkr' in type_list
 
     asteroids = convert_input_to_list(asteroids)
     formulas = convert_input_to_list(formulas) if formulas is not None else None

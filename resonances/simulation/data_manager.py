@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -52,57 +53,57 @@ class DataManager:
             self.save_planets(times, simulation.integration_engine.planets_data)
 
         for body in bodies:
-            for resonance in body.mmrs + body.secular_resonances + body.lidov_kozai_resonances:
-                if self.should_save_body(body, resonance):
-                    self.save_body(body, resonance, times)
-                if self.should_plot_body(body, resonance):
-                    self.plot_body(body, resonance, simulation)
+            self.save_body(body, times)
+            self.plot_body(body, simulation)
 
-    def save_body(self, body: Body, resonance, times):
-        """Save MMR data for a body."""
-        self.ensure_save_path_exists()
+    def save_body(self, body: Body, times):
+        """Save all resonance data for a body."""
 
-        if isinstance(resonance, MMR):
-            df_data = body.mmr_to_dict(resonance, times)
-        elif isinstance(resonance, SecularResonance):
-            df_data = body.secular_to_dict(resonance, times)
-        elif isinstance(resonance, LidovKozaiResonance):
-            df_data = body.lidov_kozai_to_dict(resonance, times)
-        else:
-            raise ValueError(f"Unknown resonance type: {type(resonance)}")
+        if (self.config.save is None) or (self.config.save is False):
+            return
 
-        if df_data is not None:
-            df = pd.DataFrame(data=df_data)
-            df.to_csv(f'{self.config.save_path}/data-{body.name}-{resonance.to_s()}.csv')
+        body_data = body.keplerian_elements_to_dict()
+        body_data["times"] = times / (2 * np.pi)
+        for resonance in body.resonances():
+            if self.should_save_body(body, resonance):
+                body_data.update(body.resonance_to_dict(resonance))
 
-        self._save_periodogram_data(body, resonance.to_s(), body.name)
+        if body_data is not None:
+            df = pd.DataFrame(data=body_data)
+            df.to_csv(f'{self.config.save_path}/data-{body.name}.csv')
 
-    def plot_body(self, body: Body, resonance, simulation=None):
-        """Plot MMR data for a body."""
-        self.ensure_save_path_exists()
-        plot_body(simulation, body, resonance, image_type=self.config.image_type)
+        self._save_periodogram_data(body)
 
-    def _save_periodogram_data(self, body: Body, resonance_key: str, body_name: str):
+    def _save_periodogram_data(self, body: Body):
         """Save periodogram data for a resonance."""
         # Save resonant angle periodogram
-        if body.periodogram_frequency.get(resonance_key) is not None:
-            freq = body.periodogram_frequency[resonance_key]
-            power = body.periodogram_power[resonance_key]
+        df_data = {}
 
-            periodogram_data = {'frequency': freq, 'power': power, 'period': 1.0 / freq}
-
-            df = pd.DataFrame(periodogram_data)
-            df.to_csv(f'{self.config.save_path}/data-{body_name}-{resonance_key}-periodogram-angle.csv', index=False)
-
-        # Save semi-major axis periodogram
         if body.axis_periodogram_frequency is not None:
             freq = body.axis_periodogram_frequency
             power = body.axis_periodogram_power
+            df_data = {'a_frequency': freq, 'a_power': power, 'a_period': 1.0 / freq}
 
-            periodogram_data = {'frequency': freq, 'power': power, 'period': 1.0 / freq}
+        for resonance in body.resonances():
+            if self.should_save_body(body, resonance):
+                resonance_key = resonance.to_s()
+                if body.periodogram_frequency.get(resonance_key) is not None:
+                    freq = body.periodogram_frequency[resonance_key]
+                    power = body.periodogram_power[resonance_key]
 
-            df = pd.DataFrame(periodogram_data)
-            df.to_csv(f'{self.config.save_path}/data-{body_name}-{resonance_key}-periodogram-axis.csv', index=False)
+                    df_data[resonance_key + '_frequency'] = freq
+                    df_data[resonance_key + '_power'] = power
+                    df_data[resonance_key + '_period'] = 1.0 / freq
+
+        df = pd.DataFrame(df_data)
+        df.to_csv(f'{self.config.save_path}/data-{body.name}-periodograms.csv', index=False)
+
+    def plot_body(self, body: Body, simulation=None):
+        """Plot MMR data for a body."""
+        self.ensure_save_path_exists()
+        for resonance in body.resonances():
+            if self.should_plot_body(body, resonance):
+                plot_body(simulation, body, resonance, image_type=self.config.image_type)
 
     def save_planets(self, times, planets_data):
         """Save planetary data."""
@@ -133,7 +134,7 @@ class DataManager:
         data = []
 
         for body in bodies:
-            for resonance in body.mmrs + body.secular_resonances + body.lidov_kozai_resonances:
+            for resonance in body.resonances():
                 try:
                     overlapping_str = ', '.join(
                         f'({left:.0f}, {right:.0f})' for left, right in body.periodogram_peaks_overlapping.get(resonance.to_s(), [])
