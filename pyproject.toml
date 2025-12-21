@@ -38,6 +38,10 @@ astdys = ">=1.0.0"
 tqdm = "^4.67.1"
 python-dotenv = "^1.1.0"
 lxml-html-clean = ">=0.1.1,<0.5.0"
+click = "^8.1.7"
+
+[tool.poetry.scripts]
+resonances = "resonances.cli:cli"
 
 [tool.poetry.group.dev.dependencies]
 # Testing
