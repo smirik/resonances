@@ -1,14 +1,11 @@
 import pytest
 import resonances
-from tests.tools import reset_fast_integrator, set_fast_integrator
 
 
 @pytest.mark.slow
 def test_find():
     asteroids = [463, 490]
     planets = ['Jupiter', 'Saturn']
-
-    set_fast_integrator()
 
     sim = resonances.find(asteroids, planets, integration_years=40000)
 
@@ -23,13 +20,9 @@ def test_find():
     assert 2 == status463
     assert 1 == status490
 
-    reset_fast_integrator()
-
 
 @pytest.mark.slow
 def test_check():
-    set_fast_integrator()
-
     sim = resonances.check(463, resonance='4J-2S-1')
     sim.config.tmax = 200000  # enough for 463
     assert isinstance(sim, resonances.Simulation)
@@ -40,5 +33,3 @@ def test_check():
     summary = sim.data_manager.get_simulation_summary(sim.bodies)
     status = summary.loc[(summary['name'] == '463') & (summary['resonance'] == '4J-2S-1+0+0-1'), 'status'].iloc[0]
     assert 2 == status
-
-    reset_fast_integrator()

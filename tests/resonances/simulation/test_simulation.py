@@ -3,20 +3,11 @@ import datetime  # noqa: F401 - used in patches
 import astdys  # noqa: F401 - used in patches
 import rebound  # noqa: F401 - used in patches
 import tests.tools as tools
-import shutil  # noqa: F401 - used in fixtures
-from pathlib import Path
 import pytest
 from unittest.mock import Mock, patch
 
 import resonances
 from resonances.simulation import Simulation
-
-
-@pytest.fixture(autouse=True)
-def run_around_tests():
-    Path('cache/tests').mkdir(parents=True, exist_ok=True)
-    yield
-    # shutil.rmtree('cache/tests')
 
 
 def test_solar_system_full_filename():

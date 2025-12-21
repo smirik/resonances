@@ -66,6 +66,7 @@ class DataManager:
     def save_body(self, body: Body, times):
         """Save all resonance data for a body."""
 
+        self.ensure_save_path_exists()
         if (self.config.save is None) or (self.config.save is False):
             return
 
@@ -107,7 +108,6 @@ class DataManager:
 
     def plot_body(self, body: Body, simulation=None):
         """Plot MMR data for a body."""
-        self.ensure_save_path_exists()
         config = self.config.plot_config if self.config.plot_config is not None else 'full'
         for resonance in body.resonances():
             if self.should_plot_body(body, resonance):

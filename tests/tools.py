@@ -1,6 +1,5 @@
 import datetime
 import astdys.util
-import pytest
 import resonances
 
 
@@ -28,21 +27,6 @@ def get_2body_elements_sample():
         "M": 5.033788240164378,
         "epoch": 60000.0,
     }
-
-
-@pytest.fixture(autouse=True)
-def setup_test_config():
-    """Setup test configuration before each test and restore after."""
-    original_save_path = resonances.config.get('SAVE_PATH')
-    original_plot_path = resonances.config.get('PLOT_PATH')
-
-    resonances.config.set('SAVE_PATH', 'cache/tests')
-    resonances.config.set('PLOT_PATH', 'cache/tests')
-
-    yield
-
-    resonances.config.set('SAVE_PATH', original_save_path)
-    resonances.config.set('PLOT_PATH', original_plot_path)
 
 
 def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=False):
@@ -73,25 +57,3 @@ def add_test_asteroid_to_simulation(sim: resonances.Simulation):
     mmr = resonances.create_mmr('4J-2S-1')
     sim.add_body(elem, mmr, name='asteroid')
     return sim
-
-
-def set_fast_integrator():
-    resonances.config.set('INTEGRATION_INTEGRATOR', 'SABA(10,6,4)')
-    resonances.config.set('INTEGRATION_DT', 5.0)
-    resonances.config.set('INTEGRATION_TMAX', 200000)
-    resonances.config.set('SAVE_PATH', 'cache/tests')
-    resonances.config.set('PLOT_PATH', 'cache/tests')
-    resonances.config.set('PLOT', None)
-    resonances.config.set('SAVE', None)
-
-
-def reset_fast_integrator():
-    resonances.config.set('INTEGRATION_INTEGRATOR', 'SABA(10,6,4)')
-    resonances.config.set('INTEGRATION_DT', 1.0)
-    resonances.config.set('INTEGRATION_TMAX', 628319)
-    resonances.config.set('INTEGRATION_SAFE_MODE', 0)
-    resonances.config.set('INTEGRATION_CORRECTOR', 17)
-    resonances.config.set('SAVE_PATH', 'cache')
-    resonances.config.set('PLOT_PATH', 'cache')
-    resonances.config.set('PLOT', 'nonzero')
-    resonances.config.set('SAVE', 'nonzero')

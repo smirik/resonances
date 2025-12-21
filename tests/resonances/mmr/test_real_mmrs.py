@@ -2,29 +2,23 @@ import pytest
 import resonances
 import astdys
 from resonances.mmr.three_body_matrix import ThreeBodyMatrix
-from tests.tools import reset_fast_integrator, set_fast_integrator
 
 
 @pytest.mark.slow
 def test_find():
-    set_fast_integrator()
-
-    sim = resonances.find(463, ['Jupiter', 'Saturn'])
+    sim = resonances.find(463, ['Jupiter', 'Saturn'], save="all", plot="all", integration_years=40000, type=["mmr"])
     sim.run()
 
     summary = sim.data_manager.get_simulation_summary(sim.bodies)
     status = summary.loc[(summary['name'] == '463') & (summary['resonance'] == '4J-2S-1+0+0-1'), 'status'].iloc[0]
     assert 2 == status
 
-    reset_fast_integrator()
-
 
 @pytest.mark.slow
 def test_trojans():
-    set_fast_integrator()
     asteroids = [624, 588, 617]
 
-    sim = resonances.find(asteroids, ['Jupiter'])
+    sim = resonances.find(asteroids, ['Jupiter'], type="mmr")
     sim.run()
     summary = sim.data_manager.get_simulation_summary(sim.bodies)
 
@@ -37,13 +31,9 @@ def test_trojans():
     assert 2 == summary.loc[(summary['resonance'] == '1J-1+0+0') & (summary['name'] == '617'), 'status'].iloc[0]
     assert 0 == summary.loc[(summary['resonance'] == '1J+1+0-2') & (summary['name'] == '617'), 'status'].iloc[0]
 
-    reset_fast_integrator()
-
 
 @pytest.mark.slow
 def test_3body():
-    set_fast_integrator()
-
     asteroids = [463]
 
     sim = resonances.Simulation()
@@ -62,5 +52,3 @@ def test_3body():
 
     assert 2 == summary.loc[summary['name'] == '463, resonance=4J-2S-1', 'status'].values[0]
     assert 0 == summary.loc[summary['name'] == '463, resonance=5J-4S-1', 'status'].values[0]
-
-    reset_fast_integrator()

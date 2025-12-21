@@ -4,10 +4,10 @@ import pytest
 
 def test_get_and_has():
     assert resonances.config.has('SAVE_PATH') is True
-    assert 'cache' == resonances.config.get('SAVE_PATH')
+    assert 'cache/tests' == resonances.config.get('SAVE_PATH')  # cache/tests set in conftest.py
 
     assert resonances.config.has('PLOT_PATH') is True
-    assert 'cache' == resonances.config.get('PLOT_PATH')
+    assert 'cache/tests' == resonances.config.get('PLOT_PATH')
 
     assert resonances.config.has('SAVE') is True
     assert resonances.config.get('SAVE') == 'nonzero'

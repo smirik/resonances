@@ -347,6 +347,7 @@ class libration:
             axis_peaks_data = cls.find_peaks_with_position(axis_frequency, axis_power, height=sim.config.periodogram_soft)
         except Exception as e:  # pragma: no cover
             logger.error(f"Error in periodogram of semi-major axis for {body.name}: {e}")
+            logger.info(f"Configs: {sim.config.periodogram_frequency_min}, {sim.config.periodogram_frequency_max}")
             axis_frequency, axis_power, axis_peaks_data = None, None, None
 
         body.axis_filtered = axis_filtered

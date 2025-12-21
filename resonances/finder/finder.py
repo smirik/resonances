@@ -60,10 +60,9 @@ def check(
     mmr_resonances, secular_resonances, lidov_kozai_resonances = _categorize_resonances(resonance)
     shouldSearchSecular = len(secular_resonances) > 0
     secular_angle_mode = "proper" if shouldSearchSecular else "osculating"
+    _verify_secular_parameters(kwargs)
 
-    params = setup_secular_parameters(kwargs, shouldSearchSecular)
-
-    sim = Simulation(name=name or "resonance_find", secular_angle_mode=secular_angle_mode, **params, **kwargs)
+    sim = Simulation(name=name or "resonance_find", secular_angle_mode=secular_angle_mode, **kwargs)
     sim.create_solar_system()
     for asteroid in asteroids:
         sim.add_body(asteroid, mmr_resonances + secular_resonances + lidov_kozai_resonances, name=f"{asteroid}")
@@ -144,8 +143,9 @@ def find(
             resonances_dict[asteroid].append(LidovKozaiResonance())
 
     secular_angle_mode = kwargs.pop('secular_angle_mode', 'proper' if shouldSearchSecular else "osculating")
-    params = setup_secular_parameters(kwargs, shouldSearchSecular)
-    sim = Simulation(name=name or "resonance_find", secular_angle_mode=secular_angle_mode, **params, **kwargs)
+    _verify_secular_parameters(kwargs)
+
+    sim = Simulation(name=name or "resonance_find", secular_angle_mode=secular_angle_mode, **kwargs)
     sim.create_solar_system()
 
     for asteroid_name, kepler_elements in elems.items():
@@ -184,21 +184,12 @@ def _categorize_resonances(resonance_list):
     return mmr_resonances, secular_resonances, lidov_kozai_resonances
 
 
-def setup_secular_parameters(params, shouldSearchSecular):
-    if not shouldSearchSecular:
-        return {}
-
-    integration_years = params.pop('integration_years', 1000000)
-
-    libration_period_min = params.pop('libration_period_min', 20000)
-    libration_period_critical = params.pop('libration_period_critical', integration_years * 0.2)
-    periodogram_frequency_min = params.pop('periodogram_frequency_min', 0.000001)
-    periodogram_frequency_max = params.pop('periodogram_frequency_max', 0.0002)
-
-    return {
-        'integration_years': integration_years,
-        'libration_period_min': libration_period_min,
-        'libration_period_critical': libration_period_critical,
-        'periodogram_frequency_min': periodogram_frequency_min,
-        'periodogram_frequency_max': periodogram_frequency_max,
-    }
+def _verify_secular_parameters(params):
+    if (
+        (params.get("integration_years") and params.get("integration_years") < 100000)
+        or params.get("tmax")
+        and params.get("tmax") < 6283185
+    ):
+        logger.warning(
+            "Integration time for secular resonance search is set to less than 100,000 years. " "This may lead to inaccurate results."
+        )

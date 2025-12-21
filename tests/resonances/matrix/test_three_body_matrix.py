@@ -1,7 +1,6 @@
 import pytest
 import pandas as pd
 from pathlib import Path
-import shutil
 
 import resonances
 from resonances.mmr.three_body_matrix import ThreeBodyMatrix
@@ -10,9 +9,7 @@ from resonances.mmr.three_body_matrix import ThreeBodyMatrix
 @pytest.fixture(autouse=True)
 def run_around_tests():
     resonances.config.set(ThreeBodyMatrix.catalog_file, 'cache/tests/mmr-3body-test.csv')
-    Path('cache/tests').mkdir(parents=True, exist_ok=True)
     yield
-    shutil.rmtree('cache/tests')
 
 
 def test_build():
