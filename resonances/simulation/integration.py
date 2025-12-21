@@ -6,6 +6,7 @@ import numpy as np
 
 import rebound
 from resonances.config import config as c
+from resonances.logger import logger
 from .config import SimulationConfig
 from resonances.body import Body
 from rebound import hash as h
@@ -32,9 +33,11 @@ class IntegrationEngine:
         solar_file = Path(self._solar_system_filename())
 
         if solar_file.exists() and not force:
+            logger.info(f"Loading solar system from cache: {solar_file}")
             self.sim = rebound.Simulation(str(solar_file))
         else:
             self.sim = rebound.Simulation()
+            logger.info(f"Creating new solar system simulation. Date = {self.config.date.isoformat()}")
             for planet in self.planets:
                 self.sim.add(planet, date=self.config.date, hash=planet)
             self.sim.save_to_file(str(solar_file))
@@ -64,7 +67,7 @@ class IntegrationEngine:
         """Run the numerical integration."""
         # Setup bodies for simulation
         for body in bodies:
-            body.setup_vars_for_simulation(len(times))
+            body.setup_vars_for_simulation(times)
 
         # Setup integrator
         self.setup_integrator()
@@ -124,13 +127,13 @@ class IntegrationEngine:
         # Calculate MMR angles
         for mmr in body.mmrs:
             planets = [orbits[idx - 1] for idx in mmr.index_of_planets]
-            body.angle(mmr)[time_index] = mmr.calc_angle(orbit, planets)
+            body.angles_unwrapped[mmr.to_s()][time_index] = mmr.calc_angle(orbit, planets)
 
         # Calculate secular resonance angles
         for secular in body.secular_resonances:
             planets = {idx: orbits[idx - 1] for idx in secular.index_of_planets}
-            body.angle(secular)[time_index] = secular.calc_angle(orbit, planets)
+            body.angles_unwrapped[secular.to_s()][time_index] = secular.calc_angle(orbit, planets)
 
         # Calculate Lidov-Kozai resonant angle (argument of pericenter)
         for lidov in body.lidov_kozai_resonances:
-            body.angle(lidov)[time_index] = lidov.calc_angle(orbit, None)
+            body.angles_unwrapped[lidov.to_s()][time_index] = lidov.calc_angle(orbit, None)

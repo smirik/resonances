@@ -104,7 +104,7 @@ def test_libration_properties():
 
     # Test that all libration properties are accessible via config
     assert isinstance(sim.config.oscillations_cutoff, float)
-    assert isinstance(sim.config.libration_period_min, int)
+    assert isinstance(sim.config.libration_period_min, float)
     assert isinstance(sim.config.periodogram_frequency_min, float)
     assert isinstance(sim.config.periodogram_frequency_max, float)
     assert isinstance(sim.config.periodogram_soft, float)

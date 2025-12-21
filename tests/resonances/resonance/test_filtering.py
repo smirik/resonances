@@ -2,6 +2,8 @@ import resonances
 import numpy as np
 import pytest
 
+from resonances.resonance.filtering import butter_lowpass_filter
+
 
 def test_periodogram():
     t = np.linspace(0, 10, 101)
@@ -40,7 +42,7 @@ def test_filter():
     t = np.linspace(0, 10, 101)
     y = np.sin(np.pi * t) + np.sin(2 * np.pi * t)  # 0.5 Hz and 1 Hz
     (frequency, power) = resonances.libration.periodogram(t, y, minimum_frequency=0.0, maximum_frequency=2.0)
-    y_filtered = resonances.libration.butter_lowpass_filter(y, 0.6, 1, 2, 5)
+    y_filtered = butter_lowpass_filter(y, 0.6, 1, 2, 5)
     frequency, power = resonances.libration.periodogram(t, y_filtered, minimum_frequency=0.0, maximum_frequency=2.0)
     peaks = resonances.libration.find_peaks_with_position(frequency, power, height=0.2)
 

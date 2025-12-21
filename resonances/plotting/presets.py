@@ -32,7 +32,12 @@ def create_simple_preset(resonance_key: str) -> PlotConfig:
             data_column=f'{resonance_key}_angle',
             x_column='times',
             style=StyleConfig(
-                ylabel=r"$\sigma$ (rad)", xlabel="Time (years)", title="Resonant angle", color='black', marker=',', linestyle=''
+                ylabel=r"$\sigma$ (rad)",
+                xlabel="Time (years)",
+                title="Resonant angle",
+                color='black',
+                marker=',',
+                linestyle='',
             ),
             required=True,
         )

@@ -7,12 +7,11 @@ from .integration import IntegrationEngine
 from .data_manager import DataManager
 from .batch_manager import BatchManager
 
-from resonances.secular.proper_angle import build_proper_angle_series
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.resonance.resonance import Resonance
-from resonances.body import Body
 from resonances.logger import logger
 from resonances.resonance.libration import libration
+from resonances.resonance.filtering import filter_angle, wrap
 
 
 class Simulation:
@@ -83,6 +82,7 @@ class Simulation:
         self.running_time["integration_started"] = logger.get_current_time()
         self.integration_engine.run_integration(self.bodies, self.times, progress)
         self.running_time["integration_finished"] = logger.get_current_time()
+        self.prepare_angles()
         self.identify_librations()
         self.running_time["librations_identified"] = logger.get_current_time()
         self.data_manager.save_data(self.bodies, self.times, self)
@@ -91,33 +91,23 @@ class Simulation:
         """Run batched execution with multi-core support."""
         self.batch_manager.execute_batches(self, self.bodies, self.times, progress)
 
+    def prepare_angles(self):
+        for body in self.bodies:
+            for resonance in body.resonances():
+                # make wrapped angle, filter, and record wrapped filtered
+                body.angles[resonance.to_s()] = wrap(body.angle_unwrapped(resonance))
+                unwrapped_filtered_angle = filter_angle(body.angle_unwrapped(resonance), self.config)
+                body.angles_filtered_unwrapped[resonance.to_s()] = unwrapped_filtered_angle
+                body.angles_filtered[resonance.to_s()] = filter_angle(body.angles[resonance.to_s()], self.config)
+                body.axis_filtered = filter_angle(body.axis, self.config)
+                if isinstance(resonance, SecularResonance):
+                    body.build_proper_angle(resonance)
+
     def identify_librations(self):
         """Identify librations for all bodies."""
         for body in self.bodies:
             try:
-                if self.config.secular_angle_mode == 'proper':
-                    self._rebuild_proper_secular_angles(body)
                 libration.body(self, body)
             except Exception as e:
                 logger.error(f"Error identifying librations for {body.name}: {e}")
                 raise
-
-    def _rebuild_proper_secular_angles(self, body: Body):
-        for secular in body.secular_resonances:
-            if not isinstance(secular, SecularResonance):
-                continue
-            try:
-                existing = body.secular_angles.get(secular.to_s())
-                if existing is not None:
-                    body.secular_angles_osculating[secular.to_s()] = existing.copy()
-                proper_angle = build_proper_angle_series(
-                    times=self.times,
-                    body=body,
-                    resonance=secular,
-                    existing_angle=existing,
-                    cutoff_period_years=700_000.0,
-                )
-                body.secular_angles_proper[secular.to_s()] = proper_angle
-                body.secular_angles[secular.to_s()] = proper_angle
-            except Exception as exc:
-                logger.warning(f"Failed to build proper secular angle for {body.name} / {secular.to_s()}: {exc}")

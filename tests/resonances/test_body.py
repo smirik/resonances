@@ -27,7 +27,7 @@ def test_setup():
     body = resonances.Body()
     mmr = resonances.create_mmr('4J-2S-1')
     body.mmrs = [mmr]
-    body.setup_vars_for_simulation(5)
+    body.setup_vars_for_simulation([1, 2, 3, 4, 5])
     assert 5 == len(body.axis)
     assert 5 == len(body.ecc)
     assert 5 == len(body.angles[mmr.to_s()])
@@ -45,14 +45,15 @@ def test_str():
     assert 'Body(type=asteroid, name=463, mass=1.0)\nMMR Resonances: 4J-2S-1+0+0-1, \n' == str(body)
 
 
-def test_mmr_to_dict():
+def test_resonance_to_dict_mmr():
     body = resonances.Body()
     mmr = resonances.create_mmr('4J-2S-1')
     body.mmrs = [mmr]
+    body.angles_unwrapped[mmr.to_s()] = np.array([0, 1, 2, 3, 4])
     body.angles[mmr.to_s()] = np.array([0, 1, 2, 3, 4])
     body.periodogram_peaks[mmr.to_s()] = np.array([0, 1, 2, 3, 4])
 
-    result = body.mmr_to_dict(mmr)
+    result = body.resonance_to_dict(mmr)
     assert result is not None
 
     angle_key = mmr.to_s() + '_angle'
@@ -66,8 +67,9 @@ def test_mmr_to_dict():
     assert 'times' not in result
 
     # Test with filtered angles
+    body.angles_filtered_unwrapped[mmr.to_s()] = np.array([0.1, 1.1, 2.1, 3.1, 4.1])
     body.angles_filtered[mmr.to_s()] = np.array([0.1, 1.1, 2.1, 3.1, 4.1])
-    result = body.mmr_to_dict(mmr)
+    result = body.resonance_to_dict(mmr)
 
     assert isinstance(result, dict)
     filtered_key = mmr.to_s() + '_angle_filtered'
@@ -186,6 +188,7 @@ def test_resonance_to_dict_dispatcher():
     # Test MMR dispatch
     mmr = resonances.create_mmr('4J-2S-1')
     body.mmrs = [mmr]
+    body.angles_unwrapped[mmr.to_s()] = np.array([0, 1, 2, 3, 4])
     body.angles[mmr.to_s()] = np.array([0, 1, 2, 3, 4])
 
     result = body.resonance_to_dict(mmr)
@@ -195,7 +198,8 @@ def test_resonance_to_dict_dispatcher():
     # Test Secular dispatch
     secular = resonances.create_resonance('g-2g6+g5')
     body.secular_resonances = [secular]
-    body.secular_angles[secular.to_s()] = np.array([10, 11, 12])
+    body.angles_unwrapped[secular.to_s()] = np.array([10, 11, 12])
+    body.angles[secular.to_s()] = np.array([10, 11, 12])
     body.secular_angles_osculating[secular.to_s()] = np.array([10.1, 11.1, 12.1])
     body.secular_angles_proper[secular.to_s()] = np.array([10.2, 11.2, 12.2])
 
@@ -206,17 +210,17 @@ def test_resonance_to_dict_dispatcher():
     assert secular.to_s() + '_angle_proper' in result
 
 
-def test_secular_to_dict():
-    """Test secular_to_dict with new signature (no times parameter)."""
+def test_resonance_to_dict_for_secular():
     body = resonances.Body()
     secular = resonances.create_resonance('g-2g6+g5')
 
     body.secular_resonances = [secular]
-    body.secular_angles[secular.to_s()] = np.array([10, 11, 12, 13])
+    body.angles_unwrapped[secular.to_s()] = np.array([10, 11, 12, 13])
+    body.angles[secular.to_s()] = np.array([10, 11, 12, 13])
     body.secular_angles_osculating[secular.to_s()] = np.array([10.1, 11.1, 12.1, 13.1])
     body.secular_angles_proper[secular.to_s()] = np.array([10.2, 11.2, 12.2, 13.2])
 
-    result = body.secular_to_dict(secular)
+    result = body.resonance_to_dict(secular)
 
     assert result is not None
     assert isinstance(result, dict)
@@ -231,7 +235,7 @@ def test_secular_to_dict():
     assert proper_key in result
 
     assert len(result[angle_key]) == 4
-    assert np.array_equal(result[angle_key], body.secular_angles[secular.to_s()])
+    assert np.array_equal(result[angle_key], body.angles[secular.to_s()])
 
     # Should NOT contain Keplerian elements
     assert 'a' not in result
@@ -239,22 +243,24 @@ def test_secular_to_dict():
     assert 'times' not in result
 
     # Test with filtered angles
-    body.secular_angles_filtered[secular.to_s()] = np.array([10.3, 11.3, 12.3, 13.3])
-    result = body.secular_to_dict(secular)
+    body.angles_filtered_unwrapped[secular.to_s()] = np.array([10.3, 11.3, 12.3, 13.3])
+    body.angles_filtered[secular.to_s()] = np.array([10.3, 11.3, 12.3, 13.3])
+    result = body.resonance_to_dict(secular)
 
     filtered_key = secular.to_s() + '_angle_filtered'
     assert filtered_key in result
-    assert np.array_equal(result[filtered_key], body.secular_angles_filtered[secular.to_s()])
+    assert np.array_equal(result[filtered_key], body.angles_filtered[secular.to_s()])
 
 
-def test_lidov_kozai_to_dict():
+def test_resonance_to_dict_for_lidov_kozai():
     """Test lidov_kozai_to_dict with new signature (no times parameter)."""
     body = resonances.Body()
     lk = resonances.create_resonance('lkr')
     body.lidov_kozai_resonances = [lk]
-    body.lidov_kozai_angles[lk.to_s()] = np.array([20, 21, 22, 23, 24])
+    body.angles_unwrapped[lk.to_s()] = np.array([20, 21, 22, 23, 24])
+    body.angles[lk.to_s()] = np.array([20, 21, 22, 23, 24])
 
-    result = body.lidov_kozai_to_dict(lk)
+    result = body.resonance_to_dict(lk)
 
     assert result is not None
     assert isinstance(result, dict)
@@ -262,7 +268,7 @@ def test_lidov_kozai_to_dict():
     # Check that it uses generic 'LK_angle' key (not prefixed)
     assert lk.to_s() + '_angle' in result
     assert len(result[lk.to_s() + '_angle']) == 5
-    assert np.array_equal(result[lk.to_s() + '_angle'], body.lidov_kozai_angles[lk.to_s()])
+    assert np.array_equal(result[lk.to_s() + '_angle'], body.angles[lk.to_s()])
 
     # Should NOT contain Keplerian elements
     assert 'a' not in result
@@ -270,8 +276,9 @@ def test_lidov_kozai_to_dict():
     assert 'times' not in result
 
     # Test with filtered angles
+    body.angles_filtered_unwrapped[lk.to_s()] = np.array([20.1, 21.1, 22.1, 23.1, 24.1])
     body.angles_filtered[lk.to_s()] = np.array([20.1, 21.1, 22.1, 23.1, 24.1])
-    result = body.lidov_kozai_to_dict(lk)
+    result = body.resonance_to_dict(lk)
 
     assert lk.to_s() + '_angle_filtered' in result
     assert np.array_equal(result[lk.to_s() + '_angle_filtered'], body.angles_filtered[lk.to_s()])

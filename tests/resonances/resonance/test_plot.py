@@ -1,11 +1,14 @@
 """Tests for plotting functionality using the new Plotter class."""
 
 from pathlib import Path
+
+import pytest
 import resonances
 import os
 import tests.tools as tools
 
 
+@pytest.mark.slow
 def test_simple_run():
     """Test basic simulation with plotting enabled."""
     sim = tools.create_test_simulation_for_solar_system()

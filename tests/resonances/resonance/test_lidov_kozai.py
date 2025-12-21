@@ -19,15 +19,6 @@ def test_lidov_kozai_parameters_scalar():
     assert c2 < 0.0
 
 
-def test_lidov_kozai_resonance_angle_normalization():
-    resonance = LidovKozaiResonance()
-    orbit = SimpleNamespace(omega=-0.5)
-    angle = resonance.calc_angle(orbit, None)
-
-    assert np.isclose(angle, 2 * np.pi - 0.5)
-    assert 0 <= angle <= 2 * np.pi
-
-
 def test_lidov_kozai_resonance_angle_direct_value():
     resonance = LidovKozaiResonance()
     orbit = SimpleNamespace(omega=1.234)

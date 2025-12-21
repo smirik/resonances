@@ -3,7 +3,6 @@ import re
 from resonances.mmr.mmr import MMR
 import resonances.data.util as util
 from resonances.data import const
-import rebound
 
 
 class ThreeBody(MMR):
@@ -19,7 +18,7 @@ class ThreeBody(MMR):
     def calc_angle(self, body, planets):
         body1 = planets[0]
         body2 = planets[1]
-        angle = rebound.mod2pi(
+        angle = (
             self.coeff[0] * body1.l
             + self.coeff[1] * body2.l
             + self.coeff[2] * body.l

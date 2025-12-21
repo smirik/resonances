@@ -14,6 +14,7 @@ from typing import Union, Optional, Dict, Any
 
 from resonances.body import Body
 from resonances.logger import logger
+from resonances.secular.secular_resonance import SecularResonance
 from .config import PlotConfig, Panel, StyleConfig
 from .presets import get_preset
 
@@ -255,6 +256,11 @@ class Plotter:
         if resonance_key in body.angles_filtered:
             self._data[f'{resonance_key}_angle_filtered'] = body.angles_filtered[resonance_key]
 
+        # Add proper angles if available
+        if isinstance(resonance, SecularResonance):
+            self._data[f'{resonance_key}_angle_proper'] = body.secular_angles_proper[resonance_key]
+            self._data[f'{resonance_key}_angle_osculating'] = body.secular_angles_osculating[resonance_key]
+
         # Create periodogram dataframe if data exists
         periodogram_dict = {}
 
@@ -446,6 +452,9 @@ class Plotter:
             ax.set_ylabel(style.ylabel, fontsize=self._config.label_fontsize)
         if style.xlabel:
             ax.set_xlabel(style.xlabel, fontsize=self._config.label_fontsize)
+
+        # Tick label fontsize
+        ax.tick_params(axis='both', which='major', labelsize=self._config.tick_labelsize)
 
         # Axis limits
         if style.xlim is not None:

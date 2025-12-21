@@ -1,5 +1,4 @@
 import numpy as np
-import rebound
 
 from resonances.resonance.resonance import Resonance
 
@@ -128,7 +127,7 @@ class LidovKozaiResonance(Resonance):
         """
         The resonant argument is the argument of pericenter ω.
         """
-        return rebound.mod2pi(body_orbit.omega)
+        return body_orbit.omega
 
     def to_s(self):
         return self.identifier

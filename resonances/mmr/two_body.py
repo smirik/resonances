@@ -2,7 +2,6 @@ import numpy as np
 import re
 from resonances.mmr.mmr import MMR
 from resonances.data import const
-import rebound
 
 
 class TwoBody(MMR):
@@ -17,7 +16,7 @@ class TwoBody(MMR):
 
     def calc_angle(self, body, planets):
         body1 = planets[0]
-        angle = rebound.mod2pi(
+        angle = (
             self.coeff[0] * body1.l
             + self.coeff[1] * body.l
             + self.coeff[2] * (body1.Omega + body1.omega)

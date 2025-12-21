@@ -11,7 +11,7 @@ def test_simulation_rebuilds_proper_secular_angles():
     body = Body()
     resonance = SecularResonance('g-g6+s-s6')
     body.secular_resonances.append(resonance)
-    body.setup_vars_for_simulation(len(sim.times))
+    body.setup_vars_for_simulation(sim.times)
 
     times_years = sim.times / (2.0 * np.pi)
     g_true = 0.04
@@ -26,9 +26,9 @@ def test_simulation_rebuilds_proper_secular_angles():
     body.omega[:] = omega
     body.varpi[:] = varpi
 
-    body.secular_angles[resonance.to_s()] = (varpi + Omega) % (2.0 * np.pi)
+    body.angles[resonance.to_s()] = (varpi + Omega) % (2.0 * np.pi)
 
-    sim._rebuild_proper_secular_angles(body)
+    body.build_proper_angle(resonance)
 
     assert resonance.to_s() in body.secular_angles_proper
-    assert body.secular_angles[resonance.to_s()].shape == sim.times.shape
+    assert body.angles[resonance.to_s()].shape == sim.times.shape

@@ -55,5 +55,13 @@ class logger:  # pragma: no cover
         logging.warning(message)
 
     @classmethod
+    def warn(cls, message):
+        cls.warning(message)
+
+    @classmethod
     def error(cls, message):
         logging.error(message)
+
+    @classmethod
+    def err(cls, message):
+        cls.error(message)

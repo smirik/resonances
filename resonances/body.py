@@ -2,6 +2,7 @@ import numpy as np
 
 from resonances.resonance.resonance import Resonance
 from resonances.mmr.mmr import MMR
+from resonances.secular.proper_angle import build_proper_angle_series
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
 from .logger import logger
@@ -32,17 +33,18 @@ class Body:
 
         self.mmrs: List[MMR] = []
         self.angles = {}  # For MMR angles
+        self.angles_unwrapped = {}  # Wrapped by mod2pi angles
+        self.angles_filtered = {}
+        self.angles_filtered_unwrapped = {}
         self.statuses = {}
 
         # Secular resonances data
         self.secular_resonances: List[SecularResonance] = []
-        self.secular_angles = {}  # For secular resonance angles
         self.secular_angles_osculating = {}
         self.secular_angles_proper = {}
 
         # Lidov-Kozai resonance data
         self.lidov_kozai_resonances: List[LidovKozaiResonance] = []
-        self.lidov_kozai_angles = {}
 
         # Libration and filtering data (shared between MMR and secular)
         self.librations = {}
@@ -55,7 +57,6 @@ class Body:
         self.periodogram_peaks = {}
 
         self.angles_filtered = {}
-        self.secular_angles_filtered = {}
 
         self.axis_filtered = None
         self.axis_periodogram_frequency = None
@@ -72,7 +73,6 @@ class Body:
 
         # Simulation data
         self.index_in_simulation = None
-        # self.index_of_planets = None
 
     def __str__(self):
         s = f'Body(type={self.type}, name={self.name}, mass={self.mass})\n'
@@ -106,68 +106,29 @@ class Body:
         return df_data
 
     def resonance_to_dict(self, resonance: Resonance):
-        if isinstance(resonance, MMR):
-            return self.mmr_to_dict(resonance)
-        elif isinstance(resonance, SecularResonance):
-            return self.secular_to_dict(resonance)
-        elif isinstance(resonance, LidovKozaiResonance):
-            return self.lidov_kozai_to_dict(resonance)
-        else:
-            logger.error(f'Unknown resonance type in resonance_to_dct for body={self.name} and resonance={resonance.to_s()}')
-            return None
-
-    def mmr_to_dict(self, mmr: MMR) -> dict:
         try:
             df_data = {
-                mmr.to_s() + '_angle': self.angles[mmr.to_s()],
-            }
-
-            if self.angles_filtered.get(mmr.to_s()) is not None:
-                df_data[mmr.to_s() + '_angle_filtered'] = self.angles_filtered[mmr.to_s()]
-
-        except Exception as e:
-            logger.error(f'Error in mmr_to_dict function for body={self.name} and mmr={mmr.to_s()}: {e}')
-            return None
-        return df_data
-
-    def lidov_kozai_to_dict(self, resonance: LidovKozaiResonance) -> dict:
-        """
-        Convert Lidov–Kozai resonance data to dictionary format for saving.
-        """
-        try:
-            df_data = {
-                resonance.to_s() + '_angle': self.lidov_kozai_angles[resonance.to_s()],
+                resonance.to_s() + '_angle_unwrapped': self.angles_unwrapped[resonance.to_s()],
+                resonance.to_s() + '_angle': self.angles[resonance.to_s()],
             }
 
             if self.angles_filtered.get(resonance.to_s()) is not None:
+                df_data[resonance.to_s() + '_angle_filtered_unwrapped'] = self.angles_filtered_unwrapped[resonance.to_s()]
                 df_data[resonance.to_s() + '_angle_filtered'] = self.angles_filtered[resonance.to_s()]
 
-        except Exception as e:
-            logger.error(f'Error in lidov_kozai_to_dict for body={self.name} and resonance={resonance.to_s()}: {e}')
-            return None
-        return df_data
-
-    def secular_to_dict(self, secular: SecularResonance) -> dict:
-        """
-        Convert secular resonance data to dictionary format for saving.
-        """
-        try:
-            df_data = {
-                secular.to_s() + '_angle': self.secular_angles[secular.to_s()],
-            }
-
-            if self.secular_angles_filtered.get(secular.to_s()) is not None:
-                df_data[secular.to_s() + '_angle_filtered'] = self.secular_angles_filtered[secular.to_s()]
-
-            df_data[secular.to_s() + "_angle_osculating"] = self.secular_angles_osculating[secular.to_s()]
-            df_data[secular.to_s() + "_angle_proper"] = self.secular_angles_proper[secular.to_s()]
+            if isinstance(resonance, SecularResonance):
+                df_data[resonance.to_s() + "_angle_osculating"] = self.secular_angles_osculating[resonance.to_s()]
+                df_data[resonance.to_s() + "_angle_proper"] = self.secular_angles_proper[resonance.to_s()]
 
         except Exception as e:
-            logger.error(f'Error in secular_to_dict function for body={self.name} and secular={secular.to_s()}: {e}')
-            return None
+            error_text = f'Error in resonance_to_dict function for body={self.name} and resonance={resonance.to_s()}: {e}'
+            logger.error(error_text)
+            raise Exception(error_text)
         return df_data
 
-    def setup_vars_for_simulation(self, num):
+    def setup_vars_for_simulation(self, times):
+        self.times = times
+        num = len(times)
         self.axis, self.ecc, self.inc, self.Omega, self.omega, self.M, self.longitude, self.varpi = (
             np.zeros(num),
             np.zeros(num),
@@ -179,32 +140,51 @@ class Body:
             np.zeros(num),
         )
         # Setup MMR angles
-        for mmr in self.mmrs:
-            self.angles[mmr.to_s()] = np.zeros(num)
-        # Setup secular resonance angles
-        for secular in self.secular_resonances:
-            arr = np.zeros(num)
-            self.secular_angles[secular.to_s()] = arr
-            self.secular_angles_osculating[secular.to_s()] = arr
-        # Setup Lidov-Kozai resonance angles
-        for lidov in self.lidov_kozai_resonances:
-            self.lidov_kozai_angles[lidov.to_s()] = np.zeros(num)
+        for resonance in self.resonances():
+            self.angles_unwrapped[resonance.to_s()] = np.zeros(num)
+            self.angles[resonance.to_s()] = np.zeros(num)
 
     def angle(self, resonance: Resonance) -> np.ndarray:
         """
         Get angle array for any supported resonance.
         """
         try:
-            if isinstance(resonance, MMR):
-                return self.angles[resonance.to_s()]
-            elif isinstance(resonance, SecularResonance):
-                return self.secular_angles[resonance.to_s()]
-            elif isinstance(resonance, LidovKozaiResonance):
-                return self.lidov_kozai_angles[resonance.to_s()]
-            else:
-                raise ValueError(f"Unknown resonance type: {type(resonance)}")
+            return self.angles[resonance.to_s()]
         except Exception:
-            raise Exception('The angle for the resonance {} does not exist in the body {}.'.format(resonance.to_s(), self.name))
+            raise Exception(f"The angle for the resonance {resonance.to_s()} does not exist in the body {self.name}.")
+
+    def angle_unwrapped(self, resonance: Resonance) -> np.ndarray:
+        try:
+            return self.angles_unwrapped[resonance.to_s()]
+        except Exception:
+            raise Exception(f"The angle for the resonance {resonance.to_s()} does not exist in the body {self.name}.")
+
+    def angle_filtered(self, resonance: Resonance) -> np.ndarray:
+        try:
+            return self.angles_filtered[resonance.to_s()]
+        except Exception:
+            raise Exception(f"The filtered angle for the resonance {resonance.to_s()} does not exist in the body {self.name}.")
+
+    def build_proper_angle(self, resonance: Resonance):
+        if not isinstance(resonance, SecularResonance):
+            raise Exception(
+                f"You can build proper angle only for a secular resonance. Here resonance is {resonance.to_s()} for the body {self.name}"
+            )
+
+        try:
+            existing = self.angles.get(resonance.to_s())
+            if existing is not None:
+                self.secular_angles_osculating[resonance.to_s()] = existing.copy()
+            proper_angle = build_proper_angle_series(
+                times=self.times,
+                body=self,
+                resonance=resonance,
+                existing_angle=existing,
+                cutoff_period_years=700_000.0,
+            )
+            self.secular_angles_proper[resonance.to_s()] = proper_angle
+        except Exception as exc:
+            logger.warning(f"Failed to build proper secular angle for the body {self.name} in the resonance {resonance.to_s()}: {exc}")
 
     def in_resonance(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]):
         """

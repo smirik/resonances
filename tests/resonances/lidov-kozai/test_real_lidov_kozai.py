@@ -28,11 +28,6 @@ LK_SIMULATION_CONFIG = dict(
 def test_real_lidov_kozai_statuses():
     resonance_name = resonances.LidovKozaiResonance().to_s()
     sim = resonances.check([number for number, _ in LK_ASTEROIDS], "lidov-kozai", **LK_SIMULATION_CONFIG)
-    # sim = resonances.Simulation(name='test_lidov_kozai_real', source='astdys', **LK_SIMULATION_CONFIG)
-    # sim.create_solar_system()
-
-    # for asteroid, _ in LK_ASTEROIDS:
-    #     sim.add_body(asteroid, resonances.LidovKozaiResonance(), name=str(asteroid))
 
     sim.run(progress=False)
 

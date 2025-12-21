@@ -19,6 +19,7 @@ class SimulationConfig:
         self._setup_save_params(kwargs)
         self._setup_plot_params(kwargs)
         self._setup_libration_params(kwargs)
+        self._setup_filtering_params(kwargs)
         self._setup_batch_params(kwargs)
 
         self.secular_angle_mode = kwargs.get('secular_angle_mode', c.get('SECULAR_ANGLE_MODE'))
@@ -57,14 +58,11 @@ class SimulationConfig:
         self.save_summary = kwargs.get('save_summary', bool(c.get('SAVE_SUMMARY') == 'True'))
         self.save_planets = kwargs.get('save_planets', bool(c.get('SAVE_PLANETS') == 'True'))
 
-        now = datetime.datetime.now()
         self.save_path = kwargs.get('save_path', None)
         if self.save_path is None:
-            save_path = f"{c.get('SAVE_PATH')}/{self.name}"
-            if os.path.exists(save_path):
-                save_path += f"_{now.strftime('%Y-%m-%d_%H-%M-%S')}"
-                logger.info(f"Save path already exists. Using new path: {save_path}")
-            self.save_path = save_path
+            self.save_path = self._verify_existing_path(f"{c.get('SAVE_PATH')}/{self.name}")
+        else:
+            self.save_path = self._verify_existing_path(self.save_path)
 
     def _setup_plot_params(self, kwargs):
         """Setup plotting parameters."""
@@ -73,22 +71,32 @@ class SimulationConfig:
         self.image_type = kwargs.get('image_type', c.get('PLOT_IMAGE_TYPE'))
         self.plot_config = kwargs.get('plot_config', None)  # Optional plot configuration
 
-        now = datetime.datetime.now()
         self.plot_path = kwargs.get('plot_path', None)
         if self.plot_path is None:
-            plot_path = f"{c.get('PLOT_PATH')}/{self.name}"
-            if os.path.exists(plot_path):
-                plot_path += f"_{now.strftime('%Y-%m-%d_%H-%M-%S')}"
-                logger.info(f"Plot path already exists. Using new path: {plot_path}")
-            self.plot_path = plot_path
+            self.plot_path = self._verify_existing_path(f"{c.get('PLOT_PATH')}/{self.name}")
+        else:
+            self.plot_path = self._verify_existing_path(self.plot_path)
+
+    def _verify_existing_path(self, path):
+        """Verify if the given path exists and modify it to avoid overwriting."""
+        if os.path.exists(path):
+            now = datetime.datetime.now()
+            new_path = f"{path}_{now.strftime('%Y-%m-%d_%H-%M-%S')}"
+            logger.warning(f"Path {path} already exists. Using new path: {new_path}")
+            return new_path
+        return path
 
     def _setup_libration_params(self, kwargs):
         """Setup libration analysis parameters."""
         self.oscillations_cutoff = kwargs.get('oscillations_cutoff', float(c.get('LIBRATION_FILTER_CUTOFF')))
         self.oscillations_filter_order = kwargs.get('oscillations_filter_order', int(c.get('LIBRATION_FILTER_ORDER')))
-        self.periodogram_frequency_min = kwargs.get('periodogram_frequency_min', float(c.get('LIBRATION_FREQ_MIN')))
+        self.periodogram_frequency_min = kwargs.get('periodogram_frequency_min', None)
+        if self.periodogram_frequency_min is None:  # to show all possible frequencies based on integration time
+            self.periodogram_frequency_min = 1.0 / self.tmax_yrs
         self.periodogram_frequency_max = kwargs.get('periodogram_frequency_max', float(c.get('LIBRATION_FREQ_MAX')))
-        self.periodogram_critical = kwargs.get('periodogram_critical', float(c.get('LIBRATION_CRITICAL')))
+        self.periodogram_critical = kwargs.get('periodogram_critical', None)
+        if self.periodogram_critical is None:
+            self.periodogram_critical = self.tmax_yrs * 0.2  # if not set, 20% of integration time should be in libration
         self.periodogram_soft = kwargs.get('periodogram_soft', float(c.get('LIBRATION_SOFT')))
         self.libration_period_critical = kwargs.get('libration_period_critical', int(c.get('LIBRATION_PERIOD_CRITICAL')))
 
@@ -98,7 +106,12 @@ class SimulationConfig:
         else:
             self.libration_monotony_critical = [float(x.strip()) for x in c.get('LIBRATION_MONOTONY_CRITICAL').split(",")]
 
-        self.libration_period_min = kwargs.get('libration_period_min', int(c.get('LIBRATION_PERIOD_MIN')))
+        self.libration_period_min = kwargs.get('libration_period_min', None)
+        if self.libration_period_min is None:
+            self.libration_period_min = self.tmax_yrs * 0.05  # if not set, let's librate at least 5%
+
+    def _setup_filtering_params(self, kwargs):
+        self.filter = kwargs.get('filter', c.get('FILTER'))
 
     @property
     def tmax(self):

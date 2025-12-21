@@ -131,6 +131,7 @@ class PlotConfig:
     # Font sizes
     title_fontsize: int = 14
     label_fontsize: int = 14
+    tick_labelsize: int = 14  # Fontsize for tick labels (axis numbers)
 
     # Overall plot title template
     plot_title: str = '{body_name}, resonance = {resonance}, status = {status}'

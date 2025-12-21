@@ -304,43 +304,19 @@ class libration:
         return {'position': peaks_position, 'peaks': peaks}
 
     @classmethod
-    def butter_lowpass_filter(cls, data, cutoff, fs, order, nyq):
-        normal_cutoff = cutoff / nyq
-        # Ensure normalized cutoff frequency is valid for Butterworth filter (0 < Wn < 1)
-        if normal_cutoff >= 1.0:
-            # For secular resonances with very long integration times, adjust cutoff
-            normal_cutoff = 0.99  # Use maximum allowable value
-            logger.warning(
-                f"Cutoff frequency ({cutoff}) >= Nyquist frequency ({nyq}). "
-                f"Adjusting normalized cutoff to {normal_cutoff} for filter stability."
-            )
-        elif normal_cutoff <= 0.0:
-            normal_cutoff = 0.01  # Use minimum allowable value
-            logger.warning(f"Cutoff frequency ({cutoff}) <= 0. " f"Adjusting normalized cutoff to {normal_cutoff} for filter stability.")
-
-        # Get the filter coefficients
-        b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
-        y = signal.filtfilt(b, a, data, method="gust")
-        return y
-
-    @classmethod
     def body(cls, sim, body: Body):
         integration_time = abs(round(sim.config.tmax / (2 * np.pi)))  # abs for backward integration
         fs = sim.config.Nout / integration_time  # sample rate, Hz || Nout/time, i.e. 10000/100000
-        cutoff = sim.config.oscillations_cutoff  # should be a little bit more than needed
-        nyq = 0.5 * fs  # Nyquist Frequency
-        order = sim.config.oscillations_filter_order  # polynom order
         """
         Do not take into account first N and last N points because of the filter applied.
         There is no previous (or following) data for them. Thus, they mess the periodogram.
         """
         points_to_cut = round(sim.config.libration_period_min * fs)
 
-        axis_filtered = cls.butter_lowpass_filter(body.axis, cutoff, fs, order, nyq)
         try:
             (axis_frequency, axis_power) = cls.periodogram(
-                sim.times[points_to_cut : len(axis_filtered) - points_to_cut] / (2 * np.pi),
-                axis_filtered[points_to_cut : len(axis_filtered) - points_to_cut],
+                sim.times[points_to_cut : len(body.axis_filtered) - points_to_cut] / (2 * np.pi),
+                body.axis_filtered[points_to_cut : len(body.axis_filtered) - points_to_cut],
                 minimum_frequency=sim.config.periodogram_frequency_min,
                 maximum_frequency=sim.config.periodogram_frequency_max,
             )
@@ -350,7 +326,6 @@ class libration:
             logger.info(f"Configs: {sim.config.periodogram_frequency_min}, {sim.config.periodogram_frequency_max}")
             axis_frequency, axis_power, axis_peaks_data = None, None, None
 
-        body.axis_filtered = axis_filtered
         body.axis_periodogram_frequency = axis_frequency
         body.axis_periodogram_power = axis_power
         body.axis_periodogram_peaks = axis_peaks_data
@@ -382,10 +357,9 @@ class libration:
             monotony = cls.monotony_estimation(body.angle(resonance))
 
             try:
-                angle_filtered = cls.butter_lowpass_filter(body.angle(resonance), cutoff, fs, order, nyq)
                 (frequency, power) = cls.periodogram(
-                    sim.times[points_to_cut : len(angle_filtered) - points_to_cut] / (2 * np.pi),
-                    angle_filtered[points_to_cut : len(angle_filtered) - points_to_cut],
+                    sim.times[points_to_cut : len(body.angle_filtered(resonance)) - points_to_cut] / (2 * np.pi),
+                    body.angle_filtered(resonance)[points_to_cut : len(body.angle_filtered(resonance)) - points_to_cut],
                     minimum_frequency=sim.config.periodogram_frequency_min,
                     maximum_frequency=sim.config.periodogram_frequency_max,
                 )
@@ -394,7 +368,7 @@ class libration:
                 overlapping = cls.overlap_list(angle_peaks_data['position'], axis_peaks_data['position'], delta=0)
             except Exception as e:  # pragma: no cover
                 logger.error(f"Error in periodogram for {body.name} and {resonance.to_s()}: {e}")
-                frequency, power, angle_peaks_data, angle_filtered, overlapping = None, None, None, None, []
+                frequency, power, angle_peaks_data, overlapping = None, None, None, []
 
             body.statuses[resonance.to_s()] = cls.resolve(
                 resonance,
@@ -414,7 +388,6 @@ class libration:
             body.periodogram_power[resonance.to_s()] = power
             body.periodogram_peaks[resonance.to_s()] = angle_peaks_data
 
-            body.angles_filtered[resonance.to_s()] = angle_filtered
             body.periodogram_peaks_overlapping[resonance.to_s()] = overlapping
 
             body.monotony[resonance.to_s()] = monotony

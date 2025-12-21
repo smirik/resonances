@@ -1,5 +1,3 @@
-import rebound
-
 from resonances.resonance.resonance import Resonance
 from resonances.secular.secular_resonance_formula import SecularResonanceFormula
 
@@ -61,7 +59,7 @@ class SecularResonance(Resonance):
 
             angle += term.coefficient * theta
 
-        return rebound.mod2pi(angle)
+        return angle
 
     def to_s(self) -> str:
         return self.formula_str
