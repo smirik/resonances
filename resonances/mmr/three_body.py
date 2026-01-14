@@ -1,3 +1,4 @@
+from typing import ClassVar
 import numpy as np
 import re
 from resonances.mmr.mmr import MMR
@@ -6,6 +7,8 @@ from resonances.data import const
 
 
 class ThreeBody(MMR):
+    mmr_type: ClassVar[str] = "three-body"
+
     def __init__(self, coeff, planets_names=None):
         if isinstance(coeff, str):
             coeff, planets_names = self.init_from_short_notation(coeff)

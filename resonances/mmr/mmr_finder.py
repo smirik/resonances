@@ -1,10 +1,12 @@
-from typing import List
-from resonances.mmr.mmr import MMR
+from typing import List, Union
+from .three_body import ThreeBody
+from .mmr import MMR
+from .two_body import TwoBody
 from .three_body_matrix import ThreeBodyMatrix
 from .two_body_matrix import TwoBodyMatrix
 
 
-def find_mmrs(a: float, planets=None, sigma2=0.1, sigma3=0.02, sigma=None) -> List[MMR]:
+def find_mmrs(a: float, planets=None, sigma2=0.1, sigma3=0.02, sigma=None, mmr_type: Union[str, None] = None) -> List[MMR]:
     """Find Two and Three-Body Mean Motion Resonances (MMR) for a given semi-major axis.
     This function identifies both two-body and three-body mean motion resonances
     near the specified semi-major axis value. If a single sigma value is provided,
@@ -35,7 +37,13 @@ def find_mmrs(a: float, planets=None, sigma2=0.1, sigma3=0.02, sigma=None) -> Li
         sigma2 = sigma
         sigma3 = sigma
 
-    mmrs = ThreeBodyMatrix.find_resonances(a, planets=planets, sigma=sigma3)
-    mmrs2 = TwoBodyMatrix.find_resonances(a, planets=planets, sigma=sigma2)
+    mmrs, mmrs2 = [], []
+
+    if (mmr_type is None) or (mmr_type == TwoBody.mmr_type):
+        mmrs2 = TwoBodyMatrix.find_resonances(a, planets=planets, sigma=sigma2)
+
+    if (mmr_type is None) or (mmr_type == ThreeBody.mmr_type):
+        mmrs = ThreeBodyMatrix.find_resonances(a, planets=planets, sigma=sigma3)
+
     mmrs = mmrs + mmrs2
     return mmrs

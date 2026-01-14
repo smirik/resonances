@@ -83,7 +83,7 @@ def find(ctx):
     click.echo(f"Running with parameters: {kwargs}")
 
     sim = resonances.find(**kwargs)
-    sim.run()
+    sim.run(progress=True)
 
     click.echo(f"✓ Complete! Results in: {sim.config.save_path}")
 
@@ -130,7 +130,7 @@ def check(ctx):
     click.echo(f"Running with parameters: {kwargs}")
 
     sim = resonances.check(**kwargs)
-    sim.run()
+    sim.run(progress=True)
 
     click.echo(f"✓ Complete! Results in: {sim.config.save_path}")
 

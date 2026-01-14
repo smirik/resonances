@@ -48,13 +48,14 @@ def create_simple_preset(resonance_key: str) -> PlotConfig:
 
 def create_full_preset(resonance_key: str) -> PlotConfig:
     """
-    Create a full preset matching the current 7-panel plot.
+    Create a full preset.
 
     This is the default preset and replicates existing functionality:
     - Resonant angle
     - Filtered resonant angle
     - Semi-major axis (filtered if available)
     - Eccentricity
+    - Inclination
     - Periodogram of resonant angle
     - Periodogram of semi-major axis
     - Periodogram of eccentricity
@@ -67,7 +68,7 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
     Returns
     -------
     PlotConfig
-        Full 7-panel plot configuration
+        Full N-panel plot configuration
     """
     config = PlotConfig(figsize=(10, 12), plot_title='{body_name}, resonance = {resonance}, status = {status}')
 
@@ -117,7 +118,18 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
         )
     )
 
-    # Panel 5: Periodogram of resonant angle
+    # Panel 5: Inclination
+    config.add_panel(
+        Panel(
+            key='inclination',
+            data_column='inc',
+            x_column='times',
+            style=StyleConfig(ylabel="i", title="Inclination", color='black', marker=',', linestyle=''),
+            required=True,
+        )
+    )
+
+    # Panel 6: Periodogram of resonant angle
     config.add_panel(
         Panel(
             key='periodogram_angle',
@@ -138,7 +150,7 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
         )
     )
 
-    # Panel 6: Periodogram of semi-major axis
+    # Panel 7: Periodogram of semi-major axis
     config.add_panel(
         Panel(
             key='periodogram_axis',
@@ -159,7 +171,7 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
         )
     )
 
-    # Panel 7: Periodogram of eccentricity
+    # Panel 8: Periodogram of eccentricity
     config.add_panel(
         Panel(
             key='periodogram_ecc',
@@ -177,6 +189,98 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
                 ],
             ),
             required=False,
+        )
+    )
+
+    return config
+
+
+def create_lk_preset(resonance_key: str) -> PlotConfig:
+    """
+    Create a Lidov-Kozai tuned preset.
+
+    This is the default preset and replicates existing functionality:
+    - Resonant angle
+    - Semi-major axis (filtered if available)
+    - Eccentricity
+    - Inclination
+    - Periodogram of resonant angle
+
+    Parameters
+    ----------
+    resonance_key : str
+        Resonance key (e.g., '4J-2S-1+0+0-1')
+
+    Returns
+    -------
+    PlotConfig
+        Full LK plot configuration
+    """
+    config = PlotConfig(figsize=(10, 12), plot_title='{body_name}, resonance = {resonance}, status = {status}')
+
+    # Panel 1: Resonant angle
+    config.add_panel(
+        Panel(
+            key='angle',
+            data_column=f'{resonance_key}_angle',
+            x_column='times',
+            style=StyleConfig(ylabel=r"$\sigma$ (rad)", title="Resonant angle", color='black', marker=',', linestyle=''),
+            required=True,
+        )
+    )
+
+    # Panel 3: Semi-major axis
+    config.add_panel(
+        Panel(
+            key='axis',
+            data_column='a_filtered',
+            fallback_column='a',
+            x_column='times',
+            style=StyleConfig(ylabel=r"$a_f$ (AU)", title="Semi-major axis", color='black', marker=',', linestyle=''),
+            required=True,
+        )
+    )
+
+    # Panel 4: Eccentricity
+    config.add_panel(
+        Panel(
+            key='eccentricity',
+            data_column='e',
+            x_column='times',
+            style=StyleConfig(ylabel="e", title="Eccentricity", color='black', marker=',', linestyle=''),
+            required=True,
+        )
+    )
+
+    # Panel 5: Inclination
+    config.add_panel(
+        Panel(
+            key='inclination',
+            data_column='inc',
+            x_column='times',
+            style=StyleConfig(ylabel="i", title="Inclination", color='black', marker=',', linestyle=''),
+            required=True,
+        )
+    )
+
+    # Panel 6: Periodogram of resonant angle
+    config.add_panel(
+        Panel(
+            key='periodogram_angle',
+            data_column=f'{resonance_key}_power',
+            x_column=f'{resonance_key}_frequency',
+            style=StyleConfig(
+                ylabel=r"$p_{\sigma}$",
+                title="Periodogram (the resonant angle)",
+                color='black',
+                linestyle='-',
+                marker='',
+                reference_lines=[
+                    {'type': 'axhline', 'y': 0.05, 'color': 'r', 'linestyle': '--'},
+                    {'type': 'axhline', 'y': 0.1, 'color': 'g', 'linestyle': '--'},
+                ],
+            ),
+            required=False,  # Periodograms may not exist
         )
     )
 

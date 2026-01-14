@@ -13,5 +13,6 @@ exclude =
     __init__.py
     .venv
     tests/test_wip.py
+    experiments
 per-file-ignores =
     resonances/matrix/three_body_matrix.py:C901

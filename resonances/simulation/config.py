@@ -14,6 +14,9 @@ class SimulationConfig:
     def __init__(self, **kwargs):
         """Initialize simulation configuration."""
         self.name = kwargs.get('name', datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        # Internal flag for batch workers to skip path verification
+        # Also skip for resume scenarios
+        self._skip_path_verification = kwargs.get('_skip_path_verification', False) or kwargs.get('resume_enabled', False)
         self._setup_date(kwargs.get('date'), kwargs.get('source'))
         self._setup_integration_params(kwargs)
         self._setup_save_params(kwargs)
@@ -78,12 +81,25 @@ class SimulationConfig:
             self.plot_path = self._verify_existing_path(self.plot_path)
 
     def _verify_existing_path(self, path):
-        """Verify if the given path exists and modify it to avoid overwriting."""
-        if os.path.exists(path):
-            now = datetime.datetime.now()
-            new_path = f"{path}_{now.strftime('%Y-%m-%d_%H-%M-%S')}"
-            logger.warning(f"Path {path} already exists. Using new path: {new_path}")
-            return new_path
+        """
+        Verify if the given path exists and modify it to avoid overwriting.
+
+        Skips verification if _skip_path_verification is True (used by batch workers).
+        Only renames if directory exists AND is not empty.
+        """
+        # Skip verification for batch workers
+        if self._skip_path_verification:
+            return path
+
+        # For regular simulations, check if path exists and has content
+        if os.path.exists(path) and os.path.isdir(path):
+            # Check if directory is not empty
+            if os.listdir(path):
+                # Directory exists and has files - create new timestamped path
+                now = datetime.datetime.now()
+                new_path = f"{path}_{now.strftime('%Y-%m-%d_%H-%M-%S')}"
+                logger.warning(f"Path {path} already exists and is not empty. Using new path: {new_path}")
+                return new_path
         return path
 
     def _setup_libration_params(self, kwargs):

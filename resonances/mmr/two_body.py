@@ -1,3 +1,4 @@
+from typing import ClassVar
 import numpy as np
 import re
 from resonances.mmr.mmr import MMR
@@ -5,6 +6,8 @@ from resonances.data import const
 
 
 class TwoBody(MMR):
+    mmr_type: ClassVar[str] = "two-body"
+
     def __init__(self, coeff, planets_names=None):
         if isinstance(coeff, str):
             coeff, planets_names = self.init_from_short_notation(coeff)
@@ -24,8 +27,8 @@ class TwoBody(MMR):
         )
         return angle
 
-    def order(self):
-        return abs((0 - self.coeff[0] - self.coeff[1]))
+    def order(self) -> int:
+        return int(abs((0 - self.coeff[0] - self.coeff[1])))
 
     def init_from_short_notation(self, s):
         tmp = re.split('-|\\+', s)

@@ -31,7 +31,9 @@ def _run_batch_worker(batch_index: int, bodies_data: List[Dict], simulation_kwar
 
     try:
         # Create a new simulation for this batch
-        sim = Simulation(**simulation_kwargs)
+        # Skip path verification since batch workers should use the same paths
+        batch_kwargs = {**simulation_kwargs, '_skip_path_verification': True}
+        sim = Simulation(**batch_kwargs)
         sim.create_solar_system()
 
         # Add bodies to simulation

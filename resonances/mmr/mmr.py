@@ -1,8 +1,10 @@
+from typing import ClassVar
 import numpy as np
 from resonances.resonance.resonance import Resonance
 
 
 class MMR(Resonance):
+    mmr_type: ClassVar[str] = "mmr"
 
     def __init__(self, coeff, planets_names=None, index_of_planets=None):
         self.coeff = np.array(coeff)
