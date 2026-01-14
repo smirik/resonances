@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import json
 from pathlib import Path
 
 from .config import SimulationConfig
@@ -9,6 +8,7 @@ from resonances.logger import logger
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, LidovKozaiParameters
 from resonances.plotting import Plotter
+from .serializer import SimulationSerializer
 
 
 class DataManager:
@@ -213,40 +213,4 @@ class DataManager:
 
     def save_configuration_details(self, bodies, simulation):
         """Save configuration details to file."""
-        data = {
-            "name": self.config.name,
-            "date": self.config.date.isoformat(),
-            "source": self.config.source,
-            "number_of_bodies": len(bodies),
-            "tmax": self.config.tmax,
-            "integrator": self.config.integrator,
-            "dt": self.config.dt,
-            "libration_analysis_parameters": {
-                "cutoff": self.config.oscillations_cutoff,
-                "filter_order": self.config.oscillations_filter_order,
-                "frequency_min": self.config.periodogram_frequency_min,
-                "frequency_max": self.config.periodogram_frequency_max,
-                "critical": self.config.periodogram_critical,
-                "soft": self.config.periodogram_soft,
-                "period_critical": self.config.libration_period_critical,
-            },
-        }
-
-        if simulation is not None and hasattr(simulation, 'running_time') and simulation.running_time:
-            running_time_str = {k: v.isoformat() for k, v in simulation.running_time.items()}
-            data["running_time"] = running_time_str
-
-            # Calculate differences between nearest times
-            times_sorted = sorted(simulation.running_time.items(), key=lambda x: x[1])
-            differences = {}
-            for i in range(len(times_sorted) - 1):
-                diff = (times_sorted[i + 1][1] - times_sorted[i][1]).total_seconds()
-                key = f"{times_sorted[i][0]}_to_{times_sorted[i+1][0]}"
-                differences[key] = diff
-            if differences:
-                # Add total time between first and last
-                differences["total_time"] = (times_sorted[-1][1] - times_sorted[0][1]).total_seconds()
-                data["running_time_differences"] = differences
-
-        with open(f"{self.config.save_path}/simulation.json", "w") as f:
-            json.dump(data, f, indent=4)
+        SimulationSerializer.save_simulation_json(self.config, bodies, simulation)

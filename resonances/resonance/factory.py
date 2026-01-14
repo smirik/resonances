@@ -7,6 +7,7 @@ from resonances.secular.secular_resonance import SECULAR_RESONANCE_ALIASES, Secu
 from resonances.mmr.three_body import ThreeBody
 from resonances.mmr.two_body import TwoBody
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
+from resonances.resonance.planets_mappings import planet_name_from_letter
 
 
 def create_mmr(coeff, planets_names=None):  # noqa: C901
@@ -60,6 +61,7 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
 
     if isinstance(coeff, str):
         # Parse as MMR string
+        coeff = coeff.replace(" ", "")
         tmp = re.split('-|\\+', coeff)
         size = len(tmp)
         if 3 == size:
@@ -67,6 +69,15 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
         elif 2 == size:
             return TwoBody(coeff)
         else:
+            tokens = re.findall(r"[A-Za-z]+|[+-]?\d+", coeff)
+            letters = [t for t in tokens if t.isalpha()]
+            numbers = [int(t) for t in tokens if re.match(r"[+-]?\d+$", t)]
+            if len(letters) >= 1 and len(numbers) >= 4:
+                if len(letters) == 1 and len(numbers) == 4:
+                    return TwoBody(numbers, [planet_name_from_letter(letters[0])])
+                if len(letters) >= 2 and len(numbers) >= 6:
+                    planets = [planet_name_from_letter(letters[0]), planet_name_from_letter(letters[1])]
+                    return ThreeBody(numbers[:6], planets)
             raise Exception(
                 """Cannot create a resonance because the notation is wrong.
                  It should have either two or three bodies (i.e. 2J-1 or 4M-2J-1) for MMR. Given {}.""".format(

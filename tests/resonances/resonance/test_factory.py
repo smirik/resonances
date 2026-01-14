@@ -52,6 +52,9 @@ def test_create_mmr():
     with pytest.raises(Exception, match='should be either'):
         mmr = create_mmr(42, planets_names=['Jupiter'])
 
+    mmr = create_mmr('2J+3S-1+0+0-4')
+    assert isinstance(mmr, ThreeBody) is True
+
 
 def test_detect_resonance_type():
     """Test the detect_resonance_type function."""

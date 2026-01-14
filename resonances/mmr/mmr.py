@@ -1,6 +1,7 @@
 from typing import ClassVar
 import numpy as np
 from resonances.resonance.resonance import Resonance
+from resonances.resonance.planets_mappings import planet_name_from_letter, planet_letter_from_name
 
 
 class MMR(Resonance):
@@ -37,28 +38,13 @@ class MMR(Resonance):
         return len(self.coeff) / 2
 
     def get_planet_name_from_letter(self, letter):
-        if letter == 'R':
-            return 'Mercury'
-        elif letter == 'V':
-            return 'Venus'
-        elif letter == 'E':
-            return 'Earth'
-        elif letter == 'M':
-            return 'Mars'
-        elif letter == 'J':
-            return 'Jupiter'
-        elif letter == 'S':
-            return 'Saturn'
-        elif letter == 'U':
-            return 'Uranus'
-        elif letter == 'N':
-            return 'Neptune'
-        raise Exception('Bad notation used. Only the following letter are available: R (for Mercury), V, E, M, J, S, U, N ')
+        planet = planet_name_from_letter(letter)
+        if planet == letter:
+            raise Exception('Bad notation used. Only the following letter are available: R (for Mercury), V, E, M, J, S, U, N ')
+        return planet
 
     def get_letter_from_planet_name(self, planet_name: str) -> str:
-        if 'Mercury' == planet_name:
-            return 'R'
-        return planet_name[0]
+        return planet_letter_from_name(planet_name)
 
     @property
     def resonant_axis(self):
