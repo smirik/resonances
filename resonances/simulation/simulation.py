@@ -1,6 +1,9 @@
 import numpy as np
 from typing import List, Union
 
+from resonances.resonance.classify import classify_resonance_detailed
+from resonances.resonance.periodogram import Periodogram
+
 from .config import SimulationConfig
 from .body_manager import BodyManager
 from .integration import IntegrationEngine
@@ -10,7 +13,6 @@ from .batch_manager import BatchManager
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.resonance.resonance import Resonance
 from resonances.logger import logger
-from resonances.resonance.libration import libration
 from resonances.resonance.filtering import filter_angle, wrap
 
 
@@ -83,6 +85,7 @@ class Simulation:
         self.integration_engine.run_integration(self.bodies, self.times, progress)
         self.running_time["integration_finished"] = logger.get_current_time()
         self.prepare_angles()
+        self.build_periodograms()
         self.identify_librations()
         self.running_time["librations_identified"] = logger.get_current_time()
         self.data_manager.save_data(self.bodies, self.times, self)
@@ -105,11 +108,54 @@ class Simulation:
                 body.angles_filtered[resonance.to_s()] = filter_angle(body.angles[resonance.to_s()], self.config)
                 body.axis_filtered = filter_angle(body.axis, self.config)
 
+    def build_periodograms(self):
+        base_periodogram_config = {
+            'integration_time_yrs': self.config.tmax_yrs,
+            'Nout': self.config.Nout,
+            'libration_period_min': self.config.libration_period_min,
+            'minimum_frequency': self.config.periodogram_frequency_min,
+            'maximum_frequency': self.config.periodogram_frequency_max,
+            'threshold': self.config.periodogram_soft,
+        }
+
+        for body in self.bodies:
+            (
+                body.axis_periodogram_frequency,
+                body.axis_periodogram_power,
+                body.axis_periodogram_peaks,
+            ) = Periodogram.periodogram(
+                self.times,
+                body.axis,
+                label=f'{body.name}:a',
+                **base_periodogram_config,
+            )
+            (
+                body.eccentricity_periodogram_frequency,
+                body.eccentricity_periodogram_power,
+                body.eccentricity_periodogram_peaks,
+            ) = Periodogram.periodogram(
+                self.times,
+                body.ecc,
+                label=f'{body.name}:e',
+                **base_periodogram_config,
+            )
+
+            for resonance in body.resonances():
+                (
+                    body.periodogram_frequency[resonance.to_s()],
+                    body.periodogram_power[resonance.to_s()],
+                    body.periodogram_peaks[resonance.to_s()],
+                ) = Periodogram.periodogram(
+                    self.times,
+                    body.angles[resonance.to_s()],
+                    label=f'{body.name}:{resonance.to_s()}',
+                    **base_periodogram_config,
+                )
+
     def identify_librations(self):
         """Identify librations for all bodies."""
         for body in self.bodies:
-            try:
-                libration.body(self, body)
-            except Exception as e:
-                logger.error(f"Error identifying librations for {body.name}: {e}")
-                raise
+            for resonance in body.resonances():
+                libration = classify_resonance_detailed(self.times, body.angles[resonance.to_s()])
+                body.librations[resonance.to_s()] = libration
+                body.statuses[resonance.to_s()] = libration['status']

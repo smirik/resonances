@@ -6,12 +6,13 @@ from resonances.mmr.three_body_matrix import ThreeBodyMatrix
 
 @pytest.mark.slow
 def test_find():
-    sim = resonances.find(463, ['Jupiter', 'Saturn'], save="all", plot="all", integration_years=40000, type=["mmr"])
+    sim = resonances.find([463, 490], ['Jupiter', 'Saturn'], save="all", plot="all", integration_years=40000, type=["mmr"])
     sim.run()
 
     summary = sim.data_manager.get_simulation_summary(sim.bodies)
     status = summary.loc[(summary['name'] == '463') & (summary['resonance'] == '4J-2S-1+0+0-1'), 'status'].iloc[0]
     assert 2 == status
+    assert 1 == summary.loc[(summary['name'] == '490') & (summary['resonance'] == '5J-2S-2+0+0-1'), 'status'].iloc[0]
 
 
 @pytest.mark.slow

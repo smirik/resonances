@@ -60,9 +60,11 @@ def test_identify_librations_exception():
     sim = tools.create_test_simulation_for_solar_system()
     tools.add_test_asteroid_to_simulation(sim)
 
-    with patch('resonances.libration.body', side_effect=RuntimeError("Test error")):
+    # identify_librations uses the new detection model (classify_resonance_detailed)
+    # and relies on angles computed during sim.run()
+    with patch('resonances.simulation.simulation.classify_resonance_detailed', side_effect=RuntimeError("Test error")):
         with pytest.raises(RuntimeError):
-            sim.identify_librations()
+            sim.run()
 
 
 def test_tmax_access():
