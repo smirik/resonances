@@ -4,6 +4,7 @@ Preset configurations for common plotting scenarios.
 Provides 'simple' and 'full' presets as specified in requirements.
 """
 
+import numpy as np
 from .config import PlotConfig, Panel, StyleConfig
 
 
@@ -287,6 +288,75 @@ def create_lk_preset(resonance_key: str) -> PlotConfig:
     return config
 
 
+def create_secular_preset(resonance_key: str) -> PlotConfig:
+    """
+    Create a secular tuned preset.
+
+    This is the default preset and replicates existing functionality:
+    - Proper angle
+    - Resonant angle (osculating)
+    - Semi-major axis (filtered if available)
+    - Eccentricity
+
+    Parameters
+    ----------
+    resonance_key : str
+        Resonance key (e.g., 'g-g6+s-s6')
+
+    Returns
+    -------
+    PlotConfig
+        Full secular plot configuration
+    """
+    config = PlotConfig(figsize=(10, 12), plot_title='{body_name}, resonance = {resonance}, status = {status}')
+
+    # Panel 1: Proper angle
+    config.add_panel(
+        Panel(
+            key='angle_proper',
+            data_column='{resonance_key}_angle_proper',
+            x_column='times',
+            style=StyleConfig(ylabel=r"$\sigma$ (rad)", title="Proper angle", color='black', marker=',', linestyle='', ylim=(0, 2 * np.pi)),
+            required=True,
+        )
+    )
+    # Panel 2: Resonant angle
+    config.add_panel(
+        Panel(
+            key='angle',
+            data_column='{resonance_key}_angle_osculating',
+            x_column='times',
+            style=StyleConfig(
+                ylabel=r"$\sigma$ (rad)", title="Resonant angle", color='black', marker=',', linestyle='', ylim=(0, 2 * np.pi)
+            ),
+            required=True,
+        )
+    )
+    # Panel 3: Semi-major axis
+    config.add_panel(
+        Panel(
+            key='axis',
+            data_column='a_filtered',
+            fallback_column='a',
+            x_column='times',
+            style=StyleConfig(ylabel=r"$a_f$ (AU)", title="Semi-major axis", color='black', marker=',', linestyle=''),
+            required=True,
+        )
+    )
+    # Panel 4: Eccentricity
+    config.add_panel(
+        Panel(
+            key='eccentricity',
+            data_column='e',
+            x_column='times',
+            style=StyleConfig(ylabel="e", title="Eccentricity", color='black', marker=',', linestyle=''),
+            required=True,
+        )
+    )
+
+    return config
+
+
 def get_preset(preset_name: str, resonance_key: str) -> PlotConfig:
     """
     Get a preset configuration by name.
@@ -308,7 +378,13 @@ def get_preset(preset_name: str, resonance_key: str) -> PlotConfig:
     ValueError
         If preset name is unknown
     """
-    presets = {'simple': create_simple_preset, 'full': create_full_preset, 'lk': create_lk_preset, 'lkr': create_lk_preset}
+    presets = {
+        'simple': create_simple_preset,
+        'full': create_full_preset,
+        'lk': create_lk_preset,
+        'lkr': create_lk_preset,
+        'secular': create_secular_preset,
+    }
 
     if preset_name not in presets:
         raise ValueError(f"Unknown preset '{preset_name}'. Available: {list(presets.keys())}")
