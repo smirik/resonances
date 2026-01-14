@@ -308,7 +308,7 @@ def get_preset(preset_name: str, resonance_key: str) -> PlotConfig:
     ValueError
         If preset name is unknown
     """
-    presets = {'simple': create_simple_preset, 'full': create_full_preset}
+    presets = {'simple': create_simple_preset, 'full': create_full_preset, 'lk': create_lk_preset, 'lkr': create_lk_preset}
 
     if preset_name not in presets:
         raise ValueError(f"Unknown preset '{preset_name}'. Available: {list(presets.keys())}")
