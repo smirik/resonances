@@ -38,9 +38,6 @@ class SecularResonanceFinder:
         # Load planetary secular frequencies (arcsec/yr)
         self.planetary_freqs: Dict[str, float] = PLANETARY_FREQUENCIES
 
-        # Ensure AstDyS is in synthetic proper elements mode
-        astdys.set_type("synthetic")
-
     def _evaluate_divisor(self, proper_g: float, proper_s: float, resonance: SecularResonance) -> float:
         """
         Evaluate the secular divisor numerically (arcsec/yr).
@@ -92,6 +89,7 @@ class SecularResonanceFinder:
         dict
             Mapping formula string -> SecularResonance instance.
         """
+        astdys.set_type("synthetic")
         if proper_freqs is not None:
             proper_g = proper_freqs.get("g", proper_freqs.get("proper_g"))
             proper_s = proper_freqs.get("s", proper_freqs.get("proper_s"))
@@ -116,6 +114,7 @@ class SecularResonanceFinder:
             if self._matches_threshold(divisor):
                 results[formula] = resonance
 
+        astdys.set_type("osculating")
         return results
 
     def find_secular_resonances_for_asteroids(
@@ -154,6 +153,7 @@ class SecularResonanceFinder:
         records: List[dict] = []
 
         # Iterate over all numbered asteroids in AstDyS
+        astdys.set_type("synthetic")
         catalog = astdys.get_catalog()
         if limit:
             catalog = catalog.head(limit)
@@ -177,5 +177,5 @@ class SecularResonanceFinder:
                 newRow = {"name": asteroid_id, "resonance_value": divisor}
                 newRow.update(dict(row))
                 records.append(newRow)
-
+        astdys.set_type("osculating")
         return pd.DataFrame(records)

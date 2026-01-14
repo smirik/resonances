@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import List, Union
 
+import astdys
+
 from resonances.data.util import convert_input_to_list
 from resonances.horizons import get_body_keplerian_elements
 from resonances.logger import logger
@@ -122,8 +124,15 @@ def find(
     resonances_dict = {}
     elems = {}
 
+    secular_angle_mode = kwargs.pop('secular_angle_mode', 'proper' if shouldSearchSecular else "osculating")
+    _verify_secular_parameters(kwargs)
+    sim = Simulation(name=name or "resonance_find", secular_angle_mode=secular_angle_mode, **kwargs)
+
     for asteroid in asteroids:
-        elem = get_body_keplerian_elements(asteroid, date=now)
+        if sim.config.source == 'astdys':
+            elem = astdys.search(asteroid)
+        else:
+            elem = get_body_keplerian_elements(asteroid, date=now)
         elems[asteroid] = elem
         resonances_dict[asteroid] = []
         if shouldSearchMMR:
@@ -142,10 +151,6 @@ def find(
         if shouldSearchLidovKozai:
             resonances_dict[asteroid].append(LidovKozaiResonance())
 
-    secular_angle_mode = kwargs.pop('secular_angle_mode', 'proper' if shouldSearchSecular else "osculating")
-    _verify_secular_parameters(kwargs)
-
-    sim = Simulation(name=name or "resonance_find", secular_angle_mode=secular_angle_mode, **kwargs)
     sim.create_solar_system()
 
     for asteroid_name, kepler_elements in elems.items():

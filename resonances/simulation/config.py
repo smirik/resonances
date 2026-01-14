@@ -158,7 +158,10 @@ class SimulationConfig:
 
     def get_bodies_date(self):
         """Get the date to use for body elements."""
-        return astdys.get_catalog_datetime() if self.source == 'astdys' else self.date
+        if self.source == 'astdys':
+            astdys.set_type("osculating")
+            return astdys.get_catalog_datetime()
+        return self.date
 
     def _setup_batch_params(self, kwargs):
         """Setup batch processing parameters."""
