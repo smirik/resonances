@@ -58,20 +58,6 @@ def test_resolve():
     assert 0 == resonances.libration.resolve(mmr, False, empty, 10000, lib_crit, 0.5, mon_crit)
     assert 0 == resonances.libration.resolve(mmr, False, empty, 30000, lib_crit, 0.3, mon_crit)
 
-    secular = MockSecularResonance()
-
-    # For SecularResonance: if pure, always status = 2 (no overlapping check)
-    assert 2 == resonances.libration.resolve(secular, True, empty, 100000, lib_crit, 0.5, mon_crit)
-    assert 2 == resonances.libration.resolve(secular, True, overlapping, 100000, lib_crit, 0.5, mon_crit)
-
-    # For SecularResonance: if not pure but max_libration_length > critical, status = 1
-    assert 1 == resonances.libration.resolve(secular, False, empty, 30000, lib_crit, 0.4, mon_crit)
-    assert 1 == resonances.libration.resolve(secular, False, overlapping, 30000, lib_crit, 0.4, mon_crit)
-
-    # For SecularResonance: if not pure and max_libration_length <= critical, status = 0
-    assert 0 == resonances.libration.resolve(secular, False, empty, 10000, lib_crit, 0.5, mon_crit)
-    assert 0 == resonances.libration.resolve(secular, False, overlapping, 10000, lib_crit, 0.5, mon_crit)
-
 
 def test_monotony_estimation():
     data = [1, 2, 3, 4, 5]

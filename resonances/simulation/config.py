@@ -114,7 +114,10 @@ class SimulationConfig:
         if self.periodogram_critical is None:
             self.periodogram_critical = self.tmax_yrs * 0.2  # if not set, 20% of integration time should be in libration
         self.periodogram_soft = kwargs.get('periodogram_soft', float(c.get('LIBRATION_SOFT')))
-        self.libration_period_critical = kwargs.get('libration_period_critical', int(c.get('LIBRATION_PERIOD_CRITICAL')))
+
+        self.libration_period_critical = kwargs.get('libration_period_critical', None)
+        if self.libration_period_critical is None:
+            self.libration_period_critical = round(self.tmax_yrs * 0.1)  # if not set, 10% of integration time should be in libration
 
         # Handle libration_monotony_critical specially since it's a list
         if 'libration_monotony_critical' in kwargs:

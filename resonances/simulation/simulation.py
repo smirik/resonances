@@ -96,12 +96,14 @@ class Simulation:
             for resonance in body.resonances():
                 # make wrapped angle, filter, and record wrapped filtered
                 body.angles[resonance.to_s()] = wrap(body.angle_unwrapped(resonance))
+                if isinstance(resonance, SecularResonance):
+                    body.build_proper_angle(resonance)
+                    if self.config.secular_angle_mode == "proper":
+                        body.angles[resonance.to_s()] = body.secular_angles_proper[resonance.to_s()]
                 unwrapped_filtered_angle = filter_angle(body.angle_unwrapped(resonance), self.config)
                 body.angles_filtered_unwrapped[resonance.to_s()] = unwrapped_filtered_angle
                 body.angles_filtered[resonance.to_s()] = filter_angle(body.angles[resonance.to_s()], self.config)
                 body.axis_filtered = filter_angle(body.axis, self.config)
-                if isinstance(resonance, SecularResonance):
-                    body.build_proper_angle(resonance)
 
     def identify_librations(self):
         """Identify librations for all bodies."""

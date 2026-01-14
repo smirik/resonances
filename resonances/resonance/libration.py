@@ -396,49 +396,21 @@ class libration:
 
     @classmethod
     def resolve(cls, resonance, pure, overlapping, max_libration_length, libration_period_critical, monotony, libration_monotony_critical):
-        from resonances.secular.secular_resonance import SecularResonance
-
         status = 0
-
-        # Special logic for SecularResonance
-        if isinstance(resonance, SecularResonance):
-            if pure:
-                status = 2
-            elif max_libration_length > libration_period_critical:
-                # For secular resonances, we need more nuanced classification
-                # Check if this is wide/chaotic libration that should still be considered trapped
-
-                # Very long stability periods (>5x critical) suggest strong trapping
-                # even if not perfectly pure
-                stability_factor = max_libration_length / libration_period_critical
-
-                # Monotony in acceptable range suggests quasi-periodic behavior
-                mono_ok = monotony >= libration_monotony_critical[0] and monotony <= libration_monotony_critical[1]
-
-                if stability_factor >= 4.99 and mono_ok:
-                    # This suggests wide libration or chaotic libration
-                    # that's still effectively trapped
-                    status = 2  # Classify as pure (trapped)
-                else:
-                    status = 1  # Transient
-            else:
-                status = 0
-        else:
-            if pure and (len(overlapping) > 0):
-                status = 2  # pure libration
-            elif pure:
-                # seems to be pure but libration periods of axis and resonant angle are different
-                # need manual check
-                status = -2
-            elif (len(overlapping) > 0) and (max_libration_length > libration_period_critical):
-                status = 1  # transient resonance
-            elif (
-                (max_libration_length > libration_period_critical)
-                and (monotony >= libration_monotony_critical[0])
-                and (monotony <= libration_monotony_critical[1])
-            ):
-                # Looks like chaotic but has long stable period and acceptable monotony
-                # need to verify manually
-                status = -1
-            # No resonance
+        if pure and (len(overlapping) > 0):
+            status = 2  # pure libration
+        elif pure:
+            # seems to be pure but libration periods of axis and resonant angle are different
+            # need manual check
+            status = -2
+        elif (len(overlapping) > 0) and (max_libration_length > libration_period_critical):
+            status = 1  # transient resonance
+        elif (
+            (max_libration_length > libration_period_critical)
+            and (monotony >= libration_monotony_critical[0])
+            and (monotony <= libration_monotony_critical[1])
+        ):
+            # Looks like chaotic but has long stable period and acceptable monotony
+            # need to verify manually
+            status = -1
         return status
