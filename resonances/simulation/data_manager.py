@@ -144,9 +144,6 @@ class DataManager:
         for body in bodies:
             for resonance in body.resonances():
                 try:
-                    # # overlapping_str = ', '.join(
-                    #     f'({left:.0f}, {right:.0f})' for left, right in body.periodogram_peaks_overlapping.get(resonance.to_s(), [])
-                    # )
                     res_type = 'MMR'
                     c1_value = None
                     c2_value = None
@@ -168,11 +165,12 @@ class DataManager:
                             resonance.to_s(),
                             res_type,
                             body.statuses.get(resonance.to_s(), 0),
-                            # body.libration_pure.get(resonance.to_s(), False),
-                            # body.libration_metrics.get(resonance.to_s(), {}).get('num_libration_periods', 0),
-                            # body.libration_metrics.get(resonance.to_s(), {}).get('max_libration_length', 0),
-                            # body.monotony.get(resonance.to_s(), 0),
-                            # overlapping_str,
+                            body.librations[resonance.to_s()]['r_squared'],
+                            body.librations[resonance.to_s()]['libration_fraction'],
+                            body.librations[resonance.to_s()]['drift_rate'],
+                            ", ".join(
+                                f'({left:.0f}, {right:.0f})' for left, right in body.librations[resonance.to_s()]['overlapping_peaks']
+                            ),
                             body.initial_data['a'],
                             body.initial_data['e'],
                             body.initial_data['inc'],
@@ -194,11 +192,10 @@ class DataManager:
                 'resonance',
                 'type',
                 'status',
-                # 'pure',
-                # 'num_libration_periods',
-                # 'max_libration_length',
-                # 'monotony',
-                # 'overlapping',
+                'r_squared',
+                'libration_fraction',
+                'drift_rate',
+                'overlapping_peaks',
                 'a',
                 'e',
                 'inc',

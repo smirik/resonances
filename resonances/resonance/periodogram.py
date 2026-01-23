@@ -147,9 +147,9 @@ class Periodogram:
 
         Parameters
         ----------
-        a_list : list
+        a_list : list or None
             List of intervals (tuples of start, end)
-        b_list : list
+        b_list : list or None
             List of intervals (tuples of start, end)
         delta : float
             Tolerance to extend intervals (default: 0)
@@ -159,6 +159,9 @@ class Periodogram:
         list
             List of intervals from a_list that overlap with at least one interval in b_list
         """
+        if not a_list or not b_list:
+            return []
+
         arr = []
         for a_elem in a_list:
             for b_elem in b_list:

@@ -5,10 +5,12 @@ Resonance Angle Classification Algorithm
 PURPOSE
 -------
 This module classifies resonant angle time series from celestial mechanics simulations
-into three categories based on the dynamical behavior of the resonant argument:
+into categories based on the dynamical behavior of the resonant argument:
 
-    Status 2: Libration for the entire duration
-    Status 1: Libration for a significant portion of time (configurable threshold)
+    Status 2: Libration for the entire duration AND (for MMRs) periodogram peaks match
+    Status -2: Libration for the entire duration but periodogram peaks don't match
+    Status 1: Libration for a significant portion AND (for MMRs) periodogram peaks match
+    Status -1: Libration for a significant portion but periodogram peaks don't match
     Status 0: Other cases (circulation or chaotic behavior)
 
 
@@ -84,85 +86,9 @@ ALGORITHM STEPS
      → Status 1 if ≥20% of time shows libration
      → Status 0 otherwise
 
-
-HANDLING WRAPPED ANGLES (THE 2π BOUNDARY)
------------------------------------------
-Since angles are wrapped to [0, 2π], we must interpret jumps correctly:
-
-    Example: angle goes from 6.1 to 0.2
-
-    WRONG interpretation: Δ = 0.2 - 6.1 = -5.9 radians (huge backward jump)
-    RIGHT interpretation: Δ = 0.2 - 6.1 + 2π ≈ +0.38 radians (small forward step)
-
-The algorithm always takes the "shortest path" on the circle, which is the
-physically meaningful interpretation. This allows correct handling of:
-    - Apocentric libration (oscillating around 0/2π boundary)
-    - High-amplitude libration that crosses the boundary multiple times
-    - Fast circulation where the angle wraps many times
-
-
-CONFIGURABLE PARAMETERS
------------------------
-    min_libration_fraction (default: 0.20)
-        Minimum fraction of time that must show libration behavior to
-        qualify for status 1. Set higher to be more strict.
-
-    circulation_threshold_cycles (default: 2.0)
-        Number of complete cycles of net drift that triggers circulation
-        detection. Lower values catch slower circulation.
-
-    r_squared_circulation_threshold (default: 0.85)
-        R² value above which circulation is considered definite (no false
-        positive allowed). Set to 1.0 to allow more false positives for
-        very slow circulation cases.
-
-    window_fraction (default: 0.1)
-        Size of sliding window as fraction of total data length.
-        Larger windows smooth out more noise but may miss transitions.
-
-    min_window_points (default: 100)
-        Minimum number of data points in each analysis window.
-        Ensures statistical reliability for sparse data.
-
-    max_libration_drift (default: 2π)
-        Maximum allowed drift within a window for it to be considered
-        libration. Larger values allow higher-amplitude libration.
-
-
-USAGE
------
-    from resonance_classifier import classify_resonance, classify_resonance_detailed
-
-    # Simple classification
-    status = classify_resonance(times, angles)
-
-    # With custom parameters
-    status = classify_resonance(
-        times, angles,
-        min_libration_fraction=0.30,
-        r_squared_circulation_threshold=0.90
-    )
-
-    # With detailed diagnostics
-    result = classify_resonance_detailed(times, angles)
-    print(f"Status: {result['status']}")
-    print(f"R²: {result['r_squared']}")
-    print(f"Total drift: {result['total_drift_cycles']} cycles")
-
-
-EXPECTED BEHAVIOR ON TEST CASES
--------------------------------
-    Slow circulation with oscillations:
-        - Total drift: ~3 cycles, R² ≈ 0.97 → Status 0
-
-    High-amplitude libration:
-        - Total drift: ~0.5 cycles, R² ≈ 0.01 → Status 2
-
-    Clear libration:
-        - Total drift: ~0 cycles, R² ≈ 0.01 → Status 2
-
-    Fast/clear circulation:
-        - Total drift: ~70+ cycles, R² ≈ 0.99 → Status 0
+5. FOR MMRs: CHECK PERIODOGRAM OVERLAP
+   - Compare periodogram peaks of resonant angle and semi-major axis
+   - Modify status based on whether frequencies match
 
 
 Authors: Evgeny Smirnov + Claude (Anthropic)
@@ -170,6 +96,11 @@ Authors: Evgeny Smirnov + Claude (Anthropic)
 
 import numpy as np
 from typing import Tuple, List
+
+from resonances.body import Body
+from resonances.resonance.resolver import resolve_mmr_status
+from resonances.resonance.resonance import Resonance
+from resonances.mmr.mmr import MMR
 
 
 def compute_angle_difference(angle1: float, angle2: float) -> float:
@@ -241,7 +172,6 @@ def analyze_cumulative_drift(cumulative: np.ndarray, times: np.ndarray, circulat
     times_normalized = (times - times[0]) / (times[-1] - times[0])
 
     # Simple linear regression: cumulative = intercept + slope * time
-    # n = len(times)
     mean_t = np.mean(times_normalized)
     mean_c = np.mean(cumulative)
 
@@ -342,24 +272,31 @@ def compute_libration_fraction(segments: List[Tuple[int, int]], n_total: int) ->
 
 
 def classify_resonance(
+    body: Body,
     times: np.ndarray,
-    angles: np.ndarray,
+    resonance: Resonance,
     min_libration_fraction: float = 0.20,
     circulation_threshold_cycles: float = 2.0,
     r_squared_circulation_threshold: float = 0.85,
     window_fraction: float = 0.1,
     min_window_points: int = 100,
     max_libration_drift: float = 2.0 * np.pi,
-) -> int:
+    overlap_delta: float = 0,
+) -> dict:
     """
-    Classify the resonant angle time series.
+    Classify with detailed diagnostics.
+
+    Returns a dictionary with classification result and diagnostic information
+    useful for debugging and understanding the classification decision.
 
     Parameters
     ----------
+    body : Body
+        Body object with the resonant angle and periodogram data
     times : np.ndarray
         Array of time values (x-axis of the plot)
-    angles : np.ndarray
-        Array of resonant angles wrapped to [0, 2π] (y-axis of the plot)
+    resonance : Resonance
+        The resonance object (used to determine if it's an MMR)
     min_libration_fraction : float
         Minimum fraction of time in libration to qualify for status 1
     circulation_threshold_cycles : float
@@ -372,68 +309,16 @@ def classify_resonance(
         Minimum points per analysis window
     max_libration_drift : float
         Maximum drift within a window for libration classification
-
-    Returns
-    -------
-    int
-        Status code:
-        - 2: Libration for the entire duration
-        - 1: Libration for a significant portion (>= min_libration_fraction)
-        - 0: Other cases (circulation, chaos)
-    """
-    # Step 1: Compute cumulative drift
-    cumulative = compute_cumulative_drift(angles)
-
-    # Step 2: Check for overall circulation
-    is_circulation, drift_rate, r_squared = analyze_cumulative_drift(cumulative, times, circulation_threshold_cycles)
-
-    # Step 3: Find libration segments
-    segments = find_libration_segments(cumulative, times, window_fraction, min_window_points, max_libration_drift)
-
-    # Step 4: Compute libration fraction
-    libration_fraction = compute_libration_fraction(segments, len(times))
-
-    # Step 5: Final classification
-    if is_circulation:
-        # Strong linear drift (high R²) is definitely circulation
-        if r_squared > r_squared_circulation_threshold:
-            return 0  # Clear circulation, no false positive allowed
-        # Weaker circulation signal - check for partial libration
-        if libration_fraction >= min_libration_fraction:
-            return 1  # Significant libration despite overall circulation
-        else:
-            return 0  # Circulation dominates
-    else:
-        # No strong overall circulation - classify by libration fraction
-        if libration_fraction >= 0.9:  # 90% or more in libration
-            return 2  # Full libration
-        elif libration_fraction >= min_libration_fraction:
-            return 1  # Partial libration
-        else:
-            return 0  # Chaotic or insufficient libration
-
-
-def classify_resonance_detailed(
-    times: np.ndarray,
-    angles: np.ndarray,
-    min_libration_fraction: float = 0.20,
-    circulation_threshold_cycles: float = 2.0,
-    r_squared_circulation_threshold: float = 0.85,
-    window_fraction: float = 0.1,
-    min_window_points: int = 100,
-    max_libration_drift: float = 2.0 * np.pi,
-) -> dict:
-    """
-    Classify with detailed diagnostics.
-
-    Returns a dictionary with classification result and diagnostic information
-    useful for debugging and understanding the classification decision.
+    overlap_delta : float
+        Tolerance for periodogram peak overlap (default: 0)
 
     Returns
     -------
     dict with keys:
         status : int
-            Classification result (0, 1, or 2)
+            Final status code (including periodogram check for MMRs)
+        classification_status : int
+            Basic classification (0, 1, or 2) before periodogram check
         libration_fraction : float
             Fraction of time in libration-like behavior
         is_circulation : bool
@@ -448,28 +333,66 @@ def classify_resonance_detailed(
             Number of distinct libration segments found
         cumulative_drift : np.ndarray
             The computed cumulative drift array
+        overlapping_peaks : list
+            List of overlapping peak intervals (MMR only)
+        n_angle_peaks : int
+            Number of peaks in angle periodogram (MMR only)
+        n_axis_peaks : int
+            Number of peaks in axis periodogram (MMR only)
+        has_overlap : bool
+            Whether any peaks overlap (MMR only)
     """
-    cumulative = compute_cumulative_drift(angles)
-
+    cumulative = compute_cumulative_drift(
+        body.angles[resonance.to_s()]
+    )  # using non-filtered angle to avoid false positives with circulation
     is_circulation, drift_rate, r_squared = analyze_cumulative_drift(cumulative, times, circulation_threshold_cycles)
-
     segments = find_libration_segments(cumulative, times, window_fraction, min_window_points, max_libration_drift)
-
     libration_fraction = compute_libration_fraction(segments, len(times))
 
-    status = classify_resonance(
-        times,
-        angles,
-        min_libration_fraction=min_libration_fraction,
-        circulation_threshold_cycles=circulation_threshold_cycles,
-        r_squared_circulation_threshold=r_squared_circulation_threshold,
-        window_fraction=window_fraction,
-        min_window_points=min_window_points,
-        max_libration_drift=max_libration_drift,
-    )
+    if is_circulation:
+        # Strong linear drift (high R²) is definitely circulation
+        if r_squared > r_squared_circulation_threshold:
+            classification_status = 0  # Clear circulation, no false positive allowed
+        # Weaker circulation signal - check for partial libration
+        elif libration_fraction >= min_libration_fraction:
+            classification_status = 1  # Significant libration despite overall circulation
+        else:
+            classification_status = 0  # Circulation dominates
+    else:
+        # No strong overall circulation - classify by libration fraction
+        if libration_fraction >= 0.9:  # 90% or more in libration
+            classification_status = 2  # Full libration
+        elif libration_fraction >= min_libration_fraction:
+            classification_status = 1  # Partial libration
+        else:
+            classification_status = 0  # Chaotic or insufficient libration
+
+    # Step 6: For MMRs, resolve final status with periodogram overlap check
+    is_mmr = isinstance(resonance, MMR)
+
+    if is_mmr:
+        resolver_result = resolve_mmr_status(
+            classification_status=classification_status,
+            angle_periodogram_peaks=body.periodogram_peaks.get(resonance.to_s()),
+            axis_periodogram_peaks=body.axis_periodogram_peaks,
+            overlap_delta=overlap_delta,
+        )
+        final_status = resolver_result['status']
+        overlapping_peaks = resolver_result['overlapping_peaks']
+        n_angle_peaks = resolver_result['n_angle_peaks']
+        n_axis_peaks = resolver_result['n_axis_peaks']
+        has_overlap = resolver_result['has_overlap']
+    else:
+        # For non-MMRs (secular resonances), no periodogram check
+        final_status = classification_status
+        overlapping_peaks = []
+        n_angle_peaks = 0
+        n_axis_peaks = 0
+        has_overlap = False
 
     return {
-        'status': status,
+        'status': final_status,
+        'classification_status': classification_status,
         'libration_fraction': libration_fraction,
         'is_circulation': is_circulation,
         'drift_rate': drift_rate,
@@ -477,4 +400,8 @@ def classify_resonance_detailed(
         'total_drift_cycles': abs(cumulative[-1] - cumulative[0]) / (2 * np.pi),
         'n_libration_segments': len(segments),
         'cumulative_drift': cumulative,
+        'overlapping_peaks': overlapping_peaks,
+        'n_angle_peaks': n_angle_peaks,
+        'n_axis_peaks': n_axis_peaks,
+        'has_overlap': has_overlap,
     }

@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List, Union
 
-from resonances.resonance.classify import classify_resonance_detailed
+from resonances.resonance.classify import classify_resonance
 from resonances.resonance.periodogram import Periodogram
 
 from .config import SimulationConfig
@@ -125,7 +125,7 @@ class Simulation:
                 body.axis_periodogram_peaks,
             ) = Periodogram.periodogram(
                 self.times,
-                body.axis,
+                body.axis_filtered,
                 label=f'{body.name}:a',
                 **base_periodogram_config,
             )
@@ -147,7 +147,7 @@ class Simulation:
                     body.periodogram_peaks[resonance.to_s()],
                 ) = Periodogram.periodogram(
                     self.times,
-                    body.angles[resonance.to_s()],
+                    body.angles_filtered[resonance.to_s()],  # if not filtered, easy to skip relevant frequencies
                     label=f'{body.name}:{resonance.to_s()}',
                     **base_periodogram_config,
                 )
@@ -156,6 +156,10 @@ class Simulation:
         """Identify librations for all bodies."""
         for body in self.bodies:
             for resonance in body.resonances():
-                libration = classify_resonance_detailed(self.times, body.angles[resonance.to_s()])
+                libration = classify_resonance(
+                    body,
+                    self.times,
+                    resonance=resonance,
+                )
                 body.librations[resonance.to_s()] = libration
                 body.statuses[resonance.to_s()] = libration['status']
