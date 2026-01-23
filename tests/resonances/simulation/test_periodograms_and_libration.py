@@ -32,11 +32,16 @@ def _build_simulation(tmp_path):
     body = sim.bodies[0]
 
     t_years = sim.times / (2 * np.pi)
-    body.axis = 2.5 + 0.01 * np.sin(2 * np.pi * 0.2 * t_years)
-    body.ecc = 0.1 + 0.01 * np.sin(2 * np.pi * 0.2 * t_years)
+    # Use the same frequency for both semi-major axis and resonant angle
+    # so that periodogram peaks match for MMR classification
+    freq = 0.2
+    body.axis = 2.5 + 0.01 * np.sin(2 * np.pi * freq * t_years)
+    body.axis_filtered = body.axis  # For test purposes, use same data
+    body.ecc = 0.1 + 0.01 * np.sin(2 * np.pi * freq * t_years)
 
     resonance = body.resonances()[0]
-    body.angles[resonance.to_s()] = (np.pi + 0.5 * np.sin(2 * np.pi * 0.5 * t_years)) % (2 * np.pi)
+    body.angles[resonance.to_s()] = (np.pi + 0.5 * np.sin(2 * np.pi * freq * t_years)) % (2 * np.pi)
+    body.angles_filtered[resonance.to_s()] = body.angles[resonance.to_s()]  # For test purposes
 
     return sim
 
@@ -58,6 +63,8 @@ def test_identify_librations_sets_status(tmp_path):
     body = sim.bodies[0]
     resonance = body.resonances()[0]
 
+    # Build periodograms first (required for MMR periodogram overlap check)
+    sim.build_periodograms()
     sim.identify_librations()
 
     assert resonance.to_s() in body.librations

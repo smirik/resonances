@@ -35,3 +35,64 @@ def test_periodogram_returns_peaks():
     assert peaks is not None
     assert "position" in peaks
     assert "peaks" in peaks
+
+
+def test_overlap_no_overlap():
+    a = (1.0, 2.0)
+    b = (3.0, 4.0)
+    assert Periodogram.overlap(a, b) == 0
+
+
+def test_overlap_partial():
+    a = (1.0, 3.0)
+    b = (2.0, 4.0)
+    overlap = Periodogram.overlap(a, b)
+    assert overlap == 1.0
+
+
+def test_overlap_contained():
+    a = (1.0, 5.0)
+    b = (2.0, 3.0)
+    overlap = Periodogram.overlap(a, b)
+    assert overlap == 1.0
+
+
+def test_overlap_with_delta():
+    a = (1.0, 2.0)
+    b = (2.5, 3.5)
+    # Without delta, no overlap
+    assert Periodogram.overlap(a, b) == 0
+    # With delta=0.5, they should overlap
+    assert Periodogram.overlap(a, b, delta=0.5) == 0.5
+
+
+def test_overlap_list_no_matches():
+    a_list = [(1.0, 2.0), (3.0, 4.0)]
+    b_list = [(5.0, 6.0), (7.0, 8.0)]
+    result = Periodogram.overlap_list(a_list, b_list)
+    assert result == []
+
+
+def test_overlap_list_some_matches():
+    a_list = [(1.0, 2.0), (3.0, 5.0), (10.0, 11.0)]
+    b_list = [(4.0, 6.0), (20.0, 21.0)]
+    result = Periodogram.overlap_list(a_list, b_list)
+    assert len(result) == 1
+    assert result[0] == (3.0, 5.0)
+
+
+def test_overlap_list_all_matches():
+    a_list = [(1.0, 3.0), (5.0, 7.0)]
+    b_list = [(2.0, 4.0), (6.0, 8.0)]
+    result = Periodogram.overlap_list(a_list, b_list)
+    assert len(result) == 2
+
+
+def test_overlap_list_with_delta():
+    a_list = [(1.0, 2.0)]
+    b_list = [(2.5, 3.5)]
+    # Without delta, no match
+    assert Periodogram.overlap_list(a_list, b_list) == []
+    # With delta=0.5, should match
+    result = Periodogram.overlap_list(a_list, b_list, delta=0.5)
+    assert len(result) == 1

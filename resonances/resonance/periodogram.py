@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any
 from astropy.timeseries import LombScargle
 from scipy import signal
 import numpy as np
@@ -118,3 +118,51 @@ class Periodogram:
         peaks_position = list(zip(peaks_left, peaks_right))
         peaks_position = sorted(peaks_position, key=lambda tup: tup[0])
         return {'position': peaks_position, 'peaks': peaks}
+
+    @classmethod
+    def overlap(cls, a: Tuple[float, float], b: Tuple[float, float], delta: float = 0) -> float:
+        """Check if two intervals overlap.
+
+        Parameters
+        ----------
+        a : tuple
+            First interval (start, end)
+        b : tuple
+            Second interval (start, end)
+        delta : float
+            Tolerance to extend intervals (default: 0)
+
+        Returns
+        -------
+        float
+            The amount of overlap (0 if no overlap)
+        """
+        return max(0, min(a[1] + delta, b[1] + delta) - max(a[0] - delta, b[0] - delta))
+
+    @classmethod
+    def overlap_list(
+        cls, a_list: List[Tuple[float, float]], b_list: List[Tuple[float, float]], delta: float = 0
+    ) -> List[Tuple[float, float]]:
+        """Find all intervals from a_list that overlap with any interval in b_list.
+
+        Parameters
+        ----------
+        a_list : list
+            List of intervals (tuples of start, end)
+        b_list : list
+            List of intervals (tuples of start, end)
+        delta : float
+            Tolerance to extend intervals (default: 0)
+
+        Returns
+        -------
+        list
+            List of intervals from a_list that overlap with at least one interval in b_list
+        """
+        arr = []
+        for a_elem in a_list:
+            for b_elem in b_list:
+                if cls.overlap(a_elem, b_elem, delta=delta):
+                    arr.append(a_elem)
+                    break
+        return arr

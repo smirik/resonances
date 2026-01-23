@@ -25,6 +25,9 @@ def cleanup_test_files():
     """Clean up test cache after each test."""
     yield  # Test runs
 
+    if os.environ.get('KEEP_TEST_CACHE'):
+        return  # skip clean when run manually with KEEP_TEST_CACHE=1
+
     cache_path = Path('cache/tests')
     if cache_path.exists():
         shutil.rmtree(cache_path)
