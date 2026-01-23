@@ -3,6 +3,7 @@ import numpy as np
 from resonances.resonance.classify import (
     classify_resonance,
     compute_angle_difference,
+    compute_angle_uniformity,
 )
 from resonances.body import Body
 from resonances.mmr.two_body import TwoBody
@@ -165,3 +166,40 @@ def test_classify_secular_resonance_fields():
     assert result['classification_status'] == 2
     assert result['has_overlap'] is False
     assert result['overlapping_peaks'] == []
+
+
+def test_compute_angle_uniformity_libration():
+    """Test that libration has low uniformity (angles concentrated)."""
+    # Libration: angles clustered around π
+    angles = np.pi + 0.3 * np.sin(np.linspace(0, 20 * np.pi, 1000))
+    uniformity = compute_angle_uniformity(angles)
+    assert uniformity < 0.1  # Should be very low
+
+
+def test_compute_angle_uniformity_chaotic():
+    """Test that chaotic behavior has high uniformity (angles spread evenly)."""
+    # Random angles covering full range
+    np.random.seed(42)
+    angles = np.random.uniform(0, 2 * np.pi, 1000)
+    uniformity = compute_angle_uniformity(angles)
+    assert uniformity > 0.5  # Should be high
+
+
+def test_classify_chaotic_as_nonresonant():
+    """Test that chaotic behavior (uniform angle distribution) is classified as 0."""
+    times = np.linspace(0.0, 100.0, 2000)
+    # Random angles filling the entire 0-2π range uniformly
+    np.random.seed(42)
+    angles = np.random.uniform(0, 2 * np.pi, 2000)
+
+    angle_peaks = {'position': [(9.0, 11.0)], 'peaks': [0]}
+    axis_peaks = {'position': [(9.5, 10.5)], 'peaks': [0]}
+
+    resonance = _create_mmr()
+    body = _create_body_with_angles(angles, resonance, angle_peaks, axis_peaks)
+
+    result = classify_resonance(body, times, resonance=resonance)
+
+    # Should be classified as 0 (non-resonant) due to high uniformity
+    assert result['status'] == 0
+    assert result['angle_uniformity'] > 0.5

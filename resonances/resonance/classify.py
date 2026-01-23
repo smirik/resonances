@@ -271,6 +271,26 @@ def compute_libration_fraction(segments: List[Tuple[int, int]], n_total: int) ->
     return libration_points / n_total
 
 
+def compute_angle_uniformity(angles: np.ndarray, n_bins: int = 20) -> float:
+    """
+    Compute how uniformly the angles are distributed across 0 to 2π.
+
+    Returns the ratio of minimum to maximum bin counts. High uniformity (close to 1)
+    indicates chaotic or random behavior where the angle visits all values equally.
+    Low uniformity (close to 0) indicates libration where the angle concentrates
+    around certain values.
+
+    This metric helps distinguish:
+    - Chaotic behavior (uniformity > 0.5): angle fills 0-2π evenly
+    - True libration (uniformity ~ 0): angle concentrates around equilibrium
+    - Large-amplitude libration (uniformity 0-0.3): angle spans full range but non-uniformly
+    """
+    hist, _ = np.histogram(angles, bins=n_bins, range=(0, 2 * np.pi))
+    if hist.max() == 0:
+        return 0.0
+    return hist.min() / hist.max()
+
+
 def classify_resonance(
     body: Body,
     times: np.ndarray,
@@ -282,6 +302,7 @@ def classify_resonance(
     min_window_points: int = 100,
     max_libration_drift: float = 2.0 * np.pi,
     overlap_delta: float = 0,
+    chaotic_uniformity_threshold: float = 0.5,
 ) -> dict:
     """
     Classify with detailed diagnostics.
@@ -311,6 +332,10 @@ def classify_resonance(
         Maximum drift within a window for libration classification
     overlap_delta : float
         Tolerance for periodogram peak overlap (default: 0)
+    chaotic_uniformity_threshold : float
+        If angle uniformity exceeds this threshold, classify as chaotic (status 0)
+        even if libration segments are detected. This helps distinguish true
+        transient resonance from chaotic behavior where angles fill 0-2π uniformly.
 
     Returns
     -------
@@ -342,25 +367,34 @@ def classify_resonance(
         has_overlap : bool
             Whether any peaks overlap (MMR only)
     """
-    cumulative = compute_cumulative_drift(
-        body.angles[resonance.to_s()]
-    )  # using non-filtered angle to avoid false positives with circulation
+    angles = body.angles[resonance.to_s()]
+    cumulative = compute_cumulative_drift(angles)  # using non-filtered angle to avoid false positives with circulation
     is_circulation, drift_rate, r_squared = analyze_cumulative_drift(cumulative, times, circulation_threshold_cycles)
     segments = find_libration_segments(cumulative, times, window_fraction, min_window_points, max_libration_drift)
     libration_fraction = compute_libration_fraction(segments, len(times))
+    angle_uniformity = compute_angle_uniformity(angles)
+
+    # Check for chaotic behavior: high uniformity means angles fill 0-2π evenly
+    # which indicates random/chaotic behavior, not true libration
+    is_chaotic = angle_uniformity > chaotic_uniformity_threshold
 
     if is_circulation:
         # Strong linear drift (high R²) is definitely circulation
         if r_squared > r_squared_circulation_threshold:
             classification_status = 0  # Clear circulation, no false positive allowed
+        # Chaotic behavior with uniform angle distribution
+        elif is_chaotic:
+            classification_status = 0  # Chaotic, not transient resonance
         # Weaker circulation signal - check for partial libration
         elif libration_fraction >= min_libration_fraction:
             classification_status = 1  # Significant libration despite overall circulation
         else:
             classification_status = 0  # Circulation dominates
     else:
-        # No strong overall circulation - classify by libration fraction
-        if libration_fraction >= 0.9:  # 90% or more in libration
+        # No strong overall circulation - but check for chaotic behavior
+        if is_chaotic:
+            classification_status = 0  # Chaotic behavior despite no clear circulation
+        elif libration_fraction >= 0.9:  # 90% or more in libration
             classification_status = 2  # Full libration
         elif libration_fraction >= min_libration_fraction:
             classification_status = 1  # Partial libration
@@ -404,4 +438,5 @@ def classify_resonance(
         'n_angle_peaks': n_angle_peaks,
         'n_axis_peaks': n_axis_peaks,
         'has_overlap': has_overlap,
+        'angle_uniformity': angle_uniformity,
     }
