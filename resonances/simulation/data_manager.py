@@ -167,6 +167,7 @@ class DataManager:
                             body.statuses.get(resonance.to_s(), 0),
                             body.librations[resonance.to_s()]['r_squared'],
                             body.librations[resonance.to_s()]['libration_fraction'],
+                            body.librations[resonance.to_s()]['is_circulation'],
                             body.librations[resonance.to_s()]['drift_rate'],
                             ", ".join(
                                 f'({left:.0f}, {right:.0f})' for left, right in body.librations[resonance.to_s()]['overlapping_peaks']
@@ -194,6 +195,7 @@ class DataManager:
                 'status',
                 'r_squared',
                 'libration_fraction',
+                'is_circulation',
                 'drift_rate',
                 'overlapping_peaks',
                 'a',
