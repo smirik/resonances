@@ -27,6 +27,7 @@ class SimulationSerializer:
     @classmethod
     def restore(cls, json_file_path: str, recompute_librations: bool = True) -> "Simulation":
         json_path = Path(json_file_path)
+        logger.info(f"Restoring simulation from {json_path}")
         with json_path.open("r") as file:
             data = json.load(file)
 
@@ -37,7 +38,9 @@ class SimulationSerializer:
 
         from resonances.simulation.simulation import Simulation
 
+        logger.info(f"Creating simulation from config: {config['name']}")
         sim = Simulation(**config)
+        logger.info(f"Simulation created: {sim.config.name}")
 
         cls._restore_running_time(sim, data.get("timing", {}))
 
@@ -46,9 +49,13 @@ class SimulationSerializer:
             body = cls._build_body_from_json(sim, body_data)
             sim.body_manager.bodies.append(body)
 
+        logger.info(f"Restoring body data")
         cls._restore_body_data(sim, json_path.parent, data.get("simulation", {}).get("data_files", {}))
+
+        logger.info(f"Restoring planets")
         cls._restore_planets(sim, json_path.parent, data.get("simulation", {}).get("data_files", {}))
 
+        logger.info(f"Identifying librations")
         if recompute_librations and sim.bodies:
             sim.identify_librations()
 
