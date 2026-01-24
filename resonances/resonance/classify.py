@@ -338,28 +338,37 @@ def classify_angle(  # noqa: C901
 
     # Non-linear high-cycle behavior suggests transient (libration periods cause non-linearity)
     # High cycles with low R² means drift oscillates rather than trends linearly
-    # Allow high uniformity up to 0.75 - apocentric transients can have wide angle coverage
-    nonlinear_high_cycle = total_drift_cycles > 50 and r_squared < 0.2 and angle_uniformity < 0.75
+    # Require uniformity < 0.65 - apocentric transients have concentrated angles around apocenters
+    # Chaotic cases with high uniformity (>0.65) should not be protected by this rule
+    nonlinear_high_cycle = total_drift_cycles > 50 and r_squared < 0.2 and angle_uniformity < 0.65
 
     # Chaotic detection: high uniformity + low-moderate lib_frac
     # But protect cases with strong libration or non-linear high-cycle behavior
-    # Three conditions: (1) uniformity > 0.7 + lib_frac < 0.35, (2) uniformity > 0.6 + lib_frac < 0.25,
-    # (3) very high uniformity > 0.8 + lib_frac < 0.5 (angles spread everywhere = clear circulation)
+    # Three conditions: (1) uniformity > 0.7 + lib_frac < 0.45, (2) uniformity > 0.6 + lib_frac < 0.25,
+    # (3) very high uniformity > 0.75 + lib_frac < 0.5 (angles spread everywhere = clear circulation)
     is_chaotic = (
         not strong_libration
         and not nonlinear_high_cycle
         and (
-            (angle_uniformity > chaotic_uniformity_threshold and libration_fraction < 0.35)
+            (angle_uniformity > chaotic_uniformity_threshold and libration_fraction < 0.45)
             or (angle_uniformity > 0.6 and libration_fraction < 0.25)
-            or (angle_uniformity > 0.8 and libration_fraction < 0.5)
+            or (angle_uniformity > 0.75 and libration_fraction < 0.5)
         )
     )
 
     # High-cycle chaotic detection: for very high drift cycles (>50), moderate uniformity
     # combined with elevated lib_frac indicates spurious libration detection in chaotic data.
-    # BUT exclude cases with high R² (>0.8) - these are real transients with linear circulation phases.
+    # Variant 1: low R² (<0.8) with moderate lib_frac (>0.35)
+    # Variant 2: moderate R² (0.75-0.93) with low lib_frac (<0.20) and cycles > 100
+    #            Catches Mercury/Venus chaotic cases with high drift but without enough libration periods
     is_high_cycle_chaotic = (
-        is_circulation and total_drift_cycles > 50 and angle_uniformity > 0.55 and libration_fraction > 0.35 and r_squared < 0.8
+        is_circulation
+        and total_drift_cycles > 50
+        and angle_uniformity > 0.55
+        and (
+            (libration_fraction > 0.35 and r_squared < 0.8)
+            or (r_squared >= 0.75 and r_squared < 0.93 and libration_fraction < 0.20 and total_drift_cycles > 100)
+        )
     )
 
     # Venus-type chaotic: low-moderate R² with moderate lib_frac (0.21-0.35) and moderate uniformity
