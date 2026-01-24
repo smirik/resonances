@@ -14,3 +14,9 @@ class Resonance(ABC):
     @abstractmethod
     def to_short(self):
         pass
+
+    def __str__(self):
+        return f"{self.type}({self.to_short()})"
+
+    def __repr__(self):
+        return str(self)

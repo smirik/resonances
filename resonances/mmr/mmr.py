@@ -31,9 +31,6 @@ class MMR(Resonance):
     def type(self) -> str:
         return 'mmr'
 
-    def __str__(self):
-        return "MMR(coeff=[{}])".format(', '.join(str(e) for e in self.coeff))
-
     def number_of_bodies(self):
         return len(self.coeff) / 2
 
