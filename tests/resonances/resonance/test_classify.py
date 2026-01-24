@@ -182,7 +182,7 @@ def test_compute_angle_uniformity_chaotic():
     np.random.seed(42)
     angles = np.random.uniform(0, 2 * np.pi, 1000)
     uniformity = compute_angle_uniformity(angles)
-    assert uniformity > 0.5  # Should be high
+    assert uniformity > 0.6  # Should be high (threshold for chaotic detection)
 
 
 def test_classify_chaotic_as_nonresonant():

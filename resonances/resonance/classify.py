@@ -298,11 +298,12 @@ def classify_resonance(
     min_libration_fraction: float = 0.20,
     circulation_threshold_cycles: float = 2.0,
     r_squared_circulation_threshold: float = 0.85,
+    r_squared_definite_threshold: float = 0.95,
     window_fraction: float = 0.1,
     min_window_points: int = 100,
     max_libration_drift: float = 2.0 * np.pi,
     overlap_delta: float = 0,
-    chaotic_uniformity_threshold: float = 0.5,
+    chaotic_uniformity_threshold: float = 0.7,
 ) -> dict:
     """
     Classify with detailed diagnostics.
@@ -323,7 +324,11 @@ def classify_resonance(
     circulation_threshold_cycles : float
         Number of drift cycles to trigger circulation detection
     r_squared_circulation_threshold : float
-        R² above which circulation is definite (no false positive)
+        R² above which circulation is likely (used with lib_frac check)
+    r_squared_definite_threshold : float
+        R² above which circulation is definite regardless of lib_frac.
+        Very high R² (>0.95) means cumulative drift is nearly perfectly linear,
+        indicating true circulation even if window analysis detects "libration".
     window_fraction : float
         Sliding window size as fraction of total data
     min_window_points : int
@@ -379,15 +384,20 @@ def classify_resonance(
     is_chaotic = angle_uniformity > chaotic_uniformity_threshold
 
     if is_circulation:
-        # Strong linear drift (high R²) is definitely circulation
-        if r_squared > r_squared_circulation_threshold:
-            classification_status = 0  # Clear circulation, no false positive allowed
-        # Chaotic behavior with uniform angle distribution
-        elif is_chaotic:
-            classification_status = 0  # Chaotic, not transient resonance
-        # Weaker circulation signal - check for partial libration
+        # High uniformity (>0.7) = chaotic, angles fill 0-2π too evenly to be resonance
+        if is_chaotic:
+            classification_status = 0  # Chaotic behavior
+        # Very high R² (>0.95) = definite circulation regardless of lib_frac
+        # Slow circulation can fool window-based libration detection, but
+        # nearly-perfect linear drift cannot be anything but circulation
+        elif r_squared > r_squared_definite_threshold:
+            classification_status = 0  # Definite circulation (very strong linear trend)
+        # Moderate R² with low lib_frac = likely circulation
+        elif r_squared > r_squared_circulation_threshold and libration_fraction < min_libration_fraction:
+            classification_status = 0  # Clear circulation with no real libration segments
+        # Significant libration segments detected - trust them when R² is moderate
         elif libration_fraction >= min_libration_fraction:
-            classification_status = 1  # Significant libration despite overall circulation
+            classification_status = 1  # Transient resonance
         else:
             classification_status = 0  # Circulation dominates
     else:
