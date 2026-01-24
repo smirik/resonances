@@ -456,45 +456,8 @@ def classify_resonance(
         overlap_delta,
         chaotic_uniformity_threshold,
     )
-    # cumulative = compute_cumulative_drift(angles)  # using non-filtered angle to avoid false positives with circulation
-    # is_circulation, drift_rate, r_squared = analyze_cumulative_drift(cumulative, times, circulation_threshold_cycles)
-    # segments = find_libration_segments(cumulative, times, window_fraction, min_window_points, max_libration_drift)
-    # libration_fraction = compute_libration_fraction(segments, len(times))
-    # angle_uniformity = compute_angle_uniformity(angles)
 
-    # # Check for chaotic behavior: high uniformity means angles fill 0-2π evenly
-    # # which indicates random/chaotic behavior, not true libration
-    # is_chaotic = angle_uniformity > chaotic_uniformity_threshold
-
-    # if is_circulation:
-    #     # High uniformity (>0.7) = chaotic, angles fill 0-2π too evenly to be resonance
-    #     if is_chaotic:
-    #         classification_status = 0  # Chaotic behavior
-    #     # Very high R² (>0.95) = definite circulation regardless of lib_frac
-    #     # Slow circulation can fool window-based libration detection, but
-    #     # nearly-perfect linear drift cannot be anything but circulation
-    #     elif r_squared > r_squared_definite_threshold:
-    #         classification_status = 0  # Definite circulation (very strong linear trend)
-    #     # Moderate R² with low lib_frac = likely circulation
-    #     elif r_squared > r_squared_circulation_threshold and libration_fraction < min_libration_fraction:
-    #         classification_status = 0  # Clear circulation with no real libration segments
-    #     # Significant libration segments detected - trust them when R² is moderate
-    #     elif libration_fraction >= min_libration_fraction:
-    #         classification_status = 1  # Transient resonance
-    #     else:
-    #         classification_status = 0  # Circulation dominates
-    # else:
-    #     # No strong overall circulation - but check for chaotic behavior
-    #     if is_chaotic:
-    #         classification_status = 0  # Chaotic behavior despite no clear circulation
-    #     elif libration_fraction >= 0.9:  # 90% or more in libration
-    #         classification_status = 2  # Full libration
-    #     elif libration_fraction >= min_libration_fraction:
-    #         classification_status = 1  # Partial libration
-    #     else:
-    #         classification_status = 0  # Chaotic or insufficient libration
-
-    # Step 6: For MMRs, resolve final status with periodogram overlap check
+    # For MMRs, resolve final status with periodogram overlap check
     is_mmr = isinstance(resonance, MMR)
 
     if is_mmr:
@@ -520,17 +483,8 @@ def classify_resonance(
     return {
         **classification,
         'status': final_status,
-        # 'classification_status': classification_status,
-        # 'libration_fraction': libration_fraction,
-        # 'is_circulation': is_circulation,
-        # 'drift_rate': drift_rate,
-        # 'r_squared': r_squared,
-        # 'total_drift_cycles': abs(cumulative[-1] - cumulative[0]) / (2 * np.pi),
-        # 'n_libration_segments': len(segments),
-        # 'cumulative_drift': cumulative,
         'overlapping_peaks': overlapping_peaks,
         'n_angle_peaks': n_angle_peaks,
         'n_axis_peaks': n_axis_peaks,
         'has_overlap': has_overlap,
-        # 'angle_uniformity': angle_uniformity,
     }

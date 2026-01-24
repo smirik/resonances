@@ -1,6 +1,7 @@
 import numpy as np
 
 from resonances.resonance.classify import (
+    classify_angle,
     classify_resonance,
     compute_angle_difference,
     compute_angle_uniformity,
@@ -203,3 +204,17 @@ def test_classify_chaotic_as_nonresonant():
     # Should be classified as 0 (non-resonant) due to high uniformity
     assert result['status'] == 0
     assert result['angle_uniformity'] > 0.5
+
+
+def test_classify_angle_libration():
+    times = np.linspace(0.0, 100.0, 2000)
+    angles = (np.pi + 0.5 * np.sin(2 * np.pi * times / 10.0)) % (2 * np.pi)
+    result = classify_angle(times, angles)
+    assert result['status'] == 2
+
+
+def test_classify_angle_circulation():
+    times = np.linspace(0.0, 100.0, 2000)
+    angles = (0.5 * times) % (2 * np.pi)
+    result = classify_angle(times, angles)
+    assert result['status'] == 0

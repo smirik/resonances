@@ -2,6 +2,7 @@
 
 import click
 import resonances
+from resonances.resonance.benchmark_classify import run_benchmark, print_benchmark_results, save_failed_files
 
 
 @click.group()
@@ -230,6 +231,30 @@ def _parse_extra_args(args):
             i += 1
 
     return kwargs
+
+
+@cli.command()
+@click.argument('directory')
+@click.option('-v', '--verbose', count=True, help="Verbose output. -v for failed diagnostics, -vv for all.")
+@click.option('--save', is_flag=True, help="Save misclassified files to a 'misclassified' subfolder.")
+def benchmark_classify(directory, verbose, save):
+    """Run classification benchmark on labeled examples.
+
+    DIRECTORY should contain subfolders: libration, transient, non-resonant.
+    Each subfolder contains CSV files with 'times' and 'angle' columns.
+
+    Examples:
+
+        resonances benchmark-classify cache/examples/test
+
+        resonances benchmark-classify cache/examples/test -v
+
+        resonances benchmark-classify cache/examples/test -vv --save
+    """
+    results = run_benchmark(directory)
+    print_benchmark_results(results, verbose=verbose)
+    if save:
+        save_failed_files(results, directory)
 
 
 if __name__ == '__main__':
