@@ -75,20 +75,35 @@ ALGORITHM STEPS
    - Within each window, compare net drift to oscillation amplitude
    - If |net drift| < amplitude/2, the window shows libration behavior
 
-4. FINAL CLASSIFICATION
-   - If circulation detected AND R² > threshold (default 0.85):
-     → Status 0 (definite circulation, no false positive)
-   - If circulation detected but R² lower, check libration fraction:
-     → Status 1 if significant local libration exists
-     → Status 0 otherwise
-   - If no circulation detected:
-     → Status 2 if ≥90% of time shows libration
-     → Status 1 if ≥20% of time shows libration
-     → Status 0 otherwise
+4. COMPUTE ANGLE UNIFORMITY
+   - Measure how evenly angles are distributed across 0 to 2π
+   - High uniformity (>0.7) indicates chaotic or circulation behavior
+   - Low uniformity (<0.14) indicates angles concentrated around equilibrium
 
-5. FOR MMRs: CHECK PERIODOGRAM OVERLAP
+5. FINAL CLASSIFICATION
+   The classification uses multiple criteria combining R², libration fraction,
+   uniformity, and total drift cycles:
+
+   STATUS 0 (Non-resonant):
+   - Slow circulation: very high R² (>0.95) + cycles >1.5 (even if lib_frac high)
+   - Slow circulation edge case: very high R² (>0.95) + high uniformity (>0.5)
+     even without is_circulation flag (catches cases with cycles just below threshold)
+   - Chaotic: high uniformity (>0.7) + either low lib_frac (<0.6) or
+     (is_circulation + low R² (<0.5))
+   - Clear circulation: moderate R² (>0.85) + low lib_frac (<0.2)
+
+   STATUS 2 (Pure libration):
+   - Large-amplitude libration: very low R² (<0.2) + very high lib_frac (≥0.95)
+     + low cycles (<1.2). Allows full 0-2π range oscillations.
+   - Regular libration: low-moderate R² (<0.8) + high lib_frac (≥0.9)
+     + low uniformity (<0.14) + low cycles (<1.2). Angles concentrated.
+
+   STATUS 1 (Transient):
+   - Everything else with significant lib_frac (≥0.2)
+
+6. FOR MMRs: CHECK PERIODOGRAM OVERLAP
    - Compare periodogram peaks of resonant angle and semi-major axis
-   - Modify status based on whether frequencies match
+   - Modify status based on whether frequencies match (±2 for status sign)
 
 
 Authors: Evgeny Smirnov + Claude (Anthropic)
@@ -276,14 +291,15 @@ def compute_angle_uniformity(angles: np.ndarray, n_bins: int = 20) -> float:
     Compute how uniformly the angles are distributed across 0 to 2π.
 
     Returns the ratio of minimum to maximum bin counts. High uniformity (close to 1)
-    indicates chaotic or random behavior where the angle visits all values equally.
+    indicates chaotic or circulation behavior where the angle visits all values equally.
     Low uniformity (close to 0) indicates libration where the angle concentrates
     around certain values.
 
-    This metric helps distinguish:
-    - Chaotic behavior (uniformity > 0.5): angle fills 0-2π evenly
-    - True libration (uniformity ~ 0): angle concentrates around equilibrium
-    - Large-amplitude libration (uniformity 0-0.3): angle spans full range but non-uniformly
+    This metric is used in classification:
+    - uniformity > 0.7: chaotic detection threshold (combined with lib_frac/r_sq checks)
+    - uniformity > 0.5: slow circulation edge case detection (combined with high R²)
+    - uniformity < 0.14: required for status 2 with moderate R² (concentrated angles)
+    - uniformity can be high for large-amplitude librations if R² is very low (<0.2)
     """
     hist, _ = np.histogram(angles, bins=n_bins, range=(0, 2 * np.pi))
     if hist.max() == 0:
@@ -291,7 +307,7 @@ def compute_angle_uniformity(angles: np.ndarray, n_bins: int = 20) -> float:
     return hist.min() / hist.max()
 
 
-def classify_angle(
+def classify_angle(  # noqa: C901
     times: np.ndarray,
     angles: np.ndarray,
     min_libration_fraction: float = 0.20,
@@ -351,8 +367,13 @@ def classify_angle(
         else:
             classification_status = 0  # Circulation dominates
     else:
-        # No strong overall circulation - but check for chaotic behavior
-        if is_chaotic:
+        # No strong overall circulation detected, but check for edge cases first
+        # Very high R² + high uniformity = slow circulation even without is_circulation flag
+        # This catches cases with cycles slightly below threshold but clearly linear drift
+        if r_squared > r_squared_definite_threshold and angle_uniformity > 0.5:
+            classification_status = 0  # Slow circulation (linear drift + angles spread evenly)
+        # Check for chaotic behavior
+        elif is_chaotic:
             classification_status = 0  # Chaotic behavior despite no clear circulation
         # For status 2 (pure libration): require high lib_frac, low drift, and either:
         # 1. Very low R² (<0.2) with very high lib_frac (>=0.95): cumulative drift clearly
@@ -396,10 +417,10 @@ def classify_resonance(
     max_libration_drift: float = 2.0 * np.pi,
     overlap_delta: float = 0,
     chaotic_uniformity_threshold: float = 0.7,
-    pure_libration_max_cycles: float = 0.5,
+    pure_libration_max_cycles: float = 1.2,
 ) -> dict:
     """
-    Classify with detailed diagnostics.
+    Classify resonance with detailed diagnostics.
 
     Returns a dictionary with classification result and diagnostic information
     useful for debugging and understanding the classification decision.
@@ -413,27 +434,30 @@ def classify_resonance(
     resonance : Resonance
         The resonance object (used to determine if it's an MMR)
     min_libration_fraction : float
-        Minimum fraction of time in libration to qualify for status 1
+        Minimum fraction of time in libration to qualify for status 1 (default: 0.2)
     circulation_threshold_cycles : float
-        Number of drift cycles to trigger circulation detection
+        Number of drift cycles to trigger circulation detection (default: 2.0)
     r_squared_circulation_threshold : float
-        R² above which circulation is likely (used with lib_frac check)
+        R² above which circulation is likely when combined with low lib_frac (default: 0.85)
     r_squared_definite_threshold : float
-        R² above which circulation is definite regardless of lib_frac.
-        Very high R² (>0.95) means cumulative drift is nearly perfectly linear,
-        indicating true circulation even if window analysis detects "libration".
+        R² above which slow circulation is detected. Very high R² (>0.95) means
+        cumulative drift is nearly perfectly linear, indicating circulation even
+        if window analysis detects high lib_frac (default: 0.95)
     window_fraction : float
-        Sliding window size as fraction of total data
+        Sliding window size as fraction of total data (default: 0.1)
     min_window_points : int
-        Minimum points per analysis window
+        Minimum points per analysis window (default: 100)
     max_libration_drift : float
-        Maximum drift within a window for libration classification
+        Maximum drift within a window for libration classification (default: 2π)
     overlap_delta : float
         Tolerance for periodogram peak overlap (default: 0)
     chaotic_uniformity_threshold : float
-        If angle uniformity exceeds this threshold, classify as chaotic (status 0)
-        even if libration segments are detected. This helps distinguish true
-        transient resonance from chaotic behavior where angles fill 0-2π uniformly.
+        Uniformity above this threshold combined with low lib_frac or low R² indicates
+        chaotic behavior (status 0). Helps distinguish true transients from random
+        behavior where angles fill 0-2π uniformly (default: 0.7)
+    pure_libration_max_cycles : float
+        Maximum drift cycles allowed for status 2 (pure libration). Librations with
+        more drift are classified as transient (status 1) (default: 1.2)
 
     Returns
     -------
@@ -445,17 +469,19 @@ def classify_resonance(
         libration_fraction : float
             Fraction of time in libration-like behavior
         is_circulation : bool
-            Whether circulation was detected
+            Whether circulation was detected by analyze_cumulative_drift
         drift_rate : float
             Net drift rate (radians per time unit)
         r_squared : float
-            R² of linear fit to cumulative drift
+            R² of linear fit to cumulative drift (high = linear drift = circulation)
         total_drift_cycles : float
             Total drift in units of 2π
         n_libration_segments : int
             Number of distinct libration segments found
         cumulative_drift : np.ndarray
             The computed cumulative drift array
+        angle_uniformity : float
+            How evenly angles are distributed (high = chaotic/circulation)
         overlapping_peaks : list
             List of overlapping peak intervals (MMR only)
         n_angle_peaks : int
