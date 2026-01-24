@@ -23,11 +23,11 @@ def test_get_planet_name_from_letter():
 
 
 def test_str():
-    mmr = resonances.TwoBody([2, -1, 0, -1])
-    assert str(mmr) == "MMR(coeff=[2, -1, 0, -1])"
+    mmr = resonances.TwoBody([2, -1, 0, -1], ['Jupiter'])
+    assert str(mmr) == "mmr(2J-1)"
 
-    mmr = resonances.ThreeBody([4, -2, -1, 0, 0, -1])
-    assert str(mmr) == "MMR(coeff=[4, -2, -1, 0, 0, -1])"
+    mmr = resonances.ThreeBody([4, -2, -1, 0, 0, -1], ['Jupiter', 'Saturn'])
+    assert str(mmr) == "mmr(4J-2S-1)"
 
 
 def test_initialisation():

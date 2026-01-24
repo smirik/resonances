@@ -310,7 +310,7 @@ def compute_angle_uniformity(angles: np.ndarray, n_bins: int = 20) -> float:
 def classify_angle(  # noqa: C901
     times: np.ndarray,
     angles: np.ndarray,
-    min_libration_fraction: float = 0.20,
+    min_libration_fraction: float = 0.10,
     circulation_threshold_cycles: float = 2.0,
     r_squared_circulation_threshold: float = 0.85,
     r_squared_definite_threshold: float = 0.95,
@@ -333,18 +333,68 @@ def classify_angle(  # noqa: C901
     angle_uniformity = compute_angle_uniformity(angles)
     total_drift_cycles = abs(cumulative[-1] - cumulative[0]) / (2 * np.pi)
 
-    # Check for chaotic behavior: high uniformity means angles fill 0-2π evenly
-    # But distinguish from apocentric transients which also have high uniformity:
-    # - Apocentric transients: high r_sq (circulation is linear) + moderate lib_frac
-    # - Chaotic/random: low r_sq (random jumps don't fit a line) even with moderate lib_frac
-    # So for circulation cases, require either low lib_frac OR low r_sq for chaotic
-    is_chaotic = angle_uniformity > chaotic_uniformity_threshold and (libration_fraction < 0.6 or (is_circulation and r_squared < 0.5))
+    # Strong libration evidence protects from chaotic classification
+    strong_libration = libration_fraction >= 0.5
+
+    # Non-linear high-cycle behavior suggests transient (libration periods cause non-linearity)
+    # High cycles with low R² means drift oscillates rather than trends linearly
+    # Allow high uniformity up to 0.75 - apocentric transients can have wide angle coverage
+    nonlinear_high_cycle = total_drift_cycles > 50 and r_squared < 0.2 and angle_uniformity < 0.75
+
+    # Chaotic detection: high uniformity + low-moderate lib_frac
+    # But protect cases with strong libration or non-linear high-cycle behavior
+    # Three conditions: (1) uniformity > 0.7 + lib_frac < 0.35, (2) uniformity > 0.6 + lib_frac < 0.25,
+    # (3) very high uniformity > 0.8 + lib_frac < 0.5 (angles spread everywhere = clear circulation)
+    is_chaotic = (
+        not strong_libration
+        and not nonlinear_high_cycle
+        and (
+            (angle_uniformity > chaotic_uniformity_threshold and libration_fraction < 0.35)
+            or (angle_uniformity > 0.6 and libration_fraction < 0.25)
+            or (angle_uniformity > 0.8 and libration_fraction < 0.5)
+        )
+    )
+
+    # High-cycle chaotic detection: for very high drift cycles (>50), moderate uniformity
+    # combined with elevated lib_frac indicates spurious libration detection in chaotic data.
+    # BUT exclude cases with high R² (>0.8) - these are real transients with linear circulation phases.
+    is_high_cycle_chaotic = (
+        is_circulation and total_drift_cycles > 50 and angle_uniformity > 0.55 and libration_fraction > 0.35 and r_squared < 0.8
+    )
+
+    # Venus-type chaotic: low-moderate R² with moderate lib_frac (0.21-0.35) and moderate uniformity
+    # This catches chaotic patterns where angles spread moderately but not enough for standard chaotic detection
+    # The narrow lib_frac range (0.21-0.35) avoids catching apocentric transients with lib_frac < 0.21
+    # R² threshold at 0.75 is safe because real transients have R² > 0.95
+    is_venus_chaotic = (
+        is_circulation
+        and total_drift_cycles > 50
+        and angle_uniformity > 0.55
+        and libration_fraction >= 0.21
+        and libration_fraction < 0.35
+        and r_squared < 0.75
+    )
+
+    # Random chaotic: very high uniformity with high lib_frac - the high lib_frac is spurious
+    # because random data can fool window-based libration detection
+    # Key distinction from real transients: random data has low R² (<0.5) because there's no
+    # consistent drift direction, while real transients have high R² from circulation phases
+    is_random_chaotic = is_circulation and angle_uniformity > chaotic_uniformity_threshold and libration_fraction >= 0.5 and r_squared < 0.5
 
     # Slow steady circulation: very high R² + significant cycles
     # This catches cases where window-based detection is fooled by slow, uniform drift.
-    # Two variants: with very high lib_frac (typical), or moderate lib_frac but extreme r_sq
+    # Five variants: (1) very high lib_frac (>0.85), (2) extreme r_sq (>0.99),
+    # (3) low lib_frac with moderate uniformity, (4) very high R² (>0.97) with moderate uniformity,
+    # (5) very high R² (>0.97) with high lib_frac (>0.85) - catches LK-type slow circulations
     is_slow_circulation = (
-        r_squared > r_squared_definite_threshold and total_drift_cycles > 1.5 and (libration_fraction > 0.9 or r_squared > 0.99)
+        r_squared > r_squared_definite_threshold
+        and total_drift_cycles > 1.5
+        and (
+            libration_fraction > 0.85
+            or r_squared > 0.99
+            or (libration_fraction < 0.2 and angle_uniformity > 0.5)
+            or (r_squared > 0.97 and angle_uniformity > 0.5)
+        )
     )
 
     if is_circulation:
@@ -352,6 +402,10 @@ def classify_angle(  # noqa: C901
         # Window-based lib_frac is fooled by slow drift, but cumulative drift is linear
         if is_slow_circulation:
             classification_status = 0  # Definite slow circulation
+        # High-cycle chaotic: many cycles + moderate uniformity + elevated lib_frac
+        # The elevated lib_frac is spurious in truly chaotic high-cycle data
+        elif is_high_cycle_chaotic or is_venus_chaotic or is_random_chaotic:
+            classification_status = 0  # High-cycle chaotic behavior
         # High uniformity = chaotic (angles fill 0-2π evenly)
         elif is_chaotic:
             classification_status = 0  # Chaotic behavior
@@ -408,7 +462,7 @@ def classify_resonance(
     body: Body,
     times: np.ndarray,
     resonance: Resonance,
-    min_libration_fraction: float = 0.20,
+    min_libration_fraction: float = 0.10,
     circulation_threshold_cycles: float = 2.0,
     r_squared_circulation_threshold: float = 0.85,
     r_squared_definite_threshold: float = 0.95,
