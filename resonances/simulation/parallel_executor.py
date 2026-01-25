@@ -1,7 +1,7 @@
 import os
 import multiprocessing as mp
 from typing import List, Callable, Dict, Any
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed, BrokenExecutor
 
 from resonances.logger import logger
 
@@ -156,9 +156,13 @@ class ParallelExecutor:
 
         return results
 
-    def _execute_parallel(self, batches: List[tuple], simulation_kwargs: Dict[str, Any], progress_callback: Callable = None) -> List[Dict]:
+    def _execute_parallel(
+        self, batches: List[tuple], simulation_kwargs: Dict[str, Any], progress_callback: Callable = None, max_retries: int = 3
+    ) -> List[Dict]:
         """
         Execute batches in parallel using ProcessPoolExecutor.
+
+        Includes retry logic for BrokenProcessPool errors (usually caused by OOM).
 
         Parameters
         ----------
@@ -168,6 +172,8 @@ class ParallelExecutor:
             Simulation configuration parameters
         progress_callback : Callable, optional
             Callback function to report progress
+        max_retries : int
+            Maximum number of retries when process pool breaks (default: 3)
 
         Returns
         -------
@@ -175,40 +181,70 @@ class ParallelExecutor:
             List of results from each batch
         """
         results = []
+        pending_batches = list(batches)
+        completed_indices = set()
+        retry_count = 0
 
         logger.info(f"Starting parallel execution with {self.n_cores} cores")
 
-        with ProcessPoolExecutor(max_workers=self.n_cores) as executor:
-            # Submit all batches
-            future_to_batch = {}
-            for batch_index, batch_bodies in batches:
-                future = executor.submit(_run_batch_worker, batch_index, batch_bodies, simulation_kwargs)
-                future_to_batch[future] = batch_index
+        while pending_batches and retry_count <= max_retries:
+            if retry_count > 0:
+                logger.warning(f"Retrying with fresh process pool (attempt {retry_count}/{max_retries})")
 
-            # Process results as they complete
-            for future in as_completed(future_to_batch):
-                batch_index = future_to_batch[future]
+            try:
+                with ProcessPoolExecutor(max_workers=self.n_cores) as executor:
+                    # Submit all pending batches
+                    future_to_batch = {}
+                    for batch_index, batch_bodies in pending_batches:
+                        future = executor.submit(_run_batch_worker, batch_index, batch_bodies, simulation_kwargs)
+                        future_to_batch[future] = (batch_index, batch_bodies)
 
-                try:
-                    result = future.result()
+                    # Process results as they complete
+                    for future in as_completed(future_to_batch):
+                        batch_index, batch_bodies = future_to_batch[future]
 
-                    if result["status"] == "failed":
-                        # Cancel remaining futures
-                        for f in future_to_batch:
-                            f.cancel()
-                        raise RuntimeError(f"Batch {batch_index} failed: {result['error']}")
+                        try:
+                            result = future.result()
 
-                    results.append(result)
+                            if result["status"] == "failed":
+                                # Cancel remaining futures
+                                for f in future_to_batch:
+                                    f.cancel()
+                                raise RuntimeError(f"Batch {batch_index} failed: {result['error']}")
 
-                    if progress_callback:
-                        progress_callback(batch_index, result)
+                            results.append(result)
+                            completed_indices.add(batch_index)
 
-                except Exception as e:
-                    logger.error(f"Error processing batch {batch_index}: {e}")
-                    # Cancel remaining futures
-                    for f in future_to_batch:
-                        f.cancel()
-                    raise
+                            if progress_callback:
+                                progress_callback(batch_index, result)
+
+                        except BrokenExecutor as e:
+                            # Process pool broke - will retry remaining batches
+                            logger.error(f"Process pool broken while processing batch {batch_index}: {e}")
+                            logger.error("This usually indicates out-of-memory. Consider reducing batch_size or n_cores.")
+                            raise
+
+                        except Exception as e:
+                            logger.error(f"Error processing batch {batch_index}: {e}")
+                            # Cancel remaining futures
+                            for f in future_to_batch:
+                                f.cancel()
+                            raise
+
+                # All batches completed successfully
+                pending_batches = []
+
+            except BrokenExecutor:
+                # Filter out completed batches and retry remaining
+                retry_count += 1
+                pending_batches = [(idx, bodies) for idx, bodies in batches if idx not in completed_indices]
+                if pending_batches and retry_count <= max_retries:
+                    logger.info(f"Retrying {len(pending_batches)} remaining batches...")
+                elif pending_batches:
+                    raise RuntimeError(
+                        f"Process pool failed {max_retries} times. {len(pending_batches)} batches remaining. "
+                        "This is likely due to out-of-memory. Try reducing batch_size or n_cores."
+                    )
 
         # Sort results by batch_index to maintain order
         results.sort(key=lambda x: x["batch_index"])

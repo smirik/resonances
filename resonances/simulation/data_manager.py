@@ -25,9 +25,9 @@ class DataManager:
         """Check if body MMR should be plotted."""
         return self._process_status(body.statuses.get(resonance.to_s(), 0), self.config.plot)
 
-    def _process_status(self, status: int, mode: str) -> bool:
+    def _process_status(self, status: int, mode) -> bool:
         """Process status against mode to determine if action should be taken."""
-        if mode is None:
+        if (mode is None) or (mode is False) or (isinstance(mode, str) and mode.lower() == 'none'):
             return False
         if mode == 'all':
             return True
@@ -67,7 +67,8 @@ class DataManager:
         """Save all resonance data for a body."""
 
         self.ensure_save_path_exists()
-        if (self.config.save is None) or (self.config.save.lower() == 'none') or (self.config.save is False):
+        save_mode = self.config.save
+        if (save_mode is None) or (save_mode is False) or (isinstance(save_mode, str) and save_mode.lower() == 'none'):
             return
 
         body_data = body.keplerian_elements_to_dict()
