@@ -128,12 +128,18 @@ def find(
     _verify_secular_parameters(kwargs)
     sim = Simulation(name=name or "resonance_find", secular_angle_mode=secular_angle_mode, **kwargs)
 
+    # Batch fetch all asteroid elements at once for better performance
+    if sim.config.source == 'astdys':
+        elems = astdys.search(asteroids)  # Returns dict: {name: elements_dict}
+    else:
+        for asteroid in asteroids:
+            elems[asteroid] = get_body_keplerian_elements(asteroid, date=now)
+
     for asteroid in asteroids:
-        if sim.config.source == 'astdys':
-            elem = astdys.search(asteroid)
-        else:
-            elem = get_body_keplerian_elements(asteroid, date=now)
-        elems[asteroid] = elem
+        elem = elems.get(str(asteroid))
+        if elem is None:
+            logger.warning(f'Asteroid {asteroid} not found in catalog')
+            continue
         resonances_dict[asteroid] = []
         if shouldSearchMMR:
             mmrs = find_mmrs(elem['a'], planets=planets, sigma2=sigma2, sigma3=sigma3)
