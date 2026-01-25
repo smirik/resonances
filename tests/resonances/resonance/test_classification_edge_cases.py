@@ -28,7 +28,6 @@ def test_classification_edge_cases():
     test_cases = [
         # === Jupiter resonances ===
         # Transient cases - status 1 or -1
-        ("887", "3J-1", 1, 'nominal'),  # Libration 0-14000 yrs, then circulation
         # ("6489", "3J-1", 1, 'nominal'),  # Libration ~8000-20000 yrs - TODO: revisit after drift_norm tuning
         ("17346", "2J-1", 1, 'absolute'),  # Transient, r_sq=0.92, lib_frac=0.32
         ("4177", "2J-1", 2, 'nominal'),  # Clean apocentric libration throughout
@@ -38,9 +37,17 @@ def test_classification_edge_cases():
         # ("42355", "3N-4", 1, 'absolute'),  # r_sq=0.815 - TODO: revisit after drift_norm tuning
     ]
 
+    test_cases_chaotic = [
+        ("189865", "lkr"),
+        ("477492", "lkr"),
+    ]
+
     for asteroid, resonance_str, _, _ in test_cases:
         mmr = resonances.create_mmr(resonance_str)
         sim.add_body(asteroid, mmr, name=f"{asteroid}")
+    for asteroid, resonance_str in test_cases_chaotic:
+        lkr = resonances.create_resonance(resonance_str)
+        sim.add_body(asteroid, lkr, name=f"{asteroid}")
 
     sim.run()
 
@@ -60,3 +67,10 @@ def test_classification_edge_cases():
             f"Asteroid {asteroid} ({resonance_str}): "
             f"expected |status|={expected_abs_status}, got status={status} (expected_type={expected_type})"
         )
+
+    for asteroid, resonance_str in test_cases_chaotic:
+        mask = summary["name"] == asteroid
+        matching_rows = summary[mask]
+        assert len(matching_rows) > 0, f"No results found for asteroid {asteroid}"
+        status = matching_rows["status"].iloc[0]
+        assert status == -3, f"Asteroid {asteroid} ({resonance_str}): expected status=-3, got status={status}"

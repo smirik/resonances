@@ -708,6 +708,19 @@ def classify_resonance(
     -------
     dict with classification result and diagnostic information
     """
+    # Check for integration failure: eccentricity > 2.0 indicates chaotic ejection
+    if body.ecc is not None and np.any(body.ecc > 1.2):
+        return {
+            'status': -3,
+            'classification_status': -3,
+            'max_eccentricity': float(np.max(body.ecc)),
+            'r_squared': 0.0,
+            'libration_fraction': 0.0,
+            'is_circulation': True,
+            'drift_rate': 0.0,
+            'overlapping_peaks': [],
+        }
+
     angles = body.angles[resonance.to_s()]
     classification = classify_angle(
         times,

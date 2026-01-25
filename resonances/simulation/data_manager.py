@@ -125,6 +125,7 @@ class DataManager:
         - 'non-resonant' for status=0
         - 'controversial-transient' for status=-1
         - 'controversial-libration' for status=-2
+        - 'chaotic' for status=-3 (integration failure, e > 1.1)
         """
         base_path = self.config.plot_path
 
@@ -136,6 +137,7 @@ class DataManager:
                 0: 'non-resonant',
                 -1: 'controversial-transient',
                 -2: 'controversial-libration',
+                -3: 'chaotic',
             }
             subfolder = status_folders.get(status, 'non-resonant')
             plot_path = f'{base_path}/{subfolder}'
