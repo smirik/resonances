@@ -61,6 +61,7 @@ Below is the list of options. When lowercase is used, it refers to the arguments
 - `save_summary`/`SAVE_SUMMARY` (bool): save summary of the simulation as a dataframe (available through `get_simulation_summary()` method)
 - `plot_path`/`PLOT_PATH` (str): the same as `save_path`.
 - `plot_type`/`PLOT_TYPE` (str): determines what to do with graphs. `save` - only save graphs as files (default), `show` - just show (if false), `both` - both options. Valid only for plots specified by `plot`. In other words, if you set `plot` as `None`, no graphs will be plotted.
+- `plot_subfolder_strategy`/`PLOT_SUBFOLDER_STRATEGY` (str or None): controls how plots are organized within `plot_path`. By default, `None` (empty), meaning all plots are saved directly in `plot_path`. If set to `status`, creates subfolders based on resonance classification: `resonant/` (status=2), `transient/` (status=1), `non-resonant/` (status=0), `controversial-transient/` (status=-1), and `controversial-libration/` (status=-2).
 
 ## Libration options
 

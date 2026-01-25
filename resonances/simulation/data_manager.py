@@ -111,8 +111,38 @@ class DataManager:
         config = self.config.plot_config if self.config.plot_config is not None else 'full'
         for resonance in body.resonances():
             if self.should_plot_body(body, resonance):
-                plot_filename = f'{self.config.plot_path}/{body.name}-{resonance.to_s()}.{self.config.image_type}'
+                plot_path = self._get_plot_path(body, resonance)
+                plot_filename = f'{plot_path}/{body.name}-{resonance.to_s()}.{self.config.image_type}'
                 Plotter.from_body(body, resonance, simulation).configure(config).plot().save(plot_filename)
+
+    def _get_plot_path(self, body: Body, resonance) -> str:
+        """
+        Get the plot path, optionally with subfolder based on strategy.
+
+        If plot_subfolder_strategy is 'status', creates subfolders:
+        - 'resonant' for status=2
+        - 'transient' for status=1
+        - 'non-resonant' for status=0
+        - 'controversial-transient' for status=-1
+        - 'controversial-libration' for status=-2
+        """
+        base_path = self.config.plot_path
+
+        if self.config.plot_subfolder_strategy == 'status':
+            status = body.statuses.get(resonance.to_s(), 0)
+            status_folders = {
+                2: 'resonant',
+                1: 'transient',
+                0: 'non-resonant',
+                -1: 'controversial-transient',
+                -2: 'controversial-libration',
+            }
+            subfolder = status_folders.get(status, 'non-resonant')
+            plot_path = f'{base_path}/{subfolder}'
+            Path(plot_path).mkdir(parents=True, exist_ok=True)
+            return plot_path
+
+        return base_path
 
     def save_planets(self, times, planets_data):
         """Save planetary data."""

@@ -213,5 +213,126 @@ class TestDataManager:
         assert len(old_style_files) == 0, "Old-style separate resonance files should not be created"
 
 
+class TestPlotSubfolderStrategy:
+    """Test the plot subfolder strategy feature."""
+
+    def test_plot_subfolder_strategy_default_is_none(self):
+        """Test that default plot_subfolder_strategy is None."""
+        config = SimulationConfig()
+        assert config.plot_subfolder_strategy is None
+
+    def test_plot_subfolder_strategy_status_valid(self):
+        """Test that 'status' is a valid plot_subfolder_strategy value."""
+        config = SimulationConfig(plot_subfolder_strategy='status')
+        assert config.plot_subfolder_strategy == 'status'
+
+    def test_plot_subfolder_strategy_empty_string_becomes_none(self):
+        """Test that empty string becomes None."""
+        config = SimulationConfig(plot_subfolder_strategy='')
+        assert config.plot_subfolder_strategy is None
+
+    def test_plot_subfolder_strategy_invalid_raises_error(self):
+        """Test that invalid values raise ValueError."""
+        with pytest.raises(ValueError, match="Invalid plot_subfolder_strategy"):
+            SimulationConfig(plot_subfolder_strategy='invalid')
+
+    def test_get_plot_path_no_strategy(self):
+        """Test _get_plot_path returns base path when no strategy set."""
+        config = SimulationConfig(plot_subfolder_strategy=None)
+        data_manager = DataManager(config)
+
+        mock_body = Mock()
+        mock_body.statuses = {'test_res': 2}
+        mock_resonance = Mock()
+        mock_resonance.to_s.return_value = 'test_res'
+
+        path = data_manager._get_plot_path(mock_body, mock_resonance)
+        assert path == config.plot_path
+
+    @patch('pathlib.Path.mkdir')
+    def test_get_plot_path_status_strategy_resonant(self, mock_mkdir):
+        """Test _get_plot_path returns correct subfolder for status=2 (resonant)."""
+        config = SimulationConfig(plot_subfolder_strategy='status', plot_path='cache/test')
+        data_manager = DataManager(config)
+
+        mock_body = Mock()
+        mock_body.statuses = {'test_res': 2}
+        mock_resonance = Mock()
+        mock_resonance.to_s.return_value = 'test_res'
+
+        path = data_manager._get_plot_path(mock_body, mock_resonance)
+        assert path == 'cache/test/resonant'
+
+    @patch('pathlib.Path.mkdir')
+    def test_get_plot_path_status_strategy_transient(self, mock_mkdir):
+        """Test _get_plot_path returns correct subfolder for status=1 (transient)."""
+        config = SimulationConfig(plot_subfolder_strategy='status', plot_path='cache/test')
+        data_manager = DataManager(config)
+
+        mock_body = Mock()
+        mock_body.statuses = {'test_res': 1}
+        mock_resonance = Mock()
+        mock_resonance.to_s.return_value = 'test_res'
+
+        path = data_manager._get_plot_path(mock_body, mock_resonance)
+        assert path == 'cache/test/transient'
+
+    @patch('pathlib.Path.mkdir')
+    def test_get_plot_path_status_strategy_non_resonant(self, mock_mkdir):
+        """Test _get_plot_path returns correct subfolder for status=0 (non-resonant)."""
+        config = SimulationConfig(plot_subfolder_strategy='status', plot_path='cache/test')
+        data_manager = DataManager(config)
+
+        mock_body = Mock()
+        mock_body.statuses = {'test_res': 0}
+        mock_resonance = Mock()
+        mock_resonance.to_s.return_value = 'test_res'
+
+        path = data_manager._get_plot_path(mock_body, mock_resonance)
+        assert path == 'cache/test/non-resonant'
+
+    @patch('pathlib.Path.mkdir')
+    def test_get_plot_path_status_strategy_controversial_transient(self, mock_mkdir):
+        """Test _get_plot_path returns correct subfolder for status=-1 (controversial-transient)."""
+        config = SimulationConfig(plot_subfolder_strategy='status', plot_path='cache/test')
+        data_manager = DataManager(config)
+
+        mock_body = Mock()
+        mock_body.statuses = {'test_res': -1}
+        mock_resonance = Mock()
+        mock_resonance.to_s.return_value = 'test_res'
+
+        path = data_manager._get_plot_path(mock_body, mock_resonance)
+        assert path == 'cache/test/controversial-transient'
+
+    @patch('pathlib.Path.mkdir')
+    def test_get_plot_path_status_strategy_controversial_libration(self, mock_mkdir):
+        """Test _get_plot_path returns correct subfolder for status=-2 (controversial-libration)."""
+        config = SimulationConfig(plot_subfolder_strategy='status', plot_path='cache/test')
+        data_manager = DataManager(config)
+
+        mock_body = Mock()
+        mock_body.statuses = {'test_res': -2}
+        mock_resonance = Mock()
+        mock_resonance.to_s.return_value = 'test_res'
+
+        path = data_manager._get_plot_path(mock_body, mock_resonance)
+        assert path == 'cache/test/controversial-libration'
+
+    @patch('pathlib.Path.mkdir')
+    def test_get_plot_path_status_strategy_unknown_status_defaults_to_non_resonant(self, mock_mkdir):
+        """Test _get_plot_path defaults to non-resonant for unknown status values."""
+        config = SimulationConfig(plot_subfolder_strategy='status', plot_path='cache/test')
+        data_manager = DataManager(config)
+
+        mock_body = Mock()
+        mock_body.statuses = {'test_res': 99}  # Unknown status
+        mock_resonance = Mock()
+        mock_resonance.to_s.return_value = 'test_res'
+
+        path = data_manager._get_plot_path(mock_body, mock_resonance)
+        assert path == 'cache/test/non-resonant'
+
+
 if __name__ == '__main__':
     pytest.main([__file__])

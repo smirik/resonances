@@ -72,7 +72,12 @@ class SimulationConfig:
         self.plot = kwargs.get('plot', c.get('PLOT'))
         self.plot_type = kwargs.get('plot_type', c.get('PLOT_TYPE'))
         self.image_type = kwargs.get('image_type', c.get('PLOT_IMAGE_TYPE'))
-        self.plot_config = kwargs.get('plot_config', None)  # Optional plot configuration
+        self.plot_config = kwargs.get('plot_config', c.get('PLOT_CONFIG'))  # Optional plot configuration
+
+        plot_subfolder_strategy = kwargs.get('plot_subfolder_strategy', c.get('PLOT_SUBFOLDER_STRATEGY', None))
+        self.plot_subfolder_strategy = plot_subfolder_strategy if plot_subfolder_strategy else None
+        if self.plot_subfolder_strategy is not None and self.plot_subfolder_strategy not in ['status']:
+            raise ValueError(f"Invalid plot_subfolder_strategy: {self.plot_subfolder_strategy}. Valid values are None or 'status'.")
 
         self.plot_path = kwargs.get('plot_path', None)
         if self.plot_path is None:
