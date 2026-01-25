@@ -71,6 +71,8 @@ def run_benchmark(directory: str) -> dict:
                     "unif": classification["angle_uniformity"],
                     "is_circ": classification["is_circulation"],
                     "cycles": classification["total_drift_cycles"],
+                    "total_lib_time": classification.get("total_libration_time_frac", 0),
+                    "libration_periods": classification.get("libration_periods", []),
                 }
 
                 entry = {
@@ -116,6 +118,26 @@ def _format_diag(diag: dict) -> str:
     )
 
 
+def _format_libration_periods(diag: dict) -> str:
+    """Format libration periods for display."""
+    if diag is None:
+        return ""
+
+    total_lib_time = diag.get("total_lib_time", 0)
+    periods = diag.get("libration_periods", [])
+
+    lines = [f"    Total libration time: {total_lib_time*100:.1f}%"]
+
+    if periods:
+        lines.append(f"    Libration periods ({len(periods)}):")
+        for i, p in enumerate(periods):
+            lines.append(f"      {i+1}. {p['start_frac']*100:.1f}%-{p['end_frac']*100:.1f}% " f"(duration: {p['duration_frac']*100:.1f}%)")
+    else:
+        lines.append("    No libration periods detected")
+
+    return "\n".join(lines)
+
+
 def print_benchmark_results(results: dict, verbose: int = 0):
     """Print benchmark results.
 
@@ -155,6 +177,7 @@ def print_benchmark_results(results: dict, verbose: int = 0):
                 print(f"  {entry['file']}: expected={entry['expected']} ({exp_name}), got={entry['actual']} ({act_name})")
                 if verbose >= 1 and entry["diag"]:
                     print(f"    {_format_diag(entry['diag'])}")
+                    print(_format_libration_periods(entry['diag']))
 
     if verbose >= 2 and results["successes"]:
         print(f"\n{'='*60}")
