@@ -36,6 +36,7 @@ ALGORITHM (SLIDING WINDOW APPROACH)
    Apply check_libration() to the full time series. Criteria:
    - No circulation detected (total drift < 2 cycles)
    - Low total drift cycles (< 1.2)
+   - Moderate uniformity (< 0.5)
    - One of:
      * Very low R² (< 0.2) with very high libration fraction (≥ 0.95)
      * Low R² (< 0.8) with high lib_frac (≥ 0.9) and low uniformity (< 0.14)
@@ -45,12 +46,18 @@ ALGORITHM (SLIDING WINDOW APPROACH)
    Filter out cases where sliding windows would incorrectly detect libration:
    - Slow circulation: R² > 0.97 and cycles > 1.5
    - Chaotic: uniformity > 0.7 and libration fraction < 0.5
-   - High-cycle chaotic: circulation with > 50 cycles and moderate uniformity
+   - High-cycle chaotic: circulation with > 25 cycles and uniformity > 0.63
 
 3. SLIDING WINDOW DETECTION (for Transient)
    - Window width: 10% of total time
    - Window shift: 2% of total time
-   - Apply check_libration() to each window
+   - Apply check_libration() with is_window=True to each window
+   - Window libration criteria:
+     * Base criteria (same as status 2) AND
+     * Normalized drift (drift_norm) below adaptive threshold:
+       - uniformity < 0.1:  drift_norm < 0.30 (relaxed for concentrated angles)
+       - uniformity < 0.45: drift_norm < 0.25 (moderate)
+       - uniformity >= 0.45: drift_norm < 0.15 (strict for spread angles)
    - Track which time points are covered by ANY libration window
    - Merge overlapping windows to get total libration time
 
@@ -243,6 +250,86 @@ def compute_libration_fraction(segments: List[Tuple[int, int]], n_total: int) ->
     return libration_points / n_total
 
 
+def compute_drift_norm(cumulative: np.ndarray) -> float:
+    """
+    Compute the normalized cumulative drift metric.
+
+    This metric divides the standard deviation of cumulative drift by sqrt(N),
+    which accounts for the random walk behavior. For a random walk, std grows
+    as sqrt(N), so drift_norm stays roughly constant regardless of series length.
+
+    For libration: drift_norm is small (bounded oscillation)
+    For circulation/chaos: drift_norm is larger (unbounded drift)
+
+    The threshold drift_norm < 0.086 provides perfect separation for status 2 (libration)
+    when applied to the full time series.
+    """
+    n = len(cumulative)
+    if n == 0:
+        return 0.0
+    return np.std(cumulative) / np.sqrt(n)
+
+
+def compute_circulation_segment_fraction(
+    angles: np.ndarray,
+    n_segments: int = 10,
+    full_range_threshold: float = 5.5,
+    high_drift_threshold: float = 0.7,
+) -> float:
+    """
+    Compute the fraction of segments showing circulation behavior.
+
+    A segment shows circulation if it has BOTH:
+    1. Full angle range (spans nearly 0-2π)
+    2. High drift (net change > 0.5 cycles in one direction)
+
+    This distinguishes between:
+    - Apocentric libration: full range but drift ~0 (oscillates back and forth)
+    - Circulation/transient: full range AND high drift (moves in one direction)
+
+    Args:
+        angles: Array of angle values
+        n_segments: Number of equal segments to divide the data into (default: 10)
+        full_range_threshold: Angle range above which a segment spans full range
+                             (default: 5.5 radians, ~87% of 2π)
+        high_drift_threshold: Drift in cycles above which segment shows circulation
+                             (default: 0.7 cycles - allows for noisy libration)
+
+    Returns:
+        Fraction of segments showing circulation (0.0 to 1.0)
+    """
+    n = len(angles)
+    if n < n_segments:
+        return 0.0
+
+    # Compute cumulative drift for the full series
+    cumulative = np.zeros(n)
+    for i in range(1, n):
+        diff = angles[i] - angles[i - 1]
+        # Wrap to [-π, π]
+        while diff > np.pi:
+            diff -= 2 * np.pi
+        while diff < -np.pi:
+            diff += 2 * np.pi
+        cumulative[i] = cumulative[i - 1] + diff
+
+    circulation_count = 0
+    for i in range(n_segments):
+        start = int(n * i / n_segments)
+        end = int(n * (i + 1) / n_segments)
+        seg_angles = angles[start:end]
+        angle_range = np.max(seg_angles) - np.min(seg_angles)
+
+        # Calculate drift in this segment (in cycles)
+        drift_in_seg = abs(cumulative[end - 1] - cumulative[start]) / (2 * np.pi)
+
+        # Circulation: full range AND high drift
+        if angle_range > full_range_threshold and drift_in_seg > high_drift_threshold:
+            circulation_count += 1
+
+    return circulation_count / n_segments
+
+
 def compute_angle_uniformity(angles: np.ndarray, n_bins: int = 20) -> float:
     """
     Compute how uniformly the angles are distributed across 0 to 2π.
@@ -272,6 +359,8 @@ def check_libration(
     window_fraction: float = 0.1,
     min_window_points: int = 100,
     max_libration_drift: float = 2.0 * np.pi,
+    window_drift_norm_threshold: float = 0.15,
+    is_window: bool = False,
 ) -> Tuple[bool, dict]:
     """
     Check if the angle time series shows libration (status 2) characteristics.
@@ -283,8 +372,16 @@ def check_libration(
     Uses the status 2 criteria:
     - No circulation detected
     - Low total drift cycles
+    - Moderate uniformity (< 0.5) - angles must be somewhat concentrated, not randomly scattered
     - Either: (R² < 0.2 and lib_frac >= 0.95) or (R² < 0.8 and lib_frac >= 0.9 and uniformity < 0.14)
              or (R² < 0.1 and uniformity < 0.15) for apocentric libration
+
+    For sliding windows (is_window=True), also requires:
+    - Normalized drift (drift_norm) below adaptive threshold based on uniformity:
+      * uniformity < 0.1:  drift_norm < 0.30 (relaxed)
+      * uniformity < 0.45: drift_norm < 0.25 (moderate)
+      * uniformity >= 0.45: drift_norm < 0.15 (strict)
+    - This helps reject chaotic windows that accidentally pass base criteria
 
     Returns
     -------
@@ -296,6 +393,8 @@ def check_libration(
     libration_fraction = compute_libration_fraction(segments, len(times))
     angle_uniformity = compute_angle_uniformity(angles)
     total_drift_cycles = abs(cumulative[-1] - cumulative[0]) / (2 * np.pi)
+    drift_norm = compute_drift_norm(cumulative)
+    circulation_segment_fraction = compute_circulation_segment_fraction(angles) if not is_window else 0.0
 
     diagnostics = {
         'is_circulation': is_circulation,
@@ -306,11 +405,16 @@ def check_libration(
         'total_drift_cycles': total_drift_cycles,
         'n_libration_segments': len(segments),
         'cumulative_drift': cumulative,
+        'drift_norm': drift_norm,
+        'circulation_segment_fraction': circulation_segment_fraction,
     }
 
-    is_libration = (
+    # Core libration criteria (used for both full series and windows)
+    # Uniformity < 0.5 ensures angles are somewhat concentrated (not chaotic)
+    meets_base_criteria = (
         not is_circulation
         and total_drift_cycles < max_drift_cycles
+        and angle_uniformity < 0.5
         and (
             (r_squared < 0.2 and libration_fraction >= 0.95)
             or (r_squared < 0.8 and libration_fraction >= 0.9 and angle_uniformity < 0.14)
@@ -318,6 +422,26 @@ def check_libration(
         )
     )
 
+    # For sliding windows, add normalized drift constraint
+    # This filters out chaotic windows that pass base criteria by chance
+    # Use adaptive threshold: very concentrated angles (low uniformity) allow higher drift_norm
+    if is_window:
+        # Stricter drift_norm threshold for windows with moderate uniformity
+        # Very low uniformity (< 0.1) indicates strong libration, allow higher drift_norm
+        if angle_uniformity < 0.1:
+            drift_threshold = 0.30  # Relaxed for very concentrated angles
+        elif angle_uniformity < 0.45:
+            drift_threshold = 0.25  # Moderate threshold
+        else:
+            drift_threshold = window_drift_norm_threshold  # 0.15 - strict for less concentrated
+        is_libration = meets_base_criteria and drift_norm < drift_threshold
+        return is_libration, diagnostics
+
+    # For full time series: use base criteria + check for hidden circulation episodes
+    # If > 30% of segments show circulation (full range + high drift), reject pure libration
+    # This catches transient cases where circulation episodes cancel out in total drift
+    has_hidden_circulation = circulation_segment_fraction >= 0.3
+    is_libration = meets_base_criteria and not has_hidden_circulation
     return is_libration, diagnostics
 
 
@@ -340,16 +464,21 @@ def check_clear_circulation(
     is_slow_circulation = r_squared > 0.97 and total_drift_cycles > 1.5
 
     # Chaotic detection: high uniformity means angles spread uniformly across 0-2π
-    # If uniformity > 0.7 and we have detected circulation with many cycles, it's chaotic
-    # The cycle threshold (12) distinguishes chaotic behavior from transient librations
-    is_chaotic = angle_uniformity > chaotic_uniformity_threshold and (
-        libration_fraction < 0.5 or (is_circulation and total_drift_cycles > 12)
+    # Three tiers based on uniformity level:
+    # - Extremely high uniformity (>0.84): likely transient, not chaotic (protect these)
+    # - Very high uniformity (0.74-0.84): chaotic if circulation detected
+    # - High uniformity (0.7-0.74): need circulation + cycles > 12
+    is_very_high_uniformity_chaotic = angle_uniformity > 0.74 and angle_uniformity <= 0.84 and is_circulation
+    is_high_uniformity_chaotic = (
+        angle_uniformity > chaotic_uniformity_threshold
+        and angle_uniformity <= 0.74
+        and (libration_fraction < 0.5 or (is_circulation and total_drift_cycles > 12))
     )
+    is_chaotic = is_very_high_uniformity_chaotic or is_high_uniformity_chaotic
 
-    # High-cycle chaotic: very many cycles with moderate uniformity
-    is_high_cycle_chaotic = (
-        is_circulation and total_drift_cycles > 50 and ((angle_uniformity > 0.60 and total_drift_cycles > 100) or angle_uniformity > 0.65)
-    )
+    # High-cycle chaotic: many cycles with moderate uniformity
+    # Threshold of 25 cycles protects real transients (max ~22 cycles) while catching chaotic cases
+    is_high_cycle_chaotic = is_circulation and total_drift_cycles > 25 and angle_uniformity > 0.63
 
     # Slow circulation without is_circ flag: high R² + high uniformity
     is_slow_no_circ = not is_circulation and r_squared > 0.95 and angle_uniformity > 0.7
@@ -464,6 +593,7 @@ def classify_angle(  # noqa: C901
             window_fraction=window_fraction,
             min_window_points=min_window_points,
             max_libration_drift=max_libration_drift,
+            is_window=True,
         )
 
         if has_libration:
