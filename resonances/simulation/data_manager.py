@@ -67,7 +67,7 @@ class DataManager:
         """Save all resonance data for a body."""
 
         self.ensure_save_path_exists()
-        if (self.config.save is None) or (self.config.save is False):
+        if (self.config.save is None) or (self.config.save.lower() == 'none') or (self.config.save is False):
             return
 
         body_data = body.keplerian_elements_to_dict()
