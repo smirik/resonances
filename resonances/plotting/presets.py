@@ -288,6 +288,17 @@ def create_lk_preset(resonance_key: str) -> PlotConfig:
     return config
 
 
+def create_full2pi_preset(resonance_key: str) -> PlotConfig:
+    """
+    Create a full preset with resonant angle panel limited to [0, 2π].
+
+    Same as 'full' but the first panel (resonant angle) has fixed y-axis limits.
+    """
+    config = create_full_preset(resonance_key)
+    config.panels[0].style.ylim = (0, 2 * np.pi)
+    return config
+
+
 def create_secular_preset(resonance_key: str) -> PlotConfig:
     """
     Create a secular tuned preset.
@@ -381,6 +392,7 @@ def get_preset(preset_name: str, resonance_key: str) -> PlotConfig:
     presets = {
         'simple': create_simple_preset,
         'full': create_full_preset,
+        'full2pi': create_full2pi_preset,
         'lk': create_lk_preset,
         'lkr': create_lk_preset,
         'secular': create_secular_preset,
