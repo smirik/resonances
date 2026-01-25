@@ -340,7 +340,11 @@ def check_clear_circulation(
     is_slow_circulation = r_squared > 0.97 and total_drift_cycles > 1.5
 
     # Chaotic detection: high uniformity means angles spread uniformly across 0-2π
-    is_chaotic = angle_uniformity > chaotic_uniformity_threshold and libration_fraction < 0.5
+    # If uniformity > 0.7 and we have detected circulation with many cycles, it's chaotic
+    # The cycle threshold (12) distinguishes chaotic behavior from transient librations
+    is_chaotic = angle_uniformity > chaotic_uniformity_threshold and (
+        libration_fraction < 0.5 or (is_circulation and total_drift_cycles > 12)
+    )
 
     # High-cycle chaotic: very many cycles with moderate uniformity
     is_high_cycle_chaotic = (
