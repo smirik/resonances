@@ -41,6 +41,9 @@ ALGORITHM (SLIDING WINDOW APPROACH)
      * Very low R² (< 0.2) with very high libration fraction (≥ 0.95)
      * Low R² (< 0.8) with high lib_frac (≥ 0.9) and low uniformity (< 0.14)
      * Very low R² (< 0.1) with low uniformity (< 0.15) - for apocentric libration
+   - Hidden circulation check: ≥30% of segments with BOTH full range AND high drift
+     rejects pure libration (catches transient cases where circulation episodes
+     cancel out in total drift but are visible in individual segments)
 
 2. CHECK FOR CLEAR NON-RESONANT (Status 0)
    Filter out cases where sliding windows would incorrectly detect libration:
@@ -281,7 +284,7 @@ def compute_circulation_segment_fraction(
 
     A segment shows circulation if it has BOTH:
     1. Full angle range (spans nearly 0-2π)
-    2. High drift (net change > 0.5 cycles in one direction)
+    2. High drift (net change > 0.7 cycles in one direction)
 
     This distinguishes between:
     - Apocentric libration: full range but drift ~0 (oscillates back and forth)
