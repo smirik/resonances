@@ -16,7 +16,7 @@ class SimulationConfig:
         self.name = kwargs.get('name', datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
         # Internal flag for batch workers to skip path verification
         # Also skip for resume scenarios
-        self._skip_path_verification = kwargs.get('_skip_path_verification', False) or kwargs.get('resume_enabled', False)
+        self._skip_path_verification = kwargs.get('_skip_path_verification', False) or kwargs.get('resume_enabled', True)
         self._setup_date(kwargs.get('date'), kwargs.get('source'))
         self._setup_integration_params(kwargs)
         self._setup_save_params(kwargs)
