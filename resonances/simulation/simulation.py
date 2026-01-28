@@ -98,6 +98,7 @@ class Simulation:
         for body in self.bodies:
             for resonance in body.resonances():
                 # make wrapped angle, filter, and record wrapped filtered
+                body.angles_unwrapped[resonance.to_s()] = np.unwrap(body.angle_unwrapped(resonance))
                 body.angles[resonance.to_s()] = wrap(body.angle_unwrapped(resonance))
                 if isinstance(resonance, SecularResonance):
                     body.build_proper_angle(resonance)

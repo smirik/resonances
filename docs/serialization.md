@@ -69,6 +69,57 @@ If you need a fast restore without recomputing librations:
 sim = SimulationSerializer.restore("output/my_run/simulation.json", recompute_librations=False)
 ```
 
+## Resuming interrupted batch simulations
+
+When running large simulations with batch processing, if the simulation is interrupted (crash, OOM, manual stop), you can resume from where it stopped.
+
+### How it works
+
+During batch processing, a `state.json` file is saved in the output directory after each completed batch. This file tracks:
+- Which batches have been completed
+- The body names processed in each batch
+- Batch configuration (total batches, batch size, etc.)
+
+### How to resume
+
+Simply **run the same script again** with:
+1. The **same asteroid list** (same order, same filtering)
+2. The **same `save_path`** pointing to the existing output directory
+
+The simulation will automatically:
+1. Detect the existing `state.json`
+2. Skip already-completed batches
+3. Continue from the next pending batch
+
+### Example
+
+If your simulation crashed at batch 537/4368:
+
+```python
+# Original script - just run it again
+sim = resonances.find(
+    asteroids=asteroids,  # Same asteroid list!
+    name="my-simulation",
+    save_path="/path/to/existing/output",  # Same path!
+    plot_path="/path/to/existing/plots",
+    # ... other parameters unchanged
+)
+sim.run(progress=True)
+```
+
+### Important notes
+
+1. **Keep the same asteroid list**: Resume works by batch index. If you change the asteroid list, batch indices won't match the saved state.
+
+2. **Point to the existing directory**: If your simulation created a timestamped directory (e.g., `data_2026-01-26_00-06-44`), update `save_path` and `plot_path` to point to those directories.
+
+3. **Check progress**: You can inspect the state file to see how many batches completed:
+   ```bash
+   cat /path/to/output/state.json | python -c "import sys,json; d=json.load(sys.stdin); print(f\"Completed: {len(d['progress']['completed_batches'])}/{d['batch_config']['total_batches']}\")"
+   ```
+
+4. **Check last processed asteroid**: Look at the end of `summary.csv` to see which asteroids were processed last.
+
 ## Notes
 
 - `simulation.json` is always written by `DataManager.save_configuration_details`.

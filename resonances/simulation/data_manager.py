@@ -114,7 +114,12 @@ class DataManager:
             if self.should_plot_body(body, resonance):
                 plot_path = self._get_plot_path(body, resonance)
                 plot_filename = f'{plot_path}/{body.name}-{resonance.to_s()}.{self.config.image_type}'
-                Plotter.from_body(body, resonance, simulation).configure(config).plot().save(plot_filename)
+                plotter = Plotter.from_body(body, resonance, simulation).configure(config).plot()
+                if self.config.plot_type in ["show", "both"]:
+                    plotter.show()
+                if self.config.plot_type in ["save", "both"]:
+                    plotter.save(plot_filename)
+                plotter.close()
 
     def _get_plot_path(self, body: Body, resonance) -> str:
         """
