@@ -1,6 +1,7 @@
 import numpy as np
 from typing import List, Union
 
+from resonances.body import Body
 from resonances.resonance.classify import classify_resonance
 from resonances.resonance.periodogram import Periodogram
 
@@ -46,7 +47,7 @@ class Simulation:
         self.times = []
 
     @property
-    def bodies(self):
+    def bodies(self) -> List[Body]:
         return self.body_manager.bodies
 
     def create_solar_system(self, force=False):
@@ -159,7 +160,6 @@ class Simulation:
             for resonance in body.resonances():
                 libration = classify_resonance(
                     body,
-                    self.times,
                     resonance=resonance,
                 )
                 body.librations[resonance.to_s()] = libration

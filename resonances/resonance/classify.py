@@ -1,767 +1,445 @@
-"""
-Resonance Angle Classification Algorithm
-=========================================
-
-PURPOSE
--------
-This module classifies resonant angle time series from celestial mechanics simulations
-into categories based on the dynamical behavior of the resonant argument:
-
-    Status 2: Pure libration (entire duration) AND (for MMRs) periodogram peaks match
-    Status -2: Pure libration but periodogram peaks don't match
-    Status 1: Transient libration (≥20% of time) AND (for MMRs) periodogram peaks match
-    Status -1: Transient libration but periodogram peaks don't match
-    Status 0: Non-resonant (circulation or chaotic behavior)
-
-
-CORE CONCEPT: CUMULATIVE DRIFT ANALYSIS
----------------------------------------
-The fundamental distinction between libration and circulation lies in how the angle
-evolves over time:
-
-    LIBRATION: The resonant angle oscillates around a fixed center. When "unwrapped"
-    (cumulative drift computed), it oscillates around a constant level.
-
-    CIRCULATION: The resonant angle continuously increases/decreases. When unwrapped,
-    it produces a line with non-zero slope.
-
-By fitting a linear regression to the cumulative drift:
-    - High R² (close to 1) → linear drift → CIRCULATION
-    - Low R² (close to 0) → bounded oscillation → LIBRATION
-
-
-ALGORITHM (SLIDING WINDOW APPROACH)
------------------------------------
-1. CHECK FOR PURE LIBRATION (Status 2)
-   Apply check_libration() to the full time series. Criteria:
-   - No circulation detected (total drift < 2 cycles)
-   - Low total drift cycles (< 1.2)
-   - Moderate uniformity (< 0.5)
-   - One of:
-     * Very low R² (< 0.2) with very high libration fraction (≥ 0.95)
-     * Low R² (< 0.8) with high lib_frac (≥ 0.9) and low uniformity (< 0.14)
-     * Very low R² (< 0.1) with low uniformity (< 0.15) - for apocentric libration
-   - Hidden circulation check: ≥30% of segments with BOTH full range AND high drift
-     rejects pure libration (catches transient cases where circulation episodes
-     cancel out in total drift but are visible in individual segments)
-
-2. CHECK FOR CLEAR NON-RESONANT (Status 0)
-   Filter out cases where sliding windows would incorrectly detect libration:
-   - Slow circulation: R² > 0.97 and cycles > 1.5
-   - Chaotic: uniformity > 0.7 and libration fraction < 0.5
-   - High-cycle chaotic: circulation with > 25 cycles and uniformity > 0.63
-
-3. SLIDING WINDOW DETECTION (for Transient)
-   - Window width: 10% of total time
-   - Window shift: 2% of total time
-   - Apply check_libration() with is_window=True to each window
-   - Window libration criteria:
-     * Base criteria (same as status 2) AND
-     * Normalized drift (drift_norm) below adaptive threshold:
-       - uniformity < 0.1:  drift_norm < 0.30 (relaxed for concentrated angles)
-       - uniformity < 0.45: drift_norm < 0.25 (moderate)
-       - uniformity >= 0.45: drift_norm < 0.15 (strict for spread angles)
-   - Track which time points are covered by ANY libration window
-   - Merge overlapping windows to get total libration time
-
-4. FINAL CLASSIFICATION
-   - If ≥ 20% of time is in libration windows → Status 1 (transient)
-   - Otherwise → Status 0 (non-resonant)
-
-5. FOR MMRs: PERIODOGRAM CHECK
-   Compare periodogram peaks of resonant angle and semi-major axis.
-   If no overlap, negate the status (2 → -2, 1 → -1).
-
-
-Authors: Evgeny Smirnov + Claude (Anthropic)
-"""
-
 import numpy as np
-from typing import Tuple, List
+from typing import Optional, Tuple, List, Dict, Any
+from enum import IntEnum
+from astropy.timeseries import LombScargle
 
-from resonances.body import Body
-from resonances.resonance.resolver import resolve_mmr_status
-from resonances.resonance.resonance import Resonance
-from resonances.mmr.mmr import MMR
 
+class ResonanceStatus(IntEnum):
+    """Статусы классификации резонанса."""
 
-def compute_angle_difference(angle1: float, angle2: float) -> float:
-    """
-    Compute the signed difference between two angles, handling 2π wrapping.
+    STICKINESS = 3
+    LIBRATION = 2
+    TRANSIENT = 1
+    CIRCULATION = 0
+    TRANSIENT_UNCERTAIN = -1
+    LIBRATION_UNCERTAIN = -2
+    UNCERTAIN = -4
+    CHAOTIC = -99
 
-    Returns the shortest path on the circle from angle1 to angle2.
-    Result is in the range [-π, π].
 
-    Examples:
-        compute_angle_difference(0.1, 0.3) → +0.2  (small forward step)
-        compute_angle_difference(6.1, 0.2) → +0.38 (crossing 2π boundary forward)
-        compute_angle_difference(0.2, 6.1) → -0.38 (crossing 2π boundary backward)
-    """
-    diff = angle2 - angle1
-    # Wrap to [-π, π] using modular arithmetic
-    while diff > np.pi:
-        diff -= 2 * np.pi
-    while diff < -np.pi:
-        diff += 2 * np.pi
-    return diff
+def _calc_sigma_dot(times: np.ndarray, sigma: np.ndarray) -> np.ndarray:
+    """Calculate the derivative of the resonant angle using central differences."""
+    sigma_dot = np.zeros_like(sigma)
+    sigma_dot[1:-1] = (sigma[2:] - sigma[:-2]) / (times[2:] - times[:-2])
+    dt = np.diff(times)
+    sigma_dot[0] = (sigma[1] - sigma[0]) / dt[0]
+    sigma_dot[-1] = (sigma[-1] - sigma[-2]) / dt[-1]
+    return sigma_dot
 
 
-def compute_cumulative_drift(angles: np.ndarray) -> np.ndarray:
-    """
-    Compute the cumulative drift of the angle over time.
+def _calc_zero_crossing_stats(sigma_dot: np.ndarray) -> Tuple[int, float]:
+    """Computes the number of zero crossings and the CV of the inter-zero-crossing intervals."""
+    # sign_changes = np.where(np.diff(np.sign(sigma_dot)) != 0)[0]
+    sign_changes = np.where(sigma_dot[:-1] * sigma_dot[1:] < 0)[0]
+    n_crossings = len(sign_changes)
 
-    This "unwraps" the angle by accumulating the shortest-path differences
-    between consecutive points. The result shows how far the angle has
-    drifted from its starting position (in radians, unbounded).
+    if n_crossings < 2:
+        return n_crossings, np.inf
 
-    For libration: cumulative drift oscillates around zero
-    For circulation: cumulative drift grows/decreases monotonically
-    """
-    n = len(angles)
-    cumulative = np.zeros(n)
+    intervals = np.diff(sign_changes)
+    if len(intervals) == 0 or np.mean(intervals) == 0:
+        return n_crossings, np.inf
 
-    for i in range(1, n):
-        diff = compute_angle_difference(angles[i - 1], angles[i])
-        cumulative[i] = cumulative[i - 1] + diff
+    return n_crossings, np.std(intervals) / np.mean(intervals)
 
-    return cumulative
 
-
-def analyze_cumulative_drift(cumulative: np.ndarray, times: np.ndarray, circulation_threshold_cycles: float) -> Tuple[bool, float, float]:
-    """
-    Analyze cumulative drift to determine if it shows circulation.
-
-    Fits a linear model to the cumulative drift and computes R² to
-    measure how well the drift follows a straight line.
-
-    Returns:
-        is_circulation: True if circulation detected
-        drift_rate: Net drift rate (radians per unit time)
-        r_squared: Coefficient of determination for linear fit
-    """
-    # Calculate total drift
-    total_drift = cumulative[-1] - cumulative[0]
-    total_time = times[-1] - times[0]
-
-    # Net drift rate (radians per unit time)
-    drift_rate = total_drift / total_time if total_time > 0 else 0
-
-    # Total drift in cycles
-    total_cycles = abs(total_drift) / (2 * np.pi)
-
-    # Fit a linear trend to the cumulative drift
-    # Normalize time to [0, 1] for numerical stability
-    times_normalized = (times - times[0]) / (times[-1] - times[0])
-
-    # Simple linear regression: cumulative = intercept + slope * time
-    mean_t = np.mean(times_normalized)
-    mean_c = np.mean(cumulative)
-
-    numerator = np.sum((times_normalized - mean_t) * (cumulative - mean_c))
-    denominator = np.sum((times_normalized - mean_t) ** 2)
-
-    if denominator > 0:
-        slope = numerator / denominator
-        intercept = mean_c - slope * mean_t
-
-        # Predicted values from linear model
-        predicted = intercept + slope * times_normalized
-
-        # R-squared: fraction of variance explained by linear model
-        ss_res = np.sum((cumulative - predicted) ** 2)  # Residual sum of squares
-        ss_tot = np.sum((cumulative - mean_c) ** 2)  # Total sum of squares
-        r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
-    else:
-        slope = 0
-        r_squared = 0
-
-    # Slope in cycles per normalized time unit
-    slope_cycles = abs(slope) / (2 * np.pi)
-
-    # Circulation detection criteria:
-    # 1. Total drift exceeds threshold cycles, OR
-    # 2. Significant slope with moderate linear fit quality
-    is_circulation = total_cycles > circulation_threshold_cycles or (slope_cycles > 1.5 and r_squared > 0.3)
-
-    return is_circulation, drift_rate, r_squared
-
-
-def find_libration_segments(
-    cumulative: np.ndarray, times: np.ndarray, window_fraction: float, min_window_points: int, max_libration_drift: float
-) -> List[Tuple[int, int]]:
-    """
-    Find segments where the behavior looks like libration (bounded oscillation).
-
-    Uses a sliding window approach: within each window, compares the net drift
-    to the oscillation amplitude. If net drift is small compared to amplitude,
-    the window shows libration-like behavior.
-    """
-    n = len(cumulative)
-
-    # Determine window size
-    window_size = max(min_window_points, int(n * window_fraction))
-
-    # Track which points are in libration-like regions
-    libration_mask = np.zeros(n, dtype=bool)
-
-    # Slide through the data
-    step = max(1, window_size // 10)  # Step size for efficiency
-
-    for start in range(0, n - window_size, step):
-        end = start + window_size
-        window_cumulative = cumulative[start:end]
-
-        # Net drift within window
-        window_drift = window_cumulative[-1] - window_cumulative[0]
-
-        # Oscillation amplitude within window
-        window_range = np.max(window_cumulative) - np.min(window_cumulative)
-
-        # Libration criterion:
-        # Net drift should be small compared to oscillation range
-        # This catches libration even with some secular drift
-        is_libration_window = abs(window_drift) < max(window_range * 0.5, np.pi) and abs(window_drift) < max_libration_drift
-
-        if is_libration_window:
-            libration_mask[start:end] = True
-
-    # Convert boolean mask to list of (start, end) segments
-    segments = []
-    in_segment = False
-    segment_start = 0
-
-    for i in range(n):
-        if libration_mask[i] and not in_segment:
-            segment_start = i
-            in_segment = True
-        elif not libration_mask[i] and in_segment:
-            segments.append((segment_start, i))
-            in_segment = False
-
-    if in_segment:
-        segments.append((segment_start, n))
-
-    return segments
-
-
-def compute_libration_fraction(segments: List[Tuple[int, int]], n_total: int) -> float:
-    """Compute the fraction of time spent in libration-like segments."""
-    if not segments:
-        return 0.0
-
-    libration_points = sum(end - start for start, end in segments)
-    return libration_points / n_total
-
-
-def compute_drift_norm(cumulative: np.ndarray) -> float:
-    """
-    Compute the normalized cumulative drift metric.
-
-    This metric divides the standard deviation of cumulative drift by sqrt(N),
-    which accounts for the random walk behavior. For a random walk, std grows
-    as sqrt(N), so drift_norm stays roughly constant regardless of series length.
-
-    For libration: drift_norm is small (bounded oscillation)
-    For circulation/chaos: drift_norm is larger (unbounded drift)
-
-    The threshold drift_norm < 0.086 provides perfect separation for status 2 (libration)
-    when applied to the full time series.
-    """
-    n = len(cumulative)
-    if n == 0:
-        return 0.0
-    return np.std(cumulative) / np.sqrt(n)
-
-
-def compute_circulation_segment_fraction(
-    angles: np.ndarray,
-    n_segments: int = 10,
-    full_range_threshold: float = 5.5,
-    high_drift_threshold: float = 0.7,
-) -> float:
-    """
-    Compute the fraction of segments showing circulation behavior.
-
-    A segment shows circulation if it has BOTH:
-    1. Full angle range (spans nearly 0-2π)
-    2. High drift (net change > 0.7 cycles in one direction)
-
-    This distinguishes between:
-    - Apocentric libration: full range but drift ~0 (oscillates back and forth)
-    - Circulation/transient: full range AND high drift (moves in one direction)
-
-    Args:
-        angles: Array of angle values
-        n_segments: Number of equal segments to divide the data into (default: 10)
-        full_range_threshold: Angle range above which a segment spans full range
-                             (default: 5.5 radians, ~87% of 2π)
-        high_drift_threshold: Drift in cycles above which segment shows circulation
-                             (default: 0.7 cycles - allows for noisy libration)
-
-    Returns:
-        Fraction of segments showing circulation (0.0 to 1.0)
-    """
-    n = len(angles)
-    if n < n_segments:
-        return 0.0
-
-    # Compute cumulative drift for the full series
-    cumulative = np.zeros(n)
-    for i in range(1, n):
-        diff = angles[i] - angles[i - 1]
-        # Wrap to [-π, π]
-        while diff > np.pi:
-            diff -= 2 * np.pi
-        while diff < -np.pi:
-            diff += 2 * np.pi
-        cumulative[i] = cumulative[i - 1] + diff
-
-    circulation_count = 0
-    for i in range(n_segments):
-        start = int(n * i / n_segments)
-        end = int(n * (i + 1) / n_segments)
-        seg_angles = angles[start:end]
-        angle_range = np.max(seg_angles) - np.min(seg_angles)
-
-        # Calculate drift in this segment (in cycles)
-        drift_in_seg = abs(cumulative[end - 1] - cumulative[start]) / (2 * np.pi)
-
-        # Circulation: full range AND high drift
-        if angle_range > full_range_threshold and drift_in_seg > high_drift_threshold:
-            circulation_count += 1
-
-    return circulation_count / n_segments
-
-
-def compute_angle_uniformity(angles: np.ndarray, n_bins: int = 20) -> float:
-    """
-    Compute how uniformly the angles are distributed across 0 to 2π.
-
-    Returns the ratio of minimum to maximum bin counts. High uniformity (close to 1)
-    indicates chaotic or circulation behavior where the angle visits all values equally.
-    Low uniformity (close to 0) indicates libration where the angle concentrates
-    around certain values.
-
-    This metric is used in classification:
-    - uniformity > 0.7: chaotic detection threshold (combined with lib_frac/r_sq checks)
-    - uniformity > 0.5: slow circulation edge case detection (combined with high R²)
-    - uniformity < 0.14: required for status 2 with moderate R² (concentrated angles)
-    - uniformity can be high for large-amplitude librations if R² is very low (<0.2)
-    """
-    hist, _ = np.histogram(angles, bins=n_bins, range=(0, 2 * np.pi))
-    if hist.max() == 0:
-        return 0.0
-    return hist.min() / hist.max()
-
-
-def check_libration(
+def _calc_periodogram(
     times: np.ndarray,
-    angles: np.ndarray,
-    circulation_threshold_cycles: float = 2.0,
-    max_drift_cycles: float = 1.2,
-    window_fraction: float = 0.1,
-    min_window_points: int = 100,
-    max_libration_drift: float = 2.0 * np.pi,
-    window_drift_norm_threshold: float = 0.15,
-    is_window: bool = False,
-) -> Tuple[bool, dict]:
-    """
-    Check if the angle time series shows libration (status 2) characteristics.
+    sigma_wrapped: np.ndarray,
+    min_period: Optional[float] = None,
+    max_period: Optional[float] = None,
+) -> Tuple[Optional[float], Optional[float], Optional[float]]:
+    """Calculates Lomb-Scargle for cos(σ) and sin(σ)."""
+    if len(times) < 10:
+        return None, None, None
 
-    This is the core libration detection function used for both:
-    - Full time series check (status 2)
-    - Sliding window checks (status 1 detection)
+    dt_total = times[-1] - times[0]
+    dt_median = np.median(np.diff(times))
 
-    Uses the status 2 criteria:
-    - No circulation detected
-    - Low total drift cycles
-    - Moderate uniformity (< 0.5) - angles must be somewhat concentrated, not randomly scattered
-    - Either: (R² < 0.2 and lib_frac >= 0.95) or (R² < 0.8 and lib_frac >= 0.9 and uniformity < 0.14)
-             or (R² < 0.1 and uniformity < 0.15) for apocentric libration
+    if min_period is None:
+        min_period = 2 * dt_median
+    if max_period is None:
+        max_period = dt_total / 2
 
-    For sliding windows (is_window=True), also requires:
-    - Normalized drift (drift_norm) below adaptive threshold based on uniformity:
-      * uniformity < 0.1:  drift_norm < 0.30 (relaxed)
-      * uniformity < 0.45: drift_norm < 0.25 (moderate)
-      * uniformity >= 0.45: drift_norm < 0.15 (strict)
-    - This helps reject chaotic windows that accidentally pass base criteria
+    if min_period >= max_period:
+        return None, None, None
 
-    Returns
-    -------
-    Tuple of (is_libration, diagnostics)
-    """
-    cumulative = compute_cumulative_drift(angles)
-    is_circulation, drift_rate, r_squared = analyze_cumulative_drift(cumulative, times, circulation_threshold_cycles)
-    segments = find_libration_segments(cumulative, times, window_fraction, min_window_points, max_libration_drift)
-    libration_fraction = compute_libration_fraction(segments, len(times))
-    angle_uniformity = compute_angle_uniformity(angles)
-    total_drift_cycles = abs(cumulative[-1] - cumulative[0]) / (2 * np.pi)
-    drift_norm = compute_drift_norm(cumulative)
-    circulation_segment_fraction = compute_circulation_segment_fraction(angles) if not is_window else 0.0
+    cos_sigma = np.cos(sigma_wrapped)
+    sin_sigma = np.sin(sigma_wrapped)
 
-    diagnostics = {
-        'is_circulation': is_circulation,
-        'drift_rate': drift_rate,
-        'r_squared': r_squared,
-        'libration_fraction': libration_fraction,
-        'angle_uniformity': angle_uniformity,
-        'total_drift_cycles': total_drift_cycles,
-        'n_libration_segments': len(segments),
-        'cumulative_drift': cumulative,
-        'drift_norm': drift_norm,
-        'circulation_segment_fraction': circulation_segment_fraction,
+    ls_cos = LombScargle(times, cos_sigma)
+    ls_sin = LombScargle(times, sin_sigma)
+
+    freq, power_cos = ls_cos.autopower(minimum_frequency=1 / max_period, maximum_frequency=1 / min_period, samples_per_peak=5)
+    _, power_sin = ls_sin.autopower(minimum_frequency=1 / max_period, maximum_frequency=1 / min_period, samples_per_peak=5)
+
+    power = power_cos + power_sin
+    idx = np.argmax(power)
+
+    period = 1 / freq[idx]
+    fap = ls_cos.false_alarm_probability(power_cos[idx])
+    snr = power[idx] / np.mean(power) if np.mean(power) > 0 else 0
+
+    return period, fap, snr
+
+
+def _calc_metrics(
+    times: np.ndarray, sigma_wrapped: np.ndarray, sigma_unwrapped: np.ndarray, compute_periodogram: bool = True
+) -> Dict[str, Any]:
+    """Calculates all metrics."""
+
+    N = len(times)
+    dt_total = times[-1] - times[0]
+
+    cos_avg = np.mean(np.cos(sigma_wrapped))
+    sin_avg = np.mean(np.sin(sigma_wrapped))
+    R = np.sqrt(cos_avg**2 + sin_avg**2)
+    phi_rad = np.arctan2(sin_avg, cos_avg)
+    phi_deg = np.rad2deg(phi_rad) % 360
+
+    amplitude = np.max(sigma_unwrapped) - np.min(sigma_unwrapped)
+
+    displacement = sigma_unwrapped[-1] - sigma_unwrapped[0]
+    revolutions = displacement / (2 * np.pi)
+
+    sigma_dot = _calc_sigma_dot(times, sigma_unwrapped)
+    frac_positive = np.mean(sigma_dot > 0)
+    sign_dominance = max(frac_positive, 1 - frac_positive)
+
+    n_zero_crossings, cv_intervals = _calc_zero_crossing_stats(sigma_dot)
+
+    ls_period, ls_fap, ls_snr = None, None, None
+    if compute_periodogram:
+        ls_period, ls_fap, ls_snr = _calc_periodogram(times, sigma_wrapped)
+
+    return {
+        'R': R,
+        'phi_rad': phi_rad,
+        'phi_deg': phi_deg,
+        'circular_variance': 1 - R,
+        'amplitude': amplitude,
+        'revolutions': revolutions,
+        'displacement': displacement,
+        'sign_dominance': sign_dominance,
+        'frac_positive': frac_positive,
+        'mean_sigma_dot': np.mean(sigma_dot),
+        'std_sigma_dot': np.std(sigma_dot),
+        'n_zero_crossings': n_zero_crossings,
+        'cv_intervals': cv_intervals,
+        'ls_period': ls_period,
+        'ls_fap': ls_fap,
+        'ls_snr': ls_snr,
+        'N': N,
+        'dt_total': dt_total,
     }
 
-    # Core libration criteria (used for both full series and windows)
-    # Uniformity < 0.5 ensures angles are somewhat concentrated (not chaotic)
-    meets_base_criteria = (
-        not is_circulation
-        and total_drift_cycles < max_drift_cycles
-        and angle_uniformity < 0.5
-        and (
-            (r_squared < 0.2 and libration_fraction >= 0.95)
-            or (r_squared < 0.8 and libration_fraction >= 0.9 and angle_uniformity < 0.14)
-            or (r_squared < 0.1 and angle_uniformity < 0.15)
-        )
-    )
 
-    # For sliding windows, add normalized drift constraint
-    # This filters out chaotic windows that pass base criteria by chance
-    # Use adaptive threshold: very concentrated angles (low uniformity) allow higher drift_norm
-    if is_window:
-        # Stricter drift_norm threshold for windows with moderate uniformity
-        # Very low uniformity (< 0.1) indicates strong libration, allow higher drift_norm
-        if angle_uniformity < 0.1:
-            drift_threshold = 0.30  # Relaxed for very concentrated angles
-        elif angle_uniformity < 0.45:
-            drift_threshold = 0.25  # Moderate threshold
-        else:
-            drift_threshold = window_drift_norm_threshold  # 0.15 - strict for less concentrated
-        is_libration = meets_base_criteria and drift_norm < drift_threshold
-        return is_libration, diagnostics
-
-    # For full time series: use base criteria + check for hidden circulation episodes
-    # If > 30% of segments show circulation (full range + high drift), reject pure libration
-    # This catches transient cases where circulation episodes cancel out in total drift
-    has_hidden_circulation = circulation_segment_fraction >= 0.3
-    is_libration = meets_base_criteria and not has_hidden_circulation
-    return is_libration, diagnostics
-
-
-def check_clear_circulation(
-    is_circulation: bool,
-    r_squared: float,
-    total_drift_cycles: float,
-    angle_uniformity: float,
-    libration_fraction: float,
-    r_squared_definite_threshold: float = 0.95,
-    chaotic_uniformity_threshold: float = 0.7,
-) -> bool:
-    """
-    Check if the global metrics indicate clear circulation/non-resonant behavior.
-
-    This filters out cases where sliding window would incorrectly detect libration
-    in slow circulation or chaotic data.
-    """
-    # Slow steady circulation: VERY high R² (>0.97) + significant cycles
-    is_slow_circulation = r_squared > 0.97 and total_drift_cycles > 1.5
-
-    # Chaotic detection: high uniformity means angles spread uniformly across 0-2π
-    # Three tiers based on uniformity level:
-    # - Extremely high uniformity (>0.84): likely transient, not chaotic (protect these)
-    # - Very high uniformity (0.74-0.84): chaotic if circulation detected
-    # - High uniformity (0.7-0.74): need circulation + cycles > 12
-    is_very_high_uniformity_chaotic = angle_uniformity > 0.74 and angle_uniformity <= 0.84 and is_circulation
-    is_high_uniformity_chaotic = (
-        angle_uniformity > chaotic_uniformity_threshold
-        and angle_uniformity <= 0.74
-        and (libration_fraction < 0.5 or (is_circulation and total_drift_cycles > 12))
-    )
-    is_chaotic = is_very_high_uniformity_chaotic or is_high_uniformity_chaotic
-
-    # High-cycle chaotic: many cycles with moderate uniformity
-    # Threshold of 25 cycles protects real transients (max ~22 cycles) while catching chaotic cases
-    is_high_cycle_chaotic = is_circulation and total_drift_cycles > 25 and angle_uniformity > 0.63
-
-    # Slow circulation without is_circ flag: high R² + high uniformity
-    is_slow_no_circ = not is_circulation and r_squared > 0.95 and angle_uniformity > 0.7
-
-    return is_slow_circulation or is_chaotic or is_high_cycle_chaotic or is_slow_no_circ
-
-
-def classify_angle(  # noqa: C901
+def _classify_segment(
     times: np.ndarray,
-    angles: np.ndarray,
-    circulation_threshold_cycles: float = 2.0,
-    r_squared_definite_threshold: float = 0.95,
-    window_fraction: float = 0.1,
-    min_window_points: int = 100,
-    max_libration_drift: float = 2.0 * np.pi,
-    chaotic_uniformity_threshold: float = 0.7,
-    pure_libration_max_cycles: float = 1.2,
-    sliding_window_width: float = 0.10,
-    sliding_window_shift: float = 0.02,
-) -> dict:
+    sigma_wrapped: np.ndarray,
+    sigma_unwrapped: np.ndarray,
+    total_duration: float,
+    circulation_threshold_cycles: float,
+    sign_dominance_threshold: float,
+    ls_fap_threshold: float,
+    ls_snr_threshold: float,
+    is_window: bool = False,
+) -> Tuple[str, Dict[str, Any]]:
     """
-    Classify the resonant angle time series using a sliding window approach.
-
-    Algorithm:
-    1. Check if the entire time series shows pure libration (status 2)
-    2. Check for clear circulation/chaotic behavior (status 0)
-    3. Use sliding windows to detect transient libration periods
-    4. If >= 20% of time is in libration windows → status 1 (transient)
-    5. Otherwise → status 0 (non-resonant)
-
-    Parameters
-    ----------
-    times : np.ndarray
-        Array of time values
-    angles : np.ndarray
-        Array of resonant angle values (in radians, 0 to 2π)
-    sliding_window_width : float
-        Width of sliding window as fraction of total time (default: 0.10 = 10%)
-    sliding_window_shift : float
-        Shift of sliding window as fraction of total time (default: 0.02 = 2%)
-
-    Returns
-    -------
-    dict with classification result and diagnostic information
+    Classify segment (time series or window) as LIBRATION/CIRCULATION/UNCERTAIN.
     """
-    # Step 1: Check for pure libration (status 2) on full time series
-    is_pure_libration, diagnostics = check_libration(
-        times,
-        angles,
-        circulation_threshold_cycles=circulation_threshold_cycles,
-        max_drift_cycles=pure_libration_max_cycles,
-        window_fraction=window_fraction,
-        min_window_points=min_window_points,
-        max_libration_drift=max_libration_drift,
-    )
+    segment_duration = times[-1] - times[0]
+    duration_ratio = segment_duration / total_duration
 
-    if is_pure_libration:
-        return {
-            'status': 2,
-            'classification_status': 2,
-            'n_libration_windows': 0,
-            'n_total_windows': 0,
-            'libration_window_fraction': 0.0,
-            **diagnostics,
-        }
+    # Metrics
+    amplitude = np.max(sigma_unwrapped) - np.min(sigma_unwrapped)
+    displacement = sigma_unwrapped[-1] - sigma_unwrapped[0]
+    revolutions = displacement / (2 * np.pi)
 
-    # Step 2: Check for clear circulation (status 0) based on global metrics
-    is_clear_circulation = check_clear_circulation(
-        is_circulation=diagnostics['is_circulation'],
-        r_squared=diagnostics['r_squared'],
-        total_drift_cycles=diagnostics['total_drift_cycles'],
-        angle_uniformity=diagnostics['angle_uniformity'],
-        libration_fraction=diagnostics['libration_fraction'],
-        r_squared_definite_threshold=r_squared_definite_threshold,
-        chaotic_uniformity_threshold=chaotic_uniformity_threshold,
-    )
+    sigma_dot = _calc_sigma_dot(times, sigma_unwrapped)
+    frac_positive = np.mean(sigma_dot > 0)
+    sign_dominance = max(frac_positive, 1 - frac_positive)
 
-    if is_clear_circulation:
-        return {
-            'status': 0,
-            'classification_status': 0,
-            'n_libration_windows': 0,
-            'n_total_windows': 0,
-            'libration_window_fraction': 0.0,
-            **diagnostics,
-        }
+    # Threshold are proportional
+    rev_threshold_lib = 0.5 * duration_ratio
+    rev_threshold_circ = circulation_threshold_cycles * duration_ratio
 
-    # Step 3: Sliding window approach for transient detection
-    n_points = len(times)
-    window_size = max(min_window_points, int(n_points * sliding_window_width))
-    shift_size = max(1, int(n_points * sliding_window_shift))
+    # Resolvers
+    votes_libration = 0
+    votes_circulation = 0
 
-    # Track which points are covered by at least one libration window
-    libration_coverage = np.zeros(n_points, dtype=bool)
-    n_libration_windows = 0
-    n_total_windows = 0
+    # A1: amplitude < 2π -> only globally, not for windows
+    if not is_window and amplitude < 2 * np.pi:
+        votes_libration += 1
+
+    # A2: |rev| < threshold (proportional) -> LIBRATION
+    if abs(revolutions) < rev_threshold_lib:
+        votes_libration += 1
+
+    # A3: |rev| > threshold (for circulation) -> CIRCULATION
+    if abs(revolutions) > rev_threshold_circ:
+        votes_circulation += 1
+
+    # A4: sign_dominance > 0.95 -> CIRCULATION
+    if sign_dominance > sign_dominance_threshold:
+        votes_circulation += 1
+
+    # C1: Lomb-Scargle — only if |rev| is moderate (otherwise does not make sense)
+    if len(times) >= 50 and abs(revolutions) < rev_threshold_lib * 2:
+        period, fap, snr = _calc_periodogram(times, sigma_wrapped)
+        if fap is not None and fap < ls_fap_threshold and snr is not None and snr > ls_snr_threshold:
+            votes_libration += 1
+
+    info = {
+        't_start': times[0],
+        't_end': times[-1],
+        'amplitude': amplitude,
+        'revolutions': revolutions,
+        'sign_dominance': sign_dominance,
+        'votes_libration': votes_libration,
+        'votes_circulation': votes_circulation,
+    }
+
+    # Resolving
+    if votes_libration >= 2 and votes_circulation == 0:
+        return 'LIBRATION', info
+    if votes_circulation >= 1:
+        return 'CIRCULATION', info
+    if votes_libration >= 1 and votes_circulation == 0:
+        return 'LIBRATION', info
+
+    return 'UNCERTAIN', info
+
+
+def _analyze_windows(
+    times: np.ndarray,
+    sigma_wrapped: np.ndarray,
+    sigma_unwrapped: np.ndarray,
+    window_fraction: float,
+    circulation_threshold_cycles: float,
+    sign_dominance_threshold: float,
+    ls_fap_threshold: float,
+    ls_snr_threshold: float,
+) -> List[Dict[str, Any]]:
+    """Analyzing time series by sliding window's method."""
+
+    N = len(times)
+    total_duration = times[-1] - times[0]
+    window_size = int(N * window_fraction)
+
+    if window_size >= N:
+        return []
+
+    step = window_size // 2  # 50% overlap
+    results = []
 
     start = 0
-    while start + window_size <= n_points:
+    while start + window_size <= N:
         end = start + window_size
 
-        window_times = times[start:end]
-        window_angles = angles[start:end]
-
-        n_total_windows += 1
-
-        has_libration, _ = check_libration(
-            window_times,
-            window_angles,
-            circulation_threshold_cycles=circulation_threshold_cycles,
-            max_drift_cycles=pure_libration_max_cycles,
-            window_fraction=window_fraction,
-            min_window_points=min_window_points,
-            max_libration_drift=max_libration_drift,
+        verdict, info = _classify_segment(
+            times[start:end],
+            sigma_wrapped[start:end],
+            sigma_unwrapped[start:end],
+            total_duration,
+            circulation_threshold_cycles,
+            sign_dominance_threshold,
+            ls_fap_threshold * 5,  # softer for windows
+            ls_snr_threshold / 2,  # softer for windows
             is_window=True,
         )
 
-        if has_libration:
-            libration_coverage[start:end] = True
-            n_libration_windows += 1
+        info['verdict'] = verdict
+        results.append(info)
+        start += step
 
-        start += shift_size
+    return results
 
-    # Calculate total libration time fraction (non-overlapping)
-    total_libration_time_frac = np.sum(libration_coverage) / n_points
 
-    # Find contiguous libration periods (merged from overlapping windows)
-    libration_periods = []
-    in_libration = False
-    period_start_idx = 0
-    for i in range(n_points):
-        if libration_coverage[i] and not in_libration:
-            period_start_idx = i
-            in_libration = True
-        elif not libration_coverage[i] and in_libration:
-            libration_periods.append(
-                {
-                    'start_idx': period_start_idx,
-                    'end_idx': i,
-                    'start_time': times[period_start_idx],
-                    'end_time': times[i - 1],
-                    'start_frac': period_start_idx / n_points,
-                    'end_frac': i / n_points,
-                    'duration_frac': (i - period_start_idx) / n_points,
-                }
-            )
-            in_libration = False
-    if in_libration:
-        libration_periods.append(
-            {
-                'start_idx': period_start_idx,
-                'end_idx': n_points,
-                'start_time': times[period_start_idx],
-                'end_time': times[-1],
-                'start_frac': period_start_idx / n_points,
-                'end_frac': 1.0,
-                'duration_frac': (n_points - period_start_idx) / n_points,
-            }
-        )
+def _is_stickiness(window_results: List[Dict], stickiness_ratio_threshold: float = 0.2) -> bool:
+    """
+    Checks stickiness by the contrast |rev| between windows.
 
-    # Step 4: Final classification
-    diagnostics['n_libration_windows'] = n_libration_windows
-    diagnostics['n_total_windows'] = n_total_windows
-    diagnostics['libration_window_fraction'] = n_libration_windows / n_total_windows if n_total_windows > 0 else 0.0
-    diagnostics['total_libration_time_frac'] = total_libration_time_frac
-    diagnostics['libration_periods'] = libration_periods
+    Stickiness = there are windows with very small |rev| (sticking)
+        and windows with very large |rev| (breakout).
 
-    # Require >= 20% of time in libration for transient status
-    min_libration_time_frac = 0.20
-    if total_libration_time_frac >= min_libration_time_frac:
-        classification_status = 1  # Transient resonance
-    else:
-        classification_status = 0  # Non-resonant
+    Parameters
+    ----------
+    window_results : list
+        Window analysis results
+    stickiness_ratio_threshold : float
+        Threshold of min/max ratio to determine stickiness
 
-    return {
-        'status': classification_status,
-        'classification_status': classification_status,
-        **diagnostics,
-    }
+    Returns
+    -------
+    bool
+        True if stickiness
+    """
+    if len(window_results) < 3:
+        return False
+
+    revs = [abs(w['revolutions']) for w in window_results]
+    min_rev = min(revs)
+    max_rev = max(revs)
+
+    if max_rev == 0:
+        return False
+
+    ratio = min_rev / max_rev
+    return ratio < stickiness_ratio_threshold
+
+
+def _determine_subtype(status: int, phi_deg: float, revolutions: float) -> str:
+    """Find subtype (apocentric / pericentric for libration; slow/fast for circulation)"""
+    if status in [ResonanceStatus.LIBRATION, ResonanceStatus.LIBRATION_UNCERTAIN]:
+        return 'apocentric' if (phi_deg < 90 or phi_deg > 270) else 'pericentric'
+    elif status == ResonanceStatus.CIRCULATION:
+        return 'fast' if abs(revolutions) > 10 else 'slow'
+    return ''
 
 
 def classify_resonance(
-    body: Body,
-    times: np.ndarray,
-    resonance: Resonance,
+    body,
+    resonance,
     circulation_threshold_cycles: float = 2.0,
-    r_squared_definite_threshold: float = 0.95,
+    sign_dominance_threshold: float = 0.95,
+    ls_fap_threshold: float = 0.01,
+    ls_snr_threshold: float = 5.0,
+    regularity_cv_threshold: float = 0.5,
+    stickiness_ratio_threshold: float = 0.2,
     window_fraction: float = 0.1,
-    min_window_points: int = 100,
-    max_libration_drift: float = 2.0 * np.pi,
-    overlap_delta: float = 0,
-    chaotic_uniformity_threshold: float = 0.7,
-    pure_libration_max_cycles: float = 1.2,
-) -> dict:
+    compute_periodogram: bool = True,
+) -> Dict[str, Any]:
     """
-    Classify resonance with detailed diagnostics.
+    Classifies the resonance status of a body.
 
     Parameters
     ----------
     body : Body
-        Body object with the resonant angle and periodogram data
-    times : np.ndarray
-        Array of time values (x-axis of the plot)
     resonance : Resonance
-        The resonance object (used to determine if it's an MMR)
     circulation_threshold_cycles : float
-        Number of drift cycles to trigger circulation detection (default: 2.0)
-    r_squared_definite_threshold : float
-        R² above which slow circulation is detected (default: 0.95)
+        Threhold of |rev| for circulation (in revolutions) (2.0 by default)
+    sign_dominance_threshold : float
+        Threhold sign_dominance for circulation (0.95 by default)
+    ls_fap_threshold : float
+        Threshold FAP for Lomb-Scargle (0.01 by default)
+    ls_snr_threshold : float
+        Threshold SNR for Lomb-Scargle (5.0 by default)
+    regularity_cv_threshold : float
+        Threhold CV for regularity of the derivative of the resonant angle (0.5 by default)
+    stickiness_ratio_threshold : float
+        Threshold min/max the ratio |rev| for stickiness (0.2 by default)
     window_fraction : float
-        Sliding window size as fraction of total data (default: 0.1)
-    min_window_points : int
-        Minimum points per analysis window (default: 100)
-    max_libration_drift : float
-        Maximum drift within a window for libration classification (default: 2π)
-    overlap_delta : float
-        Tolerance for periodogram peak overlap (default: 0)
-    chaotic_uniformity_threshold : float
-        Uniformity threshold for chaotic detection (default: 0.7)
-    pure_libration_max_cycles : float
-        Maximum drift cycles allowed for status 2 (default: 1.2)
+        Width of the sliding window as a fraction of the total time series (0.1 by default)
+    compute_periodogram : bool
+        Calculate or not Lomb-Scargle periodogram (True by default)
 
     Returns
     -------
-    dict with classification result and diagnostic information
+    dict with status, type, subtype, metrics, resolvers, window_analysis
     """
-    # Check for integration failure: eccentricity > 2.0 indicates chaotic ejection
-    if body.ecc is not None and np.any(body.ecc > 1.2):
-        return {
-            'status': -3,
-            'classification_status': -3,
-            'max_eccentricity': float(np.max(body.ecc)),
-            'r_squared': 0.0,
-            'libration_fraction': 0.0,
-            'is_circulation': True,
-            'drift_rate': 0.0,
-            'overlapping_peaks': [],
-        }
 
-    angles = body.angles[resonance.to_s()]
-    classification = classify_angle(
+    times = body.times / (2 * np.pi)
+    sigma_wrapped = body.angle(resonance)
+    sigma_unwrapped = body.angle_unwrapped(resonance)
+    total_duration = times[-1] - times[0]
+
+    metrics = _calc_metrics(times, sigma_wrapped, sigma_unwrapped, compute_periodogram)
+
+    # Classify full time series
+    global_verdict, global_info = _classify_segment(
         times,
-        angles,
+        sigma_wrapped,
+        sigma_unwrapped,
+        total_duration,
         circulation_threshold_cycles,
-        r_squared_definite_threshold,
-        window_fraction,
-        min_window_points,
-        max_libration_drift,
-        chaotic_uniformity_threshold,
-        pure_libration_max_cycles,
+        sign_dominance_threshold,
+        ls_fap_threshold,
+        ls_snr_threshold,
+        is_window=False,
     )
 
-    # For MMRs, resolve final status with periodogram overlap check
-    is_mmr = isinstance(resonance, MMR)
+    # Perform window analysis
+    window_results = _analyze_windows(
+        times,
+        sigma_wrapped,
+        sigma_unwrapped,
+        window_fraction,
+        circulation_threshold_cycles,
+        sign_dominance_threshold,
+        ls_fap_threshold,
+        ls_snr_threshold,
+    )
 
-    if is_mmr:
-        resolver_result = resolve_mmr_status(
-            classification_status=classification['status'],
-            angle_periodogram_peaks=body.periodogram_peaks.get(resonance.to_s()),
-            axis_periodogram_peaks=body.axis_periodogram_peaks,
-            overlap_delta=overlap_delta,
-        )
-        final_status = resolver_result['status']
-        overlapping_peaks = resolver_result['overlapping_peaks']
-        n_angle_peaks = resolver_result['n_angle_peaks']
-        n_axis_peaks = resolver_result['n_axis_peaks']
-        has_overlap = resolver_result['has_overlap']
+    window_verdicts = [w['verdict'] for w in window_results]
+    has_libration_window = 'LIBRATION' in window_verdicts
+    has_circulation_window = 'CIRCULATION' in window_verdicts
+
+    # Checking stickiness by the contrast |rev|
+    is_stickiness = _is_stickiness(window_results, stickiness_ratio_threshold)
+
+    # Additional resolver: regularity of the derivative of the resonant angle
+    has_regular_oscillations = metrics['n_zero_crossings'] >= 4 and metrics['cv_intervals'] < regularity_cv_threshold
+
+    # Final status
+    # Chain: LIBRATION > TRANSIENT > STICKINESS > CIRCULATION > UNCERTAIN
+
+    # Simple case: if librates globally
+    if global_verdict == 'LIBRATION':
+        status = ResonanceStatus.LIBRATION
+        type_str = 'libration'
+
+    # If there is at least one window with libration (and not full but elif here)
+    elif has_libration_window and has_circulation_window:
+        status = ResonanceStatus.TRANSIENT
+        type_str = 'transient'
+
+    # Stickiness case if there is a big contrast between windows
+    elif is_stickiness:
+        status = ResonanceStatus.STICKINESS
+        type_str = 'stickiness'
+
+    # Circulation case detected globally
+    elif global_verdict == 'CIRCULATION':
+        status = ResonanceStatus.CIRCULATION
+        type_str = 'circulation'
+
+    # Derivative crosses zero often and the intervals are regular (amplitude small or moderate)
+    elif has_regular_oscillations and metrics['amplitude'] < 3 * np.pi:
+        status = ResonanceStatus.LIBRATION
+        type_str = 'libration'
+
+    # Dunno else
     else:
-        # For non-MMRs (secular resonances), no periodogram check
-        final_status = classification['status']
-        overlapping_peaks = []
-        n_angle_peaks = 0
-        n_axis_peaks = 0
-        has_overlap = False
+        status = ResonanceStatus.UNCERTAIN
+        type_str = 'uncertain'
+
+    # Subtype
+    subtype = _determine_subtype(status, metrics['phi_deg'], metrics['revolutions'])
+
+    resolvers = {
+        'A1_amplitude': metrics['amplitude'] < 2 * np.pi,
+        'A2_revolutions_low': abs(metrics['revolutions']) < 0.5,
+        'A3_revolutions_high': abs(metrics['revolutions']) > circulation_threshold_cycles,
+        'A4_sign_dominance': metrics['sign_dominance'] > sign_dominance_threshold,
+        'B1_regularity': has_regular_oscillations,
+        'C1_periodogram': (
+            metrics['ls_fap'] is not None
+            and metrics['ls_fap'] < ls_fap_threshold
+            and metrics['ls_snr'] is not None
+            and metrics['ls_snr'] > ls_snr_threshold
+        ),
+        'global_verdict': global_verdict,
+        'has_libration_window': has_libration_window,
+        'has_circulation_window': has_circulation_window,
+        'is_stickiness': is_stickiness,
+    }
 
     return {
-        **classification,
-        'status': final_status,
-        'overlapping_peaks': overlapping_peaks,
-        'n_angle_peaks': n_angle_peaks,
-        'n_axis_peaks': n_axis_peaks,
-        'has_overlap': has_overlap,
+        'status': int(status),
+        'type': type_str,
+        'subtype': subtype,
+        'metrics': metrics,
+        'resolvers': resolvers,
+        'window_analysis': window_results,
     }
