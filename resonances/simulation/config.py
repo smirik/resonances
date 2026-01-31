@@ -88,22 +88,27 @@ class SimulationConfig:
         """
         Verify if the given path exists and modify it to avoid overwriting.
 
-        Skips verification if _skip_path_verification is True (used by batch workers).
-        Only renames if directory exists AND is not empty.
+        Returns original path if:
+        - _skip_path_verification is True (batch workers)
+        - State file exists (resuming simulation)
+        - Directory doesn't exist or is empty
+
+        Returns timestamped path if directory exists and is not empty.
         """
-        # Skip verification for batch workers
         if self._skip_path_verification:
             return path
 
-        # For regular simulations, check if path exists and has content
-        if os.path.exists(path) and os.path.isdir(path):
-            # Check if directory is not empty
-            if os.listdir(path):
-                # Directory exists and has files - create new timestamped path
-                now = datetime.datetime.now()
-                new_path = f"{path}_{now.strftime('%Y-%m-%d_%H-%M-%S')}"
-                logger.warning(f"Path {path} already exists and is not empty. Using new path: {new_path}")
-                return new_path
+        state_file = os.path.join(path, "simulation_state.json")
+        if os.path.exists(state_file):
+            return path
+
+        is_non_empty_dir = os.path.isdir(path) and os.listdir(path)
+        if is_non_empty_dir:
+            now = datetime.datetime.now()
+            new_path = f"{path}_{now.strftime('%Y-%m-%d_%H-%M-%S')}"
+            logger.warning(f"Path {path} already exists and is not empty. Using new path: {new_path}")
+            return new_path
+
         return path
 
     def _setup_libration_params(self, kwargs):
