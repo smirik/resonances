@@ -1,3 +1,4 @@
+from dataclasses import asdict
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -138,12 +139,15 @@ class DataManager:
         if self.config.plot_subfolder_strategy == 'status':
             status = body.statuses.get(resonance.to_s(), 0)
             status_folders = {
+                3: 'separatrix',
+                3: 'stickiness',
                 2: 'resonant',
                 1: 'transient',
                 0: 'non-resonant',
                 -1: 'controversial-transient',
                 -2: 'controversial-libration',
-                -3: 'chaotic',
+                -4: 'uncertain',
+                -99: 'chaotic',
             }
             subfolder = status_folders.get(status, 'non-resonant')
             plot_path = f'{base_path}/{subfolder}'
@@ -164,127 +168,90 @@ class DataManager:
         """Save simulation summary."""
         self.ensure_save_path_exists()
 
-        df = self.get_simulation_summary(bodies)
+        df, df_segments = self.get_simulation_summary(bodies)
         summary_filename = f'{self.config.save_path}/summary.csv'
+        segments_filename = f'{self.config.save_path}/segments.csv'
 
         summary_file = Path(summary_filename)
+        segments_file = Path(segments_filename)
         if summary_file.exists():
             df.to_csv(summary_filename, mode='a', header=False, index=False)
         else:
             df.to_csv(summary_filename, mode='a', header=True, index=False)
 
-        return df
+        if segments_file.exists():
+            df_segments.to_csv(segments_filename, mode='a', header=False, index=False)
+        else:
+            df_segments.to_csv(segments_filename, mode='a', header=True, index=False)
+
+        return df, df_segments
 
     def get_simulation_summary(self, bodies):
         """Generate simulation summary dataframe."""
-        data = []
-
+        rows = []
+        segments = []
         for body in bodies:
             for resonance in body.resonances():
                 try:
-                    res_type = 'MMR'
-                    c1_value = None
-                    c2_value = None
-                    c_value = None
-
+                    # Resonance type
                     if isinstance(resonance, SecularResonance):
                         res_type = 'Secular'
                     elif isinstance(resonance, LidovKozaiResonance):
                         res_type = 'Lidov-Kozai'
-                        c1_value, c2_value, c_value = LidovKozaiParameters.evaluate(
+                    else:
+                        res_type = 'MMR'
+
+                    # Lidov-Kozai params
+                    if isinstance(resonance, LidovKozaiResonance):
+                        c1, c2, c = LidovKozaiParameters.evaluate(
                             body.initial_data['e'],
                             body.initial_data['inc'],
                             body.initial_data['omega'],
                         )
+                    else:
+                        c1, c2, c = None, None, None
 
-                    libr = body.librations[resonance.to_s()]
-
-                    data.append(
-                        [
-                            body.name,
-                            resonance.to_s(),
-                            res_type,
-                            body.statuses.get(resonance.to_s(), 0),
-                            libr['subtype'],
-                            libr['metrics']['phi_deg'],
-                            libr['metrics']['phi_rad'],
-                            libr['metrics']['amplitude'],
-                            libr['metrics']['revolutions'],
-                            libr['metrics']['displacement'],
-                            libr['metrics']['sign_dominance'],
-                            libr['metrics']['frac_positive'],
-                            libr['metrics']['mean_sigma_dot'],
-                            libr['metrics']['std_sigma_dot'],
-                            libr['metrics']['n_zero_crossings'],
-                            libr['metrics']['cv_intervals'],
-                            libr['metrics']['ls_period'],
-                            libr['metrics']['ls_fap'],
-                            libr['metrics']['ls_snr'],
-                            libr['resolvers']['A1_amplitude'],
-                            libr['resolvers']['A2_revolutions_low'],
-                            libr['resolvers']['A3_revolutions_high'],
-                            libr['resolvers']['A4_sign_dominance'],
-                            libr['resolvers']['C1_periodogram'],
-                            libr['resolvers']['global_verdict'],
-                            libr['resolvers']['has_libration_window'],
-                            libr['resolvers']['has_circulation_window'],
-                            libr['resolvers']['is_stickiness'],
-                            body.initial_data['a'],
-                            body.initial_data['e'],
-                            body.initial_data['inc'],
-                            body.initial_data['Omega'],
-                            body.initial_data['omega'],
-                            body.initial_data['M'],
-                            c1_value,
-                            c2_value,
-                            c_value,
-                        ]
+                    rows.append(
+                        {
+                            'name': body.name,
+                            'resonance': resonance.to_s(),
+                            'type': res_type,
+                            'status': body.statuses.get(resonance.to_s(), 0),
+                            **body.librations[resonance.to_s()].to_flat_dict(),
+                            'a': body.initial_data['a'],
+                            'e': body.initial_data['e'],
+                            'inc': body.initial_data['inc'],
+                            'Omega': body.initial_data['Omega'],
+                            'omega': body.initial_data['omega'],
+                            'M': body.initial_data['M'],
+                            'c1': c1,
+                            'c2': c2,
+                            'c': c,
+                        }
                     )
+
+                    if body.libration_segments.get(resonance.to_s()) is not None:
+                        metrics = {}
+                        for key, segment in body.libration_segments[resonance.to_s()].items():
+                            value = asdict(segment)
+                            metrics[f"{key}_revolutions_true"] = value["revolutions_true"]
+                            metrics[f"{key}_trend_to_oscillation"] = value["trend_to_oscillation"]
+                            metrics[f"{key}_amplitude"] = value["amplitude"]
+                            metrics[f"{key}_sign_dominance"] = value["sign_dominance"]
+                            metrics[f"{key}_mean_sigma_dot"] = value["mean_sigma_dot"]
+
+                        segments.append(
+                            {
+                                'body': body.name,
+                                'resonance': resonance.to_s(),
+                                **metrics,
+                            }
+                        )
+
                 except Exception as e:
                     logger.error(f"Error getting resonance summary for {body.name}: {e}")
 
-        return pd.DataFrame(
-            data,
-            columns=[
-                'name',
-                'resonance',
-                'type',
-                'status',
-                'subtype',
-                'phi_deg',
-                'phi_rad',
-                'amplitude',
-                'revolutions',
-                'displacement',
-                'sign_dominance',
-                'frac_positive',
-                'mean_sigma_dot',
-                'std_sigma_dot',
-                'n_zero_crossings',
-                'cv_intervals',
-                'ls_period',
-                'ls_fap',
-                'ls_snr',
-                'A1_amplitude',
-                'A2_revolutions_low',
-                'A3_revolutions_high',
-                'A4_sign_dominance',
-                'C1_periodogram',
-                'global_verdict',
-                'has_libration_window',
-                'has_circulation_window',
-                'is_stickiness',
-                'a',
-                'e',
-                'inc',
-                'Omega',
-                'omega',
-                'M',
-                'c1',
-                'c2',
-                'c',
-            ],
-        )
+        return pd.DataFrame(rows), pd.DataFrame(segments)
 
     def save_configuration_details(self, bodies, simulation):
         """Save configuration details to file."""
