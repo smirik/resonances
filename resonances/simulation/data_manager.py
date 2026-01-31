@@ -17,6 +17,7 @@ class DataManager:
 
     def __init__(self, config: SimulationConfig):
         self.config = config
+        self.skip_simulation_json = False  # Set to True for batch workers
 
     def should_save_body(self, body: Body, resonance):
         """Check if body MMR data should be saved."""
@@ -62,7 +63,8 @@ class DataManager:
         if simulation:
             simulation.running_time["stop"] = logger.get_current_time()
 
-        self.save_configuration_details(bodies, simulation)
+        if not self.skip_simulation_json:
+            self.save_configuration_details(bodies, simulation)
 
     def save_body(self, body: Body, times):
         """Save all resonance data for a body."""

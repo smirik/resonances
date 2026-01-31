@@ -197,7 +197,12 @@ class Body:
         """
         Get resonance status
         """
-        return self.statuses[resonance.to_s()]
+        if resonance.to_s() in self.statuses:
+            return self.statuses[resonance.to_s()]
+
+        raise Exception(
+            f"The status for the resonance {resonance.to_s()} does not exist in the body {self.name}. Available resonance statuses: {self.statuses.keys()}"
+        )
 
     def in_pure_resonance(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]):
         """

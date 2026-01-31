@@ -209,8 +209,8 @@ def classify_resonance(  # noqa: C901
     if metrics.revolutions_true <= 1:
         result = ResonanceClassifyResult(
             status=ResonanceStatus.LIBRATION,
-            type='libration_by_revolutions',
-            subtype='test',
+            type='resonance',
+            subtype='libration_by_revolutions',
             metrics=metrics,
         )
         return {"result": result, "extra": {}}
@@ -222,8 +222,8 @@ def classify_resonance(  # noqa: C901
     ):
         result = ResonanceClassifyResult(
             status=ResonanceStatus.LIBRATION,
-            type='libration_very_high_amplitude',
-            subtype='test',
+            type='resonance',
+            subtype='libration_very_high_amplitude',
             metrics=metrics,
         )
         return {"result": result, "extra": {}}
@@ -231,8 +231,8 @@ def classify_resonance(  # noqa: C901
     if (abs(metrics.mean_sigma_dot) <= mean_derivative_threshold) and (metrics.revolutions_true <= revolutions_libration_soft):
         result = ResonanceClassifyResult(
             status=ResonanceStatus.LIBRATION,
-            type='libration_by_mean_derivative',
-            subtype='test',
+            type='resonance',
+            subtype='libration_by_mean_derivative',
             metrics=metrics,
         )
         return {"result": result, "extra": {}}
@@ -250,26 +250,16 @@ def classify_resonance(  # noqa: C901
         if len(uncertain_segments) > 0:
             result = ResonanceClassifyResult(
                 status=ResonanceStatus.UNCERTAIN,
-                type='uncertain_by_segments',
-                subtype='test',
+                type='uncertain',
+                subtype='uncertain_by_segments',
                 metrics=metrics,
             )
             return {"result": result, "extra": results}
 
         result = ResonanceClassifyResult(
             status=ResonanceStatus.NON_RESONANT,
-            type='no_libration_segments',
-            subtype='test',
-            metrics=metrics,
-        )
-        return {"result": result, "extra": results}
-
-    # If there is a strong trend with small or no oscillation, it is non-resonant
-    if metrics.trend_to_oscillation > tto_non_resonant_above:
-        result = ResonanceClassifyResult(
-            status=ResonanceStatus.NON_RESONANT,
-            type='trend_with_no_or_weak_oscillation',
-            subtype='test',
+            type='non_resonant',
+            subtype='no_libration_segments',
             metrics=metrics,
         )
         return {"result": result, "extra": results}
@@ -277,8 +267,8 @@ def classify_resonance(  # noqa: C901
     if metrics.trend_to_oscillation < tto_transient:
         result = ResonanceClassifyResult(
             status=ResonanceStatus.TRANSIENT,
-            type='transient_by_trend_to_oscillation',
-            subtype='test',
+            type='transient',
+            subtype='transient_by_trend_to_oscillation',
             metrics=metrics,
         )
         return {"result": result, "extra": results}
@@ -288,19 +278,43 @@ def classify_resonance(  # noqa: C901
     min_segment_tto = np.min(segment_ttos)
     n_transient_segments = np.sum((segment_ttos < tto_transient_segment) & (segment_revs < revolutions_transient_segment))
 
-    if (n_transient_segments >= transient_segments_min) and (min_segment_tto < tto_transient_segment_min):
+    # If there is a strong trend with small or no oscillation, it is non-resonant
+    if metrics.trend_to_oscillation > tto_non_resonant_above:
+        # backup for weird cases that have an interesting interval
+        if n_transient_segments >= transient_segments_min:
+            result = ResonanceClassifyResult(
+                status=ResonanceStatus.UNCERTAIN,
+                type='uncertain',
+                subtype='uncertain_high_tto_but_transient_segments',
+                metrics=metrics,
+            )
+            return {"result": result, "extra": results}
+
+        result = ResonanceClassifyResult(
+            status=ResonanceStatus.NON_RESONANT,
+            type='non_resonant',
+            subtype='trend_with_no_or_weak_oscillation',
+            metrics=metrics,
+        )
+        return {"result": result, "extra": results}
+
+    if (
+        (n_transient_segments >= transient_segments_min)
+        and (min_segment_tto < tto_transient_segment_min)
+        and (metrics.trend_to_oscillation < 4)
+    ):
         result = ResonanceClassifyResult(
             status=ResonanceStatus.TRANSIENT,
-            type='transient_by_segments',
-            subtype='test',
+            type='transient',
+            subtype='transient_by_segments',
             metrics=metrics,
         )
         return {"result": result, "extra": results}
 
     result = ResonanceClassifyResult(
         status=ResonanceStatus.STICKINESS,
-        type='trend_with_libration',
-        subtype='test',
+        type='stickiness',
+        subtype='trend_with_libration',
         metrics=metrics,
     )
     return {"result": result, "extra": results}

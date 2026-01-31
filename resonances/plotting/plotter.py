@@ -531,7 +531,7 @@ class Plotter:
 
         result = column_name
         for placeholder, value in replacements.items():
-            result = result.replace(placeholder, value)
+            result = result.replace(placeholder, str(value))
 
         return result
 

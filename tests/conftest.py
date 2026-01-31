@@ -3,6 +3,8 @@ from pathlib import Path
 import shutil
 import sys
 
+os.environ.setdefault('LOG_LEVEL', 'warning')
+
 import pytest
 
 import resonances

@@ -94,6 +94,8 @@ class Simulation:
     def _run_batched(self, progress=False):
         """Run batched execution with multi-core support."""
         self.batch_manager.execute_batches(self, self.bodies, self.times, progress)
+        # Save consolidated simulation.json with all bodies after batches complete
+        self.data_manager.save_configuration_details(self.bodies, self)
 
     def prepare_angles(self):
         for body in self.bodies:

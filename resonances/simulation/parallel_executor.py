@@ -34,6 +34,7 @@ def _run_batch_worker(batch_index: int, bodies_data: List[Dict], simulation_kwar
         # Skip path verification since batch workers should use the same paths
         batch_kwargs = {**simulation_kwargs, '_skip_path_verification': True}
         sim = Simulation(**batch_kwargs)
+        sim.data_manager.skip_simulation_json = True  # Don't save simulation.json per batch
         sim.create_solar_system()
 
         # Add bodies to simulation

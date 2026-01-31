@@ -4,16 +4,19 @@ install:
 test: install
 	poetry run flake8 --count
 	poetry run black . --check
-	poetry run pytest -v tests
+	poetry run pytest -v -m "not benchmark" tests
 
 test-only: install
-	poetry run pytest -v tests
+	poetry run pytest -v -m "not benchmark" tests
 
 test-fast: install
-	poetry run pytest -v -m "not slow" tests
+	poetry run pytest -v -m "not slow and not benchmark" tests
 
 test-slow: install
 	poetry run pytest -v -m "slow" tests
+
+test-benchmark: install
+	poetry run pytest -v -m "benchmark" tests
 
 run-docs:
 	poetry run mkdocs serve

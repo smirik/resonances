@@ -63,7 +63,10 @@ omit = [".*", "tests/*", "*/site-packages/*"]
 [tool.pytest.ini_options]
 testpaths = ["tests/resonances"]
 addopts = ["--import-mode=importlib"]
-markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "benchmark: marks tests as benchmark/stress tests (excluded by default)",
+]
 filterwarnings = [
     "ignore::DeprecationWarning:rebound",
     "ignore::RuntimeWarning:rebound.horizons",
