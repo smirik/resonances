@@ -1,5 +1,6 @@
 import numpy as np
 
+from resonances.resonance.classify import ResonanceClassifyResult
 from resonances.resonance.resonance import Resonance
 from resonances.mmr.mmr import MMR
 from resonances.secular.proper_angle import build_proper_angle_series
@@ -47,10 +48,8 @@ class Body:
         self.lidov_kozai_resonances: List[LidovKozaiResonance] = []
 
         # Libration and filtering data (shared between MMR and secular)
-        self.librations = {}
-        self.libration_metrics = {}
-        self.libration_status = {}
-        self.libration_pure = {}
+        self.librations: dict[str, List[ResonanceClassifyResult]] = {}
+        self.libration_segments = {}
 
         self.periodogram_frequency = {}
         self.periodogram_power = {}
