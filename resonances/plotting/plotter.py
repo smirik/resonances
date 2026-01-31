@@ -251,10 +251,14 @@ class Plotter:
         angle_data = body.angle(resonance)
         if angle_data is not None:
             self._data[f'{resonance_key}_angle'] = angle_data
+            self._data[f'{resonance_key}_angle_unwrapped'] = body.angles_filtered_unwrapped[resonance_key]
 
         # Add filtered angles if available
         if resonance_key in body.angles_filtered:
             self._data[f'{resonance_key}_angle_filtered'] = body.angles_filtered[resonance_key]
+
+        if resonance_key in body.angles_filtered_unwrapped:
+            self._data[f'{resonance_key}_angle_filtered_unwrapped'] = body.angles_filtered_unwrapped[resonance_key]
 
         # Add proper angles if available
         if isinstance(resonance, SecularResonance):

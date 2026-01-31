@@ -71,32 +71,10 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
     PlotConfig
         Full N-panel plot configuration
     """
-    config = PlotConfig(figsize=(10, 12), plot_title='{body_name}, resonance = {resonance}, status = {status}')
+    config = create_angle_preset(resonance_key)
+    config.figsize = (10, 12)
 
-    # Panel 1: Resonant angle
-    config.add_panel(
-        Panel(
-            key='angle',
-            data_column=f'{resonance_key}_angle',
-            x_column='times',
-            style=StyleConfig(ylabel=r"$\sigma$ (rad)", title="Resonant angle", color='black', marker=',', linestyle=''),
-            required=True,
-        )
-    )
-
-    # Panel 2: Filtered resonant angle
-    config.add_panel(
-        Panel(
-            key='angle_filtered',
-            data_column=f'{resonance_key}_angle_filtered',
-            fallback_column=f'{resonance_key}_angle',  # Fall back to raw if filtered missing
-            x_column='times',
-            style=StyleConfig(ylabel=r"$\sigma_f$ (rad)", title="Filtered resonant angle", color='black', marker=',', linestyle=''),
-            required=False,  # Optional - uses raw angle if missing
-        )
-    )
-
-    # Panel 3: Semi-major axis
+    # Panel 4: Semi-major axis
     config.add_panel(
         Panel(
             key='axis',
@@ -108,7 +86,7 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
         )
     )
 
-    # Panel 4: Eccentricity
+    # Panel 5: Eccentricity
     config.add_panel(
         Panel(
             key='eccentricity',
@@ -119,7 +97,7 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
         )
     )
 
-    # Panel 5: Inclination
+    # Panel 6: Inclination
     config.add_panel(
         Panel(
             key='inclination',
@@ -130,7 +108,7 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
         )
     )
 
-    # Panel 6: Periodogram of resonant angle
+    # Panel 7: Periodogram of resonant angle
     config.add_panel(
         Panel(
             key='periodogram_angle',
@@ -151,7 +129,7 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
         )
     )
 
-    # Panel 7: Periodogram of semi-major axis
+    # Panel 8: Periodogram of semi-major axis
     config.add_panel(
         Panel(
             key='periodogram_axis',
@@ -172,7 +150,7 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
         )
     )
 
-    # Panel 8: Periodogram of eccentricity
+    # Panel 9: Periodogram of eccentricity
     config.add_panel(
         Panel(
             key='periodogram_ecc',
@@ -217,18 +195,8 @@ def create_lk_preset(resonance_key: str) -> PlotConfig:
     PlotConfig
         Full LK plot configuration
     """
-    config = PlotConfig(figsize=(10, 12), plot_title='{body_name}, resonance = {resonance}, status = {status}')
-
-    # Panel 1: Resonant angle
-    config.add_panel(
-        Panel(
-            key='angle',
-            data_column=f'{resonance_key}_angle',
-            x_column='times',
-            style=StyleConfig(ylabel=r"$\sigma$ (rad)", title="Resonant angle", color='black', marker=',', linestyle=''),
-            required=True,
-        )
-    )
+    config = create_angle_preset(resonance_key)
+    config.figsize = (10, 12)
 
     # Panel 3: Semi-major axis
     config.add_panel(
@@ -285,6 +253,33 @@ def create_lk_preset(resonance_key: str) -> PlotConfig:
         )
     )
 
+    return config
+
+
+def create_angle_preset(resonance_key: str) -> PlotConfig:
+    # Panel 1: Resonant angle
+    config = PlotConfig(figsize=(10, 4), plot_title='{body_name}, resonance = {resonance}, status = {status}')
+    config.add_panel(
+        Panel(
+            key='angle',
+            data_column=f'{resonance_key}_angle',
+            x_column='times',
+            style=StyleConfig(ylabel=r"$\sigma$ (rad)", title="Resonant angle", color='black', marker=',', linestyle=''),
+            required=True,
+        )
+    )
+    # Panel 2: Unwrapped resonant angle
+    config.add_panel(
+        Panel(
+            key='angle_unwrapped',
+            data_column=f'{resonance_key}_angle_filtered_unwrapped',
+            x_column='times',
+            style=StyleConfig(
+                ylabel=r"$\sigma_f$ (rad)", title="Unwrapped resonant angle (filtered)", color='black', marker=',', linestyle=''
+            ),
+            required=False,  # Optional - uses raw angle if missing
+        )
+    )
     return config
 
 
@@ -331,18 +326,10 @@ def create_secular_preset(resonance_key: str) -> PlotConfig:
             required=True,
         )
     )
-    # Panel 2: Resonant angle
-    config.add_panel(
-        Panel(
-            key='angle',
-            data_column='{resonance_key}_angle_osculating',
-            x_column='times',
-            style=StyleConfig(
-                ylabel=r"$\sigma$ (rad)", title="Resonant angle", color='black', marker=',', linestyle='', ylim=(0, 2 * np.pi)
-            ),
-            required=True,
-        )
-    )
+
+    angle_config = create_angle_preset(resonance_key)
+    config.panels.extend(angle_config.panels)
+
     # Panel 3: Semi-major axis
     config.add_panel(
         Panel(
@@ -396,6 +383,7 @@ def get_preset(preset_name: str, resonance_key: str) -> PlotConfig:
         'lk': create_lk_preset,
         'lkr': create_lk_preset,
         'secular': create_secular_preset,
+        'angle': create_angle_preset,
     }
 
     if preset_name not in presets:
