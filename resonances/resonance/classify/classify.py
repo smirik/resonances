@@ -264,7 +264,7 @@ def classify_resonance(  # noqa: C901
         )
         return {"result": result, "extra": results}
 
-    if metrics.trend_to_oscillation < tto_transient:
+    if (metrics.trend_to_oscillation < tto_transient) and (metrics.sign_dominance < 0.7):
         result = ResonanceClassifyResult(
             status=ResonanceStatus.TRANSIENT,
             type='transient',

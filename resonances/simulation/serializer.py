@@ -56,8 +56,12 @@ class SimulationSerializer:
         cls._restore_planets(sim, json_path.parent, data.get("simulation", {}).get("data_files", {}))
 
         logger.info(f"Identifying librations")
-        if recompute_librations and sim.bodies:
-            sim.identify_librations()
+        try:
+            if recompute_librations and sim.bodies:
+                sim.identify_librations()
+        except Exception as e:
+            logger.error(f"Cannot restore librations: {e}")
+            raise e
 
         return sim
 
