@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 
 
@@ -31,17 +32,17 @@ def merge_intervals(intervals: np.ndarray, *, join_touching: bool = True) -> np.
     return np.column_stack([merged_s, merged_e])
 
 
-def is_unphysical_orbit(body) -> bool:
+def is_unphysical_orbit(body) -> Tuple[bool, str]:
     """Minimum check for unphysical orbit."""
 
     # hyperbolic orbit (e > 1 = unbound)
-    if np.any(body.eccentricity > 1.0):
-        return True
+    if np.any(body.ecc > 1.3):
+        return True, "hyperbolic"
 
     # negative semimajor axis = negative energy,
     # but it's derived from e > 1, so it's redundant,
     # but it's safer to check
-    if np.any(body.semimajor_axis < 0):
-        return True
+    if np.any(body.axis < 0):
+        return True, "negative_sma"
 
     return False, "ok"

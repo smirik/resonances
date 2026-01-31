@@ -1,3 +1,4 @@
+from dataclasses import asdict
 import numpy as np
 from typing import List, Union
 
@@ -15,6 +16,7 @@ from resonances.secular.secular_resonance import SecularResonance
 from resonances.resonance.resonance import Resonance
 from resonances.logger import logger
 from resonances.resonance.filtering import filter_angle, wrap
+import pandas as pd
 
 
 class Simulation:
@@ -156,11 +158,42 @@ class Simulation:
 
     def identify_librations(self):
         """Identify librations for all bodies."""
+        data = []
         for body in self.bodies:
             for resonance in body.resonances():
-                libration = classify_resonance(
+                classification = classify_resonance(
                     body,
                     resonance=resonance,
                 )
+                libration = classification["result"]
+                if ("extra" in classification) and ("segments_data" in classification["extra"]):
+                    body.libration_segments[resonance.to_s()] = classification["extra"]["segments_data"]
                 body.librations[resonance.to_s()] = libration
-                body.statuses[resonance.to_s()] = libration['status']
+                body.statuses[resonance.to_s()] = libration.status.value
+
+                if libration.status.value not in [2, -2, -99]:
+                    tmp = {
+                        "body": body.name,
+                        "resonance": resonance.to_s(),
+                    }
+                    extra = classification["extra"]
+                    tmp.update(
+                        {
+                            "ratio": extra["ratio"],
+                            "total_libration_length": extra["total_libration_length"],
+                        }
+                    )
+                    for key, value in extra["segments_data"].items():
+                        value = asdict(value)
+                        # tmp[f"{key}_phi_rad"] = value["phi_rad"]
+                        # tmp[f"{key}_phi_deg"] = value["phi_deg"]
+                        # tmp[f"{key}_R"] = value["R"]
+                        tmp[f"{key}_revolutions_true"] = value["revolutions_true"]
+                        tmp[f"{key}_trend_to_oscillation"] = value["trend_to_oscillation"]
+                        tmp[f"{key}_amplitude"] = value["amplitude"]
+                        tmp[f"{key}_sign_dominance"] = value["sign_dominance"]
+                        tmp[f"{key}_mean_sigma_dot"] = value["mean_sigma_dot"]
+                    data.append(tmp)
+        df = pd.DataFrame(data)
+        self.data_manager.ensure_save_path_exists()
+        df.to_csv(f'{self.config.save_path}/segments.csv')

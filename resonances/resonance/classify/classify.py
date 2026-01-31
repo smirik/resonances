@@ -3,8 +3,8 @@ from typing import Tuple, Union
 from scipy.stats import linregress
 
 from resonances.logger import logger
-from resonances.resonance.classify import ResonanceClassifyResult, ResonanceStatus, is_unphysical_orbit, merge_intervals
-from .classify import SegmentMetrics
+from resonances.resonance.classify.models import ResonanceClassifyResult, ResonanceStatus, SegmentMetrics
+from resonances.resonance.classify.util import is_unphysical_orbit, merge_intervals
 
 
 def _calc_sigma_derivative(times: np.ndarray, sigma: np.ndarray) -> np.ndarray:
@@ -158,14 +158,17 @@ def classify_resonance(
     window_step_percentage: float = 0.05,
 ) -> dict[str, Union[ResonanceClassifyResult, dict]]:
 
-    if is_unphysical_orbit(body):
-        logger.warning(f"Unphysical orbit for {body.name} at {resonance.to_s()}")
-        return ResonanceClassifyResult(
-            status=ResonanceStatus.CHAOTIC,
-            type='chaotic',
-            metrics=SegmentMetrics(),
-            extra={},
-        )
+    is_unstable, reason = is_unphysical_orbit(body)
+    if is_unstable:
+        logger.warning(f"Unphysical orbit for {body.name} at {resonance.to_s()}: {reason}")
+        return {
+            "result": ResonanceClassifyResult(
+                status=ResonanceStatus.CHAOTIC,
+                type='chaotic',
+                metrics=SegmentMetrics(),
+            ),
+            "extra": {},
+        }
 
     times = body.times / (2 * np.pi)
     sigma_wrapped = body.angles_filtered[resonance.to_s()]
