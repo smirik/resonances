@@ -16,3 +16,4 @@ exclude =
     experiments
 per-file-ignores =
     resonances/matrix/three_body_matrix.py:C901
+    resonances/simulation/parallel_executor.py:C901

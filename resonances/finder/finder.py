@@ -71,7 +71,7 @@ def check(
     return sim
 
 
-def find(
+def find(  # noqa: C901
     asteroids: Union[int, str, List[Union[int, str]]],
     planets=None,
     name: str = None,
