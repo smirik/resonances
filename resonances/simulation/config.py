@@ -23,6 +23,7 @@ class SimulationConfig:
         self._setup_libration_params(kwargs)
         self._setup_filtering_params(kwargs)
         self._setup_batch_params(kwargs)
+        self._setup_classify_params(kwargs)
 
         self.secular_angle_mode = kwargs.get('secular_angle_mode', c.get('SECULAR_ANGLE_MODE'))
         if self.secular_angle_mode not in ['osculating', 'proper']:
@@ -187,3 +188,59 @@ class SimulationConfig:
         self.n_cores = kwargs.get('n_cores', int(c.get('BATCH_N_CORES', 1)))
         self.stop_on_failure = kwargs.get('stop_on_failure', True)
         self.resume_enabled = kwargs.get('resume_enabled', True)
+
+    def _setup_classify_params(self, kwargs):
+        """Setup classification parameters."""
+        # Window settings for segment analysis
+        self.classify_window_length = kwargs.get('classify_window_length', float(c.get('CLASSIFY_WINDOW_LENGTH', 0.1)))
+        self.classify_window_step = kwargs.get('classify_window_step', float(c.get('CLASSIFY_WINDOW_STEP', 0.05)))
+
+        # Mean derivative threshold (rad/yr)
+        self.classify_mean_derivative_threshold = kwargs.get(
+            'classify_mean_derivative_threshold', float(c.get('CLASSIFY_MEAN_DERIVATIVE_THRESHOLD', 0.00005))
+        )
+
+        # Sign dominance thresholds
+        self.classify_sign_dominance_libration = kwargs.get(
+            'classify_sign_dominance_libration', float(c.get('CLASSIFY_SIGN_DOMINANCE_LIBRATION', 0.6))
+        )
+        self.classify_sign_dominance_segment = kwargs.get(
+            'classify_sign_dominance_segment', float(c.get('CLASSIFY_SIGN_DOMINANCE_SEGMENT', 0.7))
+        )
+
+        # Revolutions thresholds
+        self.classify_revolutions_libration_soft = kwargs.get(
+            'classify_revolutions_libration_soft', float(c.get('CLASSIFY_REVOLUTIONS_LIBRATION_SOFT', 1.5))
+        )
+        self.classify_revolutions_segment_hard = kwargs.get(
+            'classify_revolutions_segment_hard', float(c.get('CLASSIFY_REVOLUTIONS_SEGMENT_HARD', 2.0))
+        )
+        self.classify_revolutions_uncertain_segment = kwargs.get(
+            'classify_revolutions_uncertain_segment', float(c.get('CLASSIFY_REVOLUTIONS_UNCERTAIN_SEGMENT', 1.0))
+        )
+        self.classify_revolutions_transient_segment = kwargs.get(
+            'classify_revolutions_transient_segment', float(c.get('CLASSIFY_REVOLUTIONS_TRANSIENT_SEGMENT', 1.0))
+        )
+
+        # Trend-to-oscillation thresholds
+        self.classify_tto_high_amp_libration = kwargs.get(
+            'classify_tto_high_amp_libration', float(c.get('CLASSIFY_TTO_HIGH_AMP_LIBRATION', 0.01))
+        )
+        self.classify_tto_transient = kwargs.get('classify_tto_transient', float(c.get('CLASSIFY_TTO_TRANSIENT', 1.5)))
+        self.classify_tto_uncertain_segment = kwargs.get(
+            'classify_tto_uncertain_segment', float(c.get('CLASSIFY_TTO_UNCERTAIN_SEGMENT', 2.0))
+        )
+        self.classify_tto_non_resonant_above = kwargs.get(
+            'classify_tto_non_resonant_above', float(c.get('CLASSIFY_TTO_NON_RESONANT_ABOVE', 5.0))
+        )
+        self.classify_tto_transient_segment = kwargs.get(
+            'classify_tto_transient_segment', float(c.get('CLASSIFY_TTO_TRANSIENT_SEGMENT', 0.4))
+        )
+        self.classify_tto_transient_segment_min = kwargs.get(
+            'classify_tto_transient_segment_min', float(c.get('CLASSIFY_TTO_TRANSIENT_SEGMENT_MIN', 0.15))
+        )
+
+        # Transient detection
+        self.classify_transient_segments_min = kwargs.get(
+            'classify_transient_segments_min', int(c.get('CLASSIFY_TRANSIENT_SEGMENTS_MIN', 1))
+        )

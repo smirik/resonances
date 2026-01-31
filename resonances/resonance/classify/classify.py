@@ -101,7 +101,14 @@ def _classify_segments(
     sigma_unwrapped: np.ndarray,
     window_length_percentage: float,
     window_step_percentage: float,
+    config=None,
 ):
+    revolutions_segment_hard = getattr(config, 'classify_revolutions_segment_hard', 2.0) if config else 2.0
+    tto_transient = getattr(config, 'classify_tto_transient', 1.5) if config else 1.5
+    mean_derivative_threshold = getattr(config, 'classify_mean_derivative_threshold', 0.00005) if config else 0.00005
+    revolutions_libration_soft = getattr(config, 'classify_revolutions_libration_soft', 1.5) if config else 1.5
+    sign_dominance_segment = getattr(config, 'classify_sign_dominance_segment', 0.7) if config else 0.7
+
     N = len(times)
     window_length = int(N * window_length_percentage)
     window_step = int(N * window_step_percentage)
@@ -119,9 +126,13 @@ def _classify_segments(
 
         segment_metrics = _calc_metrics(times[start:end], sigma_wrapped[start:end], sigma_unwrapped[start:end])
 
-        has_small_rev_and_trend = (segment_metrics.revolutions_true <= 2) and (segment_metrics.trend_to_oscillation < 1.5)
-        has_small_mean_sigma_dot_and_rev = (abs(segment_metrics.mean_sigma_dot) <= 0.00005) and (segment_metrics.revolutions_true <= 1.5)
-        has_reasonable_sign_dominance = abs(segment_metrics.sign_dominance) < 0.7
+        has_small_rev_and_trend = (segment_metrics.revolutions_true <= revolutions_segment_hard) and (
+            segment_metrics.trend_to_oscillation < tto_transient
+        )
+        has_small_mean_sigma_dot_and_rev = (abs(segment_metrics.mean_sigma_dot) <= mean_derivative_threshold) and (
+            segment_metrics.revolutions_true <= revolutions_libration_soft
+        )
+        has_reasonable_sign_dominance = abs(segment_metrics.sign_dominance) < sign_dominance_segment
 
         has_libration = has_reasonable_sign_dominance and (has_small_rev_and_trend or has_small_mean_sigma_dot_and_rev)
 
@@ -149,12 +160,32 @@ def _classify_segments(
     }
 
 
-def classify_resonance(
+def classify_resonance(  # noqa: C901
     body,
     resonance,
-    window_length_percentage: float = 0.1,
-    window_step_percentage: float = 0.05,
+    config=None,
+    window_length_percentage: float = None,
+    window_step_percentage: float = None,
 ) -> dict[str, Union[ResonanceClassifyResult, dict]]:
+    # Get window parameters from config or use defaults
+    if window_length_percentage is None:
+        window_length_percentage = getattr(config, 'classify_window_length', 0.1) if config else 0.1
+    if window_step_percentage is None:
+        window_step_percentage = getattr(config, 'classify_window_step', 0.05) if config else 0.05
+
+    # Get thresholds from config or use defaults
+    mean_derivative_threshold = getattr(config, 'classify_mean_derivative_threshold', 0.00005) if config else 0.00005
+    sign_dominance_libration = getattr(config, 'classify_sign_dominance_libration', 0.6) if config else 0.6
+    revolutions_libration_soft = getattr(config, 'classify_revolutions_libration_soft', 1.5) if config else 1.5
+    revolutions_uncertain_segment = getattr(config, 'classify_revolutions_uncertain_segment', 1.0) if config else 1.0
+    revolutions_transient_segment = getattr(config, 'classify_revolutions_transient_segment', 1.0) if config else 1.0
+    tto_high_amp_libration = getattr(config, 'classify_tto_high_amp_libration', 0.01) if config else 0.01
+    tto_transient = getattr(config, 'classify_tto_transient', 1.5) if config else 1.5
+    tto_uncertain_segment = getattr(config, 'classify_tto_uncertain_segment', 2.0) if config else 2.0
+    tto_non_resonant_above = getattr(config, 'classify_tto_non_resonant_above', 5.0) if config else 5.0
+    tto_transient_segment = getattr(config, 'classify_tto_transient_segment', 0.4) if config else 0.4
+    tto_transient_segment_min = getattr(config, 'classify_tto_transient_segment_min', 0.15) if config else 0.15
+    transient_segments_min = getattr(config, 'classify_transient_segments_min', 1) if config else 1
 
     is_unstable, reason = is_unphysical_orbit(body)
     if is_unstable:
@@ -184,7 +215,11 @@ def classify_resonance(
         )
         return {"result": result, "extra": {}}
 
-    if (metrics.trend_to_oscillation < 0.01) and (metrics.sign_dominance < 0.6) and (metrics.mean_sigma_dot < 0.00005):
+    if (
+        (metrics.trend_to_oscillation < tto_high_amp_libration)
+        and (metrics.sign_dominance < sign_dominance_libration)
+        and (metrics.mean_sigma_dot < mean_derivative_threshold)
+    ):
         result = ResonanceClassifyResult(
             status=ResonanceStatus.LIBRATION,
             type='libration_very_high_amplitude',
@@ -193,7 +228,7 @@ def classify_resonance(
         )
         return {"result": result, "extra": {}}
 
-    if (abs(metrics.mean_sigma_dot) <= 0.00005) and (metrics.revolutions_true <= 1.5):
+    if (abs(metrics.mean_sigma_dot) <= mean_derivative_threshold) and (metrics.revolutions_true <= revolutions_libration_soft):
         result = ResonanceClassifyResult(
             status=ResonanceStatus.LIBRATION,
             type='libration_by_mean_derivative',
@@ -202,13 +237,15 @@ def classify_resonance(
         )
         return {"result": result, "extra": {}}
 
-    results = _classify_segments(times, sigma_wrapped, sigma_unwrapped, window_length_percentage, window_step_percentage)
+    results = _classify_segments(times, sigma_wrapped, sigma_unwrapped, window_length_percentage, window_step_percentage, config)
 
     # 0 good segments
     if results['ratio'] == 0:
         # not very good segments, but still (no sign dominance condition + relaxed to trend)
         uncertain_segments = [
-            key for key, value in results["segments_data"].items() if (value.trend_to_oscillation < 2) and (value.revolutions_true < 1)
+            key
+            for key, value in results["segments_data"].items()
+            if (value.trend_to_oscillation < tto_uncertain_segment) and (value.revolutions_true < revolutions_uncertain_segment)
         ]
         if len(uncertain_segments) > 0:
             result = ResonanceClassifyResult(
@@ -228,7 +265,7 @@ def classify_resonance(
         return {"result": result, "extra": results}
 
     # If there is a strong trend with small or no oscillation, it is non-resonant
-    if metrics.trend_to_oscillation > 5:
+    if metrics.trend_to_oscillation > tto_non_resonant_above:
         result = ResonanceClassifyResult(
             status=ResonanceStatus.NON_RESONANT,
             type='trend_with_no_or_weak_oscillation',
@@ -237,7 +274,7 @@ def classify_resonance(
         )
         return {"result": result, "extra": results}
 
-    if metrics.trend_to_oscillation < 1.5:
+    if metrics.trend_to_oscillation < tto_transient:
         result = ResonanceClassifyResult(
             status=ResonanceStatus.TRANSIENT,
             type='transient_by_trend_to_oscillation',
@@ -249,9 +286,9 @@ def classify_resonance(
     segment_ttos = np.array([value.trend_to_oscillation for value in results["segments_data"].values()])
     segment_revs = np.array([value.revolutions_true for value in results["segments_data"].values()])
     min_segment_tto = np.min(segment_ttos)
-    n_transient_segments = np.sum((segment_ttos < 0.4) & (segment_revs < 1))
+    n_transient_segments = np.sum((segment_ttos < tto_transient_segment) & (segment_revs < revolutions_transient_segment))
 
-    if (n_transient_segments >= 1) and (min_segment_tto < 0.15):
+    if (n_transient_segments >= transient_segments_min) and (min_segment_tto < tto_transient_segment_min):
         result = ResonanceClassifyResult(
             status=ResonanceStatus.TRANSIENT,
             type='transient_by_segments',

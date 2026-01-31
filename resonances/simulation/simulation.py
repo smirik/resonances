@@ -161,6 +161,7 @@ class Simulation:
                 classification = classify_resonance(
                     body,
                     resonance=resonance,
+                    config=self.config,
                 )
                 libration = classification["result"]
                 if ("extra" in classification) and ("segments_data" in classification["extra"]):

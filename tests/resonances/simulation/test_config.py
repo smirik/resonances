@@ -59,6 +59,41 @@ class TestSimulationConfig:
         assert hasattr(config, 'periodogram_frequency_max')
         assert hasattr(config, 'libration_period_critical')
 
+    def test_classify_params_defaults(self):
+        """Test classification parameters have correct defaults."""
+        config = SimulationConfig()
+
+        # Window settings
+        assert config.classify_window_length == 0.1
+        assert config.classify_window_step == 0.05
+
+        # Core thresholds
+        assert config.classify_mean_derivative_threshold == 0.00005
+        assert config.classify_sign_dominance_libration == 0.6
+        assert config.classify_sign_dominance_segment == 0.7
+
+        # Revolutions thresholds
+        assert config.classify_revolutions_libration_soft == 1.5
+        assert config.classify_revolutions_segment_hard == 2.0
+
+        # Trend-to-oscillation thresholds
+        assert config.classify_tto_non_resonant_above == 5.0
+        assert config.classify_tto_transient == 1.5
+
+    def test_classify_params_custom(self):
+        """Test classification parameters can be customized."""
+        config = SimulationConfig(
+            classify_window_length=0.2,
+            classify_mean_derivative_threshold=0.0001,
+            classify_tto_non_resonant_above=10.0,
+        )
+
+        assert config.classify_window_length == 0.2
+        assert config.classify_mean_derivative_threshold == 0.0001
+        assert config.classify_tto_non_resonant_above == 10.0
+        # Other values should still be defaults
+        assert config.classify_window_step == 0.05
+
 
 if __name__ == '__main__':
     pytest.main([__file__])
