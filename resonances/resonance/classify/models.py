@@ -5,7 +5,6 @@ import numpy as np
 
 
 class ResonanceStatus(IntEnum):
-    NEAR_SEPARATRIX = 4  # Waves with a trend, chaotic zone
     STICKINESS = 3  # Steps
     LIBRATION = 2
     TRANSIENT = 1

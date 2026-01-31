@@ -36,8 +36,6 @@ def _calc_zero_crossing_by_sigma_derivative(sigma_dot: np.ndarray) -> Tuple[int,
 def _calc_metrics(times: np.ndarray, sigma_wrapped: np.ndarray, sigma_unwrapped: np.ndarray) -> SegmentMetrics:
     """Calculates all metrics."""
 
-    N = len(times)
-
     cos_avg = np.mean(np.cos(sigma_wrapped))
     sin_avg = np.mean(np.sin(sigma_wrapped))
     R = np.sqrt(cos_avg**2 + sin_avg**2)
