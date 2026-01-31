@@ -65,7 +65,7 @@ class TestFullPreset:
 
         expected_keys = [
             'angle',
-            'angle_filtered',
+            'angle_unwrapped',
             'axis',
             'eccentricity',
             'inclination',
@@ -88,15 +88,14 @@ class TestFullPreset:
         assert panel.style.ylabel == r"$\sigma$ (rad)"
         assert panel.style.title == "Resonant angle"
 
-    def test_full_preset_filtered_angle_panel(self):
-        """Test filtered resonant angle panel with fallback."""
+    def test_full_preset_unwrapped_angle_panel(self):
+        """Test unwrapped resonant angle panel."""
         resonance_key = '4J-2S-1+0+0-1'
         config = create_full_preset(resonance_key)
         panel = config.panels[1]
 
-        assert panel.key == 'angle_filtered'
-        assert panel.data_column == f'{resonance_key}_angle_filtered'
-        assert panel.fallback_column == f'{resonance_key}_angle'
+        assert panel.key == 'angle_unwrapped'
+        assert panel.data_column == f'{resonance_key}_angle_filtered_unwrapped'
         assert panel.required is False
 
     def test_full_preset_axis_panel(self):

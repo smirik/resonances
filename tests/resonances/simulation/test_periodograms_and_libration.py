@@ -30,6 +30,7 @@ def _build_simulation(tmp_path):
     sim.body_manager.add_body(elem, "2J-1", name="test_body")
     sim.times = np.linspace(0.0, sim.config.tmax, sim.config.Nout)
     body = sim.bodies[0]
+    body.times = sim.times
 
     t_years = sim.times / (2 * np.pi)
     # Use the same frequency for both semi-major axis and resonant angle
@@ -40,8 +41,10 @@ def _build_simulation(tmp_path):
     body.ecc = 0.1 + 0.01 * np.sin(2 * np.pi * freq * t_years)
 
     resonance = body.resonances()[0]
-    body.angles[resonance.to_s()] = (np.pi + 0.5 * np.sin(2 * np.pi * freq * t_years)) % (2 * np.pi)
-    body.angles_filtered[resonance.to_s()] = body.angles[resonance.to_s()]  # For test purposes
+    wrapped_angle = (np.pi + 0.5 * np.sin(2 * np.pi * freq * t_years)) % (2 * np.pi)
+    body.angles[resonance.to_s()] = wrapped_angle
+    body.angles_filtered[resonance.to_s()] = wrapped_angle
+    body.angles_filtered_unwrapped[resonance.to_s()] = np.unwrap(wrapped_angle)
 
     return sim
 

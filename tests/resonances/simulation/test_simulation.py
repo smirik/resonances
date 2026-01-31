@@ -51,7 +51,7 @@ def test_get_simulation_summary_exception():
 
     # Mock an exception in the summary generation
     with patch.object(sim.bodies[0], 'mmrs', []):
-        summary = sim.data_manager.get_simulation_summary(sim.bodies)
+        summary, segments = sim.data_manager.get_simulation_summary(sim.bodies)
         assert len(summary) == 0  # Should handle gracefully
 
 
@@ -211,7 +211,7 @@ def test_get_simulation_summary():
     tools.add_test_asteroid_to_simulation(sim)
     sim.run()
 
-    summary = sim.data_manager.get_simulation_summary(sim.bodies)
+    summary, segments = sim.data_manager.get_simulation_summary(sim.bodies)
     assert len(summary) > 0
     assert 'name' in summary.columns
     assert 'resonance' in summary.columns

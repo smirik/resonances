@@ -13,7 +13,7 @@ def test_find():
     assert 2 == len(sim.bodies)
 
     sim.run(progress=True)
-    summary = sim.data_manager.get_simulation_summary(sim.bodies)
+    summary, _ = sim.data_manager.get_simulation_summary(sim.bodies)
     status463 = summary.loc[(summary['name'] == '463') & (summary['resonance'] == '4J-2S-1+0+0-1'), 'status'].iloc[0]
     status490 = summary.loc[(summary['name'] == '490') & (summary['resonance'] == '5J-2S-2+0+0-1'), 'status'].iloc[0]
 
@@ -30,6 +30,6 @@ def test_check():
 
     sim.run()
 
-    summary = sim.data_manager.get_simulation_summary(sim.bodies)
+    summary, _ = sim.data_manager.get_simulation_summary(sim.bodies)
     status = summary.loc[(summary['name'] == '463') & (summary['resonance'] == '4J-2S-1+0+0-1'), 'status'].iloc[0]
     assert 2 == status

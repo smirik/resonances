@@ -24,7 +24,7 @@ def test_backward_integration():
     sim.create_solar_system()
     tools.add_test_asteroid_to_simulation(sim)
     sim.run(progress=True)
-    summary = sim.data_manager.get_simulation_summary(sim.bodies)
+    summary, _ = sim.data_manager.get_simulation_summary(sim.bodies)
     assert len(summary) > 0
     assert 'name' in summary.columns
 

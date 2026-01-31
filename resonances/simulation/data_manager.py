@@ -139,7 +139,6 @@ class DataManager:
         if self.config.plot_subfolder_strategy == 'status':
             status = body.statuses.get(resonance.to_s(), 0)
             status_folders = {
-                3: 'separatrix',
                 3: 'stickiness',
                 2: 'resonant',
                 1: 'transient',

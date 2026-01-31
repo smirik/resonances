@@ -31,7 +31,7 @@ def test_real_lidov_kozai_statuses():
 
     sim.run(progress=False)
 
-    summary = sim.data_manager.get_simulation_summary(sim.bodies)
+    summary, _ = sim.data_manager.get_simulation_summary(sim.bodies)
     assert not summary.empty
 
     for asteroid, expected_status in LK_ASTEROIDS:

@@ -133,29 +133,30 @@ def find(
         elems = astdys.search(asteroids)  # Returns dict: {name: elements_dict}
     else:
         for asteroid in asteroids:
-            elems[asteroid] = get_body_keplerian_elements(asteroid, date=now)
+            elems[str(asteroid)] = get_body_keplerian_elements(asteroid, date=now)
 
     for asteroid in asteroids:
-        elem = elems.get(str(asteroid))
+        asteroid_key = str(asteroid)
+        elem = elems.get(asteroid_key)
         if elem is None:
             logger.warning(f'Asteroid {asteroid} not found in catalog')
             continue
-        resonances_dict[asteroid] = []
+        resonances_dict[asteroid_key] = []
         if shouldSearchMMR:
             mmrs = find_mmrs(elem['a'], planets=planets, sigma2=sigma2, sigma3=sigma3)
-            resonances_dict[asteroid] = mmrs
+            resonances_dict[asteroid_key] = mmrs
         if shouldSearchSecular:
             if formulas is None:
                 finder = SecularResonanceFinder()
                 secular_resonances = finder.find_secular_resonances(asteroid=asteroid)
-                resonances_dict[asteroid].extend(secular_resonances.values())
+                resonances_dict[asteroid_key].extend(secular_resonances.values())
             else:
                 from resonances.resonance.factory import create_secular_resonance
 
                 secular_resonances = [create_secular_resonance(formula) for formula in formulas]
-                resonances_dict[asteroid].extend(secular_resonances)
+                resonances_dict[asteroid_key].extend(secular_resonances)
         if shouldSearchLidovKozai:
-            resonances_dict[asteroid].append(LidovKozaiResonance())
+            resonances_dict[asteroid_key].append(LidovKozaiResonance())
 
     sim.create_solar_system()
 
