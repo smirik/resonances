@@ -70,6 +70,10 @@ class BodyManager:
 
     def add_bodies_to_simulation(self, sim):
         """Add all bodies to the REBOUND simulation."""
+        if sim is None:
+            raise RuntimeError(
+                "Solar system or other particles for rebound are not initialized. Call sim.create_solar_system() or add them manually before sim.run()."
+            )
         for body in self.bodies:
             self._add_body_to_simulation(body, sim)
 
