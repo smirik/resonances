@@ -8,7 +8,7 @@ from resonances.body import Body
 from resonances.logger import logger
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, LidovKozaiParameters
-from resonances.plotting import Plotter
+from resonances.plotting import Plotter, PhasePlotter
 from .serializer import SimulationSerializer
 
 
@@ -51,7 +51,7 @@ class DataManager:
         if self.config.save_summary:
             self.save_simulation_summary(bodies)
 
-        if simulation and simulation.integration_engine.planets_data is not None and self.config.save_planets:
+        if simulation and self.config.save_planets:
             self.save_planets(times, simulation.integration_engine.planets_data)
 
         for body in bodies:
@@ -111,18 +111,61 @@ class DataManager:
         df.to_csv(f'{self.config.save_path}/data-{body.name}-periodograms.csv', index=False)
 
     def plot_body(self, body: Body, simulation=None):
-        """Plot MMR data for a body."""
-        config = self.config.plot_config if self.config.plot_config is not None else 'full'
+        """Plot data for a body based on configured plot types."""
+        plots_to_generate = getattr(self.config, 'plots', ['evolution'])
+
         for resonance in body.resonances():
             if self.should_plot_body(body, resonance):
                 plot_path = self._get_plot_path(body, resonance)
-                plot_filename = f'{plot_path}/{body.name}-{resonance.to_s()}.{self.config.image_type}'
-                plotter = Plotter.from_body(body, resonance, simulation).configure(config).plot()
-                if self.config.plot_type in ["show", "both"]:
-                    plotter.show()
-                if self.config.plot_type in ["save", "both"]:
-                    plotter.save(plot_filename)
-                plotter.close()
+
+                # Evolution plot (original behavior)
+                if 'evolution' in plots_to_generate:
+                    self._plot_evolution(body, resonance, simulation, plot_path)
+
+                # Phase portrait plot
+                if 'phase_portrait' in plots_to_generate:
+                    self._plot_phase_portrait(body, resonance, simulation, plot_path)
+
+    def _plot_evolution(self, body: Body, resonance, simulation, plot_path: str):
+        """Plot evolution (resonant angle, semi-major axis, etc.)."""
+        config = self.config.plot_config if self.config.plot_config is not None else 'full'
+        plot_filename = f'{plot_path}/{body.name}-{resonance.to_s()}.{self.config.image_type}'
+        plotter = Plotter.from_body(body, resonance, simulation).configure(config).plot()
+        if self.config.plot_type in ["show", "both"]:
+            plotter.show()
+        if self.config.plot_type in ["save", "both"]:
+            plotter.save(plot_filename)
+        plotter.close()
+
+    def _plot_phase_portrait(self, body: Body, resonance, simulation, plot_path: str):
+        """Plot all phase portrait variants (filtered, unfiltered, slow points)."""
+        plotter = PhasePlotter.from_body(body, resonance, simulation)
+        res_key = resonance.to_s()
+        img_type = self.config.image_type
+
+        # Filtered phase portrait
+        plotter.plot_phase_portrait_filtered()
+        if self.config.plot_type in ["show", "both"]:
+            plotter.show()
+        if self.config.plot_type in ["save", "both"]:
+            plotter.save(f'{plot_path}/{body.name}-{res_key}-filtered.{img_type}')
+
+        # Unfiltered phase portrait
+        plotter.plot_phase_portrait_unfiltered()
+        if self.config.plot_type in ["show", "both"]:
+            plotter.show()
+        if self.config.plot_type in ["save", "both"]:
+            plotter.save(f'{plot_path}/{body.name}-{res_key}-unfiltered.{img_type}')
+
+        # Slow points phase portrait
+        percentile = getattr(self.config, 'phase_portrait_slow_percentile', 95)
+        plotter.plot_phase_portrait_slow(percentile=percentile)
+        if self.config.plot_type in ["show", "both"]:
+            plotter.show()
+        if self.config.plot_type in ["save", "both"]:
+            plotter.save(f'{plot_path}/{body.name}-{res_key}-percentile{percentile}.{img_type}')
+
+        plotter.close()
 
     def _get_plot_path(self, body: Body, resonance) -> str:
         """
@@ -141,14 +184,16 @@ class DataManager:
         if self.config.plot_subfolder_strategy == 'status':
             status = body.statuses.get(resonance.to_s(), 0)
             status_folders = {
-                3: 'stickiness',
-                2: 'resonant',
-                1: 'transient',
-                0: 'non-resonant',
-                -1: 'controversial-transient',
-                -2: 'controversial-libration',
-                -4: 'uncertain',
-                -99: 'chaotic',
+                -5: '_probably_near_separatrix',
+                -4: '_slow-circulation',
+                -3: '_near_separatrix',
+                2: '_resonant',
+                1: '_transient',
+                0: '_non-resonant',
+                -1: '_controversial-transient',
+                -2: '_controversial-libration',
+                -9: '_uncertain',
+                -99: '_chaotic',
             }
             subfolder = status_folders.get(status, 'non-resonant')
             plot_path = f'{base_path}/{subfolder}'

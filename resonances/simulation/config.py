@@ -85,6 +85,19 @@ class SimulationConfig:
         else:
             self.plot_path = self._verify_existing_path(self.plot_path)
 
+        # Plot types to generate (list of: evolution, phase_portrait)
+        plots_param = kwargs.get('plots', None)
+        if plots_param is not None:
+            self.plots = plots_param if isinstance(plots_param, list) else [plots_param]
+        else:
+            plots_str = c.get('PLOTS', 'evolution')
+            self.plots = [p.strip() for p in plots_str.split(',') if p.strip()]
+
+        # Phase portrait slow points percentile threshold (0-100)
+        self.phase_portrait_slow_percentile = kwargs.get(
+            'phase_portrait_slow_percentile', float(c.get('PHASE_PORTRAIT_SLOW_PERCENTILE', 95))
+        )
+
     def _verify_existing_path(self, path):
         """
         Verify if the given path exists and modify it to avoid overwriting.

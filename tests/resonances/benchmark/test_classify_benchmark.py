@@ -29,6 +29,7 @@ def create_simulation():
         source="astdys",
         plot_config="full",
         plot_subfolder_strategy="status",
+        plots=["evolution", "phase_portrait"],
         batch_size=100,
         batch_threshold=100,
     )

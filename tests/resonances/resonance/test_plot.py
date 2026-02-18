@@ -33,11 +33,13 @@ def test_plotter_with_missing_data():
     body.angles_filtered[mmr.to_s()] = None
     plotter = resonances.Plotter.from_body(body, mmr, sim)
     plotter.configure('full').plot()  # Should not crash
+    plotter.close()
 
     # Test with missing filtered axis
     body.axis_filtered = None
     plotter = resonances.Plotter.from_body(body, mmr, sim)
     plotter.configure('full').plot()  # Should not crash
+    plotter.close()
 
 
 def test_plotter_save_functionality():
@@ -57,6 +59,7 @@ def test_plotter_save_functionality():
 
     plotter = resonances.Plotter.from_body(body, mmr, sim).configure('full').plot()
     plotter.save(file_path)
+    plotter.close()
 
     assert Path(file_path).is_file() is True
 
@@ -88,6 +91,7 @@ def test_plotter_with_custom_config():
 
     assert plotter._figure is not None
     assert len(plotter._axes) == 1
+    plotter.close()
 
 
 def test_plotter_presets():
@@ -103,8 +107,10 @@ def test_plotter_presets():
     plotter_simple = resonances.Plotter.from_body(body, mmr, sim)
     plotter_simple.configure('simple').plot()
     assert plotter_simple._figure is not None
+    plotter_simple.close()
 
     # Test 'full' preset
     plotter_full = resonances.Plotter.from_body(body, mmr, sim)
     plotter_full.configure('full').plot()
     assert plotter_full._figure is not None
+    plotter_full.close()

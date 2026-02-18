@@ -15,6 +15,7 @@ Main exports:
 from .plotter import Plotter
 from .config import PlotConfig, Panel, StyleConfig
 from .presets import get_preset, create_simple_preset, create_full_preset
+from .phase_plots import PhasePlotter
 
 __all__ = [
     'Plotter',
@@ -24,4 +25,5 @@ __all__ = [
     'get_preset',
     'create_simple_preset',
     'create_full_preset',
+    'PhasePlotter',
 ]

@@ -62,6 +62,8 @@ Below is the list of options. When lowercase is used, it refers to the arguments
 - `plot_path`/`PLOT_PATH` (str): the same as `save_path`.
 - `plot_type`/`PLOT_TYPE` (str): determines what to do with graphs. `save` - only save graphs as files (default), `show` - just show (if false), `both` - both options. Valid only for plots specified by `plot`. In other words, if you set `plot` as `None`, no graphs will be plotted.
 - `plot_subfolder_strategy`/`PLOT_SUBFOLDER_STRATEGY` (str or None): controls how plots are organized within `plot_path`. By default, `None` (empty), meaning all plots are saved directly in `plot_path`. If set to `status`, creates subfolders based on resonance classification: `resonant/` (status=2), `transient/` (status=1), `non-resonant/` (status=0), `controversial-transient/` (status=-1), and `controversial-libration/` (status=-2).
+- `plots`/`PLOTS` (list or str): plot types to generate. Options: `evolution` (time series), `phase_portrait` (phase portraits). Default: `['evolution']`. When `phase_portrait` is enabled, three variants are generated: filtered, unfiltered, and slow points. See [Phase Plots](phase-plots.md) for details.
+- `phase_portrait_slow_percentile`/`PHASE_PORTRAIT_SLOW_PERCENTILE` (float): percentile threshold (0-100) for slow points phase portrait. Points with |σ̇| below this percentile are shown. Default: `95`.
 
 ## Libration options
 

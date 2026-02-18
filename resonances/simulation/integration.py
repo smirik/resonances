@@ -21,7 +21,6 @@ class IntegrationEngine:
         self.planets = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
 
         self.hash_to_planets = {}
-
         self.planets_data = {}
         for planet in self.planets:
             planet_cuid = h(planet).value
@@ -84,8 +83,7 @@ class IntegrationEngine:
             self.sim.integrate(time)
             os = self.sim.orbits(primary=ps[0])
 
-            if self.config.save_planets:
-                self._store_planets(time, os)
+            self._store_planets(time, os)
 
             # Update body data
             for body in bodies:

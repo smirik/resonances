@@ -174,6 +174,7 @@ class TestPlotterMethodChaining:
         result = plotter.plot()
         assert result is plotter
         assert plotter._figure is not None
+        plotter.close()
 
     def test_save_creates_directories(self):
         """Test that save creates parent directories if needed."""
@@ -199,6 +200,7 @@ class TestPlotterMethodChaining:
 
             assert result is plotter
             assert save_path.exists()
+            plotter.close()
 
 
 class TestPlotterRoundToNiceValue:

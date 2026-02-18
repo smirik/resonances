@@ -268,7 +268,19 @@ def create_angle_preset(resonance_key: str) -> PlotConfig:
             required=True,
         )
     )
-    # Panel 2: Unwrapped resonant angle
+
+    # Panel 2: Wrapped filtered resonant angle
+    config.add_panel(
+        Panel(
+            key='filtered_angle',
+            data_column=f'{resonance_key}_angle_filtered',
+            x_column='times',
+            style=StyleConfig(ylabel=r"$\sigma$ (rad)", title="Filtered resonant angle", color='black', marker=',', linestyle=''),
+            required=True,
+        )
+    )
+
+    # Panel 3: Unwrapped filtered resonant angle
     config.add_panel(
         Panel(
             key='angle_unwrapped',

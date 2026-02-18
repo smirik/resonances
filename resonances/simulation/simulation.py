@@ -109,7 +109,7 @@ class Simulation:
                         body.angles[resonance.to_s()] = body.secular_angles_proper[resonance.to_s()]
                 unwrapped_filtered_angle = filter_angle(body.angle_unwrapped(resonance), self.config)
                 body.angles_filtered_unwrapped[resonance.to_s()] = unwrapped_filtered_angle
-                body.angles_filtered[resonance.to_s()] = filter_angle(body.angles[resonance.to_s()], self.config)
+                body.angles_filtered[resonance.to_s()] = wrap(unwrapped_filtered_angle)
                 body.axis_filtered = filter_angle(body.axis, self.config)
 
     def build_periodograms(self):
@@ -166,7 +166,7 @@ class Simulation:
                     config=self.config,
                 )
                 libration = classification["result"]
-                if ("extra" in classification) and ("segments_data" in classification["extra"]):
-                    body.libration_segments[resonance.to_s()] = classification["extra"]["segments_data"]
+                if "segments" in classification:
+                    body.libration_segments[resonance.to_s()] = classification["segments"]
                 body.librations[resonance.to_s()] = libration
                 body.statuses[resonance.to_s()] = libration.status.value

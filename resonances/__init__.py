@@ -28,7 +28,7 @@ from .secular.secular_resonance import SecularResonance
 from .simulation.simulation import Simulation
 from .simulation.serializer import SimulationSerializer
 
-from .plotting import Plotter, PlotConfig, Panel, StyleConfig, get_preset
+from .plotting import Plotter, PlotConfig, Panel, StyleConfig, get_preset, PhasePlotter
 
 from .body import Body
 from .config import config
