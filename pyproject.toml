@@ -1,13 +1,11 @@
-[tool.poetry]
+[project]
 name = "resonances"
 version = "1.0.0"
 description = "Identification of mean-motion resonances"
-authors = ["Evgeny Smirnov <smirik@gmail.com>"]
-license = "MIT"
+authors = [{ name = "Evgeny Smirnov", email = "smirik@gmail.com" }]
+license = { text = "MIT" }
 readme = "README.md"
-homepage = "http://smirik.github.io/resonances/"
-repository = "https://github.com/smirik/resonances"
-documentation = "http://smirik.github.io/resonances/"
+requires-python = ">=3.11, <4"
 keywords = ["astronomy", "nbody", "resonance", "mmr"]
 classifiers = [
     'Development Status :: 4 - Beta',
@@ -18,44 +16,49 @@ classifiers = [
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
 ]
+dependencies = [
+    # Core scientific computing
+    "numpy>=2.3.0",
+    "scipy>=1.15.3",
+    "pandas>=2.3.0",
+    # Visualization
+    "matplotlib>=3.10.3",
+    "seaborn>=0.13.2",
+    # Astronomy specific
+    "astropy>=7.1.0",
+    "astroquery>=0.4.10",
+    "rebound>=4.4.8",
+    "astdys>=1.0.0",
+    # Utilities
+    "tqdm>=4.67.1",
+    "python-dotenv>=1.1.0",
+    "lxml-html-clean>=0.1.1,<0.5.0",
+    "click>=8.1.7",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.11, <4"
-# Core scientific computing
-numpy = "^2.3.0"
-scipy = "^1.15.3"
-pandas = "^2.3.0"
-# Visualization
-matplotlib = "^3.10.3"
-seaborn = "^0.13.2"
-# Astronomy specific
-astropy = "^7.1.0"
-astroquery = "^0.4.10"
-rebound = "^4.4.8"
-# rebound = "^4.4.2"
-astdys = ">=1.0.0"
-# Utilities
-tqdm = "^4.67.1"
-python-dotenv = "^1.1.0"
-lxml-html-clean = ">=0.1.1,<0.5.0"
-click = "^8.1.7"
+[project.urls]
+Homepage = "http://smirik.github.io/resonances/"
+Repository = "https://github.com/smirik/resonances"
+Documentation = "http://smirik.github.io/resonances/"
 
-[tool.poetry.scripts]
+[project.scripts]
 resonances = "resonances.cli:cli"
 
-[tool.poetry.group.dev.dependencies]
-# Testing
-pytest = "^8.4.0"
-coverage = "^7.8.2"
-# Code quality
-black = { extras = ["jupyter"], version = "^25.1.0" }
-flake8 = "^7.2.0"
-flake8-bugbear = "^24.12.12"
-# Documentation
-mkdocs = "1.4.2"
-mkdocs-jupyter = "^0.25.1"
-# Jupyter support
-ipykernel = "^6.29.5"
+[dependency-groups]
+dev = [
+    # Testing
+    "pytest>=8.4.0",
+    "coverage>=7.8.2",
+    # Code quality
+    "black[jupyter]>=25.1.0,<26",
+    "flake8>=7.2.0",
+    "flake8-bugbear>=24.12.12",
+    # Documentation
+    "mkdocs==1.4.2",
+    "mkdocs-jupyter>=0.25.1",
+    # Jupyter support
+    "ipykernel>=6.29.5",
+]
 
 [tool.coverage.run]
 omit = [".*", "tests/*", "*/site-packages/*"]
@@ -78,9 +81,10 @@ fail_under = 80
 omit = [".*", "tests/resonances/*", "*/site-packages/*"]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.black]
 line-length = 140
 skip-string-normalization = true
+target-version = ["py311"]

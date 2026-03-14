@@ -1,41 +1,41 @@
 install:
-	pip uninstall resonances -y && poetry install
+	uv sync
 
 test: install
-	poetry run flake8 --count
-	poetry run black . --check
-	poetry run pytest -v -m "not benchmark" tests
+	uv run flake8 --count
+	uv run black . --check
+	uv run pytest -v -m "not benchmark" tests
 
 test-only: install
-	poetry run pytest -v -m "not benchmark" tests
+	uv run pytest -v -m "not benchmark" tests
 
 test-fast: install
-	poetry run pytest -v -m "not slow and not benchmark" tests
+	uv run pytest -v -m "not slow and not benchmark" tests
 
 test-slow: install
-	poetry run pytest -v -m "slow" tests
+	uv run pytest -v -m "slow" tests
 
 test-benchmark: install
-	poetry run pytest -v -m "benchmark" tests
+	uv run pytest -v -m "benchmark" tests
 
 run-docs:
-	poetry run mkdocs serve
+	uv run mkdocs serve
 
 publish-docs:
 	rm -Rf docs/cache/*
-	poetry run mkdocs gh-deploy
+	uv run mkdocs gh-deploy
 
 publish-test:
-	poetry build
-	poetry config repositories.testpypi https://test.pypi.org/legacy/
-	poetry publish -r testpypi
+	uv build
+	uv publish --index-url https://test.pypi.org/legacy/
 
 publish:
-	poetry publish --build
+	uv build
+	uv publish
 
 coverage: install
-	poetry run coverage run -m pytest -v tests/resonances
-	poetry run coverage report -m
+	uv run coverage run -m pytest -v tests/resonances
+	uv run coverage report -m
 
 clean:
 	rm -f cache/allnum.cat

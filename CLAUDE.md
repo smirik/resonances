@@ -36,7 +36,7 @@ Files in resonances/:
 
 ## How to run
 
-Everything should be run in venv created by poetry.
+Everything should be run through `uv run` (which automatically manages the virtual environment). Use `uv sync` to install dependencies.
 
 ## Testing
 

@@ -3,32 +3,32 @@
 ## To release a new version
 
 1. Set a new version in `pyproject.toml`.
-2. Set the production token:
-
-    ```bash
-    poetry config pypi-token.pypi TOKEN
-    ```
-
-3. Run tests
+2. Run tests
 
     ```bash
     make test
     ```
 
-4. Publish
+3. Build and publish
 
     ```bash
     make publish
     ```
 
-5. Update docs if necessary
+    This runs `uv build` and `uv publish`. You will need to set the `UV_PUBLISH_TOKEN` environment variable with your PyPI token, or pass it via `--token`:
+
+    ```bash
+    UV_PUBLISH_TOKEN=your-token make publish
+    ```
+
+4. Update docs if necessary
 
     ```bash
     make publish-docs
     ```
 
-For pypi test, the test token should be set:
+For pypi test:
 
-    ```bash
-    poetry config pypi-token.testpypi TEST-TOKEN
-    ```
+```bash
+UV_PUBLISH_TOKEN=your-test-token make publish-test
+```
