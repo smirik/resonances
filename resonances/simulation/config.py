@@ -203,57 +203,66 @@ class SimulationConfig:
         self.resume_enabled = kwargs.get('resume_enabled', True)
 
     def _setup_classify_params(self, kwargs):
-        """Setup classification parameters."""
+        """Setup classification parameters matching ClassifyParams fields."""
         # Window settings for segment analysis
-        self.classify_window_length = kwargs.get('classify_window_length', float(c.get('CLASSIFY_WINDOW_LENGTH', 0.1)))
-        self.classify_window_step = kwargs.get('classify_window_step', float(c.get('CLASSIFY_WINDOW_STEP', 0.05)))
+        self.classify_window_step = kwargs.get(
+            'classify_window_step',
+            float(c.get('CLASSIFY_WINDOW_STEP', 0.05)),
+        )
+        window_steps_raw = kwargs.get('classify_window_steps', None)
+        if window_steps_raw is not None:
+            self.classify_window_steps = window_steps_raw
+        else:
+            self.classify_window_steps = [float(x.strip()) for x in c.get('CLASSIFY_WINDOW_STEPS', '0.1,0.2,0.3').split(',')]
 
-        # Mean derivative threshold (rad/yr)
-        self.classify_mean_derivative_threshold = kwargs.get(
-            'classify_mean_derivative_threshold', float(c.get('CLASSIFY_MEAN_DERIVATIVE_THRESHOLD', 0.00005))
+        # Global thresholds
+        self.classify_rev_libration = kwargs.get(
+            'classify_rev_libration',
+            float(c.get('CLASSIFY_REV_LIBRATION', 1.0)),
         )
-
-        # Sign dominance thresholds
-        self.classify_sign_dominance_libration = kwargs.get(
-            'classify_sign_dominance_libration', float(c.get('CLASSIFY_SIGN_DOMINANCE_LIBRATION', 0.6))
+        self.classify_tto_pure_libration = kwargs.get(
+            'classify_tto_pure_libration',
+            float(c.get('CLASSIFY_TTO_PURE_LIBRATION', 0.5)),
         )
-        self.classify_sign_dominance_segment = kwargs.get(
-            'classify_sign_dominance_segment', float(c.get('CLASSIFY_SIGN_DOMINANCE_SEGMENT', 0.7))
+        self.classify_tto_partial_libration = kwargs.get(
+            'classify_tto_partial_libration',
+            float(c.get('CLASSIFY_TTO_PARTIAL_LIBRATION', 2.5)),
         )
-
-        # Revolutions thresholds
-        self.classify_revolutions_libration_soft = kwargs.get(
-            'classify_revolutions_libration_soft', float(c.get('CLASSIFY_REVOLUTIONS_LIBRATION_SOFT', 1.5))
+        self.classify_tto_non_resonant = kwargs.get(
+            'classify_tto_non_resonant',
+            float(c.get('CLASSIFY_TTO_NON_RESONANT', 6.0)),
         )
-        self.classify_revolutions_segment_hard = kwargs.get(
-            'classify_revolutions_segment_hard', float(c.get('CLASSIFY_REVOLUTIONS_SEGMENT_HARD', 2.0))
+        self.classify_tto_transient_global = kwargs.get(
+            'classify_tto_transient_global',
+            float(c.get('CLASSIFY_TTO_TRANSIENT_GLOBAL', 3.0)),
         )
-        self.classify_revolutions_uncertain_segment = kwargs.get(
-            'classify_revolutions_uncertain_segment', float(c.get('CLASSIFY_REVOLUTIONS_UNCERTAIN_SEGMENT', 1.0))
-        )
-        self.classify_revolutions_transient_segment = kwargs.get(
-            'classify_revolutions_transient_segment', float(c.get('CLASSIFY_REVOLUTIONS_TRANSIENT_SEGMENT', 1.0))
-        )
-
-        # Trend-to-oscillation thresholds
-        self.classify_tto_high_amp_libration = kwargs.get(
-            'classify_tto_high_amp_libration', float(c.get('CLASSIFY_TTO_HIGH_AMP_LIBRATION', 0.01))
-        )
-        self.classify_tto_transient = kwargs.get('classify_tto_transient', float(c.get('CLASSIFY_TTO_TRANSIENT', 1.5)))
-        self.classify_tto_uncertain_segment = kwargs.get(
-            'classify_tto_uncertain_segment', float(c.get('CLASSIFY_TTO_UNCERTAIN_SEGMENT', 2.0))
-        )
-        self.classify_tto_non_resonant_above = kwargs.get(
-            'classify_tto_non_resonant_above', float(c.get('CLASSIFY_TTO_NON_RESONANT_ABOVE', 5.0))
-        )
-        self.classify_tto_transient_segment = kwargs.get(
-            'classify_tto_transient_segment', float(c.get('CLASSIFY_TTO_TRANSIENT_SEGMENT', 0.4))
-        )
-        self.classify_tto_transient_segment_min = kwargs.get(
-            'classify_tto_transient_segment_min', float(c.get('CLASSIFY_TTO_TRANSIENT_SEGMENT_MIN', 0.15))
+        self.classify_tto_near_separatrix = kwargs.get(
+            'classify_tto_near_separatrix',
+            float(c.get('CLASSIFY_TTO_NEAR_SEPARATRIX', 6.0)),
         )
 
-        # Transient detection
-        self.classify_transient_segments_min = kwargs.get(
-            'classify_transient_segments_min', int(c.get('CLASSIFY_TRANSIENT_SEGMENTS_MIN', 1))
+        # Segment quality thresholds
+        self.classify_good_seg_max_rev = kwargs.get(
+            'classify_good_seg_max_rev',
+            float(c.get('CLASSIFY_GOOD_SEG_MAX_REV', 1.0)),
+        )
+        self.classify_good_seg_max_tto = kwargs.get(
+            'classify_good_seg_max_tto',
+            float(c.get('CLASSIFY_GOOD_SEG_MAX_TTO', 0.5)),
+        )
+        self.classify_reasonable_seg_max_rev_1 = kwargs.get(
+            'classify_reasonable_seg_max_rev_1',
+            float(c.get('CLASSIFY_REASONABLE_SEG_MAX_REV_1', 2.0)),
+        )
+        self.classify_reasonable_seg_max_tto_1 = kwargs.get(
+            'classify_reasonable_seg_max_tto_1',
+            float(c.get('CLASSIFY_REASONABLE_SEG_MAX_TTO_1', 1.0)),
+        )
+        self.classify_reasonable_seg_max_rev_2 = kwargs.get(
+            'classify_reasonable_seg_max_rev_2',
+            float(c.get('CLASSIFY_REASONABLE_SEG_MAX_REV_2', 1.0)),
+        )
+        self.classify_reasonable_seg_max_tto_2 = kwargs.get(
+            'classify_reasonable_seg_max_tto_2',
+            float(c.get('CLASSIFY_REASONABLE_SEG_MAX_TTO_2', 1.5)),
         )

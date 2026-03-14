@@ -257,13 +257,38 @@ class DataManager:
                     else:
                         c1, c2, c = None, None, None
 
-                    rows.append(
+                    flat = body.librations[resonance.to_s()].to_flat_dict()
+                    # Extract comments to place it last; strip line breaks
+                    comments = flat.pop('comments', None)
+                    if comments is not None:
+                        comments = str(comments).replace('\n', ' ').replace('\r', ' ')
+
+                    # Extract segment counts and rename to user-friendly column names
+                    segment_count_columns = {
+                        'n_good_total': flat.pop('segment_counts_n_good_total', 0),
+                        'n_reasonable_total': flat.pop('segment_counts_n_reasonable_total', 0),
+                        'n_good_0.1': flat.pop('segment_counts_n_good_0_1', 0),
+                        'n_reasonable_0.1': flat.pop('segment_counts_n_reasonable_0_1', 0),
+                        'n_good_0.2': flat.pop('segment_counts_n_good_0_2', 0),
+                        'n_reasonable_0.2': flat.pop('segment_counts_n_reasonable_0_2', 0),
+                        'n_good_0.3': flat.pop('segment_counts_n_good_0_3', 0),
+                        'n_reasonable_0.3': flat.pop('segment_counts_n_reasonable_0_3', 0),
+                    }
+
+                    # Build row with segment counts after metrics_trend_to_oscillation,
+                    # and comments as the last column
+                    row = {
+                        'name': body.name,
+                        'resonance': resonance.to_s(),
+                        'type': res_type,
+                        'status': body.statuses.get(resonance.to_s(), 0),
+                    }
+                    for k, v in flat.items():
+                        row[k] = v
+                        if k == 'metrics_trend_to_oscillation':
+                            row.update(segment_count_columns)
+                    row.update(
                         {
-                            'name': body.name,
-                            'resonance': resonance.to_s(),
-                            'type': res_type,
-                            'status': body.statuses.get(resonance.to_s(), 0),
-                            **body.librations[resonance.to_s()].to_flat_dict(),
                             'a': body.initial_data['a'],
                             'e': body.initial_data['e'],
                             'inc': body.initial_data['inc'],
@@ -273,8 +298,10 @@ class DataManager:
                             'c1': c1,
                             'c2': c2,
                             'c': c,
+                            'comments': comments,
                         }
                     )
+                    rows.append(row)
 
                     if body.libration_segments.get(resonance.to_s()) is not None:
                         metrics = {}

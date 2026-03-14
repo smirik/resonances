@@ -64,35 +64,37 @@ class TestSimulationConfig:
         config = SimulationConfig()
 
         # Window settings
-        assert config.classify_window_length == 0.1
+        assert config.classify_window_steps == [0.1, 0.2, 0.3]
         assert config.classify_window_step == 0.05
 
-        # Core thresholds
-        assert config.classify_mean_derivative_threshold == 0.00005
-        assert config.classify_sign_dominance_libration == 0.6
-        assert config.classify_sign_dominance_segment == 0.7
+        # Global thresholds
+        assert config.classify_rev_libration == 1.0
+        assert config.classify_tto_pure_libration == 0.5
+        assert config.classify_tto_partial_libration == 2.5
+        assert config.classify_tto_non_resonant == 6.0
+        assert config.classify_tto_transient_global == 3.0
+        assert config.classify_tto_near_separatrix == 6.0
 
-        # Revolutions thresholds
-        assert config.classify_revolutions_libration_soft == 1.5
-        assert config.classify_revolutions_segment_hard == 2.0
-
-        # Trend-to-oscillation thresholds
-        assert config.classify_tto_non_resonant_above == 5.0
-        assert config.classify_tto_transient == 1.5
+        # Segment quality thresholds
+        assert config.classify_good_seg_max_rev == 1.0
+        assert config.classify_good_seg_max_tto == 0.5
+        assert config.classify_reasonable_seg_max_rev_1 == 2.0
+        assert config.classify_reasonable_seg_max_tto_1 == 1.0
+        assert config.classify_reasonable_seg_max_rev_2 == 1.0
+        assert config.classify_reasonable_seg_max_tto_2 == 1.5
 
     def test_classify_params_custom(self):
         """Test classification parameters can be customized."""
         config = SimulationConfig(
-            classify_window_length=0.2,
-            classify_mean_derivative_threshold=0.0001,
-            classify_tto_non_resonant_above=10.0,
+            classify_tto_non_resonant=10.0,
+            classify_good_seg_max_rev=0.5,
         )
 
-        assert config.classify_window_length == 0.2
-        assert config.classify_mean_derivative_threshold == 0.0001
-        assert config.classify_tto_non_resonant_above == 10.0
+        assert config.classify_tto_non_resonant == 10.0
+        assert config.classify_good_seg_max_rev == 0.5
         # Other values should still be defaults
         assert config.classify_window_step == 0.05
+        assert config.classify_rev_libration == 1.0
 
 
 if __name__ == '__main__':

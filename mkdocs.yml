@@ -19,6 +19,7 @@ nav:
                   - "Resonance Matrices": matrix.md
                   - "Lidov-Kozai Resonances": "lidov-kozai.ipynb"
                   - "Output data": output.ipynb
+                  - "Classification": classify.md
                   - "Config": config.md
         - "About":
                   - "Copyright, license, references": about.md
