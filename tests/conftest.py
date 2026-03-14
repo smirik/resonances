@@ -5,9 +5,9 @@ import sys
 
 os.environ.setdefault('LOG_LEVEL', 'warning')
 
-import pytest
+import pytest  # noqa: E402
 
-import resonances
+import resonances  # noqa: E402
 
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))

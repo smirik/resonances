@@ -242,90 +242,99 @@ class DataManager:
         for body in bodies:
             for resonance in body.resonances():
                 try:
-                    # Resonance type
-                    if isinstance(resonance, SecularResonance):
-                        res_type = 'Secular'
-                    elif isinstance(resonance, LidovKozaiResonance):
-                        res_type = 'Lidov-Kozai'
-                    else:
-                        res_type = 'MMR'
-
-                    # Lidov-Kozai params
-                    if isinstance(resonance, LidovKozaiResonance):
-                        c1, c2, c = LidovKozaiParameters.evaluate(
-                            body.initial_data['e'],
-                            body.initial_data['inc'],
-                            body.initial_data['omega'],
-                        )
-                    else:
-                        c1, c2, c = None, None, None
-
-                    flat = body.librations[resonance.to_s()].to_flat_dict()
-                    # Extract comments to place it last; strip line breaks
-                    comments = flat.pop('comments', None)
-                    if comments is not None:
-                        comments = str(comments).replace('\n', ' ').replace('\r', ' ')
-
-                    # Extract segment counts and rename to user-friendly column names
-                    segment_count_columns = {
-                        'n_good_total': flat.pop('segment_counts_n_good_total', 0),
-                        'n_reasonable_total': flat.pop('segment_counts_n_reasonable_total', 0),
-                        'n_good_0.1': flat.pop('segment_counts_n_good_0_1', 0),
-                        'n_reasonable_0.1': flat.pop('segment_counts_n_reasonable_0_1', 0),
-                        'n_good_0.2': flat.pop('segment_counts_n_good_0_2', 0),
-                        'n_reasonable_0.2': flat.pop('segment_counts_n_reasonable_0_2', 0),
-                        'n_good_0.3': flat.pop('segment_counts_n_good_0_3', 0),
-                        'n_reasonable_0.3': flat.pop('segment_counts_n_reasonable_0_3', 0),
-                    }
-
-                    # Build row with segment counts after metrics_trend_to_oscillation,
-                    # and comments as the last column
-                    row = {
-                        'name': body.name,
-                        'resonance': resonance.to_s(),
-                        'type': res_type,
-                        'status': body.statuses.get(resonance.to_s(), 0),
-                    }
-                    for k, v in flat.items():
-                        row[k] = v
-                        if k == 'metrics_trend_to_oscillation':
-                            row.update(segment_count_columns)
-                    row.update(
-                        {
-                            'a': body.initial_data['a'],
-                            'e': body.initial_data['e'],
-                            'inc': body.initial_data['inc'],
-                            'Omega': body.initial_data['Omega'],
-                            'omega': body.initial_data['omega'],
-                            'M': body.initial_data['M'],
-                            'c1': c1,
-                            'c2': c2,
-                            'c': c,
-                            'comments': comments,
-                        }
-                    )
-                    rows.append(row)
-
-                    if body.libration_segments.get(resonance.to_s()) is not None:
-                        metrics = {}
-                        for window_key, window_segments in body.libration_segments[resonance.to_s()].items():
-                            for segment_key, segment in window_segments.items():
-                                compound_key = f"{window_key}_{segment_key}"
-                                for fld in self.SEGMENT_FIELDS:
-                                    metrics[f"{compound_key}_{fld}"] = getattr(segment, fld)
-
-                        segments.append(
-                            {
-                                'body': body.name,
-                                'resonance': resonance.to_s(),
-                                **metrics,
-                            }
-                        )
-
+                    rows.append(self._build_summary_row(body, resonance))
+                    seg_entry = self._build_segments_entry(body, resonance)
+                    if seg_entry is not None:
+                        segments.append(seg_entry)
                 except Exception as e:
                     logger.error(f"Error getting resonance summary for {body.name}: {e}")
 
         return pd.DataFrame(rows), pd.DataFrame(segments)
+
+    def _build_summary_row(self, body: Body, resonance) -> dict:
+        """Build a single summary row for one body+resonance pair."""
+        # Resonance type
+        if isinstance(resonance, SecularResonance):
+            res_type = 'Secular'
+        elif isinstance(resonance, LidovKozaiResonance):
+            res_type = 'Lidov-Kozai'
+        else:
+            res_type = 'MMR'
+
+        # Lidov-Kozai params
+        if isinstance(resonance, LidovKozaiResonance):
+            c1, c2, c = LidovKozaiParameters.evaluate(
+                body.initial_data['e'],
+                body.initial_data['inc'],
+                body.initial_data['omega'],
+            )
+        else:
+            c1, c2, c = None, None, None
+
+        flat = body.librations[resonance.to_s()].to_flat_dict()
+        # Extract comments to place it last; strip line breaks
+        comments = flat.pop('comments', None)
+        if comments is not None:
+            comments = str(comments).replace('\n', ' ').replace('\r', ' ')
+
+        # Extract segment counts and rename to user-friendly column names
+        segment_count_columns = {
+            'n_good_total': flat.pop('segment_counts_n_good_total', 0),
+            'n_reasonable_total': flat.pop('segment_counts_n_reasonable_total', 0),
+            'n_good_0.1': flat.pop('segment_counts_n_good_0_1', 0),
+            'n_reasonable_0.1': flat.pop('segment_counts_n_reasonable_0_1', 0),
+            'n_good_0.2': flat.pop('segment_counts_n_good_0_2', 0),
+            'n_reasonable_0.2': flat.pop('segment_counts_n_reasonable_0_2', 0),
+            'n_good_0.3': flat.pop('segment_counts_n_good_0_3', 0),
+            'n_reasonable_0.3': flat.pop('segment_counts_n_reasonable_0_3', 0),
+        }
+
+        # Build row with segment counts after metrics_trend_to_oscillation,
+        # and comments as the last column
+        row = {
+            'name': body.name,
+            'resonance': resonance.to_s(),
+            'type': res_type,
+            'status': body.statuses.get(resonance.to_s(), 0),
+        }
+        for k, v in flat.items():
+            row[k] = v
+            if k == 'metrics_trend_to_oscillation':
+                row.update(segment_count_columns)
+        row.update(
+            {
+                'a': body.initial_data['a'],
+                'e': body.initial_data['e'],
+                'inc': body.initial_data['inc'],
+                'Omega': body.initial_data['Omega'],
+                'omega': body.initial_data['omega'],
+                'M': body.initial_data['M'],
+                'c1': c1,
+                'c2': c2,
+                'c': c,
+                'comments': comments,
+            }
+        )
+        return row
+
+    def _build_segments_entry(self, body: Body, resonance) -> dict | None:
+        """Build a segments entry for one body+resonance pair, or None if no segments."""
+        res_key = resonance.to_s()
+        if body.libration_segments.get(res_key) is None:
+            return None
+
+        metrics = {}
+        for window_key, window_segments in body.libration_segments[res_key].items():
+            for segment_key, segment in window_segments.items():
+                compound_key = f"{window_key}_{segment_key}"
+                for fld in self.SEGMENT_FIELDS:
+                    metrics[f"{compound_key}_{fld}"] = getattr(segment, fld)
+
+        return {
+            'body': body.name,
+            'resonance': res_key,
+            **metrics,
+        }
 
     def save_configuration_details(self, bodies, simulation):
         """Save configuration details to file."""
