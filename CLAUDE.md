@@ -2,26 +2,29 @@
 
 This package can identify mean-motion resonances (MMRs), secular resonances and Lidov-Kozai resonances in the Solar system. It loads the data from AstDyS catalog or NASA Horizon, set up a simulation, perform numerical integration using rebound python package (integrator), build resonant angles and periodograms for some times series, classify the results, depending on the configuration, save the data and plots to files.
 
-Core modules in /resonances directory:
+Core modules in `resonances/`:
 
-- cli - support for command line interface
-- data - utility functions for data handling, constants, etc.
-- finder - high-level interface to different resonance finders (MMR, secular, Lidov-Kozai)
-- lidov_kozai - Lidov-Kozai resonance module; provides class for Lidov-Kozai resonance, methods to compute the Lidov-Kozai invariants, etc.
-- matrix - (abstract by logic) base class for MMRs catalogs (2-body and 3-body); his children are TwoBodyMatrix and ThreeBodyMatrix. They contain a list of all considered relevant resonances and their resonant semi-major axes.
-- mmr - MMR module; provides abstract class for MMR and TwoBody and ThreeBody classes implementing the MMR interface; provides Matrix classes for them; provides finder functions for finding MMRs
-- plotting - provides classes for plotting time series and periodograms and their flexible configurator
-- resonance - core components of the package; classify - classify the resonant angle time series into libration, circulation or chaotic behavior; factory - factory for creating different types of resonances; filtering - filter time series using scipy filters to remove noise; libration - old class, not used now; periodogram - provides class for building and analyzing Lomb-Scargle periodograms through astropy python package; planets_mappings - utility class to map a letter to the planet name and vice versa; resolver - resolver for the final status of MMRs only (need overlapping of the periodogram peaks of semi-major axis and resonant angle); resonance - abstract class Resonance for all types of resonances;
-- secular - secular resonance module; provides class for secular resonance, secular formula parser, finder for secular resonances and functions to build the proper angle from the osculating elements (where for the planets a linear model is used instead of the real Keplerian elements);
-- simulation - simulation module with core simulation classes and functions; batch_manager - manages multiple batches (use multiple cores if possible), body_manager - manages bodies in the simulation, data_manager - manages data saving for simulation itself and its bodies / results of identification; integration - performs numerical integration using rebound python package and invokes data storage during the simulation, serializer - serializes and restores simulations that were interrupted, state_manager - manages simulation state for batches and interrupted simulations;
+| Module | Purpose |
+|--------|---------|
+| `cli` | Command line interface (Click-based `resonances` command) |
+| `data` | Utility functions, constants |
+| `finder` | High-level interface to resonance finders (MMR, secular, Lidov-Kozai) |
+| `lidov_kozai` | Lidov-Kozai resonance class, invariant computation |
+| `matrix` | MMR catalogs — `TwoBodyMatrix`, `ThreeBodyMatrix` with resonant semi-major axes |
+| `mmr` | MMR classes (`TwoBody`, `ThreeBody`), finder functions |
+| `plotting` | Time series and periodogram plotting with flexible configurator |
+| `resonance` | Core: classify (3-layer: `classify_resonance` → `classify_from_data` → `classify_from_metrics`), factory, filtering (scipy), periodogram (Lomb-Scargle via astropy), resolver (final MMR status from periodogram peak overlap), planets_mappings |
+| `secular` | Secular resonance class, formula parser, finder, proper angle builder |
+| `simulation` | Simulation engine: `batch_manager` (multicore), `body_manager`, `data_manager` (I/O), `integration` (rebound), `serializer`, `state_manager` |
 
-Files in resonances/:
+Key files in `resonances/`:
 
-- body.py - class Body used in the simulation; contains structure of the data and other important vars
-- config.py - load config from .env.dist and .env files if presented; allows to rewrite config values at runtime.
-- horizons.py - get Keplerian elements from NASA Horizon for a given body.
-- logger.py - logger for the package; allows to log messages with different levels. (info used for something useful during the development, error - for critical errors (e.g., asteroid's initial data cannot be retrieved), warning - something that does not affect but worth mentioning, e.g., when eccentricity becomes too large)
-- .env.dist - default config values for the package.
+| File | Purpose |
+|------|---------|
+| `body.py` | `Body` class — simulation data structure |
+| `config.py` | Loads `.env.dist` + `.env`, exposes `SimulationConfig` |
+| `horizons.py` | Fetch Keplerian elements from NASA Horizons |
+| `logger.py` | Logging (info/warning/error levels) |
 
 ## Important notes
 
@@ -36,17 +39,32 @@ Files in resonances/:
 
 ## How to run
 
-Everything should be run through `uv run` (which automatically manages the virtual environment). Use `uv sync` to install dependencies.
+Python >=3.11 required. Uses `uv` for dependency management.
+
+```bash
+uv sync                # install dependencies
+uv run resonances      # CLI entry point
+```
+
+## Configuration
+
+- `resonances/.env.dist` contains all default config values with comments.
+- Place a `.env` file next to `.env.dist` to override values at runtime.
+- `config.py` loads both files and exposes `SimulationConfig`.
 
 ## Testing
 
 Any functionality except temporary should be tested. The package has the following conventions:
 
-- black for code formatting and flake8 for code quality. Run every time before saying "done".
+- Code quality checks (run every time before saying "done"):
+  ```bash
+  uv run black . --check    # formatting
+  uv run flake8 --count     # linting
+  ```
 - `make test-fast` to run all fast tests that do not require numerical integration, which takes time.
 - `make test-slow` to run all slow tests that require numerical integration, which takes enough time. Run them at the end of the task when all other fast tests and formatting are done and passed.
 - `make test` to run all tests - fast and slow.
-- never change real (slow) tests unless you are absolutely sure that you know what you do; ask me if you are not sure.
+- Never change real (slow) tests unless you are absolutely sure that you know what you do; ask me if you are not sure.
 
 For tests:
 
