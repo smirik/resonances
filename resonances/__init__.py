@@ -9,7 +9,7 @@ warnings.filterwarnings(
 
 from .finder.finder import find, check
 from .resonance.factory import create_mmr, create_resonance, create_secular_resonance, detect_resonance_type
-from .resonance.libration import libration
+from .resonance.periodogram import Periodogram
 
 from .lidov_kozai.lidov_kozai_matrix import LidovKozaiMatrix
 from .lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, LidovKozaiParameters

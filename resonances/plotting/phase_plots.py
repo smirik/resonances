@@ -8,7 +8,6 @@ Provides specialized plotting functions for:
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import Optional, Union
 
@@ -173,6 +172,8 @@ class PhasePlotter:
         PhasePlotter
             Self for method chaining
         """
+        import matplotlib.pyplot as plt
+
         # Close any existing figure to prevent memory leaks
         if self._figure is not None:
             plt.close(self._figure)
@@ -378,11 +379,15 @@ class PhasePlotter:
         if self._figure is None:
             raise RuntimeError("Must call a plot method before show()")
 
+        import matplotlib.pyplot as plt
+
         plt.show()
         return self
 
     def close(self):
         """Close the figure to free memory."""
+        import matplotlib.pyplot as plt
+
         if self._figure is not None:
             plt.close(self._figure)
             self._figure = None

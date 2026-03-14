@@ -9,7 +9,7 @@ from resonances.config import config as c
 from resonances.logger import logger
 from .config import SimulationConfig
 from resonances.body import Body
-from rebound import hash as h
+from resonances.data.const import SOLAR_SYSTEM_WITH_SUN
 
 
 class IntegrationEngine:
@@ -18,14 +18,10 @@ class IntegrationEngine:
     def __init__(self, config: SimulationConfig):
         self.config = config
         self.sim = None
-        self.planets = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+        self.planets = SOLAR_SYSTEM_WITH_SUN
 
-        self.hash_to_planets = {}
-        self.planets_data = {}
-        for planet in self.planets:
-            planet_cuid = h(planet).value
-            self.hash_to_planets[planet_cuid] = planet
-            self.planets_data[planet] = []
+        self.planets_without_sun = [p for p in self.planets if p != 'Sun']
+        self.planets_data = {planet: [] for planet in self.planets}
 
     def create_solar_system(self, force=False):
         """Create or load the Solar System REBOUND simulation."""
@@ -83,28 +79,27 @@ class IntegrationEngine:
             self.sim.integrate(time)
             os = self.sim.orbits(primary=ps[0])
 
-            self._store_planets(time, os)
+            if self.config.save_planets:
+                self._store_planets(time, os)
 
             # Update body data
             for body in bodies:
                 self._update_body_data(body, os, i)
 
     def _store_planets(self, time, os):
-        planets_without_sun = self.planets.copy()
-        planets_without_sun.remove('Sun')
-        for i, planet in enumerate(planets_without_sun):
-            planet_hash = h(planet).value
-            self.planets_data[self.hash_to_planets[planet_hash]].append(
+        for i, planet in enumerate(self.planets_without_sun):
+            orbit = os[i]
+            self.planets_data[planet].append(
                 {
                     'times': time / (2 * np.pi),
-                    'a': os[i].a,
-                    'e': os[i].e,
-                    'inc': os[i].inc,
-                    'Omega': os[i].Omega,
-                    'omega': os[i].omega,
-                    'M': os[i].M,
-                    'l': os[i].l,
-                    'varpi': os[i].Omega + os[i].omega,
+                    'a': orbit.a,
+                    'e': orbit.e,
+                    'inc': orbit.inc,
+                    'Omega': orbit.Omega,
+                    'omega': orbit.omega,
+                    'M': orbit.M,
+                    'l': orbit.l,
+                    'varpi': orbit.Omega + orbit.omega,
                 }
             )
 

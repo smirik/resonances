@@ -120,7 +120,7 @@ class SimulationSerializer:
         return {
             "type": getattr(resonance, "type", None),
             "key": key,
-            "display": resonance.to_s(),
+            "display": key,
         }
 
     @classmethod

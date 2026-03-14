@@ -3,6 +3,7 @@ from typing import List, Union
 import astdys
 from .config import SimulationConfig
 from resonances.body import Body
+from resonances.data.const import SOLAR_SYSTEM_WITH_SUN
 from resonances.resonance.resonance import Resonance
 
 
@@ -12,7 +13,7 @@ class BodyManager:
     def __init__(self, config: SimulationConfig):
         self.config = config
         self.bodies: List[Body] = []
-        self.planets = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+        self.planets = SOLAR_SYSTEM_WITH_SUN
 
     def get_index_of_planets(self, planets_names):
         """Get indices of planets by name."""

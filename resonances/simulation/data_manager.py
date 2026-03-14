@@ -8,23 +8,26 @@ from resonances.logger import logger
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, LidovKozaiParameters
 from resonances.plotting import Plotter, PhasePlotter
+from resonances.resonance.classify.models import ResonanceStatus
 from .serializer import SimulationSerializer
+
+_S = ResonanceStatus
 
 
 class DataManager:
     """Manages data saving and export functionality."""
 
     STATUS_FOLDERS = {
-        -5: 'probably_near_separatrix',
-        -4: 'slow-circulation',
-        -3: 'near_separatrix',
-        2: 'resonant',
-        1: 'transient',
-        0: 'non-resonant',
-        -1: 'controversial-transient',
-        -2: 'controversial-libration',
-        -9: 'uncertain',
-        -99: 'chaotic',
+        _S.PROBABLY_NEAR_SEPARATRIX: 'probably_near_separatrix',
+        _S.PROBABLY_SLOW_CIRCULATION: 'slow-circulation',
+        _S.NEAR_SEPARATRIX: 'near_separatrix',
+        _S.LIBRATION: 'resonant',
+        _S.TRANSIENT: 'transient',
+        _S.NON_RESONANT: 'non-resonant',
+        _S.TRANSIENT_UNCERTAIN: 'controversial-transient',
+        _S.LIBRATION_UNCERTAIN: 'controversial-libration',
+        _S.UNCERTAIN: 'uncertain',
+        _S.CHAOTIC: 'chaotic',
     }
 
     # Fields extracted per segment for the segments summary CSV
@@ -85,8 +88,7 @@ class DataManager:
         """Save all resonance data for a body."""
 
         self.ensure_save_path_exists()
-        save_mode = self.config.save
-        if (save_mode is None) or (save_mode is False) or (isinstance(save_mode, str) and save_mode.lower() == 'none'):
+        if not self.config.save or (isinstance(self.config.save, str) and self.config.save.lower() == 'none'):
             return
 
         body_data = body.keplerian_elements_to_dict()
@@ -141,15 +143,19 @@ class DataManager:
                 if 'phase_portrait' in plots_to_generate:
                     self._plot_phase_portrait(body, resonance, simulation, plot_path)
 
+    def _show_or_save(self, plotter, filename):
+        """Show and/or save a plot depending on config, then close."""
+        if self.config.plot_type in ["show", "both"]:
+            plotter.show()
+        if self.config.plot_type in ["save", "both"]:
+            plotter.save(filename)
+
     def _plot_evolution(self, body: Body, resonance, simulation, plot_path: str):
         """Plot evolution (resonant angle, semi-major axis, etc.)."""
         config = self.config.plot_config if self.config.plot_config is not None else 'full'
         plot_filename = f'{plot_path}/{body.name}-{resonance.to_s()}.{self.config.image_type}'
         plotter = Plotter.from_body(body, resonance, simulation).configure(config).plot()
-        if self.config.plot_type in ["show", "both"]:
-            plotter.show()
-        if self.config.plot_type in ["save", "both"]:
-            plotter.save(plot_filename)
+        self._show_or_save(plotter, plot_filename)
         plotter.close()
 
     def _plot_phase_portrait(self, body: Body, resonance, simulation, plot_path: str):
@@ -160,25 +166,16 @@ class DataManager:
 
         # Filtered phase portrait
         plotter.plot_phase_portrait_filtered()
-        if self.config.plot_type in ["show", "both"]:
-            plotter.show()
-        if self.config.plot_type in ["save", "both"]:
-            plotter.save(f'{plot_path}/{body.name}-{res_key}-filtered.{img_type}')
+        self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-filtered.{img_type}')
 
         # Unfiltered phase portrait
         plotter.plot_phase_portrait_unfiltered()
-        if self.config.plot_type in ["show", "both"]:
-            plotter.show()
-        if self.config.plot_type in ["save", "both"]:
-            plotter.save(f'{plot_path}/{body.name}-{res_key}-unfiltered.{img_type}')
+        self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-unfiltered.{img_type}')
 
         # Slow points phase portrait
         percentile = getattr(self.config, 'phase_portrait_slow_percentile', 95)
         plotter.plot_phase_portrait_slow(percentile=percentile)
-        if self.config.plot_type in ["show", "both"]:
-            plotter.show()
-        if self.config.plot_type in ["save", "both"]:
-            plotter.save(f'{plot_path}/{body.name}-{res_key}-percentile{int(percentile)}.{img_type}')
+        self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-percentile{int(percentile)}.{img_type}')
 
         plotter.close()
 
@@ -221,19 +218,16 @@ class DataManager:
         summary_filename = f'{self.config.save_path}/summary.csv'
         segments_filename = f'{self.config.save_path}/segments.csv'
 
-        summary_file = Path(summary_filename)
-        segments_file = Path(segments_filename)
-        if summary_file.exists():
-            df.to_csv(summary_filename, mode='a', header=False, index=False)
-        else:
-            df.to_csv(summary_filename, mode='a', header=True, index=False)
-
-        if segments_file.exists():
-            df_segments.to_csv(segments_filename, mode='a', header=False, index=False)
-        else:
-            df_segments.to_csv(segments_filename, mode='a', header=True, index=False)
+        self._append_csv(df, summary_filename)
+        self._append_csv(df_segments, segments_filename)
 
         return df, df_segments
+
+    @staticmethod
+    def _append_csv(df, filename):
+        """Append DataFrame to CSV, writing header only if the file is new."""
+        write_header = not Path(filename).exists()
+        df.to_csv(filename, mode='a', header=write_header, index=False)
 
     def get_simulation_summary(self, bodies):
         """Generate simulation summary dataframe."""

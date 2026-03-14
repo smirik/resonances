@@ -99,6 +99,7 @@ class Simulation:
 
     def prepare_angles(self):
         for body in self.bodies:
+            body.axis_filtered = filter_angle(body.axis, self.config)
             for resonance in body.resonances():
                 # make wrapped angle, filter, and record wrapped filtered
                 body.angles_unwrapped[resonance.to_s()] = np.unwrap(body.angle_unwrapped(resonance))
@@ -110,7 +111,6 @@ class Simulation:
                 unwrapped_filtered_angle = filter_angle(body.angle_unwrapped(resonance), self.config)
                 body.angles_filtered_unwrapped[resonance.to_s()] = unwrapped_filtered_angle
                 body.angles_filtered[resonance.to_s()] = wrap(unwrapped_filtered_angle)
-                body.axis_filtered = filter_angle(body.axis, self.config)
 
     def build_periodograms(self):
         base_periodogram_config = {

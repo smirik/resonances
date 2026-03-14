@@ -52,6 +52,7 @@ K = 0.0172020989484
 DAYS_IN_YEAR = 365.2422
 
 SOLAR_SYSTEM = ["Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"]
+SOLAR_SYSTEM_WITH_SUN = ['Sun'] + SOLAR_SYSTEM + ['Pluto']
 
 SECULAR_FORMULAS = [
     # --- Linear secular resonances ---

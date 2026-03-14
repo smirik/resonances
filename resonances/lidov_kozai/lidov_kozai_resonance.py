@@ -34,7 +34,6 @@ class LidovKozaiParameters:
         return (1.0 - e**2) * np.cos(inc) ** 2
 
     @staticmethod
-    @staticmethod
     def compute_c(eccentricity, inclination, argument_of_pericenter):
         """
         Lidov's c parameter – the additional invariant introduced by Lidov for direct libration prediction.

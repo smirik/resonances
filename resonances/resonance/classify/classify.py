@@ -143,11 +143,8 @@ def _is_good_segment(smetrics: SegmentMetrics, params: ClassifyParams) -> bool:
 
 def _is_reasonable_segment(smetrics: SegmentMetrics, params: ClassifyParams) -> bool:
     return (
-        (smetrics.revolutions_true <= params.reasonable_seg_max_rev_1)
-        and (smetrics.trend_to_oscillation < params.reasonable_seg_max_tto_1)
-        or (smetrics.revolutions_true <= params.reasonable_seg_max_rev_2)
-        and (smetrics.trend_to_oscillation < params.reasonable_seg_max_tto_2)
-    )
+        smetrics.revolutions_true <= params.reasonable_seg_max_rev_1 and smetrics.trend_to_oscillation < params.reasonable_seg_max_tto_1
+    ) or (smetrics.revolutions_true <= params.reasonable_seg_max_rev_2 and smetrics.trend_to_oscillation < params.reasonable_seg_max_tto_2)
 
 
 def _count_segments(

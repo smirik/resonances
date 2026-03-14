@@ -21,6 +21,7 @@ this confirms the resonance is genuine.
 from typing import Optional
 
 from resonances.resonance.periodogram import Periodogram
+from resonances.resonance.classify.models import ResonanceStatus
 
 
 def resolve_mmr_status(
@@ -68,18 +69,19 @@ def resolve_mmr_status(
     overlapping = Periodogram.overlap_list(angle_positions, axis_positions, delta=overlap_delta)
     has_overlap = len(overlapping) > 0
 
-    # Determine final status
-    if classification_status == 0:
-        final_status = 0
-    elif classification_status == 2:
-        final_status = 2 if has_overlap else -2
-    elif classification_status == 1:
-        final_status = 1 if has_overlap else -1
+    # Determine final status based on classification and periodogram overlap
+    S = ResonanceStatus
+    if classification_status == S.NON_RESONANT:
+        final_status = S.NON_RESONANT
+    elif classification_status == S.LIBRATION:
+        final_status = S.LIBRATION if has_overlap else S.LIBRATION_UNCERTAIN
+    elif classification_status == S.TRANSIENT:
+        final_status = S.TRANSIENT if has_overlap else S.TRANSIENT_UNCERTAIN
     else:
-        final_status = 0
+        final_status = S.NON_RESONANT
 
     return {
-        'status': final_status,
+        'status': int(final_status),
         'overlapping_peaks': overlapping,
         'n_angle_peaks': len(angle_positions),
         'n_axis_peaks': len(axis_positions),

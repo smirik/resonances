@@ -3,11 +3,7 @@ from pathlib import Path
 from resonances.config import config
 from datetime import datetime
 
-
-def static_init(cls):
-    if getattr(cls, "static_init", None):
-        cls.static_init()
-    return cls
+from resonances.data.util import static_init
 
 
 @static_init

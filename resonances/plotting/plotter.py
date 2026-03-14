@@ -7,7 +7,6 @@ from both live Body objects and CSV files.
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import math
 from pathlib import Path
 from typing import Union, Optional, Dict, Any
@@ -152,6 +151,8 @@ class Plotter:
             logger.warning("No enabled panels to plot")
             return self
 
+        import matplotlib.pyplot as plt
+
         # Create figure and axes
         n_panels = len(enabled_panels)
         self._figure, self._axes = plt.subplots(n_panels, 1, figsize=self._config.figsize, dpi=self._config.dpi)
@@ -216,11 +217,15 @@ class Plotter:
         if self._figure is None:
             raise RuntimeError("Must call plot() before show()")
 
+        import matplotlib.pyplot as plt
+
         plt.show()
         return self
 
     def close(self):
         """Close the figure to free memory."""
+        import matplotlib.pyplot as plt
+
         if self._figure is not None:
             plt.close(self._figure)
             self._figure = None
@@ -382,6 +387,8 @@ class Plotter:
 
     def _render_timeseries_panel(self, ax, x_data, y_data, style: StyleConfig, tmax_years):
         """Render a time-series panel."""
+        import matplotlib.pyplot as plt
+
         # Plot data
         ax.plot(
             x_data,

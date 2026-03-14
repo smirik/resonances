@@ -72,7 +72,7 @@ class SecularResonance(Resonance):
         Formal order of the secular resonance:
         sum |coefficients|.
         """
-        return sum(abs(t.coefficient) for t in self.formula.terms)
+        return self.formula.order()
 
 
 SECULAR_RESONANCE_ALIASES: dict[str, str] = {

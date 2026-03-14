@@ -2,11 +2,7 @@ from pathlib import Path
 from dotenv import dotenv_values
 import os
 
-
-def static_init(cls):
-    if getattr(cls, "static_init", None):
-        cls.static_init()
-    return cls
+from resonances.data.util import static_init
 
 
 @static_init
@@ -59,7 +55,7 @@ class config:
 
         # Merge them: left to right means the rightmost wins in conflicts
         #   default_config  <  env_vars < user_config
-        merged = {**user_config, **default_config, **env_vars, **user_config}
+        merged = {**default_config, **env_vars, **user_config}
         if merged.get("LOG_LEVEL") == "debug":
             print(f"Merged config: {merged}")
 

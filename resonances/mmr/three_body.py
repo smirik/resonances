@@ -59,37 +59,29 @@ class ThreeBody(MMR):
         return coeff, planets_names
 
     def to_s(self):
-        s = '{:d}{:.1}{:+d}{:.1}{:+d}{:+d}{:+d}{:+d}'.format(
-            int(self.coeff[0]),
-            self.get_letter_from_planet_name(self.planets_names[0]),
-            int(self.coeff[1]),
-            self.get_letter_from_planet_name(self.planets_names[1]),
-            int(self.coeff[2]),
-            int(self.coeff[3]),
-            int(self.coeff[4]),
-            int(self.coeff[5]),
-        )
-        return s
+        if not hasattr(self, '_to_s'):
+            self._to_s = '{:d}{:.1}{:+d}{:.1}{:+d}{:+d}{:+d}{:+d}'.format(
+                int(self.coeff[0]),
+                self.get_letter_from_planet_name(self.planets_names[0]),
+                int(self.coeff[1]),
+                self.get_letter_from_planet_name(self.planets_names[1]),
+                int(self.coeff[2]),
+                int(self.coeff[3]),
+                int(self.coeff[4]),
+                int(self.coeff[5]),
+            )
+        return self._to_s
 
     def to_short(self):
-        s = '{:d}{:.1}{:+d}{:.1}{:+d}'.format(
-            int(self.coeff[0]),
-            self.get_letter_from_planet_name(self.planets_names[0]),
-            int(self.coeff[1]),
-            self.get_letter_from_planet_name(self.planets_names[1]),
-            int(self.coeff[2]),
-        )
-        return s
-
-    @property
-    def resonant_axis(self):
-        if self._resonant_axis is None:
-            self._resonant_axis = self.calculate_resonant_axis()
-        return self._resonant_axis
-
-    @resonant_axis.setter
-    def resonant_axis(self, value):
-        self._resonant_axis = value
+        if not hasattr(self, '_to_short'):
+            self._to_short = '{:d}{:.1}{:+d}{:.1}{:+d}'.format(
+                int(self.coeff[0]),
+                self.get_letter_from_planet_name(self.planets_names[0]),
+                int(self.coeff[1]),
+                self.get_letter_from_planet_name(self.planets_names[1]),
+                int(self.coeff[2]),
+            )
+        return self._to_short
 
     def calculate_resonant_axis(self):
         if len(self.planets_names) != 2:

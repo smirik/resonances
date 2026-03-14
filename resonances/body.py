@@ -1,6 +1,7 @@
 import numpy as np
 
 from resonances.resonance.classify import ResonanceClassifyResult
+from resonances.resonance.classify.models import ResonanceStatus
 from resonances.resonance.resonance import Resonance
 from resonances.mmr.mmr import MMR
 from resonances.secular.proper_angle import build_proper_angle_series
@@ -54,8 +55,6 @@ class Body:
         self.periodogram_frequency = {}
         self.periodogram_power = {}
         self.periodogram_peaks = {}
-
-        self.angles_filtered = {}
 
         self.axis_filtered = None
         self.axis_periodogram_frequency = None
@@ -189,9 +188,8 @@ class Body:
         """
         Check if body is in resonance (works for both MMR and secular).
         """
-        if (self.status(resonance) is not None) and (self.status(resonance) > 0):
-            return True
-        return False
+        status = self.status(resonance)
+        return status is not None and status > ResonanceStatus.NON_RESONANT
 
     def status(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]):
         """
@@ -209,9 +207,7 @@ class Body:
         """
         Check if body is in pure resonance (works for both MMR and secular).
         """
-        if (self.status(resonance) is not None) and (2 == self.status(resonance)):
-            return True
-        return False
+        return self.status(resonance) == ResonanceStatus.LIBRATION
 
     def is_particle(self):
         if 'particle' == self.type:

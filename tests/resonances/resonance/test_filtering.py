@@ -1,14 +1,14 @@
-import resonances
 import numpy as np
 import pytest
 
 from resonances.resonance.filtering import butter_lowpass_filter
+from resonances.resonance.periodogram import Periodogram
 
 
 def test_periodogram():
     t = np.linspace(0, 10, 101)
     y = np.sin(np.pi * t)
-    (frequency, power) = resonances.libration.periodogram(t, y, minimum_frequency=0.0, maximum_frequency=2.0)
+    (frequency, power) = Periodogram.lomb_scargle(t, y, minimum_frequency=0.0, maximum_frequency=2.0)
 
     key = 0
     for i, elem in enumerate(frequency):
@@ -21,9 +21,9 @@ def test_periodogram():
 def test_find_peaks_with_position():
     t = np.linspace(0, 10, 101)
     y = np.sin(np.pi * t) + np.sin(2 * np.pi * t)  # 0.5 Hz and 1 Hz
-    (frequency, power) = resonances.libration.periodogram(t, y, minimum_frequency=0.0, maximum_frequency=2.0)
+    (frequency, power) = Periodogram.lomb_scargle(t, y, minimum_frequency=0.0, maximum_frequency=2.0)
 
-    peaks = resonances.libration.find_peaks_with_position(frequency, power)
+    peaks = Periodogram.find_peaks_with_position(frequency, power)
 
     keys = []
     for i, elem in enumerate(frequency):
@@ -41,10 +41,10 @@ def test_find_peaks_with_position():
 def test_filter():
     t = np.linspace(0, 10, 101)
     y = np.sin(np.pi * t) + np.sin(2 * np.pi * t)  # 0.5 Hz and 1 Hz
-    (frequency, power) = resonances.libration.periodogram(t, y, minimum_frequency=0.0, maximum_frequency=2.0)
+    (frequency, power) = Periodogram.lomb_scargle(t, y, minimum_frequency=0.0, maximum_frequency=2.0)
     y_filtered = butter_lowpass_filter(y, 0.6, 1, 2, 5)
-    frequency, power = resonances.libration.periodogram(t, y_filtered, minimum_frequency=0.0, maximum_frequency=2.0)
-    peaks = resonances.libration.find_peaks_with_position(frequency, power, height=0.2)
+    frequency, power = Periodogram.lomb_scargle(t, y_filtered, minimum_frequency=0.0, maximum_frequency=2.0)
+    peaks = Periodogram.find_peaks_with_position(frequency, power, height=0.2)
 
     assert True == (peaks['position'][0][0] <= 1.0 / 0.5 <= peaks['position'][0][1])
     assert 1 == len(peaks['position'])
