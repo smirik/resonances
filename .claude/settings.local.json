@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/resonances/secular/test_secular_check.py::test_759_all_secular_resonances -v)",
+      "WebFetch(domain:github.com)",
+      "Bash(python test:*)",
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(python3:*)",
+      "Bash(xxd:*)",
+      "Bash(head -1 /Users/smirik/projects/resonances/experiments/lkr-main-belt-mmr/csv_workers/phase1/*.csv)",
+      "Bash(poetry run python experiments/lkr-main-belt-mmr/reclassification/collect_images.py --dry-run)",
+      "Bash(poetry run python experiments/lkr-main-belt-mmr/reclassification/collect_images.py)",
+      "Bash(poetry run:*)"
+    ],
+    "deny": []
+  }
+}

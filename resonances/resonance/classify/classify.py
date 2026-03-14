@@ -123,71 +123,6 @@ def _calc_segments_metrics(
     return segments_metrics
 
 
-def _classify_segments(
-    times: np.ndarray,
-    sigma_wrapped: np.ndarray,
-    sigma_unwrapped: np.ndarray,
-    window_length_percentage: float,
-    window_step_percentage: float,
-    config=None,
-):
-    revolutions_segment_hard = getattr(config, 'classify_revolutions_segment_hard', 2.0) if config else 2.0
-    tto_transient = getattr(config, 'classify_tto_transient', 1.5) if config else 1.5
-    mean_derivative_threshold = getattr(config, 'classify_mean_derivative_threshold', 0.00005) if config else 0.00005
-    revolutions_libration_soft = getattr(config, 'classify_revolutions_libration_soft', 1.5) if config else 1.5
-    sign_dominance_segment = getattr(config, 'classify_sign_dominance_segment', 0.7) if config else 0.7
-
-    N = len(times)
-    window_length = int(N * window_length_percentage)
-    window_step = int(N * window_step_percentage)
-
-    start = 0
-    libration_segments = []
-    libration_segments_metrics = {}
-    segments_data = {}
-
-    while start + window_length <= N:
-        end = start + window_length
-
-        segment_start = times[start]
-        segment_end = times[end - 1]
-
-        segment_metrics = _calc_metrics(times[start:end], sigma_wrapped[start:end], sigma_unwrapped[start:end])
-
-        has_small_rev_and_trend = (segment_metrics.revolutions_true <= revolutions_segment_hard) and (
-            segment_metrics.trend_to_oscillation < tto_transient
-        )
-        has_small_mean_sigma_dot_and_rev = (abs(segment_metrics.mean_sigma_dot) <= mean_derivative_threshold) and (
-            segment_metrics.revolutions_true <= revolutions_libration_soft
-        )
-        has_reasonable_sign_dominance = abs(segment_metrics.sign_dominance) < sign_dominance_segment
-
-        has_libration = has_reasonable_sign_dominance and (has_small_rev_and_trend or has_small_mean_sigma_dot_and_rev)
-
-        if has_libration:
-            libration_segments.append((segment_start, segment_end))
-            libration_segments_metrics[f"{segment_start:.2f}-{segment_end:.2f}"] = segment_metrics
-        segments_data[f"{segment_start:.2f}-{segment_end:.2f}"] = segment_metrics
-        start += window_step
-
-    libration_segments = np.array(libration_segments, dtype=times.dtype).reshape(-1, 2)
-    merged = merge_intervals(libration_segments, join_touching=True)
-
-    lengths = (merged[:, 1] - merged[:, 0]).astype(float) if merged.size else np.array([], float)
-    total_true_length = float(lengths.sum())
-
-    total_length = float(times[-1] - times[0]) if N >= 2 else 0.0
-    ratio = (total_true_length / total_length) if total_length > 0 else 0.0
-
-    return {
-        'merged': merged,
-        'good_segments_metrics': libration_segments_metrics,
-        'ratio': ratio,
-        'total_libration_length': total_true_length,
-        'segments_data': segments_data,
-    }
-
-
 def classify_resonance(  # noqa: C901
     body,
     resonance,
@@ -199,7 +134,6 @@ def classify_resonance(  # noqa: C901
     window_steps = [0.1, 0.2, 0.3]
     if window_length_percentage is None:
         window_length_percentage = getattr(config, 'classify_window_length', 0.1) if config else 0.1
-        window_length_percentage = 0.2
     if window_step_percentage is None:
         window_step_percentage = getattr(config, 'classify_window_step', 0.05) if config else 0.05
 
