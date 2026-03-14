@@ -172,13 +172,13 @@ class TestPlotsGeneration:
         assert evolution_file.exists(), f"Evolution plot not found: {evolution_file}"
 
         # Check all three phase portrait variants exist
-        phase_filtered = plot_path / f'phase_filtered_test_asteroid-{resonance_key}.png'
+        phase_filtered = plot_path / f'test_asteroid-{resonance_key}-filtered.png'
         assert phase_filtered.exists(), f"Filtered phase portrait not found: {phase_filtered}"
 
-        phase_unfiltered = plot_path / f'phase_unfiltered_test_asteroid-{resonance_key}.png'
+        phase_unfiltered = plot_path / f'test_asteroid-{resonance_key}-unfiltered.png'
         assert phase_unfiltered.exists(), f"Unfiltered phase portrait not found: {phase_unfiltered}"
 
-        phase_slow = plot_path / f'phase_slow_test_asteroid-{resonance_key}.png'
+        phase_slow = plot_path / f'test_asteroid-{resonance_key}-percentile95.png'
         assert phase_slow.exists(), f"Slow phase portrait not found: {phase_slow}"
 
     def test_generate_only_phase_portrait(self):
@@ -200,7 +200,7 @@ class TestPlotsGeneration:
         resonance_key = '4J-2S-1+0+0-1'
 
         # Phase portraits should exist
-        phase_filtered = plot_path / f'phase_filtered_test_asteroid-{resonance_key}.png'
+        phase_filtered = plot_path / f'test_asteroid-{resonance_key}-filtered.png'
         assert phase_filtered.exists()
 
         # Evolution plot should NOT exist

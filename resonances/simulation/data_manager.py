@@ -1,4 +1,3 @@
-from dataclasses import asdict
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -14,6 +13,22 @@ from .serializer import SimulationSerializer
 
 class DataManager:
     """Manages data saving and export functionality."""
+
+    STATUS_FOLDERS = {
+        -5: 'probably_near_separatrix',
+        -4: 'slow-circulation',
+        -3: 'near_separatrix',
+        2: 'resonant',
+        1: 'transient',
+        0: 'non-resonant',
+        -1: 'controversial-transient',
+        -2: 'controversial-libration',
+        -9: 'uncertain',
+        -99: 'chaotic',
+    }
+
+    # Fields extracted per segment for the segments summary CSV
+    SEGMENT_FIELDS = ('revolutions_true', 'trend_to_oscillation', 'amplitude', 'sign_dominance', 'mean_sigma_dot')
 
     def __init__(self, config: SimulationConfig):
         self.config = config
@@ -163,7 +178,7 @@ class DataManager:
         if self.config.plot_type in ["show", "both"]:
             plotter.show()
         if self.config.plot_type in ["save", "both"]:
-            plotter.save(f'{plot_path}/{body.name}-{res_key}-percentile{percentile}.{img_type}')
+            plotter.save(f'{plot_path}/{body.name}-{res_key}-percentile{int(percentile)}.{img_type}')
 
         plotter.close()
 
@@ -183,19 +198,7 @@ class DataManager:
 
         if self.config.plot_subfolder_strategy == 'status':
             status = body.statuses.get(resonance.to_s(), 0)
-            status_folders = {
-                -5: '_probably_near_separatrix',
-                -4: '_slow-circulation',
-                -3: '_near_separatrix',
-                2: '_resonant',
-                1: '_transient',
-                0: '_non-resonant',
-                -1: '_controversial-transient',
-                -2: '_controversial-libration',
-                -9: '_uncertain',
-                -99: '_chaotic',
-            }
-            subfolder = status_folders.get(status, 'non-resonant')
+            subfolder = self.STATUS_FOLDERS.get(status, 'non-resonant')
             plot_path = f'{base_path}/{subfolder}'
             Path(plot_path).mkdir(parents=True, exist_ok=True)
             return plot_path
@@ -305,13 +308,11 @@ class DataManager:
 
                     if body.libration_segments.get(resonance.to_s()) is not None:
                         metrics = {}
-                        for key, segment in body.libration_segments[resonance.to_s()].items():
-                            value = asdict(segment)
-                            metrics[f"{key}_revolutions_true"] = value["revolutions_true"]
-                            metrics[f"{key}_trend_to_oscillation"] = value["trend_to_oscillation"]
-                            metrics[f"{key}_amplitude"] = value["amplitude"]
-                            metrics[f"{key}_sign_dominance"] = value["sign_dominance"]
-                            metrics[f"{key}_mean_sigma_dot"] = value["mean_sigma_dot"]
+                        for window_key, window_segments in body.libration_segments[resonance.to_s()].items():
+                            for segment_key, segment in window_segments.items():
+                                compound_key = f"{window_key}_{segment_key}"
+                                for fld in self.SEGMENT_FIELDS:
+                                    metrics[f"{compound_key}_{fld}"] = getattr(segment, fld)
 
                         segments.append(
                             {

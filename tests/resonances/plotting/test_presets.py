@@ -56,7 +56,7 @@ class TestFullPreset:
 
         assert isinstance(config, PlotConfig)
         assert config.figsize == (10, 12)
-        assert len(config.panels) == 8  # 5 time-series + 3 periodograms
+        assert len(config.panels) == 9  # 6 time-series + 3 periodograms
 
     def test_full_preset_panel_keys(self):
         """Test that all expected panels are present."""
@@ -65,6 +65,7 @@ class TestFullPreset:
 
         expected_keys = [
             'angle',
+            'filtered_angle',
             'angle_unwrapped',
             'axis',
             'eccentricity',
@@ -88,11 +89,21 @@ class TestFullPreset:
         assert panel.style.ylabel == r"$\sigma$ (rad)"
         assert panel.style.title == "Resonant angle"
 
+    def test_full_preset_filtered_angle_panel(self):
+        """Test filtered resonant angle panel."""
+        resonance_key = '4J-2S-1+0+0-1'
+        config = create_full_preset(resonance_key)
+        panel = config.panels[1]
+
+        assert panel.key == 'filtered_angle'
+        assert panel.data_column == f'{resonance_key}_angle_filtered'
+        assert panel.required is True
+
     def test_full_preset_unwrapped_angle_panel(self):
         """Test unwrapped resonant angle panel."""
         resonance_key = '4J-2S-1+0+0-1'
         config = create_full_preset(resonance_key)
-        panel = config.panels[1]
+        panel = config.panels[2]
 
         assert panel.key == 'angle_unwrapped'
         assert panel.data_column == f'{resonance_key}_angle_filtered_unwrapped'
@@ -101,7 +112,7 @@ class TestFullPreset:
     def test_full_preset_axis_panel(self):
         """Test semi-major axis panel with fallback."""
         config = create_full_preset('4J-2S-1+0+0-1')
-        panel = config.panels[2]
+        panel = config.panels[3]
 
         assert panel.key == 'axis'
         assert panel.data_column == 'a_filtered'
@@ -111,7 +122,7 @@ class TestFullPreset:
     def test_full_preset_eccentricity_panel(self):
         """Test eccentricity panel."""
         config = create_full_preset('4J-2S-1+0+0-1')
-        panel = config.panels[3]
+        panel = config.panels[4]
 
         assert panel.key == 'eccentricity'
         assert panel.data_column == 'e'
@@ -124,21 +135,21 @@ class TestFullPreset:
         config = create_full_preset(resonance_key)
 
         # Angle periodogram
-        angle_perio = config.panels[5]
+        angle_perio = config.panels[6]
         assert angle_perio.key == 'periodogram_angle'
         assert angle_perio.data_column == f'{resonance_key}_power'
         assert angle_perio.x_column == f'{resonance_key}_frequency'
         assert angle_perio.required is False
 
         # Axis periodogram
-        axis_perio = config.panels[6]
+        axis_perio = config.panels[7]
         assert axis_perio.key == 'periodogram_axis'
         assert axis_perio.data_column == 'a_power'
         assert axis_perio.x_column == 'a_frequency'
         assert axis_perio.required is False
 
         # Eccentricity periodogram
-        ecc_perio = config.panels[7]
+        ecc_perio = config.panels[8]
         assert ecc_perio.key == 'periodogram_ecc'
         assert ecc_perio.data_column == 'e_power'
         assert ecc_perio.x_column == 'e_frequency'
@@ -148,7 +159,7 @@ class TestFullPreset:
         """Test reference lines in periodogram panels."""
         config = create_full_preset('4J-2S-1+0+0-1')
 
-        for panel in config.panels[5:8]:  # All periodogram panels
+        for panel in config.panels[6:9]:  # All periodogram panels
             assert len(panel.style.reference_lines) == 2
             # Red line at 0.05
             assert panel.style.reference_lines[0]['y'] == 0.05
@@ -160,7 +171,7 @@ class TestFullPreset:
     def test_full_preset_periodogram_styling(self):
         """Test periodogram panel styling."""
         config = create_full_preset('4J-2S-1+0+0-1')
-        perio_panel = config.panels[5]
+        perio_panel = config.panels[6]
 
         assert perio_panel.style.linestyle == '-'
         assert perio_panel.style.marker == ''
@@ -194,7 +205,7 @@ class TestGetPreset:
         config = get_preset('full', resonance_key)
 
         assert isinstance(config, PlotConfig)
-        assert len(config.panels) == 8
+        assert len(config.panels) == 9
 
     def test_get_unknown_preset(self):
         """Test that unknown preset raises ValueError."""
@@ -211,4 +222,4 @@ class TestGetPreset:
 
             full = get_preset('full', res_key)
             assert full.panels[0].data_column == f'{res_key}_angle'
-            assert full.panels[5].data_column == f'{res_key}_power'
+            assert full.panels[6].data_column == f'{res_key}_power'

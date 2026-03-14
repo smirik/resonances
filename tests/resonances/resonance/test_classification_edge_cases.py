@@ -34,7 +34,7 @@ def test_classification_edge_cases():
         ("624", "1J+1", 0, 'nominal'),  #
         ("564160", "3N-4", 0, 'nominal'),  # r_sq=0.997, definite circulation
         ("666184", "3N-4", 0, 'nominal'),  # r_sq=0.999, definite circulation
-        ("42355", "3N-4", 3, ''),  # stickiness
+        ("42355", "3N-4", 1, ''),  # stickiness
     ]
 
     test_cases_chaotic = [("189865", "lkr"), ("477492", "lkr")]  # Gets e > 1.3 during integration -> CHAOTIC

@@ -7,7 +7,7 @@ def test_find():
     asteroids = [463, 490]
     planets = ['Jupiter', 'Saturn']
 
-    sim = resonances.find(asteroids, planets, integration_years=40000)
+    sim = resonances.find(asteroids, planets, integration_years=40000, type='mmr')
 
     assert isinstance(sim, resonances.Simulation)
     assert 2 == len(sim.bodies)
