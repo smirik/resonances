@@ -3,13 +3,13 @@ import pandas as pd
 
 from resonances.config import config
 from resonances.data import const
-from resonances.resonance.factory import create_mmr
 from .two_body import TwoBody
 from resonances.matrix.matrix import Matrix
 
 
 class TwoBodyMatrix(Matrix):
     catalog_file = 'MATRIX_2BODY_FILE'
+    planet_columns = ['planet']
 
     @classmethod
     def build(cls):
@@ -41,18 +41,3 @@ class TwoBodyMatrix(Matrix):
         df = pd.DataFrame(data, columns=['mmr', 'planet', 'm1', 'm', 'q', 'a'])
         cls.matrix = df
         return df
-
-    @classmethod
-    def find_resonances(cls, a, sigma=0.1, planets=None):
-        if cls.matrix is None:
-            cls.load()
-
-        if isinstance(planets, list):
-            df = cls.matrix[(cls.matrix['a'] >= (a - sigma)) & (cls.matrix['a'] <= (a + sigma)) & (cls.matrix['planet'].isin(planets))]
-        else:
-            df = cls.matrix[(cls.matrix['a'] >= (a - sigma)) & (cls.matrix['a'] <= (a + sigma))]
-
-        mmrs = []
-        for mmr in df['mmr'].tolist():
-            mmrs.append(create_mmr(mmr))
-        return mmrs

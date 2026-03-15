@@ -1,4 +1,5 @@
 from resonances.config import config
+from resonances.resonance.factory import create_mmr
 import pandas as pd
 from pathlib import Path
 import os
@@ -8,6 +9,9 @@ class Matrix:
     catalog_file = ''
     matrix = None
     planets = None
+
+    # Subclasses define which columns hold planet names for filtering
+    planet_columns = []
 
     @classmethod
     def dump(cls):
@@ -39,3 +43,17 @@ class Matrix:
         else:
             catalog = pd.read_csv(catalog_file)
             cls.matrix = catalog
+
+    @classmethod
+    def find_resonances(cls, a, sigma=0.1, planets=None):
+        """Find resonances near semi-major axis `a` within `sigma` AU."""
+        if cls.matrix is None:
+            cls.load()
+
+        df = cls.matrix[(cls.matrix['a'] >= (a - sigma)) & (cls.matrix['a'] <= (a + sigma))]
+
+        if isinstance(planets, list) and cls.planet_columns:
+            for col in cls.planet_columns:
+                df = df[df[col].isin(planets)]
+
+        return [create_mmr(mmr) for mmr in df['mmr'].tolist()]

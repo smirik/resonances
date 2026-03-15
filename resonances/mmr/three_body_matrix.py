@@ -1,11 +1,9 @@
-from typing import List
 import numpy as np
 import pandas as pd
 import itertools
 
 from resonances.config import config
 from resonances.data import const
-from resonances.resonance.factory import create_mmr
 from .three_body import ThreeBody
 from resonances.matrix.matrix import Matrix
 
@@ -13,6 +11,7 @@ from resonances.matrix.matrix import Matrix
 class ThreeBodyMatrix(Matrix):
 
     catalog_file = 'MATRIX_3BODY_FILE'
+    planet_columns = ['planet1', 'planet2']
 
     @classmethod
     # flake8: noqa: C901
@@ -47,23 +46,3 @@ class ThreeBodyMatrix(Matrix):
         df = pd.DataFrame(data, columns=['mmr', 'planet1', 'planet2', 'm1', 'm2', 'm', 'q', 'a'])
         cls.matrix = df
         return df
-
-    @classmethod
-    def find_resonances(cls, a, sigma=0.02, planets=None) -> List["MMR"]:
-        if cls.matrix is None:
-            cls.load()
-
-        if isinstance(planets, list):
-            df = cls.matrix[
-                (cls.matrix['a'] >= (a - sigma))
-                & (cls.matrix['a'] <= (a + sigma))
-                & (cls.matrix['planet1'].isin(planets))
-                & (cls.matrix['planet2'].isin(planets))
-            ]
-        else:
-            df = cls.matrix[(cls.matrix['a'] >= (a - sigma)) & (cls.matrix['a'] <= (a + sigma))]
-
-        mmrs = []
-        for mmr in df['mmr'].tolist():
-            mmrs.append(create_mmr(mmr))
-        return mmrs

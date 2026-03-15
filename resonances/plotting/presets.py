@@ -7,6 +7,46 @@ Provides 'simple' and 'full' presets as specified in requirements.
 import numpy as np
 from .config import PlotConfig, Panel, StyleConfig
 
+# Shared reference lines for all periodogram panels
+PERIODOGRAM_REF_LINES = [
+    {'type': 'axhline', 'y': 0.05, 'color': 'r', 'linestyle': '--'},
+    {'type': 'axhline', 'y': 0.1, 'color': 'g', 'linestyle': '--'},
+]
+
+
+def _axis_panel() -> Panel:
+    """Semi-major axis panel (filtered with raw fallback)."""
+    return Panel(
+        key='axis',
+        data_column='a_filtered',
+        fallback_column='a',
+        x_column='times',
+        style=StyleConfig(ylabel=r"$a_f$ (AU)", title="Semi-major axis", color='black', marker=',', linestyle=''),
+        required=True,
+    )
+
+
+def _eccentricity_panel() -> Panel:
+    """Eccentricity panel."""
+    return Panel(
+        key='eccentricity',
+        data_column='e',
+        x_column='times',
+        style=StyleConfig(ylabel="e", title="Eccentricity", color='black', marker=',', linestyle=''),
+        required=True,
+    )
+
+
+def _inclination_panel() -> Panel:
+    """Inclination panel."""
+    return Panel(
+        key='inclination',
+        data_column='inc',
+        x_column='times',
+        style=StyleConfig(ylabel="i", title="Inclination", color='black', marker=',', linestyle=''),
+        required=True,
+    )
+
 
 def create_simple_preset(resonance_key: str) -> PlotConfig:
     """
@@ -74,41 +114,11 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
     config = create_angle_preset(resonance_key)
     config.figsize = (10, 12)
 
-    # Panel 4: Semi-major axis
-    config.add_panel(
-        Panel(
-            key='axis',
-            data_column='a_filtered',
-            fallback_column='a',
-            x_column='times',
-            style=StyleConfig(ylabel=r"$a_f$ (AU)", title="Semi-major axis", color='black', marker=',', linestyle=''),
-            required=True,
-        )
-    )
+    config.add_panel(_axis_panel())
+    config.add_panel(_eccentricity_panel())
+    config.add_panel(_inclination_panel())
 
-    # Panel 5: Eccentricity
-    config.add_panel(
-        Panel(
-            key='eccentricity',
-            data_column='e',
-            x_column='times',
-            style=StyleConfig(ylabel="e", title="Eccentricity", color='black', marker=',', linestyle=''),
-            required=True,
-        )
-    )
-
-    # Panel 6: Inclination
-    config.add_panel(
-        Panel(
-            key='inclination',
-            data_column='inc',
-            x_column='times',
-            style=StyleConfig(ylabel="i", title="Inclination", color='black', marker=',', linestyle=''),
-            required=True,
-        )
-    )
-
-    # Panel 7: Periodogram of resonant angle
+    # Periodogram panels
     config.add_panel(
         Panel(
             key='periodogram_angle',
@@ -120,16 +130,12 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
                 color='black',
                 linestyle='-',
                 marker='',
-                reference_lines=[
-                    {'type': 'axhline', 'y': 0.05, 'color': 'r', 'linestyle': '--'},
-                    {'type': 'axhline', 'y': 0.1, 'color': 'g', 'linestyle': '--'},
-                ],
+                reference_lines=PERIODOGRAM_REF_LINES,
             ),
-            required=False,  # Periodograms may not exist
+            required=False,
         )
     )
 
-    # Panel 8: Periodogram of semi-major axis
     config.add_panel(
         Panel(
             key='periodogram_axis',
@@ -141,16 +147,12 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
                 color='black',
                 linestyle='-',
                 marker='',
-                reference_lines=[
-                    {'type': 'axhline', 'y': 0.05, 'color': 'r', 'linestyle': '--'},
-                    {'type': 'axhline', 'y': 0.1, 'color': 'g', 'linestyle': '--'},
-                ],
+                reference_lines=PERIODOGRAM_REF_LINES,
             ),
             required=False,
         )
     )
 
-    # Panel 9: Periodogram of eccentricity
     config.add_panel(
         Panel(
             key='periodogram_ecc',
@@ -162,10 +164,7 @@ def create_full_preset(resonance_key: str) -> PlotConfig:
                 color='black',
                 linestyle='-',
                 marker='',
-                reference_lines=[
-                    {'type': 'axhline', 'y': 0.05, 'color': 'r', 'linestyle': '--'},
-                    {'type': 'axhline', 'y': 0.1, 'color': 'g', 'linestyle': '--'},
-                ],
+                reference_lines=PERIODOGRAM_REF_LINES,
             ),
             required=False,
         )
@@ -198,41 +197,10 @@ def create_lk_preset(resonance_key: str) -> PlotConfig:
     config = create_angle_preset(resonance_key)
     config.figsize = (10, 12)
 
-    # Panel 3: Semi-major axis
-    config.add_panel(
-        Panel(
-            key='axis',
-            data_column='a_filtered',
-            fallback_column='a',
-            x_column='times',
-            style=StyleConfig(ylabel=r"$a_f$ (AU)", title="Semi-major axis", color='black', marker=',', linestyle=''),
-            required=True,
-        )
-    )
+    config.add_panel(_axis_panel())
+    config.add_panel(_eccentricity_panel())
+    config.add_panel(_inclination_panel())
 
-    # Panel 4: Eccentricity
-    config.add_panel(
-        Panel(
-            key='eccentricity',
-            data_column='e',
-            x_column='times',
-            style=StyleConfig(ylabel="e", title="Eccentricity", color='black', marker=',', linestyle=''),
-            required=True,
-        )
-    )
-
-    # Panel 5: Inclination
-    config.add_panel(
-        Panel(
-            key='inclination',
-            data_column='inc',
-            x_column='times',
-            style=StyleConfig(ylabel="i", title="Inclination", color='black', marker=',', linestyle=''),
-            required=True,
-        )
-    )
-
-    # Panel 6: Periodogram of resonant angle
     config.add_panel(
         Panel(
             key='periodogram_angle',
@@ -244,12 +212,9 @@ def create_lk_preset(resonance_key: str) -> PlotConfig:
                 color='black',
                 linestyle='-',
                 marker='',
-                reference_lines=[
-                    {'type': 'axhline', 'y': 0.05, 'color': 'r', 'linestyle': '--'},
-                    {'type': 'axhline', 'y': 0.1, 'color': 'g', 'linestyle': '--'},
-                ],
+                reference_lines=PERIODOGRAM_REF_LINES,
             ),
-            required=False,  # Periodograms may not exist
+            required=False,
         )
     )
 
@@ -342,27 +307,8 @@ def create_secular_preset(resonance_key: str) -> PlotConfig:
     angle_config = create_angle_preset(resonance_key)
     config.panels.extend(angle_config.panels)
 
-    # Panel 3: Semi-major axis
-    config.add_panel(
-        Panel(
-            key='axis',
-            data_column='a_filtered',
-            fallback_column='a',
-            x_column='times',
-            style=StyleConfig(ylabel=r"$a_f$ (AU)", title="Semi-major axis", color='black', marker=',', linestyle=''),
-            required=True,
-        )
-    )
-    # Panel 4: Eccentricity
-    config.add_panel(
-        Panel(
-            key='eccentricity',
-            data_column='e',
-            x_column='times',
-            style=StyleConfig(ylabel="e", title="Eccentricity", color='black', marker=',', linestyle=''),
-            required=True,
-        )
-    )
+    config.add_panel(_axis_panel())
+    config.add_panel(_eccentricity_panel())
 
     return config
 

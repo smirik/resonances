@@ -184,12 +184,7 @@ class Periodogram:
     @classmethod
     def is_pure(cls, y):
         """Check if consecutive angle differences never exceed π."""
-        prev = y[0]
-        for elem in y:
-            if abs(elem - prev) > np.pi:
-                return False
-            prev = elem
-        return True
+        return bool(np.all(np.abs(np.diff(y)) <= np.pi))
 
     @classmethod
     def is_pure_apocentric(cls, y):
@@ -254,22 +249,23 @@ class Periodogram:
 
     @classmethod
     def monotony_estimation(cls, data, crit=np.pi) -> float:
-        """Estimate the fraction of "decreasing" points, ignoring jumps larger than crit."""
+        """Estimate the fraction of "decreasing" points, ignoring jumps larger than crit.
+
+        For each consecutive pair (prev, elem):
+        - If prev - elem > crit (large downward jump): skip (not counted)
+        - If elem - prev > crit (large upward jump): count as "decreasing"
+        - If elem < prev (small decrease): count as "decreasing"
+        """
         if len(data) <= 1:
             return 0.0
-        num = 0
-        prev = data[0]
-        for elem in data:
-            if prev - elem > crit:
-                prev = elem
-                continue
-            if elem - prev > crit:
-                num += 1
-                prev = elem
-                continue
-            if elem < prev:
-                num += 1
-            prev = elem
+        diffs = np.diff(data)
+        # Large upward jumps (elem - prev > crit) count as decreasing
+        large_up = diffs > crit
+        # Large downward jumps (prev - elem > crit, i.e. diffs < -crit) are skipped
+        large_down = diffs < -crit
+        # Small decreases count as decreasing
+        small_decrease = (~large_up & ~large_down) & (diffs < 0)
+        num = int(np.sum(large_up) + np.sum(small_decrease))
         return num / (len(data) - 1)
 
     @classmethod
@@ -279,9 +275,9 @@ class Periodogram:
 
         Parameters
         ----------
-        x : list
+        x : array-like
             Time array
-        y : list
+        y : array-like
             Data array
         break_value : float
             Threshold for detecting a break (default: π)
@@ -291,17 +287,20 @@ class Periodogram:
         list
             [break_times, directions, prev_values, curr_values]
         """
-        prev = y[0]
-        res = [[], [], [], []]
-        for i, elem in enumerate(y):
-            if abs(elem - prev) > break_value:
-                res[0].append(x[i])
-                direction = 1 if elem > prev else -1
-                res[1].append(direction)
-                res[2].append(prev)
-                res[3].append(elem)
-            prev = elem
-        return res
+        y = np.asarray(y)
+        x = np.asarray(x)
+        diffs = np.diff(y)
+        mask = np.abs(diffs) > break_value
+        indices = np.where(mask)[0]
+        if len(indices) == 0:
+            return [[], [], [], []]
+        # indices refer to diffs[i] = y[i+1] - y[i], so break is at position i+1
+        break_idx = indices + 1
+        break_times = x[break_idx].tolist()
+        directions = np.where(diffs[indices] > 0, 1, -1).tolist()
+        prev_values = y[break_idx - 1].tolist()
+        curr_values = y[break_idx].tolist()
+        return [break_times, directions, prev_values, curr_values]
 
     @classmethod
     def circulation(cls, x, y):

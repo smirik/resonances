@@ -32,7 +32,7 @@ class MMR(Resonance):
         return 'mmr'
 
     def number_of_bodies(self):
-        return len(self.coeff) / 2
+        return len(self.coeff) // 2
 
     def get_planet_name_from_letter(self, letter):
         planet = planet_name_from_letter(letter)

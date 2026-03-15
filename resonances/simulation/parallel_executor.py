@@ -1,4 +1,3 @@
-import os
 import multiprocessing as mp
 from typing import List, Callable, Dict, Any
 from concurrent.futures import ProcessPoolExecutor, as_completed, BrokenExecutor
@@ -251,24 +250,3 @@ class ParallelExecutor:
         results.sort(key=lambda x: x["batch_index"])
 
         return results
-
-    @staticmethod
-    def configure_environment():
-        """
-        Configure environment variables for single-threaded execution.
-
-        This prevents numpy/scipy from using internal parallelization,
-        which would conflict with our process-level parallelism.
-        """
-        env_vars = {
-            "OMP_NUM_THREADS": "1",
-            "MKL_NUM_THREADS": "1",
-            "OPENBLAS_NUM_THREADS": "1",
-            "VECLIB_MAXIMUM_THREADS": "1",
-            "NUMEXPR_NUM_THREADS": "1",
-        }
-
-        for key, value in env_vars.items():
-            if key not in os.environ:
-                os.environ[key] = value
-                logger.debug(f"Set {key}={value}")

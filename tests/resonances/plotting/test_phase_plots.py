@@ -1,5 +1,6 @@
 """Tests for phase portrait plots."""
 
+import pytest
 import numpy as np
 from pathlib import Path
 import tempfile
@@ -8,17 +9,23 @@ import resonances
 import tests.tools as tools
 
 
+@pytest.fixture(scope="class")
+def phase_sim():
+    """Shared simulation fixture for PhasePlotter tests."""
+    sim = tools.create_test_simulation_for_solar_system()
+    sim.add_body(tools.get_3body_elements_sample(), resonances.ThreeBody('4J-2S-1'))
+    sim.run()
+    body = sim.bodies[0]
+    mmr = body.mmrs[0]
+    return sim, body, mmr
+
+
 class TestPhasePlotter:
     """Test suite for PhasePlotter class."""
 
-    def test_phase_plotter_from_body(self):
+    def test_phase_plotter_from_body(self, phase_sim):
         """Test creating PhasePlotter from Body object."""
-        sim = tools.create_test_simulation_for_solar_system()
-        sim.add_body(tools.get_3body_elements_sample(), resonances.ThreeBody('4J-2S-1'))
-        sim.run()
-
-        body = sim.bodies[0]
-        mmr = body.mmrs[0]
+        sim, body, mmr = phase_sim
 
         plotter = resonances.PhasePlotter.from_body(body, mmr, sim)
         assert plotter._times is not None
@@ -43,14 +50,9 @@ class TestPhasePlotter:
         assert plotter._sigma_dot_unfiltered is not None
         assert len(plotter._sigma_dot_filtered) == len(times)
 
-    def test_plot_phase_portrait_filtered(self):
+    def test_plot_phase_portrait_filtered(self, phase_sim):
         """Test filtered phase portrait plotting."""
-        sim = tools.create_test_simulation_for_solar_system()
-        sim.add_body(tools.get_3body_elements_sample(), resonances.ThreeBody('4J-2S-1'))
-        sim.run()
-
-        body = sim.bodies[0]
-        mmr = body.mmrs[0]
+        sim, body, mmr = phase_sim
 
         plotter = resonances.PhasePlotter.from_body(body, mmr, sim)
         result = plotter.plot_phase_portrait_filtered()
@@ -62,14 +64,9 @@ class TestPhasePlotter:
         plotter.close()
         assert plotter._figure is None
 
-    def test_plot_phase_portrait_unfiltered(self):
+    def test_plot_phase_portrait_unfiltered(self, phase_sim):
         """Test unfiltered phase portrait plotting."""
-        sim = tools.create_test_simulation_for_solar_system()
-        sim.add_body(tools.get_3body_elements_sample(), resonances.ThreeBody('4J-2S-1'))
-        sim.run()
-
-        body = sim.bodies[0]
-        mmr = body.mmrs[0]
+        sim, body, mmr = phase_sim
 
         plotter = resonances.PhasePlotter.from_body(body, mmr, sim)
         result = plotter.plot_phase_portrait_unfiltered()
@@ -79,14 +76,9 @@ class TestPhasePlotter:
 
         plotter.close()
 
-    def test_plot_phase_portrait_slow(self):
+    def test_plot_phase_portrait_slow(self, phase_sim):
         """Test slow points phase portrait plotting."""
-        sim = tools.create_test_simulation_for_solar_system()
-        sim.add_body(tools.get_3body_elements_sample(), resonances.ThreeBody('4J-2S-1'))
-        sim.run()
-
-        body = sim.bodies[0]
-        mmr = body.mmrs[0]
+        sim, body, mmr = phase_sim
 
         plotter = resonances.PhasePlotter.from_body(body, mmr, sim)
         result = plotter.plot_phase_portrait_slow(percentile=95)
@@ -96,14 +88,9 @@ class TestPhasePlotter:
 
         plotter.close()
 
-    def test_save_phase_portrait(self):
+    def test_save_phase_portrait(self, phase_sim):
         """Test saving phase portrait to file."""
-        sim = tools.create_test_simulation_for_solar_system()
-        sim.add_body(tools.get_3body_elements_sample(), resonances.ThreeBody('4J-2S-1'))
-        sim.run()
-
-        body = sim.bodies[0]
-        mmr = body.mmrs[0]
+        sim, body, mmr = phase_sim
 
         with tempfile.TemporaryDirectory() as tmpdir:
             save_path = Path(tmpdir) / 'phase_portrait.png'

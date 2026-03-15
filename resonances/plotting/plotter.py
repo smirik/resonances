@@ -14,6 +14,7 @@ from typing import Union, Optional, Dict, Any
 from resonances.body import Body
 from resonances.logger import logger
 from resonances.secular.secular_resonance import SecularResonance
+from .base import BasePlotter
 from .config import PlotConfig, Panel, StyleConfig
 from .presets import get_preset
 
@@ -27,7 +28,7 @@ def round_to_nice_value(value):
     return int(rounded)
 
 
-class Plotter:
+class Plotter(BasePlotter):
     """
     Main plotting interface with fluent API.
 
@@ -178,58 +179,10 @@ class Plotter:
 
         return self
 
-    def save(self, path: Union[str, Path], **kwargs) -> 'Plotter':
-        """
-        Save the figure to file.
-
-        Parameters
-        ----------
-        path : str or Path
-            Output file path
-        **kwargs : dict
-            Additional arguments passed to plt.savefig()
-
-        Returns
-        -------
-        Plotter
-            Self for method chaining
-        """
-        if self._figure is None:
-            raise RuntimeError("Must call plot() before save()")
-
-        # Ensure directory exists
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
-
-        self._figure.savefig(path, **kwargs)
-        logger.info(f"Plot saved to {path}")
-
-        return self
-
-    def show(self) -> 'Plotter':
-        """
-        Display the figure.
-
-        Returns
-        -------
-        Plotter
-            Self for method chaining
-        """
-        if self._figure is None:
-            raise RuntimeError("Must call plot() before show()")
-
-        import matplotlib.pyplot as plt
-
-        plt.show()
-        return self
-
     def close(self):
         """Close the figure to free memory."""
-        import matplotlib.pyplot as plt
-
-        if self._figure is not None:
-            plt.close(self._figure)
-            self._figure = None
-            self._axes = None
+        super().close()
+        self._axes = None
 
     def _load_from_body(self, body: Body, resonance, sim):  # noqa: C901
         """Load data from Body object."""
@@ -479,11 +432,12 @@ class Plotter:
 
         # Reference lines
         for ref_line in style.reference_lines:
-            line_type = ref_line.pop('type', 'axhline')
+            line_type = ref_line.get('type', 'axhline')
+            kwargs = {k: v for k, v in ref_line.items() if k != 'type'}
             if line_type == 'axhline':
-                ax.axhline(**ref_line)
+                ax.axhline(**kwargs)
             elif line_type == 'axvline':
-                ax.axvline(**ref_line)
+                ax.axvline(**kwargs)
 
         # Custom parameters
         if style.custom_params:

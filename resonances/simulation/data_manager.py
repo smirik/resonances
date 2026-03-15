@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from .config import SimulationConfig
+from .config import SimulationConfig, SavePlotMode
 from resonances.body import Body
 from resonances.logger import logger
 from resonances.secular.secular_resonance import SecularResonance
@@ -45,17 +45,18 @@ class DataManager:
         """Check if body MMR should be plotted."""
         return self._process_status(body.statuses.get(resonance.to_s(), 0), self.config.plot)
 
-    def _process_status(self, status: int, mode) -> bool:
+    @staticmethod
+    def _process_status(status: int, mode) -> bool:
         """Process status against mode to determine if action should be taken."""
-        if (mode is None) or (mode is False) or (isinstance(mode, str) and mode.lower() == 'none'):
+        if mode is None:
             return False
-        if mode == 'all':
+        if mode == SavePlotMode.ALL:
             return True
-        if mode == 'resonant' and status > 0:
+        if mode == SavePlotMode.RESONANT and status > 0:
             return True
-        if mode == 'nonzero' and status != 0:
+        if mode == SavePlotMode.NONZERO and status != 0:
             return True
-        if mode == 'candidates' and status < 0:
+        if mode == SavePlotMode.CANDIDATES and status < 0:
             return True
         return False
 
@@ -88,7 +89,7 @@ class DataManager:
         """Save all resonance data for a body."""
 
         self.ensure_save_path_exists()
-        if not self.config.save or (isinstance(self.config.save, str) and self.config.save.lower() == 'none'):
+        if self.config.save is None:
             return
 
         body_data = body.keplerian_elements_to_dict()
@@ -97,9 +98,8 @@ class DataManager:
             if self.should_save_body(body, resonance):
                 body_data.update(body.resonance_to_dict(resonance))
 
-        if body_data is not None:
-            df = pd.DataFrame(data=body_data)
-            df.to_csv(f'{self.config.save_path}/data-{body.name}.csv')
+        df = pd.DataFrame(data=body_data)
+        df.to_csv(f'{self.config.save_path}/data-{body.name}.csv')
 
         self._save_periodogram_data(body)
 
@@ -183,13 +183,8 @@ class DataManager:
         """
         Get the plot path, optionally with subfolder based on strategy.
 
-        If plot_subfolder_strategy is 'status', creates subfolders:
-        - 'resonant' for status=2
-        - 'transient' for status=1
-        - 'non-resonant' for status=0
-        - 'controversial-transient' for status=-1
-        - 'controversial-libration' for status=-2
-        - 'chaotic' for status=-3 (integration failure, e > 1.1)
+        If plot_subfolder_strategy is 'status', creates subfolders based on
+        ResonanceStatus enum values (see STATUS_FOLDERS mapping).
         """
         base_path = self.config.plot_path
 

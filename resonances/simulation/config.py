@@ -1,4 +1,5 @@
 import datetime
+from enum import StrEnum
 import numpy as np
 
 import astdys
@@ -6,6 +7,30 @@ from resonances.data.util import datetime_from_string
 from resonances.config import config as c
 from resonances.logger import logger
 import os
+
+
+class SavePlotMode(StrEnum):
+    """Mode for saving/plotting body data."""
+
+    NONE = 'none'
+    ALL = 'all'
+    RESONANT = 'resonant'
+    NONZERO = 'nonzero'
+    CANDIDATES = 'candidates'
+
+
+def _normalize_mode(value) -> SavePlotMode | None:
+    """Normalize a save/plot mode value to SavePlotMode enum or None."""
+    if value is None or value is False:
+        return None
+    if isinstance(value, SavePlotMode):
+        return value
+    if isinstance(value, str):
+        try:
+            return SavePlotMode(value.lower())
+        except ValueError:
+            return None
+    return None
 
 
 class SimulationConfig:
@@ -57,7 +82,7 @@ class SimulationConfig:
 
     def _setup_save_params(self, kwargs):
         """Setup save and output parameters."""
-        self.save = kwargs.get('save', c.get('SAVE'))
+        self.save = _normalize_mode(kwargs.get('save', c.get('SAVE')))
         self.save_summary = kwargs.get('save_summary', bool(c.get('SAVE_SUMMARY') == 'True'))
         self.save_planets = kwargs.get('save_planets', bool(c.get('SAVE_PLANETS') == 'True'))
 
@@ -69,7 +94,7 @@ class SimulationConfig:
 
     def _setup_plot_params(self, kwargs):
         """Setup plotting parameters."""
-        self.plot = kwargs.get('plot', c.get('PLOT'))
+        self.plot = _normalize_mode(kwargs.get('plot', c.get('PLOT')))
         self.plot_type = kwargs.get('plot_type', c.get('PLOT_TYPE'))
         self.image_type = kwargs.get('image_type', c.get('PLOT_IMAGE_TYPE'))
         self.plot_config = kwargs.get('plot_config', c.get('PLOT_CONFIG'))  # Optional plot configuration
@@ -164,8 +189,7 @@ class SimulationConfig:
     def tmax(self, value):
         """Set integration time maximum and calculate related values."""
         self.__tmax = value
-        self.tmax_yrs = self.__tmax / (2 * np.pi)
-        self.Nout = abs(int(self.tmax / 100))
+        self.Nout = abs(int(self.__tmax / 100))
 
     @tmax.deleter
     def tmax(self):

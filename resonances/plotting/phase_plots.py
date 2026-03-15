@@ -8,15 +8,15 @@ Provides specialized plotting functions for:
 """
 
 import numpy as np
-from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 from resonances.body import Body
 from resonances.resonance.classify.classify import calc_sigma_derivative
 from resonances.logger import logger
+from .base import BasePlotter
 
 
-class PhasePlotter:
+class PhasePlotter(BasePlotter):
     """
     Plotter for phase portraits.
 
@@ -342,53 +342,7 @@ class PhasePlotter:
             marker_size=15.0,  # Slightly larger markers for slow points
         )
 
-    def save(self, path: Union[str, Path], **kwargs) -> 'PhasePlotter':
-        """
-        Save the figure to file.
-
-        Parameters
-        ----------
-        path : str or Path
-            Output file path
-        **kwargs : dict
-            Additional arguments passed to plt.savefig()
-
-        Returns
-        -------
-        PhasePlotter
-            Self for method chaining
-        """
-        if self._figure is None:
-            raise RuntimeError("Must call a plot method before save()")
-
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
-        self._figure.savefig(path, **kwargs)
-        logger.info(f"Plot saved to {path}")
-
-        return self
-
-    def show(self) -> 'PhasePlotter':
-        """
-        Display the figure.
-
-        Returns
-        -------
-        PhasePlotter
-            Self for method chaining
-        """
-        if self._figure is None:
-            raise RuntimeError("Must call a plot method before show()")
-
-        import matplotlib.pyplot as plt
-
-        plt.show()
-        return self
-
     def close(self):
         """Close the figure to free memory."""
-        import matplotlib.pyplot as plt
-
-        if self._figure is not None:
-            plt.close(self._figure)
-            self._figure = None
-            self._ax = None
+        super().close()
+        self._ax = None

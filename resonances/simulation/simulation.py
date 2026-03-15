@@ -101,16 +101,19 @@ class Simulation:
         for body in self.bodies:
             body.axis_filtered = filter_angle(body.axis, self.config)
             for resonance in body.resonances():
-                # make wrapped angle, filter, and record wrapped filtered
-                body.angles_unwrapped[resonance.to_s()] = np.unwrap(body.angle_unwrapped(resonance))
-                body.angles[resonance.to_s()] = wrap(body.angle_unwrapped(resonance))
+                res_key = resonance.to_s()
+                # np.unwrap the raw integration angles and store back
+                body.angles_unwrapped[res_key] = np.unwrap(body.angle_unwrapped(resonance))
+                # Subsequent reads of angle_unwrapped() now return the unwrapped version
+                unwrapped = body.angle_unwrapped(resonance)
+                body.angles[res_key] = wrap(unwrapped)
                 if isinstance(resonance, SecularResonance):
                     body.build_proper_angle(resonance)
                     if self.config.secular_angle_mode == "proper":
-                        body.angles[resonance.to_s()] = body.secular_angles_proper[resonance.to_s()]
-                unwrapped_filtered_angle = filter_angle(body.angle_unwrapped(resonance), self.config)
-                body.angles_filtered_unwrapped[resonance.to_s()] = unwrapped_filtered_angle
-                body.angles_filtered[resonance.to_s()] = wrap(unwrapped_filtered_angle)
+                        body.angles[res_key] = body.secular_angles_proper[res_key]
+                unwrapped_filtered_angle = filter_angle(unwrapped, self.config)
+                body.angles_filtered_unwrapped[res_key] = unwrapped_filtered_angle
+                body.angles_filtered[res_key] = wrap(unwrapped_filtered_angle)
 
     def build_periodograms(self):
         base_periodogram_config = {

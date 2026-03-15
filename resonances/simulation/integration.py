@@ -21,7 +21,7 @@ class IntegrationEngine:
         self.planets = SOLAR_SYSTEM_WITH_SUN
 
         self.planets_without_sun = [p for p in self.planets if p != 'Sun']
-        self.planets_data = {planet: [] for planet in self.planets}
+        self.planets_data = {planet: [] for planet in self.planets_without_sun}
 
     def create_solar_system(self, force=False):
         """Create or load the Solar System REBOUND simulation."""
@@ -71,9 +71,9 @@ class IntegrationEngine:
         ps = self.sim.particles
 
         # Integration loop
-        iterations = list(enumerate(times))
+        iterations = enumerate(times)
         if progress:
-            iterations = tqdm.tqdm(iterations, total=len(iterations))
+            iterations = tqdm.tqdm(iterations, total=len(times))
 
         for i, time in iterations:
             self.sim.integrate(time)

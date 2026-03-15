@@ -67,8 +67,6 @@ class Body:
 
         self.periodogram_peaks_overlapping = {}
 
-        self.monotony = {}
-
         # Simulation data
         self.index_in_simulation = None
 

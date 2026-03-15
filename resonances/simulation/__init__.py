@@ -1,7 +1,7 @@
 """Simulation components for resonance analysis."""
 
 from .simulation import Simulation
-from .config import SimulationConfig
+from .config import SimulationConfig, SavePlotMode
 from .body_manager import BodyManager
 from .integration import IntegrationEngine
 from .data_manager import DataManager
@@ -13,6 +13,7 @@ from .serializer import SimulationSerializer
 __all__ = [
     "Simulation",
     "SimulationConfig",
+    "SavePlotMode",
     "BodyManager",
     "IntegrationEngine",
     "DataManager",
