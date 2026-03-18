@@ -267,10 +267,11 @@ def classify_from_metrics(  # noqa: C901
         return {"result": result, "segments": segments_metrics}
 
     # Segment-based classification using pre-computed counts
-    has_good_segment = segment_counts.n_good_total > 0
+    n_good = segment_counts.n_good_total
     has_reasonable_segment = segment_counts.n_reasonable_total > 0
 
-    if has_good_segment and (metrics.trend_to_oscillation < params.tto_transient_global):
+    # >=2 good segments: transient regardless of global tto
+    if n_good >= 2:
         good_s, reasonable_s = _segment_comment_strings(segments_metrics, params)
         result = ResonanceClassifyResult(
             status=ResonanceStatus.TRANSIENT,
@@ -279,12 +280,28 @@ def classify_from_metrics(  # noqa: C901
             confidence="high",
             metrics=metrics,
             segment_counts=segment_counts,
+            comments=(f"Good segments ({n_good}): {good_s} " f"Reasonable segments: {reasonable_s} " "Multiple good segments found."),
+        )
+        return {"result": result, "segments": segments_metrics}
+
+    # 1 good segment + moderate global tto: transient
+    if n_good == 1 and (metrics.trend_to_oscillation < params.tto_transient_global):
+        good_s, reasonable_s = _segment_comment_strings(segments_metrics, params)
+        result = ResonanceClassifyResult(
+            status=ResonanceStatus.TRANSIENT,
+            type="transient",
+            subtype="transient by segments",
+            confidence="medium",
+            metrics=metrics,
+            segment_counts=segment_counts,
             comments=(
                 f"Good segments: {good_s} " f"Reasonable segments: {reasonable_s} " "Overall trend to oscillation ratio is not very high."
             ),
         )
         return {"result": result, "segments": segments_metrics}
-    elif has_good_segment:
+
+    # 1 good segment but high global tto: near separatrix
+    if n_good == 1:
         good_s, _ = _segment_comment_strings(segments_metrics, params)
         result = ResonanceClassifyResult(
             status=ResonanceStatus.NEAR_SEPARATRIX,
