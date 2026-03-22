@@ -71,6 +71,8 @@ class DataManager:
 
     def save_data(self, bodies, times, simulation=None):
         """Save simulation data and plots."""
+        self.ensure_save_path_exists()
+
         if self.config.save_summary:
             self.save_simulation_summary(bodies)
 

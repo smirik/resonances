@@ -38,6 +38,7 @@ Detailed documentation lives in `docs/` — see `docs/classify.md` for classific
 - This is a scientific project. Methods and functions must be accurately tested and validated.
 - `ResonanceStatus` (IntEnum in `resonance/classify/models.py`) is the central status type: values range from 2 (LIBRATION) to -99 (CHAOTIC). Save/plot modes (`SavePlotMode`) filter by these values.
 - Classification has side effects: `classify_resonance` sets `chaos_flag`/`chaos_comment` on the result and may short-circuit to CHAOTIC for unphysical orbits.
+- Do NOT change `times / (2 * np.pi)` conversions or the `save_body(body, times)` signature. The per-call conversion is intentional.
 
 ## Documenting
 

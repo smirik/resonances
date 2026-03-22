@@ -21,7 +21,7 @@ class IntegrationEngine:
         self.planets = SOLAR_SYSTEM_WITH_SUN
 
         self.planets_without_sun = [p for p in self.planets if p != 'Sun']
-        self.planets_data = {planet: [] for planet in self.planets_without_sun}
+        self.planets_data = {planet: {} for planet in self.planets_without_sun}
 
     def create_solar_system(self, force=False):
         """Create or load the Solar System REBOUND simulation."""
@@ -60,73 +60,93 @@ class IntegrationEngine:
 
     def run_integration(self, bodies: List[Body], times, progress=False):
         """Run the numerical integration."""
-        # Setup bodies for simulation
         for body in bodies:
             body.setup_vars_for_simulation(times)
 
-        # Setup integrator
         self.setup_integrator()
-
-        # Get particles reference
         ps = self.sim.particles
+        n = len(times)
 
-        # Integration loop
+        # Pre-allocate planets data arrays (avoids per-timestep dict allocation)
+        save_planets = self.config.save_planets
+        if save_planets:
+            self._init_planets_arrays(n)
+            planet_arrays = [self.planets_data[p] for p in self.planets_without_sun]
+
+        # Pre-resolve per-body array references to avoid repeated
+        # dict lookups and to_s() calls in the inner loop
+        body_refs = self._build_body_refs(bodies)
+
         iterations = enumerate(times)
         if progress:
-            iterations = tqdm.tqdm(iterations, total=len(times))
+            iterations = tqdm.tqdm(iterations, total=n)
+
+        two_pi = 2 * np.pi
 
         for i, time in iterations:
             self.sim.integrate(time)
-            os = self.sim.orbits(primary=ps[0])
+            orbits = self.sim.orbits(primary=ps[0])
 
-            if self.config.save_planets:
-                self._store_planets(time, os)
+            if save_planets:
+                self._store_planets(orbits, i, time / two_pi, planet_arrays)
 
-            # Update body data
-            for body in bodies:
-                self._update_body_data(body, os, i)
+            for body, orbit_idx, mmr_refs, sec_refs, lk_refs in body_refs:
+                self._update_body(body, orbits, i, orbit_idx, mmr_refs, sec_refs, lk_refs)
 
-    def _store_planets(self, time, os):
-        for i, planet in enumerate(self.planets_without_sun):
-            orbit = os[i]
-            self.planets_data[planet].append(
-                {
-                    'times': time / (2 * np.pi),
-                    'a': orbit.a,
-                    'e': orbit.e,
-                    'inc': orbit.inc,
-                    'Omega': orbit.Omega,
-                    'omega': orbit.omega,
-                    'M': orbit.M,
-                    'l': orbit.l,
-                    'varpi': orbit.Omega + orbit.omega,
-                }
-            )
+    @staticmethod
+    def _build_body_refs(bodies):
+        """Build pre-resolved array references for each body's resonances."""
+        refs = []
+        for body in bodies:
+            orbit_idx = body.index_in_simulation - 1
+            mmr_refs = [(body.angles_unwrapped[mmr.to_s()], mmr, mmr.index_of_planets) for mmr in body.mmrs]
+            sec_refs = [(body.angles_unwrapped[sec.to_s()], sec, sec.index_of_planets) for sec in body.secular_resonances]
+            lk_refs = [(body.angles_unwrapped[lk.to_s()], lk) for lk in body.lidov_kozai_resonances]
+            refs.append((body, orbit_idx, mmr_refs, sec_refs, lk_refs))
+        return refs
 
-    def _update_body_data(self, body: Body, orbits, time_index):
-        """Update body orbital data and calculate resonant angles."""
-        # Get orbital elements
-        orbit = orbits[body.index_in_simulation - 1]  # -1 because Sun is not in orbits
+    @staticmethod
+    def _store_planets(orbits, i, t_yrs, planet_arrays):
+        """Store planet orbital data into pre-allocated arrays."""
+        for pi, parr in enumerate(planet_arrays):
+            orbit = orbits[pi]
+            parr['times'][i] = t_yrs
+            parr['a'][i] = orbit.a
+            parr['e'][i] = orbit.e
+            parr['inc'][i] = orbit.inc
+            parr['Omega'][i] = orbit.Omega
+            parr['omega'][i] = orbit.omega
+            parr['M'][i] = orbit.M
+            parr['l'][i] = orbit.l
+            parr['varpi'][i] = orbit.Omega + orbit.omega
 
-        body.axis[time_index] = orbit.a
-        body.ecc[time_index] = orbit.e
-        body.inc[time_index] = orbit.inc
-        body.Omega[time_index] = orbit.Omega
-        body.omega[time_index] = orbit.omega
-        body.M[time_index] = orbit.M
-        body.longitude[time_index] = orbit.l
-        body.varpi[time_index] = orbit.Omega + orbit.omega
+    @staticmethod
+    def _update_body(body, orbits, i, orbit_idx, mmr_refs, sec_refs, lk_refs):
+        """Update body orbital data and resonant angles using pre-resolved refs."""
+        orbit = orbits[orbit_idx]
 
-        # Calculate MMR angles
-        for mmr in body.mmrs:
-            planets = [orbits[idx - 1] for idx in mmr.index_of_planets]
-            body.angles_unwrapped[mmr.to_s()][time_index] = mmr.calc_angle(orbit, planets)
+        body.axis[i] = orbit.a
+        body.ecc[i] = orbit.e
+        body.inc[i] = orbit.inc
+        body.Omega[i] = orbit.Omega
+        body.omega[i] = orbit.omega
+        body.M[i] = orbit.M
+        body.longitude[i] = orbit.l
+        body.varpi[i] = orbit.Omega + orbit.omega
 
-        # Calculate secular resonance angles
-        for secular in body.secular_resonances:
-            planets = {idx: orbits[idx - 1] for idx in secular.index_of_planets}
-            body.angles_unwrapped[secular.to_s()][time_index] = secular.calc_angle(orbit, planets)
+        for arr, mmr, planet_indices in mmr_refs:
+            planets = [orbits[idx - 1] for idx in planet_indices]
+            arr[i] = mmr.calc_angle(orbit, planets)
 
-        # Calculate Lidov-Kozai resonant angle (argument of pericenter)
-        for lidov in body.lidov_kozai_resonances:
-            body.angles_unwrapped[lidov.to_s()][time_index] = lidov.calc_angle(orbit, None)
+        for arr, sec, planet_indices in sec_refs:
+            planets = {idx: orbits[idx - 1] for idx in planet_indices}
+            arr[i] = sec.calc_angle(orbit, planets)
+
+        for arr, lk in lk_refs:
+            arr[i] = lk.calc_angle(orbit, None)
+
+    def _init_planets_arrays(self, n):
+        """Pre-allocate numpy arrays for planet data."""
+        fields = ('times', 'a', 'e', 'inc', 'Omega', 'omega', 'M', 'l', 'varpi')
+        for planet in self.planets_without_sun:
+            self.planets_data[planet] = {f: np.empty(n) for f in fields}
