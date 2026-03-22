@@ -2,6 +2,7 @@ import numpy as np
 
 from resonances.resonance.classify import (
     ClassifyParams,
+    check_chaos,
     classify_from_data,
     classify_from_metrics,
     classify_resonance,
@@ -341,3 +342,74 @@ def test_classify_from_data_with_custom_params():
     strict = ClassifyParams(tto_pure_libration=0.01)
     result_strict = classify_from_data(times_yrs, angles, sigma_unwrapped, params=strict)
     assert result_strict['result'].subtype == 'partial libration'
+
+
+# ── check_chaos tests ──
+
+
+class _FakeBody:
+    """Minimal body-like object for check_chaos tests."""
+
+    def __init__(self, axis, ecc):
+        self.axis = np.asarray(axis, dtype=float)
+        self.ecc = np.asarray(ecc, dtype=float)
+
+
+def test_check_chaos_normal():
+    """Normal orbit → flag 0."""
+    body = _FakeBody(axis=[2.5, 2.6, 2.55], ecc=[0.1, 0.12, 0.11])
+    flag, comment = check_chaos(body)
+    assert flag == 0
+    assert comment == ""
+
+
+def test_check_chaos_hyperbolic():
+    """Eccentricity > 1.3 → flag 1 (unphysical)."""
+    body = _FakeBody(axis=[2.5, 2.6, 2.55], ecc=[0.1, 1.5, 0.3])
+    flag, comment = check_chaos(body)
+    assert flag == 1
+    assert "hyperbolic" in comment
+
+
+def test_check_chaos_negative_sma():
+    """Negative semi-major axis → flag 1 (unphysical)."""
+    body = _FakeBody(axis=[2.5, -1.0, 2.55], ecc=[0.1, 0.2, 0.1])
+    flag, comment = check_chaos(body)
+    assert flag == 1
+    assert "negative_sma" in comment
+
+
+def test_check_chaos_large_sma_change_final():
+    """Final a differs > 100% from initial → flag -1."""
+    # a0=2.5, a_final=0.5 → |da|/a0 = 0.8 (80%) — not enough
+    # a0=2.5, a_final=6.0 → |da|/a0 = 1.4 (140%) — triggers
+    body = _FakeBody(axis=[2.5, 2.6, 6.0], ecc=[0.1, 0.1, 0.1])
+    flag, comment = check_chaos(body)
+    assert flag == -1
+    assert "|da|>100%" in comment
+    assert "da_final" in comment
+
+
+def test_check_chaos_large_sma_change_max():
+    """Max a differs > 100% from initial but final is close → flag -1."""
+    # a0=2.5, max=5.5 → |da|/a0 = 1.2 (120%), final=2.6 → only 4%
+    body = _FakeBody(axis=[2.5, 5.5, 2.6], ecc=[0.1, 0.1, 0.1])
+    flag, comment = check_chaos(body)
+    assert flag == -1
+    assert "da_max" in comment
+
+
+def test_check_chaos_zero_a0():
+    """a0 = 0 → flag 1 (unphysical, division guard)."""
+    body = _FakeBody(axis=[0.0, 2.5, 2.5], ecc=[0.1, 0.1, 0.1])
+    flag, comment = check_chaos(body)
+    assert flag == 1
+    assert "a0=0" in comment
+
+
+def test_check_chaos_borderline_99_percent():
+    """99% change should NOT trigger flag -1."""
+    # a0=2.5, a_final=4.975 → |da|/a0 = 0.99
+    body = _FakeBody(axis=[2.5, 2.5, 4.975], ecc=[0.1, 0.1, 0.1])
+    flag, comment = check_chaos(body)
+    assert flag == 0

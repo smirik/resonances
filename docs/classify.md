@@ -39,17 +39,30 @@ All thresholds are collected in a single `ClassifyParams` dataclass:
 
 Defaults can be overridden via `.env`, `SimulationConfig` kwargs, or by passing a `ClassifyParams` directly.
 
+## Chaos detection
+
+Before classification, `classify_resonance` runs `check_chaos(body)` which sets two fields on the result:
+
+| `chaos_flag` | Meaning | Effect on status |
+|---|---|---|
+| `1` | Unphysical orbit (ecc > 1.3 or a < 0) | Sets status to `CHAOTIC`, skips classification |
+| `-1` | Semi-major axis changed > 100% (initial vs final or initial vs max) | No effect on status (informational) |
+| `0` | Normal | — |
+
+These fields appear in `summary.csv` as `chaos_flag` and `chaos_comment`.
+
 ## Decision tree
 
-1. **Unphysical orbit** → `CHAOTIC`
+1. **Unphysical orbit** (`chaos_flag = 1`) → `CHAOTIC`
 2. **Global libration** (`rev_true <= rev_libration`):
    - TTO < `tto_pure_libration` → `LIBRATION` (pure, high confidence)
    - TTO < `tto_partial_libration` → `LIBRATION` (partial, medium confidence)
    - Otherwise → `PROBABLY_SLOW_CIRCULATION` (low confidence)
 3. **Strong circulation** (`TTO > tto_non_resonant`) → `NON_RESONANT`
 4. **Segment analysis** (good + reasonable segments across all windows):
-   - Good segments + low global TTO → `TRANSIENT`
-   - Good segments + high global TTO → `NEAR_SEPARATRIX`
+   - >=3 good segments → `TRANSIENT` (high confidence, regardless of global TTO)
+   - 1+ good segments + low global TTO → `TRANSIENT` (medium confidence)
+   - 1+ good segments + high global TTO → `NEAR_SEPARATRIX`
    - No good but reasonable segments + moderate TTO → `PROBABLY_NEAR_SEPARATRIX`
    - Nothing matched → `NON_RESONANT` (remaining)
 

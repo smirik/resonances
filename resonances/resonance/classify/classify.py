@@ -10,7 +10,7 @@ from resonances.resonance.classify.models import (
     SegmentCounts,
     SegmentMetrics,
 )
-from resonances.resonance.classify.util import is_unphysical_orbit
+from resonances.resonance.classify.util import check_chaos
 
 
 def calc_sigma_derivative(times: np.ndarray, sigma: np.ndarray) -> np.ndarray:
@@ -270,8 +270,8 @@ def classify_from_metrics(  # noqa: C901
     n_good = segment_counts.n_good_total
     has_reasonable_segment = segment_counts.n_reasonable_total > 0
 
-    # >=2 good segments: transient regardless of global tto
-    if n_good >= 2:
+    # >=3 good segments: transient regardless of global tto
+    if n_good >= 3:
         good_s, reasonable_s = _segment_comment_strings(segments_metrics, params)
         result = ResonanceClassifyResult(
             status=ResonanceStatus.TRANSIENT,
@@ -285,7 +285,7 @@ def classify_from_metrics(  # noqa: C901
         return {"result": result, "segments": segments_metrics}
 
     # 1 good segment + moderate global tto: transient
-    if n_good == 1 and (metrics.trend_to_oscillation < params.tto_transient_global):
+    if n_good >= 1 and (metrics.trend_to_oscillation < params.tto_transient_global):
         good_s, reasonable_s = _segment_comment_strings(segments_metrics, params)
         result = ResonanceClassifyResult(
             status=ResonanceStatus.TRANSIENT,
@@ -301,7 +301,7 @@ def classify_from_metrics(  # noqa: C901
         return {"result": result, "segments": segments_metrics}
 
     # 1 good segment but high global tto: near separatrix
-    if n_good == 1:
+    if n_good >= 1:
         good_s, _ = _segment_comment_strings(segments_metrics, params)
         result = ResonanceClassifyResult(
             status=ResonanceStatus.NEAR_SEPARATRIX,
@@ -439,13 +439,16 @@ def classify_resonance(
         else:
             params = ClassifyParams()
 
-    is_unstable, reason = is_unphysical_orbit(body)
-    if is_unstable:
-        logger.warning(f"Unphysical orbit for {body.name} " f"at {resonance.to_s()}: {reason}")
+    chaos_flag, chaos_comment = check_chaos(body)
+
+    if chaos_flag == 1:
+        logger.warning(f"Unphysical orbit for {body.name} " f"at {resonance.to_s()}: {chaos_comment}")
         return {
             "result": ResonanceClassifyResult(
                 status=ResonanceStatus.CHAOTIC,
                 type="chaotic",
+                chaos_flag=chaos_flag,
+                chaos_comment=chaos_comment,
                 metrics=SegmentMetrics(),
             ),
             "segments": {},
@@ -455,4 +458,7 @@ def classify_resonance(
     sigma_wrapped = body.angles_filtered[resonance.to_s()]
     sigma_unwrapped = body.angles_filtered_unwrapped[resonance.to_s()]
 
-    return classify_from_data(times, sigma_wrapped, sigma_unwrapped, params)
+    result = classify_from_data(times, sigma_wrapped, sigma_unwrapped, params)
+    result["result"].chaos_flag = chaos_flag
+    result["result"].chaos_comment = chaos_comment
+    return result

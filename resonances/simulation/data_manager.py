@@ -54,9 +54,13 @@ class DataManager:
             return True
         if mode == SavePlotMode.RESONANT and status > 0:
             return True
+        if mode == SavePlotMode.CANDIDATES and (status > 0 or status == -3):
+            return True
+        if mode == SavePlotMode.EXTENDED and (status > 0 or status in (-3, -4, -5, -9)):
+            return True
         if mode == SavePlotMode.NONZERO and status != 0:
             return True
-        if mode == SavePlotMode.CANDIDATES and status < 0:
+        if mode == SavePlotMode.NEGATIVE and status < 0:
             return True
         return False
 
@@ -261,10 +265,12 @@ class DataManager:
             c1, c2, c = None, None, None
 
         flat = body.librations[resonance.to_s()].to_flat_dict()
-        # Extract comments to place it last; strip line breaks
+        # Extract fields to control column ordering
         comments = flat.pop('comments', None)
         if comments is not None:
             comments = str(comments).replace('\n', ' ').replace('\r', ' ')
+        chaos_flag = flat.pop('chaos_flag', 0)
+        chaos_comment = flat.pop('chaos_comment', '')
 
         # Extract segment counts and rename to user-friendly column names
         segment_count_columns = {
@@ -285,6 +291,8 @@ class DataManager:
             'resonance': resonance.to_s(),
             'type': res_type,
             'status': body.statuses.get(resonance.to_s(), 0),
+            'chaos_flag': chaos_flag,
+            'chaos_comment': chaos_comment,
         }
         for k, v in flat.items():
             row[k] = v

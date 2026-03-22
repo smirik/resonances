@@ -42,12 +42,35 @@ class TestDataManager:
         assert self.data_manager._process_status(-1, 'resonant') is False
 
     def test_process_status_candidates(self):
-        """Test process status with 'candidates' mode."""
-        assert self.data_manager._process_status(2, 'candidates') is False
-        assert self.data_manager._process_status(1, 'candidates') is False
+        """Test process status with 'candidates' mode (>0 or -3)."""
+        assert self.data_manager._process_status(2, 'candidates') is True
+        assert self.data_manager._process_status(1, 'candidates') is True
         assert self.data_manager._process_status(0, 'candidates') is False
-        assert self.data_manager._process_status(-1, 'candidates') is True
-        assert self.data_manager._process_status(-2, 'candidates') is True
+        assert self.data_manager._process_status(-1, 'candidates') is False
+        assert self.data_manager._process_status(-3, 'candidates') is True
+        assert self.data_manager._process_status(-4, 'candidates') is False
+        assert self.data_manager._process_status(-5, 'candidates') is False
+
+    def test_process_status_extended(self):
+        """Test process status with 'extended' mode (>0 or -3, -4, -5, -9)."""
+        assert self.data_manager._process_status(2, 'extended') is True
+        assert self.data_manager._process_status(1, 'extended') is True
+        assert self.data_manager._process_status(0, 'extended') is False
+        assert self.data_manager._process_status(-1, 'extended') is False
+        assert self.data_manager._process_status(-2, 'extended') is False
+        assert self.data_manager._process_status(-3, 'extended') is True
+        assert self.data_manager._process_status(-4, 'extended') is True
+        assert self.data_manager._process_status(-5, 'extended') is True
+        assert self.data_manager._process_status(-9, 'extended') is True
+        assert self.data_manager._process_status(-99, 'extended') is False
+
+    def test_process_status_negative(self):
+        """Test process status with 'negative' mode (status < 0)."""
+        assert self.data_manager._process_status(2, 'negative') is False
+        assert self.data_manager._process_status(1, 'negative') is False
+        assert self.data_manager._process_status(0, 'negative') is False
+        assert self.data_manager._process_status(-1, 'negative') is True
+        assert self.data_manager._process_status(-2, 'negative') is True
 
     def test_process_status_nonzero(self):
         """Test process status with 'nonzero' mode."""

@@ -46,3 +46,40 @@ def is_unphysical_orbit(body) -> Tuple[bool, str]:
         return True, "negative_sma"
 
     return False, "ok"
+
+
+def check_chaos(body) -> Tuple[int, str]:
+    """Check for chaotic or suspicious orbital behaviour.
+
+    Returns (flag, comment):
+      1  — unphysical orbit (ecc > 1.3 or a < 0)
+     -1  — semi-major axis changed > 100% (|a_final-a0|/a0 or |a_max-a0|/a0)
+      0  — normal
+    """
+    if body.axis is None or body.ecc is None:
+        return 0, ""
+
+    is_unstable, reason = is_unphysical_orbit(body)
+    if is_unstable:
+        return 1, f"unphysical: {reason}"
+
+    a0 = body.axis[0]
+    if a0 == 0:
+        return 1, "unphysical: a0=0"
+
+    a_final = body.axis[-1]
+    a_max = np.max(body.axis)
+    abs_a0 = abs(a0)
+
+    rel_change_final = abs(a_final - a0) / abs_a0
+    rel_change_max = abs(a_max - a0) / abs_a0
+
+    if rel_change_final > 1.0 or rel_change_max > 1.0:
+        parts = []
+        if rel_change_final > 1.0:
+            parts.append(f"|da_final|/a0={rel_change_final:.1%}")
+        if rel_change_max > 1.0:
+            parts.append(f"|da_max|/a0={rel_change_max:.1%}")
+        return -1, f"large |da|>100%: {', '.join(parts)}"
+
+    return 0, ""

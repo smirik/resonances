@@ -55,7 +55,13 @@ Under the hood, resonances reads configuration in the following priority:
 
 Below is the list of options. When lowercase is used, it refers to the arguments of the constructor of Simulation. When uppercase is used, it refers to the `.env.dist`.
 
-- `save`/`SAVE` (string or None): whether or not save the result of the simulation. There are five options: `all`, `nonzero`, `resonant`, `candidates`, `None`. `nonzero` will save all resonant cases and all cases that are unclear and require manual verification (`status != 0`). `candidates` will save only those that require manual verification (`status < 0`). `resonant` will save only resonant objects (`status>0`).
+- `save`/`SAVE` (string or None): whether or not save the result of the simulation. Options: `all`, `resonant`, `candidates`, `extended`, `nonzero`, `negative`, `None`.
+  - `resonant` — only confirmed resonant objects (`status > 0`: transient, libration).
+  - `candidates` — resonant + near separatrix (`status > 0` or `status = -3`).
+  - `extended` — candidates + uncertain/slow (`status > 0` or `status` in {-3, -4, -5, -9}).
+  - `nonzero` — everything except non-resonant (`status != 0`).
+  - `negative` — only negative statuses requiring manual verification (`status < 0`).
+  - `all` — save everything.
 - `save_path`/`SAVE_PATH`: directory where to save the output CSV files (data only). If you do not specify `save_path` when creating Simulation object, it will use `SAVE_PATH` with a sub-directory based on the current timestamp. In other words, unless explicitly specified, the app will create a subdirectory in `SAVE_PATH` to differentiate multiple runs.
 - `plot`/`PLOT` : the same as for `sim.save` but for graphs.
 - `save_summary`/`SAVE_SUMMARY` (bool): save summary of the simulation as a dataframe (available through `get_simulation_summary()` method)

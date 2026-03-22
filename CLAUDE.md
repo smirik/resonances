@@ -25,10 +25,19 @@ Key files in `resonances/`:
 | `config.py` | Loads `.env.dist` + `.env`, exposes `SimulationConfig` |
 | `horizons.py` | Fetch Keplerian elements from NASA Horizons |
 | `logger.py` | Logging (info/warning/error levels) |
+| `simulation/config.py` | `SimulationConfig`, `SavePlotMode` enum |
+| `simulation/data_manager.py` | Save/plot logic, summary.csv generation |
+| `resonance/classify/classify.py` | 3-layer classification: `classify_resonance` → `classify_from_data` → `classify_from_metrics` |
+| `resonance/classify/models.py` | `ResonanceStatus` (IntEnum), `ResonanceClassifyResult`, `ClassifyParams` thresholds |
+| `resonance/classify/util.py` | `is_unphysical_orbit`, `check_chaos`, `merge_intervals` |
+
+Detailed documentation lives in `docs/` — see `docs/classify.md` for classification logic, `docs/config.md` for all config options.
 
 ## Important notes
 
-- Note that this is a scientific project. The methods and functions must be very accurately tested and validated and stay reliable.
+- This is a scientific project. Methods and functions must be accurately tested and validated.
+- `ResonanceStatus` (IntEnum in `resonance/classify/models.py`) is the central status type: values range from 2 (LIBRATION) to -99 (CHAOTIC). Save/plot modes (`SavePlotMode`) filter by these values.
+- Classification has side effects: `classify_resonance` sets `chaos_flag`/`chaos_comment` on the result and may short-circuit to CHAOTIC for unphysical orbits.
 
 ## Documenting
 
@@ -70,3 +79,11 @@ For tests:
 
 - Prefer functional tests over unit tests and mocks.
 - When you create a new test, make sure that it tests a case obtained from different sources. For example, if you need to test a sum(a,b) function, calculate first a few examples independently (e.g., 2+3=5, 4+9=13) and then use these examples to test the function in a functional way.
+- `KEEP_TEST_CACHE=1` prevents cleanup of `cache/tests/` folder after tests.
+
+## Code style
+
+- Formatting: `black` (default settings). Linting: `flake8`.
+- Use `StrEnum`/`IntEnum` for typed constants (e.g., `SavePlotMode`, `ResonanceStatus`).
+- Plotting classes inherit `BasePlotter` (shared `save`/`show`/`close`).
+- `experiments/` contains one-off research scripts — not part of the package, not tested.

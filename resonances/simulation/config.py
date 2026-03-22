@@ -10,13 +10,25 @@ import os
 
 
 class SavePlotMode(StrEnum):
-    """Mode for saving/plotting body data."""
+    """Mode for saving/plotting body data.
+
+    Modes filter by ResonanceStatus value:
+      none       — save/plot nothing
+      all        — save/plot everything
+      resonant   — status > 0 (TRANSIENT, LIBRATION)
+      candidates — status > 0 or -3 (resonant + NEAR_SEPARATRIX)
+      extended   — status > 0 or in {-3, -4, -5, -9} (candidates + uncertain/slow)
+      nonzero    — status != 0
+      negative   — status < 0
+    """
 
     NONE = 'none'
     ALL = 'all'
     RESONANT = 'resonant'
-    NONZERO = 'nonzero'
     CANDIDATES = 'candidates'
+    EXTENDED = 'extended'
+    NONZERO = 'nonzero'
+    NEGATIVE = 'negative'
 
 
 def _normalize_mode(value) -> SavePlotMode | None:

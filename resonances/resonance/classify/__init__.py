@@ -10,7 +10,7 @@ from resonances.resonance.classify.classify import (
     classify_from_metrics,
     classify_resonance,
 )
-from resonances.resonance.classify.util import is_unphysical_orbit, merge_intervals
+from resonances.resonance.classify.util import check_chaos, is_unphysical_orbit, merge_intervals
 
 __all__ = [
     "ClassifyParams",
@@ -21,6 +21,7 @@ __all__ = [
     "classify_from_data",
     "classify_from_metrics",
     "classify_resonance",
+    "check_chaos",
     "is_unphysical_orbit",
     "merge_intervals",
 ]

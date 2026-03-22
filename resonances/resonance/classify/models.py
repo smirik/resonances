@@ -122,6 +122,8 @@ class ResonanceClassifyResult:
     type: str = ''
     subtype: str = ''
     confidence: Optional[str] = None
+    chaos_flag: int = 0
+    chaos_comment: str = ''
     comments: Optional[str] = None
     metrics: SegmentMetrics = field(default_factory=SegmentMetrics)
     segment_counts: SegmentCounts = field(default_factory=SegmentCounts)
