@@ -2,6 +2,7 @@ import numpy as np
 
 from resonances.resonance.classify import (
     ClassifyParams,
+    ResonanceClassifyResult,
     check_chaos,
     classify_from_data,
     classify_from_metrics,
@@ -10,6 +11,7 @@ from resonances.resonance.classify import (
     SegmentCounts,
     SegmentMetrics,
 )
+from resonances.resonance.classify.classify import _calc_libration_params
 from resonances.body import Body
 from resonances.mmr.two_body import TwoBody
 from resonances.secular.secular_resonance import SecularResonance
@@ -344,6 +346,133 @@ def test_classify_from_data_with_custom_params():
     assert result_strict['result'].subtype == 'partial libration'
 
 
+# ── resid_acf_first_zero_lag computation tests ──
+
+
+def test_resid_acf_staircase_signal():
+    """Linear trend + sinusoidal modulation (staircase) → small acf_zero_lag."""
+    from resonances.resonance.classify.classify import _calc_resid_acf_first_zero_lag
+
+    N = 2000
+    times = np.linspace(0, 100, N)
+    # Linear drift + periodic modulation (5 periods over 100 years)
+    sigma_f = 0.5 * times + 3.0 * np.sin(2 * np.pi * times / 20.0)
+
+    lag = _calc_resid_acf_first_zero_lag(times, sigma_f)
+
+    assert np.isfinite(lag)
+    assert lag < 0.15  # staircase: ACF crosses zero early
+
+
+def test_resid_acf_transient_signal():
+    """Aperiodic signal (half flat, half linear) → large acf_zero_lag."""
+    from resonances.resonance.classify.classify import _calc_resid_acf_first_zero_lag
+
+    N = 2000
+    times = np.linspace(0, 100, N)
+    # First half flat (simulating libration capture), second half linear drift
+    sigma_f = np.zeros(N)
+    sigma_f[N // 2 :] = 0.5 * (times[N // 2 :] - times[N // 2])
+
+    lag = _calc_resid_acf_first_zero_lag(times, sigma_f)
+
+    assert np.isfinite(lag)
+    assert lag > 0.20  # transient: ACF crosses zero late
+
+
+# ── staircase detection integration tests ──
+
+
+def test_staircase_detected_high_tto_low_acf():
+    """TTO=3.0, acf_zero_lag=0.10, n_good=5 → NEAR_SEPARATRIX (staircase)."""
+    metrics = SegmentMetrics(
+        revolutions_true=5.0,
+        trend_to_oscillation=3.0,
+        resid_acf_first_zero_lag=0.10,
+    )
+    counts = SegmentCounts(n_good_total=5, n_reasonable_total=5)
+    result = classify_from_metrics(metrics, counts, {})
+
+    assert result['result'].status == ResonanceStatus.NEAR_SEPARATRIX
+    assert result['result'].subtype == 'staircase circulation'
+
+
+def test_staircase_not_detected_high_acf():
+    """TTO=3.0, acf_zero_lag=0.25, n_good=5 → TRANSIENT (not staircase)."""
+    metrics = SegmentMetrics(
+        revolutions_true=5.0,
+        trend_to_oscillation=3.0,
+        resid_acf_first_zero_lag=0.25,
+    )
+    counts = SegmentCounts(n_good_total=5, n_reasonable_total=5)
+    result = classify_from_metrics(metrics, counts, {})
+
+    assert result['result'].status == ResonanceStatus.TRANSIENT
+
+
+def test_staircase_not_detected_low_tto():
+    """TTO=1.5, acf_zero_lag=0.10, n_good=5 → TRANSIENT (TTO too low for staircase)."""
+    metrics = SegmentMetrics(
+        revolutions_true=5.0,
+        trend_to_oscillation=1.5,
+        resid_acf_first_zero_lag=0.10,
+    )
+    counts = SegmentCounts(n_good_total=5, n_reasonable_total=5)
+    result = classify_from_metrics(metrics, counts, {})
+
+    assert result['result'].status == ResonanceStatus.TRANSIENT
+
+
+def test_staircase_not_detected_no_good_segments():
+    """TTO=3.0, acf_zero_lag=0.10, n_good=0 → not staircase (no good segments)."""
+    metrics = SegmentMetrics(
+        revolutions_true=5.0,
+        trend_to_oscillation=3.0,
+        resid_acf_first_zero_lag=0.10,
+    )
+    counts = SegmentCounts(n_good_total=0, n_reasonable_total=1)
+    reasonable_seg = SegmentMetrics(revolutions_true=1.5, trend_to_oscillation=0.8)
+    segments = {"0.1": {"0.00-10.00": reasonable_seg}}
+    result = classify_from_metrics(metrics, counts, segments)
+
+    assert result['result'].status == ResonanceStatus.PROBABLY_NEAR_SEPARATRIX
+
+
+def test_staircase_not_detected_nan_acf():
+    """TTO=3.0, acf_zero_lag=NaN, n_good=5 → TRANSIENT (NaN doesn't trigger)."""
+    metrics = SegmentMetrics(
+        revolutions_true=5.0,
+        trend_to_oscillation=3.0,
+        resid_acf_first_zero_lag=np.nan,
+    )
+    counts = SegmentCounts(n_good_total=5, n_reasonable_total=5)
+    result = classify_from_metrics(metrics, counts, {})
+
+    assert result['result'].status == ResonanceStatus.TRANSIENT
+
+
+def test_staircase_not_detected_none_acf():
+    """TTO=3.0, acf_zero_lag=None, n_good=5 → TRANSIENT (None doesn't trigger)."""
+    metrics = SegmentMetrics(
+        revolutions_true=5.0,
+        trend_to_oscillation=3.0,
+        resid_acf_first_zero_lag=None,
+    )
+    counts = SegmentCounts(n_good_total=5, n_reasonable_total=5)
+    result = classify_from_metrics(metrics, counts, {})
+
+    assert result['result'].status == ResonanceStatus.TRANSIENT
+
+
+def test_resid_acf_in_flat_dict():
+    """resid_acf_first_zero_lag appears in to_flat_dict output."""
+    metrics = SegmentMetrics(resid_acf_first_zero_lag=0.12)
+    result = ResonanceClassifyResult(metrics=metrics)
+    flat = result.to_flat_dict()
+    assert 'metrics_resid_acf_first_zero_lag' in flat
+    assert flat['metrics_resid_acf_first_zero_lag'] == 0.12
+
+
 # ── check_chaos tests ──
 
 
@@ -413,3 +542,174 @@ def test_check_chaos_borderline_99_percent():
     body = _FakeBody(axis=[2.5, 2.5, 4.975], ecc=[0.1, 0.1, 0.1])
     flag, comment = check_chaos(body)
     assert flag == 0
+
+
+# ============================================================
+# Libration period and center tests
+# ============================================================
+
+
+def test_libration_params_pure_sinusoid():
+    """Lomb-Scargle recovers known period from a pure sinusoid."""
+    # Sinusoid with period=10000 yr, center=pi
+    T = 10000.0
+    times = np.linspace(0, 100000, 6000)
+    sigma_unwrapped = np.pi + 0.3 * np.sin(2 * np.pi * times / T)
+    sigma_wrapped = sigma_unwrapped % (2 * np.pi)
+
+    p1, p2, center = _calc_libration_params(
+        times, sigma_unwrapped, np.arctan2(np.mean(np.sin(sigma_wrapped)), np.mean(np.cos(sigma_wrapped)))
+    )
+
+    assert p1 is not None
+    assert abs(p1 - T) / T < 0.05  # within 5% of true period
+    # p2 may or may not be None — pre-whitening can produce artifacts
+    assert abs(center - np.pi) < 0.1  # center near pi
+
+
+def test_libration_params_two_frequencies():
+    """Lomb-Scargle detects two periods from a two-frequency signal."""
+    T1 = 15000.0
+    T2 = 6000.0
+    times = np.linspace(0, 100000, 6000)
+    sigma_unwrapped = np.pi / 2 + 0.3 * np.sin(2 * np.pi * times / T1) + 0.2 * np.sin(2 * np.pi * times / T2)
+    sigma_wrapped = sigma_unwrapped % (2 * np.pi)
+
+    p1, p2, center = _calc_libration_params(
+        times, sigma_unwrapped, np.arctan2(np.mean(np.sin(sigma_wrapped)), np.mean(np.cos(sigma_wrapped)))
+    )
+
+    assert p1 is not None
+    assert p2 is not None
+    # One of (p1, p2) should be ~T1 and the other ~T2
+    periods = sorted([p1, p2])
+    expected = sorted([T1, T2])
+    assert abs(periods[0] - expected[0]) / expected[0] < 0.05
+    assert abs(periods[1] - expected[1]) / expected[1] < 0.05
+
+
+def test_libration_params_center_near_zero():
+    """Center of libration computed correctly for angle near 0/2π."""
+    times = np.linspace(0, 100000, 6000)
+    # Libration centered at 0 (wrapping between ~5.8 and ~0.5)
+    sigma_unwrapped = 0.3 * np.sin(2 * np.pi * times / 8000.0)
+    sigma_wrapped = sigma_unwrapped % (2 * np.pi)
+
+    _, _, center = _calc_libration_params(
+        times, sigma_unwrapped, np.arctan2(np.mean(np.sin(sigma_wrapped)), np.mean(np.cos(sigma_wrapped)))
+    )
+
+    # Center should be near 0 or 2π (they're equivalent)
+    assert center < 0.3 or center > (2 * np.pi - 0.3)
+
+
+def test_libration_params_center_at_3pi2():
+    """Center of libration at 3π/2 (typical LK apocentric)."""
+    times = np.linspace(0, 100000, 6000)
+    center_true = 3 * np.pi / 2
+    sigma_unwrapped = center_true + 0.3 * np.sin(2 * np.pi * times / 12000.0)
+    sigma_wrapped = sigma_unwrapped % (2 * np.pi)
+
+    _, _, center = _calc_libration_params(
+        times, sigma_unwrapped, np.arctan2(np.mean(np.sin(sigma_wrapped)), np.mean(np.cos(sigma_wrapped)))
+    )
+
+    assert abs(center - center_true) < 0.1
+
+
+def test_libration_params_short_timeseries():
+    """Short time series returns None periods but still computes center."""
+    times = np.linspace(0, 100, 50)
+    sigma_unwrapped = np.pi + 0.1 * np.sin(2 * np.pi * times / 20)
+    sigma_wrapped = sigma_unwrapped % (2 * np.pi)
+
+    p1, p2, center = _calc_libration_params(
+        times, sigma_unwrapped, np.arctan2(np.mean(np.sin(sigma_wrapped)), np.mean(np.cos(sigma_wrapped)))
+    )
+
+    assert p1 is None
+    assert p2 is None
+    assert center is not None
+
+
+def test_libration_params_noise_only():
+    """Pure noise should not produce a significant period (FAP too high)."""
+    np.random.seed(42)
+    times = np.linspace(0, 100000, 6000)
+    sigma_unwrapped = np.random.normal(np.pi, 0.01, len(times))
+    sigma_wrapped = sigma_unwrapped % (2 * np.pi)
+
+    p1, p2, center = _calc_libration_params(
+        times, sigma_unwrapped, np.arctan2(np.mean(np.sin(sigma_wrapped)), np.mean(np.cos(sigma_wrapped)))
+    )
+
+    # With very small noise amplitude and FAP<0.01, no peak should be significant
+    assert p1 is None
+
+
+def test_libration_params_in_classify_resonance():
+    """classify_resonance populates libration params for librating body."""
+    # Period = 10000 yr, center = pi. Time span must be long enough for LS.
+    T_yr = 10000.0
+    times = np.linspace(0.0, 100000.0, 6000) * 2 * np.pi
+    angles = (np.pi + 0.3 * np.sin(2 * np.pi * times / (T_yr * 2 * np.pi))) % (2 * np.pi)
+
+    resonance = _create_mmr()
+    body = _create_body_with_angles(times, angles, resonance)
+
+    result = classify_resonance(body, resonance)
+
+    assert result["result"].status == ResonanceStatus.LIBRATION
+    m = result["result"].metrics
+    assert m.libration_center is not None
+    assert abs(m.libration_center - np.pi) < 0.2
+    assert m.libration_period_1 is not None
+    assert abs(m.libration_period_1 - T_yr) / T_yr < 0.05
+
+
+def test_libration_params_not_computed_for_circulation():
+    """classify_resonance should NOT compute libration params for status=0."""
+    times = np.linspace(0.0, 100.0, 2000) * 2 * np.pi
+    angles = (0.05 * times) % (2 * np.pi)
+
+    resonance = _create_mmr()
+    body = _create_body_with_angles(times, angles, resonance)
+
+    result = classify_resonance(body, resonance)
+
+    assert result["result"].status == ResonanceStatus.NON_RESONANT
+    m = result["result"].metrics
+    assert m.libration_period_1 is None
+    assert m.libration_center is None
+
+
+def test_libration_params_not_computed_for_chaotic():
+    """classify_resonance should NOT compute libration params for chaotic."""
+    times = np.linspace(0.0, 100.0, 2000) * 2 * np.pi
+    angles = (np.pi + 0.5 * np.sin(2 * np.pi * times / (10.0 * 2 * np.pi))) % (2 * np.pi)
+
+    resonance = _create_mmr()
+    body = _create_body_with_angles(times, angles, resonance)
+    body.ecc = np.full_like(times, 1.5)
+
+    result = classify_resonance(body, resonance)
+
+    assert result["result"].status == ResonanceStatus.CHAOTIC
+    m = result["result"].metrics
+    assert m.libration_period_1 is None
+    assert m.libration_center is None
+
+
+def test_libration_params_in_flat_dict():
+    """Libration params appear in to_flat_dict output."""
+    result = ResonanceClassifyResult(
+        metrics=SegmentMetrics(
+            libration_period_1=10000.0,
+            libration_period_2=5000.0,
+            libration_center=1.57,
+        )
+    )
+    flat = result.to_flat_dict()
+    assert flat["metrics_libration_period_1"] == 10000.0
+    assert flat["metrics_libration_period_2"] == 5000.0
+    assert flat["metrics_libration_center"] == 1.57

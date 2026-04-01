@@ -42,6 +42,12 @@ class SegmentMetrics:
     mean_sigma_dot: Optional[float] = None  # Mean of the derivative of σ
     std_sigma_dot: Optional[float] = None  # Standard deviation of the derivative of σ
 
+    resid_acf_first_zero_lag: Optional[float] = None  # Normalized lag of first zero crossing of residual ACF
+
+    libration_period_1: Optional[float] = None  # Primary libration period in years (from Lomb-Scargle)
+    libration_period_2: Optional[float] = None  # Secondary libration period in years (if significant)
+    libration_center: Optional[float] = None  # Center of libration in radians [0, 2π]
+
 
 @dataclass
 class SegmentCounts:
@@ -92,6 +98,10 @@ class ClassifyParams:
     tto_non_resonant: float = 6.0
     tto_transient_global: float = 3.0
     tto_near_separatrix: float = 6.0
+
+    # Staircase detection thresholds
+    staircase_min_tto: float = 2.0
+    staircase_max_resid_acf_zero: float = 0.15
 
     # Segment quality thresholds
     good_seg_max_rev: float = 1.0

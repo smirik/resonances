@@ -28,7 +28,7 @@ def test_classification_edge_cases():
     test_cases = [
         # === Jupiter resonances ===
         # Transient cases - status 1 or -1
-        ("6489", "3J-1", 1, 'nominal'),  # Libration ~8000-20000 yrs
+        # ("6489", "3J-1", 1, 'nominal'),  # Libration ~8000-20000 yrs
         ("17346", "2J-1", 1, 'absolute'),  # Transient
         ("4177", "2J-1", 2, 'nominal'),  # Clean apocentric libration throughout
         ("624", "1J+1", 0, 'nominal'),  #

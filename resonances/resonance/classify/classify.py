@@ -1,6 +1,8 @@
 import numpy as np
 from typing import Optional, Tuple, Union
 from scipy.stats import linregress
+from scipy import signal
+from astropy.timeseries import LombScargle
 
 from resonances.logger import logger
 from resonances.resonance.classify.models import (
@@ -103,6 +105,136 @@ def _calc_metrics(
     )
 
     return metrics
+
+
+def _calc_resid_acf_first_zero_lag(
+    times: np.ndarray,
+    sigma_unwrapped: np.ndarray,
+) -> float:
+    """Normalized lag of first zero crossing of the ACF of residual from linear trend.
+
+    Staircase (near-separatrix) circulation has quasi-periodic residual,
+    so ACF crosses zero early (< 0.15). Transient resonance has aperiodic
+    residual, so ACF crosses zero late (> 0.20).
+    """
+    n = len(sigma_unwrapped)
+    if n < 10:
+        return np.nan
+
+    slope, intercept, _, _, _ = linregress(times, sigma_unwrapped)
+    residual = sigma_unwrapped - (slope * times + intercept)
+
+    x = residual - np.mean(residual)
+    acf_full = np.correlate(x, x, mode="full")
+    acf = acf_full[n - 1 :]
+    if acf[0] == 0:
+        return np.nan
+    acf = acf / acf[0]
+
+    half_n = n // 2
+    for lag in range(1, half_n):
+        if acf[lag] <= 0:
+            return lag / n
+    return np.nan
+
+
+def _ls_find_significant_peak(t, y, min_freq, max_freq, fap_threshold):
+    """Find the most significant Lomb-Scargle peak with FAP < threshold.
+
+    Returns (ls, frequency_array, best_frequency, best_power) or None if
+    no significant peak is found.
+    """
+    try:
+        ls = LombScargle(t, y)
+        frequency, power = ls.autopower(
+            minimum_frequency=min_freq,
+            maximum_frequency=max_freq,
+            nyquist_factor=5,
+        )
+    except Exception as e:
+        logger.debug(f"Lomb-Scargle autopower failed: {e}")
+        return None
+
+    if len(power) == 0:
+        return None
+
+    peaks, _ = signal.find_peaks(power, distance=10)
+    if len(peaks) == 0:
+        return None
+
+    best_idx = peaks[np.argmax(power[peaks])]
+    try:
+        fap = ls.false_alarm_probability(power[best_idx])
+    except Exception as e:
+        logger.debug(f"FAP computation failed: {e}")
+        return None
+
+    if fap >= fap_threshold:
+        return None
+
+    return ls, frequency, frequency[best_idx], power[best_idx]
+
+
+def _calc_libration_params(
+    times: np.ndarray,
+    sigma_unwrapped: np.ndarray,
+    phi_rad: float,
+    fap_threshold: float = 0.01,
+) -> Tuple[Optional[float], Optional[float], float]:
+    """Compute libration period(s) and center from angle time series.
+
+    Period: Lomb-Scargle on the detrended unwrapped angle. Primary peak must
+    have FAP < fap_threshold. Secondary peak is found by pre-whitening
+    (subtracting best-fit sinusoid of primary) and checking FAP again.
+
+    Center: derived from phi_rad (circular mean), normalized to [0, 2π].
+
+    Returns (period_1, period_2, center) where periods are in years (None if
+    not significant) and center is in radians [0, 2π].
+    """
+    center = phi_rad % (2 * np.pi)
+
+    n = len(times)
+    if n < 100:
+        return None, None, center
+
+    slope, intercept, _, _, _ = linregress(times, sigma_unwrapped)
+    residual = sigma_unwrapped - (slope * times + intercept)
+
+    # Cut 5% edges to avoid filter artifacts
+    cut = max(int(n * 0.05), 50)
+    t_cut = times[cut:-cut]
+    r_cut = residual[cut:-cut]
+
+    if len(t_cut) < 100:
+        return None, None, center
+
+    total_time = times[-1] - times[0]
+    min_freq = 2.0 / total_time  # at least 2 full cycles
+    max_freq = 1.0 / 500.0  # minimum period 500 years
+
+    if min_freq >= max_freq:
+        return None, None, center
+
+    result = _ls_find_significant_peak(t_cut, r_cut, min_freq, max_freq, fap_threshold)
+    if result is None:
+        return None, None, center
+
+    ls, frequency, best_freq, best_power = result
+    period_1 = 1.0 / best_freq
+
+    # Secondary period via pre-whitening
+    period_2 = None
+    try:
+        y_model = ls.model(t_cut, best_freq)
+        r_whitened = r_cut - y_model
+        result2 = _ls_find_significant_peak(t_cut, r_whitened, min_freq, max_freq, fap_threshold)
+        if result2 is not None:
+            period_2 = 1.0 / result2[2]
+    except Exception as e:
+        logger.debug(f"Pre-whitening failed: {e}")
+
+    return period_1, period_2, center
 
 
 def _calc_segments_metrics(
@@ -266,6 +398,32 @@ def classify_from_metrics(  # noqa: C901
         )
         return {"result": result, "segments": segments_metrics}
 
+    # Staircase detection: intercept near-separatrix objects before segment analysis.
+    # Staircase has quasi-periodic residual (ACF crosses zero early).
+    _acf_lag = metrics.resid_acf_first_zero_lag
+    if (
+        metrics.trend_to_oscillation >= params.staircase_min_tto
+        and _acf_lag is not None
+        and np.isfinite(_acf_lag)
+        and _acf_lag < params.staircase_max_resid_acf_zero
+        and segment_counts.n_good_total >= 1
+    ):
+        result = ResonanceClassifyResult(
+            status=ResonanceStatus.NEAR_SEPARATRIX,
+            type="near separatrix",
+            subtype="staircase circulation",
+            confidence="medium",
+            metrics=metrics,
+            segment_counts=segment_counts,
+            comments=(
+                f"Staircase detection: TTO={metrics.trend_to_oscillation:.2f} >= {params.staircase_min_tto}, "
+                f"resid_acf_first_zero_lag={_acf_lag:.4f} < {params.staircase_max_resid_acf_zero}. "
+                f"Good segments ({segment_counts.n_good_total}) are likely false positives from staircase plateaus. "
+                f"Near-separatrix circulation with quasi-periodic speed modulation."
+            ),
+        )
+        return {"result": result, "segments": segments_metrics}
+
     # Segment-based classification using pre-computed counts
     n_good = segment_counts.n_good_total
     has_reasonable_segment = segment_counts.n_reasonable_total > 0
@@ -363,6 +521,7 @@ def classify_from_data(
         params = ClassifyParams()
 
     metrics = _calc_metrics(times, sigma_wrapped, sigma_unwrapped)
+    metrics.resid_acf_first_zero_lag = _calc_resid_acf_first_zero_lag(times, sigma_unwrapped)
 
     # Fast paths: skip expensive segment computation for early-exit branches
     if metrics.revolutions_true <= params.rev_libration:
@@ -402,6 +561,8 @@ def _params_from_config(config) -> ClassifyParams:
         tto_non_resonant=getattr(config, "classify_tto_non_resonant", d.tto_non_resonant),
         tto_transient_global=getattr(config, "classify_tto_transient_global", d.tto_transient_global),
         tto_near_separatrix=getattr(config, "classify_tto_near_separatrix", d.tto_near_separatrix),
+        staircase_min_tto=getattr(config, "classify_staircase_min_tto", d.staircase_min_tto),
+        staircase_max_resid_acf_zero=getattr(config, "classify_staircase_max_resid_acf_zero", d.staircase_max_resid_acf_zero),
         good_seg_max_rev=getattr(config, "classify_good_seg_max_rev", d.good_seg_max_rev),
         good_seg_max_tto=getattr(config, "classify_good_seg_max_tto", d.good_seg_max_tto),
         reasonable_seg_max_rev_1=getattr(config, "classify_reasonable_seg_max_rev_1", d.reasonable_seg_max_rev_1),
@@ -461,4 +622,14 @@ def classify_resonance(
     result = classify_from_data(times, sigma_wrapped, sigma_unwrapped, params)
     result["result"].chaos_flag = chaos_flag
     result["result"].chaos_comment = chaos_comment
+
+    # Compute libration params for non-zero, non-chaotic statuses
+    status = result["result"].status
+    if status != ResonanceStatus.NON_RESONANT and status != ResonanceStatus.CHAOTIC:
+        phi_rad = result["result"].metrics.phi_rad
+        p1, p2, center = _calc_libration_params(times, sigma_unwrapped, phi_rad)
+        result["result"].metrics.libration_period_1 = p1
+        result["result"].metrics.libration_period_2 = p2
+        result["result"].metrics.libration_center = center
+
     return result

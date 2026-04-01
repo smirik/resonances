@@ -34,6 +34,8 @@ All thresholds are collected in a single `ClassifyParams` dataclass:
 | `good_seg_max_tto` | `0.5` | Max TTO for "good" segment |
 | `reasonable_seg_max_rev_1` | `2.0` | Max rev (condition 1) for "reasonable" |
 | `reasonable_seg_max_tto_1` | `1.0` | Max TTO (condition 1) for "reasonable" |
+| `staircase_min_tto` | `2.0` | Min TTO for staircase detection to activate |
+| `staircase_max_resid_acf_zero` | `0.15` | Max residual ACF first-zero-lag for staircase |
 | `reasonable_seg_max_rev_2` | `1.0` | Max rev (condition 2) for "reasonable" |
 | `reasonable_seg_max_tto_2` | `1.5` | Max TTO (condition 2) for "reasonable" |
 
@@ -59,8 +61,9 @@ These fields appear in `summary.csv` as `chaos_flag` and `chaos_comment`.
    - TTO < `tto_partial_libration` → `LIBRATION` (partial, medium confidence)
    - Otherwise → `PROBABLY_SLOW_CIRCULATION` (low confidence)
 3. **Strong circulation** (`TTO > tto_non_resonant`) → `NON_RESONANT`
-4. **Segment analysis** (good + reasonable segments across all windows):
-   - >=3 good segments → `TRANSIENT` (high confidence, regardless of global TTO)
+4. **Staircase detection** (`TTO >= staircase_min_tto` AND `resid_acf_first_zero_lag < staircase_max_resid_acf_zero` AND `n_good >= 1`) → `NEAR_SEPARATRIX` (subtype: staircase circulation). Catches near-separatrix objects with quasi-periodic speed modulation that create false "good" segments.
+5. **Segment analysis** (good + reasonable segments across all windows):
+   - >=3 good segments → `TRANSIENT` (high confidence)
    - 1+ good segments + low global TTO → `TRANSIENT` (medium confidence)
    - 1+ good segments + high global TTO → `NEAR_SEPARATRIX`
    - No good but reasonable segments + moderate TTO → `PROBABLY_NEAR_SEPARATRIX`

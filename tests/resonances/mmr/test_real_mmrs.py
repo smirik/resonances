@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 import resonances
 import astdys
@@ -13,6 +14,19 @@ def test_find():
     status = summary.loc[(summary['name'] == '463') & (summary['resonance'] == '4J-2S-1+0+0-1'), 'status'].iloc[0]
     assert 2 == status
     assert 1 == summary.loc[(summary['name'] == '490') & (summary['resonance'] == '5J-2S-2+0+0-1'), 'status'].iloc[0]
+
+    # 463 in 4J-2S-1 is a known librator: check libration params are populated
+    row_463 = summary.loc[(summary['name'] == '463') & (summary['resonance'] == '4J-2S-1+0+0-1')].iloc[0]
+    assert row_463['metrics_libration_period_1'] is not None
+    assert row_463['metrics_libration_center'] is not None
+    # Period should be in a reasonable range (roughly 5000-30000 yr for 40 Kyr integration)
+    assert 1000 < row_463['metrics_libration_period_1'] < 30000
+    # Center should be finite and in [0, 2pi]
+    assert 0 <= row_463['metrics_libration_center'] <= 2 * np.pi
+
+    # 490 (transient) should also have libration params
+    row_490 = summary.loc[(summary['name'] == '490') & (summary['resonance'] == '5J-2S-2+0+0-1')].iloc[0]
+    assert row_490['metrics_libration_center'] is not None
 
 
 @pytest.mark.slow

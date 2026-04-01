@@ -277,6 +277,16 @@ class SimulationConfig:
             float(c.get('CLASSIFY_TTO_NEAR_SEPARATRIX', 6.0)),
         )
 
+        # Staircase detection thresholds
+        self.classify_staircase_min_tto = kwargs.get(
+            'classify_staircase_min_tto',
+            float(c.get('CLASSIFY_STAIRCASE_MIN_TTO', 2.0)),
+        )
+        self.classify_staircase_max_resid_acf_zero = kwargs.get(
+            'classify_staircase_max_resid_acf_zero',
+            float(c.get('CLASSIFY_STAIRCASE_MAX_RESID_ACF_ZERO', 0.15)),
+        )
+
         # Segment quality thresholds
         self.classify_good_seg_max_rev = kwargs.get(
             'classify_good_seg_max_rev',
