@@ -93,7 +93,13 @@ class Simulation:
 
     def _run_batched(self, progress=False):
         """Run batched execution with multi-core support."""
+        self.running_time["adding_bodies_started"] = logger.get_current_time()
+        self.running_time["integration_started"] = logger.get_current_time()
         self.batch_manager.execute_batches(self, self.bodies, self.times, progress)
+        self.running_time["integration_finished"] = logger.get_current_time()
+        self.running_time["librations_identified"] = logger.get_current_time()
+        self.running_time["bodies_saved"] = logger.get_current_time()
+        self.running_time["stop"] = logger.get_current_time()
         # Save consolidated simulation.json with all bodies after batches complete
         self.data_manager.save_configuration_details(self.bodies, self)
 
