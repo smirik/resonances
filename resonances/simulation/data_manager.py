@@ -98,6 +98,9 @@ class DataManager:
         if self.config.save is None:
             return
 
+        if not any(self.should_save_body(body, r) for r in body.resonances()):
+            return
+
         body_data = body.keplerian_elements_to_dict()
         body_data["times"] = times / (2 * np.pi)
         for resonance in body.resonances():

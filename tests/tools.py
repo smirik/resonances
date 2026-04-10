@@ -1,4 +1,6 @@
 import datetime
+import os
+import shutil
 import astdys.util
 import resonances
 
@@ -57,3 +59,30 @@ def add_test_asteroid_to_simulation(sim: resonances.Simulation):
     mmr = resonances.create_mmr('4J-2S-1')
     sim.add_body(elem, mmr, name='asteroid')
     return sim
+
+
+def run_short_simulation(
+    asteroids, save_mode, plot_mode, label, res_type="lkr", integrator="whfast", integration_years=5_000, base_dir="/tmp/test_save_modes"
+):
+    """Run a short real simulation for testing save/plot mode behavior.
+
+    Returns (output_dir, simulation_object).
+    """
+    out_dir = f"{base_dir}/{label}"
+    if os.path.exists(out_dir):
+        shutil.rmtree(out_dir)
+
+    sim = resonances.find(
+        asteroids=asteroids,
+        name=f"test_{label}",
+        source="astdys",
+        integration_years=integration_years,
+        integrator=integrator,
+        save=save_mode,
+        plot=plot_mode,
+        save_path=out_dir,
+        plot_path=out_dir,
+        type=res_type,
+    )
+    sim.run(progress=False)
+    return out_dir, sim
