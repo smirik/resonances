@@ -73,15 +73,13 @@ Below is the list of options. When lowercase is used, it refers to the arguments
 
 ## Libration options
 
-See [Libration section](libration.md) for explanation!
-
 - `LIBRATION_FILTER_CUTOFF` (float): used to cutoff the frequencies that are higher that this value. By default, it is set to `0.0005`, which means that all oscillations with periods lower than `500` will be removed by the filter.
 - `LIBRATION_FILTER_ORDER` (int): used for `butter` filter. By default, `2`,
 - `LIBRATION_FREQ_MIN` (float): the minimal frequency of the librations that will be taken into account. By default, `0.00001`. Corresponds to the period of oscillations equal to `100000` years.
 - `LIBRATION_FREQ_MAX` (float): the maximum frequency of the librations that will be taken into account. By default, `0.002`. Corresponds to the period of oscillations equal to `500` years.
 - `LIBRATION_CRITICAL` (float): the critical value of the peaks on the periodograms that is counted as significant. By default, `0.1`.
 - `LIBRATION_SOFT` (float): the _soft_ critical value of the peaks on the periodograms that is counted as significant. Used when you _really_ want to find some librations. By default, `0.05`.
-- `LIBRATION_PERIOD_MIN` (int): the number of years to remove from the beginning and end. If you want to disable the cut of these points, just set it to `0`. See [Libration section](libration.md) for explanation!
+- `LIBRATION_PERIOD_MIN` (int): the number of years to remove from the beginning and end. If you want to disable the cut of these points, just set it to `0`.
 - `LIBRATION_PERIOD_CRITICAL` (int): the critical value of the maximum libration period used to identify is there libration or not. By default, `20000` years.
 - `LIBRATION_MONOTONY_CRITICAL` (list): critical values for the metric `monotony`. By default, `[0.4, 0.6]`.
 

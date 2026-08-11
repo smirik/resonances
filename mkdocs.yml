@@ -15,7 +15,6 @@ nav:
                   - "Examples": "examples.ipynb"
         - "Features":
                   - "Simulations, Bodies, MMRs": core.ipynb
-                  - "Libration module": libration.md
                   - "Resonance Matrices": matrix.md
                   - "Lidov-Kozai Resonances": "lidov-kozai.ipynb"
                   - "Output data": output.ipynb

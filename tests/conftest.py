@@ -27,8 +27,8 @@ def cleanup_test_files():
     """Clean up test cache after each test."""
     yield  # Test runs
 
-    if os.environ.get('KEEP_TEST_CACHE'):
-        return  # skip clean when run manually with KEEP_TEST_CACHE=1
+    if os.environ.get('KEEP_TEST_CACHE') not in (None, '', '0'):
+        return  # skip clean when run with KEEP_TEST_CACHE=1 (or `make ... KEEP=1`)
 
     cache_path = Path('cache/tests')
     if cache_path.exists():

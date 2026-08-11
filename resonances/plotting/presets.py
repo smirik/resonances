@@ -21,7 +21,7 @@ def _axis_panel() -> Panel:
         data_column='a_filtered',
         fallback_column='a',
         x_column='times',
-        style=StyleConfig(ylabel=r"$a_f$ (AU)", title="Semi-major axis", color='black', marker=',', linestyle=''),
+        style=StyleConfig(ylabel=r"$a_f$ (au)", title="Semi-major axis", color='black', marker=',', linestyle=''),
         required=True,
     )
 
@@ -43,7 +43,7 @@ def _inclination_panel() -> Panel:
         key='inclination',
         data_column='inc',
         x_column='times',
-        style=StyleConfig(ylabel="i", title="Inclination", color='black', marker=',', linestyle=''),
+        style=StyleConfig(ylabel=r"$i$ (rad)", title="Inclination", color='black', marker=',', linestyle=''),
         required=True,
     )
 

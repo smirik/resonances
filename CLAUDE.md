@@ -13,7 +13,7 @@ Core modules in `resonances/`:
 | `matrix` | MMR catalogs — `TwoBodyMatrix`, `ThreeBodyMatrix` with resonant semi-major axes |
 | `mmr` | MMR classes (`TwoBody`, `ThreeBody`), finder functions |
 | `plotting` | Time series and periodogram plotting with flexible configurator |
-| `resonance` | Core: classify (3-layer: `classify_resonance` → `classify_from_data` → `classify_from_metrics`), factory, filtering (scipy), periodogram (Lomb-Scargle via astropy), resolver (final MMR status from periodogram peak overlap), planets_mappings |
+| `resonance` | Core: classify (episode-based, on the RAW angle: `classify_resonance` → `classify_from_data` → `decide_status`), factory, filtering (scipy, plots only), periodogram (Lomb-Scargle via astropy), planets_mappings |
 | `secular` | Secular resonance class, formula parser, finder, proper angle builder |
 | `simulation` | Simulation engine: `batch_manager` (multicore), `body_manager`, `data_manager` (I/O), `integration` (rebound), `serializer`, `state_manager` |
 
@@ -26,9 +26,13 @@ Key files in `resonances/`:
 | `horizons.py` | Fetch Keplerian elements from NASA Horizons |
 | `logger.py` | Logging (info/warning/error levels) |
 | `simulation/config.py` | `SimulationConfig`, `SavePlotMode` enum |
-| `simulation/data_manager.py` | Save/plot logic, summary.csv generation |
-| `resonance/classify/classify.py` | 3-layer classification: `classify_resonance` → `classify_from_data` → `classify_from_metrics` |
-| `resonance/classify/models.py` | `ResonanceStatus` (IntEnum), `ResonanceClassifyResult`, `ClassifyParams` thresholds |
+| `simulation/data_manager.py` | Save/plot logic, summary.csv + episodes.csv generation |
+| `resonance/classify/classify.py` | Orchestration: `classify_resonance` → `classify_from_data` → `decide_status` |
+| `resonance/classify/metrics.py` | Signal primitives: coverage gap, circular stats, Schmitt trigger, degeneracy mask |
+| `resonance/classify/episodes.py` | Multi-scale scan → `LibrationEpisode` detection/validation, trains, staircase |
+| `resonance/classify/confirm.py` | MMR σ–a coupling confirmation (2/1 vs -2/-1) |
+| `resonance/classify/decision.py` | Ordered decision rules R1–R9 |
+| `resonance/classify/models.py` | `ResonanceStatus` (IntEnum), `LibrationEpisode`, `GlobalMetrics`, `ClassifyParams` |
 | `resonance/classify/util.py` | `is_unphysical_orbit`, `check_chaos`, `merge_intervals` |
 
 Detailed documentation lives in `docs/` — see `docs/classify.md` for classification logic, `docs/config.md` for all config options.
@@ -80,7 +84,7 @@ For tests:
 
 - Prefer functional tests over unit tests and mocks.
 - When you create a new test, make sure that it tests a case obtained from different sources. For example, if you need to test a sum(a,b) function, calculate first a few examples independently (e.g., 2+3=5, 4+9=13) and then use these examples to test the function in a functional way.
-- `KEEP_TEST_CACHE=1` prevents cleanup of `cache/tests/` folder after tests.
+- `KEEP_TEST_CACHE=1` (or `make <target> KEEP=1`) prevents cleanup of `cache/tests/` folder after tests.
 
 ## Code style
 

@@ -1,22 +1,25 @@
+# Pass KEEP=1 to keep cache/tests/ results after a test run, e.g. `make test-benchmark KEEP=1`
+KEEP ?=
+
 install:
 	uv sync
 
 test: install
 	uv run flake8 --count
 	uv run black . --check
-	uv run pytest -v -m "not benchmark" tests
+	KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not benchmark" tests
 
 test-only: install
-	uv run pytest -v -m "not benchmark" tests
+	KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not benchmark" tests
 
 test-fast: install
-	uv run pytest -v -m "not slow and not benchmark" tests
+	KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not slow and not benchmark" tests
 
 test-slow: install
-	uv run pytest -v -m "slow" tests
+	KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "slow" tests
 
 test-benchmark: install
-	uv run pytest -v -m "benchmark" tests
+	KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -s -m "benchmark" tests
 
 run-docs:
 	uv run mkdocs serve

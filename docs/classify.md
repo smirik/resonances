@@ -98,3 +98,21 @@ from resonances.resonance.classify import classify_from_data, ClassifyParams
 result = classify_from_data(times_yrs, sigma_wrapped, sigma_unwrapped,
                             params=ClassifyParams(tto_non_resonant=5.0))
 ```
+
+## Benchmark
+
+`make test-benchmark` integrates ~270 curated body-resonance pairs
+(`tests/resonances/benchmark/ground_truth.csv`, built by
+`experiments/classify/build_ground_truth.py`: the legacy dataset + 70
+independently re-verified cases + the author's plot-review adjudication)
+for 100 kyr and prints a human-readable report: recall on the resonant
+families {2,-2} and {1,-1}, strict and relaxed accuracy (each row carries an
+`acceptable` set of 2-3 statuses for genuinely ambiguous cases), the review
+load, the confusion matrix, and a table of every disagreement.
+
+`BENCHMARK_REPORT=1 make test-benchmark KEEP=1` additionally saves all data
+CSVs and plots (evolution + phase portraits, grouped by predicted status)
+and writes `review.csv` / `mismatches.csv` into the run folder for visual
+inspection. To add a new object, append a row to `ground_truth.csv` (and,
+for non-catalog bodies, its initial conditions to `clones.json`) -- see the
+test module docstring.

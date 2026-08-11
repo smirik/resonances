@@ -1,0 +1,270 @@
+name,resonance,category,primary,acceptable,assert_group,source,comment
+65,2J+9S-3+0+0-8,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+79,54S-7+0-47,mmr,-3,-3;-5,soft,author:2026-07-04,closer to -3
+588,1J-1+0+0,mmr,2,2;-2,strict2,dataset,
+617,1J-1+0+0,mmr,2,2;-2,strict2,dataset,
+624,1J-1+0+0,mmr,2,2;-2,strict2,dataset,
+659,1J-1+0+0,mmr,2,2;-2,strict2,dataset,
+884,1J-1+0+0,mmr,2,2;-2,strict2,dataset,
+887,3J-1+0-2,mmr,-99,-99,soft,dataset,
+935,34M-61+0+27,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+1362,2J-1+0-1,mmr,2,2;-2,strict2,dataset,
+1921,2J-1+0-1,mmr,2,2;-2,strict2,author:2026-07-04,apocentric libration
+1922,2J-1+0-1,mmr,2,2;-2,strict2,dataset,
+2348,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+2487,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+2640,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+2789,49M-86+0+37,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+2791,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+3048,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+3233,30M-53+0+23,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+3293,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+3688,2J-1+0-1,mmr,2,2;-2,strict2,dataset,
+3699,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+3716,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+3789,2J-1+0-1,mmr,2,2;-2,strict2,dataset,
+4684,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+4950,10M+23+0-33,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+5156,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+5323,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+5646,3M-5+0+2,mmr,1,1;-1,strict1,dataset,
+5747,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+6167,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+6193,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+6318,3J-1+0-2,mmr,1,1;-1,strict1,dataset,
+6947,4J-2S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+10774,4J-2S-1+0+0-1,mmr,1,1;-1,strict1,author:2026-07-04,textbook transient
+10796,31J+9+0-40,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+12123,46J-15+0-31,mmr,-3,-3;-5,soft,author:2026-07-04,closer to -3
+12218,4M-7+0+3,mmr,1,1;-1,strict1,dataset,
+12499,4M-7+0+3,mmr,1,1;-1,strict1,dataset,
+15760,2U+7+0-9,mmr,0,0,soft,dataset,
+15788,2N-3+0+1,mmr,2,2;-2,strict2,dataset,
+15789,1U+3+0-4,mmr,0,0,soft,dataset,
+15807,4N-7+0+3,mmr,0,0,soft,dataset,
+15809,3N+5+0-8,mmr,0,0,soft,dataset,
+15810,2N-3+0+1,mmr,2,2;-2,strict2,dataset,
+15820,2N-3+0+1,mmr,2,2;-2,strict2,dataset,
+15836,3N-4+0+1,mmr,2,2;-2,strict2,dataset,
+15874,5N-23+0+18,mmr,1,1;-1,strict1,author:2026-07-04,transient
+15875,2N-3+0+1,mmr,2,2;-2,strict2,author:2026-07-04,peaks match: pure libration
+15883,1U-4N+4+0+0-1,mmr,0,0,soft,dataset,
+16017,7S-1+0-6,mmr,1,1;-1;-3,soft,author:2026-07-04,between -3 and 1
+16183,5J-2S-2+0+0-1,mmr,1,1;-1,strict1,author:2026-07-04,perfect transient
+16397,29M+50+0-79,mmr,-3,-3;-5,soft,author:2026-07-04,-3 or even -5
+16684,4N-7+0+3,mmr,0,0,soft,dataset,
+16790,11J+4+0-15,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+17405,25J+7+0-32,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+17445,5J-2S-2+0+0-1,mmr,1,1;-1,strict1,author:2026-07-04,perfect transient
+17886,36M-61+0+25,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+18118,29M+49+0-78,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+19255,2U-1N-5+0+0+4,mmr,0,0,soft,dataset,
+19299,1U-3+0+2,mmr,0,0,soft,dataset,
+19308,4N-7+0+3,mmr,0,0,soft,dataset,
+19319,14J-5+0-9,mmr,-3,-3;-5,soft,author:2026-07-04,-3
+20108,1U+3+0-4,mmr,0,0,soft,dataset,
+20161,1U+1N-6+0+0+4,mmr,0,0,soft,dataset,
+20911,25M+44+0-69,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+21275,51J-14+0-37,mmr,-3,1;-1;-3;-5,soft,verdict:medium,"Bidirectional circulation (+1.5 and -2.1 rev windows, drift~1) with recurring stalls at 20-30k, 35-45k, 65-75k, 85-95k (gap 155-220, drift 0.02-0.09). 20-45k is"
+21514,36J-13+0-23,mmr,-3,1;-1;-3;-5,soft,author:2026-07-04,"-3, arguably 1"
+22000,5J-2S-2+0+0-1,mmr,1,1;-1,strict1,dataset,
+23240,1M+3J-3+0+0-1,mmr,1,1;-1,strict1,dataset,
+24293,19M-35+0+16,mmr,1,1;-1;-3,soft,author:2026-07-04,"closer to 1, theoretically -3"
+24820,3J-1S-1+0+0-1,mmr,2,2;-2,strict2,dataset,
+24835,3N+5+0-8,mmr,0,0,soft,dataset,
+24952,1U+2N-6+0+0+3,mmr,0,0,soft,dataset,
+25510,27J-8+0-19,mmr,-3,1;-1;-3,soft,verdict:medium,"Stall 20-38k (gap 255, R 0.95, drift 0.03, ~18% of run) but center drifts ~-80deg; stalls recur at 55-65k (gap 95) and 70-80k (gap 60) with a -2.2 rev backward "
+25957,2M-5J-3+0+0+6,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+26308,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+26375,2N-5+0+3,mmr,2,2;-2,strict2,dataset,
+27011,4M-7+0+3,mmr,2,2;-2,strict2,dataset,
+27103,14M+27+0-41,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+27756,74J-21+0-53,mmr,-3,1;-1;-3;-5,soft,verdict:medium,"net +7.8 / total 13.6 rev; retrograde 0-20k then prograde; only isolated stall windows (30-40k, 80-90k: gap 65, drift 0.05-0.27) between drift~1 stretches; a_me"
+28978,2N-3+0+1,mmr,2,2;-2,strict2,dataset,
+29617,38M-61+0+23,mmr,-3,1;-1;-3;-5,soft,verdict:medium,"Fast +6 rev to 12k, then slow alternation: -1.4 rev/win 15-40k, stall (gap 165), +1.8/win 45-60k, stall (gaps 130-195), -0.9/win 65-90k, stall (gap 260, drift 0"
+29637,39M-61+0+22,mmr,1,1;-1,strict1,dataset,
+29744,23M-49+0+26,mmr,-3,1;-1;-3,soft,author:2026-07-04,"between -3 and 1, leaning -3"
+30963,14M-25+0+11,mmr,1,1;-1,strict1,author:2026-07-04,capture at the end
+31028,54M-89+0+35,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+31144,17S-2+0-15,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+31416,47J+15+0-62,mmr,-3,-3;-5,soft,author:2026-07-04,-3
+31580,50J-17+0-33,mmr,-3,1;-1;-3;-5,soft,verdict:medium,"Alternation: -5.6 rev by 15k, wander 15-70k with +-1.1 rev slips (drift to 0.83, gaps 0-210 non-persistent), stall 45-55k (gap 210, drift 0.03) is one turning p"
+31935,9M-16+0+7,mmr,1,1;-1;-3,soft,author:2026-07-04,closer to 1: short periods match
+32151,35J+11+0-46,mmr,-3,-3;-5,soft,verdict:high,"Alternating circulation: window nets +0.9, -1.8, +2.7, -3.3 rev with drift 0.7-1.0; slow windows (20-30 kyr gap 175, drift 0.10; 80-90 kyr gap 130) are isolated"
+32929,1U-3+0+2,mmr,0,0,soft,dataset,
+33001,4N-7+0+3,mmr,0,0,soft,dataset,
+33128,6N-7+0+1,mmr,1,1;-1,strict1,dataset,
+34706,7J-2+0-5,mmr,1,1;-1,strict1,dataset,
+35268,21M+40+0-61,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+35512,11J+4+0-15,mmr,-3,1;-1;-3;-5,soft,author:2026-07-04,"between -3 and 1, leaning -3"
+35671,3U-1N-7+0+0+5,mmr,0,0,soft,dataset,
+35751,23M+41+0-64,mmr,-3,-3;-5,soft,author:2026-07-04,-3
+35762,36M-73+0+37,mmr,-3,2;-2;-3;-5,soft,verdict:medium,"Unwrapped angle oscillates around fixed center (~35 kyr secular period, net +0.2 rev) but amplitude ~+/-1 full rev: windows alternate drift ~0.9 with 1-2 rev ea"
+36774,19M+44+0-63,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+37087,3J+8S-3+0+0-8,mmr,1,1;-1;-3,soft,author:2026-07-04,closer to 1: short periods match
+37908,23J-8+0-15,mmr,-3,-3;-5,soft,author:2026-07-04,-3
+38083,1U-4N+3+0+0+0,mmr,0,0,soft,dataset,
+38628,1U-6N+6+0+0-1,mmr,0,0,soft,dataset,
+39423,23J-10+0-13,mmr,-3,-3;-5,soft,verdict:high,"Fine 2.5% windows: plateaus (gap 240-275, R~0.9, net~+0.1) with centers walking ~110 deg/window alternate quasi-periodically with -1 rev slips over all 100 kyr;"
+39984,37S-5+0-32,mmr,-3,1;-1;-3;-5,soft,author:2026-07-04,disputed
+40314,1U+4+0-5,mmr,0,0,soft,dataset,
+41228,11M+23+0-34,mmr,1,1;-1;-3,soft,verdict:medium,"Genuine capture 86.5-100k (~13%): 5 fine windows gap 225-240, center stationary 188-229 deg, |net|<=0.19, a shifts 2.5498->2.5494 vs fast retrograde circulation"
+41274,11S+2+0-13,mmr,-3,-3;-5,soft,verdict:medium,"Quasi-periodic staircase tied to ~17kyr e-cycle: plateaus (gap 100-235) with centers walking +130-160 deg/window, recurring retrograde slips -0.7..-1.6 rev; tot"
+41588,3J+9S-2+0+0-10,mmr,1,1;-1,strict1,dataset,
+41658,4M-6J-7+0+0+9,mmr,-3,1;-1;-3;-5,soft,verdict:medium,"Stick-slip: gap 200-285deg, drift 0.06-0.3 at 10-50k/60-75k/85-100k yr, but centers wander 0->70->180deg; slow reversing drift between; total_rev 1.6, net +1.0;"
+41774,39M-74+0+35,mmr,-3,-3;-5,soft,verdict:medium,"0-35kyr coherent circulation (drift 1.0, 3.5-4.9 rev/win, gap 0); then slow +/-1.3 rev reversing wander, only weak single-window pauses (gap 100/125, centers 31"
+41888,13J+4+0-17,mmr,-3,-3;-5,soft,verdict:high,"Alternating slow circulation +/-1.5 rev/win with turnaround pauses (gap 110/135/175deg, drift 0.09-0.58) at 15-25k, 30-40k, 90-100k yr; fast -4.4 rev burst 60-7"
+42317,32M-57+0+25,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+42355,4U-11+0+7,mmr,-3,0;-3;-5,soft,verdict:medium,"Fast circulation net -90 rev to 65kyr (13-31 rev/win), reverses to prograde as a crosses ~37.7 AU (a wanders 36-38.3); slowdowns 60-70k (net +0.1, rev 4.4) and "
+43964,25M-44+0+19,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+43982,4M+1S-9+0+0+4,mmr,1,1;-1;-3,soft,author:2026-07-04,closer to 1: librating at the start
+44028,37J-14+0-23,mmr,-3,1;-1;-3;-5,soft,verdict:medium,"Alternation w/o clean episodes: gappy windows (gap 90-175, drift~0.3, net~0.4) at 5-30k & 70-95k, circulation 30-40k/45-75k (gap 0-25, drift 0.5-0.85, net -2.1)"
+44594,8N-9+0+1,mmr,0,0,soft,dataset,
+44662,54M-89+0+35,mmr,-3,1;-1;-3;-5,soft,author:2026-07-04,"very much -3, theoretically 1"
+45021,10M-21+0+11,mmr,-3,1;-1;-3,soft,verdict:medium,"total_rev 2.6, net -1.3. Librating stretches (gap 100-220, drift<=0.4) repeatedly broken by single-rev slips (gap 0-20, net ~ +/-1) at ~25, 55, 75 kyr; no a loc"
+45074,4M-7+0+3,mmr,1,1;-1,strict1,dataset,
+46596,8J+5S-3+0+0-10,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+48012,3J-1+0-2,mmr,0,0,soft,dataset,
+48016,3J-1+0-2,mmr,0,0,soft,dataset,
+48017,3J-1+0-2,mmr,0,0,soft,dataset,
+48789,3J-1S-1+0+0-1,mmr,1,1;-1,strict1,dataset,
+49030,11J-3+0-8,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+49203,76J-23+0-53,mmr,-3,1;-1;-3;-5,soft,author:2026-07-04,"very much -3, theoretically 1"
+49817,16J+5+0-21,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+50166,85J-27+0-58,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+51731,6M-11+0+5,mmr,1,1;-1,strict1,dataset,
+51897,7J+2S-3+0+0-6,mmr,-3,-3;-4,soft,verdict:high,"Staircase: slow prograde plateaus (gap 140-220, net +0.5, ~20 kyr) alternate with fast retrograde drops (gap 0-5, drift~1, net -1.2..-1.4) every ~25 kyr synced "
+52158,4M+5S-9+0+0+0,mmr,-3,-3;-5,soft,verdict:medium,"gap=0 all windows but rev#=3-4 and drift 0.02-0.32 everywhere; per-window net flips sign (-1.28..+1.35); total 4.2 revs, net +1.9. Sigma_f oscillates ~5 rad at "
+52356,5J-2S-2+0+0-1,mmr,1,1;-1,strict1,dataset,
+52644,2M-7J-2+0+0+7,mmr,-3,-3;-4,soft,verdict:high,"Oscillations on persistent trend: net +1.5 rev/100 kyr; windows show gap 190-295, R 0.7-0.98 but drift alternates 0.03-0.98 (reversal-rich plateaus at 35-45k, 6"
+54753,7M-12+0+5,mmr,1,1;-1,strict1,dataset,
+55390,1J+3S-1+0+0-3,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+55565,1U-4N+4+0+0-1,mmr,0,0,soft,dataset,
+56533,27M-52+0+25,mmr,-3,-3;-5,soft,verdict:high,"Quasi-periodic plateaus (gap 235-280, drift 0.02-0.33 at 0-10k, 25-35k, 45-75k, 90-100k) alternating with coherent circulation (gap 0-5, drift~1, net +1.0..+1.4"
+57902,4M+1J-8+0+0+3,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+59358,8N-13+0+5,mmr,1,1;-1,strict1,dataset,
+60608,1U-1N-2+0+0+2,mmr,-3,-3;-4;-5,soft,verdict:medium,"total_rev 1.4, net +0.9/100kyr; window gaps 240-335 deg but visited arc drifts across whole circle (phase-portrait bands 30->200->30 deg); drift alternates 0.05"
+62129,15M-31+0+16,mmr,1,1;-1,strict1,dataset,
+62243,1M-4J-1+0+0+4,mmr,-3,-3;-5,soft,author:2026-07-04,clearly -3
+63217,4M+7+0-11,mmr,-3,-3;-4;-5,soft,verdict:medium,"Smooth slow wander: net +1.5 rev, total 1.6 over 100 kyr; coherent-drift windows (drift=1.00, rev#=0) alternate with turnarounds (drift 0.07-0.13, gap 280-305);"
+65366,6M-11+0+5,mmr,1,1;-1,strict1,dataset,
+66329,31M-59+0+28,mmr,-3,1;-1;-3;-5,soft,verdict:medium,"Circulation decelerates 17.8->0 rev/10kyr by t~67k (gap=0, drift=1.00), then ~25 kyr near-separatrix: gaps 155-285 but drift mixed 0.11-0.99 (one quiet window);"
+66652,4N-7+0+3,mmr,2,2;-2,strict2,dataset,
+67495,11M-20+0+9,mmr,1,1;-1;-3,soft,verdict:medium,"Fast circulation 0-40kyr (gap=0, drift=1.00, ~3 rev/win), one-off capture ~45kyr: gap 50-175 deg for 10 consecutive windows, drift 0.01-0.10, |net|<1, a_std jum"
+68436,3J-1S-1+0+0-1,mmr,1,1;-1,strict1,dataset,
+70407,2M-3S-4+0+0+5,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+74729,1J+6S-1+0+0-6,mmr,-3,1;-1;-3;-5,soft,verdict:medium,"Slow -1.3 rev drift/100kyr with two stalls (t15-40k drift .02-.35, t55-90k drift .2-.7, gap~300deg) but each stall shows only ~1 oscillation cycle; no a-lock (a"
+75677,5M-3S-10+0+0+8,mmr,-3,-3;-5,soft,verdict:high,"Staircase: unwrapped climbs +3.8 rev with plateaus recurring ~every 10 kyr; windows alternate circulation (gap 0, drift .5-.8) and plateau (gap 100-195, drift ~"
+78085,5J-4S-1+0+0+0,mmr,1,1;-1,strict1,dataset,
+78799,5N-7+0+2,mmr,0,0;-5,soft,author:2026-07-04,"0, at worst -5, not -3"
+79271,6M-3J-10+0+0+7,mmr,1,1;-1;-3,soft,verdict:medium,"Libration 0-67kyr: gap 50-180 deg in 13 consecutive windows, drift mostly <0.3, |net|<1, resonant a-oscillation visible; then one-off escape at ~67kyr to clean "
+79653,3M+3J-7+0+0+1,mmr,1,1;-1,strict1,dataset,
+81533,13M-29+0+16,mmr,-3,-3;-5,soft,verdict:high,"Alternating circulation: total 2.0 rev, net +0.1; drift~1 windows of BOTH signs (gap 0-45) interleaved with quasi-periodic plateaus (gap 170-205, drift .04-.3);"
+82157,20N-29+0+9,mmr,0,0,soft,dataset,
+82831,13M-24+0+11,mmr,-3,1;-1;-3,soft,verdict:medium,"0-25k: gap=0, alternating nets. 25-72k: gap up to 180, drift<=0.13, BUT libration center drifts monotonically 0->330deg (+1.04 rev over span) = oscillation on p"
+85627,13N-23+0+10,mmr,-4,0;-3;-4,soft,verdict:medium,"Raw angle holds a ~135deg band (gap 215-235, R~0.9) in every window but the band center drifts through the full circle: net -1.2 rev/100kyr, drift 0.07-0.18, a_"
+86921,34M-61+0+27,mmr,-3,-3;-5,soft,verdict:high,"Unwrapped oscillates ~+-1 rev (total 2.1, net -0.3): full revolutions both directions (drift=1.00, gap 0) separated by turnaround plateaus (gap 240-250, drift ."
+87555,4N-5+0+1,mmr,0,0,soft,dataset,
+88710,5V-9+0+4,mmr,0,0,soft,dataset,
+90568,17N-28+0+11,mmr,-4,0;-4,soft,verdict:medium,"Noisy band (R~0.85, moving ~180deg gap) drifts coherently: net -1.7 rev, total 2.2 over 100 kyr; with 8-kyr smoothing drift=0.94-1.00 in all interior windows, u"
+93449,17J-6+0-11,mmr,1,1;-1,strict1,dataset,
+95626,7N-5+0-2,mmr,0,0,soft,dataset,
+119066,4N-7+0+3,mmr,2,2;-2,strict2,dataset,
+119976,11N-8+0-3,mmr,1,1;-1,strict1,dataset,
+119979,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+120348,15N-22+0+7,mmr,0,0,soft,dataset,
+129772,4N-7+0+3,mmr,2,2;-2,strict2,dataset,
+130391,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+136108,7N-12+0+5,mmr,2,2;-2,strict2,dataset,
+137295,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+138537,13N-25+0+12,mmr,0,0,soft,dataset,
+138628,5N-9+0+4,mmr,0,0,soft,dataset,
+145480,1N-4+0+3,mmr,0,0,soft,dataset,
+149348,6N-11+0+5,mmr,2,2;-2,strict2,author:2026-07-04,peaks match: pure libration
+149349,3N-5+0+2,mmr,2,2;-2,strict2,author:2026-07-04,peaks match: pure libration
+182223,7N-19+0+12,mmr,1,1;-1,strict1,dataset,
+187661,7N-5+0-2,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+237509,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+237743,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+237831,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+238492,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+239586,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+239790,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+239898,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+240346,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+240581,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+240869,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+240898,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+241625,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+242784,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+243623,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+243785,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+243827,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+244214,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+244752,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+244778,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+246097,5J-2S-2+0+0-1,mmr,0,0,soft,dataset,
+278361,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+307261,11N-18+0+7,mmr,2,2;-2;-3,strict2,verdict:high,"Persistent gap 130-270 deg in all 19 windows; total_rev 0.8, net +0.1 over 100 kyr; raw angle oscillates around ~pi with ~30 kyr period, peaks only graze 2pi; a"
+308379,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+312645,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+330836,3N-2+0-1,mmr,1,1;-1;-3,soft,verdict:high,"One-off capture ~75-90 kyr (15% of run): gap 195-280 deg, R 0.80-0.93, |net|<0.25/window, center ~25 deg, with a locked at 22.95-23.01 AU vs 21.3 before and 22."
+385266,16N-27+0+11,mmr,1,1;-1;-3,soft,author:2026-07-04,"closer to 1: periods match, -3 possible"
+385458,9N-17+0+8,mmr,2,2;-2,strict2,author:2026-07-04,peaks match: pure libration
+385533,7N-12+0+5,mmr,2,2;-2,strict2,dataset,
+469333,7N-17+0+10,mmr,0,0,soft,author:2026-07-04,obvious 0
+469442,3N-4+0+1,mmr,0,0,soft,dataset,
+469505,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+470083,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+471136,10N-7+0-3,mmr,-4,0;-4,soft,dataset,
+471155,6N-7+0+1,mmr,1,1;-1,strict1,dataset,
+482824,19N-32+0+13,mmr,-3,-3;-5,soft,verdict:medium,"Staircase: net -7.7 rev; drift alternates 0.6-0.7 (circulation) and 0.03-0.3 (plateaus); no persistent gap (max 40 deg once, mostly 0-15); sawtooth angle synced"
+483002,1U-4N+4+0+0-1,mmr,0,0,soft,dataset,
+487581,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+495189,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+500830,9N-16+0+7,mmr,2,2;-2,strict2,dataset,
+500877,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+500878,11N-18+0+7,mmr,2,2;-2,strict2,dataset,
+500880,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+500884,2N-3+0+1,mmr,2,2;-2,strict2,author:2026-07-04,peaks match: pure libration
+505679,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+523588,5N-9+0+4,mmr,0,0,soft,dataset,
+523617,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+523627,11N-18+0+7,mmr,0,0,soft,dataset,
+523642,20N-37+0+17,mmr,0,0,soft,dataset,
+523653,12N-19+0+7,mmr,2,2;-2,strict2,dataset,
+523671,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+523672,13N-16+0+3,mmr,-4,0;-4,soft,dataset,
+523683,2U-9+0+7,mmr,2,2;-2,strict2,dataset,
+523691,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+523720,3N-4+0+1,mmr,,2;1;-1;-2;-3;-5,exclude,dataset:legacy-3,legacy ambiguous label
+523723,9N-14+0+5,mmr,2,2;-2,strict2,author:2026-07-04,"clearly resonant (author: ""+2!"")"
+523750,1U-3N+2+0+0+0,mmr,0,0,soft,dataset,
+523899,3N-5+0+2,mmr,0,0;-5,soft,author:2026-07-04,"closer to 0, or at least -5"
+524179,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+531074,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+534626,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+535025,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+545293,1U-4+0+3,mmr,0,0,soft,dataset,
+554856,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+555915,7N-11+0+4,mmr,2,2;-2,strict2,dataset,
+576256,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+612931,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+620082,4J-1+0-3,mmr,-99,-99,soft,dataset,
+620502,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+621861,1N-2+0+1,mmr,2,2;-2,strict2,dataset,
+623070,1U-1N-2+0+0+2,mmr,0,0,soft,dataset,
+15544,LK,lk,-3,0;-3;-5,soft,verdict:medium,"Staircase: pure-circulation windows (drift=1.00, rev#=0) alternate ~every 25kyr with plateaus (gap up to 210, drift 0-0.3) at e minima; net +6.6 rev. e hits 0.0"
+592056,LK,lk,0,0,soft,verdict:high,"Coherent circulation: net +5.5 rev, drift=1.00 in many windows, gap=0 nearly everywhere; phase portrait horizontal bands. e dips to 0.001 every ~15 kyr; unwrapp"
+651871,LK,lk,0,0;-3,soft,verdict:high,"5.1 coherent revs/100kyr; 13/19 windows drift=1.00, rev#=0. Plateau windows (t~35-50, 55-75 kyr, rev# 7-20) coincide with i-minima 0.35/0.43 deg at t=41.3/64.8 "
+88710,9V-16+0+7,mmr-neo,1,1;-1,strict1,verdict:high,"Capture 0-22kyr: gap 95-105deg, drift<=0.02, |net|<0.1, a locked 1.0615; then escape, fast circulation drift=1.0 (a=1.0783, 40-80kyr), then retrograde circulati"
+88710_c7,32E-29+0-3,mmr-neo,0,0,soft,author:2026-07-04,plainly 0
+88710_c3,3E+1M-4+0+0+0,mmr-neo,0,0;-5,soft,verdict:medium,"Slow retrograde circulation 0-25kyr (net -0.9 rev/window, drift ~0.6), brief stall 20-32kyr (one window gap=120, R=0.61, drift 0.08) but a stays 1.0615 (no lock"
+88710_c3,11R-46+0+35,mmr-neo,0,0,soft,verdict:high,"Raw angle uniform everywhere: gap=0, R<=0.09 in all windows; 0-45kyr noise (drift 0-0.6, no gap), 50-95kyr pure fast circulation drift=1.0 (~113 rev/window), ne"
+88710_c7,15V-23+0+8,mmr-neo,0,0,soft,verdict:high,"Raw angle uniform in ALL windows: gap=0, R<=0.08; 191 total rev; phase portrait structureless scatter, no loop. Slow features in filtered panel are low-pass art"
+88710_c8,43M-28+0-15,mmr-neo,0,0,soft,verdict:high,"gap=0 in every window, R<=0.14 (max-R windows 15-30kyr have drift 0.94-0.98 = coherent circulation, not libration); 82 total rev; phase portrait uniform scatter"
+88710_c8,44M-29+0-15,mmr-neo,0,0,soft,verdict:high,"gap=0 in every window, R<=0.09; 126 total rev, incl. drift=1.00 window at 15-25kyr; phase portrait uniform scatter, no closed loop. Structureless fast circulati"
+88710_c3,22V-41+0+19,mmr-neo,0,0,soft,verdict:high,"gap=0 in all windows, R<=0.19; 554 revs, net +515; t>50kyr coherent circulation (drift=1.00, rev#=0); early half noisy +-3 rev wander with zero confinement; pha"
+88710_c3,49M-31+0-18,mmr-neo,0,0,soft,verdict:high,"gap=0 everywhere, R<=0.05 in nearly all windows; 653 revs, net +602; drift=1.00 for t>50kyr; early wandering crosses full circle repeatedly (rev# 54-68, no gap)"
+88710_c4,3E+1M-4+0+0+0,mmr-neo,0,0;-5,soft,verdict:medium,"Apparent 'libration' at 20-35kyr is a single slow-circulation turnaround: center migrates 287->205->124->55->315 deg, u min at t~26.3kyr, no fixed center, no a-"
+88710_c7,7V-11+0+4,mmr-neo,0,0,soft,author:2026-07-04,plainly 0
