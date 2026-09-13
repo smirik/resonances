@@ -10,6 +10,15 @@ warnings.filterwarnings(
 from .finder.finder import find, check
 from .resonance.factory import create_mmr, create_resonance, create_secular_resonance, detect_resonance_type
 from .resonance.periodogram import Periodogram
+from .resonance.cross_spectrum import (
+    CoherenceLine,
+    CrossSpectrum,
+    cross_spectrum,
+    cross_spectrum_levels,
+    forced_free_eccentricity,
+    phase_matches,
+)
+from .resonance.coherence_analysis import CoherenceCheck, PairAnalysis, ZLKGate
 
 from .lidov_kozai.lidov_kozai_matrix import LidovKozaiMatrix
 from .lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, LidovKozaiParameters
@@ -21,6 +30,7 @@ from .mmr.two_body_matrix import TwoBodyMatrix
 from .mmr.three_body import ThreeBody
 from .mmr.two_body import TwoBody
 
+from .secular.free_elements import FreeElements, free_elements
 from .secular.secular_resonance_finder import SecularResonanceFinder
 from .secular.secular_resonance_formula import SecularResonanceFormula
 from .secular.secular_resonance import SecularResonance
@@ -28,7 +38,17 @@ from .secular.secular_resonance import SecularResonance
 from .simulation.simulation import Simulation
 from .simulation.serializer import SimulationSerializer
 
-from .plotting import Plotter, PlotConfig, Panel, StyleConfig, get_preset, PhasePlotter
+from .plotting import (
+    Plotter,
+    PlotConfig,
+    Panel,
+    StyleConfig,
+    get_preset,
+    PhasePlotter,
+    EccentricityVectorPlotter,
+    CrossSpectrumPlotter,
+    FreeOmegaPlotter,
+)
 
 from .body import Body
 from .config import config

@@ -78,6 +78,10 @@ class SimulationSerializer:
             },
         }
 
+        free = cls._free_elements_setup(bodies, config)
+        if free is not None:
+            data["simulation"]["free_elements"] = free
+
         if simulation is not None and hasattr(simulation, "running_time") and simulation.running_time:
             running_time = {k: cls._serialize_value(v) for k, v in simulation.running_time.items()}
             data["timing"] = {"running_time": running_time}
@@ -96,6 +100,37 @@ class SimulationSerializer:
                 data["timing"]["running_time_differences"] = differences
 
         return data
+
+    @classmethod
+    def _free_elements_setup(cls, bodies, config) -> Dict[str, Any]:
+        """What the forced/free split was allowed to fit on this baseline.
+
+        Run-level rather than per-body: which planetary modes the window can separate, and
+        which of them survived into the fit, follows from the baseline alone. Recorded
+        because a verdict read months later is not interpretable without it — the same
+        object gives a different basis at 300 kyr and at 10 Myr.
+        """
+        from resonances.secular import free_elements as fe
+
+        if not getattr(config, 'free_elements_enabled', False):
+            return None
+        fitted = next((body.free_elements for body in bodies if body.free_elements is not None), None)
+        baseline = fitted.baseline if fitted is not None else float(config.tmax_yrs)
+        if baseline <= 0:
+            return None
+
+        setup = {
+            "baseline_years": baseline,
+            "resolution_arcsec_per_year": fe.ARCSEC_PER_TURN / baseline,
+            "cluster_threshold_arcsec_per_year": 2.0 * fe.ARCSEC_PER_TURN / baseline,
+            "frequencies": dict(fe.PLANETARY_FREQUENCIES),
+        }
+        for kind, priority in (('e', 'e'), ('i', 'i')):
+            basis, dropped, clusters = fe.choose_basis(fe.candidate_frequencies(priority), baseline)
+            setup[f"clusters_{kind}"] = clusters
+            setup[f"basis_{kind}"] = list(basis)
+            setup[f"dropped_{kind}"] = dropped
+        return setup
 
     @classmethod
     def _config_to_dict(cls, config) -> Dict[str, Any]:
@@ -128,6 +163,9 @@ class SimulationSerializer:
         body_files = [f"data-{body.name}.csv" for body in bodies]
         periodogram_files = [f"data-{body.name}-periodograms.csv" for body in bodies]
         manifest = {"bodies": body_files, "periodograms": periodogram_files}
+        free_omega = [f"{body.name}-omega-free.csv" for body in bodies if body.free_elements is not None]
+        if free_omega:
+            manifest["free_omega"] = free_omega
         if config.save_summary:
             manifest["summary"] = "summary.csv"
         if config.save_planets:

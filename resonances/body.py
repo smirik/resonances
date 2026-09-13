@@ -2,8 +2,10 @@ import numpy as np
 
 from resonances.resonance.classify import ResonanceClassifyResult
 from resonances.resonance.classify.models import ResonanceStatus
+from resonances.resonance import cross_spectrum
 from resonances.resonance.resonance import Resonance
 from resonances.mmr.mmr import MMR
+from resonances.secular.free_elements import DEFAULT_MASK_QUANTILE, free_elements
 from resonances.secular.proper_angle import build_proper_angle_series
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
@@ -66,6 +68,16 @@ class Body:
         self.eccentricity_periodogram_peaks = None
 
         self.periodogram_peaks_overlapping = {}
+
+        # Cross-spectral coherence data
+        # keys are resonance keys, values are {pair: PairAnalysis} / ZLKGate
+        self.coherence = {}
+        self.zlk_gates = {}
+
+        # Free (proper) element decomposition — one per body, since it depends on the
+        # orbit alone; the gate built on it is per resonance key.
+        self.free_elements = None
+        self.free_gates = {}
 
         # Simulation data
         self.index_in_simulation = None
@@ -139,6 +151,47 @@ class Body:
         for resonance in self.resonances():
             self.angles_unwrapped[resonance.to_s()] = np.zeros(num)
             self.angles[resonance.to_s()] = np.zeros(num)
+
+    def has_eccentricity_vector(self) -> bool:
+        return self.ecc is not None and self.omega is not None and len(self.ecc) == len(self.omega) and len(self.ecc) > 0
+
+    def eccentricity_vector(self):
+        """Non-singular eccentricity components (k, h) = (e cos omega, e sin omega)."""
+        if not self.has_eccentricity_vector():
+            return None, None
+        return cross_spectrum.eccentricity_vector(self.ecc, self.omega)
+
+    def forced_free_eccentricity(self):
+        """Forced and free eccentricity from the (k, h) scatter. See cross_spectrum module.
+
+        Returns (None, None) when the body carries no integration data yet.
+        """
+        if not self.has_eccentricity_vector():
+            return None, None
+        return cross_spectrum.forced_free_eccentricity(self.ecc, self.omega)
+
+    def build_free_elements(self, sampling_years=500.0, mask_quantile=DEFAULT_MASK_QUANTILE):
+        """Split the eccentricity and inclination vectors into forced and free parts.
+
+        Stored on the body rather than per resonance: the decomposition depends only on
+        the orbit. See `secular.free_elements` for what it is and where it stops working.
+        """
+        if self.times is None or not self.has_eccentricity_vector() or self.Omega is None:
+            return None
+        try:
+            self.free_elements = free_elements(
+                times=np.asarray(self.times) / (2 * np.pi),
+                ecc=self.ecc,
+                inc=self.inc,
+                Omega=self.Omega,
+                omega=self.omega,
+                sampling_years=sampling_years,
+                mask_quantile=mask_quantile,
+            )
+        except Exception as exc:
+            logger.warning(f"Failed to build free elements for the body {self.name}: {exc}")
+            self.free_elements = None
+        return self.free_elements
 
     def angle(self, resonance: Resonance) -> np.ndarray:
         """

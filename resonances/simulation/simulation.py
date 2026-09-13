@@ -2,8 +2,11 @@ import numpy as np
 from typing import List, Union
 
 from resonances.body import Body
+from resonances.resonance import coherence_analysis, omega_free_gate
 from resonances.resonance.classify import classify_resonance
+from resonances.resonance.classify.models import ResonanceStatus
 from resonances.resonance.periodogram import Periodogram
+from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
 
 from .config import SimulationConfig
 from .body_manager import BodyManager
@@ -166,8 +169,22 @@ class Simulation:
                 )
 
     def identify_librations(self):
-        """Identify librations for all bodies."""
+        """Identify librations for all bodies, then run the post-classification checks.
+
+        Both checks run here rather than in a separate step because this method is
+        also the entry point used by `SimulationSerializer.restore()`, which
+        reclassifies from saved CSVs without replaying `prepare_angles`.
+
+        Order matters: the cross spectra are pure diagnostics and only the free-omega
+        gate may change a status, so it runs last and has the final word.
+        """
         for body in self.bodies:
+            # Welch spectra of a, e and i are shared by every resonance of a body.
+            psd_cache = {} if self.config.coherence_enabled else None
+            # The forced/free split depends on the orbit alone, so it is done once per
+            # body, and only where it is read — the Lidov-Kozai angle omega = varpi - Omega.
+            if self.config.free_elements_enabled and body.lidov_kozai_resonances:
+                body.build_free_elements(self.config.free_elements_sampling_years, self.config.free_gate_mask_quantile)
             for resonance in body.resonances():
                 classification = classify_resonance(
                     body,
@@ -179,3 +196,48 @@ class Simulation:
                     body.libration_segments[resonance.to_s()] = classification["segments"]
                 body.librations[resonance.to_s()] = libration
                 body.statuses[resonance.to_s()] = libration.status.value
+                self._analyse_coherence(body, resonance, libration, psd_cache)
+                self._apply_free_omega_gate(body, resonance, libration)
+
+    def _analyse_coherence(self, body: Body, resonance: Resonance, libration, psd_cache):
+        """Run the cross spectrum for a body-resonance and record the e-i exchange flag.
+
+        Diagnostic only: nothing here changes a status. See `coherence_analysis`.
+        """
+        if not self.config.coherence_enabled:
+            return
+        if self.config.coherence_skip_non_resonant and libration.status == ResonanceStatus.NON_RESONANT:
+            return
+
+        res_key = resonance.to_s()
+        analyses = coherence_analysis.analyse_resonance(body, resonance, self.config, psd_cache=psd_cache)
+        body.coherence[res_key] = analyses
+
+        if isinstance(resonance, LidovKozaiResonance):
+            body.zlk_gates[res_key] = coherence_analysis.evaluate_ei_exchange(analyses, self.config)
+
+    def _apply_free_omega_gate(self, body: Body, resonance: Resonance, libration):
+        """Confirm, demote or withhold a Lidov-Kozai libration from the free omega.
+
+        The only hook that changes a status after classification. Both `libration.status`
+        and `body.statuses` are updated so that `summary.csv` (which reads the flattened
+        classification result) cannot disagree with the save/plot filters (which read
+        `body.statuses`), and the decision leaves a "gate:" trail in the comments.
+        """
+        if not isinstance(resonance, LidovKozaiResonance) or not self.config.free_elements_enabled:
+            return
+
+        res_key = resonance.to_s()
+        status, gate = omega_free_gate.apply_gate(
+            libration.status,
+            body.free_elements,
+            libration.metrics.libration_period_1,
+            self.config,
+        )
+        body.free_gates[res_key] = gate
+        if gate.comment:
+            libration.comments = f"{libration.comments} {gate.comment}".strip() if libration.comments else gate.comment
+        if status != libration.status:
+            logger.info(f"{body.name}/{res_key}: free omega {gate.outcome} — status {libration.status} -> {status}")
+            libration.status = status
+            body.statuses[res_key] = status.value

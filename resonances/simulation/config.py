@@ -61,6 +61,7 @@ class SimulationConfig:
         self._setup_filtering_params(kwargs)
         self._setup_batch_params(kwargs)
         self._setup_classify_params(kwargs)
+        self._setup_coherence_params(kwargs)
 
         self.secular_angle_mode = kwargs.get('secular_angle_mode', c.get('SECULAR_ANGLE_MODE'))
         if self.secular_angle_mode not in ['osculating', 'proper']:
@@ -191,6 +192,55 @@ class SimulationConfig:
 
     def _setup_filtering_params(self, kwargs):
         self.filter = kwargs.get('filter', c.get('FILTER'))
+
+    def _setup_coherence_params(self, kwargs):
+        """Setup cross-spectral coherence parameters.
+
+        `coherence_pairs` and `coherence_phase_targets` are structured per-resonance-type
+        overrides and are kwarg-only (a nested mapping has no sensible .env encoding).
+        Both are merged per resonance type over the presets in `cross_spectrum.py`, so
+        overriding 'lidov_kozai' leaves 'mmr' at its default.
+        """
+        self.coherence_enabled = kwargs.get('coherence_enabled', c.get('COHERENCE_ENABLED', 'True') == 'True')
+        self.coherence_skip_non_resonant = kwargs.get('coherence_skip_non_resonant', c.get('COHERENCE_SKIP_NON_RESONANT', 'True') == 'True')
+        self.coherence_alpha = kwargs.get('coherence_alpha', float(c.get('COHERENCE_ALPHA', 0.01)))
+        self.coherence_window = kwargs.get('coherence_window', c.get('COHERENCE_WINDOW', 'hann'))
+        self.coherence_max_lines = kwargs.get('coherence_max_lines', int(c.get('COHERENCE_MAX_LINES', 10)))
+
+        n_segments = kwargs.get('coherence_n_segments', None)
+        if n_segments is None:
+            n_segments = [int(x.strip()) for x in c.get('COHERENCE_N_SEGMENTS', '4,8,16').split(',') if x.strip()]
+        self.coherence_n_segments = list(n_segments)
+
+        self.coherence_period_min = self._optional_float(kwargs, 'coherence_period_min', 'COHERENCE_PERIOD_MIN')
+        self.coherence_period_max = self._optional_float(kwargs, 'coherence_period_max', 'COHERENCE_PERIOD_MAX')
+
+        # Structured, kwarg-only. Keys are resonance types ('mmr', 'secular', 'lidov_kozai').
+        self.coherence_pairs = kwargs.get('coherence_pairs', None)
+        self.coherence_phase_targets = kwargs.get('coherence_phase_targets', None)
+
+        # Forced/free split of the element vectors, and the gate built on it. This is what
+        # decides a Lidov-Kozai status after classification — see docs/free-elements.md.
+        self.free_elements_enabled = kwargs.get('free_elements_enabled', c.get('FREE_ELEMENTS_ENABLED', 'True') == 'True')
+        self.free_elements_sampling_years = self._optional_float(kwargs, 'free_elements_sampling_years', 'FREE_ELEMENTS_SAMPLING_YEARS')
+        self.free_gate_enabled = kwargs.get('free_gate_enabled', c.get('FREE_GATE_ENABLED', 'True') == 'True')
+        self.free_gate_min_cycles = kwargs.get('free_gate_min_cycles', float(c.get('FREE_GATE_MIN_CYCLES', 3)))
+        self.free_gate_mask_quantile = kwargs.get('free_gate_mask_quantile', float(c.get('FREE_GATE_MASK_QUANTILE', 0.15)))
+
+        # e-i coherence. Diagnostic since the free-omega gate took over the status decision:
+        # this now only produces the `confirmed_ei` flag.
+        self.zlk_coherence_check = kwargs.get('zlk_coherence_check', c.get('ZLK_COHERENCE_CHECK', 'True') == 'True')
+        # PROVISIONAL default, calibrated on two objects only — see docs/coherence.md.
+        self.zlk_min_anticorrelation = kwargs.get('zlk_min_anticorrelation', float(c.get('ZLK_MIN_ANTICORRELATION', 0.5)))
+
+    @staticmethod
+    def _optional_float(kwargs, key: str, env_key: str):
+        """Read a float setting that may legitimately be unset (kwarg None or empty env value)."""
+        if key in kwargs:
+            value = kwargs[key]
+            return None if value is None else float(value)
+        raw = c.get(env_key, '')
+        return float(raw) if str(raw).strip() else None
 
     @property
     def tmax(self):

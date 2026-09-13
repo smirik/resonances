@@ -9,8 +9,12 @@ LK_ASTEROIDS = [
     (15527, 0),
 ]
 
+# 500 kyr, the baseline the free-omega gate is calibrated for. Shorter does not just cost
+# precision: one Rayleigh width at 50 kyr is 26 arcsec/yr, wider than the whole spread of
+# inner Solar System secular rates, so nothing can be told apart from planetary forcing and
+# every librator is withheld at -9. See docs/free-elements.md.
 LK_SIMULATION_CONFIG = dict(
-    tmax=int(50000 * 2 * np.pi),
+    tmax=int(500000 * 2 * np.pi),
     integrator='SABA(10,6,4)',
     dt=1.0,
     Nout=5000,

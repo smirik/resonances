@@ -7,7 +7,9 @@ from resonances.body import Body
 from resonances.logger import logger
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, LidovKozaiParameters
-from resonances.plotting import Plotter, PhasePlotter
+from resonances.plotting import Plotter, PhasePlotter, EccentricityVectorPlotter, CrossSpectrumPlotter, FreeOmegaPlotter
+from resonances.resonance import coherence_analysis, omega_free_gate
+from resonances.secular import free_elements
 from resonances.resonance.classify.models import ResonanceStatus
 from .serializer import SimulationSerializer
 
@@ -75,6 +77,8 @@ class DataManager:
 
         if self.config.save_summary:
             self.save_simulation_summary(bodies)
+            if self.config.coherence_enabled:
+                self.save_coherence_summary(bodies)
 
         if simulation and self.config.save_planets:
             self.save_planets(times, simulation.integration_engine.planets_data)
@@ -111,6 +115,8 @@ class DataManager:
         df.to_csv(f'{self.config.save_path}/data-{body.name}.csv')
 
         self._save_periodogram_data(body)
+        if body.lidov_kozai_resonances:
+            self.save_free_elements_series(body)
 
     def _save_periodogram_data(self, body: Body):
         """Save periodogram data for a resonance."""
@@ -139,18 +145,31 @@ class DataManager:
     def plot_body(self, body: Body, simulation=None):
         """Plot data for a body based on configured plot types."""
         plots_to_generate = getattr(self.config, 'plots', ['evolution'])
+        plotted_resonances = [r for r in body.resonances() if self.should_plot_body(body, r)]
 
-        for resonance in body.resonances():
-            if self.should_plot_body(body, resonance):
-                plot_path = self._get_plot_path(body, resonance)
+        for resonance in plotted_resonances:
+            plot_path = self._get_plot_path(body, resonance)
 
-                # Evolution plot (original behavior)
-                if 'evolution' in plots_to_generate:
-                    self._plot_evolution(body, resonance, simulation, plot_path)
+            # Evolution plot (original behavior)
+            if 'evolution' in plots_to_generate:
+                self._plot_evolution(body, resonance, simulation, plot_path)
 
-                # Phase portrait plot
-                if 'phase_portrait' in plots_to_generate:
-                    self._plot_phase_portrait(body, resonance, simulation, plot_path)
+            # Phase portrait plot
+            if 'phase_portrait' in plots_to_generate:
+                self._plot_phase_portrait(body, resonance, simulation, plot_path)
+
+            # Cross spectra of the configured pairs
+            if 'cross_spectrum' in plots_to_generate:
+                self._plot_cross_spectrum(body, resonance, plot_path)
+
+            # Free argument of pericentre — only meaningful for the Lidov-Kozai angle
+            if 'free_omega' in plots_to_generate and isinstance(resonance, LidovKozaiResonance):
+                self._plot_free_omega(body, resonance, plot_path)
+
+        # The eccentricity vector depends on the body alone, not on any resonance, so it
+        # is drawn once rather than repeated identically for every resonance of the body.
+        if plotted_resonances and 'ecc_vector' in plots_to_generate:
+            self._plot_ecc_vector(body, simulation, self._get_plot_path(body, plotted_resonances[0]))
 
     def _show_or_save(self, plotter, filename):
         """Show and/or save a plot depending on config, then close."""
@@ -187,6 +206,48 @@ class DataManager:
         self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-percentile{int(percentile)}.{img_type}')
 
         plotter.close()
+
+    def _plot_ecc_vector(self, body: Body, simulation, plot_path: str):
+        """Plot the non-singular eccentricity vector k = e*cos(omega), h = e*sin(omega)."""
+        plotter = EccentricityVectorPlotter.from_body(body, sim=simulation)
+        plotter.plot()
+        self._show_or_save(plotter, f'{plot_path}/{body.name}-ecc-vector.{self.config.image_type}')
+        plotter.close()
+
+    def _plot_free_omega(self, body: Body, resonance, plot_path: str):
+        """Plot the free argument of pericentre: drift, Kozai portrait, and the free vector."""
+        if body.free_elements is None:
+            return
+        plotter = FreeOmegaPlotter.from_body(body, resonance)
+        res_key = resonance.to_s()
+        img_type = self.config.image_type
+
+        plotter.plot_drift()
+        self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-free-omega-drift.{img_type}')
+
+        plotter.plot_portrait()
+        self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-free-omega-portrait.{img_type}')
+
+        # Same window as the osculating portrait of this body, so the two rings can be
+        # compared by eye — which is what tells a real free circle from a forced offset.
+        osculating = EccentricityVectorPlotter.from_body(body, resonance)
+        plotter.plot_vector(limit=osculating.extent() if body.has_eccentricity_vector() else None)
+        self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-free-omega-vector.{img_type}')
+
+        plotter.close()
+
+    def _plot_cross_spectrum(self, body: Body, resonance, plot_path: str):
+        """Plot one cross spectrum per configured pair of series."""
+        analyses = body.coherence.get(resonance.to_s())
+        if not analyses:
+            return
+
+        res_key = resonance.to_s()
+        for pair in analyses:
+            plotter = CrossSpectrumPlotter.from_body(body, resonance, pair)
+            plotter.plot()
+            self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-coherence-{pair}.{self.config.image_type}')
+            plotter.close()
 
     def _get_plot_path(self, body: Body, resonance) -> str:
         """
@@ -226,6 +287,38 @@ class DataManager:
         self._append_csv(df_segments, segments_filename)
 
         return df, df_segments
+
+    def get_coherence_summary(self, bodies) -> pd.DataFrame:
+        """Build the cross-spectral line table, one row per detected coherent line."""
+        rows = []
+        for body in bodies:
+            for resonance in body.resonances():
+                analyses = body.coherence.get(resonance.to_s())
+                if analyses:
+                    rows.extend(coherence_analysis.coherence_rows(body.name, resonance.to_s(), analyses))
+        return pd.DataFrame(rows)
+
+    def save_coherence_summary(self, bodies):
+        """Append the cross-spectral line table to coherence.csv."""
+        self.ensure_save_path_exists()
+        df = self.get_coherence_summary(bodies)
+        if not df.empty:
+            self._append_csv(df, f'{self.config.save_path}/coherence.csv')
+        return df
+
+    def save_free_elements_series(self, body: Body):
+        """Write one body's forced/free series to `{body}-omega-free.csv`.
+
+        Its own file rather than extra columns on data-{body}.csv, because the split runs
+        on a decimated grid and would not line up with the integration one.
+        """
+        columns = free_elements.series_rows(body.free_elements)
+        if columns is None:
+            return None
+        self.ensure_save_path_exists()
+        df = pd.DataFrame(columns)
+        df.to_csv(f'{self.config.save_path}/{body.name}-omega-free.csv', index=False)
+        return df
 
     @staticmethod
     def _append_csv(df, filename):
@@ -299,10 +392,14 @@ class DataManager:
             'chaos_flag': chaos_flag,
             'chaos_comment': chaos_comment,
         }
+        # 'status' set above is overwritten here by flat['status'] from the classification
+        # result. The two agree only because every post-classification status change (the
+        # Lidov-Kozai coherence gate) updates both the result object and body.statuses.
         for k, v in flat.items():
             row[k] = v
             if k == 'metrics_trend_to_oscillation':
                 row.update(segment_count_columns)
+        e_forced, e_free = body.forced_free_eccentricity()
         row.update(
             {
                 'a': body.initial_data['a'],
@@ -314,9 +411,17 @@ class DataManager:
                 'c1': c1,
                 'c2': c2,
                 'c': c,
-                'comments': comments,
+                'e_forced': e_forced,
+                'e_free': e_free,
             }
         )
+        row.update(coherence_analysis.summary_fields(body.coherence.get(resonance.to_s()), body.zlk_gates.get(resonance.to_s())))
+        # Free-element columns are written for Lidov-Kozai rows only: omega = varpi - Omega
+        # is the angle they describe, and an MMR row would carry them without using them.
+        if isinstance(resonance, LidovKozaiResonance):
+            row.update(free_elements.summary_fields(body.free_elements))
+            row.update(omega_free_gate.summary_fields(body.free_gates.get(resonance.to_s())))
+        row['comments'] = comments
         return row
 
     def _build_segments_entry(self, body: Body, resonance) -> dict | None:

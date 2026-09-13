@@ -16,7 +16,9 @@ from .base import BasePlotter
 from .plotter import Plotter
 from .config import PlotConfig, Panel, StyleConfig
 from .presets import get_preset, create_simple_preset, create_full_preset
-from .phase_plots import PhasePlotter
+from .phase_plots import PhasePlotter, EccentricityVectorPlotter
+from .cross_spectrum_plots import CrossSpectrumPlotter
+from .free_omega_plots import FreeOmegaPlotter
 
 __all__ = [
     'BasePlotter',
@@ -28,4 +30,7 @@ __all__ = [
     'create_simple_preset',
     'create_full_preset',
     'PhasePlotter',
+    'EccentricityVectorPlotter',
+    'CrossSpectrumPlotter',
+    'FreeOmegaPlotter',
 ]

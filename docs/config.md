@@ -68,8 +68,36 @@ Below is the list of options. When lowercase is used, it refers to the arguments
 - `plot_path`/`PLOT_PATH` (str): the same as `save_path`.
 - `plot_type`/`PLOT_TYPE` (str): determines what to do with graphs. `save` - only save graphs as files (default), `show` - just show (if false), `both` - both options. Valid only for plots specified by `plot`. In other words, if you set `plot` as `None`, no graphs will be plotted.
 - `plot_subfolder_strategy`/`PLOT_SUBFOLDER_STRATEGY` (str or None): controls how plots are organized within `plot_path`. By default, `None` (empty), meaning all plots are saved directly in `plot_path`. If set to `status`, creates subfolders based on resonance classification: `resonant/` (status=2), `transient/` (status=1), `non-resonant/` (status=0), `controversial-transient/` (status=-1), and `controversial-libration/` (status=-2).
-- `plots`/`PLOTS` (list or str): plot types to generate. Options: `evolution` (time series), `phase_portrait` (phase portraits). Default: `['evolution']`. When `phase_portrait` is enabled, three variants are generated: filtered, unfiltered, and slow points. See [Phase Plots](phase-plots.md) for details.
+- `plots`/`PLOTS` (list or str): plot types to generate. Options: `evolution` (time series), `phase_portrait` (phase portraits), `ecc_vector` (the (k, h) plane), `cross_spectrum` (coherence and cross-phase per configured pair), `free_omega` (the free argument of pericentre, Lidov-Kozai resonances only). Default: `['evolution']`. When `phase_portrait` is enabled, three variants are generated: filtered, unfiltered, and slow points. See [Phase Plots](phase-plots.md), [Cross-Spectral Coherence](coherence.md) and [Free elements](free-elements.md) for details.
 - `phase_portrait_slow_percentile`/`PHASE_PORTRAIT_SLOW_PERCENTILE` (float): percentile threshold (0-100) for slow points phase portrait. Points with |σ̇| below this percentile are shown. Default: `95`.
+
+## Cross-spectral coherence options
+
+These control the σ–a / σ–e / σ–i / e–i cross spectra and the Lidov-Kozai coherence gate. See [Cross-Spectral Coherence](coherence.md) for what they mean physically.
+
+- `coherence_enabled`/`COHERENCE_ENABLED` (bool): master switch. Default: `True`.
+- `coherence_skip_non_resonant`/`COHERENCE_SKIP_NON_RESONANT` (bool): skip bodies classified as non-resonant (`status = 0`). Default: `True`.
+- `coherence_alpha`/`COHERENCE_ALPHA` (float): per-bin false-alarm probability behind the threshold `γ²_crit = 1 - α^(1/(n_seg-1))`. Default: `0.01`.
+- `coherence_n_segments`/`COHERENCE_N_SEGMENTS` (list or comma-separated str): Welch segmentation levels. The coarsest level with a non-empty validity band decides. Default: `[4, 8, 16]`.
+- `coherence_window`/`COHERENCE_WINDOW` (str): Welch window. Default: `hann`.
+- `coherence_max_lines`/`COHERENCE_MAX_LINES` (int): how many strongest lines per pair per level reach `coherence.csv`. Default: `10`.
+- `coherence_period_min`/`COHERENCE_PERIOD_MIN`, `coherence_period_max`/`COHERENCE_PERIOD_MAX` (float or empty): extra narrowing of the search band, in years. Empty means the per-resonance-type preset (10000 years for Lidov-Kozai and secular). The intrinsic limits `4·dt` and `T/(5·n_seg)` always apply on top.
+- `coherence_pairs` (dict, constructor only): which pairs to analyse per resonance type, e.g. `{'mmr': ['sigma-a', 'sigma-e']}`. Replaces the preset for the named types only.
+- `coherence_phase_targets` (dict, constructor only): `(target_deg, tolerance_deg)` per resonance type and pair, e.g. `{'lidov_kozai': {'e-i': (180.0, 30.0)}}`.
+- `zlk_coherence_check`/`ZLK_COHERENCE_CHECK` (bool): whether to measure the `confirmed_ei` flag — whether e and i really trade at the strongest coherent line. It no longer changes any status; that moved to the free-omega gate below. Default: `True`.
+- `zlk_min_anticorrelation`/`ZLK_MIN_ANTICORRELATION` (float): minimum |r| of band-passed e vs i required for the antiphase line to count as a real exchange. Default: `0.5`, **provisional** — calibrated on two objects, see [Cross-Spectral Coherence](coherence.md).
+
+## Free element options
+
+These decide the Lidov-Kozai status after classification: a librating angle is confirmed at `2`, demoted to `-2` when the libration turns out kinematic, or set to `-9` when no verdict can be reached. See [Free elements](free-elements.md).
+
+- `free_elements_enabled`/`FREE_ELEMENTS_ENABLED` (bool): split the eccentricity and inclination vectors into forced and free parts, for bodies carrying a Lidov-Kozai resonance. Off means no split and no gate. Default: `True`.
+- `free_elements_sampling_years`/`FREE_ELEMENTS_SAMPLING_YEARS` (float or empty): decimate the series to about this step, with an anti-aliasing filter, before the split. Secular work needs nothing finer, and short-period terms folded into the secular band would otherwise read as free motion. Empty keeps the integration grid. Default: `500`.
+- `free_gate_enabled`/`FREE_GATE_ENABLED` (bool): whether the gate may change a status. Off computes and reports everything but leaves classification alone. Default: `True`.
+- `free_gate_min_cycles`/`FREE_GATE_MIN_CYCLES` (float): how many libration periods the baseline must hold before the gate will judge at all; below it the status becomes `-9`. Default: `3`.
+- `free_gate_mask_quantile`/`FREE_GATE_MASK_QUANTILE` (float): samples where |z_free| falls below this fraction of its median are dropped before the argument is unwrapped, since near the origin the argument is undefined. Default: `0.15`.
+
+The planetary fundamentals used for the fit are the same `g5…g8` / `s5…s8` values as the secular module uses, from `.env` (see below).
 
 ## Libration options
 
