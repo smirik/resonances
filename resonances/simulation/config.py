@@ -164,21 +164,27 @@ class SimulationConfig:
         return path
 
     def _setup_libration_params(self, kwargs):
-        """Setup libration analysis parameters."""
+        """Setup libration analysis parameters.
+
+        The span-derived defaults use the absolute length of the integration: for a backward
+        run (negative tmax) they must stay positive, otherwise the periodogram trims a negative
+        number of points and keeps only the tail of every series.
+        """
+        span_yrs = abs(self.tmax_yrs)
         self.oscillations_cutoff = kwargs.get('oscillations_cutoff', float(c.get('LIBRATION_FILTER_CUTOFF')))
         self.oscillations_filter_order = kwargs.get('oscillations_filter_order', int(c.get('LIBRATION_FILTER_ORDER')))
         self.periodogram_frequency_min = kwargs.get('periodogram_frequency_min', None)
         if self.periodogram_frequency_min is None:  # to show all possible frequencies based on integration time
-            self.periodogram_frequency_min = 1.0 / self.tmax_yrs
+            self.periodogram_frequency_min = 1.0 / span_yrs
         self.periodogram_frequency_max = kwargs.get('periodogram_frequency_max', float(c.get('LIBRATION_FREQ_MAX')))
         self.periodogram_critical = kwargs.get('periodogram_critical', None)
         if self.periodogram_critical is None:
-            self.periodogram_critical = self.tmax_yrs * 0.2  # if not set, 20% of integration time should be in libration
+            self.periodogram_critical = span_yrs * 0.2  # if not set, 20% of integration time should be in libration
         self.periodogram_soft = kwargs.get('periodogram_soft', float(c.get('LIBRATION_SOFT')))
 
         self.libration_period_critical = kwargs.get('libration_period_critical', None)
         if self.libration_period_critical is None:
-            self.libration_period_critical = round(self.tmax_yrs * 0.1)  # if not set, 10% of integration time should be in libration
+            self.libration_period_critical = round(span_yrs * 0.1)  # if not set, 10% of integration time should be in libration
 
         # Handle libration_monotony_critical specially since it's a list
         if 'libration_monotony_critical' in kwargs:
@@ -188,7 +194,7 @@ class SimulationConfig:
 
         self.libration_period_min = kwargs.get('libration_period_min', None)
         if self.libration_period_min is None:
-            self.libration_period_min = self.tmax_yrs * 0.05  # if not set, let's librate at least 5%
+            self.libration_period_min = span_yrs * 0.05  # if not set, let's librate at least 5%
 
     def _setup_filtering_params(self, kwargs):
         self.filter = kwargs.get('filter', c.get('FILTER'))

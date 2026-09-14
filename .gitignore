@@ -65,3 +65,4 @@ pip-delete-this-directory.txt
 # AI tooling
 .agents/
 .claude/skills/
+.playwright-mcp/
