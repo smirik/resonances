@@ -346,6 +346,7 @@ class TestPlotDispatch:
         assert (tmp_path / f'synthetic-{key}-coherence-e-i.png').exists()
         assert (tmp_path / f'synthetic-{key}-free-omega-drift.png').exists()
         assert (tmp_path / f'synthetic-{key}-free-omega-portrait.png').exists()
+        assert (tmp_path / f'synthetic-{key}-free-omega-vector.png').exists()
 
     def test_plot_kinds_are_opt_in(self, tmp_path):
         sim, body, _ = build_simulation(tmp_path, plot='all', plots=['evolution'])

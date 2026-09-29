@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 
 from resonances.simulation import Simulation, DataManager, SimulationSerializer
+from resonances.secular.free_elements import FreeElements
 
 
 def _build_minimal_simulation(tmp_path: Path) -> Simulation:
@@ -58,6 +59,42 @@ def _build_minimal_simulation(tmp_path: Path) -> Simulation:
         body.periodogram_frequency[key] = periodogram_freq
         body.periodogram_power[key] = periodogram_power
 
+    free_times = np.linspace(0.0, 2_000.0, sim.config.Nout)
+    free_phase_e = np.linspace(0.1, 0.5, sim.config.Nout)
+    free_phase_i = np.linspace(-0.2, 0.1, sim.config.Nout)
+    keep_e = np.array([True, True, False, True, True])
+    keep_i = np.array([True, False, True, True, True])
+    both = keep_e & keep_i
+    z_e_free = 0.08 * np.exp(1j * free_phase_e)
+    z_i_free = 0.03 * np.exp(1j * free_phase_i)
+    z_e_forced = np.full(sim.config.Nout, 0.02 + 0j)
+    z_i_forced = np.full(sim.config.Nout, 0.01 + 0j)
+    body.free_elements = FreeElements(
+        times=free_times,
+        z_e=z_e_free + z_e_forced,
+        z_i=z_i_free + z_i_forced,
+        z_e_free=z_e_free,
+        z_i_free=z_i_free,
+        z_e_forced=z_e_forced,
+        z_i_forced=z_i_forced,
+        basis_e={"g5": 4.25749319},
+        basis_i={"const": 0.0},
+        dropped_e=["g7"],
+        dropped_i=["s7"],
+        amplitudes_e={},
+        amplitudes_i={},
+        keep_e=keep_e,
+        keep_i=keep_i,
+        varpi_free=free_phase_e[keep_e],
+        Omega_free=free_phase_i[keep_i],
+        omega_free=free_phase_e[both] - free_phase_i[both],
+        b_varpi=0.0,
+        b_Omega=0.0,
+        b_omega=0.0,
+        clusters_e=[["g5", "g7"]],
+        clusters_i=[["const", "s7"]],
+    )
+
     manager = DataManager(sim.config)
     manager.save_body(body, sim.times)
     manager.save_configuration_details(sim.bodies, sim)
@@ -93,6 +130,20 @@ def test_restore_periodograms_loaded(tmp_path):
     assert body.axis_periodogram_frequency is not None
     assert key in body.periodogram_frequency
     assert key in body.periodogram_power
+
+
+def test_restore_free_omega_series(tmp_path):
+    original = _build_minimal_simulation(tmp_path)
+    restored = SimulationSerializer.restore(str(tmp_path / "simulation.json"), recompute_librations=False)
+
+    expected = original.bodies[0].free_elements
+    actual = restored.bodies[0].free_elements
+    assert actual is not None
+    np.testing.assert_allclose(actual.times, expected.times)
+    np.testing.assert_array_equal(actual.keep_e, expected.keep_e)
+    np.testing.assert_array_equal(actual.keep_i, expected.keep_i)
+    np.testing.assert_allclose(actual.omega_free, expected.omega_free)
+    np.testing.assert_allclose(np.abs(actual.z_e_free), np.abs(expected.z_e_free))
 
 
 def test_save_simulation_json_roundtrip(tmp_path):

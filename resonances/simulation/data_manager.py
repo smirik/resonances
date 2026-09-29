@@ -1,3 +1,4 @@
+import fcntl
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -44,7 +45,13 @@ class DataManager:
         return self._process_status(body.statuses.get(resonance.to_s(), 0), self.config.save)
 
     def should_plot_body(self, body: Body, resonance):
-        """Check if body MMR should be plotted."""
+        """Check if the figures of this body-resonance pair should be drawn.
+
+        The `plot` mode decides by status; resonance types listed in `config.plot_always`
+        are drawn whatever their status, as long as plotting is on at all.
+        """
+        if self.config.plot is not None and getattr(resonance, 'type', None) in getattr(self.config, 'plot_always', []):
+            return True
         return self._process_status(body.statuses.get(resonance.to_s(), 0), self.config.plot)
 
     @staticmethod
@@ -56,7 +63,7 @@ class DataManager:
             return True
         if mode == SavePlotMode.RESONANT and status > 0:
             return True
-        if mode == SavePlotMode.CANDIDATES and (status > 0 or status == -3):
+        if mode == SavePlotMode.CANDIDATES and status in (2, 1, -1, -2, -3, -4):
             return True
         if mode == SavePlotMode.EXTENDED and (status > 0 or status in (-3, -4, -5, -9)):
             return True
@@ -322,9 +329,20 @@ class DataManager:
 
     @staticmethod
     def _append_csv(df, filename):
-        """Append DataFrame to CSV, writing header only if the file is new."""
-        write_header = not Path(filename).exists()
-        df.to_csv(filename, mode='a', header=write_header, index=False)
+        """Append a DataFrame atomically across batch worker processes.
+
+        Workers share the summary paths.  The separate lock file keeps the header check and
+        the complete pandas write in one critical section, preventing duplicate headers and
+        interleaved CSV records when two batches finish together.
+        """
+        lock_filename = f'{filename}.lock'
+        with open(lock_filename, 'a') as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                write_header = not Path(filename).exists()
+                df.to_csv(filename, mode='a', header=write_header, index=False)
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
     def get_simulation_summary(self, bodies):
         """Generate simulation summary dataframe."""

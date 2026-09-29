@@ -16,7 +16,7 @@ class SavePlotMode(StrEnum):
       none       — save/plot nothing
       all        — save/plot everything
       resonant   — status > 0 (TRANSIENT, LIBRATION)
-      candidates — status > 0 or -3 (resonant + NEAR_SEPARATRIX)
+      candidates — status in {2, 1, -1, -2, -3, -4} (resonant, uncertain and slow-circulation candidates)
       extended   — status > 0 or in {-3, -4, -5, -9} (candidates + uncertain/slow)
       nonzero    — status != 0
       negative   — status < 0
@@ -130,6 +130,15 @@ class SimulationConfig:
         else:
             plots_str = c.get('PLOTS', 'evolution')
             self.plots = [p.strip() for p in plots_str.split(',') if p.strip()]
+
+        # Resonance types whose figures are drawn whatever their status (e.g. ['lidov_kozai'] to
+        # always see the ZLK angle); the `plot` mode still decides for every other resonance.
+        plot_always = kwargs.get('plot_always', None)
+        if plot_always is None:
+            plot_always = c.get('PLOT_ALWAYS', '') if c.has('PLOT_ALWAYS') else ''
+        if isinstance(plot_always, str):
+            plot_always = [x.strip() for x in plot_always.split(',') if x.strip()]
+        self.plot_always = list(plot_always)
 
         # Phase portrait slow points percentile threshold (0-100)
         self.phase_portrait_slow_percentile = kwargs.get(

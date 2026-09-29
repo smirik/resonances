@@ -559,3 +559,72 @@ def series_rows(elements: Optional[FreeElements]) -> Optional[dict]:
         full[mask] = values
         columns[name] = full
     return columns
+
+
+def from_series_frame(frame, setup: Optional[dict] = None) -> Optional[FreeElements]:
+    """Rebuild the plot-relevant free-element state from an ``omega-free.csv`` frame.
+
+    The persisted table deliberately stores magnitudes and unwrapped phases rather than
+    redundant real/imaginary columns.  Reconstructing the complex vectors makes restored
+    simulations capable of regenerating all free-omega plots without re-integration.
+    Masked phases are linearly filled only to keep the arrays finite; plots and diagnostics
+    continue to use the original masks and therefore never consume those filled samples.
+    """
+    if frame is None or len(frame) == 0:
+        return None
+    setup = setup or {}
+    times = np.asarray(frame['times'], dtype=float)
+    keep_e = ~np.asarray(frame['masked_e'], dtype=bool)
+    keep_i = ~np.asarray(frame['masked_i'], dtype=bool)
+    both = keep_e & keep_i
+
+    def restored_complex(amplitude_column: str, phase_column: str, keep: np.ndarray) -> np.ndarray:
+        amplitude = np.asarray(frame[amplitude_column], dtype=float)
+        phase = np.asarray(frame[phase_column], dtype=float)
+        valid = keep & np.isfinite(phase)
+        if valid.any():
+            phase = np.interp(times, times[valid], phase[valid])
+        else:
+            phase = np.zeros(len(times))
+        return amplitude * np.exp(1j * phase)
+
+    z_e_free = restored_complex('abs_ze_free', 'varpi_free_unwrapped', keep_e)
+    z_i_free = restored_complex('abs_zi_free', 'Omega_free_unwrapped', keep_i)
+    # Only the forced magnitudes are needed by the saved diagnostics.  Give them a stable
+    # zero phase so rho/rho_envelope remain exactly reproducible from the persisted data.
+    z_e_forced = np.asarray(frame['abs_ze_forced'], dtype=float).astype(complex)
+    z_i_forced = np.asarray(frame['abs_zi_forced'], dtype=float).astype(complex)
+    varpi_free = np.asarray(frame.loc[keep_e, 'varpi_free_unwrapped'], dtype=float)
+    Omega_free = np.asarray(frame.loc[keep_i, 'Omega_free_unwrapped'], dtype=float)
+    omega_free = np.asarray(frame.loc[both, 'omega_free_unwrapped'], dtype=float)
+    frequencies = dict(setup.get('frequencies') or PLANETARY_FREQUENCIES)
+
+    def basis(kind: str) -> Dict[str, float]:
+        return {label: (0.0 if label == 'const' else frequencies[label]) for label in setup.get(f'basis_{kind}', [])}
+
+    return FreeElements(
+        times=times,
+        z_e=z_e_free + z_e_forced,
+        z_i=z_i_free + z_i_forced,
+        z_e_free=z_e_free,
+        z_i_free=z_i_free,
+        z_e_forced=z_e_forced,
+        z_i_forced=z_i_forced,
+        basis_e=basis('e'),
+        basis_i=basis('i'),
+        dropped_e=list(setup.get('dropped_e', [])),
+        dropped_i=list(setup.get('dropped_i', [])),
+        amplitudes_e={},
+        amplitudes_i={},
+        keep_e=keep_e,
+        keep_i=keep_i,
+        varpi_free=varpi_free,
+        Omega_free=Omega_free,
+        omega_free=omega_free,
+        b_varpi=rate(times[keep_e], varpi_free),
+        b_Omega=rate(times[keep_i], Omega_free),
+        b_omega=rate(times[both], omega_free),
+        clusters_e=list(setup.get('clusters_e', [])),
+        clusters_i=list(setup.get('clusters_i', [])),
+        frequencies=frequencies,
+    )

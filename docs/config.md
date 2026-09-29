@@ -57,7 +57,8 @@ Below is the list of options. When lowercase is used, it refers to the arguments
 
 - `save`/`SAVE` (string or None): whether or not save the result of the simulation. Options: `all`, `resonant`, `candidates`, `extended`, `nonzero`, `negative`, `None`.
   - `resonant` — only confirmed resonant objects (`status > 0`: transient, libration).
-  - `candidates` — resonant + near separatrix (`status > 0` or `status = -3`).
+  - `candidates` — resonant, uncertain/near-separatrix, and slow-circulation candidates
+    (`status` in {2, 1, -1, -2, -3, -4}).
   - `extended` — candidates + uncertain/slow (`status > 0` or `status` in {-3, -4, -5, -9}).
   - `nonzero` — everything except non-resonant (`status != 0`).
   - `negative` — only negative statuses requiring manual verification (`status < 0`).
@@ -69,6 +70,7 @@ Below is the list of options. When lowercase is used, it refers to the arguments
 - `plot_type`/`PLOT_TYPE` (str): determines what to do with graphs. `save` - only save graphs as files (default), `show` - just show (if false), `both` - both options. Valid only for plots specified by `plot`. In other words, if you set `plot` as `None`, no graphs will be plotted.
 - `plot_subfolder_strategy`/`PLOT_SUBFOLDER_STRATEGY` (str or None): controls how plots are organized within `plot_path`. By default, `None` (empty), meaning all plots are saved directly in `plot_path`. If set to `status`, creates subfolders based on resonance classification: `resonant/` (status=2), `transient/` (status=1), `non-resonant/` (status=0), `controversial-transient/` (status=-1), and `controversial-libration/` (status=-2).
 - `plots`/`PLOTS` (list or str): plot types to generate. Options: `evolution` (time series), `phase_portrait` (phase portraits), `ecc_vector` (the (k, h) plane), `cross_spectrum` (coherence and cross-phase per configured pair), `free_omega` (the free argument of pericentre, Lidov-Kozai resonances only). Default: `['evolution']`. When `phase_portrait` is enabled, three variants are generated: filtered, unfiltered, and slow points. See [Phase Plots](phase-plots.md), [Cross-Spectral Coherence](coherence.md) and [Free elements](free-elements.md) for details.
+- `plot_always`/`PLOT_ALWAYS` (list or comma-separated str): resonance types (`mmr`, `secular`, `lidov_kozai`) whose figures are drawn whatever their status, e.g. `plot_always=['lidov_kozai']` to always see the ZLK angle in a survey that otherwise plots `nonzero` only. Has no effect when `plot` is `None`. Default: empty.
 - `phase_portrait_slow_percentile`/`PHASE_PORTRAIT_SLOW_PERCENTILE` (float): percentile threshold (0-100) for slow points phase portrait. Points with |σ̇| below this percentile are shown. Default: `95`.
 
 ## Cross-spectral coherence options

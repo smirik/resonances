@@ -6,6 +6,7 @@ Tests for DataManager Component
 This module tests the DataManager class.
 """
 
+import multiprocessing
 import time
 import pytest
 import numpy as np
@@ -16,6 +17,19 @@ from unittest.mock import Mock, patch
 from resonances.simulation import SimulationConfig, DataManager
 from resonances.body import Body
 import resonances
+
+
+def _append_csv_chunks(filename, worker, chunks=10, rows=25):
+    """Spawn-safe helper that repeatedly appends uniquely identified rows."""
+    for chunk in range(chunks):
+        start = chunk * rows
+        frame = pd.DataFrame(
+            {
+                "worker": [worker] * rows,
+                "row": range(start, start + rows),
+            }
+        )
+        DataManager._append_csv(frame, filename)
 
 
 class TestDataManager:
@@ -34,6 +48,25 @@ class TestDataManager:
         assert self.data_manager._process_status(0, 'all') is True
         assert self.data_manager._process_status(-1, 'all') is True
 
+    def test_append_csv_is_atomic_across_two_processes(self, tmp_path):
+        """Two batch workers produce one header and every row exactly once."""
+        filename = str(tmp_path / "summary.csv")
+        context = multiprocessing.get_context("spawn")
+        processes = [context.Process(target=_append_csv_chunks, args=(filename, worker)) for worker in range(2)]
+
+        for process in processes:
+            process.start()
+        for process in processes:
+            process.join(timeout=30)
+            assert process.exitcode == 0
+
+        result = pd.read_csv(filename)
+        expected = pd.MultiIndex.from_product([range(2), range(250)], names=["worker", "row"])
+        actual = pd.MultiIndex.from_frame(result[["worker", "row"]])
+        assert len(result) == 500
+        assert actual.is_unique
+        assert set(actual) == set(expected)
+
     def test_process_status_resonant(self):
         """Test process status with 'resonant' mode."""
         assert self.data_manager._process_status(2, 'resonant') is True
@@ -42,14 +75,17 @@ class TestDataManager:
         assert self.data_manager._process_status(-1, 'resonant') is False
 
     def test_process_status_candidates(self):
-        """Test process status with 'candidates' mode (>0 or -3)."""
+        """Candidates include confirmed, uncertain, and near-separatrix cases."""
         assert self.data_manager._process_status(2, 'candidates') is True
         assert self.data_manager._process_status(1, 'candidates') is True
         assert self.data_manager._process_status(0, 'candidates') is False
-        assert self.data_manager._process_status(-1, 'candidates') is False
+        assert self.data_manager._process_status(-1, 'candidates') is True
+        assert self.data_manager._process_status(-2, 'candidates') is True
         assert self.data_manager._process_status(-3, 'candidates') is True
-        assert self.data_manager._process_status(-4, 'candidates') is False
+        assert self.data_manager._process_status(-4, 'candidates') is True
         assert self.data_manager._process_status(-5, 'candidates') is False
+        assert self.data_manager._process_status(-9, 'candidates') is False
+        assert self.data_manager._process_status(-99, 'candidates') is False
 
     def test_process_status_extended(self):
         """Test process status with 'extended' mode (>0 or -3, -4, -5, -9)."""
@@ -359,3 +395,42 @@ class TestPlotSubfolderStrategy:
 
 if __name__ == '__main__':
     pytest.main([__file__])
+
+
+def test_plot_always_overrides_status_for_listed_types():
+    """plot_always draws the listed resonance types whatever their status; the plot mode still rules the rest.
+
+    With plot='resonant' (status > 0) a Lidov-Kozai angle at status -4 is not drawn unless
+    'lidov_kozai' is in plot_always; an MMR at -4 stays undrawn either way; plot=None draws nothing.
+    """
+    import resonances
+    from resonances.simulation.config import SimulationConfig
+    from resonances.simulation.data_manager import DataManager
+    from resonances.body import Body
+
+    lk = resonances.create_resonance('LK')
+    mmr = resonances.create_mmr('1E-1')
+    body = Body()
+    body.statuses = {lk.to_s(): -4, mmr.to_s(): -4}
+
+    plain = DataManager(SimulationConfig(plot='resonant', save=None, save_path='cache/tests/pa1', plot_path='cache/tests/pa1'))
+    assert plain.config.plot_always == []
+    assert plain.should_plot_body(body, lk) is False
+    assert plain.should_plot_body(body, mmr) is False
+
+    always = DataManager(
+        SimulationConfig(plot='resonant', plot_always=['lidov_kozai'], save=None, save_path='cache/tests/pa2', plot_path='cache/tests/pa2')
+    )
+    assert always.config.plot_always == ['lidov_kozai']
+    assert always.should_plot_body(body, lk) is True
+    assert always.should_plot_body(body, mmr) is False
+
+    as_string = SimulationConfig(
+        plot='resonant', plot_always='lidov_kozai, mmr', save=None, save_path='cache/tests/pa3', plot_path='cache/tests/pa3'
+    )
+    assert as_string.plot_always == ['lidov_kozai', 'mmr']
+
+    off = DataManager(
+        SimulationConfig(plot=None, plot_always=['lidov_kozai'], save=None, save_path='cache/tests/pa4', plot_path='cache/tests/pa4')
+    )
+    assert off.should_plot_body(body, lk) is False

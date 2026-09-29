@@ -50,7 +50,10 @@ class SimulationSerializer:
             sim.body_manager.bodies.append(body)
 
         logger.info(f"Restoring body data")
-        cls._restore_body_data(sim, json_path.parent, data.get("simulation", {}).get("data_files", {}))
+        simulation_data = data.get("simulation", {})
+        files_manifest = simulation_data.get("data_files", {})
+        cls._restore_body_data(sim, json_path.parent, files_manifest)
+        cls._restore_free_elements(sim, json_path.parent, files_manifest, simulation_data.get("free_elements", {}))
 
         logger.info(f"Restoring planets")
         cls._restore_planets(sim, json_path.parent, data.get("simulation", {}).get("data_files", {}))
@@ -321,6 +324,21 @@ class SimulationSerializer:
             planet_name = planet_csv.stem.replace("data-planet-", "")
             df = pd.read_csv(planet_csv)
             sim.integration_engine.planets_data[planet_name] = df.to_dict(orient="records")
+
+    @classmethod
+    def _restore_free_elements(cls, sim: "Simulation", base_dir: Path, files_manifest: Dict[str, Any], setup: Dict[str, Any]) -> None:
+        """Restore the saved free-omega series needed by the ZLK diagnostic plots."""
+        from resonances.secular.free_elements import from_series_frame
+
+        files = files_manifest.get("free_omega") or []
+        by_name = {filename.removesuffix("-omega-free.csv"): filename for filename in files}
+        for body in sim.bodies:
+            filename = by_name.get(body.name)
+            if not filename:
+                continue
+            path = base_dir / filename
+            if path.exists():
+                body.free_elements = from_series_frame(pd.read_csv(path), setup)
 
     @classmethod
     def _get_column(cls, df: pd.DataFrame, col: str) -> Optional[np.ndarray]:
