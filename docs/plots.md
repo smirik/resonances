@@ -31,10 +31,10 @@ Everything is computed from arrays a simulation already saves: the raw, filtered
 
 The combined figure:
 
-- **(a–c) Time series**: the unwrapped σ (raw in grey, filtered in black), the wrapped σ as points, and a − a₀, where a₀ is the median filtered a. The wrapped range is [−π, π] when the angle librates about 0, otherwise [0, 2π]. The red line joins the centres of the cycles (below). It is broken where cycles do not follow each other, or around a cycle more than three times the median period (two maxima bridging circulation); such a centre stays as a lone point.
-- **(d) Recurrence**: D(t₁, t₂) = √[(Δσ/s_σ)² + (Δσ̇/s_σ̇)²], taken on the unwrapped angle so that a full circulation never returns. Dark means the state comes back close to itself. The scales are the object's own: s_σ is half the median cycle diameter (half the range of σ when there are no cycles), and s_σ̇ is half the 5–95 % spread of σ̇. **D is therefore comparable within one figure, not between objects**, and must not be thresholded. The matrix is decimated to `max_points` for display, and pairs within `exclude_samples` steps are blank.
+- **(a–c) Time series**: the unwrapped σ (raw in grey, filtered in black), the wrapped σ in [0, 2π) as points, and Δa = a − a₀, where a₀ is the median filtered a. Neither Δa nor a₀ is printed on the figure: give them in the caption (a₀ is `MMRDiagnostics.axis_reference`). The three panels together are exactly as tall as the square panels next to them. When the oscillations are too dense for the panel (a median cycle narrower than four line widths), the raw and filtered series are drawn as min–max bands over about two cycles each, so the band shows the amplitude and its modulation instead of a solid block of ink, and the wrapped points turn translucent. The red line joins the centres of the cycles (below). It is broken where cycles do not follow each other, or around a cycle more than three times the median period (two maxima bridging circulation); such a centre stays as a lone point.
+- **(d) Recurrence**: D(t₁, t₂) = √[(Δσ/s_σ)² + (Δσ̇/s_σ̇)²], taken on the unwrapped angle so that a full circulation never returns. Dark means the state comes back close to itself. The scales are the object's own: s_σ is half the median cycle diameter (half the range of σ when there are no cycles), and s_σ̇ is half the 5–95 % spread of σ̇. **D is therefore comparable within one figure, not between objects**, and must not be thresholded. The matrix is decimated for display, by default to about 8 samples per median cycle (within 700–2500): fewer would alias the oscillation into a moiré pattern. Pairs within `exclude_samples` steps are blank.
 - **(e) FAIR** (Forgács-Dajka, Sándor & Érdi 2018): M against λₚ − λ for an inner asteroid, λ − λₚ for an outer one. It is a two-body diagnostic. It is omitted for three-body arguments: a pairwise projection does not test an argument involving two planets.
-- **(f) Portrait**: σ against σ̇ over the focus, coloured by time, with the raw points in grey. The unwrapped σ is shifted by whole turns only, so a libration about 180° is drawn about 180°. `portrait.y = 'axis'` plots a − a₀ instead; for an MMR it carries the same information, since σ̇ follows from a.
+- **(f) Portrait**: σ against σ̇ over the focus, coloured by time, with the raw points in grey. One period of the filter cutoff (1/`LIBRATION_FILTER_CUTOFF` years) is dropped at both ends of the record, where the zero-phase filter is distorted. The unwrapped σ is shifted by whole turns only, so a libration about 180° is drawn about 180°. `portrait.y = 'axis'` plots a − a₀ instead; for an MMR it carries the same information, since σ̇ follows from a.
 - **(g–h) Cycles**: a cycle runs from one maximum of the filtered unwrapped σ to the next. Incomplete ends are dropped, and the peak prominence is 5 % of the range of σ, kept within [0.005, 0.1] rad. Each cycle is stretched to [0, 1]. σ keeps its level; a is shown minus the median of each cycle. The colour is the cycle's midpoint time. A cycle is a candidate oscillation, not a confirmed libration: a drifting centre (the stack climbing) or a bridging cycle shows exactly that.
 
 The **focus** is the whole record for now. The API takes `focus=(t0, t1)` in years (`MMRPlotter.from_body(..., focus=...)`): cycles, portrait and recurrence scales then use that interval, and the time series are dimmed outside it.
@@ -49,15 +49,18 @@ Run with `save_planets=True`. Without planet data FAIR is skipped with a warning
 
 | Option | Default | Meaning |
 |--------|---------|---------|
-| `style` | `screen` | `screen`: 16×9 in, 150 dpi, title with body and resonance. `paper`: 180 mm wide, 8 pt STIX serif, 300 dpi, no title (the caption carries it) |
+| `style` | `screen` | `screen`: 16 in wide, 150 dpi, title `Asteroid <name>, <resonance>` (short notation, e.g. `2J-1`). `paper`: 180 mm wide, 8 pt STIX serif, 300 dpi, no title (the caption carries it) |
 | `raw` | `line` | Raw series next to filtered ones: `line`, `markers` (plus hollow markers on actual samples), `none` |
-| `recurrence.max_points` | `700` | Display decimation of the recurrence matrix |
+| `series` | `auto` | Time series as `lines`, min–max `envelope` bands, or `auto` (bands only when lines would merge) |
+| `recurrence.max_points` | `None` | Display decimation of the recurrence matrix; `None` = ~8 samples per cycle, within 700–2500 |
 | `recurrence.exclude_samples` | `2` | Blank band around the diagonal, in decimated steps |
 | `portrait.y` | `rate` | `rate` (σ̇, deg per time unit) or `axis` (a − a₀) |
 | `cycles.prominence` | `None` | Peak prominence in rad; `None` = 5 % of the range of σ within [0.005, 0.1] |
 | `fair.max_step_fraction` | `0.25` | Warn when the output step exceeds this share of the orbit |
 
-Units: σ in rad in time series and stacks, degrees in the portrait. Time is in yr, kyr or Myr, whichever suits the span.
+Units: σ in rad in time series and stacks, degrees in the portrait.
+
+The filter matters: the filtered σ feeds the cycles, the portrait and the recurrence. `LIBRATION_FILTER_CUTOFF` must lie above the libration frequency. The default 0.0005 (periods under 2000 yr removed) suits slow three-body librations, but erases a Trojan libration of ~150 yr; for that, use e.g. `oscillations_cutoff=0.02`. Time is in yr, kyr or Myr, whichever suits the span.
 
 ## Redrawing after a simulation
 

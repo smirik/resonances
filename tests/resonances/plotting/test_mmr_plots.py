@@ -7,15 +7,22 @@ matplotlib.use('Agg')
 import re  # noqa: E402
 from pathlib import Path  # noqa: E402
 
+import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pytest  # noqa: E402
 
 import resonances  # noqa: E402
 import tests.tools as tools  # noqa: E402
 from resonances.plotting import MMRDiagnostics, MMRPlotter  # noqa: E402
-from resonances.plotting.mmr_plots import PlanetSeries, centre_line, portrait_coordinates, wrapped_about_zero  # noqa: E402
+from resonances.plotting.mmr_plots import (  # noqa: E402
+    PlanetSeries,
+    centre_line,
+    portrait_coordinates,
+    envelope_bins,
+    recurrence_points,
+)
 from resonances.resonance.oscillations import Cycle  # noqa: E402
-from resonances.plotting.style import DEFAULT_PLOT_OPTIONS, PlotStyle, PortraitY, resolve_plot_options  # noqa: E402
+from resonances.plotting.style import DEFAULT_PLOT_OPTIONS, PlotStyle, PortraitY, SeriesMode, resolve_plot_options  # noqa: E402
 from resonances.simulation.config import MMR_PLOT_KINDS  # noqa: E402
 
 
@@ -33,6 +40,7 @@ def diagnostics(centre=np.pi, turns=3, n=4000, years=4000.0, planet=True, focus=
         axis_filtered=3.2776 + 0.002 * np.cos(2 * np.pi * t / 400),
         body_name='synthetic',
         resonance='2J-1+0-1',
+        label='2J-1',
         n_planets=1,
         mean_anomaly=np.mod(longitude, 2 * np.pi),
         longitude=longitude,
@@ -97,10 +105,25 @@ class TestDiagnostics:
         three_body.n_planets = 2
         assert 'two-body' in three_body.fair_unavailable_reason()
 
-    @pytest.mark.parametrize('centre, expected', [(0.0, True), (0.3, True), (np.pi, False), (-2.5, False)])
-    def test_wrapped_range(self, centre, expected):
-        t = np.linspace(0, 10, 500)
-        assert wrapped_about_zero(np.mod(centre + 0.5 * np.sin(t), 2 * np.pi)) is expected
+    def test_envelope_bins(self):
+        # 400-yr cycles over 4000 yr = 10 cycles. On 900 px with a 2.5-px line a cycle gets
+        # 90 px >= 4 x 2.5: lines. On 30 px it gets 3 px: bands of two cycles, 10 / 2 = 5.
+        d = diagnostics()
+        assert envelope_bins(d, SeriesMode.AUTO, 900, 2.5) == 0
+        assert envelope_bins(d, SeriesMode.AUTO, 30, 2.5) == 5
+        assert envelope_bins(d, SeriesMode.ENVELOPE, 900, 2.5) == 5
+        assert envelope_bins(d, SeriesMode.LINES, 30, 2.5) == 0
+
+    def test_envelope_contains_every_sample(self):
+        from resonances.plotting.mmr_plots import _envelope
+
+        fig, ax = plt.subplots()
+        t = np.linspace(0, 100, 1001)
+        y = np.sin(2 * np.pi * t / 3.0)
+        _envelope(ax, t, y, 10)
+        band = ax.collections[0].get_paths()[0].vertices
+        plt.close(fig)
+        assert band[:, 1].min() == pytest.approx(y.min()) and band[:, 1].max() == pytest.approx(y.max())
 
     @pytest.mark.parametrize('centre, degrees', [(np.pi, 180.0), (0.0, 0.0)])
     def test_portrait_keeps_the_libration_centre(self, centre, degrees):
@@ -124,6 +147,47 @@ class TestDiagnostics:
         assert np.max(y_long) == pytest.approx(np.degrees(0.6 * 2 * np.pi / 400) * 1000, rel=1e-3)
         _, y_axis, _, _ = portrait_coordinates(d, PortraitY.AXIS)
         assert np.ptp(y_axis) == pytest.approx(4.0, rel=1e-3)  # a = a0 + 0.002 cos -> 4e-3 au
+
+    def test_portrait_drops_the_filter_edges(self):
+        # edge = 500 yr of 4000: samples within 500 yr of either end leave the portrait
+        # (3000 of 4000 years remain); cycles and time series keep the whole record.
+        d = diagnostics()
+        d.edge = 500.0
+        kept = d.times[d.portrait_mask]
+        assert kept.min() >= 500 and kept.max() <= 3500
+        assert d.portrait_mask.sum() == pytest.approx(0.75 * len(d.times), rel=0.01)
+        assert len(portrait_coordinates(d)[0]) == d.portrait_mask.sum()
+        d.edge = 1500.0  # would leave a quarter of the record: the portrait keeps it all
+        assert d.portrait_mask.all()
+
+    def test_recurrence_points(self):
+        # 400-yr cycles over 4000 yr: 8 per cycle = 80, raised to the 700 floor.
+        d = diagnostics()
+        assert recurrence_points(d) == 700
+        assert recurrence_points(d, 300) == 300
+        # 50 kyr of 150-yr cycles: 8 * 50000 / 150 = 2667, capped at 2500.
+        t = np.linspace(0, 50000, 50000)
+        sigma = 0.3 * np.sin(2 * np.pi * t / 150)
+        dense = MMRDiagnostics(
+            times=t,
+            sigma=np.mod(sigma, 2 * np.pi),
+            sigma_raw=sigma,
+            sigma_filtered=sigma,
+            axis=np.ones_like(t),
+            axis_filtered=np.ones_like(t),
+        )
+        assert recurrence_points(dense) == 2500
+        # 400-yr cycles over the same span: 8 * 50000 / 400 = 1000.
+        sigma = 0.3 * np.sin(2 * np.pi * t / 400)
+        medium = MMRDiagnostics(
+            times=t,
+            sigma=np.mod(sigma, 2 * np.pi),
+            sigma_raw=sigma,
+            sigma_filtered=sigma,
+            axis=np.ones_like(t),
+            axis_filtered=np.ones_like(t),
+        )
+        assert recurrence_points(medium) == pytest.approx(1000, abs=3)
 
     def test_backward_integration_is_put_in_time_order(self):
         # Times from 0 down to -4000 yr: the diagnostics see increasing time, so the same
@@ -173,7 +237,7 @@ class TestFigures:
     def test_combined_two_body_has_eight_panels(self):
         plotter = MMRPlotter(diagnostics()).plot_combined()
         assert letters(plotter.figure) == [f'({c})' for c in 'abcdefgh']
-        assert plotter.figure._suptitle.get_text() == 'synthetic, 2J-1+0-1'
+        assert plotter.figure._suptitle.get_text() == 'Asteroid synthetic, 2J-1'
         plotter.close()
 
     def test_combined_without_fair_has_seven_panels(self):
@@ -184,9 +248,36 @@ class TestFigures:
 
     def test_paper_style(self, tmp_path):
         plotter = MMRPlotter(diagnostics(), {'style': 'paper'}).plot_combined()
-        assert plotter.figure.get_size_inches() == pytest.approx([7.09, 5.4])
+        assert plotter.figure.get_size_inches()[0] == pytest.approx(7.09)
         assert plotter.figure._suptitle is None  # the caption carries the title
         plotter.save(tmp_path / 'f.pdf')
+        plotter.close()
+
+    @pytest.mark.parametrize('style', ['screen', 'paper'])
+    @pytest.mark.parametrize('planet', [True, False])
+    def test_combined_geometry(self, style, planet, recwarn):
+        """Top row: the three time series together are as tall as the square recurrence
+        (and FAIR) panels. Bottom row: three equal squares. Measured on the drawn axes."""
+        plotter = MMRPlotter(diagnostics(planet=planet), {'style': style}).plot_combined()
+        fig = plotter.figure
+        w, h = fig.get_size_inches()
+
+        def inches(ax):
+            box = ax.get_position()
+            return box.x0 * w, box.y0 * h, box.width * w, box.height * h
+
+        panels = [ax for ax in fig.axes if any(re.fullmatch(r'\([a-h]\)', t.get_text()) for t in ax.texts)]
+        series, squares = panels[:3], panels[3:]
+        top = max(inches(ax)[1] + inches(ax)[3] for ax in series) - min(inches(ax)[1] for ax in series)
+        upper, lower = squares[: len(squares) - 3], squares[-3:]
+        for ax in upper:
+            x, y, width, height = inches(ax)
+            assert width == pytest.approx(height) == pytest.approx(top)
+            assert y == pytest.approx(inches(series[2])[1])  # bottoms aligned
+        sides = [inches(ax)[2:] for ax in lower]
+        for width, height in sides:
+            assert width == pytest.approx(height) == pytest.approx(sides[0][0])
+        assert len(upper) == (2 if planet else 1)
         plotter.close()
 
     def test_kinds_match_the_config(self):

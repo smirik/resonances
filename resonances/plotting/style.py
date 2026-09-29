@@ -27,15 +27,45 @@ class RawMode(StrEnum):
     NONE = 'none'
 
 
+class SeriesMode(StrEnum):
+    """How the time series are drawn: lines, min-max bands, or bands only when too dense for lines."""
+
+    AUTO = 'auto'
+    LINES = 'lines'
+    ENVELOPE = 'envelope'
+
+
 class PortraitY(StrEnum):
     RATE = 'rate'  # sigma_dot
     AXIS = 'axis'  # a - a0
 
 
 @dataclass(frozen=True)
+class CombinedLayout:
+    """Geometry of the combined figure, in inches.
+
+    Top row: the three stacked time series together are exactly as tall as the square
+    recurrence and FAIR panels (`top`). Bottom row: three equal squares, whose side
+    follows from the figure width. The figure height follows from both rows.
+    """
+
+    left: float  # room for y tick labels and label of the first column
+    right: float
+    bottom: float  # room for x tick labels and labels of the bottom row
+    title: float  # room above the top row (title, panel letters)
+    gap: float  # between neighbouring panels: y ticks and label of the right one
+    row_gap: float  # between the rows: x labels of the top row, letters of the bottom
+    top: float  # height of the top row
+    stack_gap: float  # between the three time-series panels
+    bar: float  # colour bar width
+    bar_pad: float  # between a panel and its colour bar
+    bar_room: float  # tick labels (and label) of a colour bar
+
+
+@dataclass(frozen=True)
 class FigureStyle:
     width: float  # inches (combined figure)
-    height: float  # inches (combined figure)
+    layout: CombinedLayout
     panel_size: float  # inches, one standalone panel
     dpi: int
     font_size: float
@@ -44,6 +74,7 @@ class FigureStyle:
     line: float  # filtered series
     raw_line: float  # raw series
     marker: float  # scatter point area
+    series_marker: float  # point area of the wrapped angle against time
 
     def rc(self) -> Dict[str, Any]:
         serif = self.font_family == 'serif'
@@ -73,7 +104,19 @@ class FigureStyle:
 STYLES = {
     PlotStyle.SCREEN: FigureStyle(
         width=16.0,
-        height=9.0,
+        layout=CombinedLayout(
+            left=1.15,
+            right=0.2,
+            bottom=0.65,
+            title=0.75,
+            gap=1.0,
+            row_gap=1.15,
+            top=3.3,
+            stack_gap=0.08,
+            bar=0.15,
+            bar_pad=0.12,
+            bar_room=0.75,
+        ),
         panel_size=6.0,
         dpi=150,
         font_size=11,
@@ -82,10 +125,23 @@ STYLES = {
         line=1.2,
         raw_line=0.8,
         marker=4.0,
+        series_marker=2.5,
     ),
     PlotStyle.PAPER: FigureStyle(
         width=7.09,  # 180 mm
-        height=5.4,
+        layout=CombinedLayout(
+            left=0.8,
+            right=0.12,
+            bottom=0.36,
+            title=0.18,
+            gap=0.52,
+            row_gap=0.66,
+            top=1.45,
+            stack_gap=0.04,
+            bar=0.08,
+            bar_pad=0.06,
+            bar_room=0.42,
+        ),
         panel_size=3.46,  # 88 mm, one column
         dpi=300,
         font_size=8,
@@ -94,6 +150,7 @@ STYLES = {
         line=0.8,
         raw_line=0.5,
         marker=1.2,
+        series_marker=0.8,
     ),
 }
 
@@ -102,6 +159,7 @@ INK = 'black'
 RAW = '#a3a9b1'
 CENTRE = '#b2182b'
 OUT_OF_FOCUS = '#cfd4da'
+ENVELOPE = '#3a3a3a'  # filtered series drawn as a min-max band
 
 
 @lru_cache(maxsize=1)
@@ -118,14 +176,15 @@ def time_cmap():
 DEFAULT_PLOT_OPTIONS: Dict[str, Any] = {
     'style': PlotStyle.SCREEN,
     'raw': RawMode.LINE,
-    'recurrence': {'max_points': 700, 'exclude_samples': 2},
+    'series': SeriesMode.AUTO,
+    'recurrence': {'max_points': None, 'exclude_samples': 2},  # None: ~8 samples per cycle, 700-2500
     'portrait': {'y': PortraitY.RATE},
     'cycles': {'prominence': None},  # rad; None = 5% of the angle range within [0.005, 0.1]
     'fair': {'max_step_fraction': 0.25},  # warn when the output step exceeds this share of the orbit
 }
 
 # Options whose value must be a member of an enum, by dotted path.
-_CHOICES = {'style': PlotStyle, 'raw': RawMode, 'portrait.y': PortraitY}
+_CHOICES = {'style': PlotStyle, 'raw': RawMode, 'series': SeriesMode, 'portrait.y': PortraitY}
 
 
 def resolve_plot_options(options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

@@ -32,7 +32,20 @@ from matplotlib.ticker import MaxNLocator
 from resonances.logger import logger
 from resonances.resonance import oscillations as osc
 from .base import BasePlotter, time_unit
-from .style import CENTRE, INK, OUT_OF_FOCUS, RAW, STYLES, FigureStyle, PortraitY, RawMode, resolve_plot_options, time_cmap
+from .style import (
+    CENTRE,
+    ENVELOPE,
+    INK,
+    OUT_OF_FOCUS,
+    RAW,
+    STYLES,
+    FigureStyle,
+    PortraitY,
+    RawMode,
+    SeriesMode,
+    resolve_plot_options,
+    time_cmap,
+)
 
 TWO_PI = 2 * np.pi
 MILLI = 1e3  # a - a0 is shown in 10^-3 au
@@ -62,13 +75,15 @@ class MMRDiagnostics:
     axis: np.ndarray
     axis_filtered: np.ndarray
     body_name: str = ''
-    resonance: str = ''
+    resonance: str = ''  # full key, e.g. 2J-1+0-1
+    label: str = ''  # short notation for titles, e.g. 2J-1
     n_planets: int = 1
     mean_anomaly: Optional[np.ndarray] = None
     longitude: Optional[np.ndarray] = None
     planet: Optional[PlanetSeries] = None
     focus: Optional[Tuple[float, float]] = None
     prominence: Optional[float] = None
+    edge: float = 0.0  # years dropped at both ends of the portrait: the low-pass filter's edge transient
 
     mask: np.ndarray = field(init=False)
     rate: np.ndarray = field(init=False)  # d sigma_filtered / dt, rad/yr
@@ -109,6 +124,13 @@ class MMRDiagnostics:
         return self.times / self.divisor
 
     @property
+    def portrait_mask(self) -> np.ndarray:
+        """The focus without `edge` years at both ends of the record, where the zero-phase
+        filter is distorted (kept whole if trimming would leave under half of it)."""
+        inner = self.mask & (self.times >= self.times[0] + self.edge) & (self.times <= self.times[-1] - self.edge)
+        return inner if inner.sum() >= self.mask.sum() / 2 else self.mask
+
+    @property
     def has_focus(self) -> bool:
         """Whether the focus is a proper part of the record (otherwise nothing is dimmed)."""
         return not bool(self.mask.all())
@@ -134,6 +156,7 @@ class MMRDiagnostics:
 
     @classmethod
     def from_body(cls, body, resonance, sim=None, focus=None, prominence=None) -> 'MMRDiagnostics':
+        """From a simulated body; the portrait edge is one period of the filter cutoff."""
         key = resonance.to_s()
         times = sim.times if sim is not None else body.times
         names = list(resonance.planets_names)
@@ -147,12 +170,14 @@ class MMRDiagnostics:
             axis_filtered=body.axis_filtered if body.axis_filtered is not None else body.axis,
             body_name=str(body.name),
             resonance=key,
+            label=resonance.to_short(),
             n_planets=max(len(names), 1),
             mean_anomaly=body.M,
             longitude=body.longitude,
             planet=planet,
             focus=focus,
             prominence=prominence,
+            edge=1.0 / sim.config.oscillations_cutoff if sim is not None else 0.0,
         )
 
 
@@ -167,12 +192,6 @@ def _planet_series(sim, name: str) -> Optional[PlanetSeries]:
 # ------------------------------------------------------------------ pure geometry
 
 
-def wrapped_about_zero(sigma: np.ndarray) -> bool:
-    """Whether the angle's circular mean is closer to 0 than to pi."""
-    mean = np.angle(np.mean(np.exp(1j * np.asarray(sigma, dtype=float))))
-    return bool(abs(mean) < np.pi / 2)
-
-
 def portrait_coordinates(d: MMRDiagnostics, y: PortraitY = PortraitY.RATE):
     """(x, y, x_raw, y_raw) of the portrait over the focus: sigma in degrees against
     sigma_dot in deg per display time unit, or against a - a0 in 10^-3 au.
@@ -181,7 +200,7 @@ def portrait_coordinates(d: MMRDiagnostics, y: PortraitY = PortraitY.RATE):
     180 deg is drawn about 180 deg while a circulation still runs off to the side. The raw
     angle is brought onto the same branch as the filtered one, sample by sample.
     """
-    m = d.mask
+    m = d.portrait_mask
     shift = TWO_PI * np.round(np.median(d.sigma_filtered[m]) / TWO_PI)
     x = np.degrees(d.sigma_filtered[m] - shift)
     raw_branch = TWO_PI * np.round((d.sigma_raw[m] - d.sigma_filtered[m]) / TWO_PI)
@@ -189,6 +208,18 @@ def portrait_coordinates(d: MMRDiagnostics, y: PortraitY = PortraitY.RATE):
     if y == PortraitY.RATE:
         return x, np.degrees(d.rate[m]) * d.divisor, x_raw, np.degrees(d.raw_rate[m]) * d.divisor
     return x, d.milli_au(d.axis_filtered[m]), x_raw, d.milli_au(d.axis[m])
+
+
+def recurrence_points(d: MMRDiagnostics, requested: Optional[int] = None) -> int:
+    """Decimated size of the recurrence matrix: `requested`, or enough for ~8 samples per
+    median cycle (fewer alias into a moire pattern), kept within [700, 2500]."""
+    if requested is not None:
+        return int(requested)
+    if not d.cycles:
+        return min(700, len(d.times))
+    period = np.median([c.period for c in d.cycles])
+    wanted = 8 * abs(d.times[-1] - d.times[0]) / period
+    return int(min(len(d.times), np.clip(wanted, 700, 2500)))
 
 
 def centre_line(cycles: List[osc.Cycle], *series) -> Tuple[np.ndarray, ...]:
@@ -239,57 +270,109 @@ def _raw_line(ax, x, y, style: FigureStyle, raw: RawMode):
         ax.plot(x, y, ls='none', marker='o', markevery=max(len(x) // 100, 1), ms=2.5, mfc='none', mec=RAW, mew=0.6, zorder=2)
 
 
+def _envelope(ax, t, y, bins: int, **fill):
+    """Min-max band of `y` in `bins` equal time bins: every sample is inside, at the display resolution."""
+    edges = np.unique(np.linspace(0, len(t), bins + 1).astype(int))[:-1]
+    lo, hi = np.minimum.reduceat(y, edges), np.maximum.reduceat(y, edges)
+    centre = np.add.reduceat(t, edges) / np.diff(np.append(edges, len(t)))
+    ax.fill_between(centre, lo, hi, linewidth=0, **fill)
+
+
+def envelope_bins(d: MMRDiagnostics, mode: SeriesMode, pixels: float, line_pixels: float) -> int:
+    """Number of min-max bins for the time series, or 0 to draw lines.
+
+    `envelope` always bins, `lines` never; `auto` bins when a median cycle is narrower
+    than four line widths, where single oscillations merge into a solid block. A bin spans
+    about two cycles, so the band traces the amplitude (and its modulation), not the
+    oscillation itself.
+    """
+    if mode == SeriesMode.LINES or not d.cycles:
+        return 0
+    cycles = abs(d.times[-1] - d.times[0]) / np.median([c.period for c in d.cycles])
+    if mode == SeriesMode.AUTO and pixels / cycles >= 4 * line_pixels:
+        return 0
+    return int(round(max(2, min(pixels, cycles / 2))))
+
+
 def draw_series(axes, d: MMRDiagnostics, style: FigureStyle, options: Dict[str, Any]):
-    """Unwrapped sigma, wrapped sigma and a - a0 on three axes sharing the time axis."""
+    """Unwrapped sigma, wrapped sigma and a - a0 on three axes sharing the time axis.
+
+    Raw series in grey, filtered in black. When the oscillations are too dense for the
+    panel width (see `envelope_bins`), both are drawn as min-max bands instead and
+    the wrapped points become translucent, so their density shows.
+    """
     ax_u, ax_w, ax_a = axes
     t, raw = d.t, options['raw']
+    pixels = ax_u.get_position().width * ax_u.figure.get_figwidth() * style.dpi
+    bins = envelope_bins(d, options['series'], pixels, style.line / 72 * style.dpi)
+    envelope = bins > 0
 
-    _raw_line(ax_u, t, d.sigma_raw, style, raw)
-    ax_u.plot(t, d.sigma_filtered, color=INK, lw=style.line, zorder=3)
+    for ax, raw_values, filtered in ((ax_u, d.sigma_raw, d.sigma_filtered), (ax_a, d.milli_au(d.axis), d.milli_au(d.axis_filtered))):
+        if envelope:
+            if raw != RawMode.NONE:
+                _envelope(ax, t, raw_values, bins, color=RAW, zorder=2)
+            _envelope(ax, t, filtered, bins, color=ENVELOPE, zorder=3)
+        else:
+            _raw_line(ax, t, raw_values, style, raw)
+            ax.plot(t, filtered, color=INK, lw=style.line, zorder=3)
     ax_u.set_ylabel(r'$\sigma$ (rad)')
+    ax_a.set_ylabel('$\\Delta a$\n($10^{-3}$ au)')
 
-    # A libration about 0 would be cut in two by [0, 2pi); centre the range on it instead.
-    if wrapped_about_zero(d.sigma[d.mask]):
-        wrapped, lower, labels = np.mod(d.sigma + np.pi, TWO_PI) - np.pi, -np.pi, [r'$-\pi$', '0', r'$\pi$']
-    else:
-        wrapped, lower, labels = d.sigma, 0.0, ['0', r'$\pi$', r'$2\pi$']
-    ax_w.scatter(t, wrapped, s=style.marker, color=INK, linewidths=0, rasterized=True)
-    ax_w.set_ylim(lower, lower + TWO_PI)
-    ax_w.set_yticks(lower + np.array([0, np.pi, TWO_PI]), labels)
+    ax_w.scatter(t, d.sigma, s=style.series_marker, color=INK, alpha=0.25 if envelope else 1.0, linewidths=0, rasterized=True)
+    ax_w.set_ylim(0, TWO_PI)
+    ax_w.set_yticks([0, np.pi, TWO_PI], ['0', r'$\pi$', r'$2\pi$'])
+    # The extreme labels sit on the panel edges; keep them inside, clear of the neighbours.
+    ax_w.get_yticklabels()[0].set_va('bottom')
+    ax_w.get_yticklabels()[-1].set_va('top')
     ax_w.set_ylabel(r'$\sigma$ (rad)')
-
-    _raw_line(ax_a, t, d.milli_au(d.axis), style, raw)
-    ax_a.plot(t, d.milli_au(d.axis_filtered), color=INK, lw=style.line, zorder=3)
-    ax_a.set_ylabel(r'$a - a_0$ ($10^{-3}$ au)')
-    ax_a.text(
-        0.995, 0.96, rf'$a_0 = {d.axis_reference:.6f}$ au', transform=ax_a.transAxes, ha='right', va='top', fontsize='small', zorder=7
-    )
 
     if d.cycles:
         mid, centre, axis_mid = centre_line(d.cycles, *osc.cycle_centres(d.cycles, d.times, d.axis_filtered))
-        centre_style = dict(color=CENTRE, lw=style.line, marker='.', ms=2 * style.line, zorder=4)
-        ax_u.plot(mid / d.divisor, centre, **centre_style)
-        ax_a.plot(mid / d.divisor, d.milli_au(axis_mid), **centre_style)
+        # A centre cut off from both neighbours would be invisible as a line: mark it as a point.
+        joined = np.isfinite(mid)
+        lone = joined & ~np.convolve(joined, [1, 0, 1], mode='same').astype(bool)
+        for ax, values in ((ax_u, centre), (ax_a, d.milli_au(axis_mid))):
+            ax.plot(mid / d.divisor, values, color=CENTRE, lw=style.line, zorder=4)
+            ax.plot(mid[lone] / d.divisor, values[lone], ls='none', marker='o', ms=2.5 * style.line, color=CENTRE, zorder=4)
 
     for ax in axes:
         _dim_outside_focus(ax, d)
         ax.set_xlim(t[0], t[-1])
         ax.grid(alpha=0.15, lw=0.5)
+    # Stacked without gaps: drop the ticks that would touch the neighbour's.
+    ax_u.yaxis.set_major_locator(MaxNLocator(nbins=4, prune='lower'))
+    ax_a.yaxis.set_major_locator(MaxNLocator(nbins=4, prune='upper'))
     for ax in axes[:-1]:
         ax.tick_params(labelbottom=False)
     ax_a.set_xlabel(f'Time ({d.unit})')
+    # One x for the three y labels, whatever the tick label widths (a fixed distance in inches).
+    width = ax_a.get_position().width * ax_a.figure.get_figwidth()
+    for ax in axes:
+        ax.yaxis.set_label_coords(-0.06 * style.font_size / width, 0.5)
 
 
-def draw_recurrence(ax, d: MMRDiagnostics, options: Dict[str, Any]):
-    """Recurrence image (dark = the state returns close to itself, in its own scale) with a D colour bar."""
+def draw_recurrence(ax, d: MMRDiagnostics, options: Dict[str, Any], cax=None):
+    """Recurrence image (dark = the state returns close to itself, in its own scale) with a D colour bar.
+
+    The bar goes into `cax` when given (combined figure), otherwise above the panel.
+    """
     m = d.mask
     # Scales come from the focus, like the cycles; the matrix covers the whole record.
     sigma_scale, rate_scale = osc.recurrence_scales(d.sigma_filtered[m], d.rate[m], d.cycles)
-    rec = osc.recurrence(d.times, d.sigma_filtered, d.rate, sigma_scale, rate_scale, **options['recurrence'])
+    points = recurrence_points(d, options['recurrence']['max_points'])
+    rec = osc.recurrence(
+        d.times,
+        d.sigma_filtered,
+        d.rate,
+        sigma_scale,
+        rate_scale,
+        max_points=points,
+        exclude_samples=options['recurrence']['exclude_samples'],
+    )
     cmap = mpl.colormaps['gray'].copy()
     cmap.set_bad('white')
     extent = [rec.times[0] / d.divisor, rec.times[-1] / d.divisor] * 2
-    image = ax.imshow(rec.distance, origin='lower', extent=extent, vmin=0, vmax=2, cmap=cmap, interpolation='nearest', rasterized=True)
+    image = ax.imshow(rec.distance, origin='lower', extent=extent, vmin=0, vmax=2, cmap=cmap, interpolation='antialiased', rasterized=True)
     if d.has_focus:
         for bound in (d.t[m][0], d.t[m][-1]):
             ax.axvline(bound, color=INK, lw=0.6, ls='--')
@@ -298,8 +381,12 @@ def draw_recurrence(ax, d: MMRDiagnostics, options: Dict[str, Any]):
     ax.set_anchor('W')
     ax.set_xlabel(f'$t_1$ ({d.unit})')
     ax.set_ylabel(f'$t_2$ ({d.unit})')
-    bar = ax.figure.colorbar(image, ax=ax, location='top', fraction=0.05, pad=0.04, extend='max', aspect=30)
-    bar.ax.text(1.06, 0.5, r'$D$', transform=bar.ax.transAxes, ha='left', va='center')
+    if cax is not None:
+        bar = ax.figure.colorbar(image, cax=cax, extend='max')
+        bar.set_label(r'$D$', labelpad=6)
+    else:
+        bar = ax.figure.colorbar(image, ax=ax, location='top', fraction=0.05, pad=0.04, extend='max', aspect=30)
+        bar.ax.text(1.06, 0.5, r'$D$', transform=bar.ax.transAxes, ha='left', va='center')
     bar.set_ticks([0, 1, 2])
     bar.outline.set_linewidth(0.5)
 
@@ -324,7 +411,7 @@ def draw_portrait(ax, d: MMRDiagnostics, style: FigureStyle, options: Dict[str, 
     x, y, x_raw, y_raw = portrait_coordinates(d, y_kind)
     if options['raw'] != RawMode.NONE:
         ax.scatter(x_raw, y_raw, s=style.marker * 0.6, color=RAW, alpha=0.5, linewidths=0, rasterized=True, zorder=1)
-    _colored_path(ax, x, y, d.t[d.mask], norm, style.line)
+    _colored_path(ax, x, y, d.t[d.portrait_mask], norm, style.line)
     # Raw rates are far noisier than the filtered path; keep the view on the latter.
     lo, hi = float(np.min(y)), float(np.max(y))
     pad = 0.08 * (hi - lo) or 1.0
@@ -333,10 +420,12 @@ def draw_portrait(ax, d: MMRDiagnostics, style: FigureStyle, options: Dict[str, 
         ax.set_ylabel(rf'$\dot\sigma$ (deg/{d.unit})')
         ax.axhline(0, color=RAW, lw=0.5, zorder=1)
     else:
-        ax.set_ylabel(r'$a - a_0$ ($10^{-3}$ au)')
+        ax.set_ylabel(r'$\Delta a$ ($10^{-3}$ au)')
     ax.set_xlabel(r'$\sigma$ (deg)')
     ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
     ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+    # A circulating angle runs to 10^5 deg; a power-of-ten factor keeps the ticks readable.
+    ax.ticklabel_format(style='sci', scilimits=(-3, 4), useMathText=True)
     ax.grid(alpha=0.15, lw=0.5)
 
 
@@ -386,6 +475,38 @@ def _series_axes(fig, spec):
     """Three stacked axes sharing the time axis, in a 3x1 gridspec."""
     first = fig.add_subplot(spec[0])
     return [first, fig.add_subplot(spec[1], sharex=first), fig.add_subplot(spec[2], sharex=first)]
+
+
+def combined_rects(style: FigureStyle, fair: bool) -> Tuple[Dict[str, Tuple[float, float, float, float]], float]:
+    """Panel rectangles (x, y, width, height) of the combined figure, in inches, and its height.
+
+    Top row: three stacked time series spanning exactly the height of the square
+    recurrence (and FAIR) panels. Bottom row: three equal squares and the time colour bar.
+    """
+    lay = style.layout
+    bar_block = lay.bar_pad + lay.bar + lay.bar_room
+    side = (style.width - lay.left - lay.right - 2 * lay.gap - bar_block) / 3
+    height = lay.bottom + side + lay.row_gap + lay.top + lay.title
+
+    rects = {}
+    x = lay.left
+    for name in ('portrait', 'cycles_sigma', 'cycles_axis'):
+        rects[name] = (x, lay.bottom, side, side)
+        x += side + lay.gap
+    rects['time_bar'] = (x - lay.gap + lay.bar_pad, lay.bottom, lay.bar, side)
+
+    y = lay.bottom + side + lay.row_gap
+    squares = 2 if fair else 1
+    series_width = style.width - lay.left - lay.right - squares * (lay.gap + lay.top) - bar_block
+    panel = (lay.top - 2 * lay.stack_gap) / 3
+    for i, name in enumerate(('series_u', 'series_w', 'series_a')):
+        rects[name] = (lay.left, y + (2 - i) * (panel + lay.stack_gap), series_width, panel)
+    x = lay.left + series_width + lay.gap
+    rects['recurrence'] = (x, y, lay.top, lay.top)
+    rects['recurrence_bar'] = (x + lay.top + lay.bar_pad, y, lay.bar, lay.top)
+    if fair:
+        rects['fair'] = (x + lay.top + bar_block + lay.gap, y, lay.top, lay.top)
+    return rects, height
 
 
 def _warn(message: str):
@@ -450,7 +571,8 @@ class MMRPlotter(BasePlotter):
             self._figure = plt.figure(figsize=(width, height), dpi=self.style.dpi)
             yield self._figure
             if self.style.title and (self.d.body_name or self.d.resonance):
-                title = ', '.join(part for part in (self.d.body_name, self.d.resonance) if part)
+                body = f'Asteroid {self.d.body_name}' if self.d.body_name else ''
+                title = ', '.join(part for part in (body, self.d.label or self.d.resonance) if part)
                 self._figure.suptitle(title, y=0.985, fontsize=self.style.font_size + 3)
             if tight:
                 self._figure.tight_layout()
@@ -482,24 +604,26 @@ class MMRPlotter(BasePlotter):
         d, s, o = self.d, self.style, self.options
         fair = self._fair_drawable(warn_three_body=False)
         norm = d.time_norm()
-        with self._figure_of(s.width, s.height, tight=False) as fig:
-            ratios = [2.3, 1, 1] if fair else [3.3, 1]
-            top = fig.add_gridspec(
-                1, len(ratios), left=0.1, right=0.95, bottom=0.55, top=0.92 if s.title else 0.96, width_ratios=ratios, wspace=0.4
-            )
-            series = _series_axes(fig, top[0].subgridspec(3, 1, hspace=0.12))
-            draw_series(series, d, s, o)
-            upper = [fig.add_subplot(top[1])]
-            draw_recurrence(upper[0], d, o)
-            if fair:
-                upper.append(fig.add_subplot(top[2]))
-                draw_fair(upper[1], d, s, norm)
+        rects, height = combined_rects(s, fair)
+        with self._figure_of(s.width, height, tight=False) as fig:
 
-            bottom = fig.add_gridspec(1, 4, left=0.1, right=0.92, bottom=0.08, top=0.44, width_ratios=[1.25, 1, 1, 0.035], wspace=0.45)
-            lower = [fig.add_subplot(bottom[i]) for i in range(3)]
+            def axes(name):
+                x, y, w, h = rects[name]
+                return fig.add_axes((x / s.width, y / height, w / s.width, h / height))
+
+            series = [axes('series_u'), axes('series_w'), axes('series_a')]
+            for ax in series[1:]:
+                ax.sharex(series[0])
+            draw_series(series, d, s, o)
+            upper = [axes('recurrence')]
+            draw_recurrence(upper[0], d, o, cax=axes('recurrence_bar'))
+            if fair:
+                upper.append(axes('fair'))
+                draw_fair(upper[1], d, s, norm)
+            lower = [axes('portrait'), axes('cycles_sigma'), axes('cycles_axis')]
             draw_portrait(lower[0], d, s, o, norm)
             draw_cycles(lower[1], lower[2], d, s, norm)
-            _time_colorbar(fig, norm, f'Time ({d.unit}); cycle midpoint for stacks', cax=fig.add_subplot(bottom[3]))
+            _time_colorbar(fig, norm, f'Time ({d.unit}); cycle midpoint for stacks', cax=axes('time_bar'))
 
             letters = iter(string.ascii_lowercase)
             for ax in series:
