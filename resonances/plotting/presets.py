@@ -32,7 +32,7 @@ def _eccentricity_panel() -> Panel:
         key='eccentricity',
         data_column='e',
         x_column='times',
-        style=StyleConfig(ylabel="e", title="Eccentricity", color='black', marker=',', linestyle=''),
+        style=StyleConfig(ylabel=r"$e$", title="Eccentricity", color='black', marker=',', linestyle=''),
         required=True,
     )
 

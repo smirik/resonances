@@ -42,6 +42,11 @@ class BasePlotter:
 
     _figure = None
 
+    @property
+    def figure(self):
+        """The current matplotlib Figure, or None when nothing has been drawn."""
+        return self._figure
+
     def save(self, path: Union[str, Path], **kwargs):
         """Save the figure to file."""
         if self._figure is None:

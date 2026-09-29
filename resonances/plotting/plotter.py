@@ -154,9 +154,11 @@ class Plotter(BasePlotter):
 
         import matplotlib.pyplot as plt
 
-        # Create figure and axes
+        # Create figure and axes. Tick labels show absolute values: an offset such as
+        # '1e-5+2.2063' above the a panel is easy to miss when reading the numbers.
         n_panels = len(enabled_panels)
-        self._figure, self._axes = plt.subplots(n_panels, 1, figsize=self._config.figsize, dpi=self._config.dpi)
+        with plt.rc_context({'axes.formatter.useoffset': False}):
+            self._figure, self._axes = plt.subplots(n_panels, 1, figsize=self._config.figsize, dpi=self._config.dpi)
 
         # Ensure axes is always a list
         if n_panels == 1:

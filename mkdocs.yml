@@ -19,7 +19,7 @@ nav:
                   - "Lidov-Kozai Resonances": "lidov-kozai.ipynb"
                   - "Output data": output.ipynb
                   - "Classification": classify.md
-                  - "Phase plots": phase-plots.md
+                  - "Plots": plots.md
                   - "Cross-spectral coherence": coherence.md
                   - "Free elements": free-elements.md
                   - "Config": config.md

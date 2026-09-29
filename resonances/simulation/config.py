@@ -1,4 +1,5 @@
 import datetime
+import json
 from enum import StrEnum
 import numpy as np
 
@@ -6,7 +7,12 @@ import astdys
 from resonances.data.util import datetime_from_string
 from resonances.config import config as c
 from resonances.logger import logger
+from resonances.plotting.style import resolve_plot_options
 import os
+
+# Plot kinds accepted in `plots`. The MMR kinds are drawn for MMRs only (MMRPlotter.plot_<kind>).
+MMR_PLOT_KINDS = ('combined', 'recurrence', 'fair', 'portrait', 'cycles')
+PLOT_KINDS = ('evolution', 'ecc_vector', 'cross_spectrum', 'free_omega') + MMR_PLOT_KINDS
 
 
 class SavePlotMode(StrEnum):
@@ -123,13 +129,16 @@ class SimulationConfig:
         else:
             self.plot_path = self._verify_existing_path(self.plot_path)
 
-        # Plot types to generate (list of: evolution, phase_portrait)
+        # Plot kinds to generate (see PLOT_KINDS); an unknown name is an error, not a silent no-op
         plots_param = kwargs.get('plots', None)
         if plots_param is not None:
-            self.plots = plots_param if isinstance(plots_param, list) else [plots_param]
+            self.plots = list(plots_param) if isinstance(plots_param, (list, tuple)) else [plots_param]
         else:
             plots_str = c.get('PLOTS', 'evolution')
             self.plots = [p.strip() for p in plots_str.split(',') if p.strip()]
+        unknown = [p for p in self.plots if p not in PLOT_KINDS]
+        if unknown:
+            raise ValueError(f"Unknown plot kind(s): {', '.join(unknown)}. Valid: {', '.join(PLOT_KINDS)}")
 
         # Resonance types whose figures are drawn whatever their status (e.g. ['lidov_kozai'] to
         # always see the ZLK angle); the `plot` mode still decides for every other resonance.
@@ -140,10 +149,12 @@ class SimulationConfig:
             plot_always = [x.strip() for x in plot_always.split(',') if x.strip()]
         self.plot_always = list(plot_always)
 
-        # Phase portrait slow points percentile threshold (0-100)
-        self.phase_portrait_slow_percentile = kwargs.get(
-            'phase_portrait_slow_percentile', float(c.get('PHASE_PORTRAIT_SLOW_PERCENTILE', 95))
-        )
+        # Options of the MMR diagnostic plots (style, raw series, per-kind settings), merged over
+        # DEFAULT_PLOT_OPTIONS and validated. PLOT_OPTIONS in .env holds the same dict as JSON.
+        plot_options = kwargs.get('plot_options', None)
+        if plot_options is None and c.has('PLOT_OPTIONS') and c.get('PLOT_OPTIONS', '').strip():
+            plot_options = json.loads(c.get('PLOT_OPTIONS'))
+        self.plot_options = resolve_plot_options(plot_options)
 
     def _verify_existing_path(self, path):
         """

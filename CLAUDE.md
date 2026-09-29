@@ -12,8 +12,8 @@ Core modules in `resonances/`:
 | `lidov_kozai` | Lidov-Kozai resonance class, invariant computation |
 | `matrix` | MMR catalogs — `TwoBodyMatrix`, `ThreeBodyMatrix` with resonant semi-major axes |
 | `mmr` | MMR classes (`TwoBody`, `ThreeBody`), finder functions |
-| `plotting` | Time series, periodogram, phase, cross-spectrum and free-omega plotting with flexible configurator |
-| `resonance` | Core: classify (`classify_resonance` → `classify_from_data` → `classify_from_metrics`), factory, filtering (Butterworth low-pass; feeds periodograms and classification, not just plots), periodogram (Lomb-Scargle via astropy), cross_spectrum (Welch coherence), coherence_analysis (pair presets + the e-i exchange flag), omega_free_gate (the Lidov-Kozai status decision), planets_mappings |
+| `plotting` | Evolution plots (flexible panel configurator), MMR diagnostics (combined, recurrence, FAIR, portrait, cycles; `screen`/`paper` styles), ecc-vector, cross-spectrum and free-omega plots |
+| `resonance` | Core: classify (`classify_resonance` → `classify_from_data` → `classify_from_metrics`), factory, filtering (Butterworth low-pass; feeds periodograms and classification, not just plots), periodogram (Lomb-Scargle via astropy), cross_spectrum (Welch coherence), coherence_analysis (pair presets + the e-i exchange flag), oscillations (cycles, recurrence, FAIR coordinates for the MMR plots), omega_free_gate (the Lidov-Kozai status decision), planets_mappings |
 | `secular` | Secular resonance class, formula parser, finder, proper angle builder, free (proper) element decomposition |
 | `simulation` | Simulation engine: `batch_manager` (multicore), `body_manager`, `data_manager` (I/O), `integration` (rebound), `serializer`, `state_manager` |
 
@@ -33,9 +33,11 @@ Key files in `resonances/`:
 | `resonance/cross_spectrum.py` | Welch coherence + cross-phase, line extraction, phase criterion, e_forced/e_free. Pure math, no Body/Simulation |
 | `resonance/coherence_analysis.py` | Per-resonance-type pair presets, `analyse_resonance`, the `confirmed_ei` flag, CSV row builders. Changes no status |
 | `resonance/omega_free_gate.py` | The free-omega gate: confirms status 2, demotes to -2 (kinematic libration) or withholds at -9. The only post-classification status change |
+| `resonance/oscillations.py` | Cycles (max to max), recurrence distance, FAIR coordinates. Pure math feeding the MMR plots; changes no status |
+| `plotting/mmr_plots.py` | `MMRDiagnostics` + `draw_*` panels + `MMRPlotter` (standalone and combined figures); `plotting/style.py` holds styles and `plot_options` defaults/validation |
 | `secular/free_elements.py` | Forced/free split by least squares at the planetary fundamentals: cluster the candidates at 2/T, fit one representative each, mask the origin, measure the three rates. Pure signal processing, no Body or status |
 
-Detailed documentation lives in `docs/` — see `docs/classify.md` for classification logic, `docs/coherence.md` for cross spectra and the ZLK gate, `docs/free-elements.md` for the forced/free split and the free omega, `docs/config.md` for all config options.
+Detailed documentation lives in `docs/` — see `docs/classify.md` for classification logic, `docs/coherence.md` for cross spectra and the ZLK gate, `docs/free-elements.md` for the forced/free split and the free omega, `docs/plots.md` for plot kinds and options, `docs/config.md` for all config options.
 
 ## Important notes
 
@@ -47,6 +49,7 @@ Detailed documentation lives in `docs/` — see `docs/classify.md` for classific
 - The e-i coherence check no longer changes any status; it produces `confirmed_ei`. Its validity band (`T/(5·n_seg)`) sits below the real Lidov-Kozai periods on the short baselines the package now targets (see `docs/coherence.md`).
 - The cluster representative in `free_elements` (`PRIORITY_E`, `PRIORITY_I`) is a modelling assumption, not a free convention — a different member changes the verdict on 3752 and 591986. What must stay true, and is tested, is that no choice ever turns a non-librator into a libration.
 - The method does not apply to co-orbitals: their forced term is the perturber's own vector, not a planetary fundamental. A confident-looking straight line there is not a measurement (see `docs/free-elements.md`).
+- The MMR diagnostic plots (recurrence D, cycles) are for reading figures: D uses the object's own scales and is not comparable between objects. Nothing there may feed a status.
 - Do NOT change `times / (2 * np.pi)` conversions or the `save_body(body, times)` signature. The per-call conversion is intentional.
 
 ## Documenting

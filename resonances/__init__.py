@@ -44,7 +44,7 @@ from .plotting import (
     Panel,
     StyleConfig,
     get_preset,
-    PhasePlotter,
+    MMRPlotter,
     EccentricityVectorPlotter,
     CrossSpectrumPlotter,
     FreeOmegaPlotter,

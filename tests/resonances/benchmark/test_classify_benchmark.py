@@ -80,7 +80,7 @@ def _build_simulation(truth: pd.DataFrame) -> resonances.Simulation:
         kwargs.update(
             save="all",
             plot="all",
-            plots=["evolution", "phase_portrait"],
+            plots=["evolution", "portrait"],
             plot_subfolder_strategy="status",
             batch_size=50,
             batch_threshold=50,

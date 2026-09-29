@@ -3,12 +3,13 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from .config import SimulationConfig, SavePlotMode
+from .config import SimulationConfig, SavePlotMode, MMR_PLOT_KINDS
 from resonances.body import Body
 from resonances.logger import logger
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, LidovKozaiParameters
-from resonances.plotting import Plotter, PhasePlotter, EccentricityVectorPlotter, CrossSpectrumPlotter, FreeOmegaPlotter
+from resonances.mmr.mmr import MMR
+from resonances.plotting import Plotter, EccentricityVectorPlotter, CrossSpectrumPlotter, FreeOmegaPlotter, MMRPlotter
 from resonances.resonance import coherence_analysis, omega_free_gate
 from resonances.secular import free_elements
 from resonances.resonance.classify.models import ResonanceStatus
@@ -161,9 +162,10 @@ class DataManager:
             if 'evolution' in plots_to_generate:
                 self._plot_evolution(body, resonance, simulation, plot_path)
 
-            # Phase portrait plot
-            if 'phase_portrait' in plots_to_generate:
-                self._plot_phase_portrait(body, resonance, simulation, plot_path)
+            # MMR diagnostics: combined figure and its panels as standalone figures
+            mmr_kinds = [kind for kind in MMR_PLOT_KINDS if kind in plots_to_generate]
+            if mmr_kinds and isinstance(resonance, MMR):
+                self._plot_mmr(body, resonance, simulation, plot_path, mmr_kinds)
 
             # Cross spectra of the configured pairs
             if 'cross_spectrum' in plots_to_generate:
@@ -193,26 +195,14 @@ class DataManager:
         self._show_or_save(plotter, plot_filename)
         plotter.close()
 
-    def _plot_phase_portrait(self, body: Body, resonance, simulation, plot_path: str):
-        """Plot all phase portrait variants (filtered, unfiltered, slow points)."""
-        plotter = PhasePlotter.from_body(body, resonance, simulation)
-        res_key = resonance.to_s()
-        img_type = self.config.image_type
-
-        # Filtered phase portrait
-        plotter.plot_phase_portrait_filtered()
-        self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-filtered.{img_type}')
-
-        # Unfiltered phase portrait
-        plotter.plot_phase_portrait_unfiltered()
-        self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-unfiltered.{img_type}')
-
-        # Slow points phase portrait
-        percentile = getattr(self.config, 'phase_portrait_slow_percentile', 95)
-        plotter.plot_phase_portrait_slow(percentile=percentile)
-        self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-percentile{int(percentile)}.{img_type}')
-
-        plotter.close()
+    def _plot_mmr(self, body: Body, resonance, simulation, plot_path: str, kinds):
+        """MMR diagnostic figures; the oscillation quantities are computed once for all kinds."""
+        plotter = MMRPlotter.from_body(body, resonance, simulation, options=self.config.plot_options)
+        stem = f'{plot_path}/{body.name}-{resonance.to_s()}'
+        for kind in kinds:
+            if plotter.plot(kind):
+                self._show_or_save(plotter, f'{stem}-{kind}.{self.config.image_type}')
+                plotter.close()
 
     def _plot_ecc_vector(self, body: Body, simulation, plot_path: str):
         """Plot the non-singular eccentricity vector k = e*cos(omega), h = e*sin(omega)."""

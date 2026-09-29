@@ -35,6 +35,7 @@ class SimulationSerializer:
         config["_skip_path_verification"] = True
         if isinstance(config.get("date"), str):
             config["date"] = cls._parse_datetime(config["date"])
+        cls._drop_removed_plot_kinds(config)
 
         from resonances.simulation.simulation import Simulation
 
@@ -134,6 +135,18 @@ class SimulationSerializer:
             setup[f"basis_{kind}"] = list(basis)
             setup[f"dropped_{kind}"] = dropped
         return setup
+
+    @classmethod
+    def _drop_removed_plot_kinds(cls, config: Dict[str, Any]) -> None:
+        """Let simulations saved before a plot kind was removed still be restored."""
+        from resonances.simulation.config import PLOT_KINDS
+
+        plots = config.get("plots")
+        if isinstance(plots, list):
+            removed = [kind for kind in plots if kind not in PLOT_KINDS]
+            if removed:
+                logger.warning(f"Ignoring removed plot kind(s) {', '.join(removed)} (see docs/plots.md)")
+                config["plots"] = [kind for kind in plots if kind in PLOT_KINDS]
 
     @classmethod
     def _config_to_dict(cls, config) -> Dict[str, Any]:
@@ -323,7 +336,8 @@ class SimulationSerializer:
                 continue
             planet_name = planet_csv.stem.replace("data-planet-", "")
             df = pd.read_csv(planet_csv)
-            sim.integration_engine.planets_data[planet_name] = df.to_dict(orient="records")
+            # Same shape as after a live run: one array per orbital element.
+            sim.integration_engine.planets_data[planet_name] = {column: df[column].to_numpy() for column in df.columns}
 
     @classmethod
     def _restore_free_elements(cls, sim: "Simulation", base_dir: Path, files_manifest: Dict[str, Any], setup: Dict[str, Any]) -> None:
