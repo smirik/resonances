@@ -14,7 +14,7 @@ sim = resonances.Simulation(
 | Kind | Resonances | File (`{body}-{key}-…`) | What it shows |
 |------|------------|-------------------------|---------------|
 | `evolution` | all | `{body}-{key}.png` | Angle, a, e, i and periodograms against time (`PLOT_CONFIG` preset) |
-| `combined` | MMR | `-combined` | All MMR diagnostics below on one figure |
+| `combined` | MMR | `combined/…-combined` | All MMR diagnostics below on one figure |
 | `recurrence` | MMR | `-recurrence` | Recurrence of the state (σ, σ̇) |
 | `fair` | two-body MMR | `-fair` | FAIR plane: mean anomaly against the longitude difference to the planet |
 | `portrait` | MMR | `-portrait` | Phase portrait σ–σ̇ (or σ–a) |
@@ -23,7 +23,7 @@ sim = resonances.Simulation(
 | `cross_spectrum` | all | `-coherence-{pair}` | Coherence and cross-phase, see [Cross-spectral coherence](coherence.md) |
 | `free_omega` | Lidov-Kozai | `-free-omega-…` | Free argument of pericentre, see [Free elements](free-elements.md) |
 
-An unknown name raises an error. MMR kinds are skipped for other resonances. The image format is `image_type` (`png` by default, or `pdf`).
+Every time colour bar (MMR, ecc-vector, free-ω) uses the same map, viridis without its palest yellow, and the label `Time (unit)`. An unknown name raises an error. MMR kinds are skipped for other resonances. The image format is `image_type` (`png` by default, or `pdf`). Combined figures go to their own folder, `plot_path/combined/`, so they can be browsed one after another; with `plot_subfolder_strategy='status'` it is split by status like `plot_path` itself (`combined/resonant/`, `combined/transient/`, …).
 
 ## MMR diagnostics
 

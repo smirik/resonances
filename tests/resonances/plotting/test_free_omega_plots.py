@@ -11,6 +11,7 @@ from resonances.body import Body  # noqa: E402
 from resonances.data.const import PLANETARY_FREQUENCIES  # noqa: E402
 from resonances.plotting import EccentricityVectorPlotter, FreeOmegaPlotter  # noqa: E402
 from resonances.plotting.base import time_unit  # noqa: E402
+from resonances.plotting.style import time_cmap  # noqa: E402
 from resonances.secular.free_elements import RAD_PER_ARCSEC, free_elements  # noqa: E402
 
 
@@ -100,6 +101,21 @@ class TestFreeOmegaPlotter:
 
         assert ax.get_xlim() == (0.0, 360.0)
         assert ax.get_ylim()[0] == 0.0
+
+    @pytest.mark.parametrize('draw', ['ecc_vector', 'free_vector', 'free_portrait'])
+    def test_time_colour_bar_matches_the_mmr_plots(self, draw):
+        # 4 Myr of data: the bar is in Myr, with the MMR plots' colour map and wording.
+        body = _body(free_rate_i=-20.0)
+        body.build_free_elements(sampling_years=None)
+        if draw == 'ecc_vector':
+            plotter = EccentricityVectorPlotter.from_body(body).plot()
+        else:
+            plotter = getattr(FreeOmegaPlotter.from_body(body), 'plot_' + draw.split('_')[1])()
+
+        scatter = plotter._axes[0].collections[0]
+        assert scatter.get_cmap() is time_cmap()
+        assert scatter.colorbar.ax.get_ylabel() == 'Time (Myr)'
+        plotter.close()
 
     def test_vector_honours_the_osculating_window(self):
         # The two portraits are only comparable if they are drawn on the same scale, so an

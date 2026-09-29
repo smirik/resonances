@@ -175,6 +175,11 @@ def time_cmap():
     return ListedColormap(matplotlib.colormaps['viridis'](np.linspace(0.0, 0.9, 256)), name='viridis_trunc')
 
 
+def time_label(unit: str) -> str:
+    """Label of every time colour bar, so all figures read the same."""
+    return f'Time ({unit})'
+
+
 # Defaults of `plot_options` (SimulationConfig / PLOT_OPTIONS). Every nested key is
 # validated against this tree, so a typo fails loudly instead of being ignored.
 DEFAULT_PLOT_OPTIONS: Dict[str, Any] = {

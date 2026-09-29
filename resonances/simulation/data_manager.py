@@ -34,6 +34,9 @@ class DataManager:
         _S.CHAOTIC: 'chaotic',
     }
 
+    # Folder of the combined MMR figures, under plot_path (status folders go inside it)
+    COMBINED_FOLDER = 'combined'
+
     # Fields extracted per segment for the segments summary CSV
     SEGMENT_FIELDS = ('revolutions_true', 'trend_to_oscillation', 'amplitude', 'sign_dominance', 'mean_sigma_dot')
 
@@ -198,10 +201,11 @@ class DataManager:
     def _plot_mmr(self, body: Body, resonance, simulation, plot_path: str, kinds):
         """MMR diagnostic figures; the oscillation quantities are computed once for all kinds."""
         plotter = MMRPlotter.from_body(body, resonance, simulation, options=self.config.plot_options)
-        stem = f'{plot_path}/{body.name}-{resonance.to_s()}'
         for kind in kinds:
             if plotter.plot(kind):
-                self._show_or_save(plotter, f'{stem}-{kind}.{self.config.image_type}')
+                # Combined figures get a folder of their own, to be browsed one after another.
+                folder = self._get_plot_path(body, resonance, subdir=self.COMBINED_FOLDER) if kind == 'combined' else plot_path
+                self._show_or_save(plotter, f'{folder}/{body.name}-{resonance.to_s()}-{kind}.{self.config.image_type}')
                 plotter.close()
 
     def _plot_ecc_vector(self, body: Body, simulation, plot_path: str):
@@ -246,23 +250,26 @@ class DataManager:
             self._show_or_save(plotter, f'{plot_path}/{body.name}-{res_key}-coherence-{pair}.{self.config.image_type}')
             plotter.close()
 
-    def _get_plot_path(self, body: Body, resonance) -> str:
+    def _get_plot_path(self, body: Body, resonance, subdir: str | None = None) -> str:
         """
         Get the plot path, optionally with subfolder based on strategy.
 
+        `subdir` (e.g. COMBINED_FOLDER) is put under `plot_path`, before the status folder.
         If plot_subfolder_strategy is 'status', creates subfolders based on
         ResonanceStatus enum values (see STATUS_FOLDERS mapping).
         """
-        base_path = self.config.plot_path
-
+        parts = [self.config.plot_path]
+        if subdir:
+            parts.append(subdir)
         if self.config.plot_subfolder_strategy == 'status':
             status = body.statuses.get(resonance.to_s(), 0)
-            subfolder = self.STATUS_FOLDERS.get(status, 'non-resonant')
-            plot_path = f'{base_path}/{subfolder}'
-            Path(plot_path).mkdir(parents=True, exist_ok=True)
-            return plot_path
+            parts.append(self.STATUS_FOLDERS.get(status, 'non-resonant'))
 
-        return base_path
+        if len(parts) == 1:
+            return parts[0]
+        plot_path = '/'.join(parts)
+        Path(plot_path).mkdir(parents=True, exist_ok=True)
+        return plot_path
 
     def save_planets(self, times, planets_data):
         """Save planetary data."""

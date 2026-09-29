@@ -10,6 +10,7 @@ from typing import Optional
 from resonances.body import Body
 from resonances.logger import logger
 from .base import BasePlotter, time_unit, title_prefix
+from .style import time_cmap, time_label
 
 
 def _scatter_colored_by_time(ax, x, y, times, marker_size: float = 7.5):
@@ -17,8 +18,8 @@ def _scatter_colored_by_time(ax, x, y, times, marker_size: float = 7.5):
     import matplotlib.pyplot as plt
 
     divisor, unit = time_unit(times[-1] - times[0]) if len(times) > 1 else (1.0, 'yr')
-    scatter = ax.scatter(x, y, c=np.asarray(times) / divisor, cmap='viridis', s=marker_size, marker='.', linewidths=0, alpha=0.7)
-    plt.colorbar(scatter, ax=ax).set_label(f'Time, {unit}', fontsize=10)
+    scatter = ax.scatter(x, y, c=np.asarray(times) / divisor, cmap=time_cmap(), s=marker_size, marker='.', linewidths=0, alpha=0.7)
+    plt.colorbar(scatter, ax=ax).set_label(time_label(unit), fontsize=10)
     return scatter
 
 

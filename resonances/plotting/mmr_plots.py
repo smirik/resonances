@@ -47,6 +47,7 @@ from .style import (
     SeriesMode,
     resolve_plot_options,
     time_cmap,
+    time_label,
 )
 
 TWO_PI = 2 * np.pi
@@ -593,7 +594,7 @@ class MMRPlotter(BasePlotter):
         with self._figure_of(self.style.panel_size * aspect, self.style.panel_size) as fig:
             ax = fig.add_subplot()
             draw(ax, norm)
-            _time_colorbar(fig, norm, f'Time ({self.d.unit})', ax=ax, fraction=0.046, pad=0.03)
+            _time_colorbar(fig, norm, time_label(self.d.unit), ax=ax, fraction=0.046, pad=0.03)
         return self
 
     # -- figures
@@ -622,7 +623,7 @@ class MMRPlotter(BasePlotter):
             lower = [axes('portrait'), axes('cycles_sigma'), axes('cycles_axis')]
             draw_portrait(lower[0], d, s, o, norm)
             draw_cycles(lower[1], lower[2], d, s, norm)
-            _time_colorbar(fig, norm, f'Time ({d.unit}); cycle midpoint for stacks', cax=axes('time_bar'))
+            _time_colorbar(fig, norm, f'{time_label(d.unit)}; cycle midpoint for stacks', cax=axes('time_bar'))
 
             letters = iter(string.ascii_lowercase)
             for ax in series:

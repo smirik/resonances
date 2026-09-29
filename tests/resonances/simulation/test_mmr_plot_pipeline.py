@@ -86,7 +86,17 @@ class TestDispatch:
         sim, body, resonance = synthetic_mmr(tmp_path, plots=MMR_PLOTS)
         sim.data_manager.plot_body(body, sim)
         for kind in MMR_PLOTS:
-            assert (tmp_path / f'synthetic-{resonance.to_s()}-{kind}.png').exists(), kind
+            folder = tmp_path / 'combined' if kind == 'combined' else tmp_path
+            assert (folder / f'synthetic-{resonance.to_s()}-{kind}.png').exists(), kind
+
+    def test_combined_goes_to_its_status_folder(self, tmp_path):
+        sim, body, resonance = synthetic_mmr(tmp_path, plots=['combined', 'portrait'], plot_subfolder_strategy='status')
+        body.statuses[resonance.to_s()] = 1  # transient
+        sim.data_manager.plot_body(body, sim)
+        assert [p.relative_to(tmp_path).as_posix() for p in sorted(tmp_path.rglob('*.png'))] == [
+            f'combined/transient/synthetic-{resonance.to_s()}-combined.png',
+            f'transient/synthetic-{resonance.to_s()}-portrait.png',
+        ]
 
     def test_kinds_are_opt_in(self, tmp_path):
         sim, body, _ = synthetic_mmr(tmp_path, plots=['portrait'])
@@ -96,21 +106,21 @@ class TestDispatch:
     def test_pdf(self, tmp_path):
         sim, body, resonance = synthetic_mmr(tmp_path, plots=['combined'], image_type='pdf', plot_options={'style': 'paper'})
         sim.data_manager.plot_body(body, sim)
-        assert (tmp_path / f'synthetic-{resonance.to_s()}-combined.pdf').stat().st_size > 0
+        assert (tmp_path / 'combined' / f'synthetic-{resonance.to_s()}-combined.pdf').stat().st_size > 0
 
     def test_mmr_kinds_skip_other_resonances(self, tmp_path):
         sim, _, _ = synthetic_mmr(tmp_path, plots=MMR_PLOTS)
         sim.body_manager.add_body({'a': 2.5, 'e': 0.2, 'inc': 0.5, 'Omega': 0.0, 'omega': 1.0, 'M': 0.0}, 'LK', name='lk')
         assert sim.bodies[-1].lidov_kozai_resonances
         sim.data_manager.plot_body(sim.bodies[-1], sim)
-        assert not list(tmp_path.glob('lk-*'))
+        assert not list(tmp_path.rglob('lk-*'))
 
     def test_fair_without_planet_data_warns_and_skips(self, tmp_path):
         sim, body, resonance = synthetic_mmr(tmp_path, planets=False, plots=['fair', 'combined'])
         with pytest.warns(UserWarning, match='save_planets'):
             sim.data_manager.plot_body(body, sim)
         assert not (tmp_path / f'synthetic-{resonance.to_s()}-fair.png').exists()
-        assert (tmp_path / f'synthetic-{resonance.to_s()}-combined.png').exists()
+        assert (tmp_path / 'combined' / f'synthetic-{resonance.to_s()}-combined.png').exists()
 
     def test_coarse_output_warns_but_draws(self, tmp_path):
         # a = 3.2776 au -> P = 5.93 yr; one sample per 5 yr is 0.84 of the orbit.
@@ -128,7 +138,7 @@ class TestDispatch:
     def test_three_body_combined_omits_fair_silently(self, tmp_path, recwarn):
         sim, body, resonance = synthetic_mmr(tmp_path, resonance='4J-2S-1', planets=False, plots=['combined'])
         sim.data_manager.plot_body(body, sim)
-        assert (tmp_path / f'synthetic-{resonance.to_s()}-combined.png').exists()
+        assert (tmp_path / 'combined' / f'synthetic-{resonance.to_s()}-combined.png').exists()
         assert not [w for w in recwarn if 'FAIR' in str(w.message)]
 
 
