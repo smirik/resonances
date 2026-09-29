@@ -27,11 +27,9 @@ class Cycle:
     """One maximum-to-maximum interval of an angle (times in years, angle in radians)."""
 
     start: float
-    minimum: float
     end: float
     diameter: float  # mean of the two maxima minus the minimum
     centre: float  # halfway between that mean and the minimum
-    closure_error: float  # |difference of the two maxima| / diameter
 
     @property
     def period(self) -> float:
@@ -44,11 +42,6 @@ class Recurrence:
 
     times: np.ndarray
     distance: np.ndarray
-
-
-def angle_rate(times: np.ndarray, sigma: np.ndarray) -> np.ndarray:
-    """d(sigma)/dt by second-order differences (rad per unit of `times`)."""
-    return np.gradient(np.asarray(sigma, dtype=float), np.asarray(times, dtype=float))
 
 
 def default_prominence(sigma: np.ndarray) -> float:
@@ -81,47 +74,17 @@ def find_cycles(times: np.ndarray, sigma: np.ndarray, prominence: Optional[float
         cycles.append(
             Cycle(
                 start=float(times[left]),
-                minimum=float(times[bottom]),
                 end=float(times[right]),
                 diameter=float(diameter),
                 centre=float((upper + sigma[bottom]) / 2),
-                closure_error=float(abs(sigma[right] - sigma[left]) / diameter),
             )
         )
     return cycles
 
 
-def summarize_cycles(cycles: List[Cycle]) -> dict:
-    """Scale-free description of a cycle sequence.
-
-    `centre_net_in_diameters` and `centre_direction_persistence` (net over total centre
-    motion; 1 = one-way drift, ~0 = wandering) separate a libration whose centre stays
-    put from oscillations riding on a drift.
-    """
-    result = {'count': len(cycles)}
-    if not cycles:
-        return result
-    diameters = np.array([c.diameter for c in cycles])
-    centres = np.array([c.centre for c in cycles])
-    diameter = float(np.median(diameters))
-    total = float(np.abs(np.diff(centres)).sum())
-    net = float(abs(centres[-1] - centres[0]))
-    result.update(
-        {
-            'period_median': float(np.median([c.period for c in cycles])),
-            'diameter_median': diameter,
-            'centre_span_in_diameters': float(np.ptp(centres) / diameter),
-            'centre_net_in_diameters': net / diameter,
-            'centre_direction_persistence': net / total if total > 1e-10 else None,
-            'closure_error_median': float(np.median([c.closure_error for c in cycles])),
-        }
-    )
-    return result
-
-
-def _cycle_mask(times: np.ndarray, cycle: Cycle) -> np.ndarray:
-    times = np.asarray(times)
-    return (times >= cycle.start) & (times <= cycle.end)
+def _cycle_slice(times: np.ndarray, cycle: Cycle) -> slice:
+    """Samples of one cycle, ends included (times are increasing)."""
+    return slice(int(np.searchsorted(times, cycle.start, 'left')), int(np.searchsorted(times, cycle.end, 'right')))
 
 
 def cycle_centres(cycles: List[Cycle], times: np.ndarray, axis: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -129,17 +92,17 @@ def cycle_centres(cycles: List[Cycle], times: np.ndarray, axis: np.ndarray) -> T
     axis = np.asarray(axis, dtype=float)
     mid = np.array([(c.start + c.end) / 2 for c in cycles])
     centre = np.array([c.centre for c in cycles])
-    axis_mid = np.array([(axis[m].max() + axis[m].min()) / 2 for m in (_cycle_mask(times, c) for c in cycles)])
+    axis_mid = np.array([(axis[m].max() + axis[m].min()) / 2 for m in (_cycle_slice(times, c) for c in cycles)])
     return mid, centre, axis_mid
 
 
 def fold_cycle(cycle: Cycle, times: np.ndarray, series: np.ndarray, subtract_median: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     """`series` over one cycle against the cycle fraction 0 (first maximum) .. 1 (next)."""
-    mask = _cycle_mask(times, cycle)
-    values = np.asarray(series, dtype=float)[mask]
+    part = _cycle_slice(times, cycle)
+    values = np.asarray(series, dtype=float)[part]
     if subtract_median and values.size:
         values = values - np.median(values)
-    return (np.asarray(times)[mask] - cycle.start) / cycle.period, values
+    return (np.asarray(times)[part] - cycle.start) / cycle.period, values
 
 
 def recurrence_scales(sigma: np.ndarray, rate: np.ndarray, cycles: Optional[List[Cycle]] = None) -> Tuple[float, float]:
@@ -162,7 +125,7 @@ def recurrence(
     rate: np.ndarray,
     sigma_scale: float,
     rate_scale: float,
-    max_points: int = 700,
+    max_points: int,
     exclude_samples: int = 2,
 ) -> Recurrence:
     """Distance between the states (sigma, sigma_dot) at every pair of decimated times.
@@ -176,10 +139,20 @@ def recurrence(
     times = np.asarray(times, dtype=float)
     n = len(times)
     idx = np.unique(np.round(np.linspace(0, n - 1, min(max_points, n))).astype(int))
-    y, r = np.asarray(sigma, dtype=float)[idx], np.asarray(rate, dtype=float)[idx]
-    distance = np.hypot((y[:, None] - y) / sigma_scale, (r[:, None] - r) / rate_scale)
-    k = np.arange(len(idx))
-    distance[np.abs(k[:, None] - k) <= exclude_samples] = np.nan
+    y = np.asarray(sigma, dtype=float)[idx] / sigma_scale
+    r = np.asarray(rate, dtype=float)[idx] / rate_scale
+    # In place: the matrix reaches 2500^2, so no further n^2 temporaries.
+    distance = np.subtract.outer(y, y)
+    np.square(distance, out=distance)
+    rate_part = np.subtract.outer(r, r)
+    np.square(rate_part, out=rate_part)
+    distance += rate_part
+    del rate_part
+    np.sqrt(distance, out=distance)
+    m = len(idx)
+    for offset in range(min(exclude_samples, m - 1) + 1):
+        rows = np.arange(m - offset)
+        distance[rows, rows + offset] = distance[rows + offset, rows] = np.nan
     return Recurrence(times=times[idx], distance=distance)
 
 
@@ -196,8 +169,7 @@ def fair_coordinates(
     delta = np.asarray(planet_longitude, dtype=float) - np.asarray(longitude, dtype=float)
     if not inner:
         delta = -delta
-    two_pi = 2 * np.pi
-    return np.degrees(np.mod(mean_anomaly, two_pi)), np.degrees(np.mod(delta, two_pi))
+    return np.degrees(np.mod(mean_anomaly, 2 * np.pi)), np.degrees(np.mod(delta, 2 * np.pi))
 
 
 def fair_step_fraction(times: np.ndarray, axis: np.ndarray) -> float:

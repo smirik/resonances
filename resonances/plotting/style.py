@@ -14,6 +14,10 @@ from typing import Any, Dict, Optional
 import numpy as np
 
 
+# MMR plot kinds, as named in `plots`; each is drawn by MMRPlotter.plot_<kind>.
+MMR_PLOT_KINDS = ('combined', 'recurrence', 'fair', 'portrait', 'cycles')
+
+
 class PlotStyle(StrEnum):
     SCREEN = 'screen'
     PAPER = 'paper'

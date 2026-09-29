@@ -31,11 +31,13 @@ from matplotlib.ticker import MaxNLocator
 
 from resonances.logger import logger
 from resonances.resonance import oscillations as osc
+from resonances.resonance.classify.classify import calc_sigma_derivative
 from .base import BasePlotter, time_unit
 from .style import (
     CENTRE,
     ENVELOPE,
     INK,
+    MMR_PLOT_KINDS,
     OUT_OF_FOCUS,
     RAW,
     STYLES,
@@ -92,6 +94,7 @@ class MMRDiagnostics:
     axis_reference: float = field(init=False)  # a0: median filtered a over the focus
     divisor: float = field(init=False)  # years per display time unit
     unit: str = field(init=False)  # 'yr', 'kyr' or 'Myr'
+    _recurrences: Dict[Tuple[int, int], osc.Recurrence] = field(init=False, default_factory=dict, repr=False)
 
     _SERIES = ('times', 'sigma', 'sigma_raw', 'sigma_filtered', 'axis', 'axis_filtered', 'mean_anomaly', 'longitude')
 
@@ -104,8 +107,8 @@ class MMRDiagnostics:
             self._reverse()
         t = self.times
         self.mask = np.ones(len(t), dtype=bool) if self.focus is None else (t >= min(self.focus)) & (t <= max(self.focus))
-        self.rate = osc.angle_rate(t, self.sigma_filtered)
-        self.raw_rate = osc.angle_rate(t, self.sigma_raw)
+        self.rate = calc_sigma_derivative(t, self.sigma_filtered)
+        self.raw_rate = calc_sigma_derivative(t, self.sigma_raw)
         self.cycles = osc.find_cycles(t[self.mask], self.sigma_filtered[self.mask], self.prominence)
         self.axis_reference = float(np.median(self.axis_filtered[self.mask]))
         self.divisor, self.unit = time_unit(abs(t[-1] - t[0]))
@@ -138,6 +141,17 @@ class MMRDiagnostics:
     def milli_au(self, axis: np.ndarray) -> np.ndarray:
         """a - a0 in 10^-3 au."""
         return (np.asarray(axis) - self.axis_reference) * MILLI
+
+    def recurrence(self, points: int, exclude_samples: int) -> osc.Recurrence:
+        """The recurrence matrix, built once per size: the combined and standalone figures share it.
+
+        Scales come from the focus, like the cycles; the matrix covers the whole record.
+        """
+        key = (points, exclude_samples)
+        if key not in self._recurrences:
+            scales = osc.recurrence_scales(self.sigma_filtered[self.mask], self.rate[self.mask], self.cycles)
+            self._recurrences[key] = osc.recurrence(self.times, self.sigma_filtered, self.rate, *scales, points, exclude_samples)
+        return self._recurrences[key]
 
     def time_norm(self) -> Normalize:
         return Normalize(self.t[0], self.t[-1])
@@ -357,18 +371,7 @@ def draw_recurrence(ax, d: MMRDiagnostics, options: Dict[str, Any], cax=None):
     The bar goes into `cax` when given (combined figure), otherwise above the panel.
     """
     m = d.mask
-    # Scales come from the focus, like the cycles; the matrix covers the whole record.
-    sigma_scale, rate_scale = osc.recurrence_scales(d.sigma_filtered[m], d.rate[m], d.cycles)
-    points = recurrence_points(d, options['recurrence']['max_points'])
-    rec = osc.recurrence(
-        d.times,
-        d.sigma_filtered,
-        d.rate,
-        sigma_scale,
-        rate_scale,
-        max_points=points,
-        exclude_samples=options['recurrence']['exclude_samples'],
-    )
+    rec = d.recurrence(recurrence_points(d, options['recurrence']['max_points']), options['recurrence']['exclude_samples'])
     cmap = mpl.colormaps['gray'].copy()
     cmap.set_bad('white')
     extent = [rec.times[0] / d.divisor, rec.times[-1] / d.divisor] * 2
@@ -431,13 +434,15 @@ def draw_portrait(ax, d: MMRDiagnostics, style: FigureStyle, options: Dict[str, 
 
 def draw_cycles(ax_sigma, ax_axis, d: MMRDiagnostics, style: FigureStyle, norm: Normalize):
     """sigma over each cycle, and a - median(a) over the same cycle, on one period."""
-    cmap = time_cmap()
-    for cycle in d.cycles:
-        color = cmap(norm((cycle.start + cycle.end) / 2 / d.divisor))
-        phase, sigma = osc.fold_cycle(cycle, d.times, d.sigma_filtered)
-        ax_sigma.plot(phase, sigma, color=color, lw=style.line, alpha=0.85)
-        phase, axis = osc.fold_cycle(cycle, d.times, d.axis_filtered, subtract_median=True)
-        ax_axis.plot(phase, axis * MILLI, color=color, lw=style.line, alpha=0.85)
+    if d.cycles:
+        mids = np.array([(c.start + c.end) / 2 for c in d.cycles]) / d.divisor
+        for ax, series, scale, centred in ((ax_sigma, d.sigma_filtered, 1.0, False), (ax_axis, d.axis_filtered, MILLI, True)):
+            folded = [np.column_stack(osc.fold_cycle(c, d.times, series, subtract_median=centred)) * (1.0, scale) for c in d.cycles]
+            # One collection for all cycles: thousands of separate lines would dominate drawing.
+            lines = LineCollection(folded, cmap=time_cmap(), norm=norm, linewidth=style.line, alpha=0.85)
+            lines.set_array(mids)
+            ax.add_collection(lines)
+            ax.autoscale_view()
     ax_sigma.set_ylabel(r'$\sigma$ (rad)')
     ax_axis.set_ylabel(r'$a - \tilde a_{\mathrm{cycle}}$ ($10^{-3}$ au)')
     for ax in (ax_sigma, ax_axis):
@@ -469,12 +474,6 @@ def _time_colorbar(fig, norm: Normalize, label: str, **where):
     bar.set_label(label)
     bar.outline.set_linewidth(0.5)
     return bar
-
-
-def _series_axes(fig, spec):
-    """Three stacked axes sharing the time axis, in a 3x1 gridspec."""
-    first = fig.add_subplot(spec[0])
-    return [first, fig.add_subplot(spec[1], sharex=first), fig.add_subplot(spec[2], sharex=first)]
 
 
 def combined_rects(style: FigureStyle, fair: bool) -> Tuple[Dict[str, Tuple[float, float, float, float]], float]:
@@ -526,15 +525,6 @@ class MMRPlotter(BasePlotter):
         >>> plotter.save('recurrence.png').close()
     """
 
-    # Plot kind (as in SimulationConfig.plots) -> method drawing it.
-    KINDS = {
-        'combined': 'plot_combined',
-        'recurrence': 'plot_recurrence',
-        'fair': 'plot_fair',
-        'portrait': 'plot_portrait',
-        'cycles': 'plot_cycles',
-    }
-
     def __init__(self, diagnostics: MMRDiagnostics, options: Optional[Dict[str, Any]] = None):
         self.d = diagnostics
         self.options = resolve_plot_options(options)
@@ -548,11 +538,11 @@ class MMRPlotter(BasePlotter):
 
     def plot(self, kind: str) -> bool:
         """Draw one plot kind; False when there is nothing to draw (FAIR unavailable)."""
-        if kind not in self.KINDS:
-            raise ValueError(f"Unknown MMR plot kind '{kind}'. Known: {', '.join(self.KINDS)}")
+        if kind not in MMR_PLOT_KINDS:
+            raise ValueError(f"Unknown MMR plot kind '{kind}'. Known: {', '.join(MMR_PLOT_KINDS)}")
         if self._figure is not None:
             self.close()
-        getattr(self, self.KINDS[kind])()
+        getattr(self, f'plot_{kind}')()
         return self._figure is not None
 
     def save(self, path, **kwargs):
@@ -597,6 +587,15 @@ class MMRPlotter(BasePlotter):
             )
         return True
 
+    def _time_panel(self, aspect: float, draw) -> 'MMRPlotter':
+        """One panel coloured by time, with its time colour bar; `draw(ax, norm)` fills it."""
+        norm = self.d.time_norm()
+        with self._figure_of(self.style.panel_size * aspect, self.style.panel_size) as fig:
+            ax = fig.add_subplot()
+            draw(ax, norm)
+            _time_colorbar(fig, norm, f'Time ({self.d.unit})', ax=ax, fraction=0.046, pad=0.03)
+        return self
+
     # -- figures
 
     def plot_combined(self) -> 'MMRPlotter':
@@ -632,12 +631,6 @@ class MMRPlotter(BasePlotter):
                 _letter(ax, next(letters))
         return self
 
-    def plot_series(self) -> 'MMRPlotter':
-        with self._figure_of(self.style.width, self.style.height * 0.6, tight=False) as fig:
-            grid = fig.add_gridspec(3, 1, hspace=0.1, left=0.08, right=0.98, bottom=0.1, top=0.9 if self.style.title else 0.97)
-            draw_series(_series_axes(fig, grid), self.d, self.style, self.options)
-        return self
-
     def plot_recurrence(self) -> 'MMRPlotter':
         with self._figure_of(self.style.panel_size * 1.15, self.style.panel_size) as fig:
             draw_recurrence(fig.add_subplot(), self.d, self.options)
@@ -647,20 +640,10 @@ class MMRPlotter(BasePlotter):
         """FAIR plane; warns and draws nothing when it is not available."""
         if not self._fair_drawable(warn_three_body=True):
             return self
-        norm = self.d.time_norm()
-        with self._figure_of(self.style.panel_size * 1.2, self.style.panel_size) as fig:
-            ax = fig.add_subplot()
-            draw_fair(ax, self.d, self.style, norm)
-            _time_colorbar(fig, norm, f'Time ({self.d.unit})', ax=ax, fraction=0.046, pad=0.03)
-        return self
+        return self._time_panel(1.2, lambda ax, norm: draw_fair(ax, self.d, self.style, norm))
 
     def plot_portrait(self) -> 'MMRPlotter':
-        norm = self.d.time_norm()
-        with self._figure_of(self.style.panel_size * 1.25, self.style.panel_size) as fig:
-            ax = fig.add_subplot()
-            draw_portrait(ax, self.d, self.style, self.options, norm)
-            _time_colorbar(fig, norm, f'Time ({self.d.unit})', ax=ax, fraction=0.046, pad=0.03)
-        return self
+        return self._time_panel(1.25, lambda ax, norm: draw_portrait(ax, self.d, self.style, self.options, norm))
 
     def plot_cycles(self) -> 'MMRPlotter':
         norm = self.d.time_norm()

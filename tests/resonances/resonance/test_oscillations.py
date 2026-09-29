@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from resonances.resonance import oscillations as osc
+from resonances.resonance.classify.classify import calc_sigma_derivative
 
 T = np.linspace(0, 10, 10001)  # 10 periods of 1 yr, 1000 samples per period
 
@@ -30,10 +31,8 @@ class TestFindCycles:
         assert [c.start for c in cycles] == pytest.approx(list(range(1, 9)))
         for c in cycles:
             assert c.period == pytest.approx(1.0)
-            assert c.minimum == pytest.approx(c.start + 0.5)
             assert c.diameter == pytest.approx(4.0)
             assert c.centre == pytest.approx(0.0, abs=1e-9)
-            assert c.closure_error == pytest.approx(0.0, abs=1e-9)
 
     def test_monotone_angle_has_no_cycles(self):
         assert osc.find_cycles(T, 3.0 * T) == []
@@ -44,8 +43,6 @@ class TestFindCycles:
         cycles = osc.find_cycles(T, 0.5 * T + 2 * np.cos(2 * np.pi * T))
         centres = np.array([c.centre for c in cycles])
         assert np.diff(centres) == pytest.approx(np.full(len(centres) - 1, 0.5), abs=1e-3)
-        summary = osc.summarize_cycles(cycles)
-        assert summary['centre_direction_persistence'] == pytest.approx(1.0, abs=1e-6)
 
     def test_prominence_filters_ripples(self):
         # A 0.01 rad ripple on a 0.2 rad cosine: explicit prominence 0.05 keeps only the
@@ -53,28 +50,6 @@ class TestFindCycles:
         sigma = 0.1 * np.cos(2 * np.pi * T) + 0.005 * np.cos(2 * np.pi * 37 * T)
         assert len(osc.find_cycles(T, sigma, prominence=0.05)) == 8
         assert len(osc.find_cycles(T, sigma, prominence=1e-4)) > 8
-
-
-class TestSummary:
-    def test_hand_built_cycles(self):
-        # Centres 0, 1, 0.5 and diameters 2, 2, 4: median diameter 2, span 1 -> 0.5
-        # diameters, net |0.5 - 0| = 0.5 -> 0.25 diameters, total variation 1.5 -> 1/3.
-        cycles = [
-            osc.Cycle(start=0, minimum=0.5, end=1, diameter=2, centre=0.0, closure_error=0.0),
-            osc.Cycle(start=1, minimum=1.5, end=2, diameter=2, centre=1.0, closure_error=0.2),
-            osc.Cycle(start=2, minimum=2.5, end=4, diameter=4, centre=0.5, closure_error=0.4),
-        ]
-        summary = osc.summarize_cycles(cycles)
-        assert summary['count'] == 3
-        assert summary['period_median'] == 1
-        assert summary['diameter_median'] == 2
-        assert summary['centre_span_in_diameters'] == pytest.approx(0.5)
-        assert summary['centre_net_in_diameters'] == pytest.approx(0.25)
-        assert summary['centre_direction_persistence'] == pytest.approx(1 / 3)
-        assert summary['closure_error_median'] == pytest.approx(0.2)
-
-    def test_empty(self):
-        assert osc.summarize_cycles([]) == {'count': 0}
 
 
 class TestFoldAndCentres:
@@ -105,7 +80,7 @@ class TestRecurrence:
         # sigma = 2 cos(2 pi t): diameter 4 -> s_sigma = 2. rate = -4 pi sin(2 pi t); the
         # 5th and 95th percentiles of sin over whole periods are -+sin(0.45 pi).
         sigma = 2 * np.cos(2 * np.pi * T)
-        rate = osc.angle_rate(T, sigma)
+        rate = calc_sigma_derivative(T, sigma)
         s_sigma, s_rate = osc.recurrence_scales(sigma, rate, osc.find_cycles(T, sigma))
         assert s_sigma == pytest.approx(2.0)
         assert s_rate == pytest.approx(4 * np.pi * np.sin(0.45 * np.pi), rel=1e-3)
@@ -115,7 +90,7 @@ class TestRecurrence:
         # one period (100 samples) later is the same state.
         t = np.linspace(0, 10, 1001)
         sigma = 2 * np.cos(2 * np.pi * t)
-        rate = osc.angle_rate(t, sigma)
+        rate = calc_sigma_derivative(t, sigma)
         rec = osc.recurrence(t, sigma, rate, 2.0, 4 * np.pi, max_points=2000, exclude_samples=2)
         assert rec.distance.shape == (1001, 1001)
         interior = np.arange(10, 890)
@@ -126,7 +101,7 @@ class TestRecurrence:
     def test_excluded_band_and_symmetry(self):
         t = np.linspace(0, 10, 300)
         sigma = np.sin(t)
-        rec = osc.recurrence(t, sigma, np.cos(t), 1.0, 1.0, exclude_samples=2)
+        rec = osc.recurrence(t, sigma, np.cos(t), 1.0, 1.0, max_points=300, exclude_samples=2)
         k = np.arange(300)
         band = np.abs(k[:, None] - k) <= 2
         assert np.isnan(rec.distance[band]).all()
@@ -145,7 +120,7 @@ class TestRecurrence:
         # with the time separation (same rate, so it is |d sigma| / s_sigma exactly).
         t = np.linspace(0, 10, 200)
         sigma = 2 * np.pi * t
-        rec = osc.recurrence(t, sigma, np.full_like(t, 2 * np.pi), 1.0, 1.0, exclude_samples=0)
+        rec = osc.recurrence(t, sigma, np.full_like(t, 2 * np.pi), 1.0, 1.0, max_points=200, exclude_samples=0)
         expected = np.abs(sigma[:, None] - sigma)
         off_diagonal = ~np.eye(200, dtype=bool)
         assert rec.distance[off_diagonal] == pytest.approx(expected[off_diagonal])

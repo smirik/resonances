@@ -7,11 +7,10 @@ import astdys
 from resonances.data.util import datetime_from_string
 from resonances.config import config as c
 from resonances.logger import logger
-from resonances.plotting.style import resolve_plot_options
+from resonances.plotting.style import MMR_PLOT_KINDS, resolve_plot_options
 import os
 
-# Plot kinds accepted in `plots`. The MMR kinds are drawn for MMRs only (MMRPlotter.plot_<kind>).
-MMR_PLOT_KINDS = ('combined', 'recurrence', 'fair', 'portrait', 'cycles')
+# Plot kinds accepted in `plots`. The MMR kinds are drawn for MMRs only.
 PLOT_KINDS = ('evolution', 'ecc_vector', 'cross_spectrum', 'free_omega') + MMR_PLOT_KINDS
 
 

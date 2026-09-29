@@ -212,7 +212,7 @@ class TestDiagnostics:
 
 class TestCentreLine:
     def cycle(self, start, end):
-        return Cycle(start=start, minimum=(start + end) / 2, end=end, diameter=1.0, centre=0.0, closure_error=0.0)
+        return Cycle(start=start, end=end, diameter=1.0, centre=0.0)
 
     def test_neighbours_are_joined(self):
         cycles = [self.cycle(0, 1), self.cycle(1, 2), self.cycle(2, 3)]
@@ -280,8 +280,14 @@ class TestFigures:
         assert len(upper) == (2 if planet else 1)
         plotter.close()
 
-    def test_kinds_match_the_config(self):
-        assert set(MMRPlotter.KINDS) == set(MMR_PLOT_KINDS)
+    def test_recurrence_is_built_once_for_all_figures(self):
+        d = diagnostics()
+        plotter = MMRPlotter(d)
+        plotter.plot('combined')
+        first = d.recurrence(recurrence_points(d), 2)
+        plotter.plot('recurrence')
+        assert d.recurrence(recurrence_points(d), 2) is first
+        plotter.close()
 
     @pytest.mark.parametrize('kind', MMR_PLOT_KINDS)
     def test_every_kind_draws(self, kind):
