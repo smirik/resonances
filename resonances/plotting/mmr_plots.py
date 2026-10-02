@@ -254,6 +254,12 @@ def centre_line(cycles: List[osc.Cycle], *series) -> Tuple[np.ndarray, ...]:
     return tuple(np.insert(np.asarray(values, dtype=float), breaks, np.nan) for values in series)
 
 
+def lone_points(line: np.ndarray) -> np.ndarray:
+    """Finite entries of a NaN-broken line with no finite neighbour on either side."""
+    finite = np.pad(np.isfinite(line), 1)
+    return finite[1:-1] & ~(finite[:-2] | finite[2:])
+
+
 # --------------------------------------------------------------------------- panels
 
 
@@ -344,8 +350,7 @@ def draw_series(axes, d: MMRDiagnostics, style: FigureStyle, options: Dict[str, 
     if d.cycles:
         mid, centre, axis_mid = centre_line(d.cycles, *osc.cycle_centres(d.cycles, d.times, d.axis_filtered))
         # A centre cut off from both neighbours would be invisible as a line: mark it as a point.
-        joined = np.isfinite(mid)
-        lone = joined & ~np.convolve(joined, [1, 0, 1], mode='same').astype(bool)
+        lone = lone_points(mid)
         for ax, values in ((ax_u, centre), (ax_a, d.milli_au(axis_mid))):
             ax.plot(mid / d.divisor, values, color=CENTRE, lw=style.line, zorder=4)
             ax.plot(mid[lone] / d.divisor, values[lone], ls='none', marker='o', ms=2.5 * style.line, color=CENTRE, zorder=4)

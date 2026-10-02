@@ -125,17 +125,17 @@ def _calc_resid_acf_first_zero_lag(
     residual = sigma_unwrapped - (slope * times + intercept)
 
     x = residual - np.mean(residual)
-    acf_full = np.correlate(x, x, mode="full")
-    acf = acf_full[n - 1 :]
+    # Same as np.correlate(x, x, "full") to rounding, but O(N log N): the direct sum is O(N^2)
+    # and took 40 s per angle at N = 83k under multithreaded OpenBLAS.
+    acf = signal.fftconvolve(x, x[::-1], mode="full")[n - 1 :]
     if acf[0] == 0:
         return np.nan
     acf = acf / acf[0]
 
-    half_n = n // 2
-    for lag in range(1, half_n):
-        if acf[lag] <= 0:
-            return lag / n
-    return np.nan
+    crossings = np.flatnonzero(acf[1 : n // 2] <= 0)
+    if crossings.size == 0:
+        return np.nan
+    return (crossings[0] + 1) / n
 
 
 def _ls_find_significant_peak(t, y, min_freq, max_freq, fap_threshold):

@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 
 from resonances.resonance.classify import (
@@ -378,6 +379,45 @@ def test_resid_acf_transient_signal():
 
     assert np.isfinite(lag)
     assert lag > 0.20  # transient: ACF crosses zero late
+
+
+def test_resid_acf_pure_sine_crosses_at_quarter_period():
+    """ACF of a sine crosses zero at a quarter period: P = 20 yr over 100 yr → lag ≈ 5/100."""
+    from resonances.resonance.classify.classify import _calc_resid_acf_first_zero_lag
+
+    N = 10000
+    times = np.linspace(0, 100, N, endpoint=False)
+    lag = _calc_resid_acf_first_zero_lag(times, np.sin(2 * np.pi * times / 20.0))
+
+    assert lag == pytest.approx(0.05, abs=0.003)
+
+
+def test_resid_acf_matches_direct_correlation():
+    """The FFT ACF gives the same first-zero lag as the direct np.correlate sum."""
+    from scipy.stats import linregress
+
+    from resonances.resonance.classify.classify import _calc_resid_acf_first_zero_lag
+
+    def direct(times, sigma):
+        slope, intercept, _, _, _ = linregress(times, sigma)
+        x = sigma - (slope * times + intercept)
+        x = x - x.mean()
+        acf = np.correlate(x, x, mode="full")[len(x) - 1 :]
+        acf = acf / acf[0]
+        for lag in range(1, len(x) // 2):
+            if acf[lag] <= 0:
+                return lag / len(x)
+        return np.nan
+
+    rng = np.random.default_rng(7)
+    times = np.linspace(0, 5000, 3001)
+    cases = [
+        0.01 * times + np.cumsum(rng.normal(size=times.size)) * 0.1,  # random walk
+        np.sin(2 * np.pi * times / 700) + 0.3 * rng.normal(size=times.size),
+        np.where(times < 2500, 0.0, 0.002 * (times - 2500)),  # capture then drift
+    ]
+    for sigma in cases:
+        assert _calc_resid_acf_first_zero_lag(times, sigma) == direct(times, sigma)
 
 
 # ── staircase detection integration tests ──
