@@ -192,7 +192,9 @@ class ParallelExecutor:
                 logger.warning(f"Retrying with fresh process pool (attempt {retry_count}/{max_retries})")
 
             try:
-                with ProcessPoolExecutor(max_workers=self.n_cores) as executor:
+                # One batch per process: a reused worker kept the previous batch's memory and
+                # grew to 10 GB on its second batch (50 kyr, Nout 83k). Implies the "spawn" start method.
+                with ProcessPoolExecutor(max_workers=self.n_cores, max_tasks_per_child=1) as executor:
                     # Submit all pending batches
                     future_to_batch = {}
                     for batch_index, batch_bodies in pending_batches:

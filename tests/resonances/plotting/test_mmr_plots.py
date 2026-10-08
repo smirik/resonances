@@ -17,6 +17,7 @@ from resonances.plotting import MMRDiagnostics, MMRPlotter  # noqa: E402
 from resonances.plotting.mmr_plots import (  # noqa: E402
     PlanetSeries,
     centre_line,
+    lone_points,
     portrait_coordinates,
     envelope_bins,
     recurrence_points,
@@ -232,6 +233,18 @@ class TestCentreLine:
         assert np.isnan(mid).tolist() == [False, False, True, False, True, False]
         assert values[~np.isnan(values)].tolist() == [1, 2, 3, 4]
 
+    @pytest.mark.parametrize(
+        'line, lone',
+        [
+            ([0.5], [True]),  # one cycle: a point, no line
+            ([0.5, 1.5], [False, False]),  # two joined centres (np.convolve 'same' returned 3 values here)
+            ([0.5, np.nan, 4.5], [True, False, True]),
+            ([0.5, 1.5, np.nan, 7.0, np.nan, 12.5, 13.5], [False, False, False, True, False, False, False]),
+        ],
+    )
+    def test_lone_points(self, line, lone):
+        assert lone_points(np.array(line)).tolist() == lone
+
 
 class TestFigures:
     def test_combined_two_body_has_eight_panels(self):
@@ -336,9 +349,12 @@ class TestRealRun:
             sim.run()
 
         plot_path = Path(sim.config.plot_path)
-        for kind in ('combined', 'recurrence', 'portrait', 'cycles'):
+        for kind in ('recurrence', 'portrait', 'cycles'):
             assert (plot_path / f'three-4J-2S-1+0+0-1-{kind}.png').exists(), kind
             assert (plot_path / f'two-1J-1+0+0-{kind}.png').exists(), kind
+        # Combined figures have their own folder.
+        assert (plot_path / 'combined' / 'three-4J-2S-1+0+0-1-combined.png').exists()
+        assert (plot_path / 'combined' / 'two-1J-1+0+0-combined.png').exists()
         assert (plot_path / 'two-1J-1+0+0-fair.png').exists()
         assert not (plot_path / 'three-4J-2S-1+0+0-1-fair.png').exists()
         assert (plot_path / 'three-4J-2S-1+0+0-1.png').exists()  # evolution is unchanged

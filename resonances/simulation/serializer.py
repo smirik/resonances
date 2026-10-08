@@ -97,7 +97,7 @@ class SimulationSerializer:
             differences = {}
             for i in range(len(times_sorted) - 1):
                 diff = (times_sorted[i + 1][1] - times_sorted[i][1]).total_seconds()
-                key = f"{times_sorted[i][0]}_to_{times_sorted[i+1][0]}"
+                key = f"{times_sorted[i][0]}_to_{times_sorted[i + 1][0]}"
                 differences[key] = diff
             if differences:
                 differences["total_time"] = (times_sorted[-1][1] - times_sorted[0][1]).total_seconds()
