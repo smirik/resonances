@@ -1,4 +1,6 @@
 import os
+import ssl
+from contextlib import contextmanager
 from pathlib import Path
 from typing import List
 import tqdm
@@ -7,9 +9,40 @@ import numpy as np
 import rebound
 from resonances.config import config as c
 from resonances.logger import logger
-from .config import SimulationConfig
+from .config import SimulationConfig, check_integrator_with_moon
 from resonances.body import Body
-from resonances.data.const import SOLAR_SYSTEM_WITH_SUN
+from resonances.data.const import SOLAR_SYSTEM_WITH_SUN, SOLAR_SYSTEM_WITH_MOON, HORIZONS_IDS_WITH_MOON, MOON
+
+
+@contextmanager
+def horizons_tls():
+    """Let rebound's Horizons download verify against certifi's CA bundle, for the duration of the block.
+
+    Python's default bundle may lack JPL's root (see docs/config.md, "Horizons and TLS"). rebound's `urlopen`
+    gets a certifi context and is restored afterwards. A context rebound passes itself is kept. Nothing
+    changes when SSL_CERT_FILE is set or certifi is not installed. Verification is never switched off.
+    """
+    import rebound.horizons as rh
+
+    original = getattr(rh, 'urlopen', None)
+    try:
+        import certifi
+    except ImportError:
+        certifi = None
+    if os.environ.get('SSL_CERT_FILE') or certifi is None or original is None:
+        yield
+        return
+
+    certifi_context = ssl.create_default_context(cafile=certifi.where())
+
+    def urlopen(url, *args, context=None, **kwargs):
+        return original(url, *args, context=context or certifi_context, **kwargs)
+
+    rh.urlopen = urlopen
+    try:
+        yield
+    finally:
+        rh.urlopen = original
 
 
 class IntegrationEngine:
@@ -18,36 +51,74 @@ class IntegrationEngine:
     def __init__(self, config: SimulationConfig):
         self.config = config
         self.sim = None
+        # The planets in particle order (index 0 is the Sun); resonant angles use these indices.
         self.planets = SOLAR_SYSTEM_WITH_SUN
+        # Every massive particle in order: the planets, then the Moon when it is a separate body.
+        self.massive_bodies = list(SOLAR_SYSTEM_WITH_SUN)
 
         self.planets_without_sun = [p for p in self.planets if p != 'Sun']
         self.planets_data = {planet: {} for planet in self.planets_without_sun}
 
     def create_solar_system(self, force=False):
-        """Create or load the Solar System REBOUND simulation."""
-        solar_file = Path(self._solar_system_filename())
+        """Create or load the Solar System REBOUND simulation.
+
+        Sun, Mercury..Neptune and Pluto; Earth is the Earth-Moon barycentre with the Earth+Moon mass.
+        With `config.solar_system_moon` this hands over to `create_solar_system_with_moon`.
+        """
+        if self.config.solar_system_moon:
+            self.create_solar_system_with_moon(force)
+            return
+        self._create_or_load(SOLAR_SYSTEM_WITH_SUN, {}, self._solar_system_filename(), force)
+
+    def create_solar_system_with_moon(self, force=False):
+        """Create or load the Solar System with a separate Moon.
+
+        Sun, Mercury, Venus, Earth = the geocentre (Horizons 399, hash 'Earth'), Mars..Neptune, Pluto,
+        then the Moon (Horizons 301, hash 'Moon') last, so the planets keep their indices. Earth and Moon
+        together have the mass and the centre of mass of the barycentre that `create_solar_system` uses.
+        Only ias15 is accepted (`check_integrator_with_moon`). A direct call also turns
+        `config.solar_system_moon` on, so batch workers, simulation.json and the resume hash describe the
+        system that was built.
+        """
+        check_integrator_with_moon(self.config.integrator)
+        self.config.solar_system_moon = True
+        self._create_or_load(SOLAR_SYSTEM_WITH_MOON, HORIZONS_IDS_WITH_MOON, self._solar_system_filename(moon=True), force)
+
+    def _create_or_load(self, names, horizons_ids, filename, force):
+        """Load `filename` if it exists, else fetch `names` from Horizons at config.date and cache them there."""
+        solar_file = Path(filename)
+        self.massive_bodies = list(names)
 
         if solar_file.exists() and not force:
             logger.info(f"Loading solar system from cache: {solar_file}")
             self.sim = rebound.Simulation(str(solar_file))
-        else:
-            self.sim = rebound.Simulation()
-            logger.info(f"Creating new solar system simulation. Date = {self.config.date.isoformat()}")
-            for planet in self.planets:
-                self.sim.add(planet, date=self.config.date, hash=planet)
-            self.sim.save_to_file(str(solar_file))
+            return
 
-    def _solar_system_filename(self) -> str:
-        """Generate filename for solar system cache."""
+        self.sim = rebound.Simulation()
+        logger.info(f"Creating new solar system simulation. Date = {self.config.date.isoformat()}")
+        with horizons_tls():
+            for name in names:
+                self.sim.add(horizons_ids.get(name, name), date=self.config.date, hash=name)
+        self.sim.save_to_file(str(solar_file))
+
+    def _solar_system_filename(self, moon=False) -> str:
+        """Generate filename for solar system cache: solar-<timestamp>.bin, or solar-moon-<timestamp>.bin."""
         timestamp = int(self.config.date.timestamp())
         catalog_file = f"{os.getcwd()}/{c.get('SOLAR_SYSTEM_FILE')}"
-        return catalog_file.replace('.bin', f'-{timestamp}.bin')
+        suffix = f'-moon-{timestamp}.bin' if moon else f'-{timestamp}.bin'
+        return catalog_file.replace('.bin', suffix)
 
-    def setup_integrator(self, N_active=10):
-        """Setup the numerical integrator."""
+    def setup_integrator(self, N_active=None):
+        """Setup the numerical integrator.
+
+        N_active defaults to the number of massive bodies of the solar system built here (10, or 11 with
+        the Moon); everything added after them is a test particle.
+        """
+        if MOON in self.massive_bodies:
+            check_integrator_with_moon(self.config.integrator)
         self.sim.integrator = self.config.integrator
         self.sim.dt = self.config.dt
-        self.sim.N_active = N_active
+        self.sim.N_active = len(self.massive_bodies) if N_active is None else N_active
 
         if 'whfast' == self.config.integrator.lower():
             self.sim.ri_whfast.safe_mode = 0

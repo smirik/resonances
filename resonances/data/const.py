@@ -54,6 +54,13 @@ DAYS_IN_YEAR = 365.2422
 SOLAR_SYSTEM = ["Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"]
 SOLAR_SYSTEM_WITH_SUN = ['Sun'] + SOLAR_SYSTEM + ['Pluto']
 
+# The Moon as a separate body (option `solar_system_moon`). Earth is then the geocentre, not the Earth-Moon
+# barycentre, and the Moon is appended after Pluto, so every planet keeps its particle index.
+MOON = 'Moon'
+SOLAR_SYSTEM_WITH_MOON = SOLAR_SYSTEM_WITH_SUN + [MOON]
+# Horizons IDs used instead of the names in that system: 'Earth' alone resolves to body 3, the barycentre.
+HORIZONS_IDS_WITH_MOON = {'Earth': '399', MOON: '301'}
+
 SECULAR_FORMULAS = [
     # --- Linear secular resonances ---
     "g-g5",

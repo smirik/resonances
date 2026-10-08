@@ -122,22 +122,34 @@ See [rebound documentation](https://rebound.readthedocs.io/en/latest/integrators
 - `integrator`/`INTEGRATION_INTEGRATOR` (string): the default integrator from rebound. By default, `SABA(10,6,4)`. See [rebound documentation](https://rebound.readthedocs.io/en/latest/integrators.html).
 - `integration_safe_mode`/`INTEGRATION_SAFE_MODE` (int): the parameter of the integration. By default, `0`. See [rebound documentation](https://rebound.readthedocs.io/en/latest/integrators.html)
 - `integration_corrector`/`INTEGRATION_CORRECTOR` (int): the parameter of the corrector for symplectic integrators. By default, `17`. See [rebound documentation](https://rebound.readthedocs.io/en/latest/integrators.html)
-- `SOLAR_SYSTEM_FILE` (str): the name of the cache file used to store the initial data of the Sun, planets, and Pluto. It is used to speed up the creation of the simulation. By default, `cache/solar.bin`. Note that in order to avoid issues with initial date&time, the app will automatically add postfix equals to the current timestamp, i.e., `cache/solar_12345.bin`.
+- `SOLAR_SYSTEM_FILE` (str): the name of the cache file used to store the initial data of the Sun, planets, and Pluto. It is used to speed up the creation of the simulation. By default, `cache/solar.bin`. Note that in order to avoid issues with initial date&time, the app will automatically add postfix equals to the timestamp of the simulation date, i.e., `cache/solar-12345.bin`, and `cache/solar-moon-12345.bin` for the system with the Moon.
+- `solar_system_moon`/`SOLAR_SYSTEM_MOON` (bool): the Moon as a separate body. Default: `False`. See below.
+
+### Solar system model
+
+By default the massive bodies are the Sun, Mercury–Neptune and Pluto, fetched from NASA Horizons by name. `Earth` is then Horizons body 3, the Earth–Moon barycentre, with the Earth+Moon mass. That is fine for asteroids that stay far from the Earth.
+
+With `solar_system_moon=True` (`IntegrationEngine.create_solar_system_with_moon`) the Earth is the geocentre (Horizons 399) and the Moon (Horizons 301) is an eleventh body, appended after Pluto. The planets keep their particle indices, so every resonant angle is built as before, with the Earth's angles now taken against the geocentre. The Moon is never a planet of an angle and is not in the saved planet series. Earth and Moon together have exactly the mass, position and velocity of the barycentre. The price: the geocentre's heliocentric osculating elements carry the Moon's monthly reflex (about 12.6 m/s). Measured against the barycentre, a differs by up to 1e-3 AU, e by 9e-4, λ by 0.05° and ϖ by 3°. The saved Earth series and every Earth angle (the 1:1 angle by 0.05°, any secular angle with g3 or s3 much more) contain this term, sampled at the output step. Use it for objects with close Earth encounters (Earth co-orbitals, NEAs): within a few lunar distances the barycentre is a poor stand-in for the two bodies.
+
+Only `ias15` is accepted with the Moon; any other integrator raises `ValueError` when the simulation is created or the integrator is set up. A fixed-step symplectic split around the Sun cannot follow a 27-day orbit with steps of days to months. Measured over 100 yr (2023-02-25 start, against ias15): WHFast, SABA(10,6,4), MERCURIUS and TRACE with dt = 0.05 (3 days) all put the Earth 0.03 AU off along its orbit; MERCURIUS and TRACE still 0.0015 AU with dt = 0.01, at 3 and 0.3 times the CPU of ias15. The hybrid integrators gave the same error as WHFast, although the Moon never leaves the Earth's encounter radius.
+
+`N_active` is set to the number of massive bodies (10, or 11 with the Moon); the asteroids are test particles.
+
+### Horizons and TLS
+
+The planets are fetched by rebound, which uses Python's `urllib`. Python's default CA bundle may lack the root certificate JPL uses (macOS `/etc/ssl/cert.pem` had no Sectigo Public Server Authentication Root R46 in October 2026). While it fetches the planets, the package therefore verifies against [certifi](https://pypi.org/project/certifi/)'s bundle, and restores rebound's `urlopen` afterwards. Verification is never switched off. If `SSL_CERT_FILE` is set, it is used instead. Setting `SSL_CERT_FILE` from inside a running Python process is not enough once any HTTPS connection has been verified there: OpenSSL keeps the store it loaded first.
 
 ### Access to the parameters of `rebound`
 
-While resonances wraps many Rebound integrator settings, you can still manipulate Rebound directly. You can access the simulation object of rebound directly as an attribute `sim.sim`:
+While resonances wraps many Rebound integrator settings, you can still manipulate Rebound directly. The rebound simulation is `sim.integration_engine.sim`; it exists after `create_solar_system()`:
 
 ```python
 sim = resonances.Simulation()
-# ...
-# set rebound value for whfast corrector
-sim.sim.N_active = 10
-sim.sim.ri_whfast.corrector = 17
-sim.sim.dt = 0.01
+sim.create_solar_system()
+sim.integration_engine.sim.ri_ias15.epsilon = 1e-10
 ```
 
-`resonances` will not override these values if Simulation has been already instantiated. It sets it only once through initialisation from config.
+`run_integration()` calls `setup_integrator()`, which sets `integrator`, `dt` and `N_active` (the number of massive bodies, 10 or 11 with the Moon), the WHFast corrector when `INTEGRATION_CORRECTOR` is set and the SABA safe mode. Change those through the config (`sim.config.dt = 0.01`), not on the rebound object: direct values are overwritten.
 
 ## AstDyS and Catalogue options
 

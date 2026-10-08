@@ -46,6 +46,8 @@ sim.run()
 
 Note that the first run might take a while because the app needs to download AstDyS catalogue and initial data for the Solar system. You can see the progress in `cache/resonances.log` file.
 
+If the download of the planets from NASA Horizons fails with a certificate error, see [Horizons and TLS](config.md#horizons-and-tls).
+
 **E.** Now you can see the results in `cache/%current_datetime%` folder.
 
 ## PIP

@@ -206,8 +206,11 @@ class BatchManager:
         logger.info(f"Resuming simulation: {completed}/{total} batches already completed")
 
     def _get_config_dict(self) -> Dict[str, Any]:
-        """Get configuration dictionary for hashing."""
-        return {
+        """Get configuration dictionary for hashing.
+
+        `solar_system_moon` enters only when on, so states saved before the option existed still match.
+        """
+        config_dict = {
             "tmax": self.config.tmax,
             "Nout": self.config.Nout,
             "integrator": self.config.integrator,
@@ -215,6 +218,9 @@ class BatchManager:
             "batch_threshold": self.config.batch_threshold,
             "secular_angle_mode": self.config.secular_angle_mode,
         }
+        if self.config.solar_system_moon:
+            config_dict["solar_system_moon"] = True
+        return config_dict
 
     def _prepare_simulation_kwargs(self, simulation) -> Dict[str, Any]:
         """

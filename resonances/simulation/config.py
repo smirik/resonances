@@ -50,6 +50,19 @@ def _normalize_mode(value) -> SavePlotMode | None:
     return None
 
 
+# Integrators that can carry the Moon: only the adaptive IAS15 follows its 27-day orbit (see docs/config.md).
+INTEGRATORS_WITH_MOON = ('ias15',)
+
+
+def check_integrator_with_moon(integrator: str):
+    """Raise ValueError unless `integrator` can integrate the separate Moon."""
+    if str(integrator).lower() not in INTEGRATORS_WITH_MOON:
+        raise ValueError(
+            f"solar_system_moon needs an adaptive integrator ({', '.join(INTEGRATORS_WITH_MOON)}), got {integrator!r}: "
+            "a symplectic step of days to months cannot follow the Moon around the Earth."
+        )
+
+
 class SimulationConfig:
     """Handles simulation configuration and setup parameters."""
 
@@ -97,6 +110,10 @@ class SimulationConfig:
         self.dt = kwargs.get('dt', float(c.get('INTEGRATION_DT')))
         self.integration_corrector = kwargs.get('integration_corrector', int(c.get('INTEGRATION_CORRECTOR')))
         self.integration_safe_mode = kwargs.get('integration_safe_mode', 1)
+        # The Moon as a separate body, Earth as the geocentre (IntegrationEngine.create_solar_system_with_moon)
+        self.solar_system_moon = bool(kwargs.get('solar_system_moon', c.get('SOLAR_SYSTEM_MOON', 'False') == 'True'))
+        if self.solar_system_moon:
+            check_integrator_with_moon(self.integrator)
 
     def _setup_save_params(self, kwargs):
         """Setup save and output parameters."""
