@@ -2,7 +2,7 @@ import numpy as np
 from typing import List, Union
 
 from resonances.body import Body
-from resonances.resonance import coherence_analysis, omega_free_gate
+from resonances.resonance import coherence_analysis, omega_free_gate, secular_centre
 from resonances.resonance.classify import classify_resonance
 from resonances.resonance.classify.models import ResonanceStatus
 from resonances.resonance.periodogram import Periodogram
@@ -18,6 +18,7 @@ from resonances.secular.secular_resonance import SecularResonance
 from resonances.resonance.resonance import Resonance
 from resonances.logger import logger
 from resonances.resonance.filtering import filter_angle, wrap
+from resonances.data.const import DAYS_IN_YEAR, J2000
 
 
 class Simulation:
@@ -107,6 +108,13 @@ class Simulation:
         self.data_manager.save_configuration_details(self.bodies, self)
 
     def prepare_angles(self):
+        """Unwrap, wrap and filter every angle; these are the series the classifier reads.
+
+        A secular angle is the proper one by default (`secular_angle_mode='proper'`): the planets
+        enter through their linear mode longitudes, not their osculating ones (see `Body.build_proper_angle`).
+        """
+        date = self.config.date.replace(tzinfo=None) if self.config.date else J2000
+        epoch_years = (date - J2000).total_seconds() / 86400.0 / DAYS_IN_YEAR
         for body in self.bodies:
             body.axis_filtered = filter_angle(body.axis, self.config)
             for resonance in body.resonances():
@@ -117,8 +125,10 @@ class Simulation:
                 unwrapped = body.angle_unwrapped(resonance)
                 body.angles[res_key] = wrap(unwrapped)
                 if isinstance(resonance, SecularResonance):
-                    body.build_proper_angle(resonance)
-                    if self.config.secular_angle_mode == "proper":
+                    body.build_proper_angle(resonance, epoch_years=epoch_years, remove_forced=self.config.secular_remove_forced)
+                    if self.config.secular_angle_mode == "proper" and res_key in body.secular_angles_proper:
+                        unwrapped = np.unwrap(body.secular_angles_proper[res_key])
+                        body.angles_unwrapped[res_key] = unwrapped
                         body.angles[res_key] = body.secular_angles_proper[res_key]
                 unwrapped_filtered_angle = filter_angle(unwrapped, self.config)
                 body.angles_filtered_unwrapped[res_key] = unwrapped_filtered_angle
@@ -175,8 +185,9 @@ class Simulation:
         also the entry point used by `SimulationSerializer.restore()`, which
         reclassifies from saved CSVs without replaying `prepare_angles`.
 
-        Order matters: the cross spectra are pure diagnostics and only the free-omega
-        gate may change a status, so it runs last and has the final word.
+        Order matters: the cross spectra are pure diagnostics. Two checks may change a
+        status: the centre check of a secular angle (right after classification) and the
+        free-omega gate of the Lidov-Kozai angle (last, with the final word).
         """
         for body in self.bodies:
             # Welch spectra of a, e and i are shared by every resonance of a body.
@@ -196,6 +207,7 @@ class Simulation:
                     body.libration_segments[resonance.to_s()] = classification["segments"]
                 body.librations[resonance.to_s()] = libration
                 body.statuses[resonance.to_s()] = libration.status.value
+                self._apply_secular_centre_check(body, resonance, libration)
                 self._analyse_coherence(body, resonance, libration, psd_cache)
                 self._apply_free_omega_gate(body, resonance, libration)
 
@@ -216,10 +228,35 @@ class Simulation:
         if isinstance(resonance, LidovKozaiResonance):
             body.zlk_gates[res_key] = coherence_analysis.evaluate_ei_exchange(analyses, self.config)
 
+    @staticmethod
+    def _set_status(body: Body, res_key: str, libration, status, comment: str, reason: str):
+        """A post-classification check's verdict: append its comment, and change `libration.status` and
+        `body.statuses` together (summary.csv reads the first, the save/plot filters the second)."""
+        if comment:
+            libration.comments = f"{libration.comments} {comment}".strip() if libration.comments else comment
+        if status != libration.status:
+            logger.info(f"{body.name}/{res_key}: {reason} — status {libration.status} -> {status}")
+            libration.status = status
+            body.statuses[res_key] = status.value
+
+    def _apply_secular_centre_check(self, body: Body, resonance: Resonance, libration):
+        """Lower a secular LIBRATION whose centre only drifts to BASELINE_TOO_SHORT (-6).
+
+        See `resonance/secular_centre.py`; the record lands in summary.csv like the free-omega gate's.
+        """
+        if not isinstance(resonance, SecularResonance) or not self.config.secular_centre_check:
+            return
+        res_key = resonance.to_s()
+        status, check = secular_centre.check_centre(libration.status, self.times / (2 * np.pi), body.angles_unwrapped[res_key], self.config)
+        if check is None:
+            return
+        body.centre_checks[res_key] = check
+        self._set_status(body, res_key, libration, status, check.comment, 'centre drifts')
+
     def _apply_free_omega_gate(self, body: Body, resonance: Resonance, libration):
         """Confirm, demote or withhold a Lidov-Kozai libration from the free omega.
 
-        The only hook that changes a status after classification. Both `libration.status`
+        The only hook that changes a Lidov-Kozai status after classification. Both `libration.status`
         and `body.statuses` are updated so that `summary.csv` (which reads the flattened
         classification result) cannot disagree with the save/plot filters (which read
         `body.statuses`), and the decision leaves a "gate:" trail in the comments.
@@ -235,9 +272,4 @@ class Simulation:
             self.config,
         )
         body.free_gates[res_key] = gate
-        if gate.comment:
-            libration.comments = f"{libration.comments} {gate.comment}".strip() if libration.comments else gate.comment
-        if status != libration.status:
-            logger.info(f"{body.name}/{res_key}: free omega {gate.outcome} — status {libration.status} -> {status}")
-            libration.status = status
-            body.statuses[res_key] = status.value
+        self._set_status(body, res_key, libration, status, gate.comment, f'free omega {gate.outcome}')

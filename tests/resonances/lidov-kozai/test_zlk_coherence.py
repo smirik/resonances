@@ -11,8 +11,16 @@ Two reference objects, chosen because they disagree:
 162474 (a = 1.24 au, e = 0.36, i = 51 deg) crosses the orbits of Venus, Earth and
 Mars. dt = 0.5 gives 17 SABA steps per orbit and reproduces dt = 0.1 (same 52 kyr
 cycle, same a range) at a third of the cost; dt = 1.0 gives 8.7 steps per orbit and
-ejects the body. 500 kyr is the shortest baseline that puts the 52 kyr line inside
-P_max = T/(5*n_seg).
+ejects the body.
+
+Baseline and date (2026-10-12). The e-i line must sit inside the validity band
+P_max = T/(5*n_seg) = T/20, so a ZLK cycle of 52-75 kyr needs T >= 1.5 Myr. At 500 kyr
+(P_max = 25 kyr) the test passed or failed with the epoch of the AstDyS catalogue: the
+line was outside the band and was found by luck (2025-05-05: passed, r_band -0.66;
+2025-11-21, 2026-06-09: no line, although r(e, i) = -0.92/-0.95). At 1.5 Myr all three
+epochs pass with r_band -0.97 and phase within 3 deg of 180. The body is chaotic, so the
+initial conditions are pinned: Horizons at 2026-06-09 (the epoch of the current AstDyS
+catalogue); there the status is 2, at the other two dates 1.
 """
 
 import numpy as np
@@ -25,12 +33,13 @@ from resonances.resonance.cross_spectrum import phase_distance
 
 @pytest.mark.slow
 def test_zlk_coherence_confirms_162474():
-    years, cadence = 500_000, 2.0
+    years, cadence = 1_500_000, 2.0
     sim = resonances.check(
         162474,
         "lidov-kozai",
         name="test_zlk_162474",
-        source="astdys",
+        source="nasa",
+        date="2026-06-09",  # pinned: a chaotic Earth-crosser drifts with the epoch
         integrator="SABA(10,6,4)",
         dt=0.5,
         integration_years=years,

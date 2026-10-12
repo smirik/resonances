@@ -17,14 +17,11 @@ here changes a status.
 
 import string
 import warnings
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.cm import ScalarMappable
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 from matplotlib.ticker import MaxNLocator
@@ -32,7 +29,7 @@ from matplotlib.ticker import MaxNLocator
 from resonances.logger import logger
 from resonances.resonance import oscillations as osc
 from resonances.resonance.classify.classify import calc_sigma_derivative
-from .base import BasePlotter, time_unit
+from .base import DiagnosticPlotter, time_unit
 from .style import (
     CENTRE,
     ENVELOPE,
@@ -40,13 +37,14 @@ from .style import (
     MMR_PLOT_KINDS,
     OUT_OF_FOCUS,
     RAW,
-    STYLES,
     FigureStyle,
     PortraitY,
     RawMode,
     SeriesMode,
+    panel_letter,
     resolve_plot_options,
     time_cmap,
+    time_colorbar,
     time_label,
 )
 
@@ -465,23 +463,6 @@ def draw_cycles(ax_sigma, ax_axis, d: MMRDiagnostics, style: FigureStyle, norm: 
 # ------------------------------------------------------------------------- figures
 
 
-def _letter(ax, letter: str, inside: bool = False):
-    """Panel letter above the top-left corner, or inside it for tightly stacked panels."""
-    if inside:
-        box = {'facecolor': 'white', 'edgecolor': 'none', 'alpha': 0.8, 'pad': 1}
-        ax.text(0.006, 0.95, f'({letter})', transform=ax.transAxes, ha='left', va='top', fontweight='bold', zorder=8, bbox=box)
-    else:
-        ax.text(-0.02, 1.02, f'({letter})', transform=ax.transAxes, ha='right', va='bottom', fontweight='bold')
-
-
-def _time_colorbar(fig, norm: Normalize, label: str, **where):
-    """Colour bar of the time scale; `where` is `ax=...` or `cax=...` plus layout keywords."""
-    bar = fig.colorbar(ScalarMappable(norm=norm, cmap=time_cmap()), **where)
-    bar.set_label(label)
-    bar.outline.set_linewidth(0.5)
-    return bar
-
-
 def combined_rects(style: FigureStyle, fair: bool) -> Tuple[Dict[str, Tuple[float, float, float, float]], float]:
     """Panel rectangles (x, y, width, height) of the combined figure, in inches, and its height.
 
@@ -520,7 +501,7 @@ def _warn(message: str):
     warnings.warn(message, stacklevel=2)
 
 
-class MMRPlotter(BasePlotter):
+class MMRPlotter(DiagnosticPlotter):
     """Standalone and combined diagnostic figures of one body in one MMR.
 
     Examples
@@ -531,47 +512,19 @@ class MMRPlotter(BasePlotter):
         >>> plotter.save('recurrence.png').close()
     """
 
-    def __init__(self, diagnostics: MMRDiagnostics, options: Optional[Dict[str, Any]] = None):
-        self.d = diagnostics
-        self.options = resolve_plot_options(options)
-        self.style = STYLES[self.options['style']]
-        self._figure = None
+    KINDS = MMR_PLOT_KINDS
+    KIND_NAME = 'MMR'
 
     @classmethod
     def from_body(cls, body, resonance, sim=None, options: Optional[Dict[str, Any]] = None, focus=None) -> 'MMRPlotter':
         options = resolve_plot_options(options)
         return cls(MMRDiagnostics.from_body(body, resonance, sim, focus=focus, prominence=options['cycles']['prominence']), options)
 
-    def plot(self, kind: str) -> bool:
-        """Draw one plot kind; False when there is nothing to draw (FAIR unavailable)."""
-        if kind not in MMR_PLOT_KINDS:
-            raise ValueError(f"Unknown MMR plot kind '{kind}'. Known: {', '.join(MMR_PLOT_KINDS)}")
-        if self._figure is not None:
-            self.close()
-        getattr(self, f'plot_{kind}')()
-        return self._figure is not None
-
-    def save(self, path, **kwargs):
-        kwargs.setdefault('dpi', self.style.dpi)
-        with mpl.rc_context(self.style.rc()):
-            return super().save(path, **kwargs)
-
-    # -- helpers
-
-    @contextmanager
-    def _figure_of(self, width: float, height: float, tight: bool = True):
-        """New figure in the style's rc context; titled (and tightened) on exit."""
-        if self._figure is not None:
-            plt.close(self._figure)
-        with mpl.rc_context(self.style.rc()):
-            self._figure = plt.figure(figsize=(width, height), dpi=self.style.dpi)
-            yield self._figure
-            if self.style.title and (self.d.body_name or self.d.resonance):
-                body = f'Asteroid {self.d.body_name}' if self.d.body_name else ''
-                title = ', '.join(part for part in (body, self.d.label or self.d.resonance) if part)
-                self._figure.suptitle(title, y=0.985, fontsize=self.style.font_size + 3)
-            if tight:
-                self._figure.tight_layout()
+    def title(self) -> str:
+        if not (self.d.body_name or self.d.resonance):
+            return ''
+        body = f'Asteroid {self.d.body_name}' if self.d.body_name else ''
+        return ', '.join(part for part in (body, self.d.label or self.d.resonance) if part)
 
     def _fair_drawable(self, warn_three_body: bool) -> bool:
         """Whether FAIR can be drawn, warning when it cannot or when it would be aliased.
@@ -592,15 +545,6 @@ class MMRPlotter(BasePlotter):
                 'the plane is aliased and its strips are not resolved. Save output more often (larger Nout).'
             )
         return True
-
-    def _time_panel(self, aspect: float, draw) -> 'MMRPlotter':
-        """One panel coloured by time, with its time colour bar; `draw(ax, norm)` fills it."""
-        norm = self.d.time_norm()
-        with self._figure_of(self.style.panel_size * aspect, self.style.panel_size) as fig:
-            ax = fig.add_subplot()
-            draw(ax, norm)
-            _time_colorbar(fig, norm, time_label(self.d.unit), ax=ax, fraction=0.046, pad=0.03)
-        return self
 
     # -- figures
 
@@ -628,13 +572,13 @@ class MMRPlotter(BasePlotter):
             lower = [axes('portrait'), axes('cycles_sigma'), axes('cycles_axis')]
             draw_portrait(lower[0], d, s, o, norm)
             draw_cycles(lower[1], lower[2], d, s, norm)
-            _time_colorbar(fig, norm, f'{time_label(d.unit)}; cycle midpoint for stacks', cax=axes('time_bar'))
+            time_colorbar(fig, norm, f'{time_label(d.unit)}; cycle midpoint for stacks', cax=axes('time_bar'))
 
             letters = iter(string.ascii_lowercase)
             for ax in series:
-                _letter(ax, next(letters), inside=True)
+                panel_letter(ax, next(letters), inside=True)
             for ax in upper + lower:
-                _letter(ax, next(letters))
+                panel_letter(ax, next(letters))
         return self
 
     def plot_recurrence(self) -> 'MMRPlotter':
@@ -656,5 +600,5 @@ class MMRPlotter(BasePlotter):
         with self._figure_of(self.style.panel_size * 2.1, self.style.panel_size, tight=False) as fig:
             axes = fig.subplots(1, 2)
             draw_cycles(axes[0], axes[1], self.d, self.style, norm)
-            _time_colorbar(fig, norm, f'Cycle midpoint ({self.d.unit})', ax=list(axes), fraction=0.03, pad=0.02)
+            time_colorbar(fig, norm, f'Cycle midpoint ({self.d.unit})', ax=list(axes), fraction=0.03, pad=0.02)
         return self

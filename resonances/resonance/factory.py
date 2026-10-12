@@ -4,6 +4,7 @@ from typing import Union
 from resonances.mmr.mmr import MMR
 from resonances.resonance.resonance import Resonance
 from resonances.secular.secular_resonance import SECULAR_RESONANCE_ALIASES, SecularResonance
+from resonances.secular.secular_resonance_formula import SecularResonanceFormula
 from resonances.mmr.three_body import ThreeBody
 from resonances.mmr.two_body import TwoBody
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
@@ -136,7 +137,21 @@ def create_secular_resonance(secular_type):
     raise Exception('The argument should be either a string (i.e. "nu6" or "g-g5") or a SecularResonance object.')
 
 
+def _is_secular_formula(text: str) -> bool:
+    try:
+        SecularResonanceFormula(text)
+    except ValueError:
+        return False
+    return True
+
+
 def detect_resonance_type(resonance: Union[Resonance, str]) -> str:
+    """'mmr', 'secular' or 'lidov_kozai' for a Resonance or its string notation.
+
+    A string is secular if it is an alias ('nu6'), starts with g/s, or parses as a secular
+    formula — the last case covers '-g+s+g5-s7' and '2(g-g6)+(s-s6)'. The parse is
+    case-sensitive: MMR notation uses capital planet letters ('4J-2S-1'), secular uses g, s.
+    """
     if isinstance(resonance, Resonance):
         return resonance.type
     elif isinstance(resonance, str):
@@ -150,6 +165,7 @@ def detect_resonance_type(resonance: Union[Resonance, str]) -> str:
             or normalized.startswith('s')
             or normalized.startswith('2g')
             or normalized.startswith('2s')
+            or _is_secular_formula(resonance)
         ):
             return 'secular'
         else:

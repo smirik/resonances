@@ -88,7 +88,7 @@ class SecularResonanceFormula:
 
             if index:
                 index = int(index)
-                if index not in (4, 5, 6, 7, 8):
+                if not 1 <= index <= 8:
                     raise ValueError(f"Invalid secular formula {self.formula!r}: unsupported forced index {index}")
                 term_type = TermType.FORCED
             else:

@@ -14,16 +14,18 @@ sim = resonances.Simulation(
 | Kind | Resonances | File (`{body}-{key}-…`) | What it shows |
 |------|------------|-------------------------|---------------|
 | `evolution` | all | `{body}-{key}.png` | Angle, a, e, i and periodograms against time (`PLOT_CONFIG` preset) |
-| `combined` | MMR | `combined/…-combined` | All MMR diagnostics below on one figure |
+| `combined` | MMR, secular | `combined/…-combined` | All diagnostics of the resonance type on one figure |
 | `recurrence` | MMR | `-recurrence` | Recurrence of the state (σ, σ̇) |
 | `fair` | two-body MMR | `-fair` | FAIR plane: mean anomaly against the longitude difference to the planet |
-| `portrait` | MMR | `-portrait` | Phase portrait σ–σ̇ (or σ–a) |
+| `portrait` | MMR, secular | `-portrait` | Phase portrait: σ–σ̇ (or σ–a) for an MMR, (r cos σ, r sin σ) for a secular angle |
+| `angle` | secular | `-angle` | σ(t): osculating, smoothed, turning points |
+| `rate` | secular | `-rate` | Rate of the smoothed σ, with the divisor |
 | `cycles` | MMR | `-cycles` | Oscillation cycles of σ and of a, stacked on one period |
 | `ecc_vector` | all | `{body}-ecc-vector.png` | The (k, h) = (e cos ω, e sin ω) plane |
 | `cross_spectrum` | all | `-coherence-{pair}` | Coherence and cross-phase, see [Cross-spectral coherence](coherence.md) |
 | `free_omega` | Lidov-Kozai | `-free-omega-…` | Free argument of pericentre, see [Free elements](free-elements.md) |
 
-Every time colour bar (MMR, ecc-vector, free-ω) uses the same map, viridis without its palest yellow, and the label `Time (unit)`. An unknown name raises an error. MMR kinds are skipped for other resonances. The image format is `image_type` (`png` by default, or `pdf`). Combined figures go to their own folder, `plot_path/combined/`, so they can be browsed one after another; with `plot_subfolder_strategy='status'` it is split by status like `plot_path` itself (`combined/resonant/`, `combined/transient/`, …).
+Every time colour bar (MMR, ecc-vector, free-ω) uses the same map, viridis without its palest yellow, and the label `Time (unit)`. An unknown name raises an error. A kind is drawn only for the resonance types it lists; `combined` and `portrait` mean the same kind of figure for an MMR and a secular resonance. The image format is `image_type` (`png` by default, or `pdf`). Combined figures go to their own folder, `plot_path/combined/`, so they can be browsed one after another; with `plot_subfolder_strategy='status'` it is split by status like `plot_path` itself (`combined/resonant/`, `combined/transient/`, …).
 
 ## MMR diagnostics
 
@@ -89,3 +91,21 @@ resonances.EccentricityVectorPlotter.from_data(times, ecc, omega, body_name='591
 ```
 
 `plot(limit=...)` fixes the half-width, which is how the free-vector figure of [free elements](free-elements.md) is drawn on the scale of the osculating one.
+
+## Secular diagnostics
+
+Four kinds, `angle`, `rate`, `portrait` and `combined` (all three), drawn by `SecularPlotter` (`plotting/secular_plots.py`), which shares `DiagnosticPlotter` (`plotting/base.py`: kinds, styles, titles, the `combined/` folder) with `MMRPlotter` (`plot_options={'style': 'paper'}` for a journal). They show the angle the classifier read — the reduced proper angle by default (see [Secular resonances](secular.md)) — next to the angle of the osculating elements, and change no status.
+
+```python
+resonances.SecularPlotter.from_body(body, resonance, sim.config).plot('portrait')
+```
+
+**angle — σ(t), degrees.** Grey: the angle from the osculating elements, as for every resonance type (folded mod 360° into the band of the black curve when that one is bounded and the grey one turns). Black: the classified angle smoothed — over `secular_centre_window` of the baseline (the *centre* of the status check), or, when that centre stands still, over a quarter of the libration period the classifier found, so that a fast libration (ν6 of Tina, 600 kyr) is followed. Red circles: turning points — extrema where the black curve changes direction by at least `secular_turning_prominence` degrees, not inflection points. A libration has a curve that oscillates (two turning points per cycle); a drift is a monotonic black ramp of less than a turn (status −6, see below); circulation is a ramp of several turns; a transient case oscillates for a while and runs off.
+
+**rate — dσ/dt, ″/yr.** The rate of the black curve; grey line: zero; dashed: the mean rate of the classified angle (its divisor). A libration swings around zero; a drift runs parallel to zero at the divisor; a passage or transient crosses zero and leaves it.
+
+**portrait — (r cos σ, r sin σ).** r is e when σ contains ϖ, else i measured from the invariable plane, in degrees (ν16 = s − s6 has no ϖ) — the quantities standing for the momentum conjugate to σ (Γ/|p| ≈ e²/2, Z/|q| ≈ i²/2). Grey: osculating; coloured by time: classified. As for the (k, h) plane of ZLK, a cloud that never encloses the origin keeps σ bounded. A libration draws closed loops around the resonance centre, not around the origin: a ring or oval off the origin with an empty middle when the centre is far from the origin compared with the amplitude (Tina in ν6: centre at e ≈ 0.2, σ = 180°), a crescent ("banana") when the libration is wide and the centre close to the origin (z1, z2). A ring around the origin is circulation.
+
+**The status they illustrate** comes from the classifier, plus one check (`resonance/secular_centre.py`): a secular LIBRATION whose centre moves monotonically by more than `secular_centre_drift` degrees within a turn, without a turning point, becomes BASELINE_TOO_SHORT (−6) — bounded over the baseline, a longer integration would tell (2110 in g − g6 − 2g7 + 2g8 drifts 100° in 10 Myr at 0.04″/yr). It is kept apart from the classifier's PROBABLY_SLOW_CIRCULATION (−4, the trend dominates the oscillation), so that the two never merge in a statistic; the `candidates` and `extended` save/plot modes include it, and its figures go to `baseline-too-short/`. The check leaves a `centre:` comment and the summary.csv columns `centre_check` (`kept`/`lowered`), `centre_drift_deg`, `centre_turning_points`, as the free-omega gate does for Lidov-Kozai. The window is a compromise: forced terms make σ oscillate at the beats 1/|g − f| with the forced frequencies, 40–600 kyr for the fundamentals but arbitrarily long for their combinations, while nonlinear secular librations take 2–10 Myr; T/10 (1 Myr at 10 Myr, close to the 700 kyr low-pass of Carruba et al. 2016 for z2) averages the fundamental beats out and keeps every centre motion slow enough to turn within the baseline.
+
+**Checks** (SABA, 10 Myr, `experiments/2026-09-binary-asteroids/sim_secular_reference.py`): z1 — 3701 Purkyne (period ~8 Myr as in Vokrouhlický et al. 2006), 1020, 363, 339, 633, 21211, 20845, 49, 518; z2 — 689 Zita, 8089 Yukar, 2093, 883, 1249, 915, 298, 254; ν6 — Tina, 16712, 48717; ν5 — 11028; g − 3g6 + 2g5 — 4305: status 2. ν16 (127504) transient. Controls: 51 Nemausa (circulates in z2, Carruba et al. 2021) 0, 3527 McCord −3, (847) Agnia slow circulation, every angle of Ceres and Hygiea 0.

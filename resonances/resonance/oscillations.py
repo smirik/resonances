@@ -1,4 +1,4 @@
-"""Oscillation diagnostics of a resonant angle: cycles, recurrence and the FAIR plane.
+"""Oscillation diagnostics of a resonant angle: cycles, turning points, recurrence and the FAIR plane.
 
 Pure signal processing on arrays (times in years and increasing, angles in radians;
 a backward integration is passed in time order, see `MMRDiagnostics`). Nothing here
@@ -13,13 +13,16 @@ are not calibrated decision rules.
   compared between objects or thresholded.
 - The *FAIR* plane (Forgács-Dajka, Sándor & Érdi 2018) is the asteroid mean anomaly
   against the mean-longitude difference to one planet. It is a two-body diagnostic.
+- *Turning points* are the maxima and minima of a smoothed angle with at least a given
+  prominence — where it changes direction, not where it inflects. The secular diagnostics
+  count them on the angle smoothed by `smooth` (a local quadratic fit).
 """
 
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 import numpy as np
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, oaconvolve, savgol_coeffs
 
 
 @dataclass(frozen=True)
@@ -80,6 +83,39 @@ def find_cycles(times: np.ndarray, sigma: np.ndarray, prominence: Optional[float
             )
         )
     return cycles
+
+
+def turning_points(sigma: np.ndarray, prominence: float) -> np.ndarray:
+    """Sorted indices of the maxima and minima of `sigma` with at least `prominence` (same units).
+
+    Extrema at either end are never counted: an angle that has not turned back by `prominence`
+    before the series ends has not shown that it turns. NaNs (the ends of `smooth`) are ignored.
+    """
+    sigma = np.asarray(sigma, dtype=float)
+    inside = np.flatnonzero(np.isfinite(sigma))
+    if len(inside) < 3:
+        return np.array([], dtype=int)
+    values = sigma[inside]
+    maxima, _ = find_peaks(values, prominence=prominence)
+    minima, _ = find_peaks(-values, prominence=prominence)
+    return inside[np.sort(np.concatenate([maxima, minima]))]
+
+
+def smooth(times: np.ndarray, series: np.ndarray, window: float, deriv: int = 0) -> np.ndarray:
+    """Local quadratic fit over `window` years (Savitzky-Golay): the series, or its derivative per year.
+
+    NaN within half a window of either end, where the fit would extrapolate.
+    """
+    times, series = np.asarray(times, dtype=float), np.asarray(series, dtype=float)
+    step = float(np.median(np.diff(times)))  # negative for a backward integration
+    n = int(round(window / abs(step))) | 1  # odd
+    n = max(5, min(n, len(series) - (1 - len(series) % 2)))
+    # the fit as one convolution kernel: the same interior values as savgol_filter, without its O(N n)
+    # direct evaluation (a 1 Myr window at a 100-yr step is 10 001 taps)
+    out = oaconvolve(series, savgol_coeffs(n, 2, deriv=deriv, delta=step, use='conv'), mode='same')
+    out[: n // 2] = np.nan
+    out[len(out) - n // 2 :] = np.nan
+    return out
 
 
 def _cycle_slice(times: np.ndarray, cycle: Cycle) -> slice:

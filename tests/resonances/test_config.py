@@ -58,29 +58,17 @@ def test_config_exception():
 
 
 def test_planetary_frequencies():
-    """Test that fundamental planetary frequencies are available in config"""
-    # Test g values
-    assert resonances.config.has('g5') is True
-    assert float(resonances.config.get('g5')) == 4.25749319
+    """The fundamental frequencies live in `PLANETARY_FREQUENCIES`, not in the .env config (the old
+    g5..s8 keys there were never read and were removed)."""
+    from resonances.data.const import PLANETARY_FREQUENCIES as F, PLANETARY_PHASES
 
-    assert resonances.config.has('g6') is True
-    assert float(resonances.config.get('g6')) == 28.24552984
-
-    assert resonances.config.has('g7') is True
-    assert float(resonances.config.get('g7')) == 3.08675577
-
-    assert resonances.config.has('g8') is True
-    assert float(resonances.config.get('g8')) == 0.67255084
-
-    # Test s values
-    assert resonances.config.has('s5') is True
-    assert float(resonances.config.get('s5')) == 0
-
-    assert resonances.config.has('s6') is True
-    assert float(resonances.config.get('s6')) == -26.34496354
-
-    assert resonances.config.has('s7') is True
-    assert float(resonances.config.get('s7')) == -2.99266093
-
-    assert resonances.config.has('s8') is True
-    assert float(resonances.config.get('s8')) == -0.69251386
+    # AstDyS values (Knezevic & Milani 2000) for the outer planets
+    assert F['g5'] == 4.25749319 and F['g6'] == 28.24552984 and F['g7'] == 3.08675577 and F['g8'] == 0.67255084
+    assert F['s5'] == 0 and F['s6'] == -26.34496354 and F['s7'] == -2.99266093 and F['s8'] == -0.69251386
+    # the inner planets, measured on the package's model; within 0.4 arcsec/yr of Laskar (1990), whose
+    # values differ by general relativity (Mercury) and less for the others
+    la90 = {'g1': 5.5964, 'g2': 7.4559, 'g3': 17.3646, 'g4': 17.9154, 's1': -5.6174, 's2': -7.0798, 's3': -18.8512, 's4': -17.7482}
+    for label, value in la90.items():
+        assert abs(F[label] - value) < 0.4, label
+    assert set(PLANETARY_PHASES) == set(F)
+    assert not resonances.config.has('g5')

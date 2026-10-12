@@ -7,11 +7,11 @@ import astdys
 from resonances.data.util import datetime_from_string
 from resonances.config import config as c
 from resonances.logger import logger
-from resonances.plotting.style import MMR_PLOT_KINDS, resolve_plot_options
+from resonances.plotting.style import MMR_PLOT_KINDS, SECULAR_PLOT_KINDS, resolve_plot_options
 import os
 
 # Plot kinds accepted in `plots`. The MMR kinds are drawn for MMRs only.
-PLOT_KINDS = ('evolution', 'ecc_vector', 'cross_spectrum', 'free_omega') + MMR_PLOT_KINDS
+PLOT_KINDS = ('evolution', 'ecc_vector', 'cross_spectrum', 'free_omega') + tuple(dict.fromkeys(MMR_PLOT_KINDS + SECULAR_PLOT_KINDS))
 
 
 class SavePlotMode(StrEnum):
@@ -21,8 +21,8 @@ class SavePlotMode(StrEnum):
       none       — save/plot nothing
       all        — save/plot everything
       resonant   — status > 0 (TRANSIENT, LIBRATION)
-      candidates — status in {2, 1, -1, -2, -3, -4} (resonant, uncertain and slow-circulation candidates)
-      extended   — status > 0 or in {-3, -4, -5, -9} (candidates + uncertain/slow)
+      candidates — status in {2, 1, -1, -2, -3, -4, -6} (resonant, uncertain, slow-circulation and too-short-baseline candidates)
+      extended   — status > 0 or in {-3, -4, -5, -6, -9} (candidates + uncertain/slow)
       nonzero    — status != 0
       negative   — status < 0
     """
@@ -84,6 +84,22 @@ class SimulationConfig:
         self.secular_angle_mode = kwargs.get('secular_angle_mode', c.get('SECULAR_ANGLE_MODE'))
         if self.secular_angle_mode not in ['osculating', 'proper']:
             raise ValueError(f"Invalid secular angle mode: {self.secular_angle_mode}. Valid modes are 'osculating' and 'proper'.")
+        self._setup_secular_params(kwargs)
+
+    @property
+    def secular_reduced(self) -> bool:
+        """Whether the classified secular angle is the reduced proper one (see `Body.build_proper_angle`)."""
+        return self.secular_angle_mode == 'proper' and self.secular_remove_forced
+
+    def _setup_secular_params(self, kwargs):
+        """The reduced secular angle and the centre check (see docs/secular.md)."""
+        self.secular_remove_forced = kwargs.get('secular_remove_forced', c.get('SECULAR_REMOVE_FORCED', 'True') == 'True')
+        self.secular_centre_check = kwargs.get('secular_centre_check', c.get('SECULAR_CENTRE_CHECK', 'True') == 'True')
+        self.secular_centre_window = float(kwargs.get('secular_centre_window', c.get('SECULAR_CENTRE_WINDOW', 0.1)))
+        self.secular_centre_drift = float(kwargs.get('secular_centre_drift', c.get('SECULAR_CENTRE_DRIFT', 30)))
+        self.secular_turning_prominence = float(kwargs.get('secular_turning_prominence', c.get('SECULAR_TURNING_PROMINENCE', 20)))
+        if not 0 < self.secular_centre_window < 1:
+            raise ValueError(f"secular_centre_window is a fraction of the baseline in (0, 1), got {self.secular_centre_window}")
 
     def _setup_date(self, date, source):
         """Setup date and source configuration."""

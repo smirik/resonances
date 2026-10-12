@@ -16,6 +16,8 @@ import numpy as np
 
 # MMR plot kinds, as named in `plots`; each is drawn by MMRPlotter.plot_<kind>.
 MMR_PLOT_KINDS = ('combined', 'recurrence', 'fair', 'portrait', 'cycles')
+# Secular plot kinds; `combined` and `portrait` mean the same kind of figure as for an MMR.
+SECULAR_PLOT_KINDS = ('combined', 'portrait', 'angle', 'rate')
 
 
 class PlotStyle(StrEnum):
@@ -178,6 +180,25 @@ def time_cmap():
 def time_label(unit: str) -> str:
     """Label of every time colour bar, so all figures read the same."""
     return f'Time ({unit})'
+
+
+def time_colorbar(fig, norm, label: str, **where):
+    """Colour bar of the time scale; `where` is `ax=...` or `cax=...` plus layout keywords."""
+    from matplotlib.cm import ScalarMappable
+
+    bar = fig.colorbar(ScalarMappable(norm=norm, cmap=time_cmap()), **where)
+    bar.set_label(label)
+    bar.outline.set_linewidth(0.5)
+    return bar
+
+
+def panel_letter(ax, letter: str, inside: bool = False):
+    """Panel letter above the top-left corner, or inside it for tightly stacked panels."""
+    if inside:
+        box = {'facecolor': 'white', 'edgecolor': 'none', 'alpha': 0.8, 'pad': 1}
+        ax.text(0.006, 0.95, f'({letter})', transform=ax.transAxes, ha='left', va='top', fontweight='bold', zorder=8, bbox=box)
+    else:
+        ax.text(-0.02, 1.02, f'({letter})', transform=ax.transAxes, ha='right', va='bottom', fontweight='bold')
 
 
 # Defaults of `plot_options` (SimulationConfig / PLOT_OPTIONS). Every nested key is

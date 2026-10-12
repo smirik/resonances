@@ -1,16 +1,17 @@
 import fcntl
+import os
 import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from .config import SimulationConfig, SavePlotMode, MMR_PLOT_KINDS
+from .config import SimulationConfig, SavePlotMode
 from resonances.body import Body
 from resonances.logger import logger
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, LidovKozaiParameters
 from resonances.mmr.mmr import MMR
-from resonances.plotting import Plotter, EccentricityVectorPlotter, CrossSpectrumPlotter, FreeOmegaPlotter, MMRPlotter
-from resonances.resonance import coherence_analysis, omega_free_gate
+from resonances.plotting import Plotter, EccentricityVectorPlotter, CrossSpectrumPlotter, FreeOmegaPlotter, MMRPlotter, SecularPlotter
+from resonances.resonance import coherence_analysis, omega_free_gate, secular_centre
 from resonances.secular import free_elements
 from resonances.resonance.classify.models import ResonanceStatus
 from .serializer import SimulationSerializer
@@ -24,6 +25,7 @@ class DataManager:
     STATUS_FOLDERS = {
         _S.PROBABLY_NEAR_SEPARATRIX: 'probably_near_separatrix',
         _S.PROBABLY_SLOW_CIRCULATION: 'slow-circulation',
+        _S.BASELINE_TOO_SHORT: 'baseline-too-short',
         _S.NEAR_SEPARATRIX: 'near_separatrix',
         _S.LIBRATION: 'resonant',
         _S.TRANSIENT: 'transient',
@@ -36,6 +38,8 @@ class DataManager:
 
     # Folder of the combined MMR figures, under plot_path (status folders go inside it)
     COMBINED_FOLDER = 'combined'
+    # Diagnostic plotters by resonance type; each declares the plot kinds it draws.
+    DIAGNOSTIC_PLOTTERS = ((MMR, MMRPlotter), (SecularResonance, SecularPlotter))
 
     # Fields extracted per segment for the segments summary CSV
     SEGMENT_FIELDS = ('revolutions_true', 'trend_to_oscillation', 'amplitude', 'sign_dominance', 'mean_sigma_dot')
@@ -67,9 +71,9 @@ class DataManager:
             return True
         if mode == SavePlotMode.RESONANT and status > 0:
             return True
-        if mode == SavePlotMode.CANDIDATES and status in (2, 1, -1, -2, -3, -4):
+        if mode == SavePlotMode.CANDIDATES and status in (2, 1, -1, -2, -3, -4, -6):
             return True
-        if mode == SavePlotMode.EXTENDED and (status > 0 or status in (-3, -4, -5, -9)):
+        if mode == SavePlotMode.EXTENDED and (status > 0 or status in (-3, -4, -5, -6, -9)):
             return True
         if mode == SavePlotMode.NONZERO and status != 0:
             return True
@@ -165,10 +169,11 @@ class DataManager:
             if 'evolution' in plots_to_generate:
                 self._plot_evolution(body, resonance, simulation, plot_path)
 
-            # MMR diagnostics: combined figure and its panels as standalone figures
-            mmr_kinds = [kind for kind in MMR_PLOT_KINDS if kind in plots_to_generate]
-            if mmr_kinds and isinstance(resonance, MMR):
-                self._plot_mmr(body, resonance, simulation, plot_path, mmr_kinds)
+            # Diagnostic figures of the resonance type (MMR, secular): `combined` and its panels
+            for resonance_type, plotter_class in self.DIAGNOSTIC_PLOTTERS:
+                kinds = [kind for kind in plotter_class.KINDS if kind in plots_to_generate]
+                if kinds and isinstance(resonance, resonance_type):
+                    self._plot_diagnostics(plotter_class, body, resonance, simulation, plot_path, kinds)
 
             # Cross spectra of the configured pairs
             if 'cross_spectrum' in plots_to_generate:
@@ -198,9 +203,9 @@ class DataManager:
         self._show_or_save(plotter, plot_filename)
         plotter.close()
 
-    def _plot_mmr(self, body: Body, resonance, simulation, plot_path: str, kinds):
-        """MMR diagnostic figures; the oscillation quantities are computed once for all kinds."""
-        plotter = MMRPlotter.from_body(body, resonance, simulation, options=self.config.plot_options)
+    def _plot_diagnostics(self, plotter_class, body: Body, resonance, simulation, plot_path: str, kinds):
+        """Diagnostic figures of one plotter class; its quantities are computed once for all kinds."""
+        plotter = plotter_class.from_body(body, resonance, simulation, options=self.config.plot_options)
         for kind in kinds:
             if plotter.plot(kind):
                 # Combined figures get a folder of their own, to be browsed one after another.
@@ -331,13 +336,30 @@ class DataManager:
         Workers share the summary paths.  The separate lock file keeps the header check and
         the complete pandas write in one critical section, preventing duplicate headers and
         interleaved CSV records when two batches finish together.
+
+        Batches need not share columns: a batch whose angles all skip the segment analysis
+        writes only ``body,resonance`` to segments.csv.  Rows are aligned to the existing
+        header (missing values left empty); new columns rewrite the file with the union.
         """
         lock_filename = f'{filename}.lock'
         with open(lock_filename, 'a') as lock_file:
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
             try:
-                write_header = not Path(filename).exists()
-                df.to_csv(filename, mode='a', header=write_header, index=False)
+                path = Path(filename)
+                if not path.exists() or path.stat().st_size == 0:
+                    df.to_csv(filename, mode='w', header=True, index=False)
+                    return
+                header = list(pd.read_csv(filename, nrows=0).columns)
+                new_columns = [c for c in df.columns if c not in header]
+                if not new_columns:
+                    df.reindex(columns=header).to_csv(filename, mode='a', header=False, index=False)
+                    return
+                existing = pd.read_csv(filename, dtype=str, keep_default_na=False)
+                merged = pd.concat([existing, df.astype(object)], ignore_index=True)
+                merged = merged.reindex(columns=header + new_columns)
+                tmp_filename = f'{filename}.tmp'
+                merged.to_csv(tmp_filename, index=False)
+                os.replace(tmp_filename, filename)
             finally:
                 fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
@@ -436,6 +458,8 @@ class DataManager:
         if isinstance(resonance, LidovKozaiResonance):
             row.update(free_elements.summary_fields(body.free_elements))
             row.update(omega_free_gate.summary_fields(body.free_gates.get(resonance.to_s())))
+        if isinstance(resonance, SecularResonance):
+            row.update(secular_centre.summary_fields(body.centre_checks.get(resonance.to_s())))
         row['comments'] = comments
         return row
 

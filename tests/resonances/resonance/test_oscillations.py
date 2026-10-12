@@ -159,3 +159,46 @@ class TestFair:
 
 def _circular(degrees):
     return np.abs((np.asarray(degrees) + 180) % 360 - 180)
+
+
+class TestTurningPoints:
+    def test_libration_has_two_per_cycle_and_none_at_the_ends(self):
+        # 5 full cycles of a sine: maxima at 1/4, minima at 3/4 of each period; the series starts
+        # and ends at zero, so no end point is an extremum -> 10 turning points, by hand
+        t = np.linspace(0, 5.0, 5001)
+        found = osc.turning_points(np.degrees(np.sin(2 * np.pi * t)), prominence=20.0)
+        assert len(found) == 10
+        np.testing.assert_allclose(t[found[:2]], [0.25, 0.75], atol=1e-3)
+
+    def test_monotonic_drift_and_small_ripples_have_none(self):
+        t = np.linspace(0, 10.0, 10001)
+        drift = -10.0 * t + 5.0 * np.sin(2 * np.pi * t / 0.3)  # 100 deg drift, ripples of 10 deg peak to peak
+        assert len(osc.turning_points(drift, prominence=20.0)) == 0
+
+    def test_an_unconfirmed_extremum_at_the_end_is_not_counted(self):
+        # down 50, up 54, then back down only 5: one turning point (the minimum), as for 4305 in g-3g6+2g5
+        x = np.concatenate([np.linspace(205, 155, 400), np.linspace(155, 209, 400), np.linspace(209, 204, 100)])
+        assert len(osc.turning_points(x, prominence=20.0)) == 1
+
+    def test_nan_ends_are_ignored(self):
+        x = np.degrees(np.sin(np.linspace(0, 4 * np.pi, 2001)))
+        x[:100] = np.nan
+        x[-100:] = np.nan
+        assert len(osc.turning_points(x, prominence=20.0)) == 4
+
+
+class TestSmooth:
+    def test_quadratic_is_reproduced_and_ends_are_nan(self):
+        # a local quadratic fit reproduces a quadratic exactly, and its derivative too (2 t)
+        t = np.arange(0.0, 1000.0, 1.0)
+        y = t**2
+        s = osc.smooth(t, y, window=101.0)
+        d = osc.smooth(t, y, window=101.0, deriv=1)
+        assert np.isnan(s[:50]).all() and np.isnan(s[-50:]).all()
+        np.testing.assert_allclose(s[50:-50], y[50:-50], rtol=1e-9)
+        np.testing.assert_allclose(d[50:-50], 2 * t[50:-50], rtol=1e-9)
+
+    def test_backward_time(self):
+        t = -np.arange(0.0, 1000.0, 1.0)
+        s = osc.smooth(t, np.sin(t / 100.0), window=51.0)
+        assert np.isfinite(s[25:-25]).all()

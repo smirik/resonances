@@ -13,6 +13,8 @@ class ResonanceStatus(IntEnum):
     NEAR_SEPARATRIX = -3
     PROBABLY_SLOW_CIRCULATION = -4
     PROBABLY_NEAR_SEPARATRIX = -5
+    # Secular centre check: bounded within a turn, but the centre only drifts — a longer integration would tell
+    BASELINE_TOO_SHORT = -6
     UNCERTAIN = -9
     CHAOTIC = -99
 

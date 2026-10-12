@@ -58,8 +58,8 @@ Below is the list of options. When lowercase is used, it refers to the arguments
 - `save`/`SAVE` (string or None): whether or not save the result of the simulation. Options: `all`, `resonant`, `candidates`, `extended`, `nonzero`, `negative`, `None`.
   - `resonant` — only confirmed resonant objects (`status > 0`: transient, libration).
   - `candidates` — resonant, uncertain/near-separatrix, and slow-circulation candidates
-    (`status` in {2, 1, -1, -2, -3, -4}).
-  - `extended` — candidates + uncertain/slow (`status > 0` or `status` in {-3, -4, -5, -9}).
+    (`status` in {2, 1, -1, -2, -3, -4, -6}).
+  - `extended` — candidates + uncertain/slow (`status > 0` or `status` in {-3, -4, -5, -6, -9}).
   - `nonzero` — everything except non-resonant (`status != 0`).
   - `negative` — only negative statuses requiring manual verification (`status < 0`).
   - `all` — save everything.
@@ -99,7 +99,16 @@ These decide the Lidov-Kozai status after classification: a librating angle is c
 - `free_gate_min_cycles`/`FREE_GATE_MIN_CYCLES` (float): how many libration periods the baseline must hold before the gate will judge at all; below it the status becomes `-9`. Default: `3`.
 - `free_gate_mask_quantile`/`FREE_GATE_MASK_QUANTILE` (float): samples where |z_free| falls below this fraction of its median are dropped before the argument is unwrapped, since near the origin the argument is undefined. Default: `0.15`.
 
-The planetary fundamentals used for the fit are the same `g5…g8` / `s5…s8` values as the secular module uses, from `.env` (see below).
+The planetary fundamentals used for the fit are the `g5…g8` / `s5…s8` of `PLANETARY_FREQUENCIES` (`resonances/data/const.py`), the same the secular module uses; the inner-planet modes are not fitted (see `docs/free-elements.md`).
+
+## Secular options
+
+- `secular_angle_mode`/`SECULAR_ANGLE_MODE` (`proper` or `osculating`): which secular angle is classified, plotted and saved. `proper` builds it against the planets' mode longitudes `g_j·t + phase_j`; `osculating` takes the angle of the integration, built from the planets' osculating elements, which is right only for `g1`, `g5`, `g6` terms (see `docs/secular.md`). Default: `proper`.
+- `secular_remove_forced`/`SECULAR_REMOVE_FORCED` (bool): reduce the proper angle — subtract from the body's e and i vectors the forced terms at the planetary fundamentals that are not in the angle (those in it are the resonance). False only removes the invariable plane. Default: `True`.
+- `secular_centre_check`/`SECULAR_CENTRE_CHECK` (bool): lower a secular LIBRATION whose centre only drifts to BASELINE_TOO_SHORT (−6). Default: `True`.
+- `secular_centre_window`/`SECULAR_CENTRE_WINDOW` (fraction of the baseline in (0, 1)): the smoothing that defines the centre. Default: `0.1`.
+- `secular_centre_drift`/`SECULAR_CENTRE_DRIFT` (degrees): a centre moving more than this within a turn, with no turning point, is a drift. Default: `30`.
+- `secular_turning_prominence`/`SECULAR_TURNING_PROMINENCE` (degrees): the least change of direction counted as a turning point (the check and the `angle` figure). Default: `20`.
 
 ## Libration options
 

@@ -1,7 +1,8 @@
 """Base plotter with shared save/show/close methods."""
 
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 
@@ -75,3 +76,71 @@ class BasePlotter:
         if self._figure is not None:
             plt.close(self._figure)
             self._figure = None
+
+
+class DiagnosticPlotter(BasePlotter):
+    """The contract shared by the per-resonance diagnostic plotters (MMR, secular).
+
+    Subclasses set `KINDS`, implement `plot_<kind>` for each and `title()`; their diagnostics
+    object `d` provides `unit` and `time_norm()`. Figures are drawn and saved in the style of
+    `options['style']` (`plotting.style.STYLES`), titled when the style asks for it.
+    """
+
+    KINDS: Tuple[str, ...] = ()
+
+    def __init__(self, diagnostics, options: Optional[Dict[str, Any]] = None):
+        from .style import STYLES, resolve_plot_options
+
+        self.d = diagnostics
+        self.options = resolve_plot_options(options)
+        self.style = STYLES[self.options['style']]
+        self._figure = None
+
+    def plot(self, kind: str) -> bool:
+        """Draw one plot kind; False when there is nothing to draw."""
+        if kind not in self.KINDS:
+            raise ValueError(f"Unknown {self.KIND_NAME} plot kind '{kind}'. Known: {', '.join(self.KINDS)}")
+        if self._figure is not None:
+            self.close()
+        getattr(self, f'plot_{kind}')()
+        return self._figure is not None
+
+    KIND_NAME = 'diagnostic'
+
+    def title(self) -> str:
+        return ''
+
+    def save(self, path, **kwargs):
+        import matplotlib as mpl
+
+        kwargs.setdefault('dpi', self.style.dpi)
+        with mpl.rc_context(self.style.rc()):
+            return super().save(path, **kwargs)
+
+    @contextmanager
+    def _figure_of(self, width: float, height: float, tight: bool = True):
+        """New figure in the style's rc context; titled (and tightened) on exit."""
+        import matplotlib as mpl
+        import matplotlib.pyplot as plt
+
+        if self._figure is not None:
+            plt.close(self._figure)
+        with mpl.rc_context(self.style.rc()):
+            self._figure = plt.figure(figsize=(width, height), dpi=self.style.dpi)
+            yield self._figure
+            title = self.title()
+            if self.style.title and title:
+                self._figure.suptitle(title, y=0.985, fontsize=self.style.font_size + 3)
+            if tight:
+                self._figure.tight_layout()
+
+    def _time_panel(self, aspect: float, draw):
+        """One panel coloured by time, with its time colour bar; `draw(ax, norm)` fills it."""
+        from .style import time_colorbar, time_label
+
+        norm = self.d.time_norm()
+        with self._figure_of(self.style.panel_size * aspect, self.style.panel_size) as fig:
+            ax = fig.add_subplot()
+            draw(ax, norm)
+            time_colorbar(fig, norm, time_label(self.d.unit), ax=ax, fraction=0.046, pad=0.03)
+        return self

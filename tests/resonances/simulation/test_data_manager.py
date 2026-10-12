@@ -67,6 +67,33 @@ class TestDataManager:
         assert actual.is_unique
         assert set(actual) == set(expected)
 
+    def test_append_csv_narrow_batch_first_keeps_wide_rows(self, tmp_path):
+        """segments.csv: a batch without segment metrics may finish first (seen on a real 10 kyr run)."""
+        filename = str(tmp_path / "segments.csv")
+        DataManager._append_csv(pd.DataFrame({"body": ["9068"], "resonance": ["g-g6"]}), filename)
+        wide = pd.DataFrame({"body": ["1741"], "resonance": ["g-g6"], "0.1_0.00-0.10_R": [0.25], "0.1_0.00-0.10_amp": [1.5]})
+        DataManager._append_csv(wide, filename)
+        DataManager._append_csv(pd.DataFrame({"body": ["4765"], "resonance": ["s-s6"]}), filename)
+
+        result = pd.read_csv(filename, dtype={"body": str})
+        assert list(result.columns) == ["body", "resonance", "0.1_0.00-0.10_R", "0.1_0.00-0.10_amp"]
+        assert list(result["body"]) == ["9068", "1741", "4765"]
+        assert result.loc[1, "0.1_0.00-0.10_R"] == 0.25
+        assert result.loc[1, "0.1_0.00-0.10_amp"] == 1.5
+        assert result.loc[[0, 2], "0.1_0.00-0.10_R"].isna().all()
+
+    def test_append_csv_wide_batch_first_pads_narrow_rows(self, tmp_path):
+        """Rows missing some columns are aligned to the header, not shifted."""
+        filename = str(tmp_path / "segments.csv")
+        DataManager._append_csv(pd.DataFrame({"body": ["a"], "resonance": ["r1"], "x": [1.0], "y": [2.0]}), filename)
+        DataManager._append_csv(pd.DataFrame({"body": ["b"], "y": [5.0], "resonance": ["r2"]}), filename)
+
+        result = pd.read_csv(filename)
+        assert list(result.columns) == ["body", "resonance", "x", "y"]
+        assert result.loc[1, "resonance"] == "r2"
+        assert np.isnan(result.loc[1, "x"])
+        assert result.loc[1, "y"] == 5.0
+
     def test_process_status_resonant(self):
         """Test process status with 'resonant' mode."""
         assert self.data_manager._process_status(2, 'resonant') is True
@@ -84,11 +111,12 @@ class TestDataManager:
         assert self.data_manager._process_status(-3, 'candidates') is True
         assert self.data_manager._process_status(-4, 'candidates') is True
         assert self.data_manager._process_status(-5, 'candidates') is False
+        assert self.data_manager._process_status(-6, 'candidates') is True  # baseline too short: a candidate
         assert self.data_manager._process_status(-9, 'candidates') is False
         assert self.data_manager._process_status(-99, 'candidates') is False
 
     def test_process_status_extended(self):
-        """Test process status with 'extended' mode (>0 or -3, -4, -5, -9)."""
+        """Test process status with 'extended' mode (>0 or -3, -4, -5, -6, -9)."""
         assert self.data_manager._process_status(2, 'extended') is True
         assert self.data_manager._process_status(1, 'extended') is True
         assert self.data_manager._process_status(0, 'extended') is False
@@ -97,6 +125,7 @@ class TestDataManager:
         assert self.data_manager._process_status(-3, 'extended') is True
         assert self.data_manager._process_status(-4, 'extended') is True
         assert self.data_manager._process_status(-5, 'extended') is True
+        assert self.data_manager._process_status(-6, 'extended') is True
         assert self.data_manager._process_status(-9, 'extended') is True
         assert self.data_manager._process_status(-99, 'extended') is False
 

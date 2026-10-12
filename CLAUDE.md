@@ -14,7 +14,7 @@ Core modules in `resonances/`:
 | `mmr` | MMR classes (`TwoBody`, `ThreeBody`), finder functions |
 | `plotting` | Evolution plots (flexible panel configurator), MMR diagnostics (combined, recurrence, FAIR, portrait, cycles; `screen`/`paper` styles), ecc-vector, cross-spectrum and free-omega plots |
 | `resonance` | Core: classify (`classify_resonance` → `classify_from_data` → `classify_from_metrics`), factory, filtering (Butterworth low-pass; feeds periodograms and classification, not just plots), periodogram (Lomb-Scargle via astropy), cross_spectrum (Welch coherence), coherence_analysis (pair presets + the e-i exchange flag), oscillations (cycles, recurrence, FAIR coordinates for the MMR plots), omega_free_gate (the Lidov-Kozai status decision), planets_mappings |
-| `secular` | Secular resonance class, formula parser, finder, proper angle builder, free (proper) element decomposition |
+| `secular` | Secular resonance class, formula parser, finder, proper angle builder, d'Alembert combinations near a body (`combinations`), free (proper) element decomposition |
 | `simulation` | Simulation engine: `batch_manager` (multicore), `body_manager`, `data_manager` (I/O), `integration` (rebound), `serializer`, `state_manager` |
 
 Key files in `resonances/`:
@@ -32,9 +32,12 @@ Key files in `resonances/`:
 | `resonance/classify/util.py` | `is_unphysical_orbit`, `check_chaos`, `merge_intervals` |
 | `resonance/cross_spectrum.py` | Welch coherence + cross-phase, line extraction, phase criterion, e_forced/e_free. Pure math, no Body/Simulation |
 | `resonance/coherence_analysis.py` | Per-resonance-type pair presets, `analyse_resonance`, the `confirmed_ei` flag, CSV row builders. Changes no status |
-| `resonance/omega_free_gate.py` | The free-omega gate: confirms status 2, demotes to -2 (kinematic libration) or withholds at -9. The only post-classification status change |
+| `resonance/omega_free_gate.py` | The free-omega gate: confirms status 2, demotes to -2 (kinematic libration) or withholds at -9. The only status change of a Lidov-Kozai angle after classification |
 | `resonance/oscillations.py` | Cycles (max to max), recurrence distance, FAIR coordinates. Pure math feeding the MMR plots; changes no status |
 | `plotting/mmr_plots.py` | `MMRDiagnostics` + `draw_*` panels + `MMRPlotter` (standalone and combined figures); `plotting/style.py` holds styles and `plot_options` defaults/validation |
+| `secular/proper_angle.py` | The classified secular angle: body's varpi and Omega against the planets' mode longitudes g_j·t + phase_j (`PLANETARY_FREQUENCIES`, `PLANETARY_PHASES`), reduced by default — forced terms at the fundamentals not in the angle subtracted (`reduced_vectors`) |
+| `resonance/secular_centre.py` | The centre check: a secular LIBRATION whose T/10-smoothed centre only drifts becomes BASELINE_TOO_SHORT (-6), a status of its own (not the classifier's -4). Runs in `identify_librations` right after classification |
+| `plotting/secular_plots.py` | `SecularDiagnostics` + `draw_*` + `SecularPlotter`: kinds `angle`, `rate`, `portrait`, `combined`. `SecularPlotter` and `MMRPlotter` share `DiagnosticPlotter` (`plotting/base.py`); `DataManager.DIAGNOSTIC_PLOTTERS` maps resonance types to them |
 | `secular/free_elements.py` | Forced/free split by least squares at the planetary fundamentals: cluster the candidates at 2/T, fit one representative each, mask the origin, measure the three rates. Pure signal processing, no Body or status |
 
 Detailed documentation lives in `docs/` — see `docs/classify.md` for classification logic, `docs/coherence.md` for cross spectra and the ZLK gate, `docs/free-elements.md` for the forced/free split and the free omega, `docs/plots.md` for plot kinds and options, `docs/config.md` for all config options.
@@ -42,6 +45,7 @@ Detailed documentation lives in `docs/` — see `docs/classify.md` for classific
 ## Important notes
 
 - This is a scientific project. Methods and functions must be accurately tested and validated.
+- Two hooks change a status after classification: the secular centre check and the free-omega gate (Lidov-Kozai). Both go through `Simulation._set_status`, which updates `libration.status` and `body.statuses` together, and both leave a record in summary.csv.
 - `ResonanceStatus` (IntEnum in `resonance/classify/models.py`) is the central status type: values range from 2 (LIBRATION) to -99 (CHAOTIC). Save/plot modes (`SavePlotMode`) filter by these values.
 - Classification has side effects: `classify_resonance` sets `chaos_flag`/`chaos_comment` on the result and may short-circuit to CHAOTIC for unphysical orbits.
 - `Simulation.identify_librations()` is the only hook that runs on every path (single run, batch workers, and `SimulationSerializer.restore()`); post-classification status changes belong there. It must update BOTH `libration.status` and `body.statuses[key]` — summary.csv reads the former (through `to_flat_dict()`), save/plot filters read the latter.
@@ -49,6 +53,7 @@ Detailed documentation lives in `docs/` — see `docs/classify.md` for classific
 - The e-i coherence check no longer changes any status; it produces `confirmed_ei`. Its validity band (`T/(5·n_seg)`) sits below the real Lidov-Kozai periods on the short baselines the package now targets (see `docs/coherence.md`).
 - The cluster representative in `free_elements` (`PRIORITY_E`, `PRIORITY_I`) is a modelling assumption, not a free convention — a different member changes the verdict on 3752 and 591986. What must stay true, and is tested, is that no choice ever turns a non-librator into a libration.
 - The method does not apply to co-orbitals: their forced term is the perturber's own vector, not a planetary fundamental. A confident-looking straight line there is not a measurement (see `docs/free-elements.md`).
+- Secular angles must not be built from the planets' osculating elements: from the ecliptic, no planet's node circulates (the 1.58° invariable-plane tilt dominates) and only Mercury's, Jupiter's and Saturn's perihelia follow their mode. `secular_angle_mode='proper'` (default) is what the classifier reads; the osculating series is kept only for reference. The inner-planet frequencies and phases in `const.py` are measured on the package's own Newtonian model (`experiments/2026-10-planetary-frequencies`), not taken from the literature.
 - The MMR diagnostic plots (recurrence D, cycles) are for reading figures: D uses the object's own scales and is not comparable between objects. Nothing there may feed a status.
 - Do NOT change `times / (2 * np.pi)` conversions or the `save_body(body, times)` signature. The per-call conversion is intentional.
 

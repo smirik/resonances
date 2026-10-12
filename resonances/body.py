@@ -6,6 +6,7 @@ from resonances.resonance import cross_spectrum
 from resonances.resonance.resonance import Resonance
 from resonances.mmr.mmr import MMR
 from resonances.secular.free_elements import DEFAULT_MASK_QUANTILE, free_elements
+from resonances.data.const import INVARIABLE_PLANE, PLANETARY_PHASES
 from resonances.secular.proper_angle import build_proper_angle_series
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
@@ -78,6 +79,7 @@ class Body:
         # orbit alone; the gate built on it is per resonance key.
         self.free_elements = None
         self.free_gates = {}
+        self.centre_checks = {}  # secular_centre.CentreCheck per secular resonance that librated
 
         # Simulation data
         self.index_in_simulation = None
@@ -214,24 +216,38 @@ class Body:
         except Exception:
             raise Exception(f"The filtered angle for the resonance {resonance.to_s()} does not exist in the body {self.name}.")
 
-    def build_proper_angle(self, resonance: Resonance):
+    def build_proper_angle(self, resonance: Resonance, epoch_years: float = 0.0, remove_forced: bool = True):
+        """The secular angle against the planets' linear mode longitudes g_j*t + phase_j, twice:
+
+        - `secular_angles_osculating`: from the body's osculating varpi and Omega (Omega measured from
+          the invariable plane) — what the angle looks like before anything is removed;
+        - `secular_angles_proper`: the same, reduced when `remove_forced` (config `secular_remove_forced`):
+          the body's vectors lose their forced terms at the fundamentals that are not in the angle
+          (`proper_angle.removed_modes`). Without it the two are equal.
+
+        `epoch_years` is J2000 -> t = 0. The angle of the integration itself, built from the planets'
+        osculating longitudes, is not kept: those turn at their own mode only for Mercury's, Jupiter's
+        and Saturn's varpi (docs/secular.md).
+        """
         if not isinstance(resonance, SecularResonance):
             raise Exception(
                 f"You can build proper angle only for a secular resonance. Here resonance is {resonance.to_s()} for the body {self.name}"
             )
 
+        common = dict(
+            times=self.times,
+            body=self,
+            resonance=resonance,
+            planetary_phases=PLANETARY_PHASES,
+            epoch_years=epoch_years,
+            invariable_plane=INVARIABLE_PLANE,
+        )
         try:
-            existing = self.angles.get(resonance.to_s())
-            if existing is not None:
-                self.secular_angles_osculating[resonance.to_s()] = existing.copy()
-            proper_angle = build_proper_angle_series(
-                times=self.times,
-                body=self,
-                resonance=resonance,
-                existing_angle=existing,
-                cutoff_period_years=700_000.0,
+            osculating = build_proper_angle_series(**common)
+            self.secular_angles_osculating[resonance.to_s()] = osculating
+            self.secular_angles_proper[resonance.to_s()] = (
+                build_proper_angle_series(**common, remove_forced=True) if remove_forced else osculating
             )
-            self.secular_angles_proper[resonance.to_s()] = proper_angle
         except Exception as exc:
             logger.warning(f"Failed to build proper secular angle for the body {self.name} in the resonance {resonance.to_s()}: {exc}")
 

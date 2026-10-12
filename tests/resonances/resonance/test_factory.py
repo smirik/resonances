@@ -5,6 +5,7 @@ from resonances.mmr.two_body import TwoBody
 from resonances.mmr.mmr import MMR
 from resonances.secular.secular_resonance import SecularResonance
 from resonances import LidovKozaiResonance
+from resonances.data.const import SECULAR_FORMULAS
 from resonances.resonance.factory import create_mmr, detect_resonance_type, create_resonance, create_secular_resonance
 
 
@@ -84,6 +85,20 @@ def test_detect_resonance_type():
     assert detect_resonance_type('s-s7') == 'secular'  # starts with 's'
     assert detect_resonance_type('2g-2s') == 'secular'  # starts with '2g'
     assert detect_resonance_type('2s-2g') == 'secular'  # starts with '2s'
+
+    # Formulas that do not start with g/s: a leading minus or a bracket (these used to come out as MMRs)
+    assert detect_resonance_type('-g+s+g5-s7') == 'secular'
+    assert detect_resonance_type('-g+2s-g6') == 'secular'
+    assert detect_resonance_type('2(g-g6)+(s-s6)') == 'secular'
+    assert detect_resonance_type('4(g-g6)+(s-s6)') == 'secular'
+    assert detect_resonance_type('nu14') == 'secular'
+    assert detect_resonance_type('NU3') == 'secular'
+    for formula in SECULAR_FORMULAS:
+        assert detect_resonance_type(formula) == 'secular', formula
+        assert isinstance(create_resonance(formula), SecularResonance), formula
+    # Capital planet letters stay MMRs
+    assert detect_resonance_type('1S-1') == 'mmr'
+    assert detect_resonance_type('5J-2S-2') == 'mmr'
 
     # Test Lidov-Kozai identifiers
     assert detect_resonance_type('lk') == 'lidov_kozai'
@@ -173,11 +188,18 @@ def test_create_resonance():
     assert returned_general is general_secular
     assert returned_general.type == 'secular'
 
-    # Unsupported forced indices should raise.
+    # Planets are numbered 1..8 (Mercury..Neptune); anything else is not a planet.
     with pytest.raises(ValueError, match='unsupported forced index'):
-        create_resonance('g1')
+        create_resonance('g-g9')
 
     with pytest.raises(ValueError, match='unsupported forced index'):
+        create_resonance('s-s0')
+
+    # An angle without the body's own g or s is not a resonance of the body.
+    with pytest.raises(ValueError, match='no proper term'):
+        create_resonance('g1')
+
+    with pytest.raises(ValueError, match='no proper term'):
         create_resonance('s2')
 
     # Test complex secular patterns that are supported through the formula parser

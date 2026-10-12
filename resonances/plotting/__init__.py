@@ -20,6 +20,7 @@ from .phase_plots import EccentricityVectorPlotter
 from .mmr_plots import MMRPlotter, MMRDiagnostics
 from .cross_spectrum_plots import CrossSpectrumPlotter
 from .free_omega_plots import FreeOmegaPlotter
+from .secular_plots import SecularPlotter, SecularDiagnostics
 
 __all__ = [
     'BasePlotter',
@@ -35,4 +36,6 @@ __all__ = [
     'EccentricityVectorPlotter',
     'CrossSpectrumPlotter',
     'FreeOmegaPlotter',
+    'SecularPlotter',
+    'SecularDiagnostics',
 ]
