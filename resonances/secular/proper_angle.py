@@ -93,6 +93,34 @@ def reduced_vectors(times_years, ecc, varpi, inc, Omega, terms, vectors=('e', 'i
     return z_e, z_i
 
 
+def free_rates(times_years, ecc, varpi, inc, Omega):
+    """The body's own frequencies g and s, arcsec/yr: the mean rates of its free vectors, i.e. of
+    `reduced_vectors` with every fundamental of the baseline removed (those of the angle too)."""
+    from resonances.secular.free_elements import rate
+
+    times_years = np.asarray(times_years, dtype=float)
+    z_e, z_i = reduced_vectors(times_years, ecc, varpi, inc, Omega, [])
+    return rate(times_years, np.unwrap(np.angle(z_e))), rate(times_years, np.unwrap(np.angle(z_i)))
+
+
+def free_divisor(terms, g: float, s: float, planetary_freqs=None) -> float:
+    """p*g + q*s + sum(c_j * f_j) of an angle, arcsec/yr, with the body's free g and s.
+
+    A diagnostic, no status depends on it. Near 0 the free vector itself turns with the planets' modes
+    (a locked libration, or a near-commensurability the baseline cannot tell from one); a libration
+    with |free divisor| = 2 pi / P_libration is one around the forced equilibrium: the forced term of
+    the angle's own mode is larger than the free amplitude, as in the anti-aligned nu6 libration of Tina.
+    """
+    freqs = PLANETARY_FREQUENCIES if planetary_freqs is None else planetary_freqs
+    value = 0.0
+    for term in terms:
+        if term.index is None:
+            value += term.coefficient * (g if term.mode == 'g' else s)
+        else:
+            value += term.coefficient * freqs[f'{term.mode}{term.index}']
+    return float(value)
+
+
 def invariable_plane_vector(plane=None) -> complex:
     """sin(i/2) exp(i Omega) of the invariable plane w.r.t. the elements' reference plane (`INVARIABLE_PLANE`)."""
     if plane is None:
@@ -111,12 +139,16 @@ def inclination_from_invariable_plane(inc, Omega, plane=None):
 
 
 def _build_angle_series_from_terms(
-    *, times_years, varpi_mean, Omega_mean, terms, planetary_freqs, planetary_phases=None, epoch_years=0.0
+    *, times_years, varpi_mean, Omega_mean, terms, planetary_freqs, planetary_phases=None, epoch_years=0.0, planetary_longitudes=None
 ) -> np.ndarray:
     indices = sorted({t.index for t in terms if t.index is not None})
     varpi_planets, Omega_planets = build_planetary_longitudes_by_index(
         times_years, indices, planetary_freqs, planetary_phases=planetary_phases, epoch_years=epoch_years
     )
+    for label, longitude in (planetary_longitudes or {}).items():  # measured modes replace the linear law
+        index = int(label[1:])
+        if index in indices:
+            (varpi_planets if label[0] == 'g' else Omega_planets)[index] = longitude
 
     angle = np.zeros_like(times_years, dtype=float)
     for term in terms:
@@ -140,6 +172,7 @@ def build_proper_angle_series(
     epoch_years: float = 0.0,
     invariable_plane=None,
     remove_forced: bool = False,
+    planetary_longitudes=None,
 ):
     """`calc_proper_angle_series` with the elements of `body`."""
     return calc_proper_angle_series(
@@ -154,6 +187,7 @@ def build_proper_angle_series(
         epoch_years=epoch_years,
         invariable_plane=invariable_plane,
         remove_forced=remove_forced,
+        planetary_longitudes=planetary_longitudes,
     )
 
 
@@ -169,6 +203,7 @@ def calc_proper_angle_series(
     epoch_years: float = 0.0,
     invariable_plane=None,
     remove_forced: bool = False,
+    planetary_longitudes=None,
 ):
     """
     The secular critical angle of `resonance`, in [0, 2pi).
@@ -197,6 +232,10 @@ def calc_proper_angle_series(
         low-inclination orbit's Omega librates around the invariable node instead of turning at s.
     remove_forced : bool
         Build the angle from `reduced_vectors` (the "reduced" angle).
+    planetary_longitudes : dict or None
+        {'g4': array, ...}: the modes' longitudes measured in the integration
+        (`planet_modes.measured_longitudes`), radians at `times`; they replace the linear law for
+        the modes they contain.
     """
     planetary_freqs = PLANETARY_FREQUENCIES if planetary_freqs is None else planetary_freqs
     planetary_phases = PLANETARY_PHASES if planetary_phases is None else planetary_phases
@@ -219,5 +258,6 @@ def calc_proper_angle_series(
         planetary_freqs=planetary_freqs,
         planetary_phases=planetary_phases,
         epoch_years=epoch_years,
+        planetary_longitudes=planetary_longitudes,
     )
     return np.mod(angle, 2.0 * np.pi)

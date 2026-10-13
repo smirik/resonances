@@ -98,6 +98,14 @@ class SimulationConfig:
         self.secular_centre_window = float(kwargs.get('secular_centre_window', c.get('SECULAR_CENTRE_WINDOW', 0.1)))
         self.secular_centre_drift = float(kwargs.get('secular_centre_drift', c.get('SECULAR_CENTRE_DRIFT', 30)))
         self.secular_turning_prominence = float(kwargs.get('secular_turning_prominence', c.get('SECULAR_TURNING_PROMINENCE', 20)))
+        self.secular_min_turning_points = int(kwargs.get('secular_min_turning_points', c.get('SECULAR_MIN_TURNING_POINTS', 3)))
+        # The planets' mode phases: the linear law of const.py, or measured in the integration (planet_modes)
+        self.secular_planet_phases = kwargs.get('secular_planet_phases', c.get('SECULAR_PLANET_PHASES', 'linear'))
+        self.secular_phase_window = float(kwargs.get('secular_phase_window', c.get('SECULAR_PHASE_WINDOW', 5.0e6)))
+        if self.secular_planet_phases not in ('linear', 'measured'):
+            raise ValueError(f"secular_planet_phases is 'linear' or 'measured', got {self.secular_planet_phases!r}")
+        if self.secular_planet_phases == 'measured' and not self.save_planets:
+            raise ValueError("secular_planet_phases='measured' needs save_planets=True: the planets' elements are what is measured")
         if not 0 < self.secular_centre_window < 1:
             raise ValueError(f"secular_centre_window is a fraction of the baseline in (0, 1), got {self.secular_centre_window}")
 

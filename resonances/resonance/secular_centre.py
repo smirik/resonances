@@ -1,12 +1,14 @@
 """The centre check: is a bounded secular angle a libration, or a drift the baseline is too short to see turn?
 
 The classifier calls an angle LIBRATION as soon as it stays within a turn; an angle with a small
-divisor can drift 110 deg in 10 Myr and never turn (2110 in g-g6-2g7+2g8). The *centre* — the angle
-smoothed over `secular_centre_window` of the baseline — tells them apart:
+divisor can drift 110 deg in 10 Myr and never turn (2110 in g-g6-2g7+2g8), or turn back once, as a
+U, when the body's own frequency drifts through the commensurability (2005 GQ107). The *centre* —
+the angle smoothed over `secular_centre_window` of the baseline — tells them apart:
 
-    the centre turns back (a turning point of at least `secular_turning_prominence` deg) -> LIBRATION
     the centre stays within `secular_centre_drift` deg (a libration faster than the window) -> LIBRATION
-    the centre moves monotonically by more than that, within a turn     -> BASELINE_TOO_SHORT (-6)
+    the centre moves more than that and turns back at least `secular_min_turning_points` times
+    (turning points of at least `secular_turning_prominence` deg; 3 = a cycle and a half)  -> LIBRATION
+    the centre moves more than that and turns back fewer times                              -> BASELINE_TOO_SHORT (-6)
 
 Runs only on LIBRATION and only for secular resonances. -6 is a status of its own, not the classifier's
 PROBABLY_SLOW_CIRCULATION (-4, trend dominating the oscillation): bounded over the baseline, and only
@@ -33,25 +35,29 @@ class CentreCheck:
     turning: np.ndarray  # indices of its turning points
     drift_deg: float  # its range
     lowered: bool
+    min_turning: int = 0  # the turning points a moving centre needs
 
     @property
     def comment(self) -> str:
         if not self.lowered:
             return ''
-        return f'centre: drifts {self.drift_deg:.0f} deg without turning back; a longer integration would tell'
+        return (
+            f'centre: drifts {self.drift_deg:.0f} deg and turns back {len(self.turning)} time(s), fewer than '
+            f'{self.min_turning}; a longer integration would tell'
+        )
 
 
 def analyse(times: np.ndarray, sigma_unwrapped: np.ndarray, config) -> CentreCheck:
-    """The centre of an unwrapped angle (times in years) and whether it only drifts."""
+    """The centre of an unwrapped angle (times in years) and whether the baseline shows it librate."""
     line = np.degrees(osc.smooth(times, sigma_unwrapped, config.secular_centre_window * abs(times[-1] - times[0])))
     drift = float(np.nanmax(line) - np.nanmin(line)) if np.isfinite(line).any() else 0.0
     turning = osc.turning_points(line, config.secular_turning_prominence)
-    lowered = len(turning) == 0 and config.secular_centre_drift < drift < 360.0
-    return CentreCheck(line=line, turning=turning, drift_deg=drift, lowered=lowered)
+    lowered = len(turning) < config.secular_min_turning_points and config.secular_centre_drift < drift < 360.0
+    return CentreCheck(line=line, turning=turning, drift_deg=drift, lowered=lowered, min_turning=config.secular_min_turning_points)
 
 
 def check_centre(status: ResonanceStatus, times: np.ndarray, sigma_unwrapped: np.ndarray, config):
-    """(status, CentreCheck or None): LIBRATION becomes BASELINE_TOO_SHORT when its centre only drifts."""
+    """(status, CentreCheck or None): LIBRATION becomes BASELINE_TOO_SHORT when its moving centre turns back too few times."""
     if status != ResonanceStatus.LIBRATION:
         return status, None
     check = analyse(times, sigma_unwrapped, config)

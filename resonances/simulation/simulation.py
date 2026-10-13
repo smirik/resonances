@@ -14,6 +14,7 @@ from .integration import IntegrationEngine
 from .data_manager import DataManager
 from .batch_manager import BatchManager
 
+from resonances.secular import planet_modes
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.resonance.resonance import Resonance
 from resonances.logger import logger
@@ -115,6 +116,7 @@ class Simulation:
         """
         date = self.config.date.replace(tzinfo=None) if self.config.date else J2000
         epoch_years = (date - J2000).total_seconds() / 86400.0 / DAYS_IN_YEAR
+        longitudes = self.measured_mode_longitudes()
         for body in self.bodies:
             body.axis_filtered = filter_angle(body.axis, self.config)
             for resonance in body.resonances():
@@ -125,7 +127,9 @@ class Simulation:
                 unwrapped = body.angle_unwrapped(resonance)
                 body.angles[res_key] = wrap(unwrapped)
                 if isinstance(resonance, SecularResonance):
-                    body.build_proper_angle(resonance, epoch_years=epoch_years, remove_forced=self.config.secular_remove_forced)
+                    body.build_proper_angle(
+                        resonance, epoch_years=epoch_years, remove_forced=self.config.secular_remove_forced, planetary_longitudes=longitudes
+                    )
                     if self.config.secular_angle_mode == "proper" and res_key in body.secular_angles_proper:
                         unwrapped = np.unwrap(body.secular_angles_proper[res_key])
                         body.angles_unwrapped[res_key] = unwrapped
@@ -133,6 +137,20 @@ class Simulation:
                 unwrapped_filtered_angle = filter_angle(unwrapped, self.config)
                 body.angles_filtered_unwrapped[res_key] = unwrapped_filtered_angle
                 body.angles_filtered[res_key] = wrap(unwrapped_filtered_angle)
+
+    def measured_mode_longitudes(self):
+        """The planets' mode longitudes measured in this integration (`planet_modes`), for the modes the
+        bodies' secular angles use, or None under the linear law (`secular_planet_phases='linear'`)."""
+        if self.config.secular_planet_phases != 'measured':
+            return None
+        labels = {
+            f'{t.mode}{t.index}' for body in self.bodies for r in body.secular_resonances for t in r.formula.terms if t.index is not None
+        }
+        if not labels:
+            return None
+        return planet_modes.measured_longitudes(
+            self.times / (2 * np.pi), self.integration_engine.planets_data, labels, window=self.config.secular_phase_window
+        )
 
     def build_periodograms(self):
         base_periodogram_config = {

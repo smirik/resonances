@@ -22,10 +22,34 @@ def test_a_drifting_centre_lowers_a_libration():
 
 
 def test_a_slow_libration_keeps_its_status():
-    # period 5 Myr, amplitude 80 deg: the centre turns twice in the baseline
-    sigma = np.radians(80.0 * np.sin(2 * np.pi * T / 5e6))
+    # period 4 Myr, amplitude 80 deg: extrema at 1, 3, 5, 7, 9 Myr, all inside the 0.5..9.5 Myr centre
+    sigma = np.radians(80.0 * np.sin(2 * np.pi * T / 4e6))
     status, check = check_centre(ResonanceStatus.LIBRATION, T, sigma, Config)
-    assert status == ResonanceStatus.LIBRATION and not check.lowered and len(check.turning) >= 2
+    assert status == ResonanceStatus.LIBRATION and not check.lowered and len(check.turning) == 5
+
+
+def test_a_cycle_and_a_half_is_the_least_a_moving_centre_needs():
+    # period 6.67 Myr: extrema at 1.67, 5.0, 8.33 Myr -> 3 turning points (1020 Arcadia in z1: 1.3, 4.6, 8.0)
+    sigma = np.radians(80.0 * np.sin(2 * np.pi * T / (1e7 / 1.5)))
+    status, check = check_centre(ResonanceStatus.LIBRATION, T, sigma, Config)
+    assert status == ResonanceStatus.LIBRATION and len(check.turning) == Config.secular_min_turning_points == 3
+
+
+def test_one_cycle_is_too_few():
+    # 80 cos(2 pi t / 8 Myr): extrema at 4 and 8 Myr inside the 0.5..9.5 Myr centre -> 2 turning
+    # points, one cycle (3701 Purkyne in z1, period ~8 Myr)
+    sigma = np.radians(80.0 * np.cos(2 * np.pi * T / 8e6))
+    status, check = check_centre(ResonanceStatus.LIBRATION, T, sigma, Config)
+    assert status == ResonanceStatus.BASELINE_TOO_SHORT and check.lowered and len(check.turning) == 2
+    assert 'turns back 2 time(s), fewer than 3' in check.comment
+
+
+def test_a_single_u_is_lowered():
+    # 2005 GQ107-like: the body's g drifts through the commensurability once; the angle rises
+    # 100 deg and comes back (half a sine over the baseline) with 300-kyr forced wiggles of 30 deg
+    sigma = np.radians(100.0 * np.sin(np.pi * T / 1e7) + 30.0 * np.sin(2 * np.pi * T / 3e5))
+    status, check = check_centre(ResonanceStatus.LIBRATION, T, sigma, Config)
+    assert status == ResonanceStatus.BASELINE_TOO_SHORT and len(check.turning) == 1
 
 
 def test_a_fast_libration_has_a_fixed_centre_and_keeps_its_status():

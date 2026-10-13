@@ -57,8 +57,17 @@ linear resonance removes the resonance itself.
 
 The angle from the osculating elements (same mode longitudes, nothing removed) is saved as
 `<resonance>_angle_osculating`; `secular_angle_mode='osculating'` classifies the integration's angle
-instead. A LIBRATION whose centre only drifts is lowered to −4 by the centre check (see
+instead. A LIBRATION whose smoothed centre moves but turns back fewer than
+`secular_min_turning_points` times (3: a cycle and a half) is lowered to −6 by the centre check (see
 [Plots](plots.md), "Secular diagnostics", and [Config](config.md)).
+
+**Free divisor** (summary.csv `free_divisor`, ″/yr; a diagnostic, no status depends on it):
+`p g + q s + Σ…` with the body's own `g` and `s` — the rates of its free vectors, every fundamental
+removed (`proper_angle.free_rates`). Near 0 the free vector itself keeps pace with the planets' modes
+(16712 and 48717 in ν6, the z1 and z2 librators). A libration whose period is `2π/|free divisor|` is
+one around the forced equilibrium: the angle's own forced term is larger than the free amplitude and
+the free vector turns at its own rate — Tina in ν6 (2.18″/yr, 592 kyr), the anti-aligned ν6 libration
+of Carruba & Morbidelli (2011). The two cannot be told apart by this number alone, so it changes nothing.
 
 ## Planetary frequencies and phases
 
@@ -68,8 +77,18 @@ barycentre) by a frequency analysis over 10 Myr: `experiments/2026-10-planetary-
 Against Laskar (1990, Icarus 88, 266, Tables II–III) the outer planets agree to 0.01–0.02″/yr and
 1–2° in phase, `g3, g4, s3, s4` to 0.01–0.06″/yr; `g1` is lower by 0.38″/yr, `g2` by 0.12, `s1` higher
 by 0.11 — the model has no general relativity. The inner frequencies drift by ~0.01″/yr over 10 Myr,
-and their phases are uncertain by tens of degrees (this shifts a libration centre, not a status).
-`s2` is split into several lines in this model and is the least certain of all.
+and their phases are uncertain by tens of degrees. `s2` is split into several lines in this model and
+is the least certain of all.
+
+**Measured phases** (`secular_planet_phases='measured'`, needs `save_planets=True`). Over tens of
+Myr the linear law drifts away from the integrated planets: in a 20 Myr run of the package's model the
+phase of s4 is off by 80° after 17 Myr, s3 by 23°, g3 and s2 by 20°, and even s6 by 16° (the AstDyS
+`s6` is 0.003″/yr off the model's). `resonances/secular/planet_modes.py` fits the phase of mode `j`
+in planet `j`'s own vector (`e·exp(iϖ)` for `g_j`, `sin(i/2)·exp(iΩ)` for `s_j`) by least squares
+on all eight modes of that kind, in windows of `secular_phase_window` (5 Myr: g3 and g4 are 0.54″/yr
+apart), a tenth of a window apart, and builds the longitude as `g_j t + φ_j(t)`. Within half a window
+of either end the phase goes on along its slope. A baseline shorter than the window keeps the linear
+law: a shorter fit cannot separate g3 from g4 (over 200 kyr it puts g3 51° off).
 
 ## Which resonances to check
 
@@ -80,6 +99,15 @@ angle allowed by the d'Alembert rules (coefficients summing to zero, an even num
 to the given order and keeps those whose divisor `p g + q s + Σ…` is inside the window for its
 order. Order 6 with all fifteen planetary modes gives ~900 angles within 1″/yr of a main-belt
 body — the window and the modes have to be chosen physically (see `experiments/2026-09-binary-asteroids/scan_secular.py`).
+
+The catalogue is wider than what the literature reports. Librations are shown for ν5, ν6, ν16, ν4
+(one Hungaria), z1, z2, g+g5−2g6, g+2g5−3g6, 2g−3g5+g6, g−g5+s−s7, 2g−g5−g6+s−s6 and, among the
+Hungarias, g−s−g5+s6; s−g5+g8−s6, s+g5−g8−s3, 2s−s4−s6 and 2g−g5−g6 are located there but shown only as
+temporary interactions (Warner et al. 2009; Milani et al. 2010; Knežević 2022). Nothing is reported for
+combinations with `g1, g2, s1, s2` or mixed degree-4 terms of the inner planets with Uranus or Neptune;
+their divisors in this model are also off by 0.1–0.3″/yr (no general relativity). A degree-4 resonance
+(half-width ~0.3″/yr) librates in ~9 Myr, a degree-6 one (~0.1″/yr) in ~26 Myr: the baseline has to
+hold at least a cycle and a half (`experiments/2026-09-binary-asteroids/sim_secular_v5.py`, 50 Myr).
 
 `SecularResonanceFinder` evaluates the catalogue's divisors on AstDyS synthetic proper elements
 (`resonances secular-candidates` on the command line).
@@ -106,3 +134,7 @@ print(sim.bodies[0].statuses)   # z1 librates (2), nu16 does not
 4. Souami, D. & Souchay, J. (2012). The solar system's invariable plane. A&A 543, A133.
 5. Vokrouhlický, D., Brož, M., Bottke, W. F., Nesvorný, D. & Morbidelli, A. (2006). The peculiar case of the Agnia asteroid family. Icarus 183, 349.
 6. Carruba, V. (2009). The (not so) peculiar case of the Padua family. MNRAS 395, 358.
+7. Carruba, V. & Morbidelli, A. (2011). On the first ν6 anti-aligned librating asteroid family of Tina. MNRAS 412, 2040.
+8. Warner, B. D., Harris, A. W., Vokrouhlický, D., Nesvorný, D. & Bottke, W. F. (2009). Analysis of the Hungaria asteroid population. Icarus 204, 172.
+9. Milani, A., Knežević, Z., Novaković, B. & Cellino, A. (2010). Dynamics of the Hungaria asteroids. Icarus 207, 769.
+10. Knežević, Z. (2022). Survey of secular resonances in the asteroid belt. Serb. Astron. J. 204, 1.

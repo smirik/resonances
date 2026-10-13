@@ -105,9 +105,12 @@ The planetary fundamentals used for the fit are the `g5…g8` / `s5…s8` of `PL
 
 - `secular_angle_mode`/`SECULAR_ANGLE_MODE` (`proper` or `osculating`): which secular angle is classified, plotted and saved. `proper` builds it against the planets' mode longitudes `g_j·t + phase_j`; `osculating` takes the angle of the integration, built from the planets' osculating elements, which is right only for `g1`, `g5`, `g6` terms (see `docs/secular.md`). Default: `proper`.
 - `secular_remove_forced`/`SECULAR_REMOVE_FORCED` (bool): reduce the proper angle — subtract from the body's e and i vectors the forced terms at the planetary fundamentals that are not in the angle (those in it are the resonance). False only removes the invariable plane. Default: `True`.
-- `secular_centre_check`/`SECULAR_CENTRE_CHECK` (bool): lower a secular LIBRATION whose centre only drifts to BASELINE_TOO_SHORT (−6). Default: `True`.
+- `secular_centre_check`/`SECULAR_CENTRE_CHECK` (bool): lower a secular LIBRATION whose moving centre turns back too few times to BASELINE_TOO_SHORT (−6). Default: `True`.
 - `secular_centre_window`/`SECULAR_CENTRE_WINDOW` (fraction of the baseline in (0, 1)): the smoothing that defines the centre. Default: `0.1`.
-- `secular_centre_drift`/`SECULAR_CENTRE_DRIFT` (degrees): a centre moving more than this within a turn, with no turning point, is a drift. Default: `30`.
+- `secular_centre_drift`/`SECULAR_CENTRE_DRIFT` (degrees): a centre moving less than this stands still (a libration faster than the window). Default: `30`.
+- `secular_min_turning_points`/`SECULAR_MIN_TURNING_POINTS` (int): the turning points a moving centre needs to stay a LIBRATION; 3 = a cycle and a half (1020 Arcadia in z1 at 10 Myr). Default: `3`.
+- `secular_planet_phases`/`SECULAR_PLANET_PHASES` (`linear` or `measured`): the planets' mode phases in a secular angle — the linear law of `const.py`, or fitted in the integration itself (needs `save_planets=True`; see [Secular](secular.md)). Default: `linear`.
+- `secular_phase_window`/`SECULAR_PHASE_WINDOW` (years): the sliding window of the measured phases. Default: `5000000`.
 - `secular_turning_prominence`/`SECULAR_TURNING_PROMINENCE` (degrees): the least change of direction counted as a turning point (the check and the `angle` figure). Default: `20`.
 
 ## Libration options

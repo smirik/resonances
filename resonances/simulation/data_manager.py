@@ -277,12 +277,16 @@ class DataManager:
         return plot_path
 
     def save_planets(self, times, planets_data):
-        """Save planetary data."""
+        """Save planetary data.
+
+        Every batch worker integrates the same planets and writes the same files: each is written to a
+        temporary name and moved into place, so two workers never interleave in one file."""
         self.ensure_save_path_exists()
 
         for planet, data in planets_data.items():
-            df = pd.DataFrame(data=data)
-            df.to_csv(f'{self.config.save_path}/data-planet-{planet}.csv', index=False)
+            path = f'{self.config.save_path}/data-planet-{planet}.csv'
+            pd.DataFrame(data=data).to_csv(f'{path}.{os.getpid()}.tmp', index=False)
+            os.replace(f'{path}.{os.getpid()}.tmp', path)
 
     def save_simulation_summary(self, bodies):
         """Save simulation summary."""
@@ -460,6 +464,8 @@ class DataManager:
             row.update(omega_free_gate.summary_fields(body.free_gates.get(resonance.to_s())))
         if isinstance(resonance, SecularResonance):
             row.update(secular_centre.summary_fields(body.centre_checks.get(resonance.to_s())))
+            divisor = body.secular_free_divisor(resonance)
+            row['free_divisor'] = None if divisor is None else round(divisor, 4)
         row['comments'] = comments
         return row
 

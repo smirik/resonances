@@ -7,7 +7,7 @@ from resonances.resonance.resonance import Resonance
 from resonances.mmr.mmr import MMR
 from resonances.secular.free_elements import DEFAULT_MASK_QUANTILE, free_elements
 from resonances.data.const import INVARIABLE_PLANE, PLANETARY_PHASES
-from resonances.secular.proper_angle import build_proper_angle_series
+from resonances.secular.proper_angle import build_proper_angle_series, free_divisor, free_rates
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
 from .logger import logger
@@ -80,6 +80,7 @@ class Body:
         self.free_elements = None
         self.free_gates = {}
         self.centre_checks = {}  # secular_centre.CentreCheck per secular resonance that librated
+        self._free_rates = None  # (g, s) of the free vectors, arcsec/yr; see secular_free_divisor
 
         # Simulation data
         self.index_in_simulation = None
@@ -216,7 +217,7 @@ class Body:
         except Exception:
             raise Exception(f"The filtered angle for the resonance {resonance.to_s()} does not exist in the body {self.name}.")
 
-    def build_proper_angle(self, resonance: Resonance, epoch_years: float = 0.0, remove_forced: bool = True):
+    def build_proper_angle(self, resonance: Resonance, epoch_years: float = 0.0, remove_forced: bool = True, planetary_longitudes=None):
         """The secular angle against the planets' linear mode longitudes g_j*t + phase_j, twice:
 
         - `secular_angles_osculating`: from the body's osculating varpi and Omega (Omega measured from
@@ -225,9 +226,11 @@ class Body:
           the body's vectors lose their forced terms at the fundamentals that are not in the angle
           (`proper_angle.removed_modes`). Without it the two are equal.
 
-        `epoch_years` is J2000 -> t = 0. The angle of the integration itself, built from the planets'
-        osculating longitudes, is not kept: those turn at their own mode only for Mercury's, Jupiter's
-        and Saturn's varpi (docs/secular.md).
+        `epoch_years` is J2000 -> t = 0. `planetary_longitudes` ({'g4': array, ...}, config
+        `secular_planet_phases='measured'`) replaces the linear law for the modes it has
+        (`planet_modes.measured_longitudes`). The angle of the integration itself, built from the
+        planets' osculating longitudes, is not kept: those turn at their own mode only for Mercury's,
+        Jupiter's and Saturn's varpi (docs/secular.md).
         """
         if not isinstance(resonance, SecularResonance):
             raise Exception(
@@ -241,6 +244,7 @@ class Body:
             planetary_phases=PLANETARY_PHASES,
             epoch_years=epoch_years,
             invariable_plane=INVARIABLE_PLANE,
+            planetary_longitudes=planetary_longitudes,
         )
         try:
             osculating = build_proper_angle_series(**common)
@@ -250,6 +254,19 @@ class Body:
             )
         except Exception as exc:
             logger.warning(f"Failed to build proper secular angle for the body {self.name} in the resonance {resonance.to_s()}: {exc}")
+
+    def secular_free_divisor(self, resonance: SecularResonance):
+        """The angle's divisor with the body's own free g and s (`proper_angle.free_divisor`), arcsec/yr.
+
+        The free rates are measured once per body, from the whole series; None when they cannot be."""
+        if self._free_rates is None:
+            try:
+                self._free_rates = free_rates(np.asarray(self.times) / (2 * np.pi), self.ecc, self.varpi, self.inc, self.Omega)
+            except Exception as exc:
+                logger.warning(f"Failed to measure the free rates of the body {self.name}: {exc}")
+                self._free_rates = (float('nan'), float('nan'))
+        value = free_divisor(resonance.formula.terms, *self._free_rates)
+        return None if not np.isfinite(value) else value
 
     def in_resonance(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]):
         """
