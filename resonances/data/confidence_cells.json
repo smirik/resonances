@@ -1,0 +1,186 @@
+{
+ "version": 1,
+ "note": "Written by benchmark/tools/calibrate.py from the author verdicts. n_examples/n_errors/accuracy_95: labelled verdicts of the cell at confidence high or certain; uncertain/invalid verdicts and author-uncertain labels are abstentions. Reported in summary.csv (cell_* columns); the file changes no confidence level.",
+ "run": "v2-w24-tx9b",
+ "labelled_rows": 299,
+ "cells": [
+  {
+   "status": "non_resonant",
+   "angle_status": "circulation",
+   "reason": "circulation",
+   "n_examples": 102,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.9637,
+    1.0
+   ],
+   "n_labelled_all": 139,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "resonant",
+   "angle_status": "libration",
+   "reason": "dynamic_libration",
+   "n_examples": 32,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.8928,
+    1.0
+   ],
+   "n_labelled_all": 45,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "transient",
+   "angle_status": "episodic",
+   "reason": "dynamic_episode",
+   "n_examples": 29,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.883,
+    1.0
+   ],
+   "n_labelled_all": 57,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "circulation",
+   "reason": "alias",
+   "n_examples": 6,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.6097,
+    1.0
+   ],
+   "n_labelled_all": 6,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "transient",
+   "angle_status": "episodic",
+   "reason": "subresonance_librates",
+   "n_examples": 2,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.3424,
+    1.0
+   ],
+   "n_labelled_all": 2,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "episodic",
+   "reason": "kinematic_libration",
+   "n_examples": 1,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.2065,
+    1.0
+   ],
+   "n_labelled_all": 5,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "circulation",
+   "reason": "no_resonant_potential",
+   "n_examples": 1,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.2065,
+    1.0
+   ],
+   "n_labelled_all": 1,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "episodic",
+   "reason": "implausible_strength",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 8,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "episodic",
+   "reason": "induced_libration",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 4,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "drift",
+   "reason": "induced_libration",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 3,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "drift",
+   "reason": "kinematic_drift",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 3,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "episodic",
+   "reason": "circulation",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 3,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "transient",
+   "angle_status": "episodic",
+   "reason": "geometric_episode",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 2,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "libration",
+   "reason": "induced_libration",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 1,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "libration",
+   "reason": "kinematic_libration",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 1,
+   "n_errors_all": 0,
+   "error_examples": []
+  }
+ ]
+}

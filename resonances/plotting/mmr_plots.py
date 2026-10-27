@@ -2,12 +2,12 @@
 
 `MMRDiagnostics` gathers the arrays of one body-resonance pair and derives the
 oscillation quantities once (see `resonances.resonance.oscillations`). Every panel is
-a `draw_*` function drawing onto given axes, so the standalone figures and the combined
-one share a single implementation:
+a `draw_*` function drawing onto given axes (the standalone figures of `MMRPlotter`;
+the combined MMR figure is the verdict figure of `plotting/mmr_combined.py`):
 
     series      unwrapped sigma, wrapped sigma and semi-major axis against time
     recurrence  distance between states (sigma, sigma_dot) at two times
-    fair        mean anomaly against the mean-longitude difference (two-body only)
+    fair        mean anomaly against the mean-longitude difference (prograde two-body only)
     portrait    sigma against sigma_dot (or a), coloured by time
     cycles      the sigma cycles, and a over the same cycles, stacked on one period
 
@@ -15,7 +15,6 @@ Times are in years, angles in radians internally; the portrait shows degrees. No
 here changes a status.
 """
 
-import string
 import warnings
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
@@ -28,7 +27,7 @@ from matplotlib.ticker import MaxNLocator
 
 from resonances.logger import logger
 from resonances.resonance import oscillations as osc
-from resonances.resonance.classify.classify import calc_sigma_derivative
+from resonances.resonance.classify.util import calc_sigma_derivative
 from .base import DiagnosticPlotter, time_unit
 from .style import (
     CENTRE,
@@ -36,16 +35,15 @@ from .style import (
     INK,
     MMR_PLOT_KINDS,
     OUT_OF_FOCUS,
+    RATE_ZERO,
     RAW,
     FigureStyle,
     PortraitY,
     RawMode,
     SeriesMode,
-    panel_letter,
     resolve_plot_options,
     time_cmap,
     time_colorbar,
-    time_label,
 )
 
 TWO_PI = 2 * np.pi
@@ -79,6 +77,7 @@ class MMRDiagnostics:
     resonance: str = ''  # full key, e.g. 2J-1+0-1
     label: str = ''  # short notation for titles, e.g. 2J-1
     n_planets: int = 1
+    retrograde: bool = False  # a retrograde (i > 90 deg) resonance: no FAIR
     mean_anomaly: Optional[np.ndarray] = None
     longitude: Optional[np.ndarray] = None
     planet: Optional[PlanetSeries] = None
@@ -159,6 +158,10 @@ class MMRDiagnostics:
         """Why the FAIR plane cannot be drawn, or None when it can."""
         if self.n_planets != 1:
             return 'FAIR is a two-body diagnostic; a three-body argument is not tested by it'
+        if self.retrograde:
+            # FAIR is derived for prograde orbits; for i > 90 deg the saved `longitude` (REBOUND's l)
+            # and `varpi` (Omega + omega) are not even in one convention.
+            return 'FAIR is defined for prograde resonances only'
         if self.mean_anomaly is None or self.longitude is None:
             return 'no mean anomaly / mean longitude of the body'
         if self.planet is None:
@@ -169,22 +172,29 @@ class MMRDiagnostics:
 
     @classmethod
     def from_body(cls, body, resonance, sim=None, focus=None, prominence=None) -> 'MMRDiagnostics':
-        """From a simulated body; the portrait edge is one period of the filter cutoff."""
+        """From a simulated body; the portrait edge is one period of the filter cutoff.
+
+        sigma_f is the analysis' filtered angle (`body.angles_filtered_unwrapped`); after a restore it is not in the
+        data file and is reproduced by re-running the analysis on the saved series (`refiltered_angle`)."""
         key = resonance.to_s()
         times = sim.times if sim is not None else body.times
         names = list(resonance.planets_names)
         planet = _planet_series(sim, names[0]) if len(names) == 1 and sim is not None else None
+        sigma_filtered = body.angles_filtered_unwrapped.get(key)
+        if sigma_filtered is None:
+            sigma_filtered = refiltered_angle(body, resonance, sim)
         return cls(
             times=np.asarray(times) / (2 * np.pi),
             sigma=body.angles[key],
             sigma_raw=body.angles_unwrapped[key],
-            sigma_filtered=body.angles_filtered_unwrapped[key],
+            sigma_filtered=sigma_filtered,
             axis=body.axis,
             axis_filtered=body.axis_filtered if body.axis_filtered is not None else body.axis,
             body_name=str(body.name),
             resonance=key,
             label=resonance.to_short(),
             n_planets=max(len(names), 1),
+            retrograde=bool(getattr(resonance, 'retrograde', False)),
             mean_anomaly=body.M,
             longitude=body.longitude,
             planet=planet,
@@ -192,6 +202,25 @@ class MMRDiagnostics:
             prominence=prominence,
             edge=1.0 / sim.config.oscillations_cutoff if sim is not None else 0.0,
         )
+
+
+def refiltered_angle(body, resonance, sim) -> np.ndarray:
+    """sigma_f of an MMR angle reproduced from the saved series: the analysis is re-run with the run's settings
+    (same input, same cutoff as the verdict) and its filtered angle is put back in the body's row order.
+
+    ValueError when it cannot be: no simulation (planets, settings), or an analysis stopped at G0 (no sigma_f)."""
+    key = resonance.to_s()
+    if sim is None:
+        raise ValueError(f'{body.name} {key}: no filtered angle in memory, and no simulation to re-run the analysis')
+    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
+    from resonances.simulation.mmr_adapter import series_from_body, time_order
+
+    analysis = analyse_mmr(series_from_body(body, resonance, sim), sim.config.analysis_settings, scan_subresonances=False, scan_owner=False)
+    if analysis.prep is None:
+        raise ValueError(f'{body.name} {key}: the analysis is undefined ({analysis.verdict.reason}), there is no filtered angle')
+    filtered = np.empty(len(analysis.prep.angle_f))
+    filtered[time_order(body)] = analysis.prep.angle_f
+    return filtered
 
 
 def _planet_series(sim, name: str) -> Optional[PlanetSeries]:
@@ -425,7 +454,7 @@ def draw_portrait(ax, d: MMRDiagnostics, style: FigureStyle, options: Dict[str, 
     ax.set_ylim(lo - pad, hi + pad)
     if y_kind == PortraitY.RATE:
         ax.set_ylabel(rf'$\dot\sigma$ (deg/{d.unit})')
-        ax.axhline(0, color=RAW, lw=0.5, zorder=1)
+        ax.axhline(0, **RATE_ZERO)
     else:
         ax.set_ylabel(r'$\Delta a$ ($10^{-3}$ au)')
     ax.set_xlabel(r'$\sigma$ (deg)')
@@ -463,38 +492,6 @@ def draw_cycles(ax_sigma, ax_axis, d: MMRDiagnostics, style: FigureStyle, norm: 
 # ------------------------------------------------------------------------- figures
 
 
-def combined_rects(style: FigureStyle, fair: bool) -> Tuple[Dict[str, Tuple[float, float, float, float]], float]:
-    """Panel rectangles (x, y, width, height) of the combined figure, in inches, and its height.
-
-    Top row: three stacked time series spanning exactly the height of the square
-    recurrence (and FAIR) panels. Bottom row: three equal squares and the time colour bar.
-    """
-    lay = style.layout
-    bar_block = lay.bar_pad + lay.bar + lay.bar_room
-    side = (style.width - lay.left - lay.right - 2 * lay.gap - bar_block) / 3
-    height = lay.bottom + side + lay.row_gap + lay.top + lay.title
-
-    rects = {}
-    x = lay.left
-    for name in ('portrait', 'cycles_sigma', 'cycles_axis'):
-        rects[name] = (x, lay.bottom, side, side)
-        x += side + lay.gap
-    rects['time_bar'] = (x - lay.gap + lay.bar_pad, lay.bottom, lay.bar, side)
-
-    y = lay.bottom + side + lay.row_gap
-    squares = 2 if fair else 1
-    series_width = style.width - lay.left - lay.right - squares * (lay.gap + lay.top) - bar_block
-    panel = (lay.top - 2 * lay.stack_gap) / 3
-    for i, name in enumerate(('series_u', 'series_w', 'series_a')):
-        rects[name] = (lay.left, y + (2 - i) * (panel + lay.stack_gap), series_width, panel)
-    x = lay.left + series_width + lay.gap
-    rects['recurrence'] = (x, y, lay.top, lay.top)
-    rects['recurrence_bar'] = (x + lay.top + lay.bar_pad, y, lay.bar, lay.top)
-    if fair:
-        rects['fair'] = (x + lay.top + bar_block + lay.gap, y, lay.top, lay.top)
-    return rects, height
-
-
 def _warn(message: str):
     """Tell the user (console, notebook) and the log file."""
     logger.warning(message)
@@ -502,17 +499,19 @@ def _warn(message: str):
 
 
 class MMRPlotter(DiagnosticPlotter):
-    """Standalone and combined diagnostic figures of one body in one MMR.
+    """Standalone diagnostic figures of one body in one MMR (recurrence, FAIR, portrait, cycles).
+
+    The combined MMR figure is the verdict figure of the analysis (`plotting/mmr_combined.py`, drawn by
+    `DataManager` from `body.mmr_analyses`), not a page of these panels.
 
     Examples
     --------
         >>> plotter = MMRPlotter.from_body(body, mmr, sim, options={'style': 'paper'})
-        >>> plotter.plot_combined().save('combined.pdf')
         >>> plotter.plot('recurrence')  # by kind name, as `plots` in the config
         >>> plotter.save('recurrence.png').close()
     """
 
-    KINDS = MMR_PLOT_KINDS
+    KINDS = tuple(kind for kind in MMR_PLOT_KINDS if kind != 'combined')
     KIND_NAME = 'MMR'
 
     @classmethod
@@ -526,17 +525,13 @@ class MMRPlotter(DiagnosticPlotter):
         body = f'Asteroid {self.d.body_name}' if self.d.body_name else ''
         return ', '.join(part for part in (body, self.d.label or self.d.resonance) if part)
 
-    def _fair_drawable(self, warn_three_body: bool) -> bool:
-        """Whether FAIR can be drawn, warning when it cannot or when it would be aliased.
-
-        A three-body argument is outside FAIR by construction: the combined figure omits
-        the panel silently, a standalone FAIR request is told why.
-        """
+    def _fair_drawable(self) -> bool:
+        """Whether FAIR can be drawn, warning when it cannot (three-body, retrograde, no planet data) or when
+        it would be aliased."""
         d = self.d
         reason = d.fair_unavailable_reason()
         if reason is not None:
-            if warn_three_body or d.n_planets == 1:
-                _warn(f'FAIR plot skipped for {d.body_name} {d.resonance}: {reason}')
+            _warn(f'FAIR plot skipped for {d.body_name} {d.resonance}: {reason}')
             return False
         fraction = osc.fair_step_fraction(d.times, d.axis)
         if fraction > self.options['fair']['max_step_fraction']:
@@ -548,39 +543,6 @@ class MMRPlotter(DiagnosticPlotter):
 
     # -- figures
 
-    def plot_combined(self) -> 'MMRPlotter':
-        """All panels on one figure. FAIR is included only for a two-body argument with planet data."""
-        d, s, o = self.d, self.style, self.options
-        fair = self._fair_drawable(warn_three_body=False)
-        norm = d.time_norm()
-        rects, height = combined_rects(s, fair)
-        with self._figure_of(s.width, height, tight=False) as fig:
-
-            def axes(name):
-                x, y, w, h = rects[name]
-                return fig.add_axes((x / s.width, y / height, w / s.width, h / height))
-
-            series = [axes('series_u'), axes('series_w'), axes('series_a')]
-            for ax in series[1:]:
-                ax.sharex(series[0])
-            draw_series(series, d, s, o)
-            upper = [axes('recurrence')]
-            draw_recurrence(upper[0], d, o, cax=axes('recurrence_bar'))
-            if fair:
-                upper.append(axes('fair'))
-                draw_fair(upper[1], d, s, norm)
-            lower = [axes('portrait'), axes('cycles_sigma'), axes('cycles_axis')]
-            draw_portrait(lower[0], d, s, o, norm)
-            draw_cycles(lower[1], lower[2], d, s, norm)
-            time_colorbar(fig, norm, f'{time_label(d.unit)}; cycle midpoint for stacks', cax=axes('time_bar'))
-
-            letters = iter(string.ascii_lowercase)
-            for ax in series:
-                panel_letter(ax, next(letters), inside=True)
-            for ax in upper + lower:
-                panel_letter(ax, next(letters))
-        return self
-
     def plot_recurrence(self) -> 'MMRPlotter':
         with self._figure_of(self.style.panel_size * 1.15, self.style.panel_size) as fig:
             draw_recurrence(fig.add_subplot(), self.d, self.options)
@@ -588,7 +550,7 @@ class MMRPlotter(DiagnosticPlotter):
 
     def plot_fair(self) -> 'MMRPlotter':
         """FAIR plane; warns and draws nothing when it is not available."""
-        if not self._fair_drawable(warn_three_body=True):
+        if not self._fair_drawable():
             return self
         return self._time_panel(1.2, lambda ax, norm: draw_fair(ax, self.d, self.style, norm))
 

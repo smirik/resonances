@@ -28,6 +28,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
+from resonances.data.util import time_ordered
 from resonances.logger import logger
 from resonances.resonance.cross_spectrum import bandpass
 from .base import BasePlotter, format_period, time_unit, title_prefix
@@ -89,10 +90,13 @@ class CrossSpectrumPlotter(BasePlotter):
         """Create a plotter from a `coherence_analysis.PairAnalysis`.
 
         `times` (in years) and the two series are only needed for the time-domain panel;
-        without them the figure is drawn with the two spectral panels alone.
+        without them the figure is drawn with the two spectral panels alone. A backward run
+        is put in time order, as the spectra were.
         """
         plotter = cls()
         plotter._analysis = analysis
+        if times is not None:
+            times, x, y = time_ordered(times, x, y)
         plotter._times, plotter._x, plotter._y = times, x, y
         plotter._metadata = {'body_name': body_name, 'resonance_key': resonance_key}
         return plotter

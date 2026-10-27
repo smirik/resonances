@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pytest  # noqa: E402
 
+import astdys.util  # noqa: E402
 import resonances  # noqa: E402
 import tests.tools as tools  # noqa: E402
 from resonances.plotting import MMRDiagnostics, MMRPlotter  # noqa: E402
@@ -24,7 +25,6 @@ from resonances.plotting.mmr_plots import (  # noqa: E402
 )
 from resonances.resonance.oscillations import Cycle  # noqa: E402
 from resonances.plotting.style import DEFAULT_PLOT_OPTIONS, PlotStyle, PortraitY, SeriesMode, resolve_plot_options  # noqa: E402
-from resonances.simulation.config import MMR_PLOT_KINDS  # noqa: E402
 
 
 def diagnostics(centre=np.pi, turns=3, n=4000, years=4000.0, planet=True, focus=None):
@@ -48,10 +48,6 @@ def diagnostics(centre=np.pi, turns=3, n=4000, years=4000.0, planet=True, focus=
         planet=PlanetSeries('Jupiter', (sigma + longitude) / 2, np.full(n, 5.2)) if planet else None,
         focus=focus,
     )
-
-
-def letters(figure):
-    return sorted(t.get_text() for ax in figure.axes for t in ax.texts if re.fullmatch(r'\([a-h]\)', t.get_text()))
 
 
 class TestOptions:
@@ -105,6 +101,22 @@ class TestDiagnostics:
         three_body = diagnostics()
         three_body.n_planets = 2
         assert 'two-body' in three_body.fair_unavailable_reason()
+        retrograde = diagnostics()
+        retrograde.retrograde = True
+        assert 'prograde resonances only' in retrograde.fair_unavailable_reason()
+
+    def test_a_retrograde_resonance_has_no_fair(self):
+        body = resonances.Body()
+        n = 400
+        body.times = np.linspace(0, 4000 * 2 * np.pi, n)
+        series = np.linspace(0, 1, n)
+        body.axis, body.M, body.longitude = np.full(n, 10.8), series, series
+        key = '1J-3r0'
+        body.angles[key] = body.angles_unwrapped[key] = body.angles_filtered_unwrapped[key] = series
+        d = MMRDiagnostics.from_body(body, resonances.create_mmr(key))
+        assert d.retrograde is True
+        assert d.label == key
+        assert 'prograde resonances only' in d.fair_unavailable_reason()
 
     def test_envelope_bins(self):
         # 400-yr cycles over 4000 yr = 10 cycles. On 900 px with a 2.5-px line a cycle gets
@@ -208,7 +220,7 @@ class TestDiagnostics:
         assert len(backward.cycles) == 9 and all(c.period == pytest.approx(400, rel=1e-2) for c in backward.cycles)
         expected_rate = 0.6 * 2 * np.pi / 400 * np.cos(2 * np.pi * backward.times / 400)
         assert backward.rate[100:-100] == pytest.approx(expected_rate[100:-100], abs=1e-6)
-        assert MMRPlotter(backward).plot('combined')
+        assert MMRPlotter(backward).plot('cycles')
 
 
 class TestCentreLine:
@@ -247,62 +259,37 @@ class TestCentreLine:
 
 
 class TestFigures:
-    def test_combined_two_body_has_eight_panels(self):
-        plotter = MMRPlotter(diagnostics()).plot_combined()
-        assert letters(plotter.figure) == [f'({c})' for c in 'abcdefgh']
-        assert plotter.figure._suptitle.get_text() == 'Asteroid synthetic, 2J-1'
-        plotter.close()
+    """The standalone MMR panels; the combined MMR figure is the verdict figure (plotting/mmr_combined.py)."""
 
-    def test_combined_without_fair_has_seven_panels(self):
-        with pytest.warns(UserWarning):
-            plotter = MMRPlotter(diagnostics(planet=False)).plot_combined()
-        assert letters(plotter.figure) == [f'({c})' for c in 'abcdefg']
-        plotter.close()
+    def test_combined_is_not_an_mmr_panel(self):
+        assert 'combined' not in MMRPlotter.KINDS
+        with pytest.raises(ValueError, match='Unknown MMR plot kind'):
+            MMRPlotter(diagnostics()).plot('combined')
+
+    def test_retrograde_fair_is_refused(self):
+        d = diagnostics()
+        d.retrograde = True
+        with pytest.warns(UserWarning, match='prograde resonances only'):
+            assert MMRPlotter(d).plot('fair') is False
 
     def test_paper_style(self, tmp_path):
-        plotter = MMRPlotter(diagnostics(), {'style': 'paper'}).plot_combined()
-        assert plotter.figure.get_size_inches()[0] == pytest.approx(7.09)
+        plotter = MMRPlotter(diagnostics(), {'style': 'paper'})
+        plotter.plot('portrait')
         assert plotter.figure._suptitle is None  # the caption carries the title
         plotter.save(tmp_path / 'f.pdf')
-        plotter.close()
-
-    @pytest.mark.parametrize('style', ['screen', 'paper'])
-    @pytest.mark.parametrize('planet', [True, False])
-    def test_combined_geometry(self, style, planet, recwarn):
-        """Top row: the three time series together are as tall as the square recurrence
-        (and FAIR) panels. Bottom row: three equal squares. Measured on the drawn axes."""
-        plotter = MMRPlotter(diagnostics(planet=planet), {'style': style}).plot_combined()
-        fig = plotter.figure
-        w, h = fig.get_size_inches()
-
-        def inches(ax):
-            box = ax.get_position()
-            return box.x0 * w, box.y0 * h, box.width * w, box.height * h
-
-        panels = [ax for ax in fig.axes if any(re.fullmatch(r'\([a-h]\)', t.get_text()) for t in ax.texts)]
-        series, squares = panels[:3], panels[3:]
-        top = max(inches(ax)[1] + inches(ax)[3] for ax in series) - min(inches(ax)[1] for ax in series)
-        upper, lower = squares[: len(squares) - 3], squares[-3:]
-        for ax in upper:
-            x, y, width, height = inches(ax)
-            assert width == pytest.approx(height) == pytest.approx(top)
-            assert y == pytest.approx(inches(series[2])[1])  # bottoms aligned
-        sides = [inches(ax)[2:] for ax in lower]
-        for width, height in sides:
-            assert width == pytest.approx(height) == pytest.approx(sides[0][0])
-        assert len(upper) == (2 if planet else 1)
+        assert (tmp_path / 'f.pdf').stat().st_size > 0
         plotter.close()
 
     def test_recurrence_is_built_once_for_all_figures(self):
         d = diagnostics()
         plotter = MMRPlotter(d)
-        plotter.plot('combined')
+        plotter.plot('recurrence')
         first = d.recurrence(recurrence_points(d), 2)
         plotter.plot('recurrence')
         assert d.recurrence(recurrence_points(d), 2) is first
         plotter.close()
 
-    @pytest.mark.parametrize('kind', MMR_PLOT_KINDS)
+    @pytest.mark.parametrize('kind', MMRPlotter.KINDS)
     def test_every_kind_draws(self, kind):
         plotter = MMRPlotter(diagnostics())
         assert plotter.plot(kind) is True
@@ -332,15 +319,20 @@ class TestFigures:
 class TestRealRun:
     """A short integration through Simulation.run(), as a user would call it."""
 
-    def test_all_mmr_kinds(self):
+    def test_all_mmr_kinds(self, tmp_path):
         sim = resonances.Simulation(
             name='test_mmr_plots',
+            date=astdys.util.convert_mjd_to_datetime(60000),  # the epoch of the sample elements
             integrator='SABA(10,6,4)',
             tmax=10000,
             save='all',
             save_planets=True,
+            save_path=str(tmp_path),
+            plot_path=str(tmp_path),
             plot='all',
             plots=['evolution', 'combined', 'recurrence', 'fair', 'portrait', 'cycles'],
+            plot_layout='flat',  # the statuses of this short run are not known in advance (layouts: test_output_layout)
+            plot_combined_layout='flat',
         )
         sim.create_solar_system()
         sim.add_body(tools.get_3body_elements_sample(), resonances.ThreeBody('4J-2S-1'), name='three')
@@ -349,12 +341,13 @@ class TestRealRun:
             sim.run()
 
         plot_path = Path(sim.config.plot_path)
+        figures = plot_path / 'figures'  # the individual figures' folder (PLOT_FIGURES_FOLDER)
         for kind in ('recurrence', 'portrait', 'cycles'):
-            assert (plot_path / f'three-4J-2S-1+0+0-1-{kind}.png').exists(), kind
-            assert (plot_path / f'two-1J-1+0+0-{kind}.png').exists(), kind
+            assert (figures / f'three-4J-2S-1+0+0-1-{kind}.png').exists(), kind
+            assert (figures / f'two-1J-1+0+0-{kind}.png').exists(), kind
         # Combined figures have their own folder.
         assert (plot_path / 'combined' / 'three-4J-2S-1+0+0-1-combined.png').exists()
         assert (plot_path / 'combined' / 'two-1J-1+0+0-combined.png').exists()
-        assert (plot_path / 'two-1J-1+0+0-fair.png').exists()
-        assert not (plot_path / 'three-4J-2S-1+0+0-1-fair.png').exists()
-        assert (plot_path / 'three-4J-2S-1+0+0-1.png').exists()  # evolution is unchanged
+        assert (figures / 'two-1J-1+0+0-fair.png').exists()
+        assert not list(plot_path.rglob('three-4J-2S-1+0+0-1-fair.png'))
+        assert (figures / 'three-4J-2S-1+0+0-1.png').exists()  # evolution is unchanged

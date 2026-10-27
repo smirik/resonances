@@ -106,7 +106,7 @@ def test_detect_resonance_type():
 
     # Test patterns that behave based on their starting characters
     assert detect_resonance_type('g5-g6') == 'secular'  # starts with 'g' (even though it's g5)
-    assert detect_resonance_type('2*g-2*s') == 'mmr'  # starts with '2*', not '2g'
+    assert detect_resonance_type('2*g-2*s') == 'secular'  # only g and s: secular (and then rejected by the parser)
     assert detect_resonance_type('g+s-s7-g5') == 'secular'  # starts with 'g'
     assert detect_resonance_type('g-2*g5+g6') == 'secular'  # starts with 'g'
 
@@ -230,3 +230,53 @@ def test_create_resonance():
     # Test invalid resonance string (this would be caught by the underlying functions)
     with pytest.raises(Exception, match='notation is wrong'):
         create_resonance('invalid_resonance_string')
+
+
+@pytest.mark.parametrize(
+    'notation, expected_class, short',
+    [
+        ('2S-1', TwoBody, '2S-1'),
+        ('2S-1+0-1', TwoBody, '2S-1'),
+        ('2S-3', TwoBody, '2S-3'),
+        ('2S-1U-1', ThreeBody, '2S-1U-1'),
+        ('2S-1U-1+0+0+0', ThreeBody, '2S-1U-1'),
+        ('4j-2s-1', ThreeBody, '4J-2S-1'),  # lowercase planet letters with a non-secular letter stay MMRs
+    ],
+)
+def test_mmrs_that_start_like_a_secular_formula(notation, expected_class, short):
+    # Capital S is Saturn: these used to be sent to the secular parser and raise.
+    assert detect_resonance_type(notation) == 'mmr'
+    resonance = create_resonance(notation)
+    assert isinstance(resonance, expected_class)
+    assert resonance.to_short() == short
+
+
+def test_saturn_mmr_axis_from_kepler():
+    # 2S-1: n = 2 n_S, so a = a_S * 2^(-2/3) = 9.5415 AU * 0.62996 = 6.0108 AU
+    assert create_resonance('2S-1').resonant_axis == pytest.approx(6.0108, abs=1e-3)
+
+
+@pytest.mark.parametrize(
+    'notation, short',
+    [
+        ('g-g6', 'g-g6'),
+        ('2g-g5-g6', '2g-g5-g6'),
+        ('s-s6', 's-s6'),
+        ('z1', 'g-g6+s-s6'),
+        ('Z2', '2g-2g6+s-s6'),
+        ('nu6', 'g-g6'),
+        ('NU16', 's-s6'),
+        ('2nu6-nu5', 'g-2g6+g5'),
+    ],
+)
+def test_secular_notations(notation, short):
+    assert detect_resonance_type(notation) == 'secular'
+    resonance = create_resonance(notation)
+    assert isinstance(resonance, SecularResonance)
+    assert resonance.to_short() == short
+
+
+@pytest.mark.parametrize('notation', ['G-G6', 'S-S6', '2(G-G6)'])
+def test_capitalised_secular_notation_gets_a_hint(notation):
+    with pytest.raises(ValueError, match="write g and s in lowercase"):
+        create_resonance(notation)

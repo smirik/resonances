@@ -1,0 +1,114 @@
+example_id,status,confidence,angle_status,source
+mmr2__31935__9M-16+0+7,non_resonant,high,episodic,"AUTHOR-QUESTIONS Q4 accepted (DECISIONS 2026-10-15); angle_status circulation -> transient by the author 2026-10-16 (symmetric last-regime rule, final_regime column)"
+mmr2__16017__7S-1+0-6,non_resonant,high,circulation,AUTHOR-QUESTIONS Q4 accepted (DECISIONS 2026-10-15)
+mmr3__117306__1V+5J-7+0+0+1,non_resonant,high,episodic,AUTHOR-QUESTIONS Q4 accepted (DECISIONS 2026-10-15)
+mmr2__182223__7N-19+0+12,resonant,medium,libration,AUTHOR-QUESTIONS Q4 accepted (DECISIONS 2026-10-15)
+mmr3__1566__1R-7J-4+0+0+10,uncertain,,insufficient_time,AUTHOR-QUESTIONS Q4 accepted (DECISIONS 2026-10-15)
+mmr2__385266__16N-27+0+11,non_resonant,,episodic,AUTHOR-QUESTIONS Q4 accepted (DECISIONS 2026-10-15)
+mmr3__23240__1M+3J-3+0+0-1,transient,medium,episodic,AUTHOR-QUESTIONS Q4 accepted (DECISIONS 2026-10-15)
+mmr3__1999_UQ__7E+2M-9+0+0+0,non_resonant,certain,circulation,AUTHOR-QUESTIONS Q4 accepted (DECISIONS 2026-10-15)
+mmr3__285637__3M+7J-6+0+0-4,uncertain,,libration,DECISIONS 2026-10-15 (uncertain + extension)
+mmr3__52356__5J-2S-2+0+0-1,transient,medium,episodic,DECISIONS 2026-10-15 evening (Codex)
+mmr2__82831__13M-24+0+11,non_resonant,medium,episodic,"DECISIONS 2026-10-15 evening (Codex); angle_status circulation -> transient by the author 2026-10-16 (symmetric last-regime rule, final_regime column)"
+mmr3__37087__3J+8S-3+0+0-8__1Myr,non_resonant,,,"author:2026-10-16 16:43 (AUTHOR-FEEDBACK-2026-10-16b, DECISIONS 2026-10-16): reference of a kinematic libration; confidence and angle_status pending author"
+mmr2__33128__6N-7+0+1,transient,,episodic,"author:2026-10-17 (ideal transient, close to pure resonance: angle librates, episode portrait fine; FAIR fails on this object)"
+mmr3__1864__3E-5S-5+0+0+7,non_resonant,,,"author:2026-10-17 (clearly non-resonant, seen in the episode portrait; cycle closure made mandatory)"
+mmr2__31935__9M-16+2+5,transient,,episodic,"author:2026-10-17 12:31 (""транзиент, да""; member row c0774 of 9M-16)"
+zlk__162474__LK__1500kyr,transient,,,"author:2026-10-17 (""обычный транзиент"": omega librates about 270 deg, then about 90 deg; no island_switch flag)"
+mmr2__433__47M-44+0-3,transient,,episodic,"author:2026-10-17 19:18 (""47M-44 - transient""; owner of the 1R-5V+7 libration, ANSWERS 2026-10-17b Q3)"
+mmr3__433__1R-5V+7+0+0-3,non_resonant,,,"author:2026-10-17 19:18 (""трёхтельный - non-resonant""; libration induced by 47M-44: sigma = -(7/44) sigma_47:44 + slow part, residual 0.06 deg)"
+mmr3__2013_VA14__2J+6S-1+0+0-7,non_resonant,,,"author:2026-10-17 19:18 (""non-resonant, согласен""; wiggle on a drift, force short by 135-190x, ANSWERS 2026-10-17b Q3)"
+mmr3__2013_VA14__2J+6S-1+0+0-7__60kyr_1yr,non_resonant,,,"author:2026-10-17 19:18 (same object and verdict as the 20 kyr row)"
+mmr2__2013_AS27__31E-36+0+5,resonant,high,libration,"label_source=author:2026-10-17; subtype moving_centre; literature-backed moving centre (Gallardo 2006 p.30, Wisdom 1985 p.274); min Earth distance 0.0714 au = 7.1 R_H; author accepted conditionally on literature, confirmed by Claude and Codex (ANSWERS 2026-10-17c Q8, impl/w17/q8-moving-centre-lit)"
+mmr3__23240__1M+3J-3+0+0-1,uncertain,,,"author:2026-10-18 (""склоняюсь к uncertain по фазовому портрету"": no closed curves, upward drift of the angle; replaces transient/medium of 2026-10-15; ANSWERS 2026-10-17c Q3)"
+mmr2__33128__6N-7+0+1,transient,high,episodic,"author:2026-10-18 (""поднять до high? Да"": the mark exit_and_capture lifts transient_unexplained, MMR_EXIT_AND_CAPTURE_LIFTS_UNEXPLAINED; ANSWERS 2026-10-17c Q12)"
+mmr2__2003_UG22__10E-17+0+7,resonant,,,"author:2026-10-18 (""ok"" to resonant at 20 kyr: catalogue angle with a moving centre, not the +8-1 frame; ANSWERS 2026-10-17c Q4)"
+coorbital__2017_UM52__1E-1+0+0,transient,high,episodic,author:2026-10-19 (ANSWERS-2026-10-19 Q1; exit observed: raw arc 1.98 turns after the last TP; Claude+Codex agree)
+coorbital__2022_VR1__1E-1+0+0,transient,high,episodic,author:2026-10-19 (ANSWERS-2026-10-19 Q1; raw arc 1.58 turns after the last TP; Claude+Codex agree)
+coorbital__2026_FW12__1E-1+0+0,transient,,episodic,"author:2026-10-19 (ANSWERS-2026-10-19 Q1; author leans high, analysis medium (unexplained capture): confidence open)"
+coorbital__469219__1E-1+0+0,resonant,high,libration,"author:2026-10-19 (ANSWERS-2026-10-19 Q2; QS -> horseshoe without circulation, raw range 356.7 deg)"
+coorbital__164207__1E-1+0+0,resonant,high,libration,"author:2026-10-19 (ANSWERS-2026-10-19 Q2; QS -> horseshoe without circulation, raw range 350 deg)"
+coorbital__524522__1V-1+0+0,resonant,high,libration,author:2026-10-19 (ANSWERS-2026-10-19 Q2; QS -> tadpole without circulation; high not certain)
+coorbital__2020_QU5__1V-1+0+0,uncertain,,insufficient_time,author:2026-10-19 (ANSWERS-2026-10-19 Q3; portrait hints at circulation)
+mmr2__31935__9M-16+0+7,transient,,episodic,author:2026-10-19 (ANSWERS-2026-10-19 Q5; rule C: the catalogue row takes the status of the commensurability)
+mmr2__82831__13M-24+0+11,transient,,episodic,author:2026-10-19 (ANSWERS-2026-10-19 Q5; rule C)
+mmr3__2015_OM35__1R-9E+6+0+0+2,uncertain,,insufficient_time,author:2026-10-19 (ANSWERS-2026-10-19 Q6; replaces non_resonant/drift of 14.10)
+mmr3__2016_FA13__8M-7J-5+0+0+4,uncertain,,insufficient_time,author:2026-10-19 (ANSWERS-2026-10-19 Q6; replaces non_resonant/drift of 14.10)
+coorbital__2024_WJ__1E-1+0+0,transient,medium,episodic,author:2026-10-19 (ANSWERS-2026-10-19 Q8; capture into horseshoe at the end)
+mmr2__2004_TK14__31M-34+0+3,resonant,high,libration,"author:2026-10-19 (ANSWERS-2026-10-19 Q14; turning points deep in the well, our separatrix claim was wrong; Claude+Codex agree)"
+mmr3__37087__3J+8S-3+0+0-8__1Myr,non_resonant,,episodic,"author:2026-10-19 (ANSWERS-2026-10-19 Q16; kinematic libration, Claude+Codex agree)"
+coorbital__2010_NT134__1E-1+0+0,resonant,,libration,"author:2026-10-19 (ANSWERS-2026-10-19 Q17; ""drift"" = centre wander of +-2 deg)"
+mmr2__16017__7S-1+0-6,non_resonant,high,episodic,author:2026-10-19 (ANSWERS-2026-10-19 Q18; replaces circulation)
+mmr3__62243__1M-4J-1+0+0+4,non_resonant,high,drift,author:2026-10-19 (ANSWERS-2026-10-19 Q19; confirms drift: centre shift > amplitude)
+mmr3__1997_GK3__3M+5S-3+0+0-5,non_resonant,medium,episodic,author:2026-10-19 (ANSWERS-2026-10-19 Q20; owner 10E-17+0+7 over the whole record)
+mmr3__2000_YG4__2R-8E-1+0+0+7,non_resonant,medium,circulation,author:2026-10-19 (ANSWERS-2026-10-19 Q20; note: drift 0.45-6.4 kyr induced by 7:23 with Earth)
+mmr3__2003_KQ18__6J+2S-1+0+0-7,uncertain,,insufficient_time,"author:2026-10-19 (ANSWERS-2026-10-19 Q20; arc follows -7 varpi, record 0.88 of the cycle; Claude+Codex agree)"
+mmr3__1998_QA62__1V-5M+3+0+0+1,uncertain,,episodic,author:2026-10-19 (ANSWERS-2026-10-19 Q21; replaces non_resonant/circulation of 14.10)
+mmr3__21028__7E-10M-6+0+0+9,non_resonant,,drift,"author:2026-10-19 (ANSWERS-2026-10-19 Q21; upward drift 1.8-1.95 rev in 50 kyr, kinematic (9 varpi); Claude+Codex agree)"
+mmr3__8306__2M-5S-3+0+0+6,non_resonant,,episodic,author:2026-10-19 (ANSWERS-2026-10-19 Q21; libration episode too short)
+mmr2__2003_UG22__10E-17+0+7__40kyr,transient,,episodic,author:2026-10-19 (ANSWERS-2026-10-19 Q22)
+mmr3__2013_AS27__4E+9S-5+0+0-8,non_resonant,,drift,author:2026-10-19 (ANSWERS-2026-10-19 Q23; owner 31E-36+0+5)
+mmr2__2013_AS27__31E-36+0+5,resonant,medium,libration,author:2026-10-19 (ANSWERS-2026-10-19 Q24; medium accepted; downward drift follows -2 omega)
+mmr3__78085__5J-4S-1+0+0+0,non_resonant,,episodic,"author:2026-10-19 (ANSWERS-2026-10-19 Q11; induced by 2E-7+0+5, Psi turns 4.5 times; Claude+Codex agree)"
+mmr3__2001_HW7__5J+6S-2+0+0-9,non_resonant,,libration,author:2026-10-19 (ANSWERS-2026-10-19 Q15 / C11 ok; induced by 5E-16+0+11)
+mmr3__1999_UQ__8M-9J-4+0+0+5,uncertain,,,"author:2026-10-17 (""uncertain принят""; recorded 2026-10-19)"
+mmr2__385266__16N-27+0+11,non_resonant,medium,episodic,"author:2026-10-19 13:31 (ANSWERS-2026-10-19b §4.1; 55-100 kyr cycles = forced wave of 5N-3, 16:27 too weak by 2-5e3; 500 kyr extension: no long libration; replaces non_resonant/episodic of 15.10)"
+coorbital__2016_CA138__1E-1+0+0,transient,medium,episodic,"author:2026-10-19 13:31 (ANSWERS-2026-10-19b §4.2; one closed horseshoe cycle by phase return 80.1->453.9 yr, then circulation)"
+coorbital__3753__1E-1+0+0,resonant,,libration,author:2026-10-19 13:31 (ANSWERS-2026-10-19b §4.2; phase-return closure 12.6->782.9 yr; replaces uncertain of 19.10 12:16)
+coorbital__2025_RB7__1E-1+0+0,resonant,,libration,author:2026-10-19 13:31 (ANSWERS-2026-10-19b §4.2; phase-return closure 72->782 yr; replaces uncertain of 19.10 12:16)
+coorbital__2026_FW12__1E-1+0+0,transient,medium,episodic,author:2026-10-19 13:31 (ANSWERS-2026-10-19b §4.4; unexplained capture; the meaning of medium to be checked with Codex)
+mmr3__285637__3M+7J-6+0+0-4,non_resonant,medium,libration,"author:2026-10-19 13:31 (ANSWERS-2026-10-19b §4.7; kinematic libration (-4 varpi beat, a does not respond); paper example)"
+mmr3__285637__3M+7J-6+0+0-4__2Myr,non_resonant,high,circulation,author:2026-10-19 13:31 (ANSWERS-2026-10-19b §4.7 / group C; -15.6 rev in 2 Myr)
+mmr3__101703__1V+3S-7+0+0+3,uncertain,,drift,author:2026-10-19 13:31 (ANSWERS-2026-10-19b group G ok; extend to 100-200 kyr)
+mmr3__142694__1V+3S-7+0+0+3,uncertain,,drift,author:2026-10-19 13:31 (ANSWERS-2026-10-19b group G ok)
+mmr3__2003_TG2__4E-1M-3+0+0+0__100kyr,non_resonant,low,episodic,"author:2026-10-19 13:38 (""Давай для TG2 non_resonant/low""; stall at a* ~8% of the 169-173 kyr cycle, leaves before a quarter cycle; replaces transient/low of 14.10)"
+mmr3__2003_TX9__3E+2J-10+0+0+5,resonant,medium,libration,"author:2026-10-19 15:18 (w20-design REPLY §4 q3; double well, captured into the second well after Mars encounters at 6.49-6.87 kyr; replaces resonant/high of 14.10)"
+mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr,resonant,medium,libration,author:2026-10-19 15:18 (w20-design REPLY §4 q3; same orbit at step 0.5 yr; example: double well + capture after Mars encounters)
+mmr2__258640__46J-19+0-27,non_resonant,medium,circulation,"author:2026-10-19 15:18 (w20-design REPLY §4 q6; varpi defined (1.96 turns), angle circulates 24.5 turns in 50 kyr; undefined_phase narrowed)"
+coorbital__2026_FW12__1E-1+0+0,transient,high,episodic,author:2026-10-19 15:18 (w20-design REPLY §4 q2; capture = close approach ~0.65 r_H; no transient_unexplained cap for 1:1)
+coorbital__3753__1E-1+0+0,resonant,medium,libration,author:2026-10-19 15:18 (w20-design REPLY §4 q5; cycle closed only by phase return -> medium)
+coorbital__2025_RB7__1E-1+0+0,resonant,medium,libration,author:2026-10-19 15:18 (w20-design REPLY §4 q5; cycle closed only by phase return -> medium)
+mmr3__21028__7E-10M-6+0+0+9,non_resonant,,drift,author:2026-10-19 15:18 (w20-design REPLY §4 q7; angle word drift for kinematic_drift)
+mmr2__182223__7N-19+0+12,transient,high,episodic,"author:2026-10-23 11:41 (W20 Q5a; classic transient, edge rule (a))"
+mmr3__24820__3J-1S-1+0+0-1,transient,medium,episodic,"author:2026-10-23 11:41 (W20 Q5b; ""obvious capture"", author: medium or high; package low (open))"
+coorbital__2014_OL339__1E-1+0+0,transient,high,,author:2026-10-23 11:41 (W20 Q5c)
+coorbital__2016_CO246__1E-1+0+0,transient,high,,author:2026-10-23 11:41 (W20 Q5c)
+mmr3__37087__3J+8S-3+0+0-8,non_resonant,medium,episodic,"author:2026-10-23 11:41 (W20 Q5d; forced wave on the 2J-1 line, as the 1 Myr row)"
+coorbital__2021_XO3__1V-1+0+0,resonant,high,libration,author:2026-10-23 11:41 (W20 Q5e; author: regime_change or libration both fine; episode bounds 0-300/300-600..700 yr questioned)
+mmr3__501710__1E+7S-4+0+0-4__500kyr,uncertain,,episodic,author:2026-10-23 11:41 (W20 Q5f)
+mmr2__2001_PG14__14E-25+0+11__step0.25yr,transient,medium,episodic,author:2026-10-23 11:41 (W20 Q5g; new example)
+mmr2__78085__2E-7+0+5,transient,medium,episodic,author:2026-10-23 11:41 (W20 Q5h; new example (1 yr); unwrapped angle rises through the captures: analyse later)
+mmr2__78085__2E-7+0+5__step0.5yr,transient,medium,episodic,author:2026-10-23 11:41 (W20 Q5h; new example (0.5 yr))
+mmr2__2004_TK14__31M-34+0+3,resonant,medium,libration,"author:2026-10-24 19:40 (D1a: the 5-yr step aliases a, high is out of reach; union rule + R-ALIAS)"
+mmr2__2004_TK14__31M-34+0+3__step0.5yr,resonant,high,libration,"author:2026-10-24 09:31 (N1b: episodes without a circulation between them cover the record)"
+mmr2__2003_UC22__16M-27+0+11__step0.5yr,resonant,high,libration,"author:2026-10-24 09:31 (0.5-yr twin confirmed)"
+mmr2__433__47M-44+0-3__step0.5yr,transient,medium,episodic,"author:2026-10-24 09:31 (0.5-yr twin confirmed)"
+mmr2__2001_PG14__33S-2+0-31,non_resonant,low,episodic,"author:2026-10-24 19:40 (D2: changed from high; a hard case, closed curves in the portrait come from the 25:14 Earth wave)"
+mmr2__2897__35S-4+0-31,non_resonant,low,episodic,"author:2026-10-24 19:40 (D2: episodic confirmed; level low as PG14, 23.10 'low or medium')"
+mmr3__2003_TG2__4E-1M-3+0+0+0__100kyr,uncertain,,episodic,"author:2026-10-24 19:40 (D4a: failed O1 = uncertain, not non_resonant)"
+mmr3__2013_VA14__2J+6S-1+0+0-7,uncertain,,episodic,"author:2026-10-24 19:40 (D4a)"
+mmr3__2013_VA14__2J+6S-1+0+0-7__60kyr_1yr,uncertain,,episodic,"author:2026-10-24 19:40 (D4a)"
+mmr3__117306__1V+5J-7+0+0+1,non_resonant,medium,episodic,"author:2026-10-24 19:40 (D7: back to his 14.10 level; high was a Q4 cap ceiling)"
+mmr3__2003_UG22__5M-9S-4+0+0+8,non_resonant,medium,drift,"author:2026-10-24 19:40 (D9: a slow own libration longer than the record is not excluded)"
+mmr3__62243__1M-4J-1+0+0+4,non_resonant,medium,drift,"author:2026-10-24 19:40 (D10: word drift by R-KDRIFT, level medium as every kinematic drift)"
+mmr3__142694__1V+3S-7+0+0+3__200kyr,non_resonant,medium,circulation,"author:2026-10-24 19:40 (D14: net centre advance 2.75 turns = circulation, as the twin 101703 200 kyr)"
+mmr3__2003_TX9__3E+2J-10+0+0+5,uncertain,,libration,"author:2026-10-24 19:40 (D16: TEMPORARY until CS12, then back to resonant/medium)"
+mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr,uncertain,,libration,"author:2026-10-24 19:40 (D16: TEMPORARY until CS12, then back to resonant/medium)"
+mmr3__1685__9M+6S-8+0+0-7,non_resonant,high,circulation,"author:2026-10-24 09:31 (N6a: high, another owner exists)"
+mmr2__2001_ND13__1V-3+0+2,transient,medium,episodic,"author:2026-10-26 08:59 (Q6 of for-author-2026-10-25-w23: after CS12 ""стало существенно лучше. Это действительно транзиент"")"
+mmr2__4177__2J-1+0-1,resonant,,,"author:2026-10-27 (W24 page Q5в: slow-test rows)"
+mmr2__624__1J+1+0-2,non_resonant,,,"author:2026-10-27 (W24 page Q5в: slow-test rows)"
+mmr2__666184__3N-4+0+1,non_resonant,,,"author:2026-10-27 (W24 page Q5в: slow-test rows)"
+mmr3__463__4J-2S-1+0+0-1,resonant,,,"author:2026-10-27 (W24 page Q5в: slow-test rows)"
+mmr3__463__5J-4S-1+0+0+0,non_resonant,,,"author:2026-10-27 (W24 page Q5в: slow-test rows)"
+mmr3__490__5J-2S-2+0+0-1,transient,,,"author:2026-10-27 (W24 page Q5в: slow-test rows)"
+coorbital__624__1J-1+0+0,resonant,,,"author:2026-10-27 (W24 page Q5в: slow-test rows)"
+coorbital__588__1J-1+0+0,resonant,,,"author:2026-10-27 (W24 page Q5в: slow-test rows)"
+coorbital__617__1J-1+0+0,resonant,,,"author:2026-10-27 (W24 page Q5в: slow-test rows)"
+mmr3__2003_TX9__3E+2J-10+0+0+5,resonant,,libration,"author:2026-10-27 08:54 (W24 Q1: ""resonant/low меня устроит"")"
+mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr,resonant,,libration,"author:2026-10-27 08:54 (W24 Q1: ""resonant/low меня устроит"")"
+mmr3__2003_TX9__3E+2J-10+0+0+5,uncertain,,libration,"author:2026-10-27 12:35 (W24 Q1 after the review fix: ""uncertain пусть будет""; after the Mars kick no stable regime: third regime 12.6-17.5 kyr)"
+mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr,uncertain,,libration,"author:2026-10-27 12:35 (W24 Q1 after the review fix: ""uncertain пусть будет""; same orbit at step 0.5 yr)"
+mmr2__523899__3N-5+0+2,near_separatrix,,,"author:2026-10-27 17:06 (W24 final page Q2: ""я согласен с оценкой claude (near-separatrix)""; gallery example)"
+zlk__189865__LK,non_resonant,,,"author:2026-10-27 17:06 (W24 final page Q7: ias15 record; the old invalid came from a SABA blow-up)"
+zlk__477492__LK,resonant,,,"author:2026-10-27 17:06 (W24 final page Q7: ias15 record, free-omega gate confirmed)"

@@ -1,30 +1,46 @@
 import datetime
+import math
 import json
 from enum import StrEnum
 import numpy as np
 
 import astdys
+from resonances import mpcorb
+from resonances.simulation.mpc_source import EPOCH_POLICIES as MPC_EPOCH_POLICIES, mpc_settings
 from resonances.data.util import datetime_from_string
 from resonances.config import config as c
 from resonances.logger import logger
 from resonances.plotting.style import MMR_PLOT_KINDS, SECULAR_PLOT_KINDS, resolve_plot_options
+from resonances.simulation import layout
+from resonances.resonance.analysis.settings import (
+    AnalysisSettings,
+    DryRunSettings,
+    dry_run_settings_from_config,
+    parse_value,
+    setting_fields,
+    settings_from_config,
+)
 import os
 
 # Plot kinds accepted in `plots`. The MMR kinds are drawn for MMRs only.
-PLOT_KINDS = ('evolution', 'ecc_vector', 'cross_spectrum', 'free_omega') + tuple(dict.fromkeys(MMR_PLOT_KINDS + SECULAR_PLOT_KINDS))
+# 'clones' is the figure of an ensemble of clones (also drawn with 'combined'; simulation/ensemble_run.py).
+PLOT_KINDS = ('evolution', 'ecc_vector', 'cross_spectrum', 'free_omega', 'clones') + tuple(
+    dict.fromkeys(MMR_PLOT_KINDS + SECULAR_PLOT_KINDS)
+)
+# CLONES_SOURCE values: auto = the provider of the run's elements (astdys, mpc; nasa -> sbdb)
+CLONE_SOURCES = ('auto', 'astdys', 'neodys', 'sbdb', 'mpc')
 
 
 class SavePlotMode(StrEnum):
-    """Mode for saving/plotting body data.
+    """Mode for saving/plotting body data, by the verdict's status string (SPEC §11.5, `status_selected`):
 
-    Modes filter by ResonanceStatus value:
-      none       — save/plot nothing
-      all        — save/plot everything
-      resonant   — status > 0 (TRANSIENT, LIBRATION)
-      candidates — status in {2, 1, -1, -2, -3, -4, -6} (resonant, uncertain, slow-circulation and too-short-baseline candidates)
-      extended   — status > 0 or in {-3, -4, -5, -6, -9} (candidates + uncertain/slow)
-      nonzero    — status != 0
-      negative   — status < 0
+    none       — save/plot nothing
+    all        — save/plot everything
+    resonant   — resonant, transient
+    candidates — resonant, transient, near_separatrix, uncertain
+    extended   — candidates and non_resonant with a libration origin (kinematic, induced, subresonance, ...)
+    nonzero    — everything except non_resonant without a libration origin
+    negative   — near_separatrix, uncertain, invalid
     """
 
     NONE = 'none'
@@ -34,6 +50,39 @@ class SavePlotMode(StrEnum):
     EXTENDED = 'extended'
     NONZERO = 'nonzero'
     NEGATIVE = 'negative'
+
+
+RESONANT_STATUSES = frozenset({'resonant', 'transient'})
+CANDIDATE_STATUSES = RESONANT_STATUSES | {'near_separatrix', 'uncertain'}
+NEGATIVE_STATUSES = frozenset({'near_separatrix', 'uncertain', 'invalid'})
+NON_RESONANT = 'non_resonant'
+
+
+def status_selected(mode, status, libration_origin: str = '') -> bool:
+    """Whether a row with this status string (and libration origin) is saved/plotted under `mode`.
+
+    `status` None (no verdict) is selected by `all` only. `libration_origin` is the verdict's
+    (kinematic, induced, subresonance, dynamic, unknown, or '' when nothing is bounded).
+    """
+    mode = _normalize_mode(mode)
+    if mode is None or mode == SavePlotMode.NONE:
+        return False
+    if mode == SavePlotMode.ALL:
+        return True
+    if status is None:
+        return False
+    status, origin = str(status), str(libration_origin or '')
+    if mode == SavePlotMode.RESONANT:
+        return status in RESONANT_STATUSES
+    if mode == SavePlotMode.CANDIDATES:
+        return status in CANDIDATE_STATUSES
+    if mode == SavePlotMode.EXTENDED:
+        return status in CANDIDATE_STATUSES or (status == NON_RESONANT and origin != '')
+    if mode == SavePlotMode.NONZERO:
+        return status != NON_RESONANT or origin != ''
+    if mode == SavePlotMode.NEGATIVE:
+        return status in NEGATIVE_STATUSES
+    return False
 
 
 def _normalize_mode(value) -> SavePlotMode | None:
@@ -50,6 +99,64 @@ def _normalize_mode(value) -> SavePlotMode | None:
     return None
 
 
+class SavePlanets(StrEnum):
+    """Which planets are kept in memory and written to data-planet-<planet>.csv.
+
+      all      — every planet of the solar system (needed by secular_planet_phases='measured')
+      analysis — the planets the analysis reads: those of the bodies' resonances, plus MMR_OWNER_PLANETS when the run
+                 has an MMR and the owner search is on (`Simulation.planets_needed`)
+      none     — no planet (the MMR owner search and the ripple removal are then not measured)
+
+    `bool(SavePlanets.NONE)` is False, so `if config.save_planets:` still reads "some planets are kept".
+    """
+
+    ALL = 'all'
+    ANALYSIS = 'analysis'
+    NONE = 'none'
+
+    def __bool__(self) -> bool:
+        return self != SavePlanets.NONE
+
+
+def parse_save_planets(value) -> SavePlanets:
+    """SAVE_PLANETS: all | analysis | none; a bool (or 'True'/'False') is accepted: True -> all, False -> none."""
+    if isinstance(value, SavePlanets):
+        return value
+    if isinstance(value, bool) or value is None:
+        return SavePlanets.ALL if value else SavePlanets.NONE
+    text = str(value).strip().lower()
+    if text in ('true', '1', 'yes'):
+        return SavePlanets.ALL
+    if text in ('false', '0', 'no', ''):
+        return SavePlanets.NONE
+    try:
+        return SavePlanets(text)
+    except ValueError:
+        raise ValueError(f"save_planets is one of all, analysis, none (or a bool), got {value!r}") from None
+
+
+def parse_output_step(value) -> float | str | None:
+    """OUTPUT_STEP: None/'' (the default Nout), 'auto' (chosen by the static dry-run), or a positive number of years."""
+    if value is None or str(value).strip() == '':
+        return None
+    if str(value).strip().lower() == 'auto':
+        return 'auto'
+    step = float(value)
+    if not step > 0:
+        raise ValueError(f"output_step is 'auto' or a positive number of years, got {value!r}")
+    return step
+
+
+def nout_for_step(span_yr: float, step_yr: float) -> int:
+    """Nout = ceil(|span| / step) + 1 (at least 2): `np.linspace(0, tmax, Nout)` then steps by at most `step_yr`, the
+    bound the 'auto' step is (5.0012 yr came from Nout = 4000 over 20 kyr; 4001 gives 4.9999 yr; 1001 yr at 2.5 yr
+    gives 402 rows of 2.49 yr, 1 yr gives 2 rows). The ratio is rounded to 1e-9 first: tmax in whole REBOUND units
+    leaves 20000.000000001 yr."""
+    return max(1, math.ceil(round(abs(span_yr) / step_yr, 9))) + 1
+
+
+DATA_SOURCES = ('nasa', 'astdys', 'mpc')
+
 # Integrators that can carry the Moon: only the adaptive IAS15 follows its 27-day orbit (see docs/config.md).
 INTEGRATORS_WITH_MOON = ('ias15',)
 
@@ -63,6 +170,24 @@ def check_integrator_with_moon(integrator: str):
         )
 
 
+def _config_or(config, key: str, default: str) -> str:
+    """A key of .env/.env.dist, or `default` when it is not there (older .env.dist, keys added later)."""
+    return config.get(key) if config.has(key) else default
+
+
+# The figures' subfolders when neither PLOT_LAYOUT nor the old PLOT_SUBFOLDER_STRATEGY is set (the benchmark's tree)
+DEFAULT_PLOT_LAYOUT = 'confidence/status'
+
+
+def _legacy_layout(strategy) -> str:
+    """The layout of the old PLOT_SUBFOLDER_STRATEGY ('' / None: flat, 'status': by status)."""
+    if strategy in (None, '', 'flat'):
+        return 'flat'
+    if strategy != 'status':
+        raise ValueError(f"Invalid plot_subfolder_strategy: {strategy}. Valid values are None or 'status' (or use plot_layout).")
+    return 'status'
+
+
 class SimulationConfig:
     """Handles simulation configuration and setup parameters."""
 
@@ -71,15 +196,17 @@ class SimulationConfig:
         self.name = kwargs.get('name', datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
         # Internal flag for batch workers to skip path verification
         self._skip_path_verification = kwargs.get('_skip_path_verification', False)
-        self._setup_date(kwargs.get('date'), kwargs.get('source'))
+        # Internal: the planets a batch worker keeps (its parent's `Simulation.planets_needed`), None elsewhere
+        self._planets_needed = kwargs.get('_planets_needed')
+        self._setup_date(kwargs.get('date'), kwargs.get('source'), kwargs)
         self._setup_integration_params(kwargs)
         self._setup_save_params(kwargs)
         self._setup_plot_params(kwargs)
         self._setup_libration_params(kwargs)
         self._setup_filtering_params(kwargs)
         self._setup_batch_params(kwargs)
-        self._setup_classify_params(kwargs)
         self._setup_coherence_params(kwargs)
+        self._setup_analysis_params(kwargs)
 
         self.secular_angle_mode = kwargs.get('secular_angle_mode', c.get('SECULAR_ANGLE_MODE'))
         if self.secular_angle_mode not in ['osculating', 'proper']:
@@ -92,34 +219,102 @@ class SimulationConfig:
         return self.secular_angle_mode == 'proper' and self.secular_remove_forced
 
     def _setup_secular_params(self, kwargs):
-        """The reduced secular angle and the centre check (see docs/secular.md)."""
+        """The reduced secular angle and the planets' mode phases (see docs/secular.md)."""
         self.secular_remove_forced = kwargs.get('secular_remove_forced', c.get('SECULAR_REMOVE_FORCED', 'True') == 'True')
-        self.secular_centre_check = kwargs.get('secular_centre_check', c.get('SECULAR_CENTRE_CHECK', 'True') == 'True')
-        self.secular_centre_window = float(kwargs.get('secular_centre_window', c.get('SECULAR_CENTRE_WINDOW', 0.1)))
-        self.secular_centre_drift = float(kwargs.get('secular_centre_drift', c.get('SECULAR_CENTRE_DRIFT', 30)))
-        self.secular_turning_prominence = float(kwargs.get('secular_turning_prominence', c.get('SECULAR_TURNING_PROMINENCE', 20)))
-        self.secular_min_turning_points = int(kwargs.get('secular_min_turning_points', c.get('SECULAR_MIN_TURNING_POINTS', 3)))
         # The planets' mode phases: the linear law of const.py, or measured in the integration (planet_modes)
         self.secular_planet_phases = kwargs.get('secular_planet_phases', c.get('SECULAR_PLANET_PHASES', 'linear'))
         self.secular_phase_window = float(kwargs.get('secular_phase_window', c.get('SECULAR_PHASE_WINDOW', 5.0e6)))
         if self.secular_planet_phases not in ('linear', 'measured'):
             raise ValueError(f"secular_planet_phases is 'linear' or 'measured', got {self.secular_planet_phases!r}")
-        if self.secular_planet_phases == 'measured' and not self.save_planets:
-            raise ValueError("secular_planet_phases='measured' needs save_planets=True: the planets' elements are what is measured")
-        if not 0 < self.secular_centre_window < 1:
-            raise ValueError(f"secular_centre_window is a fraction of the baseline in (0, 1), got {self.secular_centre_window}")
+        if self.secular_planet_phases == 'measured' and self.save_planets != SavePlanets.ALL:
+            raise ValueError("secular_planet_phases='measured' needs save_planets='all' (or True): the modes are fitted on every planet")
 
-    def _setup_date(self, date, source):
-        """Setup date and source configuration."""
+    def _setup_analysis_params(self, kwargs):
+        """Every setting of the libration analysis and the dry-run (see resonance/analysis/settings.py).
+
+        Each field of `AnalysisSettings`/`DryRunSettings` becomes an attribute of the same name, read
+        from the kwarg or from its .env key. The settings objects are built (and validated) here once,
+        and again whenever `analysis_settings` is read, so later attribute changes are honoured.
+        """
+        for cls in (AnalysisSettings, DryRunSettings):
+            for f in setting_fields(cls):
+                env = f.metadata['env']
+                raw = kwargs[f.name] if f.name in kwargs else (c.get(env) if c.has(env) else None)
+                setattr(self, f.name, parse_value(f, raw))
+        settings_from_config(self)  # validates (ValueError with the reason)
+        dry_run_settings_from_config(self)
+
+        # Output of the MMR analysis (docs/config.md)
+        self.save_episodes = self._read_bool(kwargs, 'save_episodes', 'SAVE_EPISODES', True)
+        self.save_candidates = kwargs.get('save_candidates', c.get('SAVE_CANDIDATES', 'top'))
+        if self.save_candidates not in ('top', 'all'):
+            raise ValueError(f"save_candidates is 'top' or 'all', got {self.save_candidates!r}")
+        self.save_constants = self._read_bool(kwargs, 'save_constants', 'SAVE_CONSTANTS', True)
+        self.output_step = parse_output_step(kwargs.get('output_step', c.get('OUTPUT_STEP', '')))
+        if isinstance(self.output_step, float):
+            nout = nout_for_step(self.tmax_yrs, self.output_step)
+            if kwargs.get('Nout') is None:
+                self.Nout = nout
+            elif int(kwargs['Nout']) != nout:
+                logger.warning(f"Nout={kwargs['Nout']} overrides output_step={self.output_step} yr (that step would need Nout={nout})")
+
+    @property
+    def analysis_settings(self) -> AnalysisSettings:
+        """The validated settings object passed to the analysis modules."""
+        return settings_from_config(self)
+
+    @property
+    def dry_run_settings(self) -> DryRunSettings:
+        """The validated settings of the dry-run."""
+        return dry_run_settings_from_config(self)
+
+    @staticmethod
+    def _read_bool(kwargs, key: str, env_key: str, default: bool) -> bool:
+        """A boolean setting from a kwarg or its .env key ('True'/'False')."""
+        if key in kwargs:
+            return bool(kwargs[key])
+        return str(c.get(env_key, str(default))).strip().lower() == 'true'
+
+    def _setup_date(self, date, source, kwargs=None):
+        """The source of the asteroids' elements and the start date of the integration.
+
+        Without an explicit date: the AstDyS catalog epoch for source 'astdys' (set by argument,
+        .env or DATA_SOURCE), the standard epoch of the MPC catalogue for 'mpc', today's midnight
+        for 'nasa'. The bodies' elements must be at this date (`BodyManager.check_epoch`). Dates are
+        naive calendar values in TT (AstDyS, MPC), which Horizons reads as TDB for the planets.
+        """
         self.source = source or c.get('DATA_SOURCE')
+        if self.source not in DATA_SOURCES:
+            raise ValueError(f"Unknown data source {self.source!r}. Valid: {', '.join(DATA_SOURCES)}")
+        if self.source == 'mpc':
+            self._setup_mpc(kwargs or {})
 
         if date is not None:
             self.date = datetime_from_string(date)
-        elif source == 'astdys':
+        elif self.source == 'astdys':
             astdys.set_type("osculating")
             self.date = astdys.get_catalog_datetime()
+        elif self.source == 'mpc':
+            self.date = mpcorb.datetime_from_mjd(self.mpc_snapshot['standard_epoch_mjd'])
         else:
             self.date = datetime.datetime.combine(datetime.datetime.today(), datetime.time.min)
+
+    def _setup_mpc(self, kwargs):
+        """The MPC catalogue (MPC_CATALOG), its epoch policy and the snapshot's provenance (resonances/mpcorb,
+        settings from simulation/mpc_source.py).
+
+        Only for source 'mpc'. A batch worker or a restored run gets `mpc_snapshot` from its parent's config and
+        does not open the catalogue; elsewhere the cached snapshot is read (downloaded on first use).
+        """
+        self.mpc_catalog = kwargs.get('mpc_catalog', _config_or(c, 'MPC_CATALOG', 'mpcorb')) or 'mpcorb'
+        self.mpc_epoch_policy = kwargs.get('mpc_epoch_policy', _config_or(c, 'MPC_EPOCH_POLICY', 'propagate')) or 'propagate'
+        if self.mpc_epoch_policy not in MPC_EPOCH_POLICIES:
+            raise ValueError(f"mpc_epoch_policy is one of {', '.join(MPC_EPOCH_POLICIES)}, got {self.mpc_epoch_policy!r}")
+        # None (empty key): no cap on the propagated span
+        max_days = kwargs.get('mpc_propagate_max_days', _config_or(c, 'MPC_PROPAGATE_MAX_DAYS', ''))
+        self.mpc_propagate_max_days = None if max_days in (None, '') else float(max_days)
+        snapshot = kwargs.get('mpc_snapshot')
+        self.mpc_snapshot = dict(snapshot) if snapshot else mpcorb.provenance(mpcorb.snapshot(settings=mpc_settings(self.mpc_catalog)))
 
     def _setup_integration_params(self, kwargs):
         """Setup integration parameters."""
@@ -133,7 +328,9 @@ class SimulationConfig:
         self.integrator = kwargs.get('integrator', c.get('INTEGRATION_INTEGRATOR'))
         self.dt = kwargs.get('dt', float(c.get('INTEGRATION_DT')))
         self.integration_corrector = kwargs.get('integration_corrector', int(c.get('INTEGRATION_CORRECTOR')))
-        self.integration_safe_mode = kwargs.get('integration_safe_mode', 1)
+        # None = the integrator's own default in setup_integrator (WHFast 0, SABA 1)
+        safe_mode = kwargs.get('integration_safe_mode', c.get('INTEGRATION_SAFE_MODE', ''))
+        self.integration_safe_mode = None if safe_mode in (None, '') else int(safe_mode)
         # The Moon as a separate body, Earth as the geocentre (IntegrationEngine.create_solar_system_with_moon)
         self.solar_system_moon = bool(kwargs.get('solar_system_moon', c.get('SOLAR_SYSTEM_MOON', 'False') == 'True'))
         if self.solar_system_moon:
@@ -143,13 +340,20 @@ class SimulationConfig:
         """Setup save and output parameters."""
         self.save = _normalize_mode(kwargs.get('save', c.get('SAVE')))
         self.save_summary = kwargs.get('save_summary', bool(c.get('SAVE_SUMMARY') == 'True'))
-        self.save_planets = kwargs.get('save_planets', bool(c.get('SAVE_PLANETS') == 'True'))
+        self.save_planets = parse_save_planets(kwargs.get('save_planets', c.get('SAVE_PLANETS', 'analysis')))
 
         self.save_path = kwargs.get('save_path', None)
         if self.save_path is None:
             self.save_path = self._verify_existing_path(f"{c.get('SAVE_PATH')}/{self.name}")
         else:
             self.save_path = self._verify_existing_path(self.save_path)
+        # The series CSVs (data-<body>.csv, periodograms, omega-free, planets) under save_path; '' = save_path itself
+        self.data_folder = layout.folder_setting(kwargs.get('data_folder', _config_or(c, 'DATA_FOLDER', 'data')))
+
+    @property
+    def data_path(self) -> str:
+        """The folder of the series CSVs: save_path/data_folder (save_path itself when data_folder is empty)."""
+        return str(layout.layout_path(self.save_path, self.data_folder, (), {}))
 
     def _setup_plot_params(self, kwargs):
         """Setup plotting parameters."""
@@ -158,10 +362,23 @@ class SimulationConfig:
         self.image_type = kwargs.get('image_type', c.get('PLOT_IMAGE_TYPE'))
         self.plot_config = kwargs.get('plot_config', c.get('PLOT_CONFIG'))  # Optional plot configuration
 
-        plot_subfolder_strategy = kwargs.get('plot_subfolder_strategy', c.get('PLOT_SUBFOLDER_STRATEGY', None))
-        self.plot_subfolder_strategy = plot_subfolder_strategy if plot_subfolder_strategy else None
-        if self.plot_subfolder_strategy is not None and self.plot_subfolder_strategy not in ['status']:
-            raise ValueError(f"Invalid plot_subfolder_strategy: {self.plot_subfolder_strategy}. Valid values are None or 'status'.")
+        # Where the figures go under plot_path: the individual figures in plot_figures_folder, the combined (verdict)
+        # figures in plot_combined_folder ('' = plot_path itself), each split by a layout (simulation/layout.py)
+        self.plot_figures_folder = layout.folder_setting(kwargs.get('plot_figures_folder', _config_or(c, 'PLOT_FIGURES_FOLDER', 'figures')))
+        self.plot_combined_folder = layout.folder_setting(
+            kwargs.get('plot_combined_folder', _config_or(c, 'PLOT_COMBINED_FOLDER', 'combined'))
+        )
+        # plot_layout, else the old name plot_subfolder_strategy ('' or 'status'), else PLOT_LAYOUT, else the old key
+        # when it is set, else DEFAULT_PLOT_LAYOUT (author 2026-10-27, W24 Q8)
+        plot_layout = kwargs.get('plot_layout')
+        if plot_layout is None and 'plot_subfolder_strategy' in kwargs:
+            plot_layout = _legacy_layout(kwargs['plot_subfolder_strategy'])
+        if plot_layout is None:
+            legacy = _config_or(c, 'PLOT_SUBFOLDER_STRATEGY', '')
+            plot_layout = _config_or(c, 'PLOT_LAYOUT', '') or (_legacy_layout(legacy) if legacy else DEFAULT_PLOT_LAYOUT)
+        self.plot_layout = layout.layout_name(layout.parse_layout(plot_layout))
+        combined_layout = kwargs.get('plot_combined_layout', _config_or(c, 'PLOT_COMBINED_LAYOUT', ''))
+        self.plot_combined_layout = layout.layout_name(layout.parse_layout(combined_layout or self.plot_layout))
 
         self.plot_path = kwargs.get('plot_path', None)
         if self.plot_path is None:
@@ -174,7 +391,7 @@ class SimulationConfig:
         if plots_param is not None:
             self.plots = list(plots_param) if isinstance(plots_param, (list, tuple)) else [plots_param]
         else:
-            plots_str = c.get('PLOTS', 'evolution')
+            plots_str = c.get('PLOTS', 'combined')
             self.plots = [p.strip() for p in plots_str.split(',') if p.strip()]
         unknown = [p for p in self.plots if p not in PLOT_KINDS]
         if unknown:
@@ -195,6 +412,16 @@ class SimulationConfig:
         if plot_options is None and c.has('PLOT_OPTIONS') and c.get('PLOT_OPTIONS', '').strip():
             plot_options = json.loads(c.get('PLOT_OPTIONS'))
         self.plot_options = resolve_plot_options(plot_options)
+
+    @property
+    def plot_subfolder_strategy(self):
+        """The old name of the layout: 'status' when the figures are split by status alone, else None."""
+        return 'status' if self.plot_layout == 'status' else None
+
+    @plot_subfolder_strategy.setter
+    def plot_subfolder_strategy(self, value):
+        """Setting the old name sets both layouts ('status' or None/'')."""
+        self.plot_layout = self.plot_combined_layout = layout.layout_name(layout.parse_layout(_legacy_layout(value)))
 
     def _verify_existing_path(self, path):
         """
@@ -237,31 +464,20 @@ class SimulationConfig:
         if self.periodogram_frequency_min is None:  # to show all possible frequencies based on integration time
             self.periodogram_frequency_min = 1.0 / span_yrs
         self.periodogram_frequency_max = kwargs.get('periodogram_frequency_max', float(c.get('LIBRATION_FREQ_MAX')))
-        self.periodogram_critical = kwargs.get('periodogram_critical', None)
-        if self.periodogram_critical is None:
-            self.periodogram_critical = span_yrs * 0.2  # if not set, 20% of integration time should be in libration
         self.periodogram_soft = kwargs.get('periodogram_soft', float(c.get('LIBRATION_SOFT')))
 
-        self.libration_period_critical = kwargs.get('libration_period_critical', None)
-        if self.libration_period_critical is None:
-            self.libration_period_critical = round(span_yrs * 0.1)  # if not set, 10% of integration time should be in libration
-
-        # Handle libration_monotony_critical specially since it's a list
-        if 'libration_monotony_critical' in kwargs:
-            self.libration_monotony_critical = kwargs['libration_monotony_critical']
-        else:
-            self.libration_monotony_critical = [float(x.strip()) for x in c.get('LIBRATION_MONOTONY_CRITICAL').split(",")]
-
+        # Years cut from each end of a series before its periodogram (5% of the span if unset)
         self.libration_period_min = kwargs.get('libration_period_min', None)
         if self.libration_period_min is None:
-            self.libration_period_min = span_yrs * 0.05  # if not set, let's librate at least 5%
+            self.libration_period_min = span_yrs * 0.05
 
     def _setup_filtering_params(self, kwargs):
         self.filter = kwargs.get('filter', c.get('FILTER'))
 
     def _setup_coherence_params(self, kwargs):
-        """Setup cross-spectral coherence parameters.
+        """Setup cross-spectral coherence parameters, the free elements and the free-omega gate.
 
+        The e-i coherence changes no status (`confirmed_ei` only); the gate's outcome is a step of `analyse_zlk`.
         `coherence_pairs` and `coherence_phase_targets` are structured per-resonance-type
         overrides and are kwarg-only (a nested mapping has no sensible .env encoding).
         Both are merged per resonance type over the presets in `cross_spectrum.py`, so
@@ -285,8 +501,10 @@ class SimulationConfig:
         self.coherence_pairs = kwargs.get('coherence_pairs', None)
         self.coherence_phase_targets = kwargs.get('coherence_phase_targets', None)
 
-        # Forced/free split of the element vectors, and the gate built on it. This is what
-        # decides a Lidov-Kozai status after classification — see docs/free-elements.md.
+        # Forced/free split of the element vectors, and the free-omega gate built on it: a step of
+        # analyse_zlk whose outcome analysis.secular.decide.decide_status turns into the Lidov-Kozai
+        # status (confirmed: resonant, kinematic: non_resonant, unavailable: uncertain) — see
+        # docs/free-elements.md.
         self.free_elements_enabled = kwargs.get('free_elements_enabled', c.get('FREE_ELEMENTS_ENABLED', 'True') == 'True')
         self.free_elements_sampling_years = self._optional_float(kwargs, 'free_elements_sampling_years', 'FREE_ELEMENTS_SAMPLING_YEARS')
         self.free_gate_enabled = kwargs.get('free_gate_enabled', c.get('FREE_GATE_ENABLED', 'True') == 'True')
@@ -315,9 +533,19 @@ class SimulationConfig:
 
     @tmax.setter
     def tmax(self, value):
-        """Set integration time maximum and calculate related values."""
+        """Set integration time maximum and calculate related values: Nout from a numeric `output_step`, else
+        the default |tmax| / 100 (an output every 100 REBOUND units = 15.9 yr)."""
         self.__tmax = value
-        self.Nout = abs(int(self.__tmax / 100))
+        step = getattr(self, 'output_step', None)
+        if isinstance(step, float):
+            self.Nout = nout_for_step(self.tmax_yrs, step)
+        else:
+            self.Nout = abs(int(self.__tmax / 100))
+
+    @property
+    def output_step_yr(self) -> float:
+        """The output step this config gives [yr]: |tmax| / (Nout - 1) of `np.linspace(0, tmax, Nout)`."""
+        return abs(self.tmax_yrs) / (self.Nout - 1) if self.Nout > 1 else float('nan')
 
     @tmax.deleter
     def tmax(self):
@@ -334,10 +562,6 @@ class SimulationConfig:
         """Set integration time in years."""
         self.__tmax = value * (2 * np.pi)
 
-    def get_bodies_date(self):
-        """Get the date to use for body elements."""
-        return self.date
-
     def _setup_batch_params(self, kwargs):
         """Setup batch processing parameters."""
         self.batch_enabled = kwargs.get('batch_enabled', c.get('BATCH_ENABLED', 'True') == 'True')
@@ -351,80 +575,24 @@ class SimulationConfig:
             self.batch_size = None
 
         self.n_cores = kwargs.get('n_cores', int(c.get('BATCH_N_CORES', 1)))
-        self.stop_on_failure = kwargs.get('stop_on_failure', True)
         self.resume_enabled = kwargs.get('resume_enabled', True)
+        self._setup_clone_params(kwargs)
 
-    def _setup_classify_params(self, kwargs):
-        """Setup classification parameters matching ClassifyParams fields."""
-        # Window settings for segment analysis
-        self.classify_window_step = kwargs.get(
-            'classify_window_step',
-            float(c.get('CLASSIFY_WINDOW_STEP', 0.05)),
-        )
-        window_steps_raw = kwargs.get('classify_window_steps', None)
-        if window_steps_raw is not None:
-            self.classify_window_steps = window_steps_raw
-        else:
-            self.classify_window_steps = [float(x.strip()) for x in c.get('CLASSIFY_WINDOW_STEPS', '0.1,0.2,0.3').split(',')]
-
-        # Global thresholds
-        self.classify_rev_libration = kwargs.get(
-            'classify_rev_libration',
-            float(c.get('CLASSIFY_REV_LIBRATION', 1.0)),
-        )
-        self.classify_tto_pure_libration = kwargs.get(
-            'classify_tto_pure_libration',
-            float(c.get('CLASSIFY_TTO_PURE_LIBRATION', 0.5)),
-        )
-        self.classify_tto_partial_libration = kwargs.get(
-            'classify_tto_partial_libration',
-            float(c.get('CLASSIFY_TTO_PARTIAL_LIBRATION', 2.5)),
-        )
-        self.classify_tto_non_resonant = kwargs.get(
-            'classify_tto_non_resonant',
-            float(c.get('CLASSIFY_TTO_NON_RESONANT', 6.0)),
-        )
-        self.classify_tto_transient_global = kwargs.get(
-            'classify_tto_transient_global',
-            float(c.get('CLASSIFY_TTO_TRANSIENT_GLOBAL', 3.0)),
-        )
-        self.classify_tto_near_separatrix = kwargs.get(
-            'classify_tto_near_separatrix',
-            float(c.get('CLASSIFY_TTO_NEAR_SEPARATRIX', 6.0)),
-        )
-
-        # Staircase detection thresholds
-        self.classify_staircase_min_tto = kwargs.get(
-            'classify_staircase_min_tto',
-            float(c.get('CLASSIFY_STAIRCASE_MIN_TTO', 2.0)),
-        )
-        self.classify_staircase_max_resid_acf_zero = kwargs.get(
-            'classify_staircase_max_resid_acf_zero',
-            float(c.get('CLASSIFY_STAIRCASE_MAX_RESID_ACF_ZERO', 0.15)),
-        )
-
-        # Segment quality thresholds
-        self.classify_good_seg_max_rev = kwargs.get(
-            'classify_good_seg_max_rev',
-            float(c.get('CLASSIFY_GOOD_SEG_MAX_REV', 1.0)),
-        )
-        self.classify_good_seg_max_tto = kwargs.get(
-            'classify_good_seg_max_tto',
-            float(c.get('CLASSIFY_GOOD_SEG_MAX_TTO', 0.5)),
-        )
-        self.classify_reasonable_seg_max_rev_1 = kwargs.get(
-            'classify_reasonable_seg_max_rev_1',
-            float(c.get('CLASSIFY_REASONABLE_SEG_MAX_REV_1', 2.0)),
-        )
-        self.classify_reasonable_seg_max_tto_1 = kwargs.get(
-            'classify_reasonable_seg_max_tto_1',
-            float(c.get('CLASSIFY_REASONABLE_SEG_MAX_TTO_1', 1.0)),
-        )
-        self.classify_reasonable_seg_max_rev_2 = kwargs.get(
-            'classify_reasonable_seg_max_rev_2',
-            float(c.get('CLASSIFY_REASONABLE_SEG_MAX_REV_2', 1.0)),
-        )
-        self.classify_reasonable_seg_max_tto_2 = kwargs.get(
-            'classify_reasonable_seg_max_tto_2',
-            float(c.get('CLASSIFY_REASONABLE_SEG_MAX_TTO_2', 1.5)),
-        )
+    def _setup_clone_params(self, kwargs):
+        """Clones (virtual asteroids, docs/clones.md): CLONES per body added by number (0 = off), their source, the
+        covariance's epoch for AstDyS/NEODyS ('' = the source's default), the seed, clones per REBOUND simulation, and
+        whether each clone gets its own figures."""
+        self.clones = int(kwargs.get('clones', _config_or(c, 'CLONES', '0')) or 0)
+        if self.clones < 0:
+            raise ValueError(f'clones is 0 (off) or a number of clones, got {self.clones}')
+        self.clones_source = str(kwargs.get('clones_source', _config_or(c, 'CLONES_SOURCE', 'auto')) or 'auto').lower()
+        if self.clones_source not in CLONE_SOURCES:
+            raise ValueError(f"clones_source is one of {', '.join(CLONE_SOURCES)}, got {self.clones_source!r}")
+        self.clones_epoch = str(kwargs.get('clones_epoch', _config_or(c, 'CLONES_EPOCH', '')) or '').lower()
+        if self.clones_epoch not in ('', 'fit', 'standard'):
+            raise ValueError(f"clones_epoch is 'fit', 'standard' or empty, got {self.clones_epoch!r}")
+        self.clones_seed = int(kwargs.get('clones_seed', _config_or(c, 'CLONES_SEED', '0')) or 0)
+        self.clones_batch = int(kwargs.get('clones_batch', _config_or(c, 'CLONES_BATCH', '20')) or 20)
+        if self.clones_batch < 1:
+            raise ValueError(f'clones_batch is at least 1, got {self.clones_batch}')
+        self.clones_plot_each = self._read_bool(kwargs, 'clones_plot_each', 'CLONES_PLOT_EACH', False)

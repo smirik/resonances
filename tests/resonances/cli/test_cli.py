@@ -202,7 +202,7 @@ class TestCheckCommand:
 
             call_kwargs = mock_check.call_args[1]
             assert call_kwargs['asteroids'] == 463
-            assert call_kwargs['resonances'] == '4J-2S-1'
+            assert call_kwargs['resonance'] == '4J-2S-1'
 
     def test_check_multiple_asteroids_comma_separated(self, runner, mock_simulation):
         """Test check with comma-separated asteroids."""
@@ -220,7 +220,7 @@ class TestCheckCommand:
 
             assert result.exit_code == 0
             call_kwargs = mock_check.call_args[1]
-            assert call_kwargs['resonances'] == ['4J-2S-1', '3J-1S-1']
+            assert call_kwargs['resonance'] == ['4J-2S-1', '3J-1S-1']
 
     def test_check_with_planets_parameter(self, runner, mock_simulation):
         """Test check with planets parameter."""
@@ -283,7 +283,7 @@ class TestCheckCommand:
 
             # Verify all parameters
             assert call_kwargs['asteroids'] == [463, 490]
-            assert call_kwargs['resonances'] == ['4J-2S-1', '3J-1S-1']
+            assert call_kwargs['resonance'] == ['4J-2S-1', '3J-1S-1']
             assert call_kwargs['planets'] == ['Jupiter', 'Saturn', 'Uranus']
             assert call_kwargs['integration_years'] == 100000
             assert call_kwargs['dt'] == 0.01

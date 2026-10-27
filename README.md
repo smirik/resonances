@@ -3,22 +3,33 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Resonances](https://github.com/smirik/resonances/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/smirik/resonances/actions/workflows/ci.yml)
 
-`resonances` is an open-source package dedicated to the identification of mean-motion resonances of small bodies. Many examples are for the Solar system; however, you might use the package for any possible planetary system, including exoplanets.
+`resonances` is an open-source package that finds small bodies in mean-motion (two-body, three-body, retrograde, co-orbital), secular and Lidov–Kozai resonances and decides, from a numerical integration, whether the resonant angle librates and why. Many examples are for the Solar system; however, you might use the package for any possible planetary system, including exoplanets.
 
-For more information, [read the documentation](https://smirik.github.io/resonances/).
+For more information, [read the documentation](https://smirik.github.io/resonances/):
+
+- [Quick start](https://smirik.github.io/resonances/quick-start/): check a body in a resonance and read its verdict;
+- [How the status is determined](https://smirik.github.io/resonances/physics/overview/): the physics behind every status, with formulas;
+- [Gallery](https://smirik.github.io/resonances/physics/gallery/): one benchmark example of every status, with its figure;
+- [Configuration](https://smirik.github.io/resonances/config/): every option and threshold.
+
+Working with a coding agent? `resonances skill install` puts the package's agent skill (how to set up runs and read the verdicts) into `.claude/skills/` of your project ([Using the package with AI agents](https://smirik.github.io/resonances/agents/)).
 
 **Note:** while this app has many functional and integration tests built in, it is still in the dev stage. Hence, it might include some inconsistencies. So, any community help is appreciated!
 
 ## What's new
 
+### October 2026
+
+1. **Libration analysis v2:** one classifier for MMR, secular and Lidov–Kozai angles. Statuses are strings (`resonant`, `transient`, `near_separatrix`, `non_resonant`, `uncertain`, `invalid`) with `angle_status`, the origin of a bounded oscillation, a confidence and every decisive number in `summary.csv`; one combined figure per verdict; a dry-run checks the output step before a long run. See [How the status is determined](https://smirik.github.io/resonances/physics/overview/).
+
 ### November 2025
 
 1. **Lidov–Kozai Resonances:** Introduced the `LidovKozaiResonance` class with analytic `c1/c2` diagnostics so the argument of pericenter can be tracked exactly like MMRs and secular resonances.
-1. **Summary Enhancements:** `summary.csv` now includes the Lidov–Kozai invariants (`c1`, `c2`) so you can immediately verify if an object satisfies the classical libration criteria (`c1 ≤ 3/5`, `c2 < 0`).
+1. **Summary Enhancements:** `summary.csv` now includes the Lidov–Kozai invariants in Lidov's notation, `c1 = (1−e²)cos²i` and `c2 = e²(2/5 − sin²i sin²ω)`, and the quadrupole Hamiltonian `h_quad`, so you can immediately check the classical libration criterion (`c1 < 3/5` and `c2 < 0`). The criterion is exact only far inside the perturber's orbit; for main-belt asteroids it is indicative. The sign of `h_quad` is not a criterion.
 
 ### September 2025
 
-1. Secular resonances are now supported. See the [Secular notebook](docs/secular.md) for more information.
+1. Secular resonances are now supported. See [Secular resonances](https://smirik.github.io/resonances/secular/).
 
 ### June 2025
 
@@ -45,23 +56,10 @@ For more information, [read the documentation](https://smirik.github.io/resonanc
 
 ### July 2024
 
-1. Now you can choose the type of the output image: it could be either ` pdf`` or  `png`.
-
-```python
-sim = resonances.Simulation()
-...
-sim.image_type = 'pdf'
-```
-
-2. You can plot only resonant asteroids:
-
-```python
-sim = resonances.Simulation()
-...
-sim.plot_only_identified = True
-```
-
-If it is `true`, then the app will plot every resonant asteroid even if `plot` is `False`. If `plot` is `True`, this option is ignored.
+1. The output image can be `png` or `pdf` (today: `sim.config.image_type = 'pdf'`, or `image_type='pdf'` in
+   `Simulation(...)`).
+2. Plots can be limited to resonant asteroids (today: the status filter `sim.config.plot = 'resonant'`, which keeps
+   `resonant` and `transient` rows; see [Configuration](https://smirik.github.io/resonances/config/)).
 
 3. New finder module (easy resonance identification):
 
@@ -77,11 +75,12 @@ sim.run()
 The package:
 
 - can automatically identify two-body and three-body mean-motion resonance in the Solar system,
+- can identify retrograde two-body resonances (p/−q, e.g. `1J-3r0`) of bodies with `i > 90°` (see [matrices](https://smirik.github.io/resonances/matrix/)),
 - can automatically identify secular resonances in the Solar system,
-- accurately differentiates different types of resonances (pure, transient, uncertain),
+- classifies every resonant angle by its observed behaviour and physics: `resonant`, `transient`, `near_separatrix`, `non_resonant` (with the origin of a bounded angle: kinematic, induced, subresonance), `uncertain`, `invalid`, with a confidence level (see [how the status is determined](https://smirik.github.io/resonances/physics/overview/)),
 - provides an interface for mass tasks (i.e. find resonant areas in a planetary system),
-- can plot time series and periodograms,
-- can identify Lidov–Kozai resonances and exports the conserved `c1/c2` parameters (see the [Lidov–Kozai notebook](docs/lidov-kozai.ipynb)),
+- draws a one-page figure of every verdict, time series and periodograms,
+- can identify Lidov–Kozai resonances and exports Lidov's integrals `c1`, `c2` and the quadrupole Hamiltonian `h_quad` (see [Lidov–Kozai resonances](https://smirik.github.io/resonances/lidov-kozai/)),
 - and, yeah, it is well tested ;)
 
 It actively uses [REBOUND integrator](https://rebound.readthedocs.io) maintained by Hanno Rein and others.
@@ -249,6 +248,10 @@ The authors of the package:
 ## Contributing
 
 Feel free to contribute to the code by sending pull requests [to the repository](https://github.com/smirik/resonances).
+
+## Development
+
+Notes for developers (history of the classifier, decisions and their reasons, rejected approaches, pitfalls, open questions) are in [dev/](dev/README.md); they are not part of the documentation site.
 
 ## License
 

@@ -202,9 +202,9 @@ def test_option_reaches_batch_workers_and_restore(tmp_path):
     assert kwargs['solar_system_moon'] is True
     worker = Simulation(**{**kwargs, '_skip_path_verification': True})
     assert worker.config.solar_system_moon is True
-    # the resume hash changes with the Moon, and keeps its old content without it
+    # the resume hash changes with the Moon
     assert sim.batch_manager._get_config_dict()['solar_system_moon'] is True
-    assert 'solar_system_moon' not in _sim(tmp_path).batch_manager._get_config_dict()
+    assert _sim(tmp_path).batch_manager._get_config_dict()['solar_system_moon'] is False
 
     sim.data_manager.save_configuration_details([], sim)
     restored = SimulationSerializer.restore(str(tmp_path / 'simulation.json'), recompute_librations=False)

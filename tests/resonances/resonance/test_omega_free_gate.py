@@ -1,4 +1,5 @@
-"""Tests for the free-omega gate.
+"""Tests for the free-omega gate (`evaluate_gate`: the outcome; the status it leads to is tested with the ZLK
+decision, test_impl_w4_secular_zlk_decide.py).
 
 Each case is built from a signal whose answer is known before the code runs: a forced term
 at a real planetary frequency plus a free term at a rate chosen by hand. The gate is then
@@ -9,12 +10,11 @@ import numpy as np
 import pytest
 
 from resonances.data.const import PLANETARY_FREQUENCIES
-from resonances.resonance.classify.models import ResonanceStatus
 from resonances.resonance.omega_free_gate import (
     SUMMARY_COLUMNS,
     GateOutcome,
     _confirmation_targets,
-    apply_gate,
+    evaluate_gate,
     summary_fields,
 )
 from resonances.secular.free_elements import ARCSEC_PER_TURN, RAD_PER_ARCSEC, free_elements
@@ -60,12 +60,10 @@ class TestConfirmation:
         # T1: bounded free omega whose rates are nowhere near a planetary fundamental.
         elements = _decompose(*_librator(times), times)
 
-        status, gate = apply_gate(ResonanceStatus.LIBRATION, elements, P_LIB, config)
+        gate = evaluate_gate(elements, P_LIB, config)
 
-        assert status == ResonanceStatus.LIBRATION
         assert gate.outcome is GateOutcome.CONFIRMED
         assert elements.omega_range < 2 * np.pi
-        assert gate.comment == 'gate: 2 confirmed'
 
     def test_a_bounded_residual_at_a_planetary_rate_is_withheld(self, times, config):
         # T13, the case the removed amplitude floor was meant to catch. The free part is
@@ -76,12 +74,10 @@ class TestConfirmation:
         z_i = _wave(times, 0.02, PLANETARY_FREQUENCIES['s6']) + _wave(times, 0.30, -19.0)
         elements = _decompose(z_e, z_i, times)
 
-        status, gate = apply_gate(ResonanceStatus.LIBRATION, elements, P_LIB, config)
+        gate = evaluate_gate(elements, P_LIB, config)
 
-        assert status == ResonanceStatus.UNCERTAIN
         assert gate.outcome is GateOutcome.PLANETARY_RESIDUAL
         assert any('b_varpi~g8' in match for match in gate.matches)
-        assert 'residual at planetary freq' in gate.comment
 
     def test_the_zero_target_tracks_whether_the_constant_was_fitted(self, times, config):
         # A constant left in the residual is the most dangerous leak of all, since it makes
@@ -103,25 +99,23 @@ class TestDemotion:
         z_i = _wave(times, 0.02, PLANETARY_FREQUENCIES['s6']) + _wave(times, 0.30, -20.0)
         elements = _decompose(z_e, z_i, times)
 
-        status, gate = apply_gate(ResonanceStatus.LIBRATION, elements, P_LIB, config)
+        gate = evaluate_gate(elements, P_LIB, config)
 
-        assert status == ResonanceStatus.LIBRATION_UNCERTAIN
         assert gate.outcome is GateOutcome.KINEMATIC
         assert elements.b_omega == pytest.approx(150.0, rel=0.05)
-        assert gate.comment == 'gate: 2->-2 kinematic libration'
 
     def test_a_winding_residual_at_a_planetary_rate_is_withheld_not_demoted(self, times, config):
         # A free omega that winds at g6 - s6 could be the object's own rate or a defect of
-        # the subtraction. The two are not separable, so no verdict is issued — and -9 must
-        # never be collapsed into -2 in any statistic.
+        # the subtraction. The two are not separable, so no verdict is issued — and no verdict
+        # must never be collapsed into kinematic in any statistic.
         combination = PLANETARY_FREQUENCIES['g6'] - PLANETARY_FREQUENCIES['s6']
         z_e = _wave(times, 0.03, PLANETARY_FREQUENCIES['g5']) + _wave(times, 0.20, combination - 20.0)
         z_i = _wave(times, 0.02, PLANETARY_FREQUENCIES['s6']) + _wave(times, 0.30, -20.0)
         elements = _decompose(z_e, z_i, times)
 
-        status, gate = apply_gate(ResonanceStatus.LIBRATION, elements, P_LIB, config)
+        gate = evaluate_gate(elements, P_LIB, config)
 
-        assert status == ResonanceStatus.UNCERTAIN
+        assert gate.outcome is GateOutcome.PLANETARY_RESIDUAL
         assert any('b_omega~g6-s6' in match for match in gate.matches)
 
     def test_the_sign_of_a_node_rate_matters(self, times, config):
@@ -132,11 +126,11 @@ class TestDemotion:
         z_i = _wave(times, 0.02, PLANETARY_FREQUENCIES['s6']) + _wave(times, 0.30, rate)
         elements = _decompose(z_e, z_i, times)
 
-        status, gate = apply_gate(ResonanceStatus.LIBRATION, elements, P_LIB, config)
+        gate = evaluate_gate(elements, P_LIB, config)
 
         assert elements.b_Omega == pytest.approx(abs(PLANETARY_FREQUENCIES['s7']), rel=0.05)
         assert not any('b_Omega~s7' in match for match in gate.matches)
-        assert status == ResonanceStatus.LIBRATION_UNCERTAIN
+        assert gate.outcome is GateOutcome.KINEMATIC
 
 
 class TestPreconditions:
@@ -144,57 +138,51 @@ class TestPreconditions:
         # T9: 500 kyr against a 200 kyr libration period is 2.5 cycles, under min_cycles = 3.
         elements = _decompose(*_librator(times), times)
 
-        status, gate = apply_gate(ResonanceStatus.LIBRATION, elements, 200_000.0, config)
+        gate = evaluate_gate(elements, 200_000.0, config)
 
-        assert status == ResonanceStatus.UNCERTAIN
         assert gate.outcome is GateOutcome.SHORT_WINDOW
         assert gate.n_cycles == pytest.approx(2.5, rel=0.01)
-        assert '2.5 libration periods' in gate.comment
 
     def test_an_unknown_libration_period_does_not_block_the_gate(self, times, config):
-        # The periodogram can fail to return a period even at status 2; that is not a
+        # The turning points can fail to give a period (no full cycle); that is not a
         # reason to refuse a verdict the free omega can give on its own.
         elements = _decompose(*_librator(times), times)
 
-        status, gate = apply_gate(ResonanceStatus.LIBRATION, elements, None, config)
+        gate = evaluate_gate(elements, None, config)
 
-        assert status == ResonanceStatus.LIBRATION
+        assert gate.outcome is GateOutcome.CONFIRMED
         assert gate.n_cycles is None
 
     def test_a_mostly_masked_series_yields_no_verdict(self, times, config):
         elements = _decompose(*_librator(times), times, mask_quantile=1.5)
 
-        status, gate = apply_gate(ResonanceStatus.LIBRATION, elements, P_LIB, config)
+        gate = evaluate_gate(elements, P_LIB, config)
 
-        assert status == ResonanceStatus.UNCERTAIN
         assert gate.outcome is GateOutcome.UNDEFINED_PHASE
-
-    @pytest.mark.parametrize(
-        'status',
-        [ResonanceStatus.TRANSIENT, ResonanceStatus.NON_RESONANT, ResonanceStatus.NEAR_SEPARATRIX, ResonanceStatus.CHAOTIC],
-    )
-    def test_only_a_libration_is_ever_touched(self, times, config, status):
-        elements = _decompose(*_librator(times), times)
-
-        result, gate = apply_gate(status, elements, P_LIB, config)
-
-        assert result == status
-        assert gate.outcome is GateOutcome.NOT_APPLICABLE
-        assert gate.comment == ''
 
     def test_a_disabled_gate_leaves_the_status_alone(self, times):
         config = SimulationConfig(save=None, plot=None, save_summary=False, free_gate_enabled=False)
         elements = _decompose(*_librator(times), times)
 
-        status, gate = apply_gate(ResonanceStatus.LIBRATION, elements, P_LIB, config)
+        gate = evaluate_gate(elements, P_LIB, config)
 
-        assert status == ResonanceStatus.LIBRATION
         assert gate.outcome is GateOutcome.DISABLED
 
-    def test_a_missing_decomposition_leaves_the_status_alone(self, config):
-        status, gate = apply_gate(ResonanceStatus.LIBRATION, None, P_LIB, config)
+    def test_a_missing_decomposition_withholds_the_verdict(self, config):
+        # Nothing was measured, so a libration cannot stand as "confirmed".
+        gate = evaluate_gate(None, P_LIB, config)
 
-        assert status == ResonanceStatus.LIBRATION
+        assert gate.outcome is GateOutcome.UNAVAILABLE
+
+    def test_a_series_too_short_to_decompose_is_withheld(self, config):
+        # 5 kyr at 100 yr: 10 samples after the 500-yr decimation, below the 16 the split needs.
+        short = np.arange(0.0, 5000.0, 100.0)
+        z_e, z_i = _librator(short)
+        elements = free_elements(short, np.abs(z_e), 2.0 * np.arcsin(np.abs(z_i)), np.angle(z_i), np.angle(z_e) - np.angle(z_i))
+        assert elements is None
+
+        gate = evaluate_gate(elements, 2000.0, config)
+
         assert gate.outcome is GateOutcome.UNAVAILABLE
 
 
@@ -207,9 +195,9 @@ class TestInvariance:
             z_e, z_i = _librator(fine)
             ecc, varpi = np.abs(z_e), np.angle(z_e)
             elements = free_elements(fine, ecc, 2.0 * np.arcsin(np.abs(z_i)), np.angle(z_i), varpi - np.angle(z_i), sampling_years=sampling)
-            verdicts.add(apply_gate(ResonanceStatus.LIBRATION, elements, P_LIB, config)[0])
+            verdicts.add(evaluate_gate(elements, P_LIB, config).outcome)
 
-        assert verdicts == {ResonanceStatus.LIBRATION}
+        assert verdicts == {GateOutcome.CONFIRMED}
 
     def test_the_tolerance_is_one_rayleigh_width(self, times, config):
         elements = _decompose(*_librator(times), times)
@@ -227,7 +215,7 @@ class TestSummaryFields:
     def test_matches_are_recorded_next_to_the_outcome(self, times, config):
         z_e = _wave(times, 0.03, PLANETARY_FREQUENCIES['g5']) + _wave(times, 0.05, PLANETARY_FREQUENCIES['g8'])
         z_i = _wave(times, 0.02, PLANETARY_FREQUENCIES['s6']) + _wave(times, 0.30, -19.0)
-        _, gate = apply_gate(ResonanceStatus.LIBRATION, _decompose(z_e, z_i, times), P_LIB, config)
+        gate = evaluate_gate(_decompose(z_e, z_i, times), P_LIB, config)
 
         fields = summary_fields(gate)
 

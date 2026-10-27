@@ -71,6 +71,7 @@ def removed_modes(terms, baseline_years: float):
     The forced terms at the angle's own frequencies (g6 and s6 for z1, g6 for nu6) are part of the
     resonance and stay; those at the other fundamentals only shake the angle. 'const' — the invariable
     plane, s5 = 0 — is never in an angle, so it always goes. Returns ({label: arcsec/yr} for e, for i).
+    The sign of `baseline_years` (a backward run) does not matter.
     """
     from resonances.secular import free_elements as fe
 
@@ -108,7 +109,7 @@ def free_divisor(terms, g: float, s: float, planetary_freqs=None) -> float:
 
     A diagnostic, no status depends on it. Near 0 the free vector itself turns with the planets' modes
     (a locked libration, or a near-commensurability the baseline cannot tell from one); a libration
-    with |free divisor| = 2 pi / P_libration is one around the forced equilibrium: the forced term of
+    with P_libration = 1 296 000 / |free divisor| yr is one around the forced equilibrium: the forced term of
     the angle's own mode is larger than the free amplitude, as in the anti-aligned nu6 libration of Tina.
     """
     freqs = PLANETARY_FREQUENCIES if planetary_freqs is None else planetary_freqs

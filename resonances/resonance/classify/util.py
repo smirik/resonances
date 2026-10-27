@@ -33,16 +33,25 @@ def merge_intervals(intervals: np.ndarray, *, join_touching: bool = True) -> np.
 
 
 def is_unphysical_orbit(body) -> Tuple[bool, str]:
-    """Minimum check for unphysical orbit."""
+    """Minimum check for unphysical orbit (`unphysical_arrays` on body.axis and body.ecc)."""
+    return unphysical_arrays(body.axis, body.ecc)
+
+
+def unphysical_arrays(axis: np.ndarray, ecc: np.ndarray) -> Tuple[bool, str]:
+    """(bad, reason) of the unphysical-orbit rule on the arrays of a and e: non_finite, hyperbolic, negative_sma or ok."""
+
+    # NaN/inf elements: the integration lost the orbit (comparisons with NaN below would all pass)
+    if not (np.isfinite(ecc).all() and np.isfinite(axis).all()):
+        return True, "non_finite"
 
     # hyperbolic orbit (e > 1 = unbound)
-    if np.any(body.ecc > 1.3):
+    if np.any(ecc > 1.3):
         return True, "hyperbolic"
 
     # negative semimajor axis = negative energy,
     # but it's derived from e > 1, so it's redundant,
     # but it's safer to check
-    if np.any(body.axis < 0):
+    if np.any(axis < 0):
         return True, "negative_sma"
 
     return False, "ok"
@@ -52,7 +61,7 @@ def check_chaos(body) -> Tuple[int, str]:
     """Check for chaotic or suspicious orbital behaviour.
 
     Returns (flag, comment):
-      1  — unphysical orbit (ecc > 1.3 or a < 0)
+      1  — unphysical orbit (ecc > 1.3, a < 0, or non-finite a or ecc)
      -1  — semi-major axis changed > 100% (|a_final-a0|/a0 or |a_max-a0|/a0)
       0  — normal
     """
@@ -83,3 +92,13 @@ def check_chaos(body) -> Tuple[int, str]:
         return -1, f"large |da|>100%: {', '.join(parts)}"
 
     return 0, ""
+
+
+def calc_sigma_derivative(times: np.ndarray, sigma: np.ndarray) -> np.ndarray:
+    """d sigma / dt by central differences, one-sided at the two ends (same length as sigma)."""
+    sigma_dot = np.zeros_like(sigma)
+    sigma_dot[1:-1] = (sigma[2:] - sigma[:-2]) / (times[2:] - times[:-2])
+    dt = np.diff(times)
+    sigma_dot[0] = (sigma[1] - sigma[0]) / dt[0]
+    sigma_dot[-1] = (sigma[-1] - sigma[-2]) / dt[-1]
+    return sigma_dot

@@ -96,29 +96,12 @@ class StateManager:
     STATE_FILENAME = "simulation_state.json"
 
     def __init__(self, save_path: str, simulation_name: str):
-        """
-        Initialize the StateManager.
-
-        Parameters
-        ----------
-        save_path : str
-            Directory where state file will be saved
-        simulation_name : str
-            Name of the simulation
-        """
         self.save_path = Path(save_path)
         self.simulation_name = simulation_name
         self.state_file = self.save_path / self.STATE_FILENAME
 
     def check_existing_simulation(self) -> Optional[SimulationState]:
-        """
-        Check for existing simulation state.
-
-        Returns
-        -------
-        Optional[SimulationState]
-            Existing state if found, None otherwise
-        """
+        """The state of an earlier run in save_path, or None (no file, or one that cannot be read)."""
         if not self.state_file.exists():
             return None
 
@@ -135,24 +118,12 @@ class StateManager:
             return None
 
     def save_state(self, state: SimulationState):
-        """
-        Save simulation state to JSON file.
-
-        Parameters
-        ----------
-        state : SimulationState
-            State to save
-        """
+        """Write the state to simulation_state.json (a temporary file renamed into place)."""
         try:
-            # Ensure directory exists
             self.save_path.mkdir(parents=True, exist_ok=True)
-
-            # Write to temporary file first
             temp_file = self.state_file.with_suffix(".tmp")
             with open(temp_file, "w") as f:
                 json.dump(asdict(state), f, indent=2)
-
-            # Atomic rename
             temp_file.replace(self.state_file)
 
             logger.debug(f"State saved to {self.state_file}")
@@ -161,21 +132,7 @@ class StateManager:
             raise
 
     def load_state(self) -> SimulationState:
-        """
-        Load simulation state from JSON file.
-
-        Returns
-        -------
-        SimulationState
-            Loaded state
-
-        Raises
-        ------
-        FileNotFoundError
-            If state file doesn't exist
-        ValueError
-            If state file is corrupted or invalid
-        """
+        """The state in simulation_state.json; FileNotFoundError without it, ValueError when it is invalid."""
         if not self.state_file.exists():
             raise FileNotFoundError(f"State file not found: {self.state_file}")
 
@@ -197,21 +154,7 @@ class StateManager:
             logger.info(f"State file removed: {self.state_file}")
 
     def validate_config_match(self, state: SimulationState, current_config_hash: str) -> bool:
-        """
-        Validate that the current configuration matches the saved state.
-
-        Parameters
-        ----------
-        state : SimulationState
-            Existing state
-        current_config_hash : str
-            Hash of current configuration
-
-        Returns
-        -------
-        bool
-            True if configs match, False otherwise
-        """
+        """Whether the saved state was written with this configuration hash (a warning when not)."""
         if state.config_hash != current_config_hash:
             logger.warning(
                 "Configuration mismatch detected! "
@@ -223,19 +166,6 @@ class StateManager:
 
     @staticmethod
     def compute_config_hash(config_dict: Dict[str, Any]) -> str:
-        """
-        Compute hash of configuration for validation.
-
-        Parameters
-        ----------
-        config_dict : Dict[str, Any]
-            Configuration parameters
-
-        Returns
-        -------
-        str
-            MD5 hash of configuration
-        """
-        # Sort keys for consistent hashing
-        config_str = json.dumps(config_dict, sort_keys=True)
+        """MD5 of the configuration dict (keys sorted)."""
+        config_str = json.dumps(config_dict, sort_keys=True, default=str)
         return hashlib.md5(config_str.encode()).hexdigest()

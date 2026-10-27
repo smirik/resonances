@@ -67,10 +67,17 @@ class TwoBody(MMR):
         return self._to_short
 
     def calculate_resonant_axis(self):
+        """Kepler's third law at the commensurability m_p n_p + m n = 0, i.e. n = -m_p/m n_p.
+
+        Prograde orbits only: the condition has a solution n > 0 only when the planet's and the
+        body's coefficients have opposite signs. '3J+2' (n = -1.5 n_J) is not a resonance of a
+        prograde body, and its angle circulates at about 6 n_J. Resonances of orbits with
+        i > 90 deg are RetrogradeTwoBody ('3J-2r0').
+        """
         if len(self.planets_names) != 1:
             raise Exception('Cannot calculate resonant axis if the only planet is not specified!')
+        if self.coeff[1] >= 0:
+            raise Exception(f'{self.to_short()} has no prograde solution: the body coefficient must be negative.')
 
         planet_axis = const.PLANETS_AXIS[self.planets_names[0]]
-        axis = planet_axis * (((self.coeff[1] / self.coeff[0]) ** (2.0)) ** (1.0 / 3))
-
-        return axis
+        return planet_axis * (-self.coeff[1] / self.coeff[0]) ** (2.0 / 3.0)

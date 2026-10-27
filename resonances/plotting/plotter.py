@@ -170,9 +170,9 @@ class Plotter(BasePlotter):
             self._figure.suptitle(title, fontsize=self._config.title_fontsize)
 
         # Render each panel
-        tmax_years = self._metadata.get('tmax_years', None)
+        time_range = self._time_range()
         for idx, panel in enumerate(enabled_panels):
-            self._render_panel(self._axes[idx], panel, tmax_years)
+            self._render_panel(self._axes[idx], panel, time_range)
 
         # Share x-axis for time-series plots
         self._setup_shared_axes(enabled_panels)
@@ -180,6 +180,13 @@ class Plotter(BasePlotter):
         plt.tight_layout()
 
         return self
+
+    def _time_range(self) -> Optional[tuple]:
+        """(earliest, latest) time of the data, years: (-T, 0) for a backward run, None without times."""
+        times = self._data.get('times') if self._data else None
+        if times is None or len(times) == 0:
+            return None
+        return float(np.min(times)), float(np.max(times))
 
     def close(self):
         """Close the figure to free memory."""
@@ -211,9 +218,12 @@ class Plotter(BasePlotter):
         angle_data = body.angle(resonance)
         if angle_data is not None:
             self._data[f'{resonance_key}_angle'] = angle_data
-            self._data[f'{resonance_key}_angle_unwrapped'] = body.angles_filtered_unwrapped[resonance_key]
+        # The unwrapped raw angle, as in data-<body>.csv (for an MMR: the analysis' predictive unwrap)
+        if body.angles_unwrapped.get(resonance_key) is not None:
+            self._data[f'{resonance_key}_angle_unwrapped'] = body.angles_unwrapped[resonance_key]
 
-        # Add filtered angles if available
+        # Filtered angles if available (for an MMR: sigma_f of the analysis at the record's cutoff; absent when the
+        # analysis stopped at G0, and never in data-<body>.csv)
         if resonance_key in body.angles_filtered:
             self._data[f'{resonance_key}_angle_filtered'] = body.angles_filtered[resonance_key]
 
@@ -268,8 +278,7 @@ class Plotter(BasePlotter):
             'body_name': body.name,
             'resonance': resonance.to_short(),
             'resonance_key': resonance_key,
-            'status': body.statuses.get(resonance_key, 0),
-            'tmax_years': abs(sim.config.tmax_yrs),
+            'status': body.statuses.get(resonance_key, ''),
         }
 
     def _load_from_csv(self, data_path: Union[str, Path], resonance_key: str, periodogram_path: Optional[Union[str, Path]] = None):
@@ -297,17 +306,15 @@ class Plotter(BasePlotter):
 
         # Extract metadata from data
         body_name = data_path.stem.replace('data-', '')
-        tmax_years = self._data['times'].max() if 'times' in self._data else 100000
 
         self._metadata = {
             'body_name': body_name,
             'resonance': resonance_key,
             'resonance_key': resonance_key,
             'status': 'N/A',
-            'tmax_years': tmax_years,
         }
 
-    def _render_panel(self, ax, panel: Panel, tmax_years: Optional[float]):
+    def _render_panel(self, ax, panel: Panel, time_range: Optional[tuple]):
         """Render a single panel."""
         # Get data for this panel
         x_data = self._get_column_data(panel.x_column)
@@ -333,15 +340,15 @@ class Plotter(BasePlotter):
         is_periodogram = 'frequency' in panel.x_column
 
         if is_periodogram:
-            self._render_periodogram_panel(ax, panel, x_data, y_data, style, tmax_years)
+            self._render_periodogram_panel(ax, panel, x_data, y_data, style, time_range)
         else:
-            self._render_timeseries_panel(ax, x_data, y_data, style, tmax_years)
+            self._render_timeseries_panel(ax, x_data, y_data, style, time_range)
 
         # Apply common styling
         self._apply_panel_style(ax, style, panel)
 
-    def _render_timeseries_panel(self, ax, x_data, y_data, style: StyleConfig, tmax_years):
-        """Render a time-series panel."""
+    def _render_timeseries_panel(self, ax, x_data, y_data, style: StyleConfig, time_range):
+        """Render a time-series panel over `time_range` = (earliest, latest), years."""
         import matplotlib.pyplot as plt
 
         # Plot data
@@ -356,11 +363,11 @@ class Plotter(BasePlotter):
         )
 
         # Set x-axis limits and ticks
-        if tmax_years is not None:
-            ax.set_xlim([0, abs(tmax_years)])
+        if time_range is not None and time_range[1] > time_range[0]:
+            ax.set_xlim(list(time_range))
 
             # Adaptive tick spacing
-            major_tick = round_to_nice_value(abs(tmax_years) / 5)
+            major_tick = round_to_nice_value((time_range[1] - time_range[0]) / 5)
             minor_tick = major_tick // 5
 
             if major_tick <= 0:
@@ -371,8 +378,8 @@ class Plotter(BasePlotter):
             ax.xaxis.set_major_locator(plt.MultipleLocator(major_tick))
             ax.xaxis.set_minor_locator(plt.MultipleLocator(minor_tick))
 
-    def _render_periodogram_panel(self, ax, panel: Panel, x_data, y_data, style: StyleConfig, tmax_years):
-        """Render a periodogram panel."""
+    def _render_periodogram_panel(self, ax, panel: Panel, x_data, y_data, style: StyleConfig, time_range):
+        """Render a periodogram panel; periods run up to the length of the integration."""
         # Convert frequency to period
         period_data = 1.0 / x_data
 
@@ -404,8 +411,8 @@ class Plotter(BasePlotter):
                 ax.plot(peak_periods, peak_powers, 'x', color='blue', markersize=10)
 
         # Set x-axis limits for periodograms
-        if tmax_years is not None:
-            ax.set_xlim(0, abs(tmax_years))
+        if time_range is not None and time_range[1] > time_range[0]:
+            ax.set_xlim(0, time_range[1] - time_range[0])
 
     def _apply_panel_style(self, ax, style: StyleConfig, panel: Panel):  # noqa: C901
         """Apply styling to a panel."""

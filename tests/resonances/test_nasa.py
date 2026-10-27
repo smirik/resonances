@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 import resonances
 import resonances.horizons
@@ -41,3 +42,35 @@ def test_horizon():
     assert 'Omega' in elem
     assert 'M' in elem
     assert 5.2 == pytest.approx(elem['a'], 0.2)
+
+
+@pytest.mark.parametrize(
+    's, expected',
+    [
+        (401, '401;'),
+        ('401', '401;'),
+        (' 502 ', '502;'),
+        (502.0, '502;'),
+        (np.int64(463), '463;'),
+        ('401;', '401;'),
+        ('Hektor', 'Hektor'),
+        ('2017 HV1', '2017 HV1'),
+    ],
+)
+def test_horizons_id_numbers_are_small_bodies(s, expected):
+    assert resonances.horizons.horizons_id(s) == expected
+
+
+def test_horizons_id_rejects_fractional_number():
+    with pytest.raises(ValueError):
+        resonances.horizons.horizons_id(401.5)
+
+
+@pytest.mark.slow
+def test_horizons_number_as_string_is_the_asteroid():
+    """'401' is 401 Ottilia (a = 3.35 AU, JPL SBDB), not Phobos (a = 1.58 AU around the Sun); the epoch is the requested date."""
+    by_str = resonances.horizons.get_body_keplerian_elements('401', '2026-06-09')
+    by_int = resonances.horizons.get_body_keplerian_elements(401, '2026-06-09')
+    assert by_str['a'] == pytest.approx(3.346, abs=0.01)
+    assert by_str == by_int
+    assert by_str['epoch'] == pytest.approx(61200.0, abs=1e-6)

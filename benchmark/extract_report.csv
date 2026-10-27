@@ -1,0 +1,772 @@
+candidate_id,name,resonance,rtype,status,reason,example_id,data_path
+c0035,10123,11M-20+0+9,mmr2,extracted,,mmr2__10123__11M-20+0+9,experiments/2026-09-binary-asteroids/output/partners-50k_2026-09-30/data-10123.csv
+c0036,101703,41J-14+0-27,mmr2,extracted,,mmr2__101703__41J-14+0-27,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-101703.csv
+c0037,105247,29M-52+0+23,mmr2,extracted,,mmr2__105247__29M-52+0+23,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-105247.csv
+c0038,115978,11M-19+0+8,mmr2,extracted,,mmr2__115978__11M-19+0+8,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-115978.csv
+c0042,142694,41J-14+0-27,mmr2,extracted,,mmr2__142694__41J-14+0-27,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-142694.csv
+c0048,16126,2R-35+0+33,mmr2,extracted,,mmr2__16126__2R-35+0+33,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-16126.csv
+c0049,165548,43S-6+0-37,mmr2,extracted,,mmr2__165548__43S-6+0-37,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-165548.csv
+c0051,16815,1R-17+0+16,mmr2,extracted,,mmr2__16815__1R-17+0+16,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-16815.csv
+c0052,16815,36S-5+0-31,mmr2,extracted,,mmr2__16815__36S-5+0-31,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-16815.csv
+c0053,182259,35S-4+0-31,mmr2,extracted,,mmr2__182259__35S-4+0-31,experiments/2026-09-binary-asteroids/output/partners-50k_2026-09-30/data-182259.csv
+c0054,1864,51M-50+0-1,mmr2,extracted,,mmr2__1864__51M-50+0-1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1864.csv
+c0055,1865,10E-11+0+1,mmr2,extracted,,mmr2__1865__10E-11+0+1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1865.csv
+c0056,1865,21E-22+0+1,mmr2,extracted,,mmr2__1865__21E-22+0+1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1865.csv
+c0062,2005 WW113,3E-11+0+8,mmr2,extracted,,mmr2__2005_WW113__3E-11+0+8,experiments/2026-09-binary-asteroids/output/partners-50k_2026-09-30/data-2005 WW113.csv
+c0066,258640,46J-19+0-27,mmr2,extracted,,mmr2__258640__46J-19+0-27,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-258640.csv
+c0067,261878,39J-11+0-28,mmr2,extracted,,mmr2__261878__39J-11+0-28,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-261878.csv
+c0068,323879,6V-41+0+35,mmr2,extracted,,mmr2__323879__6V-41+0+35,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-323879.csv
+c0071,348018,11E-48+0+37,mmr2,extracted,,mmr2__348018__11E-48+0+37,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-348018.csv
+c0072,348452,23S-2+0-21,mmr2,extracted,,mmr2__348452__23S-2+0-21,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-348452.csv
+c0073,354652,53J-20+0-33,mmr2,extracted,,mmr2__354652__53J-20+0-33,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-354652.csv
+c0074,393274,13E-53+0+40,mmr2,extracted,,mmr2__393274__13E-53+0+40,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-393274.csv
+c0076,418312,23S-2+0-21,mmr2,extracted,,mmr2__418312__23S-2+0-21,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-418312.csv
+c0077,42946,43S-6+0-37,mmr2,extracted,,mmr2__42946__43S-6+0-37,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-42946.csv
+c0078,436551,1R-17+0+16,mmr2,extracted,,mmr2__436551__1R-17+0+16,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-436551.csv
+c0079,436551,36S-5+0-31,mmr2,extracted,,mmr2__436551__36S-5+0-31,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-436551.csv
+c0081,44620,3R-40+0+37,mmr2,extracted,,mmr2__44620__3R-40+0+37,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-44620.csv
+c0082,46162,6V-41+0+35,mmr2,extracted,,mmr2__46162__6V-41+0+35,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-46162.csv
+c0088,496028,9E-41+0+32,mmr2,extracted,,mmr2__496028__9E-41+0+32,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-496028.csv
+c0089,510132,41J-12+0-29,mmr2,extracted,,mmr2__510132__41J-12+0-29,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-510132.csv
+c0097,63047,13E-53+0+40,mmr2,extracted,,mmr2__63047__13E-53+0+40,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-63047.csv
+c0099,719,36J-13+0-23,mmr2,extracted,,mmr2__719__36J-13+0-23,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-719.csv
+c0100,719,55S-8+0-47,mmr2,extracted,,mmr2__719__55S-8+0-47,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-719.csv
+c0101,719,7E-30+0+23,mmr2,extracted,,mmr2__719__7E-30+0+23,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-719.csv
+c0105,88604,49J-18+0-31,mmr2,extracted,,mmr2__88604__49J-18+0-31,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-88604.csv
+c0115,92336,13J-3+0-10,mmr2,extracted,,mmr2__92336__13J-3+0-10,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-92336.csv
+c0117,9783,11E-48+0+37,mmr2,extracted,,mmr2__9783__11E-48+0+37,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-9783.csv
+c0118,9783,25M-58+0+33,mmr2,extracted,,mmr2__9783__25M-58+0+33,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-9783.csv
+c0135,1995 HM,16M-15+0-1,mmr2,extracted,,mmr2__1995_HM__16M-15+0-1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1995 HM.csv
+c0136,1998 WR5,5M-11+0+6,mmr2,extracted,,mmr2__1998_WR5__5M-11+0+6,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1998 WR5.csv
+c0137,2000 CL33,3J-1+0-2,mmr2,extracted,,mmr2__2000_CL33__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2000 CL33.csv
+c0138,2000 GB2,3J-1+0-2,mmr2,extracted,,mmr2__2000_GB2__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2000 GB2.csv
+c0139,2000 GV127,5J-2+0-3,mmr2,extracted,,mmr2__2000_GV127__5J-2+0-3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2000 GV127.csv
+c0140,2000 QJ130,3J-1+0-2,mmr2,extracted,,mmr2__2000_QJ130__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2000 QJ130.csv
+c0141,2000 SG8,3J-1+0-2,mmr2,extracted,,mmr2__2000_SG8__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2000 SG8.csv
+c0142,2000 WX28,5J-2+0-3,mmr2,extracted,,mmr2__2000_WX28__5J-2+0-3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2000 WX28.csv
+c0143,2001 BY15,11J-4+0-7,mmr2,extracted,,mmr2__2001_BY15__11J-4+0-7,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2001 BY15.csv
+c0144,2001 HW7,5E-16+0+11,mmr2,extracted,,mmr2__2001_HW7__5E-16+0+11,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2001 HW7.csv
+c0145,2001 SJ262,7J-3+0-4,mmr2,extracted,,mmr2__2001_SJ262__7J-3+0-4,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2001 SJ262.csv
+c0146,2001 SS287,2J-1+0-1,mmr2,extracted,,mmr2__2001_SS287__2J-1+0-1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2001 SS287.csv
+c0147,2001 VC2,16E-17+0+1,mmr2,extracted,,mmr2__2001_VC2__16E-17+0+1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2001 VC2.csv
+c0148,2001 WK15,32E-39+0+7,mmr2,extracted,,mmr2__2001_WK15__32E-39+0+7,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2001 WK15.csv
+c0149,2001 YP3,3J-1+0-2,mmr2,extracted,,mmr2__2001_YP3__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2001 YP3.csv
+c0150,2002 AF29,2J-1+0-1,mmr2,extracted,,mmr2__2002_AF29__2J-1+0-1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2002 AF29.csv
+c0151,2002 XA,5J-2+0-3,mmr2,extracted,,mmr2__2002_XA__5J-2+0-3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2002 XA.csv
+c0152,2002 XB,5V-7+0+2,mmr2,extracted,,mmr2__2002_XB__5V-7+0+2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2002 XB.csv
+c0153,2003 QL96,5J-2+0-3,mmr2,extracted,,mmr2__2003_QL96__5J-2+0-3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 QL96.csv
+c0154,2003 QZ29,3J-1+0-2,mmr2,extracted,,mmr2__2003_QZ29__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 QZ29.csv
+c0155,2003 SK84,3J-1+0-2,mmr2,extracted,,mmr2__2003_SK84__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 SK84.csv
+c0156,2003 SL215,8J-3+0-5,mmr2,extracted,,mmr2__2003_SL215__8J-3+0-5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 SL215.csv
+c0157,2003 UC22,16M-27+0+11,mmr2,extracted,,mmr2__2003_UC22__16M-27+0+11,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 UC22.csv
+c0158,2003 UO25,3V-5+0+2,mmr2,extracted,,mmr2__2003_UO25__3V-5+0+2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 UO25.csv
+c0159,2003 YH136,3J-1+0-2,mmr2,extracted,,mmr2__2003_YH136__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 YH136.csv
+c0160,2004 BG41,3J-1+0-2,mmr2,extracted,,mmr2__2004_BG41__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 BG41.csv
+c0161,2004 CD39,3J-1+0-2,mmr2,extracted,,mmr2__2004_CD39__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 CD39.csv
+c0162,2004 CR2,3J-1+0-2,mmr2,extracted,,mmr2__2004_CR2__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 CR2.csv
+c0163,2004 DM44,3J-1+0-2,mmr2,extracted,,mmr2__2004_DM44__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 DM44.csv
+c0164,2004 GA,5J-2+0-3,mmr2,extracted,,mmr2__2004_GA__5J-2+0-3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 GA.csv
+c0165,2004 LB,13E-14+0+1,mmr2,extracted,,mmr2__2004_LB__13E-14+0+1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 LB.csv
+c0166,2004 NM8,3J-1+0-2,mmr2,extracted,,mmr2__2004_NM8__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 NM8.csv
+c0167,2004 PY27,2E-7+0+5,mmr2,extracted,,mmr2__2004_PY27__2E-7+0+5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 PY27.csv
+c0168,2004 TU11,3J-1+0-2,mmr2,extracted,,mmr2__2004_TU11__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 TU11.csv
+c0169,2004 UV1,5J-2+0-3,mmr2,extracted,,mmr2__2004_UV1__5J-2+0-3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 UV1.csv
+c0193,117306,11M-20+0+9,mmr2,extracted,,mmr2__117306__11M-20+0+9,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-117306.csv
+c0195,1221,3E-8+0+5,mmr2,extracted,,mmr2__1221__3E-8+0+5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1221.csv
+c0199,1627,11E-28+0+17,mmr2,extracted,,mmr2__1627__11E-28+0+17,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1627.csv
+c0200,1627,13E-33+0+20,mmr2,extracted,,mmr2__1627__13E-33+0+20,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1627.csv
+c0201,1685,5V-13+0+8,mmr2,extracted,,mmr2__1685__5V-13+0+8,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1685.csv
+c0204,1862,12V-35+0+23,mmr2,extracted,,mmr2__1862__12V-35+0+23,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1862.csv
+c0205,1863,7J-2+0-5,mmr2,extracted,,mmr2__1863__7J-2+0-5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1863.csv
+c0206,1998 UM1,5E-11+0+6,mmr2,extracted,,mmr2__1998_UM1__5E-11+0+6,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1998 UM1.csv
+c0207,1999 GL4,1V-5+0+4,mmr2,extracted,,mmr2__1999_GL4__1V-5+0+4,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1999 GL4.csv
+c0208,1999 TJ10,19M-22+0+3,mmr2,extracted,,mmr2__1999_TJ10__19M-22+0+3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1999 TJ10.csv
+c0209,2000 SF8,8M-9+0+1,mmr2,extracted,,mmr2__2000_SF8__8M-9+0+1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2000 SF8.csv
+c0210,2001 ND13,1V-3+0+2,mmr2,extracted,,mmr2__2001_ND13__1V-3+0+2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2001 ND13.csv
+c0211,2005 GQ107,40M-57+0+17,mmr2,extracted,,mmr2__2005_GQ107__40M-57+0+17,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-2005 GQ107.csv
+c0213,2897,35S-4+0-31,mmr2,extracted,,mmr2__2897__35S-4+0-31,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-2897.csv
+c0223,433,47M-44+0-3,mmr2,extracted,,mmr2__433__47M-44+0-3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-433.csv
+c0226,5026,3E-11+0+8,mmr2,extracted,,mmr2__5026__3E-11+0+8,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-5026.csv
+c0229,55913,40M-57+0+17,mmr2,extracted,,mmr2__55913__40M-57+0+17,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-55913.csv
+c0237,887,3J-1+0-2,mmr2,extracted,,mmr2__887__3J-1+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-887.csv
+c0247,2001 PG14,33S-2+0-31,mmr2,extracted,,mmr2__2001_PG14__33S-2+0-31,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2001 PG14.csv
+c0248,2004 TK14,31M-34+0+3,mmr2,extracted,,mmr2__2004_TK14__31M-34+0+3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 TK14.csv
+c0267,1992 SZ,1M-10J+1+0+0+8,mmr3,extracted,,mmr3__1992_SZ__1M-10J+1+0+0+8,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1992 SZ.csv
+c0268,2002 BG,1E-10S-1+0+0+10,mmr3,extracted,,mmr3__2002_BG__1E-10S-1+0+0+10,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2002 BG.csv
+c0269,2003 TG2,4E-1M-3+0+0+0,mmr3,extracted,,mmr3__2003_TG2__4E-1M-3+0+0+0,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 TG2.csv
+c0270,2004 YG1,9M-10J-4+0+0+5,mmr3,extracted,,mmr3__2004_YG1__9M-10J-4+0+0+5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 YG1.csv
+c0271,501710,1E+7S-4+0+0-4,mmr3,extracted,,mmr3__501710__1E+7S-4+0+0-4,experiments/2026-09-binary-asteroids/output/long-200k_2026-09-30/pair74/data-501710.csv
+c0280,101703,1V+3S-7+0+0+3,mmr3,extracted,,mmr3__101703__1V+3S-7+0+0+3,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-101703.csv
+c0281,1036,3M-8J-4+0+0+9,mmr3,extracted,,mmr3__1036__3M-8J-4+0+0+9,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1036.csv
+c0282,1036,5J+8S-3+0+0-10,mmr3,extracted,,mmr3__1036__5J+8S-3+0+0-10,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1036.csv
+c0283,1036,9J-2S-3+0+0-4,mmr3,extracted,,mmr3__1036__9J-2S-3+0+0-4,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1036.csv
+c0284,117306,1E+5S-4+0+0-2,mmr3,extracted,,mmr3__117306__1E+5S-4+0+0-2,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-117306.csv
+c0285,1221,3M-10J-2+0+0+9,mmr3,extracted,,mmr3__1221__3M-10J-2+0+0+9,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1221.csv
+c0286,1221,6V-9E-2+0+0+5,mmr3,extracted,,mmr3__1221__6V-9E-2+0+0+5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1221.csv
+c0287,122173,4J+7S-2+0+0-9,mmr3,extracted,,mmr3__122173__4J+7S-2+0+0-9,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-122173.csv
+c0288,142694,1V+3S-7+0+0+3,mmr3,extracted,,mmr3__142694__1V+3S-7+0+0+3,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-142694.csv
+c0289,154634,1R-6E+6+0+0-1,mmr3,extracted,,mmr3__154634__1R-6E+6+0+0-1,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-154634.csv
+c0290,1580,4M-7J-5+0+0+8,mmr3,extracted,,mmr3__1580__4M-7J-5+0+0+8,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1580.csv
+c0292,1620,3V+2S-7+0+0+2,mmr3,extracted,,mmr3__1620__3V+2S-7+0+0+2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1620.csv
+c0293,1620,7E+1S-10+0+0+2,mmr3,extracted,,mmr3__1620__7E+1S-10+0+0+2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1620.csv
+c0294,165548,6E-9M-5+0+0+8,mmr3,extracted,,mmr3__165548__6E-9M-5+0+0+8,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-165548.csv
+c0295,167405,1M-9J+1+0+0+7,mmr3,extracted,,mmr3__167405__1M-9J+1+0+0+7,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-167405.csv
+c0296,16815,1V+1J-7+0+0+5,mmr3,extracted,,mmr3__16815__1V+1J-7+0+0+5,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-16815.csv
+c0297,1685,5J+6S-1+0+0-10,mmr3,extracted,,mmr3__1685__5J+6S-1+0+0-10,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1685.csv
+c0298,1862,2M-6J-1+0+0+5,mmr3,extracted,,mmr3__1862__2M-6J-1+0+0+5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1862.csv
+c0299,1864,2V-5J-5+0+0+8,mmr3,extracted,,mmr3__1864__2V-5J-5+0+0+8,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1864.csv
+c0300,1864,3E-5S-5+0+0+7,mmr3,extracted,,mmr3__1864__3E-5S-5+0+0+7,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1864.csv
+c0301,1865,5V-1E-8+0+0+4,mmr3,extracted,,mmr3__1865__5V-1E-8+0+0+4,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1865.csv
+c0302,1916,3M-4S-5+0+0+6,mmr3,extracted,,mmr3__1916__3M-4S-5+0+0+6,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1916.csv
+c0304,1981,9J-10S-1+0+0+2,mmr3,extracted,,mmr3__1981__9J-10S-1+0+0+2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1981.csv
+c0305,1982 YA,1J+6S-2+0+0-5,mmr3,extracted,,mmr3__1982_YA__1J+6S-2+0+0-5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1982 YA.csv
+c0306,1999 UQ,7E+2M-9+0+0+0,mmr3,extracted,,mmr3__1999_UQ__7E+2M-9+0+0+0,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1999 UQ.csv
+c0307,2011 SR158,1V-4S-5+0+0+8,mmr3,extracted,,mmr3__2011_SR158__1V-4S-5+0+0+8,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-2011 SR158.csv
+c0308,2012 KL9,5E-2M-10+0+0+7,mmr3,extracted,,mmr3__2012_KL9__5E-2M-10+0+0+7,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-2012 KL9.csv
+c0309,2012 TK84,1M-9J+1+0+0+7,mmr3,extracted,,mmr3__2012_TK84__1M-9J+1+0+0+7,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-2012 TK84.csv
+c0310,2012 TS209,3M-8J-3+0+0+8,mmr3,extracted,,mmr3__2012_TS209__3M-8J-3+0+0+8,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-2012 TS209.csv
+c0312,2019 UK,7E+1S-6+0+0-2,mmr3,extracted,,mmr3__2019_UK__7E+1S-6+0+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2019 UK.csv
+c0313,21028,7E-10M-6+0+0+9,mmr3,extracted,,mmr3__21028__7E-10M-6+0+0+9,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-21028.csv
+c0314,214954,1M-3J-1+0+0+3,mmr3,extracted,,mmr3__214954__1M-3J-1+0+0+3,experiments/2026-09-binary-asteroids/output/long-200k_2026-09-30/data-214954.csv
+c0315,229056,4M-8J-5+0+0+9,mmr3,extracted,,mmr3__229056__4M-8J-5+0+0+9,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-229056.csv
+c0322,250322,2E-1M-5+0+0+4,mmr3,extracted,,mmr3__250322__2E-1M-5+0+0+4,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-250322.csv
+c0323,259585,4J+7S-2+0+0-9,mmr3,extracted,,mmr3__259585__4J+7S-2+0+0-9,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-259585.csv
+c0324,26416,1M-3J-1+0+0+3,mmr3,extracted,,mmr3__26416__1M-3J-1+0+0+3,experiments/2026-09-binary-asteroids/output/long-200k_2026-09-30/data-26416.csv
+c0325,26420,3M-8J-3+0+0+8,mmr3,extracted,,mmr3__26420__3M-8J-3+0+0+8,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-26420.csv
+c0329,393274,3J+7S-2+0+0-8,mmr3,extracted,,mmr3__393274__3J+7S-2+0+0-8,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-393274.csv
+c0330,414166,2E+2S-9+0+0+5,mmr3,extracted,,mmr3__414166__2E+2S-9+0+0+5,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-414166.csv
+c0331,446085,2R-7E-5+0+0+10,mmr3,extracted,,mmr3__446085__2R-7E-5+0+0+10,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-446085.csv
+c0332,44612,5M-6S-8+0+0+9,mmr3,extracted,,mmr3__44612__5M-6S-8+0+0+9,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-44612.csv
+c0337,56700,7V-10E-6+0+0+9,mmr3,extracted,,mmr3__56700__7V-10E-6+0+0+9,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-56700.csv
+c0339,63047,3J+7S-2+0+0-8,mmr3,extracted,,mmr3__63047__3J+7S-2+0+0-8,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-63047.csv
+c0340,719,1M+2J-3+0+0+0,mmr3,extracted,,mmr3__719__1M+2J-3+0+0+0,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-719.csv
+c0341,7343,1R-6E+6+0+0-1,mmr3,extracted,,mmr3__7343__1R-6E+6+0+0-1,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-7343.csv
+c0342,8306,2M-5S-3+0+0+6,mmr3,extracted,,mmr3__8306__2M-5S-3+0+0+6,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-8306.csv
+c0343,84203,3M+7J-6+0+0-4,mmr3,extracted,,mmr3__84203__3M+7J-6+0+0-4,experiments/2026-09-binary-asteroids/output/partners-50k_2026-09-30/data-84203.csv
+c0344,88666,1E+7S-4+0+0-4,mmr3,extracted,,mmr3__88666__1E+7S-4+0+0-4,experiments/2026-09-binary-asteroids/output/long-200k_2026-09-30/pair74/data-88666.csv
+c0347,92336,1R-3M-7+0+0+9,mmr3,extracted,,mmr3__92336__1R-3M-7+0+0+9,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-92336.csv
+c0348,154634,1M+1J-2+0+0+0,mmr3,extracted,,mmr3__154634__1M+1J-2+0+0+0,experiments/2026-09-binary-asteroids/output/long-200k_2026-09-30/data-154634.csv
+c0349,1999 UQ,8M-9J-4+0+0+5,mmr3,extracted,,mmr3__1999_UQ__8M-9J-4+0+0+5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1999 UQ.csv
+c0350,2003 KQ18,6J+2S-1+0+0-7,mmr3,extracted,,mmr3__2003_KQ18__6J+2S-1+0+0-7,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 KQ18.csv
+c0351,2003 UG22,5M-9S-4+0+0+8,mmr3,extracted,,mmr3__2003_UG22__5M-9S-4+0+0+8,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 UG22.csv
+c0352,2003 UG22,8M-4S-7+0+0+3,mmr3,extracted,,mmr3__2003_UG22__8M-4S-7+0+0+3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 UG22.csv
+c0353,2004 PY27,5J-4S-1+0+0+0,mmr3,extracted,,mmr3__2004_PY27__5J-4S-1+0+0+0,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2004 PY27.csv
+c0361,7343,1M+1J-2+0+0+0,mmr3,extracted,,mmr3__7343__1M+1J-2+0+0+0,experiments/2026-09-binary-asteroids/output/long-200k_2026-09-30/data-7343.csv
+c0362,1980,1M-1J-1+0+0+1,mmr3,extracted,,mmr3__1980__1M-1J-1+0+0+1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1980.csv
+c0363,2003 EH16,1M-3J-1+0+0+3,mmr3,extracted,,mmr3__2003_EH16__1M-3J-1+0+0+3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 EH16.csv
+c0364,2010 TU54,2V-9M+3+0+0+4,mmr3,extracted,,mmr3__2010_TU54__2V-9M+3+0+0+4,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2010 TU54.csv
+c0365,2011 ET4,4M+8S-5+0+0-7,mmr3,extracted,,mmr3__2011_ET4__4M+8S-5+0+0-7,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2011 ET4.csv
+c0366,2012 DE61,1E+5S-4+0+0-2,mmr3,extracted,,mmr3__2012_DE61__1E+5S-4+0+0-2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2012 DE61.csv
+c0367,2013 AS27,4E+9S-5+0+0-8,mmr3,extracted,,mmr3__2013_AS27__4E+9S-5+0+0-8,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2013 AS27.csv
+c0368,2013 TW135,8M-4S-7+0+0+3,mmr3,extracted,,mmr3__2013_TW135__8M-4S-7+0+0+3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2013 TW135.csv
+c0369,2014 QH365,2M+2S-3+0+0-1,mmr3,extracted,,mmr3__2014_QH365__2M+2S-3+0+0-1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2014 QH365.csv
+c0370,2014 TF17,3V-4E-2+0+0+3,mmr3,extracted,,mmr3__2014_TF17__3V-4E-2+0+0+3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2014 TF17.csv
+c0371,2015 EQ7,2E+4M-5+0+0-1,mmr3,extracted,,mmr3__2015_EQ7__2E+4M-5+0+0-1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2015 EQ7.csv
+c0372,2015 OM35,1R-9E+6+0+0+2,mmr3,extracted,,mmr3__2015_OM35__1R-9E+6+0+0+2,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2015 OM35.csv
+c0373,2015 QT9,3V-5M-3+0+0+5,mmr3,extracted,,mmr3__2015_QT9__3V-5M-3+0+0+5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2015 QT9.csv
+c0374,2016 FA13,8M-7J-5+0+0+4,mmr3,extracted,,mmr3__2016_FA13__8M-7J-5+0+0+4,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2016 FA13.csv
+c0375,2017 UA8,1R-10M+2+0+0+7,mmr3,extracted,,mmr3__2017_UA8__1R-10M+2+0+0+7,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2017 UA8.csv
+c0376,2018 TX1,3M-5S-2+0+0+4,mmr3,extracted,,mmr3__2018_TX1__3M-5S-2+0+0+4,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2018 TX1.csv
+c0377,2020 OE,3V+6J-8+0+0-1,mmr3,extracted,,mmr3__2020_OE__3V+6J-8+0+0-1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2020 OE.csv
+c0378,503955,1V-6M+6+0+0-1,mmr3,extracted,,mmr3__503955__1V-6M+6+0+0-1,experiments/2026-09-binary-asteroids/output/long-200k_2026-09-30/data-503955.csv
+c0380,117306,1V+5J-7+0+0+1,mmr3,extracted,,mmr3__117306__1V+5J-7+0+0+1,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-117306.csv
+c0382,1627,3V-4M-7+0+0+8,mmr3,extracted,,mmr3__1627__3V-4M-7+0+0+8,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1627.csv
+c0390,433,1R-5V+7+0+0-3,mmr3,extracted,,mmr3__433__1R-5V+7+0+0-3,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-433.csv
+c0399,1221,1V-2E+1+0+0+0,mmr3,extracted,,mmr3__1221__1V-2E+1+0+0+0,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1221.csv
+c0400,1566,1R-7J-4+0+0+10,mmr3,extracted,,mmr3__1566__1R-7J-4+0+0+10,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1566.csv
+c0401,1685,1V-1E-1+0+0+1,mmr3,extracted,,mmr3__1685__1V-1E-1+0+0+1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1685.csv
+c0402,1685,9M+6S-8+0+0-7,mmr3,extracted,,mmr3__1685__9M+6S-8+0+0-7,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1685.csv
+c0403,1862,5J+4S-1+0+0-8,mmr3,extracted,,mmr3__1862__5J+4S-1+0+0-8,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1862.csv
+c0404,1865,5E+4M-8+0+0-1,mmr3,extracted,,mmr3__1865__5E+4M-8+0+0-1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1865.csv
+c0405,1917,6M-4J-9+0+0+7,mmr3,extracted,,mmr3__1917__6M-4J-9+0+0+7,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1917.csv
+c0406,1992 SZ,5M-5S-8+0+0+8,mmr3,extracted,,mmr3__1992_SZ__5M-5S-8+0+0+8,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1992 SZ.csv
+c0407,1997 GK3,3M+5S-3+0+0-5,mmr3,extracted,,mmr3__1997_GK3__3M+5S-3+0+0-5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1997 GK3.csv
+c0408,1998 QA62,1V-5M+3+0+0+1,mmr3,extracted,,mmr3__1998_QA62__1V-5M+3+0+0+1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1998 QA62.csv
+c0409,2000 YG4,2R-8E-1+0+0+7,mmr3,extracted,,mmr3__2000_YG4__2R-8E-1+0+0+7,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2000 YG4.csv
+c0410,2001 HW7,5J+6S-2+0+0-9,mmr3,extracted,,mmr3__2001_HW7__5J+6S-2+0+0-9,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2001 HW7.csv
+c0411,2003 ND,6J-6S-1+0+0+1,mmr3,extracted,,mmr3__2003_ND__6J-6S-1+0+0+1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 ND.csv
+c0412,2003 TX9,3E+2J-10+0+0+5,mmr3,extracted,,mmr3__2003_TX9__3E+2J-10+0+0+5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2003 TX9.csv
+c0413,2013 VA14,2J+6S-1+0+0-7,mmr3,extracted,,mmr3__2013_VA14__2J+6S-1+0+0-7,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2013 VA14.csv
+c0415,285637,3M+7J-6+0+0-4,mmr3,extracted,,mmr3__285637__3M+7J-6+0+0-4,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-285637.csv
+c0417,481085,7E-10M-6+0+0+9,mmr3,extracted,,mmr3__481085__7E-10M-6+0+0+9,experiments/2026-09-binary-asteroids/output/run-50000_2026-09-30_07-34-07/data-481085.csv
+c0422,719,2M+3S-5+0+0+0,mmr3,extracted,,mmr3__719__2M+3S-5+0+0+0,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-719.csv
+c0423,2017 XF62,1M-1+0+0,coorbital,extracted,,coorbital__2017_XF62__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2017 XF62.csv
+c0425,138175,1E-1+0+0,coorbital,extracted,,coorbital__138175__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-138175.csv
+c0427,162015,1E-1+0+0,coorbital,extracted,,coorbital__162015__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-162015.csv
+c0428,1991 VG,1E-1+0+0,coorbital,extracted,,coorbital__1991_VG__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-1991 VG.csv
+c0429,2001 GO2,1E-1+0+0,coorbital,extracted,,coorbital__2001_GO2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2001 GO2.csv
+c0430,2001 GP2,1E-1+0+0,coorbital,extracted,,coorbital__2001_GP2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2001 GP2.csv
+c0431,2002 VX91,1E-1+0+0,coorbital,extracted,,coorbital__2002_VX91__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2002 VX91.csv
+c0432,2003 YN107,1E-1+0+0,coorbital,extracted,,coorbital__2003_YN107__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2003 YN107.csv
+c0433,2005 RX3,1M-1+0+0,coorbital,extracted,,coorbital__2005_RX3__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2005 RX3.csv
+c0434,2006 BZ147,1E-1+0+0,coorbital,extracted,,coorbital__2006_BZ147__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2006 BZ147.csv
+c0435,2006 JY26,1E-1+0+0,coorbital,extracted,,coorbital__2006_JY26__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2006 JY26.csv
+c0436,2007 VU6,1E-1+0+0,coorbital,extracted,,coorbital__2007_VU6__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2007 VU6.csv
+c0437,2008 EZ84,1E-1+0+0,coorbital,extracted,,coorbital__2008_EZ84__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2008 EZ84.csv
+c0438,2008 KT,1E-1+0+0,coorbital,extracted,,coorbital__2008_KT__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2008 KT.csv
+c0439,2009 SH2,1E-1+0+0,coorbital,extracted,,coorbital__2009_SH2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2009 SH2.csv
+c0440,2010 FN103,1E-1+0+0,coorbital,extracted,,coorbital__2010_FN103__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2010 FN103.csv
+c0441,2010 JK1,1E-1+0+0,coorbital,extracted,,coorbital__2010_JK1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2010 JK1.csv
+c0442,2012 XE133,1V-1+0+0,coorbital,extracted,,coorbital__2012_XE133__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2012 XE133.csv
+c0443,2013 RZ53,1E-1+0+0,coorbital,extracted,,coorbital__2013_RZ53__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2013 RZ53.csv
+c0444,2014 DH,1E-1+0+0,coorbital,extracted,,coorbital__2014_DH__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2014 DH.csv
+c0445,2014 HJ197,1E-1+0+0,coorbital,extracted,,coorbital__2014_HJ197__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2014 HJ197.csv
+c0446,2015 TG24,1V-1+0+0,coorbital,extracted,,coorbital__2015_TG24__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2015 TG24.csv
+c0447,2015 WZ12,1V-1+0+0,coorbital,extracted,,coorbital__2015_WZ12__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2015 WZ12.csv
+c0448,2015 XC352,1E-1+0+0,coorbital,extracted,,coorbital__2015_XC352__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2015 XC352.csv
+c0449,2016 JA,1E-1+0+0,coorbital,extracted,,coorbital__2016_JA__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2016 JA.csv
+c0450,2016 TY55,1E-1+0+0,coorbital,extracted,,coorbital__2016_TY55__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2016 TY55.csv
+c0451,2017 DQ35,1M-1+0+0,coorbital,extracted,,coorbital__2017_DQ35__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2017 DQ35.csv
+c0452,2018 JL1,1E-1+0+0,coorbital,extracted,,coorbital__2018_JL1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2018 JL1.csv
+c0453,2018 KS,1E-1+0+0,coorbital,extracted,,coorbital__2018_KS__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2018 KS.csv
+c0454,2018 PK21,1E-1+0+0,coorbital,extracted,,coorbital__2018_PK21__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2018 PK21.csv
+c0455,2018 RO5,1E-1+0+0,coorbital,extracted,,coorbital__2018_RO5__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2018 RO5.csv
+c0456,2019 AE3,1E-1+0+0,coorbital,extracted,,coorbital__2019_AE3__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 AE3.csv
+c0457,2019 DJ1,1E-1+0+0,coorbital,extracted,,coorbital__2019_DJ1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 DJ1.csv
+c0458,2019 JX1,1E-1+0+0,coorbital,extracted,,coorbital__2019_JX1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 JX1.csv
+c0459,2019 LB1,1E-1+0+0,coorbital,extracted,,coorbital__2019_LB1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 LB1.csv
+c0460,2019 UU1,1E-1+0+0,coorbital,extracted,,coorbital__2019_UU1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 UU1.csv
+c0461,2019 XH2,1E-1+0+0,coorbital,extracted,,coorbital__2019_XH2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 XH2.csv
+c0462,2019 XQ,1V-1+0+0,coorbital,extracted,,coorbital__2019_XQ__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 XQ.csv
+c0463,2020 CD3,1E-1+0+0,coorbital,extracted,,coorbital__2020_CD3__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 CD3.csv
+c0464,2020 CL1,1V-1+0+0,coorbital,extracted,,coorbital__2020_CL1__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 CL1.csv
+c0465,2020 FN3,1E-1+0+0,coorbital,extracted,,coorbital__2020_FN3__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 FN3.csv
+c0466,2020 HO8,1M-1+0+0,coorbital,extracted,,coorbital__2020_HO8__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 HO8.csv
+c0467,2020 QU5,1V-1+0+0,coorbital,extracted,,coorbital__2020_QU5__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 QU5.csv
+c0468,2020 SV5,1V-1+0+0,coorbital,extracted,,coorbital__2020_SV5__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 SV5.csv
+c0469,2021 EY1,1E-1+0+0,coorbital,extracted,,coorbital__2021_EY1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 EY1.csv
+c0470,2021 GQ10,1E-1+0+0,coorbital,extracted,,coorbital__2021_GQ10__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 GQ10.csv
+c0471,2021 JE1,1E-1+0+0,coorbital,extracted,,coorbital__2021_JE1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 JE1.csv
+c0472,2021 KD16,1V-1+0+0,coorbital,extracted,,coorbital__2021_KD16__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 KD16.csv
+c0473,2021 UE3,1E-1+0+0,coorbital,extracted,,coorbital__2021_UE3__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 UE3.csv
+c0474,2021 VF,1E-1+0+0,coorbital,extracted,,coorbital__2021_VF__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 VF.csv
+c0475,2021 VH2,1E-1+0+0,coorbital,extracted,,coorbital__2021_VH2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 VH2.csv
+c0476,2021 XG2,1M-1+0+0,coorbital,extracted,,coorbital__2021_XG2__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 XG2.csv
+c0477,2021 XK4,1E-1+0+0,coorbital,extracted,,coorbital__2021_XK4__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 XK4.csv
+c0478,2022 AP1,1V-1+0+0,coorbital,extracted,,coorbital__2022_AP1__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 AP1.csv
+c0479,2022 BY39,1E-1+0+0,coorbital,extracted,,coorbital__2022_BY39__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 BY39.csv
+c0480,2022 JM,1E-1+0+0,coorbital,extracted,,coorbital__2022_JM__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 JM.csv
+c0481,2022 QT5,1E-1+0+0,coorbital,extracted,,coorbital__2022_QT5__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 QT5.csv
+c0482,2022 RD2,1E-1+0+0,coorbital,extracted,,coorbital__2022_RD2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 RD2.csv
+c0483,2022 SC6,1E-1+0+0,coorbital,extracted,,coorbital__2022_SC6__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 SC6.csv
+c0484,2022 SU7,1E-1+0+0,coorbital,extracted,,coorbital__2022_SU7__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 SU7.csv
+c0485,2022 TD,1E-1+0+0,coorbital,extracted,,coorbital__2022_TD__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 TD.csv
+c0486,2022 UX1,1E-1+0+0,coorbital,extracted,,coorbital__2022_UX1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 UX1.csv
+c0487,2022 VG,1E-1+0+0,coorbital,extracted,,coorbital__2022_VG__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 VG.csv
+c0488,2022 YF4,1E-1+0+0,coorbital,extracted,,coorbital__2022_YF4__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 YF4.csv
+c0489,2023 CL2,1E-1+0+0,coorbital,extracted,,coorbital__2023_CL2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 CL2.csv
+c0490,2023 GR1,1V-1+0+0,coorbital,extracted,,coorbital__2023_GR1__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 GR1.csv
+c0491,2023 HM4,1E-1+0+0,coorbital,extracted,,coorbital__2023_HM4__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 HM4.csv
+c0492,2023 KO,1V-1+0+0,coorbital,extracted,,coorbital__2023_KO__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 KO.csv
+c0493,2023 OE5,1E-1+0+0,coorbital,extracted,,coorbital__2023_OE5__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 OE5.csv
+c0494,2023 PZ,1E-1+0+0,coorbital,extracted,,coorbital__2023_PZ__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 PZ.csv
+c0495,2023 QS7,1V-1+0+0,coorbital,extracted,,coorbital__2023_QS7__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 QS7.csv
+c0496,2023 RX1,1E-1+0+0,coorbital,extracted,,coorbital__2023_RX1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 RX1.csv
+c0497,2023 VR5,1E-1+0+0,coorbital,extracted,,coorbital__2023_VR5__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 VR5.csv
+c0498,2023 VS,1E-1+0+0,coorbital,extracted,,coorbital__2023_VS__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 VS.csv
+c0500,2024 AV2,1E-1+0+0,coorbital,extracted,,coorbital__2024_AV2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2024 AV2.csv
+c0501,2024 BM1,1E-1+0+0,coorbital,extracted,,coorbital__2024_BM1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2024 BM1.csv
+c0502,2024 MS,1E-1+0+0,coorbital,extracted,,coorbital__2024_MS__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2024 MS.csv
+c0503,2024 WJ,1E-1+0+0,coorbital,extracted,,coorbital__2024_WJ__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2024 WJ.csv
+c0504,2024 XP16,1E-1+0+0,coorbital,extracted,,coorbital__2024_XP16__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2024 XP16.csv
+c0505,2025 BL,1E-1+0+0,coorbital,extracted,,coorbital__2025_BL__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 BL.csv
+c0506,2025 DU7,1E-1+0+0,coorbital,extracted,,coorbital__2025_DU7__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 DU7.csv
+c0507,2025 FP4,1E-1+0+0,coorbital,extracted,,coorbital__2025_FP4__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 FP4.csv
+c0508,2025 FY11,1E-1+0+0,coorbital,extracted,,coorbital__2025_FY11__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 FY11.csv
+c0509,2025 GL,1E-1+0+0,coorbital,extracted,,coorbital__2025_GL__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 GL.csv
+c0510,2025 OW12,1E-1+0+0,coorbital,extracted,,coorbital__2025_OW12__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 OW12.csv
+c0511,2025 QV5,1E-1+0+0,coorbital,extracted,,coorbital__2025_QV5__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 QV5.csv
+c0512,2025 SC,1E-1+0+0,coorbital,extracted,,coorbital__2025_SC__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 SC.csv
+c0513,2025 TV10,1V-1+0+0,coorbital,extracted,,coorbital__2025_TV10__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 TV10.csv
+c0514,2025 UF5,1E-1+0+0,coorbital,extracted,,coorbital__2025_UF5__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 UF5.csv
+c0515,2025 YU11,1E-1+0+0,coorbital,extracted,,coorbital__2025_YU11__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 YU11.csv
+c0516,2026 AC4,1E-1+0+0,coorbital,extracted,,coorbital__2026_AC4__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2026 AC4.csv
+c0517,2026 BZ5,1E-1+0+0,coorbital,extracted,,coorbital__2026_BZ5__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2026 BZ5.csv
+c0518,2026 KA3,1E-1+0+0,coorbital,extracted,,coorbital__2026_KA3__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2026 KA3.csv
+c0519,2026 MF2,1E-1+0+0,coorbital,extracted,,coorbital__2026_MF2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2026 MF2.csv
+c0520,255071,1E-1+0+0,coorbital,extracted,,coorbital__255071__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-255071.csv
+c0521,459872,1E-1+0+0,coorbital,extracted,,coorbital__459872__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-459872.csv
+c0522,468910,1E-1+0+0,coorbital,extracted,,coorbital__468910__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-468910.csv
+c0523,54509,1E-1+0+0,coorbital,extracted,,coorbital__54509__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-54509.csv
+c0524,613995,1E-1+0+0,coorbital,extracted,,coorbital__613995__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-613995.csv
+c0525,679648,1E-1+0+0,coorbital,extracted,,coorbital__679648__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-679648.csv
+c0526,85770,1E-1+0+0,coorbital,extracted,,coorbital__85770__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-85770.csv
+c0527,872436,1M-1+0+0,coorbital,extracted,,coorbital__872436__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-872436.csv
+c0528,101429,1M-1+0+0,coorbital,extracted,,coorbital__101429__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-101429.csv
+c0529,121514,1M-1+0+0,coorbital,extracted,,coorbital__121514__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-121514.csv
+c0530,164207,1E-1+0+0,coorbital,extracted,,coorbital__164207__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-164207.csv
+c0531,2002 AA29,1E-1+0+0,coorbital,extracted,,coorbital__2002_AA29__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2002 AA29.csv
+c0532,2009 SE,1M-1+0+0,coorbital,extracted,,coorbital__2009_SE__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2009 SE.csv
+c0533,2010 CG236,1E-1+0+0,coorbital,extracted,,coorbital__2010_CG236__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2010 CG236.csv
+c0534,2010 NT134,1E-1+0+0,coorbital,extracted,,coorbital__2010_NT134__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2010 NT134.csv
+c0535,2011 SL25,1M-1+0+0,coorbital,extracted,,coorbital__2011_SL25__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2011 SL25.csv
+c0536,2011 SP189,1M-1+0+0,coorbital,extracted,,coorbital__2011_SP189__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2011 SP189.csv
+c0537,2013 LX28,1E-1+0+0,coorbital,extracted,,coorbital__2013_LX28__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2013 LX28.csv
+c0538,2014 OL339,1E-1+0+0,coorbital,extracted,,coorbital__2014_OL339__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2014 OL339.csv
+c0539,2016 CO246,1E-1+0+0,coorbital,extracted,,coorbital__2016_CO246__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2016 CO246.csv
+c0540,2017 SL16,1E-1+0+0,coorbital,extracted,,coorbital__2017_SL16__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2017 SL16.csv
+c0541,2017 XQ60,1E-1+0+0,coorbital,extracted,,coorbital__2017_XQ60__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2017 XQ60.csv
+c0542,2018 AN2,1E-1+0+0,coorbital,extracted,,coorbital__2018_AN2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2018 AN2.csv
+c0543,2020 CX1,1E-1+0+0,coorbital,extracted,,coorbital__2020_CX1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 CX1.csv
+c0544,2020 PP1,1E-1+0+0,coorbital,extracted,,coorbital__2020_PP1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 PP1.csv
+c0545,2022 BL5,1V-1+0+0,coorbital,extracted,,coorbital__2022_BL5__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 BL5.csv
+c0546,2023 FW13,1E-1+0+0,coorbital,extracted,,coorbital__2023_FW13__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 FW13.csv
+c0547,2023 GC2,1E-1+0+0,coorbital,extracted,,coorbital__2023_GC2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 GC2.csv
+c0548,2023 TG14,1E-1+0+0,coorbital,extracted,,coorbital__2023_TG14__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 TG14.csv
+c0549,2024 AF6,1V-1+0+0,coorbital,extracted,,coorbital__2024_AF6__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2024 AF6.csv
+c0550,2024 TY11,1M-1+0+0,coorbital,extracted,,coorbital__2024_TY11__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2024 TY11.csv
+c0551,2024 YM5,1V-1+0+0,coorbital,extracted,,coorbital__2024_YM5__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2024 YM5.csv
+c0552,2025 ON9,1M-1+0+0,coorbital,extracted,,coorbital__2025_ON9__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 ON9.csv
+c0553,2025 RB7,1E-1+0+0,coorbital,extracted,,coorbital__2025_RB7__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 RB7.csv
+c0554,322756,1V-1+0+0,coorbital,extracted,,coorbital__322756__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-322756.csv
+c0555,3753,1E-1+0+0,coorbital,extracted,,coorbital__3753__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-3753.csv
+c0556,419624,1E-1+0+0,coorbital,extracted,,coorbital__419624__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-419624.csv
+c0557,469219,1E-1+0+0,coorbital,extracted,,coorbital__469219__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-469219.csv
+c0560,614689,1E-1+0+0,coorbital,extracted,,coorbital__614689__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-614689.csv
+c0564,706765,1E-1+0+0,coorbital,extracted,,coorbital__706765__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-706765.csv
+c0566,2009 BE81,1M-1+0+0,coorbital,extracted,,coorbital__2009_BE81__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2009 BE81.csv
+c0567,2015 TL144,1M-1+0+0,coorbital,extracted,,coorbital__2015_TL144__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2015 TL144.csv
+c0568,2016 CP31,1M-1+0+0,coorbital,extracted,,coorbital__2016_CP31__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2016 CP31.csv
+c0569,2016 NZ55,1M-1+0+0,coorbital,extracted,,coorbital__2016_NZ55__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2016 NZ55.csv
+c0570,2017 XG62,1M-1+0+0,coorbital,extracted,,coorbital__2017_XG62__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2017 XG62.csv
+c0571,2018 FM29,1M-1+0+0,coorbital,extracted,,coorbital__2018_FM29__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2018 FM29.csv
+c0572,2021 WX6,1M-1+0+0,coorbital,extracted,,coorbital__2021_WX6__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 WX6.csv
+c0573,277617,1M-1+0+0,coorbital,extracted,,coorbital__277617__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-277617.csv
+c0574,439908,1M-1+0+0,coorbital,extracted,,coorbital__439908__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-439908.csv
+c0575,613440,1M-1+0+0,coorbital,extracted,,coorbital__613440__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-613440.csv
+c0576,2002 PN,1E-1+0+0,coorbital,extracted,,coorbital__2002_PN__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2002 PN.csv
+c0577,2005 QQ87,1E-1+0+0,coorbital,extracted,,coorbital__2005_QQ87__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2005 QQ87.csv
+c0578,2009 HE60,1E-1+0+0,coorbital,extracted,,coorbital__2009_HE60__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2009 HE60.csv
+c0579,2012 FM35,1E-1+0+0,coorbital,extracted,,coorbital__2012_FM35__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2012 FM35.csv
+c0580,2013 BS45,1E-1+0+0,coorbital,extracted,,coorbital__2013_BS45__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2013 BS45.csv
+c0581,2013 ND15,1V-1+0+0,coorbital,extracted,,coorbital__2013_ND15__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2013 ND15.csv
+c0582,2014 BT8,1E-1+0+0,coorbital,extracted,,coorbital__2014_BT8__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2014 BT8.csv
+c0583,2014 UR,1E-1+0+0,coorbital,extracted,,coorbital__2014_UR__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2014 UR.csv
+c0584,2015 SO2,1E-1+0+0,coorbital,extracted,,coorbital__2015_SO2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2015 SO2.csv
+c0585,2015 XX169,1E-1+0+0,coorbital,extracted,,coorbital__2015_XX169__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2015 XX169.csv
+c0586,2015 YA,1E-1+0+0,coorbital,extracted,,coorbital__2015_YA__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2015 YA.csv
+c0587,2015 YQ1,1E-1+0+0,coorbital,extracted,,coorbital__2015_YQ1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2015 YQ1.csv
+c0588,2016 CA138,1E-1+0+0,coorbital,extracted,,coorbital__2016_CA138__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2016 CA138.csv
+c0589,2016 HF2,1E-1+0+0,coorbital,extracted,,coorbital__2016_HF2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2016 HF2.csv
+c0590,2016 WQ3,1E-1+0+0,coorbital,extracted,,coorbital__2016_WQ3__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2016 WQ3.csv
+c0591,2017 CY35,1V-1+0+0,coorbital,extracted,,coorbital__2017_CY35__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2017 CY35.csv
+c0592,2017 SP21,1E-1+0+0,coorbital,extracted,,coorbital__2017_SP21__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2017 SP21.csv
+c0593,2017 UM52,1E-1+0+0,coorbital,extracted,,coorbital__2017_UM52__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2017 UM52.csv
+c0594,2018 DV1,1E-1+0+0,coorbital,extracted,,coorbital__2018_DV1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2018 DV1.csv
+c0595,2018 PN22,1E-1+0+0,coorbital,extracted,,coorbital__2018_PN22__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2018 PN22.csv
+c0596,2018 RQ2,1M-1+0+0,coorbital,extracted,,coorbital__2018_RQ2__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2018 RQ2.csv
+c0597,2018 XW2,1E-1+0+0,coorbital,extracted,,coorbital__2018_XW2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2018 XW2.csv
+c0598,2019 GF1,1E-1+0+0,coorbital,extracted,,coorbital__2019_GF1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 GF1.csv
+c0599,2019 GM1,1E-1+0+0,coorbital,extracted,,coorbital__2019_GM1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 GM1.csv
+c0600,2019 JH7,1E-1+0+0,coorbital,extracted,,coorbital__2019_JH7__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 JH7.csv
+c0601,2019 RR2,1E-1+0+0,coorbital,extracted,,coorbital__2019_RR2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 RR2.csv
+c0602,2019 SB6,1E-1+0+0,coorbital,extracted,,coorbital__2019_SB6__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 SB6.csv
+c0603,2019 SS2,1E-1+0+0,coorbital,extracted,,coorbital__2019_SS2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 SS2.csv
+c0604,2019 VL5,1E-1+0+0,coorbital,extracted,,coorbital__2019_VL5__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 VL5.csv
+c0605,2019 YB4,1E-1+0+0,coorbital,extracted,,coorbital__2019_YB4__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2019 YB4.csv
+c0606,2020 BT2,1V-1+0+0,coorbital,extracted,,coorbital__2020_BT2__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 BT2.csv
+c0607,2020 CB,1E-1+0+0,coorbital,extracted,,coorbital__2020_CB__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 CB.csv
+c0608,2020 GE1,1E-1+0+0,coorbital,extracted,,coorbital__2020_GE1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 GE1.csv
+c0609,2020 HE5,1E-1+0+0,coorbital,extracted,,coorbital__2020_HE5__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 HE5.csv
+c0610,2020 HO5,1E-1+0+0,coorbital,extracted,,coorbital__2020_HO5__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 HO5.csv
+c0611,2020 HP1,1E-1+0+0,coorbital,extracted,,coorbital__2020_HP1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 HP1.csv
+c0612,2020 KS3,1E-1+0+0,coorbital,extracted,,coorbital__2020_KS3__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 KS3.csv
+c0613,2020 MU1,1E-1+0+0,coorbital,extracted,,coorbital__2020_MU1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 MU1.csv
+c0614,2020 PN1,1E-1+0+0,coorbital,extracted,,coorbital__2020_PN1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 PN1.csv
+c0615,2020 SB,1V-1+0+0,coorbital,extracted,,coorbital__2020_SB__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2020 SB.csv
+c0616,2021 BA,1E-1+0+0,coorbital,extracted,,coorbital__2021_BA__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 BA.csv
+c0617,2021 ED2,1E-1+0+0,coorbital,extracted,,coorbital__2021_ED2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 ED2.csv
+c0618,2021 VX22,1E-1+0+0,coorbital,extracted,,coorbital__2021_VX22__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 VX22.csv
+c0619,2021 XO3,1V-1+0+0,coorbital,extracted,,coorbital__2021_XO3__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 XO3.csv
+c0620,2022 CD,1V-1+0+0,coorbital,extracted,,coorbital__2022_CD__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 CD.csv
+c0621,2022 GO3,1E-1+0+0,coorbital,extracted,,coorbital__2022_GO3__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 GO3.csv
+c0622,2022 UA13,1V-1+0+0,coorbital,extracted,,coorbital__2022_UA13__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 UA13.csv
+c0623,2022 VR1,1E-1+0+0,coorbital,extracted,,coorbital__2022_VR1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 VR1.csv
+c0624,2022 YG,1E-1+0+0,coorbital,extracted,,coorbital__2022_YG__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 YG.csv
+c0625,2023 CU,1E-1+0+0,coorbital,extracted,,coorbital__2023_CU__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 CU.csv
+c0626,2023 QD2,1E-1+0+0,coorbital,extracted,,coorbital__2023_QD2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 QD2.csv
+c0627,2023 SP2,1E-1+0+0,coorbital,extracted,,coorbital__2023_SP2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 SP2.csv
+c0628,2024 JR16,1E-1+0+0,coorbital,extracted,,coorbital__2024_JR16__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2024 JR16.csv
+c0629,2024 JZ64,1V-1+0+0,coorbital,extracted,,coorbital__2024_JZ64__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2024 JZ64.csv
+c0630,2025 DQ,1E-1+0+0,coorbital,extracted,,coorbital__2025_DQ__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 DQ.csv
+c0631,2025 KR4,1E-1+0+0,coorbital,extracted,,coorbital__2025_KR4__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 KR4.csv
+c0632,2025 NL,1E-1+0+0,coorbital,extracted,,coorbital__2025_NL__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 NL.csv
+c0633,2025 PN7,1E-1+0+0,coorbital,extracted,,coorbital__2025_PN7__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 PN7.csv
+c0634,2025 RH3,1E-1+0+0,coorbital,extracted,,coorbital__2025_RH3__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 RH3.csv
+c0635,2025 XN6,1E-1+0+0,coorbital,extracted,,coorbital__2025_XN6__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2025 XN6.csv
+c0636,2026 FW12,1E-1+0+0,coorbital,extracted,,coorbital__2026_FW12__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2026 FW12.csv
+c0637,2026 JZ2,1E-1+0+0,coorbital,extracted,,coorbital__2026_JZ2__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2026 JZ2.csv
+c0638,2026 PF1,1E-1+0+0,coorbital,extracted,,coorbital__2026_PF1__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2026 PF1.csv
+c0639,277810,1E-1+0+0,coorbital,extracted,,coorbital__277810__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-277810.csv
+c0640,522684,1E-1+0+0,coorbital,extracted,,coorbital__522684__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-522684.csv
+c0641,524522,1V-1+0+0,coorbital,extracted,,coorbital__524522__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-524522.csv
+c0642,536531,1M-1+0+0,coorbital,extracted,,coorbital__536531__1M-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-536531.csv
+c0643,2010 DH65,1E-1+0+0,coorbital,extracted,,coorbital__2010_DH65__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2010 DH65.csv
+c0644,2021 XA1,1V-1+0+0,coorbital,extracted,,coorbital__2021_XA1__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2021 XA1.csv
+c0645,2022 BB2,1V-1+0+0,coorbital,extracted,,coorbital__2022_BB2__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 BB2.csv
+c0646,2022 RA,1E-1+0+0,coorbital,extracted,,coorbital__2022_RA__1E-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2022 RA.csv
+c0647,2023 BB1,1V-1+0+0,coorbital,extracted,,coorbital__2023_BB1__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2023 BB1.csv
+c0648,2026 SZ2,1V-1+0+0,coorbital,extracted,,coorbital__2026_SZ2__1V-1+0+0,experiments/nea-mmrs/coorbitals/output/coorbital-1000-forward/data-2026 SZ2.csv
+c0649,9068,s-2s3+s4,secular,extracted,,secular__9068__s-2s3+s4,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-9068.csv
+c0650,2005 GQ107,g-2g2+g8,secular,extracted,,secular__2005_GQ107__g-2g2+g8,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-2005 GQ107.csv
+c0651,2005 GQ107,s-g5+g8-s6,secular,extracted,,secular__2005_GQ107__s-g5+g8-s6,experiments/2026-09-binary-asteroids/output/test-v5-20myr/data-2005 GQ107.csv
+c0652,2008 UZ220,g-g1+s3-s8,secular,extracted,,secular__2008_UZ220__g-g1+s3-s8,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-2008 UZ220.csv
+c0654,3701,g-g6+s-s6,secular,extracted,,secular__3701__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-3701.csv
+c0655,19289,g-g6,secular,extracted,,secular__19289__g-g6,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-19289.csv
+c0656,26420,g-g6,secular,extracted,,secular__26420__g-g6,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-26420.csv
+c0657,278067,g-g6,secular,extracted,,secular__278067__g-g6,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-278067.csv
+c0658,80218,g-g6,secular,extracted,,secular__80218__g-g6,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-80218.csv
+c0659,1,g-g6+s-s6,secular,extracted,,secular__1__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr/data-1.csv
+c0660,10,g-g6,secular,extracted,,secular__10__g-g6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr/data-10.csv
+c0661,101703,g+g5-2g6,secular,extracted,,secular__101703__g+g5-2g6,experiments/2026-09-binary-asteroids/output/test-v5-20myr/data-101703.csv
+c0662,163,2(g-g6)+(s-s6),secular,extracted,,secular__163__2_g-g6_+_s-s6_,experiments/2026-09-binary-asteroids/output/secular-reference-10myr/data-163.csv
+c0663,20845,g-g6+s-s6,secular,extracted,,secular__20845__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-20845.csv
+c0664,2306,g-g6+s-s6,secular,extracted,,secular__2306__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-2306.csv
+c0665,3527,2(g-g6)+(s-s6),secular,extracted,,secular__3527__2_g-g6_+_s-s6_,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-3527.csv
+c0666,51,2(g-g6)+(s-s6),secular,extracted,,secular__51__2_g-g6_+_s-s6_,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-51.csv
+c0667,51,g-g6+s-s6,secular,extracted,,secular__51__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-51.csv
+c0670,1020,g-g6+s-s6,secular,extracted,,secular__1020__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr/data-1020.csv
+c0671,11028,g-g5,secular,extracted,,secular__11028__g-g5,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-astdys/data-11028.csv
+c0672,11791,g-2g6+g5,secular,extracted,,secular__11791__g-2g6+g5,output/batch_mmr_test/data-11791-g-2g6+g5.csv
+c0673,1222,g-g6,secular,extracted,,secular__1222__g-g6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr/data-1222.csv
+c0674,1249,2(g-g6)+(s-s6),secular,extracted,,secular__1249__2_g-g6_+_s-s6_,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-1249.csv
+c0676,16712,g-g6,secular,extracted,,secular__16712__g-g6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-astdys/data-16712.csv
+c0677,17200,g-2g6+g5,secular,extracted,,secular__17200__g-2g6+g5,output/batch_mmr_test/data-17200-g-2g6+g5.csv
+c0678,2093,2(g-g6)+(s-s6),secular,extracted,,secular__2093__2_g-g6_+_s-s6_,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-2093.csv
+c0679,21028,g-g3,secular,extracted,,secular__21028__g-g3,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-21028.csv
+c0680,21211,g-g6+s-s6,secular,extracted,,secular__21211__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-21211.csv
+c0681,2198,g-2g6+g5,secular,extracted,,secular__2198__g-2g6+g5,output/batch_mmr_test/data-2198-g-2g6+g5.csv
+c0683,298,2(g-g6)+(s-s6),secular,extracted,,secular__298__2_g-g6_+_s-s6_,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-astdys/data-298.csv
+c0684,313701,g-g4+s4-s6,secular,extracted,,secular__313701__g-g4+s4-s6,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-313701.csv
+c0685,339,g-g6+s-s6,secular,extracted,,secular__339__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-339.csv
+c0686,363,g-g6+s-s6,secular,extracted,,secular__363__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr/data-363.csv
+c0687,41895,g-2g6+g5,secular,extracted,,secular__41895__g-2g6+g5,output/batch_mmr_test/data-41895-g-2g6+g5.csv
+c0688,4305,g-3g6+2g5,secular,extracted,,secular__4305__g-3g6+2g5,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-astdys/data-4305.csv
+c0689,4765,2s-s3-s6,secular,extracted,,secular__4765__2s-s3-s6,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-4765.csv
+c0690,4765,g-g2-s3+s6,secular,extracted,,secular__4765__g-g2-s3+s6,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-4765.csv
+c0691,48717,g-g6,secular,extracted,,secular__48717__g-g6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-astdys/data-48717.csv
+c0692,49,g-g6+s-s6,secular,extracted,,secular__49__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-astdys/data-49.csv
+c0693,5026,g+g2-g4-g6,secular,extracted,,secular__5026__g+g2-g4-g6,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-5026.csv
+c0694,518,g-g6+s-s6,secular,extracted,,secular__518__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-astdys/data-518.csv
+c0695,52773,2(g-g6)+(s-s6),secular,extracted,,secular__52773__2_g-g6_+_s-s6_,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-52773.csv
+c0696,5507,g-2g6+g5,secular,extracted,,secular__5507__g-2g6+g5,output/batch_mmr_test/data-5507-g-2g6+g5.csv
+c0697,633,g-g6+s-s6,secular,extracted,,secular__633__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-633.csv
+c0698,689,2(g-g6)+(s-s6),secular,extracted,,secular__689__2_g-g6_+_s-s6_,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-689.csv
+c0699,8089,2(g-g6)+(s-s6),secular,extracted,,secular__8089__2_g-g6_+_s-s6_,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-8089.csv
+c0700,5739,g-g4,secular,extracted,,secular__5739__g-g4,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-astdys/data-5739.csv
+c0701,847,g-g6+s-s6,secular,extracted,,secular__847__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr/data-847.csv
+c0702,127504,s-s6,secular,extracted,,secular__127504__s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-astdys/data-127504.csv
+c0703,155,g-2g6+g5,secular,extracted,,secular__155__g-2g6+g5,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-astdys/data-155.csv
+c0706,254,2(g-g6)+(s-s6),secular,extracted,,secular__254__2_g-g6_+_s-s6_,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-astdys/data-254.csv
+c0709,73415,g-g6,secular,extracted,,secular__73415__g-g6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr/data-73415.csv
+c0718,591986,LK,zlk,extracted,,zlk__591986__LK,tests/fixtures/free-omega/591986.csv.gz
+c0720,10563,LK,zlk,extracted,,zlk__10563__LK,<external>/lkr-ias15/output_1_99999/data-10563.csv
+c0722,373136,LK,zlk,extracted,,zlk__373136__LK,<external>/lkr-ias15/output_300000_399999/data-373136.csv
+c0724,555527,LK,zlk,extracted,,zlk__555527__LK,<external>/lkr-ias15/output_500000_599999/data-555527.csv
+c0728,797204,LK,zlk,extracted,,zlk__797204__LK,<external>/lkr-ias15/output_700000_799999/data-797204.csv
+c0730,1373,LK,zlk,extracted,,zlk__1373__LK,<external>/lkr-ias15/output_1_99999/data-1373.csv
+c0731,162474,LK,zlk,extracted,,zlk__162474__LK,tests/fixtures/free-omega/162474.csv.gz
+c0732,3040,LK,zlk,extracted,,zlk__3040__LK,tests/fixtures/free-omega/3040.csv.gz
+c0733,3752,LK,zlk,extracted,,zlk__3752__LK,<external>/lkr-ias15/output_1_99999/data-3752.csv
+c0734,4257,LK,zlk,extracted,,zlk__4257__LK,tests/fixtures/free-omega/4257.csv.gz
+c0737,88899,LK,zlk,extracted,,zlk__88899__LK,<external>/lkr-ias15/output_1_99999/data-88899.csv
+c0669,9068,all secular angles,secular,failed,"resonance ""all secular angles"" names no single angle",,experiments/2026-09-binary-asteroids/output/secular-10myr-ias15-pair12-v4/data-9068.csv
+c0001,620082,4J-1+0-3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0002,12123,46J-15+0-31,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0003,16397,29M+50+0-79,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0004,19319,14J-5+0-9,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0005,21275,51J-14+0-37,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0006,21514,36J-13+0-23,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0007,25510,27J-8+0-19,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0008,27756,74J-21+0-53,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0009,29617,38M-61+0+23,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0010,29744,23M-49+0+26,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0011,31416,47J+15+0-62,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0012,31580,50J-17+0-33,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0013,32151,35J+11+0-46,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0014,35512,11J+4+0-15,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0015,35751,23M+41+0-64,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0016,35762,36M-73+0+37,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0017,37908,23J-8+0-15,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0018,39423,23J-10+0-13,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0019,41274,11S+2+0-13,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0020,41774,39M-74+0+35,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0021,41888,13J+4+0-17,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0022,42355,4U-11+0+7,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0023,44028,37J-14+0-23,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0024,44662,54M-89+0+35,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0025,45021,10M-21+0+11,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0026,482824,19N-32+0+13,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0027,49203,76J-23+0-53,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0028,56533,27M-52+0+25,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0029,63217,4M+7+0-11,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0030,66329,31M-59+0+28,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0031,79,54S-7+0-47,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0032,81533,13M-29+0+16,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0033,82831,13M-24+0+11,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0034,86921,34M-61+0+27,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0039,120348,15N-22+0+7,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0040,138537,13N-25+0+12,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0041,138628,5N-9+0+4,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0043,145480,1N-4+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0044,15760,2U+7+0-9,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0045,15789,1U+3+0-4,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0046,15807,4N-7+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0047,15809,3N+5+0-8,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0050,16684,4N-7+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0057,19299,1U-3+0+2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0058,19308,4N-7+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0059,1980,5J-1+0-4,mmr2,skipped,needs_integration=yes (batches A-E),,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1980.csv
+c0060,1995 HM,6J-1+0-5,mmr2,skipped,needs_integration=yes (batches A-E),,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-1995 HM.csv
+c0061,2000 SF8,5J-1+0-4,mmr2,skipped,needs_integration=yes (batches A-E),,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/data-2000 SF8.csv
+c0063,20108,1U+3+0-4,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0064,21436,11J-3+0-8,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0065,24835,3N+5+0-8,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0069,32929,1U-3+0+2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0070,33001,4N-7+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0075,40314,1U+4+0-5,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0080,44594,8N-9+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0083,469333,7N-17+0+10,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0084,469442,3N-4+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0085,48012,3J-1+0-2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0086,48016,3J-1+0-2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0087,48017,3J-1+0-2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0090,523588,5N-9+0+4,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0091,523627,11N-18+0+7,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0092,523642,20N-37+0+17,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0093,523899,3N-5+0+2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0094,545293,1U-4+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0095,564160,3N-4+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0096,624,1J+1+0-2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0098,666184,3N-4+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0102,78799,5N-7+0+2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0103,82157,20N-29+0+9,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0104,87555,4N-5+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0106,88710,5V-9+0+4,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0107,88710_c3,11R-46+0+35,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0108,88710_c3,22V-41+0+19,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0109,88710_c3,49M-31+0-18,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0110,88710_c7,15V-23+0+8,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0111,88710_c7,32E-29+0-3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0112,88710_c7,7V-11+0+4,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0113,88710_c8,43M-28+0-15,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0114,88710_c8,44M-29+0-15,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0116,95626,7N-5+0-2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0119,119066,4N-7+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0120,119979,1N-2+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0121,129772,4N-7+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0122,130391,1N-2+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0123,136108,7N-12+0+5,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0124,1362,2J-1+0-1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0125,137295,1N-2+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0126,149348,6N-11+0+5,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0127,149349,3N-5+0+2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0128,15788,2N-3+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0129,15810,2N-3+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0130,15820,2N-3+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0131,15836,3N-4+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0132,15875,2N-3+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0133,1921,2J-1+0-1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0134,1922,2J-1+0-1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0170,26308,1N-2+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0171,26375,2N-5+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0172,27011,4M-7+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0173,278361,1N-2+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0174,28978,2N-3+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0175,307261,11N-18+0+7,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0176,3688,2J-1+0-1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0177,3789,2J-1+0-1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0178,385458,9N-17+0+8,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0179,385533,7N-12+0+5,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0180,4177,2J-1+0-1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0181,500830,9N-16+0+7,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0182,500878,11N-18+0+7,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0183,500884,2N-3+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0184,523653,12N-19+0+7,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0185,523683,2U-9+0+7,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0186,523723,9N-14+0+5,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0187,555915,7N-11+0+4,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0188,66652,4N-7+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0189,471136,10N-7+0-3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0190,523672,13N-16+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0191,85627,13N-23+0+10,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0192,90568,17N-28+0+11,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0194,119976,11N-8+0-3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0196,12218,4M-7+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0197,12499,4M-7+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0198,15874,5N-23+0+18,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0202,17346,2J-1+0-1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0203,182223,7N-19+0+12,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0212,24293,19M-35+0+16,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0214,29637,39M-61+0+22,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0215,30963,14M-25+0+11,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0216,31935,9M-16+0+7,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0217,330836,3N-2+0-1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0218,33128,6N-7+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0219,34706,7J-2+0-5,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0220,385266,16N-27+0+11,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0221,41228,11M+23+0-34,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0222,42355,3N-4+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0224,45074,4M-7+0+3,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0225,471155,6N-7+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0227,51731,6M-11+0+5,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0228,54753,7M-12+0+5,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0230,5646,3M-5+0+2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0231,59358,8N-13+0+5,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0232,62129,15M-31+0+16,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0233,6318,3J-1+0-2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0234,6489,3J-1+0-2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0235,65366,6M-11+0+5,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0236,67495,11M-20+0+9,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0238,88710,9V-16+0+7,mmr2,skipped,needs_integration=yes (batches A-E),,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/resonant/88710-9V-16+0+7.png
+c0239,93449,17J-6+0-11,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0240,10796,31J+9+0-40,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0241,16017,7S-1+0-6,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0242,16790,11J+4+0-15,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0243,17405,25J+7+0-32,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0244,17886,36M-61+0+25,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0245,18118,29M+49+0-78,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0246,187661,7N-5+0-2,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0249,20911,25M+44+0-69,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0250,27103,14M+27+0-41,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0251,2789,49M-86+0+37,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0252,31028,54M-89+0+35,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0253,31144,17S-2+0-15,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0254,3233,30M-53+0+23,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0255,35268,21M+40+0-61,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0256,36774,19M+44+0-63,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0257,39984,37S-5+0-32,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0258,42317,32M-57+0+25,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0259,43964,25M-44+0+19,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0260,49030,11J-3+0-8,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0261,4950,10M+23+0-33,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0262,49817,16J+5+0-21,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0263,50166,85J-27+0-58,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0264,523720,3N-4+0+1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0265,935,34M-61+0+27,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0266,99942,7E-6+0-1,mmr2,skipped,needs_integration=yes (batches A-E),,
+c0272,41658,4M-6J-7+0+0+9,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0273,51897,7J+2S-3+0+0-6,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0274,52158,4M+5S-9+0+0+0,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0275,52644,2M-7J-2+0+0+7,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0276,60608,1U-1N-2+0+0+2,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0277,62243,1M-4J-1+0+0+4,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0278,74729,1J+6S-1+0+0-6,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0279,75677,5M-3S-10+0+0+8,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0291,15883,1U-4N+4+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0303,19255,2U-1N-5+0+0+4,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0311,20161,1U+1N-6+0+0+4,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0316,237509,5J-2S-2+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0317,237743,5J-2S-2+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0318,237831,5J-2S-2+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0319,238492,5J-2S-2+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0320,239586,5J-2S-2+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0321,24952,1U+2N-6+0+0+3,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0326,35671,3U-1N-7+0+0+5,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0327,38083,1U-4N+3+0+0+0,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0328,38628,1U-6N+6+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0333,463,5J-4S-1+0+0+0,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0334,483002,1U-4N+4+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0335,523750,1U-3N+2+0+0+0,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0336,55565,1U-4N+4+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0338,623070,1U-1N-2+0+0+2,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0345,88710_c3,3E+1M-4+0+0+0,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0346,88710_c4,3E+1M-4+0+0+0,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0354,2348,4J-2S-1+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0355,24820,3J-1S-1+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0356,2487,4J-2S-1+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0357,2640,4J-2S-1+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0358,2791,4J-2S-1+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0359,3048,4J-2S-1+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0360,463,4J-2S-1+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,tests fixture
+c0379,10774,4J-2S-1+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0381,16183,5J-2S-2+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0383,17445,5J-2S-2+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0384,21436,2M-4S-3+0+0+5,mmr3,skipped,needs_integration=yes (batches A-E),,<main-check>/check/output/
+c0385,22000,5J-2S-2+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0386,23240,1M+3J-3+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0387,26420,4J-5N-1+0+0+2,mmr3,skipped,needs_integration=yes (batches A-E),,<main-check>/check/output/26420_4J-5N-1+0+0+2.png
+c0388,37087,3J+8S-3+0+0-8,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0389,41588,3J+9S-2+0+0-10,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0391,43982,4M+1S-9+0+0+4,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0392,48789,3J-1S-1+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0393,490,5J-2S-2+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0394,52356,5J-2S-2+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0395,68436,3J-1S-1+0+0-1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0396,78085,5J-4S-1+0+0+0,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0397,79271,6M-3J-10+0+0+7,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0398,79653,3M+3J-7+0+0+1,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0414,25957,2M-5J-3+0+0+6,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0416,46596,8J+5S-3+0+0-10,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0418,55390,1J+3S-1+0+0-3,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0419,57902,4M+1J-8+0+0+3,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0420,65,2J+9S-3+0+0-8,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0421,70407,2M-3S-4+0+0+5,mmr3,skipped,needs_integration=yes (batches A-E),,
+c0424,2025 MV,1M-1+0+0,coorbital,skipped,needs_integration=yes (batches A-E),,experiments/nea-mmrs/output/pilot10-20000/forward
+c0426,141531,1E-1+0+0,coorbital,skipped,needs_integration=yes (batches A-E),,experiments/nea-mmrs/output/pilot10-20000/
+c0499,2023 YO1,1E-1+0+0,coorbital,skipped,needs_integration=yes (batches A-E),,experiments/nea-mmrs/output/pilot10-20000-coorbital/
+c0558,588,1J-1+0+0,coorbital,skipped,needs_integration=yes (batches A-E),,
+c0559,591986,1J-1+0+0,coorbital,skipped,needs_integration=yes (batches A-E),,tests/fixtures/free-omega/591986.csv.gz
+c0561,617,1J-1+0+0,coorbital,skipped,needs_integration=yes (batches A-E),,
+c0562,624,1J-1+0+0,coorbital,skipped,needs_integration=yes (batches A-E),,
+c0563,659,1J-1+0+0,coorbital,skipped,needs_integration=yes (batches A-E),,
+c0565,884,1J-1+0+0,coorbital,skipped,needs_integration=yes (batches A-E),,
+c0653,2110,g-g6-2g7+2g8,secular,skipped,needs_integration=yes (batches A-E),,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-2110.csv
+c0668,51,z1/z2 angles,secular,skipped,same series as c0667 (g-g6+s-s6),secular__51__g-g6+s-s6,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-51.csv
+c0668,51,z1/z2 angles,secular,skipped,same series as c0666 (2(g-g6)+(s-s6)),secular__51__2_g-g6_+_s-s6_,experiments/2026-09-binary-asteroids/output/secular-reference-10myr-literature-z/data-51.csv
+c0675,137335,g-g6,secular,skipped,needs_integration=yes (batches A-E),,
+c0682,221,g-g6+s-s6,secular,skipped,needs_integration=yes (batches A-E),,
+c0704,2012 KL9,-g+s+g6-s6,secular,skipped,needs_integration=yes (batches A-E),,experiments/2026-09-binary-asteroids/output/secular-10myr-saba-v4/data-2012 KL9.csv
+c0705,2335,s-s6,secular,skipped,needs_integration=yes (batches A-E),,
+c0707,313701,-g+s+g6-s6,secular,skipped,needs_integration=yes (batches A-E),,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/data/data-313701.csv
+c0708,397488,g-g6,secular,skipped,needs_integration=yes (batches A-E),,
+c0710,143199,g-g6,secular,skipped,needs_integration=yes (batches A-E),,
+c0711,295883,g-g6,secular,skipped,needs_integration=yes (batches A-E),,
+c0712,337335,g-g6,secular,skipped,needs_integration=yes (batches A-E),,
+c0713,759,g-g6,secular,skipped,needs_integration=yes (batches A-E),,
+c0714,189865,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0715,477492,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0716,1866,LK,zlk,skipped,needs_integration=yes (batches A-E),,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/1866-omega-free.csv
+c0717,1981,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0719,15544,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0721,15527,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0723,463,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0725,592056,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0726,624,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0727,651871,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0729,88710,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0735,78201,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0736,622577,LK,zlk,skipped,needs_integration=yes (batches A-E),,
+c0738,model:test_classify_chaotic_orbit,2J-1+0-1,model,skipped,model row: not a single body x resonance,,
+c0739,model:secular_centre_drift,secular (any),model,skipped,model row: not a single body x resonance,,
+c0740,model:staircase_detection,,model,skipped,model row: not a single body x resonance,,
+c0741,model:test_classify_circulation,2J-1+0-1,model,skipped,model row: not a single body x resonance,,
+c0742,model:classify_from_metrics_decision_tree,,model,skipped,model row: not a single body x resonance,,
+c0743,model:coherence_pipeline_zlk,LK,model,skipped,model row: not a single body x resonance,,
+c0744,model:libration_params,2J-1+0-1,model,skipped,model row: not a single body x resonance,,
+c0745,model:mmr_plot_pipeline_synthetic,2J-1+0-1,model,skipped,model row: not a single body x resonance,,
+c0746,model:omega_free_gate,LK,model,skipped,model row: not a single body x resonance,,
+c0747,model:secular_plot_pipeline,"g-g6, g-g6-2g7+2g8",model,skipped,model row: not a single body x resonance,,
+c0748,model:simulation_test_periodograms_and_libration,2J-1+0-1,model,skipped,model row: not a single body x resonance,,
+c0749,model:test_classify_libration,2J-1+0-1,model,skipped,model row: not a single body x resonance,,
+c0750,model:oscillations_and_cross_spectrum,,model,skipped,model row: not a single body x resonance,,
+c0751,model:proper_secular_mode,"g-g6+s-s6, s-s6",model,skipped,model row: not a single body x resonance,,
+c0752,legacy-3-excluded,various,group:mmr2,skipped,needs_integration=yes (batches A-E),,
+c0753,463_elements_sample,4J-2S-1+0+0-1,group:mmr3,skipped,needs_integration=yes (batches A-E),,
+c0754,"v4 set of -6 cases (106 rows, 68 bodies)",s-g2+g3-s6,group:secular,skipped,needs_integration=yes (batches A-E),,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/summary.csv
+c0755,v4 -3 near-separatrix z2 set,2(g-g6)+(s-s6),group:secular,skipped,needs_integration=yes (batches A-E),,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/summary.csv
+c0756,v1 problem set s-s6 status 1,s-s6,group:secular,skipped,needs_integration=yes (batches A-E),,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/summary.csv
+c0757,19289 / 278067 other angles,g-g6+s-s6,group:secular,skipped,needs_integration=yes (batches A-E),,
+c0758,26420 / 2012 TS209 old run,g-g6,group:secular,skipped,needs_integration=yes (batches A-E),,
+c0759,v5 literature list (21 angles x 186 bodies),"nu5,nu6,nu16,nu3,nu4,nu13,nu14,z1,g+g5-2g6,2g-g5-g6,g-s-g5+s6,g-g5+s-s7,s-g5+g8-s6,s+g5-g8-s3,2s-s4-s6,z2,z3,g+2g5-3g6,2g-3g5+g6,2g-g5-g6+s-s6,s-g6+g8-2s6+s7",group:secular,skipped,needs_integration=yes (batches A-E),,
+c0760,18916 (and 24 other lkr chaotic: 119039 139359 237838 248590 312978 405058 434707 405562 461912 490171 513776 529456 529465 551023 584530 612937 670295 725997 761729 829876 850809 850547 841810 848043),LK,group:zlk,skipped,needs_integration=yes (batches A-E),,<external>/lkr-ias15/output_1_99999/chaotic/18916-LK.png
+c0761,"lkr-ias15 low-inclination status-2 set: 80923, 525487, 544232, 320511, 460870, 550108, 694503, 207978",LK,group:zlk,skipped,group:zlk row: not a single body x resonance,,<external>/lkr-ias15/output_1_99999/data-80923.csv
+c0762,lkr-ias15 near_separatrix/probably_near_separatrix LK (-3 / -5),LK,group:zlk,skipped,needs_integration=yes (batches A-E),,<external>/lkr-ias15/output_1_99999/near_separatrix/10015-LK.png
+c0763,Lidov-Kozai in the secular sample,LK,group:zlk,skipped,group:zlk row: not a single body x resonance,,experiments/2026-09-binary-asteroids/output/secular-10myr-v4/summary.csv
+c0764,"lkr-ias15 -4 slow-circulation LK: 829325, 826867, 350462, 795482, 65541",LK,group:zlk,skipped,needs_integration=yes (batches A-E),,<external>/lkr-ias15/output_800000_899999/slow-circulation
+c0765,pilot10 objects,LK,group:zlk,skipped,needs_integration=yes (batches A-E),,experiments/nea-mmrs/output/pilot10-20000-zlk/ and pilot10-100000-zlk/
+c0766,"NEA ZLK planetary_residual set (-9): 5496, 99942 (Apophis), 138925, 153957, 162416, 162926, 170086, 267494, 301844, 307005 ...",LK,group:zlk,skipped,needs_integration=yes (batches A-E),,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/5496-omega-free.csv
+c0767,"NEA ZLK status-2 set: 2010 HY22, 2020 PN1, 2020 PP1, 2023 FW13, 2023 RS2",LK,group:zlk,skipped,needs_integration=yes (batches A-E),,<external>/nea-mmrs/production-T1T2+rubin-20000-forward/2010 HY22-omega-free.csv
+c0768,"lkr-ias15 status-2 high-e set: 858130, 385402, 143637, 523630, 504033, 504034, 184990, 267494, 658883, 153957, 307005, 530871",LK,group:zlk,skipped,group:zlk row: not a single body x resonance,,<external>/lkr-ias15/output_800000_899999/data-858130.csv
+c0769,planetary mode phases (reference),"g1..g8, s1..s8",group:model,skipped,group:model row: not a single body x resonance,,experiments/2026-10-planetary-frequencies/output
+c0770,"Toro/Cruithne/Zoozve/Alinda/163693/164121 and 88710, 2023 FW14",various,group:other,skipped,needs_integration=yes (batches A-E),,experiments/nea-mmrs/

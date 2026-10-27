@@ -15,7 +15,6 @@ class TestPlaceholders:
             'body_name': 'TestBody',
             'resonance': '4J-2S-1',
             'status': '2',
-            'tmax_years': 100000,
         }
 
         # Test resonance_key replacement
@@ -33,7 +32,6 @@ class TestPlaceholders:
             'body_name': 'Asteroid463',
             'resonance': '4J-2S-1',
             'status': '2',
-            'tmax_years': 100000,
         }
 
         result = plotter._replace_placeholders('{body_name}_data')
@@ -47,7 +45,6 @@ class TestPlaceholders:
             'body_name': 'TestBody',
             'resonance': '3J-1S-1',
             'status': '1',
-            'tmax_years': 50000,
         }
 
         result = plotter._replace_placeholders('{body_name}_{resonance_key}_angle')
@@ -69,7 +66,6 @@ class TestPlaceholders:
             'body_name': 'TestBody',
             'resonance': '4J-2S-1',
             'status': '2',
-            'tmax_years': 100000,
         }
         plotter._data = {'4J-2S-1+0+0-1_angle': np.array([0, 0.5, 1.0]), 'a': np.array([1.0, 1.1, 1.2])}
         plotter._periodogram_data = None
@@ -88,7 +84,6 @@ class TestPlaceholders:
             'body_name': 'TestBody',
             'resonance': '4J-2S-1',
             'status': '2',
-            'tmax_years': 100000,
         }
         plotter._data = {'4J-2S-1+0+0-1_angle': np.array([0, 0.5, 1.0]), 'a': np.array([1.0, 1.1, 1.2])}
         plotter._periodogram_data = None
@@ -111,7 +106,6 @@ class TestPlaceholders:
             'body_name': 'Body1',
             'resonance': '4J-2S-1',
             'status': '2',
-            'tmax_years': 100000,
         }
         plotter1._data = {'times': np.array([0, 100, 200]), '4J-2S-1+0+0-1_angle': np.array([0, 0.5, 1.0])}
         plotter1._periodogram_data = None
@@ -128,7 +122,6 @@ class TestPlaceholders:
             'body_name': 'Body2',
             'resonance': '3J-1S-1',
             'status': '1',
-            'tmax_years': 100000,
         }
         plotter2._data = {'times': np.array([0, 100, 200]), '3J-1S-1+0+0-1_angle': np.array([1, 1.5, 2.0])}
         plotter2._periodogram_data = None

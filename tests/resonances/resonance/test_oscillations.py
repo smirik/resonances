@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from resonances.resonance import oscillations as osc
-from resonances.resonance.classify.classify import calc_sigma_derivative
+from resonances.resonance.classify.util import calc_sigma_derivative
 
 T = np.linspace(0, 10, 10001)  # 10 periods of 1 yr, 1000 samples per period
 

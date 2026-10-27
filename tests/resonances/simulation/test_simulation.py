@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import datetime  # noqa: F401 - used in patches
-import astdys  # noqa: F401 - used in patches
 import rebound  # noqa: F401 - used in patches
 import tests.tools as tools
 import pytest
@@ -30,18 +29,9 @@ def test_create_solar_system_file_exists():
             # Just verify no exception was raised
 
 
-def test_astdys_catalog_mismatch():
-    """Test handling of AstDyS catalog mismatch."""
-    sim = Simulation(source='astdys')
-    with patch('astdys.datetime', return_value='2023-01-01'):
-        with patch('resonances.data.util.datetime_from_string', return_value='2023-01-02'):
-            # This should not raise an exception
-            sim.config.date = '2023-01-02'
-
-
 def test_integrator_safe_mode_default():
     sim = Simulation()
-    assert sim.config.integration_safe_mode == 1
+    assert sim.config.integration_safe_mode is None
 
 
 def test_get_simulation_summary_exception():
@@ -51,7 +41,7 @@ def test_get_simulation_summary_exception():
 
     # Mock an exception in the summary generation
     with patch.object(sim.bodies[0], 'mmrs', []):
-        summary, segments = sim.data_manager.get_simulation_summary(sim.bodies)
+        summary = sim.data_manager.get_simulation_summary(sim.bodies)
         assert len(summary) == 0  # Should handle gracefully
 
 
@@ -60,9 +50,8 @@ def test_identify_librations_exception():
     sim = tools.create_test_simulation_for_solar_system()
     tools.add_test_asteroid_to_simulation(sim)
 
-    # identify_librations uses the new detection model (classify_resonance)
-    # and relies on angles computed during sim.run()
-    with patch('resonances.simulation.simulation.classify_resonance', side_effect=RuntimeError("Test error")):
+    # identify_librations analyses an MMR with analyse_mmr on the angles computed during sim.run()
+    with patch('resonances.simulation.simulation.analyse_mmr', side_effect=RuntimeError("Test error")):
         with pytest.raises(RuntimeError):
             sim.run()
 
@@ -110,8 +99,6 @@ def test_libration_properties():
     assert isinstance(sim.config.periodogram_frequency_min, float)
     assert isinstance(sim.config.periodogram_frequency_max, float)
     assert isinstance(sim.config.periodogram_soft, float)
-    assert isinstance(sim.config.libration_period_critical, int)
-    assert isinstance(sim.config.libration_monotony_critical, list)
 
 
 def test_solar_system():
@@ -174,8 +161,8 @@ def test_data_manager_methods():
     mmr = resonances.ThreeBody('4J-2S-1')
     sim.add_body(elem, mmr, name='asteroid')
     sim.add_body(elem, mmr, name='asteroid2')
-    sim.bodies[0].statuses[mmr.to_s()] = 2
-    sim.bodies[1].statuses[mmr.to_s()] = -1
+    sim.bodies[0].statuses[mmr.to_s()] = 'resonant'
+    sim.bodies[1].statuses[mmr.to_s()] = 'uncertain'
 
     # Test data manager methods directly
     assert sim.data_manager.should_save_body(sim.bodies[0], mmr) is True
@@ -211,13 +198,13 @@ def test_get_simulation_summary():
     tools.add_test_asteroid_to_simulation(sim)
     sim.run()
 
-    summary, segments = sim.data_manager.get_simulation_summary(sim.bodies)
+    summary = sim.data_manager.get_simulation_summary(sim.bodies)
     assert len(summary) > 0
     assert 'name' in summary.columns
     assert 'resonance' in summary.columns
     assert 'c1' in summary.columns
     assert 'c2' in summary.columns
-    assert 'c' in summary.columns
+    assert 'h_quad' in summary.columns
 
 
 def test_list_of_planets():
@@ -240,13 +227,61 @@ def test_data_manager_universal_methods():
 
     body = resonances.Body()
     mmr = resonances.create_mmr('4J-2S-1')
-    body.statuses[mmr.to_s()] = 2
+    body.statuses[mmr.to_s()] = 'resonant'
 
     # Test universal methods
     assert sim.data_manager.should_save_body(body, mmr) is True
     assert sim.data_manager.should_plot_body(body, mmr) is True
 
-    # Test with negative status (candidate)
-    body.statuses[mmr.to_s()] = -1
+    # Test with a candidate that is not resonant
+    body.statuses[mmr.to_s()] = 'uncertain'
     assert sim.data_manager.should_save_body(body, mmr) is True  # save='all'
-    assert sim.data_manager.should_plot_body(body, mmr) is False  # plot='resonant' and status=-1
+    assert sim.data_manager.should_plot_body(body, mmr) is False  # plot='resonant' and status uncertain
+
+
+def test_a_lost_orbit_is_chaotic_and_the_run_goes_on(tmp_path):
+    """An orbit that turns NaN halfway (what the elements of a particle the integrator lost look like) must not
+    stop the run at the filter: it is saved and every resonance of it is invalid (the old CHAOTIC -99: non-finite
+    elements), while the other body of the same run is classified as usual."""
+    import numpy as np
+    import pandas as pd
+    import astdys.util
+
+    sim = Simulation(
+        date=astdys.util.convert_mjd_to_datetime(60000),
+        integration_years=2000,
+        Nout=400,
+        libration_period_min=10,
+        save='all',
+        plot=None,
+        save_summary=True,
+        save_path=str(tmp_path),
+        plot_path=str(tmp_path),
+    )
+    sim.create_solar_system()
+    elements = tools.get_3body_elements_sample()
+    resonances_list = ['4J-2S-1', 'g-g6', 'LK']
+    sim.add_body(elements, resonances_list, name='kept')
+    sim.add_body(elements, resonances_list, name='lost')
+    sim.times = np.linspace(0.0, sim.config.tmax, sim.config.Nout)
+    sim.body_manager.add_bodies_to_simulation(sim.integration_engine.sim)
+    sim.integration_engine.run_integration(sim.bodies, sim.times)
+
+    lost = sim.bodies[1]
+    for series in [lost.axis, lost.ecc, lost.inc, lost.Omega, lost.omega, lost.M, lost.longitude, lost.varpi]:
+        series[200:] = np.nan
+    for series in list(lost.angles_unwrapped.values()) + list(lost.angles.values()):
+        series[200:] = np.nan
+
+    # The steps of Simulation._run_single after the integration
+    sim.prepare_angles()
+    sim.identify_librations()
+    sim.build_periodograms()
+    sim.data_manager.save_data(sim.bodies, sim.times, sim)
+
+    summary = pd.read_csv(tmp_path / 'summary.csv')
+    assert sorted(summary.loc[summary['name'] == 'lost', 'status']) == ['invalid', 'invalid', 'invalid']
+    assert sorted(summary.loc[summary['name'] == 'lost', 'status_code']) == [-99, -99, -99]
+    assert len(summary.loc[summary['name'] == 'kept']) == 3
+    assert (summary.loc[summary['name'] == 'kept', 'status'] != 'invalid').all()
+    assert np.isfinite(sim.bodies[0].angles_unwrapped['4J-2S-1+0+0-1']).all()

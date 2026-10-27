@@ -1,15 +1,15 @@
 import numpy as np
 
-from resonances.resonance.classify import ResonanceClassifyResult
-from resonances.resonance.classify.models import ResonanceStatus
+from resonances.resonance.analysis.verdict import Status, Verdict
 from resonances.resonance import cross_spectrum
 from resonances.resonance.resonance import Resonance
 from resonances.mmr.mmr import MMR
 from resonances.secular.free_elements import DEFAULT_MASK_QUANTILE, free_elements
-from resonances.data.const import INVARIABLE_PLANE, PLANETARY_PHASES
+from resonances.data.const import INVARIABLE_PLANE, PLANETARY_PHASES, SOLAR_SYSTEM_WITH_SUN
 from resonances.secular.proper_angle import build_proper_angle_series, free_divisor, free_rates
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
+from resonances.resonance.factory import detect_resonance_type
 from .logger import logger
 from typing import List, Union
 
@@ -24,6 +24,10 @@ class Body:
 
         # Integration data
         self.times = None
+        # Years as read from a saved data file (restore): the analysis reads them rather than times / 2 pi, so a
+        # restored record is bit for bit the one the run analysed (x / 2pi * 2pi / 2pi can differ in the last bit).
+        # Set only by SimulationSerializer.restore; None in a live run, where the years are times / (2 pi)
+        self.times_years = None
         self.axis = None
         self.ecc = None
         self.inc = None
@@ -41,7 +45,15 @@ class Body:
         self.angles_unwrapped = {}  # Wrapped by mod2pi angles
         self.angles_filtered = {}
         self.angles_filtered_unwrapped = {}
-        self.statuses = {}
+        # The verdict's status string of every resonance (`Status` value), written with `librations` by
+        # `Simulation._finalise_verdict`; the save/plot filters read it.
+        self.statuses: dict[str, str] = {}
+        # MMR: the full analysis of every analysed angle (catalogue and derived rows): CSV rows, figure data
+        self.mmr_analyses = {}
+        # Secular and Lidov-Kozai: the `LongPeriodAnalysis` of every analysed angle (CSV rows, figure data)
+        self.secular_analyses = {}
+        # Derived (subresonance) rows added by the analysis: key -> parent key (depth 1, see add_derived_resonance)
+        self.derived_resonances: dict[str, str] = {}
 
         # Secular resonances data
         self.secular_resonances: List[SecularResonance] = []
@@ -51,9 +63,10 @@ class Body:
         # Lidov-Kozai resonance data
         self.lidov_kozai_resonances: List[LidovKozaiResonance] = []
 
-        # Libration and filtering data (shared between MMR and secular)
-        self.librations: dict[str, List[ResonanceClassifyResult]] = {}
-        self.libration_segments = {}
+        # The verdict of every classified resonance (all types: `analysis.verdict.Verdict`)
+        self.librations: dict[str, Verdict] = {}
+        # Secular/ZLK only: every number their analysis measured (`LongPeriodAnalysis.numbers_row()`); no status here
+        self.classifier_numbers: dict[str, dict] = {}
 
         self.periodogram_frequency = {}
         self.periodogram_power = {}
@@ -79,7 +92,6 @@ class Body:
         # orbit alone; the gate built on it is per resonance key.
         self.free_elements = None
         self.free_gates = {}
-        self.centre_checks = {}  # secular_centre.CentreCheck per secular resonance that librated
         self._free_rates = None  # (g, s) of the free vectors, arcsec/yr; see secular_free_divisor
 
         # Simulation data
@@ -117,13 +129,15 @@ class Body:
         return df_data
 
     def resonance_to_dict(self, resonance: Resonance):
+        """The data-file columns of one resonance. An MMR writes only its raw wrapped angle and the analysis' unwrap:
+        the filtered angle is reproduced from them with the cutoff of summary.csv (`flt_cutoff_yr`)."""
         try:
             df_data = {
                 resonance.to_s() + '_angle_unwrapped': self.angles_unwrapped[resonance.to_s()],
                 resonance.to_s() + '_angle': self.angles[resonance.to_s()],
             }
 
-            if self.angles_filtered.get(resonance.to_s()) is not None:
+            if resonance.type != 'mmr' and self.angles_filtered.get(resonance.to_s()) is not None:
                 df_data[resonance.to_s() + '_angle_filtered_unwrapped'] = self.angles_filtered_unwrapped[resonance.to_s()]
                 df_data[resonance.to_s() + '_angle_filtered'] = self.angles_filtered[resonance.to_s()]
 
@@ -150,10 +164,9 @@ class Body:
             np.zeros(num),
             np.zeros(num),
         )
-        # Setup MMR angles
+        # The integration fills the raw angles; `Simulation.prepare_angles` makes the wrapped ones from them
         for resonance in self.resonances():
             self.angles_unwrapped[resonance.to_s()] = np.zeros(num)
-            self.angles[resonance.to_s()] = np.zeros(num)
 
     def has_eccentricity_vector(self) -> bool:
         return self.ecc is not None and self.omega is not None and len(self.ecc) == len(self.omega) and len(self.ecc) > 0
@@ -268,17 +281,12 @@ class Body:
         value = free_divisor(resonance.formula.terms, *self._free_rates)
         return None if not np.isfinite(value) else value
 
-    def in_resonance(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]):
-        """
-        Check if body is in resonance (works for both MMR and secular).
-        """
-        status = self.status(resonance)
-        return status is not None and status > ResonanceStatus.NON_RESONANT
+    def in_resonance(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]) -> bool:
+        """Whether the verdict is resonant or transient (any resonance type)."""
+        return self.status(resonance) in (Status.RESONANT, Status.TRANSIENT)
 
-    def status(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]):
-        """
-        Get resonance status
-        """
+    def status(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]) -> str:
+        """The status string of the verdict (`Status` value: resonant, transient, near_separatrix, ...)."""
         if resonance.to_s() in self.statuses:
             return self.statuses[resonance.to_s()]
 
@@ -287,11 +295,79 @@ class Body:
             f"in the body {self.name}. Available resonance statuses: {self.statuses.keys()}"
         )
 
-    def in_pure_resonance(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]):
+    def verdict(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance, str]) -> Verdict | None:
+        """The full verdict of a resonance (or its key), None when it was not classified in memory.
+
+        A short MMR key without the d'Alembert tail ('4J-2S-1' for the stored '4J-2S-1+0+0-1') is accepted when it
+        heads exactly one stored key; when it heads several, ValueError lists them."""
+        key = resonance if isinstance(resonance, str) else resonance.to_s()
+        if key in self.librations or not isinstance(resonance, str):
+            return self.librations.get(key)
+        matches = self._keys_headed_by(key)
+        if len(matches) > 1:
+            raise ValueError(f"'{key}' matches several resonances of {self.name}: {', '.join(matches)}; give the full key.")
+        return self.librations[matches[0]] if matches else None
+
+    def _keys_headed_by(self, short: str) -> list[str]:
+        """Stored MMR keys that are `short` followed by their d'Alembert coefficients (the next character is a sign)."""
+        if not short or not short[-1].isdigit() or detect_resonance_type(short) != 'mmr':
+            return []
+        return [k for k in self.librations if k.startswith(short) and len(k) > len(short) and k[len(short)] in '+-']
+
+    def in_pure_resonance(self, resonance: Union[MMR, SecularResonance, LidovKozaiResonance]) -> bool:
+        """Whether the verdict is resonant (a libration over the record, any resonance type)."""
+        return self.status(resonance) == Status.RESONANT
+
+    def add_derived_resonance(self, key: str, parent: str, angle_wrapped=None, angle_unwrapped=None) -> Resonance | None:
+        """Add a row found by the analysis of `parent` (an accepted planar subresonance, depth 1).
+
+        The resonance joins `mmrs` (after the catalogue ones), so it is saved, restored and listed like them;
+        `derived_resonances` remembers its parent. The angles, when given (body time order), go to `angles`
+        and `angles_unwrapped` so that `save_body` writes them. Adding an existing derived key only updates the
+        angles. None when the key is one of the body's own (catalogue) resonances: that row has its own analysis.
         """
-        Check if body is in pure resonance (works for both MMR and secular).
-        """
-        return self.status(resonance) == ResonanceStatus.LIBRATION
+        from resonances.resonance.factory import create_mmr
+
+        resonance = create_mmr(key)
+        existing = next((r for r in self.mmrs if r.to_s() == resonance.to_s()), None)
+        if existing is not None and existing.to_s() not in self.derived_resonances:
+            return None
+        resonance = existing if existing is not None else resonance
+        if existing is None:
+            resonance.index_of_planets = [SOLAR_SYSTEM_WITH_SUN.index(planet) for planet in resonance.planets_names]
+            self.mmrs.append(resonance)
+        self.derived_resonances[resonance.to_s()] = parent
+        if angle_wrapped is not None:
+            self.angles[resonance.to_s()] = np.asarray(angle_wrapped, dtype=float)
+        if angle_unwrapped is not None:
+            self.angles_unwrapped[resonance.to_s()] = np.asarray(angle_unwrapped, dtype=float)
+        return resonance
+
+    def remove_derived_resonance(self, key: str) -> None:
+        """Drop a derived row and everything stored under its key (before its parent is analysed again)."""
+        self.derived_resonances.pop(key, None)
+        self.mmrs = [r for r in self.mmrs if r.to_s() != key]
+        for store in (
+            self.angles,
+            self.angles_unwrapped,
+            self.angles_filtered,
+            self.angles_filtered_unwrapped,
+            self.statuses,
+            self.librations,
+            self.mmr_analyses,
+            self.periodogram_frequency,
+            self.periodogram_power,
+            self.periodogram_peaks,
+            self.coherence,
+        ):
+            store.pop(key, None)
+
+    def resonance_origin(self, key: str) -> tuple[str, str]:
+        """(added_by, parent) of a row: ('subresonance_check', parent) for a derived row, ('', '') otherwise."""
+        from resonances.resonance.analysis.mmr.models import ADDED_BY_SUBRESONANCE
+
+        parent = self.derived_resonances.get(key, '')
+        return (ADDED_BY_SUBRESONANCE, parent) if parent else ('', '')
 
     def is_particle(self):
         if 'particle' == self.type:

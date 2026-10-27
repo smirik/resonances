@@ -11,7 +11,7 @@ def make(**kwargs):
 
 
 def test_plots_default_and_forms():
-    assert make().plots == ['evolution']
+    assert make().plots == ['combined']  # the one-page verdict figure (author 2026-10-27, W24 Q6)
     assert make(plots='combined').plots == ['combined']
     assert make(plots=('fair', 'portrait')).plots == ['fair', 'portrait']
     assert make(plots=list(PLOT_KINDS)).plots == list(PLOT_KINDS)

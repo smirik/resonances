@@ -3,7 +3,6 @@ import pandas as pd
 import itertools
 
 from resonances.config import config
-from resonances.data import const
 from .three_body import ThreeBody
 from resonances.matrix.matrix import Matrix
 
@@ -11,6 +10,7 @@ from resonances.matrix.matrix import Matrix
 class ThreeBodyMatrix(Matrix):
 
     catalog_file = 'MATRIX_3BODY_FILE'
+    limit_keys = ('MATRIX_3BODY_PRIMARY_MAX', 'MATRIX_3BODY_COEF_MAX', 'MATRIX_3BODY_ORDER_MAX')
     planet_columns = ['planet1', 'planet2']
 
     @classmethod
@@ -19,10 +19,7 @@ class ThreeBodyMatrix(Matrix):
         primary_max = int(config.get('MATRIX_3BODY_PRIMARY_MAX'))
         m_max = int(config.get('MATRIX_3BODY_COEF_MAX'))
         q_max = int(config.get('MATRIX_3BODY_ORDER_MAX'))
-        if (cls.planets is None) or (len(cls.planets) == 0):
-            planets = const.SOLAR_SYSTEM
-        else:
-            planets = cls.planets
+        planets = cls.catalog_planets()
         pairs = list(itertools.combinations(planets, 2))
         data = []
         for planet1, planet2 in pairs:

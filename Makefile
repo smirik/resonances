@@ -1,5 +1,13 @@
 # Pass KEEP=1 to keep cache/tests/ results after a test run, e.g. `make test-benchmark KEEP=1`
 KEEP ?=
+# The tests run with the low-memory allocator on macOS (LOW_MEMORY_ALLOCATOR, docs/config.md: MallocLargeCache=0 returns
+# freed large blocks; fast suite peak 2.98 -> 1.71 GB with the module caches released). LOW_MEMORY_ALLOCATOR=off: as before.
+LOW_MEMORY_ALLOCATOR ?= on
+ifeq ($(shell uname -s),Darwin)
+ifneq ($(LOW_MEMORY_ALLOCATOR),off)
+ALLOCATOR_ENV = MallocLargeCache=0
+endif
+endif
 
 install:
 	uv sync
@@ -7,26 +15,48 @@ install:
 test: install
 	uv run flake8 --count
 	uv run black . --check
-	KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not benchmark" tests
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not benchmark and not long" tests
 
 test-only: install
-	KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not benchmark" tests
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not benchmark and not long" tests
 
 test-fast: install
-	KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not slow and not benchmark" tests
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not slow and not benchmark and not long" tests
 
 test-slow: install
-	KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "slow" tests
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "slow and not long" tests
+
+# Integrations of several minutes and more (pytest marker `long`): the 10-Myr z1 run (~13 min)
+test-long: install
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "long" tests
 
 test-benchmark: install
-	KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -s -m "benchmark" tests
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -s -m "benchmark" tests
+
+.PHONY: docs run-docs docs-figures docs-examples publish-docs skill
+
+# The documentation site (mkdocs-material; docs/cache, docs/examples and docs/tools are not published)
+docs:
+	NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict
 
 run-docs:
-	uv run mkdocs serve
+	NO_MKDOCS_2_WARNING=1 uv run mkdocs serve
+
+# Regenerate every figure the documentation uses from the saved benchmark series (no integration;
+# needs benchmark/data, RESONANCES_BENCHMARK_DATA overrides it). ONLY=name,name redraws a few.
+docs-figures:
+	MPLBACKEND=Agg nice -n 10 uv run python docs/tools/build_figures.py $(if $(ONLY),--only $(ONLY),)
+
+# Regenerate the references of the agent skill (resonances/skills/resonances/references) from docs/
+skill:
+	uv run python docs/tools/build_skill.py
+
+# Run every code example of the documentation (short integrations, needs the network for NASA Horizons)
+docs-examples:
+	nice -n 10 uv run python docs/examples/run_all.py
 
 publish-docs:
-	rm -Rf docs/cache/*
-	uv run mkdocs gh-deploy
+	NO_MKDOCS_2_WARNING=1 uv run mkdocs gh-deploy --strict
 
 publish-test:
 	uv build

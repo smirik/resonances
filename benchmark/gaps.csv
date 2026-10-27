@@ -1,0 +1,107 @@
+name,resonance,rtype,reason,suggested_source
+2022 QQ7,7E-7J-9+0+0+9,mmr3,"-4: rev 0.18, TTO 2.54 — на пороге partial libration/slow (ветвь «probably slow libration»)",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+153951,1M+8J-3+0+0-6,mmr3,"-4 (rev 0.74, TTO 2.82), пара MJ; остальные NEA -4 уже в candidates",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2025 RM3,13E-16+0+3,mmr2,"-4 для mmr2 (их всего 4, все Нептун low)",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+434344,1E+7S-2+0+0-6,mmr3,"-4 (TTO 5.68, rev 0.33): ветвь rev≤1 не смотрит на потолок TTO 6 — граница -4/0",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+251732,42E-55+0+13,mmr2,"partial libration на пороге TTO 2.49 (ветвь 2/medium, тега нет вообще)",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+3271,1M-6S-1+0+0+6,mmr3,partial libration TTO 2.37; main-belt-подобный объект в NEA-прогоне,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+311321,2E-3M-1+0+0+2,mmr3,"partial libration TTO 2.39, пара EM",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2017 WN28,21J-4+0-17,mmr2,"-3 «by segments»: есть good-сегменты, но глобальный TTO=3.0 ровно на пороге",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2006 QY5,23M-32+0+9,mmr2,"-3 «by segments», порог TTO 3.0",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+137044,4M+6J-9+0+0-1,mmr3,-5 при TTO 6.00 — граница -5/0,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+171839,1E+4S-2+0+0-3,mmr3,-5 при TTO 5.99 — граница -5/0,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2003 UO12,5J-2+0-3,mmr2,"chaos_flag=-1 (|da|/a0=714%), но статус 1: транзиент на угле, а сама орбита ушла — что считать истиной",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2003 HP32,8J-3+0-5,mmr2,chaos_flag=-1 (da_max 303%) при статусе 1,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2002 CX58,5J-2+0-3,mmr2,chaos_flag=-1 при -3 (encounter-driven),<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2000 DN1,5J-2+0-3,mmr2,chaos_flag=-1 при -5,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+18916,LK + любой MMR угол,zlk,-99 (e>1.3/a<0) вне ZLK: добавить MMR-угол к тем же телам — статус -99 ставится по телу,<external>/lkr-ias15/output_* (summary.csv + data-<name>.csv; статусы до free-omega gate)
+189865,3J-1+0-2,mmr2,-99 для MMR (сейчас -99 есть только у ZLK и 620082 low); тело уже chaotic в ZLK,"batch D, добавить MMR-угол"
+3752,LK,zlk,"-9 SHORT_WINDOW на 20 тыс. лет при 2 на 500 тыс. лет — пара «один объект, две базы»",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv) + фикстура/batch D
+4257,LK,zlk,-9 SHORT_WINDOW на 20 тыс. лет (2.6 цикла) против 2 на 500 тыс. лет,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv) + tests/fixtures/free-omega
+5496,LK,zlk,"-9 PLANETARY_RESIDUAL (b_varpi≈g5), i=68°",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+99942,LK,zlk,"-9 PLANETARY_RESIDUAL на почти плоской орбите (i=3°), Apophis",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+138925,LK,zlk,"-9 PLANETARY_RESIDUAL, i=72°",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+model:undefined_phase,LK,model,-9 UNDEFINED_PHASE (маска >50%) — ни одного примера; e-вектор проходит около нуля,синтетика в tests или поиск в lkr по free_mask_e
+2020 PN1,LK,zlk,gate CONFIRMED на коорбитале Земли (a≈1.01) — метод там не работает; нужна явная метка «не ZLK/неприменимо»,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2023 FW13,LK,zlk,"gate CONFIRMED, 13 циклов, коорбитал Земли — ложный 2",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2023 RS2,LK,zlk,"gate CONFIRMED, a≈0.98 — ложный 2 (коорбитал)",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2010 HY22,LK,zlk,"gate CONFIRMED вне коорбиталей (a 3.66, i 44°) — кандидат в настоящий ZLK",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv); продлить до 500 тыс. лет (batch D)
+408956,LK,zlk,"высокое i (42°), статус 2 в скане — кандидат в настоящий ZLK main belt, через gate не проходил",<external>/lkr-ias15/output_* (summary.csv + data-<name>.csv; статусы до free-omega gate); 500 тыс. лет SABA
+88959,LK,zlk,"i 54°, a 1.72, статус 2 — Hungaria/Phocaea-подобный ZLK",<external>/lkr-ias15/output_* (summary.csv + data-<name>.csv; статусы до free-omega gate); 500 тыс. лет
+140288,LK,zlk,"i 53°, статус 2",<external>/lkr-ias15/output_* (summary.csv + data-<name>.csv; статусы до free-omega gate); 500 тыс. лет
+410778,LK,zlk,"i 55°, e 0.72, статус 2 — высокий e",<external>/lkr-ias15/output_* (summary.csv + data-<name>.csv; статусы до free-omega gate); 500 тыс. лет ias15
+727639,LK,zlk,ZLK transient (1): 36 good-сегментов при i 12° — транзиентов ZLK в наборе 0,<external>/lkr-ias15/output_* (summary.csv + data-<name>.csv; статусы до free-omega gate)
+3552,LK,zlk,"ZLK transient, Don Quixote (a 4.27, e 0.71, i 31°): пересекает Юпитер-семейство",<external>/lkr-ias15/output_* (summary.csv + data-<name>.csv; статусы до free-omega gate)
+152685,LK,zlk,ZLK transient при i≈0 — вероятно ложный (кинематика),<external>/lkr-ias15/output_* (summary.csv + data-<name>.csv; статусы до free-omega gate)
+235756,LK,zlk,"ZLK -4 (TTO 2.57), сейчас -4 только в сводной строке",<external>/lkr-ias15/output_* (summary.csv + data-<name>.csv; статусы до free-omega gate)
+163693,LK,zlk,"ZLK -4, a 0.74 (Атон)",<external>/lkr-ias15/output_* (summary.csv + data-<name>.csv; статусы до free-omega gate)
+134340,LK,zlk,"ZLK внутри MMR: ω Плутона либрирует около 90° (Kozai 1985, Shevchenko 2017 гл. 7)","batch A (SABA, 1 млн лет), Horizons"
+134340,2N-3+0+1,mmr2,"Плутон 3:2 — эталон плутино, в наборе нет","batch A, литература"
+153,3J-2+0-1,mmr2,Хильды 3:2 отсутствуют целиком,"batch A, Milani 2014 (семья Schubart)"
+1911,3J-2+0-1,mmr2,"Хильда, семья Schubart",batch A
+334,3J-2+0-1,mmr2,"Хильда (Chicago), большая амплитуда",batch A
+279,4J-3+0-1,mmr2,Туле 4:3 — отсутствует,batch A
+1997 SZ10,1N-2+0+1,mmr2,асимметричная либрация twotino (проверить по Chiang&Jordan 2002); тега asymmetric нет ни одного,"batch A, Gladman 2012 (7TYFCC84)"
+2002 PU170,1N-2+0+1,mmr2,симметричная либрация twotino с амплитудой 154° (Gladman 2012) — пара к асимметричной,batch A
+2021 CT5,9S-1+0-8,mmr2,"Сатурн 2-тельный, статус 2 — резонансных Сатурна в наборе 0",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+85275,34S-3+0-31,mmr2,"Сатурн, порядок 31, статус 2: физически ничтожный резонанс — проверить правило автора «physically-negligible»",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2008 QB,2R-11+0+9,mmr2,"Меркурий 2-тельный, статус 2 (TTO 0.05) — резонансных Меркурия 0",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+466507,1R-4+0+3,mmr2,"Меркурий 1:4, статус 2; заодно алиасинг на шаге 16 лет",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2005 RV24,1V-3+0+2,mmr2,"Венера 3:1, чистая либрация; Венеры-резонансных 2",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2013 UK,3M-4+0+1,mmr2,"Марс 4:3 низкого порядка, статус 2",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2021 FP,4R-3E-9+0+0+8,mmr3,"пара Меркурий-Земля, статус 2 — пары RE в «resonant» нет",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+378526,1R-4M-4+0+0+7,mmr3,"пара RM, статус 2",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2022 UV27,1R-3V+2+0+0+0,mmr3,"пара RV, статус 2, нулевой порядок",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+613434,5V-5E-8+0+0+8,mmr3,"пара VE, статус 2",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+513916,1V-8J-2+0+0+9,mmr3,"пара VJ, статус 2",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+467352,4V+2M-7+0+0+1,mmr3,"пара VM, статус 2",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2012 VM82,1V+4S-6+0+0+1,mmr3,"пара VS, статус 2",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+868894,1E+9J-3+0+0-7,mmr3,"пара EJ, статус 2 (TTO 0.01)",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2018 TX1,5E+4M-10+0+0+1,mmr3,"пара EM, статус 2",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+431775,3E-3S-7+0+0+7,mmr3,"пара ES, статус 2",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2011 BY24,4M-6S-5+0+0+7,mmr3,пара MS: высокая уверенность для MS нет,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+490,5J-2S-2+0+0-1,mmr3,"Веритас: эталон 3-тельного (Cachucho 2010, Nesvorný&Morbidelli 1998); сейчас transient/medium без вердикта автора","batch A; литература 27Z5DQAX, ICUXZHAX"
+UN-three-body,nUranus+mNeptune,mmr3,"резонансных U-N нет (12 строк, все не-res/slow) — взять TNO из Nesvorný 2001 (75P8AXLW)",литература + batch A
+99935,2V-7+0+5,mmr2,захват в конце (good только в последних 7 окнах); transient-end всего 6 строк,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+159459,10J-3+0-7,mmr2,"захват в конце, Юпитер",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2006 YP,5E-6+0+1,mmr2,"захват в конце, Земля 1-го порядка",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+108906,13V-29+0+16,mmr2,выход в начале,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2005 AV27,7J-2+0-5,mmr2,"выход в начале, Юпитер",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+141527,6E-11+0+5,mmr2,эпизод в середине,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2006 RZ,3J-1+0-2,mmr2,два захвата с разрывом (multiple-captures — 1 тег на весь набор),<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2009 WL6,8J-3+0-5,mmr2,"длинная либрация, выход и повторный вход в конце",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2017 HA1,3E-5+0+2,mmr2,"два захвата, Земля",<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+2013 JX2,17E-36+0+19,mmr2,два эпизода высокого порядка,<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+138852,1E-1+0+0,coorbital,коорбитал с двумя эпизодами (transient-end у коорбиталей 0),<external>/nea-mmrs/production-T1T2+rubin-20000-forward (summary.csv + data-<name>.csv)
+5261,1M-1+0+0,coorbital,"Эврика, эталонный троянец Марса L5 — в наборе нет; все марсианские троянцы сейчас low (1 тыс. лет мало)","batch C, 20 тыс. лет; Murray&Dermott"
+385250,1M-1+0+0,coorbital,троянец Марса L5 (2007 NS2),batch C
+311999,1M-1+0+0,coorbital,троянец Марса L5 (2001 DH47),batch C
+2011 QF99,1U-1+0+0,coorbital,троянец Урана L4 — коорбиталей Урана 0,batch C/ias15 1 млн лет; Castro-Cisneros (LTZYT38M)
+2014 YX49,1U-1+0+0,coorbital,второй троянец Урана,ias15
+83982,1U-1+0+0,coorbital,Крантор: подкова Урана с переходами в QS,ias15; литература
+2001 QR322,1N-1+0+0,coorbital,первый троянец Нептуна L4,"SABA, 1 млн лет"
+2008 LC18,1N-1+0+0,coorbital,троянец Нептуна L5,SABA
+2004 KV18,1N-1+0+0,coorbital,нестабильный троянец Нептуна L5 — транзиент-эталон (de la Fuente Marcos 2012),SABA; MPGVEFHV
+309239,1N-1+0+0,coorbital,квазиспутник Нептуна 2007 RW10 (проверить номер),SABA; литература
+148975,1N-1+0+0,coorbital,временный коорбитал Нептуна 2001 XA255,MPGVEFHV
+310071,1N-1+0+0,coorbital,временный коорбитал Нептуна 2010 KR59,MPGVEFHV
+2019 LD2,1J-1+0+0,coorbital,временный коорбитал Юпитера (комета) — у Юпитера только 6 устойчивых троянцев,"Horizons (кометное обозначение), ias15"
+Jupiter-Trojan-large-D,1J-1+0+0,coorbital,троянец Юпитера с D>30° у границы устойчивости (выход/хаос) — ни одного,"AstDyS Trojan proper elements, batch A"
+2335,s-s6,secular,"ν16 ω-либратор (Froeschlé 1991, 1 млн лет SJS) — сейчас transient/low; резонансных ν16 0",batch E; LC46PKG7
+nu16-finder,s-s6,secular,2–3 ν16-либратора из secular-candidates |s-s6|<0.3″/год,resonances secular-candidates + batch E
+nu5-finder,g-g5,secular,ν5: один 11028 medium — добавить 2,resonances secular-candidates + batch E
+16712,g-g6,secular,ν6 со свободным делителем ≈0 — нужна проверка автором (сейчас literature medium),"secular-reference-10myr-astdys, переклассифицировать"
+26420,g-g6,secular,кинематическая ν6-либрация вокруг вынужденного равновесия (free divisor 4.1) — нужен вердикт автора,secular-10myr-v4
+80218,g-g6,secular,"то же, free divisor 5.3",secular-10myr-v4
+2g-3g5+g6-negatives,2g-3g5+g6,secular,"15 потенциальных либраторов, ни один не либрирует (Carruba 2024) — чистые отрицательные",BZFIKKJG + batch E
+g+g5-2g6-family,g+g5-2g6,secular,"молодые семьи в g-типе (Carruba 2024, Huaman 2017) — резонансных g+g5-2g6 сейчас 0","BZFIKKJG, 28ZT7FJU + batch E"
+Hungaria-nu4,g-g4,secular,"ν4 у Венгерии (Milani 2010) — внутренних резонансных нет (5739, 21028 low)",литература + batch E
+v4 -6 (2 тела),s-g2+g3-s6,secular,"-6 из v4 с проверкой на 50 млн лет: подтвердить, что -6 становится 2 или 0",secular-10myr-v4 + batch E
+9068 clone,s-2s3+s4,secular,-99 у вековых только 9068; нужен второй (Mars-crosser с выбросом),"batch E, ias15"
+4177,2J-1+0-1,mmr2,назад vs вперёд: устойчивый резонанс должен дать тот же статус (backward сейчас 7 строк),"batch A, integration_years<0"
+463,4J-2S-1+0+0-1,mmr3,назад vs вперёд для 3-тельного эталона,batch A
+3040,LK,zlk,назад vs вперёд для ZLK-эталона,batch D
+1020,g-g6+s-s6,secular,назад vs вперёд для z1-эталона,batch E
+2005 QQ87,1E-1+0+0,coorbital,каденс: 0.05 года vs 5 лет (NEA production) для одного коорбитала,coorbital-1000-forward + production
+466507-16yr,1R-4+0+3,mmr2,каденс главного пояса (16 лет) против 5 лет на резонансе Меркурия — алиасинг,production + batch A
+162474,LK,zlk,"интегратор: SABA dt 0.5 vs ias15 (известно, что SABA dt 1 ломает)",batch D

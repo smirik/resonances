@@ -34,4 +34,4 @@ jobs:
               run: uv run flake8 --count
 
             - name: Test with pytest
-              run: uv run pytest -v tests/resonances
+              run: uv run pytest -v -m "not long" tests/resonances

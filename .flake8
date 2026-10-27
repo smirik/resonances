@@ -18,3 +18,5 @@ exclude =
 per-file-ignores =
     resonances/matrix/three_body_matrix.py:C901
     resonances/simulation/parallel_executor.py:C901
+    # benchmark scripts: long linear drivers and an embedded HTML/JS page
+    benchmark/*:C901,B950

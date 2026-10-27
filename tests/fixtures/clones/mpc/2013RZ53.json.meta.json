@@ -1,0 +1,7 @@
+{
+  "bytes": 11190,
+  "downloaded_at": "2026-10-27T08:28:41+00:00",
+  "request_body": "{\"desig\": \"2013 RZ53\"}",
+  "sha256": "ca3332e011b04012005c409e3af468ab316b0d8cf8ba4eb3012042a823e782da",
+  "url": "https://data.minorplanetcenter.net/api/get-orb"
+}

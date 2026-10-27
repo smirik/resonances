@@ -20,7 +20,6 @@ class TestPlotterConfiguration:
             'body_name': 'Test',
             'resonance': '4J-2S-1',
             'status': '2',
-            'tmax_years': 100000,
         }
         plotter._data = {}
 
@@ -37,7 +36,6 @@ class TestPlotterConfiguration:
             'body_name': 'Test',
             'resonance': '4J-2S-1',
             'status': '2',
-            'tmax_years': 100000,
         }
         plotter._data = {}
 
@@ -57,7 +55,6 @@ class TestPlotterConfiguration:
             'body_name': 'Test',
             'resonance': '4J-2S-1',
             'status': '2',
-            'tmax_years': 100000,
         }
 
         with pytest.raises(ValueError, match="Unknown preset"):
@@ -160,7 +157,6 @@ class TestPlotterMethodChaining:
             'body_name': 'Test',
             'resonance': '4J-2S-1',
             'status': '2',
-            'tmax_years': 100000,
         }
         plotter._data = {'times': np.array([0, 1, 2]), 'a': np.array([1.0, 1.1, 1.2])}
 
@@ -185,7 +181,6 @@ class TestPlotterMethodChaining:
                 'body_name': 'Test',
                 'resonance': '4J-2S-1',
                 'status': '2',
-                'tmax_years': 100000,
             }
             plotter._data = {'times': np.array([0, 1, 2]), 'a': np.array([1.0, 1.1, 1.2])}
 
@@ -226,14 +221,12 @@ class TestPlotterIntegration:
             'body_name': 'TestBody',
             'resonance': '4J-2S-1',
             'status': '2',
-            'tmax_years': 100000,
         }
 
         assert plotter._metadata['resonance_key'] == '4J-2S-1+0+0-1'
         assert plotter._metadata['body_name'] == 'TestBody'
         assert plotter._metadata['resonance'] == '4J-2S-1'
         assert plotter._metadata['status'] == '2'
-        assert plotter._metadata['tmax_years'] == 100000
 
     def test_plotter_data_dictionary_structure(self):
         """Test that Plotter data dictionary can hold various data types."""

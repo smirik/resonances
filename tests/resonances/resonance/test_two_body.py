@@ -124,3 +124,18 @@ def test_calc_angle():
     angle = mmr.calc_angle(body, [body1])
     # 2*0.4 + (-1)*0.3 + 0 + (-1)*(0.1+0.2)
     assert 0.2 == pytest.approx(angle)
+
+
+@pytest.mark.parametrize('notation', ['3J+2', '1J+1', '2J+1', '7S+3'])
+def test_no_resonant_axis_for_a_positive_body_coefficient(notation):
+    # m_p n_p + m n = 0 with m_p, m > 0 needs n < 0: not a resonance of a prograde orbit.
+    mmr = resonances.TwoBody(notation)
+    with pytest.raises(Exception, match='no prograde solution'):
+        mmr.calculate_resonant_axis()
+
+
+def test_resonant_axis_from_kepler():
+    # n = 3/2 n_J -> a = a_J (2/3)^(2/3) = 5.20248 * 0.763143 = 3.97024 AU (3J-2, Hildas)
+    assert resonances.TwoBody('3J-2').resonant_axis == pytest.approx(3.97024, abs=1e-4)
+    # n = 3 n_J -> a = 5.20248 * 3^(-2/3) = 5.20248 * 0.480750 = 2.50109 AU (3J-1, Kirkwood gap)
+    assert resonances.TwoBody('3J-1').resonant_axis == pytest.approx(2.50109, abs=1e-4)

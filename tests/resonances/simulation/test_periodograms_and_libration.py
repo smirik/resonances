@@ -1,5 +1,6 @@
 import numpy as np
 
+from resonances.resonance.analysis.verdict import Status, Verdict
 from resonances.simulation import Simulation
 
 
@@ -66,9 +67,16 @@ def test_identify_librations_sets_status(tmp_path):
     body = sim.bodies[0]
     resonance = body.resonances()[0]
 
-    # Build periodograms first (required for MMR periodogram overlap check)
-    sim.build_periodograms()
+    # The MMR analysis reads every element: fill the ones the periodogram test leaves empty
+    n = len(sim.times)
+    body.inc, body.Omega, body.omega = np.full(n, 0.2), np.full(n, 0.3), np.full(n, 0.4)
+    body.varpi = body.Omega + body.omega
+    body.longitude = body.M = np.zeros(n)
     sim.identify_librations()
+    sim.build_periodograms()
 
-    assert resonance.to_s() in body.librations
-    assert body.statuses[resonance.to_s()] == 2
+    key = resonance.to_s()
+    verdict = body.librations[key]
+    assert isinstance(verdict, Verdict) and verdict.resonance_type == 'mmr'
+    assert body.statuses[key] == str(verdict.status) and body.statuses[key] in {str(s) for s in Status}
+    assert body.mmr_analyses[key].verdict is verdict

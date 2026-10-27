@@ -1,8 +1,10 @@
-"""The free-omega gate: does a librating Lidov-Kozai angle survive the forced/free split?
+"""The free-omega gate: does a bounded Lidov-Kozai angle survive the forced/free split?
 
-`secular/free_elements.py` does the signal processing; this module turns its output into a
-resonance status. It runs only where the classifier already said LIBRATION, and it is the
-only thing that decides a Lidov-Kozai status after classification.
+`secular/free_elements.py` does the signal processing; this module reads its output and returns an outcome
+(`evaluate_gate`). The ZLK analysis (`analysis.zlk`, `analysis.secular.decide.decide_status`) turns the outcome into
+the verdict: on a libration, confirmed keeps it resonant, kinematic makes it non_resonant (kinematic_libration),
+any other outcome uncertain (gate_unavailable) — the last two never merged; on an episodic angle, a drift or too
+few cycles only a kinematic outcome with the free circle never around the origin changes the status.
 
 Why it is needed. Libration of the osculating omega does not prove a Lidov-Kozai
 resonance. When the forced eccentricity vector is longer than the free one, the (k, h)
@@ -10,16 +12,17 @@ cloud does not enclose the origin, varpi cannot turn, and omega = varpi - Omega 
 by geometry alone. 591986 is the worked example: its osculating omega is confined for
 30 Myr while the free one leaves confinement after 6 kyr.
 
-The decision tree, entered only at LIBRATION:
+The outcomes:
 
-    baseline shorter than min_cycles * P_lib     -> UNCERTAIN   (never measured)
-    more than half the samples masked            -> UNCERTAIN   (no usable argument)
+    no free elements (too short, or failed)      -> unavailable       (never measured)
+    baseline shorter than min_cycles * P_lib     -> short_window      (never measured)
+    more than half the samples masked            -> undefined_phase   (no usable argument)
     free omega spans less than a full turn:
-        b_varpi or b_Omega at a planetary rate   -> UNCERTAIN   (residual is forcing)
-        otherwise                                -> LIBRATION   (confirmed)
+        b_varpi or b_Omega at a planetary rate   -> planetary_residual (residual is forcing)
+        otherwise                                -> confirmed
     free omega winds:
-        any rate at a planetary rate             -> UNCERTAIN   (residual is forcing)
-        otherwise                                -> LIBRATION_UNCERTAIN  (kinematic)
+        any rate at a planetary rate             -> planetary_residual
+        otherwise                                -> kinematic
 
 The same frequency check stands on both branches, and that symmetry is the point. A
 Lidov-Kozai libration lives on the object's *own* rates, so it can only be confirmed when
@@ -36,8 +39,8 @@ construction, only at known rates.
 
 The honest cost: an object whose own g or s happens to sit within one Rayleigh width of a
 planetary fundamental is withheld rather than confirmed. That is a real ambiguity, not a
-missing feature. For screening, UNCERTAIN means "re-check on a longer baseline", so it
-belongs in the candidate list next to LIBRATION, not in the discard pile.
+missing feature. For screening, uncertain means "re-check on a longer baseline", so it
+belongs in the candidate list next to resonant, not in the discard pile.
 """
 
 from dataclasses import dataclass, field
@@ -46,7 +49,6 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from resonances.resonance.classify.models import ResonanceStatus
 from resonances.secular.free_elements import FreeElements
 
 # Modes the residual rates are compared against. 'const' is deliberately absent from the
@@ -70,7 +72,7 @@ class GateOutcome(StrEnum):
     PLANETARY_RESIDUAL = 'planetary_residual'  # a residual rate matches a planetary one
     NOT_APPLICABLE = 'not_applicable'  # the angle does not librate, nothing to check
     DISABLED = 'disabled'
-    UNAVAILABLE = 'unavailable'  # the decomposition could not be built
+    UNAVAILABLE = 'unavailable'  # the decomposition could not be built: nothing was measured
 
 
 @dataclass
@@ -80,22 +82,6 @@ class OmegaFreeGate:
     outcome: GateOutcome
     matches: List[str] = field(default_factory=list)  # e.g. ['b_varpi~g8 (d=0.4)']
     n_cycles: Optional[float] = None  # baseline / P_lib
-
-    @property
-    def comment(self) -> str:
-        """The trail left in summary.csv, prefixed so gate decisions can be counted."""
-        if self.outcome is GateOutcome.CONFIRMED:
-            return 'gate: 2 confirmed'
-        if self.outcome is GateOutcome.KINEMATIC:
-            return 'gate: 2->-2 kinematic libration'
-        if self.outcome is GateOutcome.SHORT_WINDOW:
-            cycles = 'unknown' if self.n_cycles is None else f'{self.n_cycles:.1f}'
-            return f'gate: 2->-9 window holds {cycles} libration periods'
-        if self.outcome is GateOutcome.UNDEFINED_PHASE:
-            return 'gate: 2->-9 phase undefined (|z_free| near zero)'
-        if self.outcome is GateOutcome.PLANETARY_RESIDUAL:
-            return f"gate: 2->-9 residual at planetary freq: {', '.join(self.matches)}"
-        return ''
 
 
 def _matches(label: str, value: float, targets: Dict[str, float], tolerance: float) -> List[str]:
@@ -143,43 +129,37 @@ def _demotion_targets(frequencies: Dict[str, float]) -> Tuple[dict, dict, dict]:
     return g_targets, s_targets, combos
 
 
-def apply_gate(
-    status: ResonanceStatus,
-    elements: Optional[FreeElements],
-    libration_period: Optional[float],
-    config,
-) -> Tuple[ResonanceStatus, OmegaFreeGate]:
-    """Confirm, demote or withhold a Lidov-Kozai libration using the free omega.
+def evaluate_gate(elements: Optional[FreeElements], libration_period: Optional[float], config) -> OmegaFreeGate:
+    """The free-omega verdict on a bounded Lidov-Kozai angle (`libration_period` its period in years).
 
-    Only LIBRATION is ever changed. The two outcomes below it are distinct and must stay
-    that way in any statistics: LIBRATION_UNCERTAIN means the libration was measured and
-    found kinematic, UNCERTAIN means no verdict could be reached.
+    The caller asks only for an angle that librates (or has libration episodes); the outcome is then confirmed,
+    kinematic, or one of the reasons why no verdict is possible (short_window, undefined_phase, planetary_residual,
+    unavailable). The two outcomes below confirmed are distinct and must stay that way in any statistics: kinematic
+    is a measurement (the libration was found to be geometry), the others are the absence of one.
     """
     if not getattr(config, 'free_gate_enabled', True):
-        return status, OmegaFreeGate(GateOutcome.DISABLED)
-    if status != ResonanceStatus.LIBRATION:
-        return status, OmegaFreeGate(GateOutcome.NOT_APPLICABLE)
+        return OmegaFreeGate(GateOutcome.DISABLED)
     if elements is None:
-        return status, OmegaFreeGate(GateOutcome.UNAVAILABLE)
+        return OmegaFreeGate(GateOutcome.UNAVAILABLE)
 
     # The fundamentals the split actually subtracted, not a fresh lookup: judging a
     # residual against numbers other than the ones removed would be meaningless.
     frequencies = elements.frequencies
     tolerance = elements.resolution
     min_cycles = getattr(config, 'free_gate_min_cycles', DEFAULT_MIN_CYCLES)
-    cycles = elements.baseline / libration_period if libration_period else None
+    cycles = elements.baseline / libration_period if libration_period and np.isfinite(libration_period) else None
 
     if cycles is not None and cycles < min_cycles:
-        return ResonanceStatus.UNCERTAIN, OmegaFreeGate(GateOutcome.SHORT_WINDOW, n_cycles=cycles)
+        return OmegaFreeGate(GateOutcome.SHORT_WINDOW, n_cycles=cycles)
     if max(elements.mask_fraction_e, elements.mask_fraction_i) > MAX_MASKED_FRACTION:
-        return ResonanceStatus.UNCERTAIN, OmegaFreeGate(GateOutcome.UNDEFINED_PHASE, n_cycles=cycles)
+        return OmegaFreeGate(GateOutcome.UNDEFINED_PHASE, n_cycles=cycles)
 
     if elements.librates:
         g_targets, s_targets = _confirmation_targets(elements, frequencies)
         matches = _matches('b_varpi', elements.b_varpi, g_targets, tolerance) + _matches('b_Omega', elements.b_Omega, s_targets, tolerance)
         if matches:
-            return ResonanceStatus.UNCERTAIN, OmegaFreeGate(GateOutcome.PLANETARY_RESIDUAL, matches, cycles)
-        return status, OmegaFreeGate(GateOutcome.CONFIRMED, n_cycles=cycles)
+            return OmegaFreeGate(GateOutcome.PLANETARY_RESIDUAL, matches, cycles)
+        return OmegaFreeGate(GateOutcome.CONFIRMED, n_cycles=cycles)
 
     g_targets, s_targets, combos = _demotion_targets(frequencies)
     matches = (
@@ -188,8 +168,8 @@ def apply_gate(
         + _matches('b_omega', elements.b_omega, combos, tolerance)
     )
     if matches:
-        return ResonanceStatus.UNCERTAIN, OmegaFreeGate(GateOutcome.PLANETARY_RESIDUAL, matches, cycles)
-    return ResonanceStatus.LIBRATION_UNCERTAIN, OmegaFreeGate(GateOutcome.KINEMATIC, n_cycles=cycles)
+        return OmegaFreeGate(GateOutcome.PLANETARY_RESIDUAL, matches, cycles)
+    return OmegaFreeGate(GateOutcome.KINEMATIC, n_cycles=cycles)
 
 
 SUMMARY_COLUMNS = ('free_gate', 'free_n_cycles', 'free_gate_matches')

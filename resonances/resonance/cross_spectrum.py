@@ -39,6 +39,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import numpy as np
 from scipy import signal
 
+from resonances.data.util import time_ordered
 from resonances.logger import logger
 
 # Series that can take part in a pair. 'sigma' is the raw (unfiltered) unwrapped
@@ -193,12 +194,12 @@ def bandpassed_correlation(x: np.ndarray, y: np.ndarray, dt: float, frequency: f
 
 
 def is_uniform_grid(times: np.ndarray, rtol: float = 1e-4) -> bool:
-    """Whether the sampling grid is uniform to within `rtol` of the median step."""
+    """Whether the sampling grid is uniform to within `rtol` of the median step, in either direction."""
     if len(times) < 3:
         return False
     steps = np.diff(times)
     dt = float(np.median(steps))
-    return bool(dt > 0 and np.ptp(steps) <= rtol * dt)
+    return bool(dt != 0 and np.all(np.sign(steps) == np.sign(dt)) and np.ptp(steps) <= rtol * abs(dt))
 
 
 def cross_spectrum(
@@ -219,7 +220,9 @@ def cross_spectrum(
     Parameters
     ----------
     times : np.ndarray
-        Sampling times in years. Must be uniform.
+        Sampling times in years. Must be uniform. Decreasing times (a backward run) are put in
+        time order with the series: reversing time flips the sign of the cross-phase, so the
+        spectrum must be that of the time-ordered pair to read the same as a forward run.
     x, y : np.ndarray
         The two series. Angles must already be unwrapped by the caller; a, e and i
         must not be.
@@ -237,8 +240,10 @@ def cross_spectrum(
         Keep only this many strongest lines. Dropped lines are logged.
     psd_cache : dict, optional
         Reused across pairs of the same body to avoid recomputing Welch spectra of
-        shared series. Keyed by (id(array), nperseg, window).
+        shared series. Keyed by (id(array), reversed, nperseg, window).
     """
+    x_given, y_given = x, y
+    times, x, y = time_ordered(times, x, y)
     n = len(x)
     result = CrossSpectrum(pair=pair, n_seg=n_seg, valid=False)
 
@@ -276,8 +281,8 @@ def cross_spectrum(
     try:
         frequency, coherence_xy = signal.coherence(x, y, **kwargs)
         _, pxy = signal.csd(x, y, **kwargs)
-        pxx = _welch_cached(x, kwargs, psd_cache)
-        pyy = _welch_cached(y, kwargs, psd_cache)
+        pxx = _welch_cached(x, kwargs, psd_cache, x_given)
+        pyy = _welch_cached(y, kwargs, psd_cache, y_given)
     except Exception as e:  # pragma: no cover - scipy failures are environment-specific
         logger.error(f"Cross spectrum failed for pair '{pair}' (n_seg={n_seg}): {e}")
         result.reason = f"scipy failure: {e}"
@@ -314,19 +319,22 @@ def cross_spectrum(
     return result
 
 
-def _welch_cached(series: np.ndarray, kwargs: dict, cache: Optional[dict]) -> np.ndarray:
+def _welch_cached(series: np.ndarray, kwargs: dict, cache: Optional[dict], given: Optional[np.ndarray] = None) -> np.ndarray:
     """Welch power spectrum, memoised per (array, segmentation) when a cache is given.
 
     A body's a, e and i are shared by all of its resonances, so without the cache the
-    same spectra get recomputed for every resonance and every pair. The cached entry
-    keeps a reference to the array so that its id() cannot be recycled by another
-    object while the cache is alive.
+    same spectra get recomputed for every resonance and every pair. `given` is the
+    caller's array that `series` was taken from (a reversed view for a backward run): the
+    key is its id, because a fresh view has a new id on every call. The cached entry
+    keeps a reference to it so that its id() cannot be recycled by another object while
+    the cache is alive.
     """
     if cache is None:
         return signal.welch(series, **kwargs)[1]
-    key = (id(series), kwargs['nperseg'], kwargs['window'])
+    given = series if given is None else given
+    key = (id(given), series is not given, kwargs['nperseg'], kwargs['window'])
     if key not in cache:
-        cache[key] = (series, signal.welch(series, **kwargs)[1])
+        cache[key] = (given, signal.welch(series, **kwargs)[1])
     return cache[key][1]
 
 

@@ -1,0 +1,210 @@
+<!-- Generated from docs/output.md by docs/tools/build_skill.py (make skill). Edit the docs, not this file. -->
+
+# Output data
+
+A run writes into `save_path` (see [Serialization](serialization.md) for `simulation.json` and restore, [Config](config.md)
+for what is saved): the tables below and `simulation.json` at its top, the series (`data-*`, `*-omega-free.csv`) in
+`data/` (`data_folder`), the figures in `plot_path` (see [Layout](#layout)). Which bodies get data files and figures is set by `save` and `plot` (status filters);
+summary.csv, episodes.csv and the other tables hold every body (`save_summary`). List cells are `;`-separated; an
+empty cell means *not measured*, never 0. A unit is in the column name (`_yr`, `_kyr`, `_deg`, `_rad`, `_au`,
+`_deg_yr`, `_rad_kyr`, `_arcsec_yr`).
+
+| file | rows | content |
+|---|---|---|
+| `summary.csv` | body × resonance | the verdict, the checks and margins, the numbers the decision read |
+| `mmr_numbers.csv` | body × MMR | every number of the MMR analysis |
+| `episodes.csv` | run of turning points | accepted and rejected episodes of every resonance type (`save_episodes`) |
+| `candidates.csv` | candidate | subresonances and owners of the MMR analysis (`save_candidates`: `top` or `all`) |
+| `constants.csv` | planet / term | the run's planetary constants (`save_constants`) |
+| `coherence.csv` | coherent line | cross spectra ([coherence](coherence.md)) |
+| `clones.csv` | body × resonance | status shares of a body's clones with Wilson 95 % intervals ([clones](clones.md)) |
+| `data/data-<body>.csv` | time | elements and angles of a saved body |
+| `data/data-<body>-periodograms.csv` | frequency | Lomb-Scargle periodograms of a and the angles |
+| `data/data-planet-<planet>.csv` | time | the planets `save_planets` keeps (`all`, `analysis`, `none`) |
+| `data/<body>-omega-free.csv` | time | forced/free series of a Lidov-Kozai body ([free elements](free-elements.md)) |
+| `data/ensemble-<body>.csv`, `.json` | clone | every draw of a body's clones and its orbit solution ([clones](clones.md)) |
+
+## Layout
+
+The folder names and the figures' subfolders are settings ([Config](config.md): `data_folder`, `plot_figures_folder`,
+`plot_combined_folder`, `plot_layout`, `plot_combined_layout`; `resonances/simulation/layout.py`). With the defaults
+(`save_path` = `plot_path` = `cache/<name>`, `data`, `figures`, `combined`, `plot_layout='confidence/status'`, the
+benchmark's tree) each figure goes into a subfolder per confidence level and status:
+
+```
+cache/<name>/
+  simulation.json  summary.csv  mmr_numbers.csv  episodes.csv  candidates.csv  constants.csv  coherence.csv
+  data/        data-463.csv  data-463-periodograms.csv  data-planet-Jupiter.csv  463-omega-free.csv
+  figures/     high/resonant/463-4J-2S-1+0+0-1-portrait.png   none/uncertain/490-...png  ...
+  combined/    high/resonant/463-4J-2S-1+0+0-1-combined.png   medium/transient/...       ...
+```
+
+The other presets are `flat`, `status`, `confidence`, `status/confidence`, `type/status`, `type/confidence/status`,
+`resonance`, `body`. With `plot_layout='flat'` the figures lie directly in their
+folders:
+
+```
+cache/<name>/
+  ...
+  figures/     463-4J-2S-1+0+0-1.png  463-4J-2S-1+0+0-1-portrait.png  463-ecc-vector.png  ...
+  combined/    463-4J-2S-1+0+0-1-combined.png  463-LK-combined.png  ...
+```
+
+An empty folder name puts its files at the top (`data_folder=''`, the layout of older versions); a verdict without a
+confidence level (uncertain, invalid) goes to `none`, a row without a verdict to `unclassified`. The data files are per
+body, the status per body × resonance, so the data folder has no layout of its own. The benchmark sorts its figures with
+the same function (`benchmark/tools/sort_figures.py`).
+
+Batch workers append to the same tables; each write holds `<table>.lock` next to the table, and its holder removes it,
+so a finished run leaves no `*.lock` file (one left by a killed worker is reused by the next write).
+
+## summary.csv
+
+The meaning of each verdict column is in [How the status is determined](physics/overview.md#the-verdict); the rules
+behind the columns are in the [full reference](libration-analysis.md).
+
+| group | columns |
+|---|---|
+| identity | `name`, `resonance`, `resonance_type` (`mmr`, `secular`, `lidov_kozai`), `added_by` (`subresonance_check` for a derived row), `parent` (its catalogue angle) |
+| verdict | `status`, `angle_status` (`episodic` for librating episodes in part of the record; older files wrote `transient`, read back as `episodic`), `angle_subtype`, `final_regime` and `final_regime_start_yr` (how the record ends: the last regime after librating episodes, or `libration` when the last episode reaches the end; empty otherwise), `orbit_type` (the orbit in its librating episodes, for the figure's header: `tadpole L4`, `horseshoe`, `compound: horseshoe → quasi-satellite`, `exterior, asymmetric libration about 72° and 288°`, `ω libration about 90°`; empty without an episode; without a libration when the word is neither libration nor episodic: `exterior` or empty; `episodes about 75° (not this resonance)` for a non_resonant or uncertain verdict that is induced, kinematic or implausible_strength), `confidence`, `confidence_raw`, `cell_n_examples`, `cell_n_errors`, `cell_accuracy_low_95`, `cell_accuracy_high_95` (the calibration cell (status, angle_status, reason): verdicts of the benchmark labelled by eye, at high or certain, their errors, the Wilson 95 % interval of the accuracy; reported only, they change no level), `reason` (`implausible_strength`, rule 5s: neither L4 nor R0 passes, a measured failure included, and the period needs ≥ `MMR_STRENGTH_IMPLAUSIBLE_RATIO` (10³) × a computed strength; for a three-body angle the legal e^q scale must still leave that factor after the small-divisor envelope; a centre outside the theoretical well does not count, [reference](libration-analysis.md#status-tree)), `flags` (see [Flags](#flags) below; old files' `separatrix_chaos` is read back as `episodes_in_separatrix_zone`, in `caps` too), `action`, `extend_to_years` (with `action=extend`: the total length to integrate; for an `insufficient_time` angle the next check round_up(max(2T, min(N, 4T))), a budget after which the record is analysed again), `base_extend_to_years` (MMR: the physical estimate N = round_up(max(required, 2T)) from the period that decides; empty when the record already holds it or no period is measured, and `extend_to_years` then falls back to 2T), `resample_step_yr` (with `action=resample`: the step to rerun at; for a level held down by the cap `short_period_aliased` it is `smp_fold_free_step_yr`), `libration_origin`, `origin_detail`, `owner`, `multiplet_status` (the best status of a catalogue row and its subresonance), `status_code`. A catalogue row whose libration an accepted member carries takes that member's status (`subresonance_librates`): a statistic counts a body once per commensurability, deduplicated on (`name`, `parent` or `resonance`) |
+| checks | `check_mmr_alias`, `_filter`, `_baseline`, `_identity`, `_a_response`, `_potential`, `_a_amplitude`, `_kinematic`, `_subresonances`, `_owner`, `_slow_libration`, `_one_pendulum`, `_onset`, `_exit`, `_separatrix_zone`, `_strength`; `check_secular_e_response`; `check_zlk_free_omega`, `check_zlk_ei` (empty for another type) |
+| confidence | `thin_margins` (a `U:<name>` item there is a decision close to a convention, no `mrg_U` column), `failed_support`, `caps`, `mrg_<id>` and `mrg_<id>_value` for every margin. MMR: L1–L8, O1, Z, R0, S, W, F, C1–C5, K1, B5, N ([reference](libration-analysis.md#confidence)). Secular and ZLK: N (turning points of the decisive episode), S (centre stationarity), F (the filter guard), P (a circulation's centre pass ≥ 1 turn at every smoothing), and for ZLK G (the free-omega gate) ([details](classify.md)); a shared id is read with `resonance_type` |
+| decision | `decision_path` (the ledger's comparisons in order) and the columns they read (`geo_*`, `smp_*`, `rsp_*`, `sep_*`, `ep_*`, `own_*`, `sub_*`, …; `ep_onset_ratio`: O1's a-wave before / inside the decisive episode) |
+| reproducibility | `settings_hash`, `confidence_cells_sha`, `package_commit` |
+| orbit | `a0`, `e0`, `inc0`, `Omega0`, `omega0`, `M0` (initial elements) |
+| Lidov-Kozai | `c1`, `c2`, `h_quad`, `e_forced`, `e_free`, `confirmed_ei`, `zlk_*` (coherence), `zlk_gate*`, `free_*` (free-omega gate) |
+| secular/ZLK analysis | `sec_*` (centre scale), `flt_*` (cutoff and its bounds), `geo_*`, `exit_*`, `entry_*`, `rsp_e_*`, `rsp_i_*` (response of e and i); secular rows: `free_divisor` [″/yr], the angle's divisor $p\,g_{\text{free}} + q\,s_{\text{free}} + \sum_j(p_jg_j + q_js_j)$ with the rates of the body's free vectors over the whole record and the package's planetary fundamentals (empty when they cannot be measured; a diagnostic, no status reads it; not one of the ZLK `free_*` columns; [Secular resonances](secular.md)) |
+| last | `comments` |
+
+!!! note "Legacy: `status_code`"
+    `status_code` is the integer status of older versions, kept only to compare with old runs. MMR: resonant 2,
+    transient 1, near_separatrix −3, non_resonant 0 (kinematic and induced included), uncertain −6 (baseline needed)
+    or −9, invalid −99. Secular and ZLK: as MMR, plus −2 for a kinematic libration and −4 for an uncertain record too
+    short to hold a cycle. Never merge −2 (a measurement: the libration was found kinematic) with −9 (no verdict).
+    Use the string columns.
+
+### Flags {#flags}
+
+`flags` lists marks that change no status by themselves (a cap with the same name is in `caps`). Most are explained
+with their rule in the [full reference](libration-analysis.md) (search for the name); these are not:
+
+| flag | meaning |
+|---|---|
+| `exit_and_capture` | an episodic angle that left a libration and came back at least once, with its own force measured; names no mechanism |
+| `subresonance_composite` | the accepted member does not dominate the multiplet's composite coefficient (Rouché test) |
+| `subresonance_theory_disagrees` | the theoretical centre of the member (test D) was measured and disagrees; confidence only |
+| `subresonance_theory_crossing` | no theoretical centre: the orbits can intersect |
+| `subresonance_theory_round_off` | no theoretical centre: its coefficients are below round-off |
+| `subresonance_theory_range` | no theoretical centre: $e$ or $e_P$ outside (0, 1), or an empty window |
+| `owner_catalogue_ambiguous` | an owner candidate on catalogue longitudes lies within the phase error of a threshold: undecided |
+| `owner_unresolved` | no owner accepted; the best candidate's phases cannot separate it from σ and its potential route does not apply: `check_mmr_owner` not measured |
+| `zone_eq_only` | the separatrix zone's modulation is the $e^q$ estimate, not resolved multiplet members |
+| `zone_edge_cycle` | at least one cycle lies within one σ of a zone edge: its class is not stable |
+| `jump_locator_aliased` | the jump locator's time τ ≥ $T_0/\pi$: the resonance's own swing can imitate a step of $a$ |
+| `confidence_uncalibrated` | a verdict rebuilt from an old integer status: its level is inherited, not computed |
+
+## mmr_numbers.csv
+
+One row per body × MMR (`name`, `resonance`), every number the analysis measured, grouped by prefix:
+
+| prefix | step | examples |
+|---|---|---|
+| `rec_` | record check and leaf | `rec_rule` (the leaf of the status tree that decided, `G0` on a refused input), `rec_unphysical` (1 for a rejected orbit, else 0); on a refused input also `rec_body_coefficient` ($k$) and `rec_input_problems` (the failed input requirements, `;`-separated). Present when nothing else was measured |
+| `ctx_` | context | `ctx_a_mean_au`, `ctx_a_star_au`, `ctx_delta_a_au`, `ctx_c_rad_yr_au`, `ctx_P_syn_yr`, `ctx_rate_expected_deg_yr`, `ctx_rate_measured_deg_yr`, `ctx_crosses` |
+| `smp_` | step and alias | `smp_step_yr`, `smp_verdict`, `smp_fast_over_half_amp` (σ's fast residual over the decisive episode's median half-amplitude: with `MMR_SHORT_PERIOD_CAP_RATIO` > 0 the cap short_period_aliased is lifted at or below it), `smp_branches`, `smp_far_ratio`, `smp_ghost_au`, `smp_nyquist_halfwidth_au`, `smp_unwrap_resid_p99_deg` (λ part, the gate), `smp_unwrap_resid_full_p99_deg`, `smp_unwrap_resid_full_max_deg` (whole angle, read by G0 with `jitter_low_e`), `smp_n_slow_element_steps`, `smp_phase_undefined_fraction` (the \|p\|-scaled proxy: share of samples with \|p\| s/\|z_f\| > `MMR_JITTER_MAX_RAD`, not the share where ϖ is undefined), `smp_varpi_undefined_fraction` (ϖ's own s/\|z_f\| over that limit: `undefined_phase` needs it above `MMR_VARPI_UNDEFINED_MAX_SHARE`), `smp_jitter` (\|p\| δe_sp/ē, G0's jitter), `smp_jitter_low_e`, `smp_undefined_phase`, `smp_safe_step_pred_yr`, `smp_resample_step_yr`, `smp_short_period_step_yr` (min(P_orb, P_syn)/2: a step at or above it sets `short_period_aliased`), `smp_folded_slowest_yr` (the longest period the step folds P_orb, P_syn and their harmonics up to `MMR_SHORT_PERIOD_HARMONICS` into: slower than the period floor, it sets `short_period_aliased` below that step too), `smp_fold_free_step_yr` (the largest `MMR_RESAMPLE_STEPS_YR` step below the record's at which nothing folds by that predicate: a rerun there lifts `short_period_aliased`; empty when the step folds nothing or no grid step is free), `smp_da_sp_over_a_excursion` (the short-period scatter of a over the decisive episode's a half-excursion: above `MMR_SHORT_PERIOD_A_RATIO` a record that folds short periods gets the flag `a_short_period_scatter`, and the tree may read its failed L3/L4 as not measured) |
+| `flt_` | filter | `flt_cutoff_yr`, `flt_cutoff_binding` (`synodic`, `floor`, `user`, `centre_scale`), `flt_cutoff_floor_bound_yr`, `flt_ripple_removed_deg`, `flt_gain_at_pcyc`, `flt_filter_too_slow`, `flt_period_floor_yr`, `flt_x1_*`, `flt_x2_*` (the ×2 guard: on the decisive episode `flt_decisive_episode_id` and its counterpart, `flt_x1/x2_decisive_bounds_yr`, their time overlap over union `flt_decisive_overlap`, 0 = not reproduced; empty id = the whole interval), `flt_withdrawn_before_tree` (the passed checks the guard took from the tree, e.g. `check_mmr_potential`); G1q (1:1): `flt_qs_period_yr` (the shortest small-amplitude quasi-satellite period of the averaged potential; empty without a well, and for an angle that librates over the record at the first pass or an aliased step, where the well is not measured), `flt_qs_floor_yr`, `flt_qs_cutoff_yr` (the floor and cutoff of the quasi-satellite pass) |
+| `geo_`, `stall_`, `exit_`, `entry_`, `jump_`, `regime_start_yr` | geometry | `geo_n_tp`, `geo_period_cycle_yr`, `geo_n_episodes`, `geo_centre_max_pass_rev`, `geo_drift_fraction`, `geo_n_slips`, `geo_stall_fraction`, `jump_times_yr`; G2c: `geo_centre_scale_cutoff_yr`, `geo_centre_scale_basis`, `geo_centre_scale_first_cutoff_yr`; G1l: `geo_before_jump_covers_start`, `geo_before_jump_end_gap_P` (the earliest librating episode before the last jump: covers the record start, its gap to the jump zone in periods); G2a (a step of the libration action): `geo_action_step_n_cuts`, `geo_action_step_n_tested`, `geo_action_step_time_yr` and `_t_from_yr`/`_t_to_yr` (the transitional half-cycle), `_run_t0_yr`/`_run_t1_yr`, `_n_before`/`_n_after` (half-cycles), `_amp_before_deg`/`_amp_after_deg`, `_separation`, `_ratio`, `_a_ratio`, `_transition_P`, `_cycles_before`/`_cycles_after`, `_dh`, `_dh_threshold`, `_h_before`/`_h_after` (median cycle h per side); test 7, one potential for both regimes: `_shape_cutoff_yr` (the cutoff of the reported shape test), `_shape_R2` (R² of V_E within the larger swings' cycles), `_shape_wells` (minima of that V over a turn), `_shape_cycles_before`/`_shape_cycles_after` (disjoint cycles per side), `_law_before`/`_law_after` (the worst T_obs/T_pred of each side at that cutoff; inf: a cycle V cannot hold), `_period_ratio` (median period of the smaller swings / of the larger ones: near 1, one forcing frequency explains both), `_tp_mismatch` (the worst \|observed − predicted turning point\| / half-swing), `_drift_before`/`_drift_after` (each side's spread of cycle energies / the energy step), `_held_out` (1: the larger side's laws were tested out of sample), `_laws` (the worst laws at each cutoff factor), `_shape_failed` (the sub-test that failed, `name@factor`), `_vf_r`, `_vf_law_small` (V_E ~ V_F over the larger swings and the smaller side's worst law in V_F: reported, they decide nothing), `_provisional`, `_failed` (the first test that failed; empty when it cut; `withheld` when the guard kept the record whole), `_withheld_checks`/`_withheld_verdict` (the checks the cut left unmeasured that failed on the whole record, the verdict it would have given), `jump_action_step` (1 for each jump that is an action step); `record_entry_*` (after a cut: the entry before the record's first run, the `entry_*` columns read on it); the edge rule: `exit_raw_arc_rev`/`entry_raw_arc_rev` (travel of the raw angle averaged over one orbit away from the centre, from the last episode's last TP to the record's end / from the start to the first TP, in turns; empty for secular/ZLK) `exit_raw_monotonic`/`entry_raw_monotonic` (the monotonic test alone) and `exit_observed`/`entry_observed` (≥
+`LIBRATION_EDGE_ARC_REV` turns and monotonic: the edge is not covered); the union of episodes: `geo_union_n_episodes` (the episodes that cover the record together, 0 for none), `geo_union_tp_range_rad`, `geo_union_raw_range_rad` (the largest range of σ_f's TPs and of the orbit-averaged raw angle between two of them), `geo_union_span_tp_range_rad`, `geo_union_span_raw_range_rad` (the same over the whole chain), `geo_union_gap_max_P` (the longest gap over P_left + P_right), `geo_union_start_shortfall_P`, `geo_union_end_shortfall_P` (how far the TPs beyond an outer episode fall short of the record edge, in its periods; empty where the episode covers the edge), `geo_union_read_episodic` (1: a G2u union the status read as episodic, not promoted), `geo_union_word_centre_scale` (1: G2c found such a union at the scale of the centre and the fine verdict's word was rewritten to libration; 0 when the word stayed); `geo_cs_rej_cutoff_yr`, `geo_cs_rej_tp_prominence_deg`, `geo_cs_rej_status`, `geo_cs_rej_angle_status`, `geo_cs_rej_reason`, `geo_cs_rej_origin`, `geo_cs_rej_caps`, `geo_cs_rej_n_accepted`, `geo_cs_rej_union_n`, `geo_cs_rej_episodes`, `geo_cs_rej_decisive` (diagnostics only: the last G2c analysis that union guard rejected, its W_c, TP prominence, verdict, caps, accepted episodes and their union, as `t0-t1` spans in yr; empty when none was rejected); G4b: `geo_centre_net_rev` (the slow centre's net advance over the window, rev); G5a: `geo_centre_n_tp_interior` (turns of the slow centre farther than W_c from the window's edges), `geo_centre_range_rad`
+(the slow centre's range: an arc below one revolution); forced waves (F6): `geo_n_forced_wave_episodes` and, of the one with most TPs, `geo_forced_wave_episode_id`, `geo_forced_wave_period_yr`, `geo_forced_wave_line` (the lattice line, empty for the wrong-sign route), `geo_forced_wave_line_offset` (\|1/T − 1/P\| W P), `geo_forced_wave_identity_slope_ratio`, `geo_forced_wave_identity_slope_offset`, `geo_forced_wave_identity_corr`, `geo_forced_wave_identity_corr_abs`; G1q: `geo_qs_visit_yr` (the longest stretch of the orbit-averaged angle inside the quasi-satellite well), `geo_qs_visit_needed_yr` (`LIBRATION_MIN_TURNING_POINTS`/2 × the longest P_QS along it), `geo_qs_n_outside_episodes` (the kept pass: its librating episodes outside the well), `geo_qs_pass` (`kept`: the row is the quasi-satellite pass; `rejected`: that pass found no libration in the well; `resample`: the step cannot filter its cutoff; empty: the rule did not fire) |
+| `ep_` | decisive episode | the episodes.csv columns of the episode the verdict rests on (the covering one, else the longest accepted), prefixed `ep_` (`ep_closed_by_return`, `ep_forced_wave`, `ep_force_R2_null_max`, …); also `ep_onset_ratio` (O1) and `ep_n_tp_cut_half`, `ep_n_tp_cut_double` (L1: its TPs at P_c × 0.5 and × 2) |
+| `sep_` | energy and zone | `sep_VE_R2`, `sep_VE_VF_agree_fraction`, `sep_h_med`, `sep_zone_J_lo`, `sep_zone_h_hi`, `sep_cycle_classes`, `sep_R0_sigma_only`, `sep_R0_with_a`, `sep_episodes_in_separatrix_zone`, `sep_zone_source` (`pendulum`, or `averaged_potential`: the episode cycles classed by the energy of their turning points in a two-body angle's averaged well), `sep_h_avgpot_med`, `sep_h_avgpot_max`, `sep_h_avgpot_n` (those energies, 0 at the bottom, 1 at the barrier), `sep_mechanism` (`kick`, `trend`, `pulsation`, `layer`, `unexplained`, empty without a crossing; [reference](libration-analysis.md#response), §8.6), `sep_n_crossings` (distinct boundary times: a slip between librations is one), `sep_n_exits`, `sep_n_captures` (directed transitions: that slip is one of each), `sep_period_law_med` (R0's median T_obs/T_pred), `sep_period_law_source` (`full_well`: T_pred of the libration cycles that librate in the full averaged well taken there, two-body with the planet saved; `fitted`: all in V_E), `sep_period_law_n_full_well` (those cycles), `sep_period_law_fitted_med` (the law in V_E, kept beside it) |
+| `rsp_` | response of a | `rsp_identity_slope_ratio`, `rsp_force_R2_h1`, `rsp_force_R2_h2`, `rsp_force_law`, `rsp_identity_slope_offset` (\|slope/c − 1\|), `rsp_phi0_coherence`, `rsp_phi0_max_dev_deg`, `rsp_phi0_tol_deg` (the spread of φ0 and its expected bound: diagnostic, they decide nothing), `rsp_b1_ratio`, `rsp_b5_ratio`, `rsp_b5_route` (`data`, `geometry`, `owner`, `none`), rule R: `rsp_force_source`, `rsp_identity_source`, `rsp_b1_source` (where the status tree read L4, L3, B1: `record` pooled, `witness`, `before_jump` pooled over the episodes before the last jump of a; the `rsp_` numbers of each check are those of its source), `rsp_witness_episode_id`, `rsp_n_witnesses`, `rsp_n_episode_force_fail`, `rsp_force_line`, `rsp_force_line_period_yr`, `rsp_force_line_offset` (the forced line of the angle's lattice within the window's resolution of the force law's period, the offset in units of 1/(W P)), `rsp_force_contaminated` (L4 not_measured by it), `rsp_force_raw_check` (the measured L4 it replaced), `rsp_force_n_windows_jump` (force-law windows dropped next to a confirmed jump of a), the line rule: `rsp_response_cutoff_ep_yr` (the cutoff the force law read), `rsp_line_binding_yr` (the line of ȧ that raised it; empty when none did), `rsp_force_R2_null_max` (the largest R² of the same law with a shifted in time), `rsp_force_null_gain` (R² minus it; the ledger's null test), the N-harmonic force law (read only when L4 fails or passes thin; empty when not consulted): `rsp_force_harm_N` (harmonics), `rsp_force_harm_R2` (the smaller half median, as the single law), `rsp_force_harm_gain` (over one harmonic), `rsp_force_harm_coherence` (its leading coefficients over the windows), `rsp_force_harm_null_max` and `rsp_force_harm_null_gain` (the shifted null on fully covered windows), `rsp_force_harm_oos` (independent halves: one half's law predicting the other), `rsp_force_harm_c2_over_c1` (\|C_2\|/\|C_1\|), `rsp_force_harm_reason` (`taken`, or the guard that refused it: `no_gain`, `null_not_measured`, `incoherent`, `below_null`, `below_fail`, `halves_disagree`); `rsp_force_law` is `harmonic` when it lifted L4, `rsp_force_R2_whole` (R² of the one force fit over the whole window, set only without force windows, a circulation: C4 reads it), `rsp_short_period_unmeasured` (the failed checks read as not measured, `a_response`, `identity`; the check columns keep the fail), `rsp_coorb_*` (co-orbital law; `rsp_coorb_regime`: tadpole_L4/L5, horseshoe, quasi_satellite, compound, or `retrograde` for a 1/−1) |
+| `kin_` | kinematics | `kin_corr_rate`, `kin_cancel_ratio`, `kin_e_free`, `kin_e_forced` (the component at the g5 mode frequency, not at Jupiter's measured ϖ rate), `kin_cycle_secular_offset` (\|P / P_sec − 1\| for the closer of 2π/\|g − g5\| and the 2ω cycle, P the decisive episode's period, else P_cyc), `kin_origin_detail`; K2: `kin_centre_corr_rate`, `kin_centre_slope`, `kin_centre_intercept_rad_kyr` (the slow centre's rate regressed on the rate of the secular part σ − ψ_λ low-passed at W_c; the intercept should be the λ part's rate), `kin_centre_ripple_share` (largest episode swing / range of the slow centre), `kin_drift_word` (1 when the K2 leaf reported the slow centre's word, drift or circulation, 0 when `MMR_KINEMATIC_DRIFT_WORD` is off, empty otherwise) |
+| `sub_` | subresonances | `sub_triggers`, `sub_n_scanned`, `sub_best`, `sub_best_strength_rel`, `sub_best_member_tp` and `sub_best_member_episodes` (test L), `sub_swing_deg` (σ0's largest half-amplitude in the scan window; below 45° test A is not measured), `sub_undetermined`, `sub_accepted`, `sub_theory_measured`, `sub_top` (the ranked members `key:W/W0:E:N:A/W`, display only: the range of the member's slow centre against the catalogue angle's, the share of the catalogue centre's motion it explains, its own slow cycles in the window, σ0's median full swing over that range), `sub_rank1..3_key`, `_W_deg`, `_W_ratio`, `_E`, `_N`, `_AW`, `_strength_rel` (the first three of that list), `sub_cat_W_deg`, `sub_cat_AW` (the catalogue angle's own W0, A/W0), `sub_fast_swing_deg` (A), `sub_pot_W_deg`, `sub_pot_E` (two-body: the minimum of the averaged potential as the model of the centre; empty without a moving-well track), `sub_strength_caveat` (why the d'Alembert factors are unreliable: e, i, crossing), `sub_plane_offset_deg` (largest σ0(invariable) − σ0(ecliptic): how far a mixed frame would put a nodal member), `sub_members_locked` (1: the catalogue angle and its accepted member both librate, each row keeps its own verdict) |
+| `own_`, `str_`, `base_` | owner, strength, baseline | `own_name`, `own_R2`, `own_law` (`single`, `multiplet`: the law that fixed the owner's phase), `own_multiplet_R2`, `own_multiplet_coherence`, `own_K_theory_au_yr` and `own_strength_ratio` (a force scale 2\|k\| n a Πμ without the disturbing-function coefficient, not a theory), the owner routes: `own_route` (`r2`, `phase`, `potential`, `identity`), the identity route (empty for another route): `own_id_coef_dev` (c/(k_σ/k_φ) − 1), `own_id_resid` (rms of σ_f − (k_σ/k_φ)φ_f about its line over σ's median half-amplitude), `own_id_phi_span_deg`, `own_id_phi_angle_status`, `own_id_phi_cover` (φ's librating cover of σ's window), `own_id_phi_str_ratio` (φ's direct-averaging strength ratio), `own_id_n_pass`, `own_id_n_analysed`, `own_owner_period_yr` (2π/\|mean φ̇_o\| on the regime's windows), `own_lever_owner`/`own_lever_sigma` (L_B = \|⟨exp(iΨ_w/v)⟩\|, L_σ = \|⟨exp(iΨ_w/u)⟩\|, slip-corrected), `own_lever_gain` (C_B − L_B), `own_psi_def` (Ψ = uσ − vφ, e.g. `5*sigma-27*phi`), `own_identity_text` (σ = (v/u)φ + Ψ/u written out, e.g. `(27/5)φ + (ϖ − λ_N)/5`), `own_intervals` (`t0-t1:libration|forced_wave|slip;…` [yr], rounded to the step), `own_cover` (share of σ's decisive episode they cover, F7), `own_decisive_t0_yr`/`_t1_yr` (that episode; the analysis window for a libration over the record), the second capture (`own_psi_turns`, `own_psi_sweep_deg` of x = Ψ_slow/u, `own_psi_energy_R2` of ẋ² on [1, cos x, sin x, cos 2x, sin 2x], `own_adiabatic` λ_ad, `own_second_capture` `excluded` or `unresolved`; tested on each connected block of the intervals that meets the episode, the numbers of the deciding block), the potential route of the shown candidate (`own_pot_reason`: '' measured, `three_body_owner`, `catalogue`, `coorbital_owner`, `potential_cost`, `not_converged`, `close_approach`, …; `own_pot_n_windows`, `own_pot_R2`, `own_pot_scale`, `own_pot_scale_lo`/`_hi`, `own_pot_scale_worst` = max(s, 1/s), `own_pot_min_distance_hill`), the owner's force from direct averaging (`own_K_direct_au_yr` median, `own_K_direct_min`/`_max` of the unfiltered (2k_o/(na)) G m_P d⟨D⟩/dφ on sin/cos φ; `own_K_over_K_direct_min`/`_max` fitted over predicted, both through the same band-pass; `own_phi0_direct_deg`, `own_phi0_diff_max_deg`; `own_omega0_direct_rad_yr` = \|k_o\| n √(3μ_P a A1), `own_nu_over_omega0`), forced-wave regimes only `own_wave_da_pred_au` = K_direct/\|ν_o\| and `own_wave_da_meas_au` (a's band amplitude on sin/cos φ_o, divided by the band's gain at the owner's period), `own_sigma_wave_deg`/`own_sigma_wave_R2` (σ's band amplitude on sin/cos φ_o, measured only, gain-corrected), `own_sigma_force_bound` = max \|s − 1\| and `own_sigma_period_min_yr` = T_obs/√(\|v/u\|·bound) (the bound on σ's own term; the model limit is ≈ 0.1), `str_method` (`direct_averaging` two-body, `direct_harmonic` two-body where double precision cannot resolve the well: the resonant harmonic in extended precision, `eq_scale` three-body and 1:1), `str_mu_eff_theory_min`/`_max`, `str_ratio_min`/`_max` (required/theory over the consistent evaluations: the observed swing librates in the well), `str_ratio`, `str_n_evaluations`, `str_n_consistent`, `str_centre_offset_max_deg`, `str_min_distance_hill`, `str_planet_elements`, `str_not_measured_reason` (`centre_outside_well`: none consistent, F fails, the ratios are over every evaluation), `str_mu_scale`, `str_implausible`, `str_divisor_kind` (the small-divisor envelope of a legal three-body ratio ≥ 10³: `nearest`, `crosses_zero`, `no_candidate`, `no_period`; empty when not evaluated), `str_divisor_B` (n/max(|Δ|, 2π/min(P, P_cyc))), `str_divisor_residual` (ratio / B², a lower bound for `no_candidate`), `str_divisor_candidate`, `str_divisor_capped` (1: the swing cap n·min(P, P_cyc)/2π set B); for the figure only (no decision reads them): `str_mu_eff_theory_all_min`/`_max`, `str_P_lib_theory_min_kyr`/`_max_kyr` (T0_th = 2π/(\|k\| n √(3μ)), n at each snapshot's a), `str_ratio_all_min`/`_max` (over every evaluation, in the well or not), `str_T_obs_yr` (T0 of the decisive episode from μ_req), `str_T_obs_source` (`episode:<id>` or `rejected_run:<t0>-<t1>`), `str_snap_t0_yr`/`_t1_yr` (the window of the snapshots), `str_e_snap_min`/`_max` (averaged e there), `str_sep_halfwidth_min_au`/`_max_au` (2ω0_th/\|c\| with c = 1.5\|k\|n/a of each snapshot: (4/3)a√(3μ)); `base_required_kyr`, `base_extend_to_years` (the estimate N, also in summary.csv), `base_period_yr` (the period P the requirement reads), `base_period_source` (`tp_spacing`, `arc_slow`, `two_omega`, `modulation`, `stall_rate`, `stall_force`, `cycle`, `b5`; see libration-analysis.md, Baseline), `base_cause` (an `insufficient_time` angle whose P already fits the record: the reject reason of the run P came from, or `period_fits_record`; empty otherwise) |
+
+## episodes.csv
+
+One row per run of turning points, accepted or not: `name`, `resonance`, `episode_id`, `accepted`, `subtype`
+(`stationary`, `modulated`, `moving_centre`), `reject_reason` (`too_few_tp`, `centre_moves`, `no_closed_cycle`, `over_the_top`, `edge`), `t_start_yr`,
+`t_end_yr`, `n_tp`, `tp_times_yr`, periods (`period_med_yr`, `_min_`, `_max_`), half-amplitudes
+(`half_amp_min_deg`, `_med_`, `_max_`), the centre (`centre_mod_2pi_deg`, `centre_shift_deg`,
+`centre_shift_over_amp`, `bands_overlap`, `centre_estimates`, `centre_stationarity`, `centre_returns`), closure
+(`closed_cycles`: full cycles whose net advance is below their swing, an episode needs one; `closure_ratio_min`: the
+smallest advance/swing of the run), coverage
+(`coverage_start_gap_P`, `coverage_end_gap_P` from the record's edges; for an MMR also `window_start_gap_yr`,
+`window_end_gap_yr` from the analysis window's edges, `tp_step_max_yr`, the longest TP-to-TP step, and
+`window_start_hidden_P`, `window_end_hidden_P`, the stretches the filter trims off the record), `before_last_jump`,
+`tp_prominence_deg` (MMR: the prominence its turning points were selected with, that of its run of provisional
+turning points, else of its regime between jumps of a), the moving centre (MMR: `frame` `sigma` or `psi`, the frame
+whose band test accepted it; `margin_sigma_deg`, `margin_psi_deg`, min(m + A) − max(m − A) over the full cycles, > 0
+passes; `half_swing_margin_deg`, every maximum above every minimum, a column only; `centre_track`: empty when the σ
+test decided, else `ok`, `invalid_track` (the centres do not follow it better than a fixed centre and the reversed
+track), `no_well`, `quadrature_not_converged`, `close_approach`, `three_body`, `planet_not_saved`, `no_planet_mass`;
+`centre_model_drift_deg`,
+c(t_end) − c(t_start); `centre_track_rms_deg`, `centre_fixed_rms_deg`, `centre_reversed_rms_deg`), the MMR edge and return rules
+(`exit_observed`, `entry_observed`: the last / first accepted run whose exit / entry the raw angle shows;
+`closed_by_return`, `return_t_a_yr`, `return_t_b_yr`, `return_level_fraction`: a 2-TP run closed by its phase return,
+the two crossings of its level and where that level lies between the second (0) and the first (1) turning point, 0.5
+for the mid-level; such an episode's period is t_b − t_a; `forced_wave`: `lattice_line` or `wrong_sign` for an accepted
+run judged a forced wave of another argument, no episode of the angle, F6), `cutoff_yr`; for an MMR also the pendulum
+(`T0_min_kyr`, `T0_max_kyr`, `T0_ratio`, `omega0_rad_yr`, `omega0_vmax_rad_yr` (max\|σ̇\| / (2 sin(A_max/2)), the cosine frequency from the peak speed), `omega0_vmax_ratio` (max\|σ̇\| / (2 ω0), the peak speed in cosine separatrix units; not a bound for a well that is not a cosine), `half_width_au`, `a_excursion_pred_au`,
+`a_excursion_meas_au`, `mu_eff`), the onset bands `a_band_std_before/in/after_au` (each cut to the
+episode's regime clear of the record's ends and of the confirmed jumps; the stretch before never holds an accepted
+episode of the angle: `onset_before_t0_yr`/`_t1_yr` are its bounds, `onset_group` the earlier episodes joined without a
+circulation between them, the stretch then lying before the first of them; `onset_not_measured`: `record_edge`, `jump`
+or `episode` (cut at an earlier episode with a circulation after it) when the stretch before or the episode itself
+keeps less than a period), energy (`h_min`, `h_med`,
+`h_max`, `J_over_Js_min/max`, `zone_class`), the force law on the episode with its own period (`force_window_yr`,
+`force_n_windows`, `force_n_windows_jump` (windows dropped next to a confirmed jump of a), `force_R2_h1/h2` (the
+1:1 law's halves for a co-orbital), `force_R2_multi`, `force_law`,
+`force_K_au_yr`, `force_phi0_deg`, `phi0_coherence`, `phi0_tol_deg`, `identity_*`, `b1_ratio`, `force_line`,
+`force_line_period_yr`, `force_contaminated`, `force_raw_check`, `force_cutoff_yr`, `force_line_binding_yr`,
+`force_R2_null_max`: the line rule on that episode; `force_harm_N`, `force_R2_harm`, `force_harm_reason`: the
+N-harmonic force law when it was consulted, as `rsp_force_harm_*`), on a librating episode
+also its checks (rule R: `check_a_response`, `force_thin`, `check_identity`, `check_a_amplitude`, empty on the other
+runs; `episode_filter_too_slow`: the filter guard at the episode's period), `witness` (it stands for the dynamics by
+itself), `deciding_witness` (the witness the status read), `libration_origin` and `owner`.
+
+## candidates.csv
+
+`name`, `resonance`, `kind` (`subresonance` or `owner`), `candidate` (its package notation), `rank`, `accepted`,
+`reason` (the first test it failed, or `accepted:<route>`). Subresonances: `coefficients`, `order`, `j`, `nodal`,
+`member_degree` (Σ|slow coefficients|), `strength_rel` (test E′), the centre track (`centre_range_deg`,
+`centre_rate_rad_kyr`, `rate_resid_tol` (the rate over its tolerance), `centre_max_pass_deg`), `phi0_coherence`,
+`force_R2_med`, test L (`member_tp`, `member_episodes`: turning points and librating episodes of the member's own
+angle in the scan window, `member_reject`: why its longest run is not one, `member_t0_yr`/`member_t1_yr`: the longest
+librating episode; empty when step 1 dropped the member), the theory (`coef_rel`, `composite_rms_deg`, `period_corr`, `period_ratio`). Owners: `R2`,
+`psi_share`, `K_au_yr`, `K_theory_au_yr`, `strength_ratio`, `regime`, `n_windows` and the same numbers of the angle
+itself on the same windows (`sigma_R2`, `sigma_phi0_coherence`, `sigma_slow_turns`, `sigma_slow_to_band`), the
+multiplet law where the single phase fails (`multiplet_R2`, `multiplet_coherence`, `multiplet_planet`,
+`sigma_multiplet_R2`: σ with constant coefficients on the same long windows) and `law`; `owner_period_yr`,
+`rate_admissible` (a forced wave at that period lies in the a band; else reason `rate_outside_band`), `lever_owner`,
+`lever_sigma`, `route`, and the potential route where it was tried (`pot_reason`, `pot_R2`, `pot_scale_lo`,
+`pot_scale_hi`). Owner reasons: `rate_outside_band`, `phase_unresolved`, `potential_scale_out`,
+`potential_unconfirmed`, `accepted:potential`.
+
+## constants.csv
+
+One per run. A row per planet: `planet`, `n_deg_yr` and `n_source` (`measured` from the saved longitude, else
+`table`), `mu`, `a_mean_au`, `e_mean`, `g_arcsec_yr`, `s_arcsec_yr`, `varpi_dot_meas_arcsec_yr`,
+`Omega_dot_meas_arcsec_yr`; then the great inequality (`period_yr`, `dlambda_jupiter_deg`, `dlambda_saturn_deg`,
+`measured`) and the other planetary near-commensurabilities (`period_yr`).
+
+## Data files
+
+`data/data-<body>.csv`: `times` (years), `a`, `e`, `inc`, `Omega`, `omega`, `M`, `longitude`, `varpi` (rad),
+`a_filtered` (the body-level low-pass of a, `oscillations_cutoff`), then per saved resonance `<key>_angle` (the
+angle mod 2π, exact) and `<key>_angle_unwrapped` (for an MMR the analysis' predictive unwrap). An MMR's filtered
+angle is not written: the analysis reproduces it from the cutoff in summary.csv. Secular and ZLK rows add
+`<key>_angle_filtered`, `<key>_angle_filtered_unwrapped` (secular: also `_osculating`, `_proper`).
+`data-<body>-periodograms.csv`: `a_frequency`, `a_power`, `a_period` and the same per angle.
+`data-planet-<planet>.csv`: `times`, `a`, `e`, `inc`, `Omega`, `omega`, `M`, `l`, `varpi`.
+
+```python
+import pandas as pd  # noqa: E402
+
+summary = pd.read_csv('output/my_run/summary.csv')
+print(summary.groupby(['status', 'angle_status', 'confidence'], dropna=False).size())  # uncertain/invalid: no level
+in_resonance = summary[summary['status'].isin(['resonant', 'transient'])]
+```

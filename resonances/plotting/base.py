@@ -14,8 +14,9 @@ def time_unit(span_years: float) -> Tuple[float, str]:
 
     One unit is chosen for a whole axis, and each switch happens as soon as the unit
     would otherwise run into four digits: a 10 Myr baseline reads as 10 Myr, not as
-    10000 kyr.
+    10000 kyr. The sign of the span (a backward run) does not matter.
     """
+    span_years = abs(span_years)
     if not np.isfinite(span_years) or span_years < 1e4:
         return 1.0, 'yr'
     if span_years < 1e6:

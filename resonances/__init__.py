@@ -29,6 +29,8 @@ from .mmr.three_body_matrix import ThreeBodyMatrix
 from .mmr.two_body_matrix import TwoBodyMatrix
 from .mmr.three_body import ThreeBody
 from .mmr.two_body import TwoBody
+from .mmr.retrograde_two_body import RetrogradeTwoBody
+from .mmr.retrograde_two_body_matrix import RetrogradeTwoBodyMatrix
 
 from .secular.free_elements import FreeElements, free_elements
 from .secular.secular_resonance_finder import SecularResonanceFinder
@@ -37,6 +39,8 @@ from .secular.secular_resonance import SecularResonance
 
 from .simulation.simulation import Simulation
 from .simulation.serializer import SimulationSerializer
+
+from .clones import Ensemble, OrbitSolution, orbit_solution, wilson_interval
 
 from .plotting import (
     Plotter,

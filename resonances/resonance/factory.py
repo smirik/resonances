@@ -4,11 +4,13 @@ from typing import Union
 from resonances.mmr.mmr import MMR
 from resonances.resonance.resonance import Resonance
 from resonances.secular.secular_resonance import SECULAR_RESONANCE_ALIASES, SecularResonance
-from resonances.secular.secular_resonance_formula import SecularResonanceFormula
 from resonances.mmr.three_body import ThreeBody
 from resonances.mmr.two_body import TwoBody
+from resonances.mmr.retrograde_two_body import RetrogradeTwoBody
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
 from resonances.resonance.planets_mappings import planet_name_from_letter
+
+RETROGRADE_LOOKALIKE = re.compile(r'^\d+[A-Za-z][-+]\d+[rR]\d*$')
 
 
 def create_mmr(coeff, planets_names=None):  # noqa: C901
@@ -20,6 +22,8 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
         coeff: Input that defines the resonance(s). Can be:
             - An MMR instance (returned as-is)
             - A string in format "2J-1" (two-body) or "4M-2J-1" (three-body) for MMR
+            - A string "1J-3r0" for the 1/-3 retrograde resonance with Jupiter, k = 0
+              (RetrogradeTwoBody; a list of numbers always means a prograde MMR)
             - A list of coefficients: 4 elements for two-body or 6 elements for three-body resonance
             - A list of strings, each in format "2J-1", "4M-2J-1"
             - A list of MMR objects (returned as-is)
@@ -34,6 +38,7 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
         >>> create_mmr("2J-1")  # Creates two-body MMR from string
         >>> create_mmr([1, 2, -3, 4])  # Creates two-body MMR from coefficients
         >>> create_mmr("4M-2J-1")  # Creates three-body MMR from string
+        >>> create_mmr("1J-3r0")  # Creates retrograde two-body MMR
         >>> create_mmr(['4J-2S-1', '1J-1'])  # Creates list of MMRs
         >>> create_mmr(existing_mmr)  # Returns existing MMR instance as-is
         >>> create_mmr([mmr1, mmr2])  # Returns list of MMR instances as-is
@@ -63,6 +68,11 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
     if isinstance(coeff, str):
         # Parse as MMR string
         coeff = coeff.replace(" ", "")
+        # Before the split: '1J-3r0' would go to TwoBody and fail on int('3r0'). A lowercase
+        # r appears in no other MMR notation, so '1J-3r', '1J+3r0' or '1J-3R0' is a malformed retrograde
+        # one, and RetrogradeTwoBody raises its notation message for it.
+        if RETROGRADE_LOOKALIKE.match(coeff):
+            return RetrogradeTwoBody(coeff)
         tmp = re.split('-|\\+', coeff)
         size = len(tmp)
         if 3 == size:
@@ -137,39 +147,29 @@ def create_secular_resonance(secular_type):
     raise Exception('The argument should be either a string (i.e. "nu6" or "g-g5") or a SecularResonance object.')
 
 
-def _is_secular_formula(text: str) -> bool:
-    try:
-        SecularResonanceFormula(text)
-    except ValueError:
-        return False
-    return True
+LIDOV_KOZAI_NAMES = ('lk', 'lkr', 'lidov-kozai', 'lidov_kozai', 'lidovkozai', 'lidov', 'kozai')
 
 
 def detect_resonance_type(resonance: Union[Resonance, str]) -> str:
     """'mmr', 'secular' or 'lidov_kozai' for a Resonance or its string notation.
 
-    A string is secular if it is an alias ('nu6'), starts with g/s, or parses as a secular
-    formula — the last case covers '-g+s+g5-s7' and '2(g-g6)+(s-s6)'. The parse is
-    case-sensitive: MMR notation uses capital planet letters ('4J-2S-1'), secular uses g, s.
+    A string is secular if it is an alias ('nu6', 'z1', case-insensitive) or if its only
+    letters are the lowercase g and s of a secular formula ('g-g6', '2(g-g6)+(s-s6)').
+    Anything else is an MMR: MMR notation names planets by capital letters, so '2S-1',
+    '2S-1+0-1' and '4J-2S-1' are MMRs although they start like '2s'.
     """
     if isinstance(resonance, Resonance):
         return resonance.type
     elif isinstance(resonance, str):
         normalized = resonance.lower()
-        normalized_base = normalized.split(':', 1)[0]
-        if normalized_base in ['lk', 'lkr', 'lidov-kozai', 'lidov_kozai', 'lidovkozai', 'lidov', 'kozai']:
+        if normalized.split(':', 1)[0] in LIDOV_KOZAI_NAMES:
             return 'lidov_kozai'
-        if (
-            (normalized in SECULAR_RESONANCE_ALIASES.keys())
-            or normalized.startswith('g')
-            or normalized.startswith('s')
-            or normalized.startswith('2g')
-            or normalized.startswith('2s')
-            or _is_secular_formula(resonance)
-        ):
+        if normalized in SECULAR_RESONANCE_ALIASES:
             return 'secular'
-        else:
-            return 'mmr'
+        letters = {c for c in resonance if c.isalpha()}
+        if letters and letters <= {'g', 's'}:
+            return 'secular'
+        return 'mmr'
     raise Exception('The argument should be either a string (i.e. "nu6") or a Resonance object.')
 
 
@@ -179,7 +179,12 @@ def create_resonance(resonance: Union[Resonance, str]) -> Resonance:
     elif isinstance(resonance, str):
         res_type = detect_resonance_type(resonance)
         if res_type == 'mmr':
-            return create_mmr(resonance)
+            try:
+                return create_mmr(resonance)
+            except Exception as exc:
+                if {c for c in resonance if c.isalpha()} <= {'g', 's', 'G', 'S'}:
+                    raise ValueError(f"{exc} If '{resonance}' is a secular formula, write g and s in lowercase (e.g. 'g-g6').") from exc
+                raise
         elif res_type == 'secular':
             return create_secular_resonance(resonance)
         elif res_type == 'lidov_kozai':

@@ -1,26 +1,28 @@
 import resonances
 import numpy as np
+import pytest
 
 
 def test_checkers():
     body = resonances.Body()
     mmr = resonances.create_mmr('4J-2S-1')
     body.mmrs = [mmr]
-    body.statuses[mmr.to_s()] = 2
+    body.statuses[mmr.to_s()] = 'resonant'
 
-    assert body.status(mmr) == 2
+    assert body.status(mmr) == 'resonant'
     assert body.in_resonance(mmr) is True
     assert body.in_pure_resonance(mmr) is True
 
-    body.statuses[mmr.to_s()] = 1
-    assert body.status(mmr) == 1
+    body.statuses[mmr.to_s()] = 'transient'
+    assert body.status(mmr) == 'transient'
     assert body.in_resonance(mmr) is True
     assert body.in_pure_resonance(mmr) is False
 
-    body.statuses[mmr.to_s()] = 0
-    assert body.status(mmr) == 0
-    assert body.in_resonance(mmr) is False
-    assert body.in_pure_resonance(mmr) is False
+    for status in ('non_resonant', 'near_separatrix', 'uncertain', 'invalid'):
+        body.statuses[mmr.to_s()] = status
+        assert body.status(mmr) == status
+        assert body.in_resonance(mmr) is False
+        assert body.in_pure_resonance(mmr) is False
 
 
 def test_setup():
@@ -30,7 +32,7 @@ def test_setup():
     body.setup_vars_for_simulation([1, 2, 3, 4, 5])
     assert 5 == len(body.axis)
     assert 5 == len(body.ecc)
-    assert 5 == len(body.angles[mmr.to_s()])
+    assert 5 == len(body.angles_unwrapped[mmr.to_s()])  # what the integration fills
     assert 5 == len(body.varpi)
     assert 5 == len(body.longitude)
 
@@ -67,14 +69,25 @@ def test_resonance_to_dict_mmr():
     assert 'times' not in result
 
     # Test with filtered angles
+    # An MMR's filtered angle is not written (SPEC §2.6): the analysis reproduces it with its saved cutoff
     body.angles_filtered_unwrapped[mmr.to_s()] = np.array([0.1, 1.1, 2.1, 3.1, 4.1])
     body.angles_filtered[mmr.to_s()] = np.array([0.1, 1.1, 2.1, 3.1, 4.1])
     result = body.resonance_to_dict(mmr)
 
     assert isinstance(result, dict)
-    filtered_key = mmr.to_s() + '_angle_filtered'
-    assert filtered_key in result
-    assert len(result[filtered_key]) == 5
+    assert sorted(result) == [mmr.to_s() + '_angle', mmr.to_s() + '_angle_unwrapped']
+
+
+def test_resonance_to_dict_keeps_the_filtered_angle_of_a_lidov_kozai_angle():
+    body = resonances.Body()
+    lk = resonances.create_resonance('LK')
+    body.lidov_kozai_resonances = [lk]
+    for store in (body.angles, body.angles_unwrapped, body.angles_filtered, body.angles_filtered_unwrapped):
+        store[lk.to_s()] = np.array([0.1, 1.1, 2.1])
+
+    result = body.resonance_to_dict(lk)
+
+    assert lk.to_s() + '_angle_filtered' in result and lk.to_s() + '_angle_filtered_unwrapped' in result
 
 
 def test_angle():
@@ -102,14 +115,14 @@ def test_in_resonance():
     body = resonances.Body()
     mmr = resonances.create_mmr('4J-2S-1')
     body.mmrs = [mmr]
-    body.statuses[mmr.to_s()] = 2
+    body.statuses[mmr.to_s()] = 'resonant'
 
     assert body.in_resonance(mmr) is True
 
-    body.statuses[mmr.to_s()] = 1
+    body.statuses[mmr.to_s()] = 'transient'
     assert body.in_resonance(mmr) is True
 
-    body.statuses[mmr.to_s()] = 0
+    body.statuses[mmr.to_s()] = 'non_resonant'
     assert body.in_resonance(mmr) is False
 
 
@@ -282,3 +295,37 @@ def test_resonance_to_dict_for_lidov_kozai():
 
     assert lk.to_s() + '_angle_filtered' in result
     assert np.array_equal(result[lk.to_s() + '_angle_filtered'], body.angles_filtered[lk.to_s()])
+
+
+def _verdict(status):
+    from resonances.resonance.analysis.verdict import AngleStatus, ResonanceType, Verdict
+
+    return Verdict(resonance_type=ResonanceType.MMR, status=status, angle_status=AngleStatus.LIBRATION)
+
+
+def test_verdict_accepts_a_short_mmr_key_that_heads_one_stored_key():
+    body = resonances.Body()
+    body.name = '463'
+    lib, circ = _verdict('resonant'), _verdict('non_resonant')
+    # keys as `to_s` writes them (create_mmr('4J-2S-1') and create_mmr('5J-2'))
+    body.librations = {'4J-2S-1+0+0-1': lib, '5J-2+0-3': circ, 'g-g6': _verdict('uncertain')}
+
+    assert body.verdict('4J-2S-1+0+0-1') is lib  # the full key, as before
+    assert body.verdict('4J-2S-1') is lib
+    assert body.verdict(resonances.create_mmr('4J-2S-1')) is lib
+    assert body.verdict('5J-2') is circ
+    # a key that ends in a planet, or whose next character is not a sign, heads nothing
+    assert body.verdict('4J-2S') is None
+    assert body.verdict('4J-2') is None  # '4J-2S-1+0+0-1' continues with S, not a sign
+    assert body.verdict('4J-2S-10') is None
+    assert body.verdict('g') is None  # secular formulas are matched exactly only
+
+
+def test_verdict_refuses_an_ambiguous_short_key():
+    body = resonances.Body()
+    body.name = '463'
+    body.librations = {'4J-2S-1+0+0-1': _verdict('resonant'), '4J-2S-1+0+1-2': _verdict('transient')}
+
+    with pytest.raises(ValueError, match=r"4J-2S-1\+0\+0-1, 4J-2S-1\+0\+1-2"):
+        body.verdict('4J-2S-1')
+    assert body.verdict('4J-2S-1+0+1-2').status == 'transient'

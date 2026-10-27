@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, TYPE_CHECKING
@@ -8,8 +9,17 @@ import pandas as pd
 
 from resonances.body import Body
 from resonances.logger import logger
-from resonances.resonance.factory import create_resonance
+from resonances.resonance.analysis.verdict import AngleStatus, ResonanceType, Status, Verdict, verdict_from_status_code
+from resonances.resonance.factory import create_resonance, detect_resonance_type
 from resonances.data.util import datetime_from_string
+
+# Columns of summary.csv a Verdict is rebuilt from (Verdict.from_flat_dict); older files have only `status`
+VERDICT_COLUMNS = ('resonance_type', 'status', 'angle_status')
+# Where the manifest looks for a series besides the run's data_folder: the top (runs before the data folder) and the
+# default folder (a run resumed across the change, BatchManager.RESUME_DATA_FOLDERS)
+MANIFEST_DATA_FOLDERS = ('', 'data')
+# The run-wide MMR tables written next to summary.csv (by DataManager), listed in the manifest when present
+MMR_TABLES = ('mmr_numbers', 'episodes', 'candidates', 'constants')
 
 if TYPE_CHECKING:
     from resonances.simulation.simulation import Simulation
@@ -25,7 +35,19 @@ class SimulationSerializer:
             json.dump(data, f, indent=4)
 
     @classmethod
-    def restore(cls, json_file_path: str, recompute_librations: bool = True) -> "Simulation":
+    def restore(cls, json_file_path: str, recompute_librations: bool = False, current_settings: bool = False) -> "Simulation":
+        """Rebuild a saved simulation: config, bodies (derived subresonance rows included), saved series, planets
+        and verdicts.
+
+        By default the verdicts come from summary.csv: `body.statuses[key]` (a status string) and
+        `body.librations[key]` (a `Verdict` rebuilt from the row's verdict columns; numbers that are not verdict
+        columns stay in the file). With `recompute_librations=True` the resonances whose series were saved (the
+        SAVE mode keeps only some) are analysed again with the settings of simulation.json, through
+        `identify_librations`: an MMR by `analyse_mmr` on the raw saved angle and elements (its derived rows are
+        produced again by it), a secular/ZLK angle by its classifier and hooks. The others keep their summary.csv
+        verdict. `current_settings=True` analyses with the analysis settings of the current .env/.env.dist instead
+        of those of simulation.json (everything else still comes from simulation.json).
+        """
         json_path = Path(json_file_path)
         logger.info(f"Restoring simulation from {json_path}")
         with json_path.open("r") as file:
@@ -36,6 +58,9 @@ class SimulationSerializer:
         if isinstance(config.get("date"), str):
             config["date"] = cls._parse_datetime(config["date"])
         cls._drop_removed_plot_kinds(config)
+        if current_settings:
+            for name in cls._analysis_setting_names():
+                config.pop(name, None)
 
         from resonances.simulation.simulation import Simulation
 
@@ -50,24 +75,137 @@ class SimulationSerializer:
             body = cls._build_body_from_json(sim, body_data)
             sim.body_manager.bodies.append(body)
 
-        logger.info(f"Restoring body data")
+        # the derived rows of summary.csv first: their saved series are read with the others
+        cls._add_summary_derived_rows(sim.bodies, json_path.parent / "summary.csv")
+
+        logger.info("Restoring body data")
         simulation_data = data.get("simulation", {})
         files_manifest = simulation_data.get("data_files", {})
         cls._restore_body_data(sim, json_path.parent, files_manifest)
         cls._restore_free_elements(sim, json_path.parent, files_manifest, simulation_data.get("free_elements", {}))
 
-        logger.info(f"Restoring planets")
+        logger.info("Restoring planets")
         cls._restore_planets(sim, json_path.parent, data.get("simulation", {}).get("data_files", {}))
 
-        logger.info(f"Identifying librations")
-        try:
-            if recompute_librations and sim.bodies:
-                sim.identify_librations()
-        except Exception as e:
-            logger.error(f"Cannot restore librations: {e}")
-            raise e
+        restored = cls.restore_statuses(sim.bodies, json_path.parent / "summary.csv")
+        if not restored and not recompute_librations:
+            logger.warning(f"No statuses restored for {json_path}: summary.csv is missing or has none of these bodies")
+
+        if recompute_librations and sim.bodies:
+            saved = {body.name: cls._saved_resonances(body) for body in sim.bodies}
+            skipped = sum(len(body.resonances()) - len(saved[body.name]) for body in sim.bodies)
+            if skipped:
+                logger.info(f"Not reclassified ({skipped} resonances): their series were not saved; statuses from summary.csv")
+            logger.info("Identifying librations")
+            sim.identify_librations(only=saved)
+            sim.build_periodograms(only=saved)  # the spectra of the recomputed angles, as after a run
 
         return sim
+
+    @staticmethod
+    def _analysis_setting_names() -> set:
+        """The config attributes that are settings of the libration analysis (and its dry-run)."""
+        from resonances.resonance.analysis.settings import AnalysisSettings, DryRunSettings, setting_fields
+
+        return {f.name for cls in (AnalysisSettings, DryRunSettings) for f in setting_fields(cls)}
+
+    @classmethod
+    def restore_statuses(cls, bodies, summary_csv) -> int:
+        """Set the verdicts of the bodies from summary.csv; return how many were set.
+
+        `body.statuses[key]` gets the status string; `body.librations[key]` a `Verdict` rebuilt from the row when the
+        file has the verdict columns. A derived row (column `parent` not empty) that the body does not have yet is
+        added to it first (`Body.add_derived_resonance`), which also brings back the rows of resumed batches.
+        A file of an older version with integer statuses: secular and Lidov-Kozai rows are translated
+        (`verdict_from_status_code`); an integer MMR status has no translation and is skipped with a warning.
+        """
+        frame = cls._summary_frame(summary_csv)
+        if frame is None:
+            return 0
+        has_verdict = all(column in frame.columns for column in VERDICT_COLUMNS)
+        by_body = cls._rows_by_body(frame)
+        count = skipped_mmr = 0
+        for body in bodies:
+            rows = by_body.get(str(body.name), [])
+            cls._add_derived_rows(body, rows)
+            keys = {r.to_s() for r in body.resonances()}
+            for row in (row for row in rows if row["resonance"] in keys):
+                verdict = cls._verdict_of_row(row, row["resonance"], has_verdict)
+                if verdict is None:
+                    skipped_mmr += 1
+                    continue
+                body.statuses[row["resonance"]] = str(verdict.status)
+                body.librations[row["resonance"]] = verdict
+                count += 1
+        if skipped_mmr:
+            logger.warning(
+                f"{skipped_mmr} MMR rows of {summary_csv} have an integer status (an older version): MMR statuses are strings "
+                "now and have no translation; restore with recompute_librations=True to analyse them again"
+            )
+        return count
+
+    @staticmethod
+    def _summary_frame(summary_csv) -> Optional[pd.DataFrame]:
+        """summary.csv as strings, or None when it is missing, empty or has no name/resonance/status columns."""
+        path = Path(summary_csv)
+        if not path.exists() or path.stat().st_size == 0:
+            return None
+        frame = pd.read_csv(path, dtype=str, keep_default_na=False)
+        return frame if {"name", "resonance", "status"} <= set(frame.columns) else None
+
+    @staticmethod
+    def _rows_by_body(frame: pd.DataFrame) -> Dict[str, list]:
+        by_body = {}
+        for row in frame.to_dict("records"):
+            by_body.setdefault(row["name"], []).append(row)
+        return by_body
+
+    @classmethod
+    def _add_summary_derived_rows(cls, bodies, summary_csv) -> None:
+        """Register the derived rows of summary.csv on their bodies (`_add_derived_rows`)."""
+        frame = cls._summary_frame(summary_csv)
+        if frame is None:
+            return
+        by_body = cls._rows_by_body(frame)
+        for body in bodies:
+            cls._add_derived_rows(body, by_body.get(str(body.name), []))
+
+    @staticmethod
+    def _add_derived_rows(body: Body, rows) -> None:
+        """Add the derived rows of summary.csv (column `parent` not empty) that the body does not have yet."""
+        for row in rows:
+            parent = str(row.get("parent") or "")
+            if parent and row["resonance"] not in {r.to_s() for r in body.resonances()}:
+                body.add_derived_resonance(row["resonance"], parent)
+
+    @staticmethod
+    def _verdict_of_row(row: Dict[str, Any], key: str, has_verdict: bool) -> Optional[Verdict]:
+        """The verdict of one summary.csv row: from its verdict columns, or translated from an integer status
+        (secular and Lidov-Kozai only; None for an integer MMR status)."""
+        status = str(row["status"]).strip()
+        if status in {str(s) for s in Status}:
+            if has_verdict and str(row.get("resonance_type") or ""):
+                return Verdict.from_flat_dict(row)
+            resonance_type = detect_resonance_type(key)
+            return Verdict(resonance_type=ResonanceType(resonance_type), status=Status(status), angle_status=AngleStatus.UNDEFINED)
+        resonance_type = detect_resonance_type(key)
+        if resonance_type == ResonanceType.MMR:
+            return None
+        return verdict_from_status_code(int(float(status)), resonance_type)
+
+    @staticmethod
+    def _saved_resonances(body: Body) -> set:
+        """Resonance keys of a restored body whose series the analysis needs were in data-<body>.csv: for an MMR
+        the raw wrapped angle (`<key>_angle`), for secular/ZLK the unwrapped angle (`<key>_angle_unwrapped`; the
+        analysis filters it itself), each with the body's elements."""
+        if body.times is None or body.axis is None:
+            return set()
+        saved = set()
+        for resonance in body.resonances():
+            key = resonance.to_s()
+            if key in (body.angles if resonance.type == "mmr" else body.angles_unwrapped):
+                saved.add(key)
+        return saved
 
     @classmethod
     def _build_simulation_json(cls, config, bodies, simulation) -> Dict[str, Any]:
@@ -81,6 +219,8 @@ class SimulationSerializer:
                 "data_files": cls._data_files_manifest(bodies, config, simulation),
             },
         }
+        if simulation is not None and hasattr(simulation, "planets_saved"):
+            data["simulation"]["planets_saved"] = list(simulation.planets_saved())
 
         free = cls._free_elements_setup(bodies, config)
         if free is not None:
@@ -162,35 +302,58 @@ class SimulationSerializer:
             "type": body.type,
             "mass": cls._serialize_value(body.mass),
             "initial_data": cls._serialize_value(body.initial_data),
-            "resonances": [cls._resonance_to_dict(res) for res in body.resonances()],
+            "resonances": [cls._resonance_to_dict(res, body) for res in body.resonances()],
         }
 
     @classmethod
-    def _resonance_to_dict(cls, resonance) -> Dict[str, Any]:
+    def _resonance_to_dict(cls, resonance, body: Optional[Body] = None) -> Dict[str, Any]:
+        """A resonance of a body in simulation.json; a derived row also has `added_by` and `parent`."""
         key = resonance.to_s()
-        return {
+        entry = {
             "type": getattr(resonance, "type", None),
             "key": key,
             "display": key,
         }
+        added_by, parent = body.resonance_origin(key) if body is not None else ("", "")
+        if parent:
+            entry["added_by"] = added_by
+            entry["parent"] = parent
+        return entry
 
     @classmethod
     def _data_files_manifest(cls, bodies, config, simulation) -> Dict[str, Any]:
-        body_files = [f"data-{body.name}.csv" for body in bodies]
-        periodogram_files = [f"data-{body.name}-periodograms.csv" for body in bodies]
-        manifest = {"bodies": body_files, "periodograms": periodogram_files}
-        free_omega = [f"{body.name}-omega-free.csv" for body in bodies if body.free_elements is not None]
+        """The data files of this run that are on disk (the SAVE mode writes only some bodies' files), as paths
+        relative to save_path (also for an absolute data folder, so a moved run folder restores): in the data folder
+        (`config.data_folder`), else at the top or in data/ (MANIFEST_DATA_FOLDERS: a run resumed across the change)."""
+        save_path = Path(config.save_path)
+        folders = list(dict.fromkeys([str(getattr(config, 'data_folder', '') or '')] + list(MANIFEST_DATA_FOLDERS)))
+
+        def written(names):
+            found = []
+            for name in names:
+                path = next((save_path / folder / name for folder in folders if (save_path / folder / name).exists()), None)
+                if path is not None:
+                    found.append(Path(os.path.relpath(path, save_path)).as_posix())
+            return found
+
+        manifest = {
+            "bodies": written(f"data-{body.name}.csv" for body in bodies),
+            "periodograms": written(f"data-{body.name}-periodograms.csv" for body in bodies),
+        }
+        free_omega = written(f"{body.name}-omega-free.csv" for body in bodies)
         if free_omega:
             manifest["free_omega"] = free_omega
-        if config.save_summary:
-            manifest["summary"] = "summary.csv"
+        for name in ("summary", "coherence") + MMR_TABLES:
+            if (save_path / f"{name}.csv").exists():
+                manifest[name] = f"{name}.csv"
         if config.save_planets:
+            # the planets this run kept: integrated here, or by the workers of a batched run (`planets_saved`)
             planet_names = []
-            if simulation is not None and getattr(simulation, "integration_engine", None) is not None:
-                planets_data = simulation.integration_engine.planets_data
-                if planets_data:
-                    planet_names = list(planets_data.keys())
-            manifest["planets"] = [f"data-planet-{planet}.csv" for planet in planet_names]
+            if simulation is not None and hasattr(simulation, "planets_saved"):
+                planet_names = list(simulation.planets_saved())
+            elif simulation is not None and getattr(simulation, "integration_engine", None) is not None:
+                planet_names = list(simulation.integration_engine.planets_data)
+            manifest["planets"] = written(f"data-planet-{planet}.csv" for planet in planet_names)
         return manifest
 
     @classmethod
@@ -231,11 +394,14 @@ class SimulationSerializer:
         seculars = []
         lidovs = []
 
+        derived = {}
         for res in body_data.get("resonances", []):
             key = res.get("key")
             if not key:
                 continue
             resonance = create_resonance(key)
+            if res.get("parent"):
+                derived[resonance.to_s()] = res["parent"]
             if resonance.type == "mmr":
                 mmrs.append(resonance)
             elif resonance.type == "secular":
@@ -246,6 +412,7 @@ class SimulationSerializer:
         body.mmrs = mmrs
         body.secular_resonances = seculars
         body.lidov_kozai_resonances = lidovs
+        body.derived_resonances = derived
 
         for mmr in body.mmrs:
             if mmr.planets_names:
@@ -255,21 +422,31 @@ class SimulationSerializer:
 
     @classmethod
     def _restore_body_data(cls, sim: "Simulation", base_dir: Path, files_manifest: Dict[str, Any]) -> None:
-        body_files = files_manifest.get("bodies", [])
-        body_files_by_name = {Path(fname).stem.replace("data-", ""): fname for fname in body_files}
+        # names as strings: the manifest's file names are, a body may be named by a number. The names are relative
+        # to the run folder (data/data-<body>.csv; data-<body>.csv in runs before the data folder)
+        if "bodies" in files_manifest:
+            body_files_by_name = {Path(fname).stem.removeprefix("data-"): fname for fname in files_manifest["bodies"]}
+        else:
+            body_files_by_name = {str(body.name): cls._first_existing(base_dir, f"data-{body.name}.csv", sim.config) for body in sim.bodies}
 
         for body in sim.bodies:
-            body_csv = base_dir / body_files_by_name.get(body.name, f"data-{body.name}.csv")
+            if str(body.name) not in body_files_by_name:  # not saved under the SAVE mode
+                continue
+            body_csv = base_dir / body_files_by_name[str(body.name)]
             if not body_csv.exists():
                 logger.warning(f"Body data file not found for {body.name}: {body_csv}")
                 continue
 
-            df = pd.read_csv(body_csv, index_col=0)
+            # round_trip: the default parser may change the last bit, and the analysis must read what the run read
+            df = pd.read_csv(body_csv, index_col=0, float_precision="round_trip")
             cls._populate_body_from_dataframe(sim, body, df)
 
-            periodogram_csv = base_dir / f"data-{body.name}-periodograms.csv"
-            if periodogram_csv.exists():
-                periodograms = pd.read_csv(periodogram_csv)
+            periodogram_csv = body_csv.parent / f"data-{body.name}-periodograms.csv"  # next to the body's series
+            if periodogram_csv.exists() and periodogram_csv.stat().st_size > 0:
+                try:
+                    periodograms = pd.read_csv(periodogram_csv)
+                except pd.errors.EmptyDataError:  # written empty by versions that saved no-periodogram files
+                    continue
                 cls._populate_periodograms(body, periodograms)
 
     @classmethod
@@ -278,6 +455,7 @@ class SimulationSerializer:
         if times_years is not None:
             sim.times = np.asarray(times_years) * (2 * np.pi)
             body.times = sim.times
+            body.times_years = np.asarray(times_years, dtype=float)
 
         body.axis = cls._get_column(df, "a")
         body.ecc = cls._get_column(df, "e")
@@ -296,6 +474,7 @@ class SimulationSerializer:
             if f"{key}_angle" in df.columns:
                 body.angles[key] = cls._get_column(df, f"{key}_angle")
 
+            # MMR files hold no filtered columns (the analysis reproduces sigma_f); older files may
             filtered_unwrapped = cls._get_column(df, f"{key}_angle_filtered_unwrapped")
             filtered = cls._get_column(df, f"{key}_angle_filtered")
             if filtered_unwrapped is not None:
@@ -335,7 +514,7 @@ class SimulationSerializer:
             if not planet_csv.exists():
                 continue
             planet_name = planet_csv.stem.replace("data-planet-", "")
-            df = pd.read_csv(planet_csv)
+            df = pd.read_csv(planet_csv, float_precision="round_trip")
             # Same shape as after a live run: one array per orbital element.
             sim.integration_engine.planets_data[planet_name] = {column: df[column].to_numpy() for column in df.columns}
 
@@ -345,7 +524,7 @@ class SimulationSerializer:
         from resonances.secular.free_elements import from_series_frame
 
         files = files_manifest.get("free_omega") or []
-        by_name = {filename.removesuffix("-omega-free.csv"): filename for filename in files}
+        by_name = {Path(filename).name.removesuffix("-omega-free.csv"): filename for filename in files}
         for body in sim.bodies:
             filename = by_name.get(body.name)
             if not filename:
@@ -353,6 +532,16 @@ class SimulationSerializer:
             path = base_dir / filename
             if path.exists():
                 body.free_elements = from_series_frame(pd.read_csv(path), setup)
+
+    @staticmethod
+    def _first_existing(base_dir: Path, filename: str, config) -> str:
+        """`filename` in the run's data folder when it is there, else in data/, else at the top (runs before the data
+        folder; MANIFEST_DATA_FOLDERS)."""
+        for folder in (str(getattr(config, "data_folder", "") or ""), *MANIFEST_DATA_FOLDERS):
+            candidate = base_dir / folder / filename
+            if candidate.exists():
+                return Path(os.path.relpath(candidate, base_dir)).as_posix()
+        return filename
 
     @classmethod
     def _get_column(cls, df: pd.DataFrame, col: str) -> Optional[np.ndarray]:

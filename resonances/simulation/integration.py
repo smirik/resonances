@@ -45,6 +45,18 @@ def horizons_tls():
         rh.urlopen = original
 
 
+# A fixed step must sample a body's orbit this many times. Measured with SABA(10,6,4) against ias15
+# over 2 kyr (non-crossing orbits): 8 steps per orbit misplace the mean longitude by 0.003 deg,
+# 3 steps by 39 deg. With the default dt = 1.0 (58 d) this is a < 1.36 AU.
+MIN_STEPS_PER_ORBIT = 10
+
+
+def is_fixed_step(integrator: str) -> bool:
+    """Whether the integrator keeps sim.dt (symplectic and leapfrog) rather than adapting it (ias15, bs...)."""
+    name = str(integrator).lower()
+    return name.startswith('saba') or name in ('whfast', 'whfast512', 'leapfrog', 'janus', 'eos')
+
+
 class IntegrationEngine:
     """Handles the actual numerical integration logic."""
 
@@ -57,7 +69,8 @@ class IntegrationEngine:
         self.massive_bodies = list(SOLAR_SYSTEM_WITH_SUN)
 
         self.planets_without_sun = [p for p in self.planets if p != 'Sun']
-        self.planets_data = {planet: {} for planet in self.planets_without_sun}
+        # The kept planets' series ({planet: {column: array}}), filled by run_integration (or restore)
+        self.planets_data = {}
 
     def create_solar_system(self, force=False):
         """Create or load the Solar System REBOUND simulation.
@@ -120,29 +133,43 @@ class IntegrationEngine:
         self.sim.dt = self.config.dt
         self.sim.N_active = len(self.massive_bodies) if N_active is None else N_active
 
+        # Unset safe_mode: WHFast 0 (its corrector would otherwise run at every step), SABA 1. Both are what
+        # earlier versions used, so their runs are reproduced bit for bit; 0 and 1 differ at round-off.
+        safe_mode = self.config.integration_safe_mode
         if 'whfast' == self.config.integrator.lower():
-            self.sim.ri_whfast.safe_mode = 0
+            self.sim.ri_whfast.safe_mode = 0 if safe_mode is None else safe_mode
             if self.config.integration_corrector is not None:
                 self.sim.ri_whfast.corrector = self.config.integration_corrector
         elif 'SABA' in self.config.integrator:
-            self.sim.ri_saba.safe_mode = self.config.integration_safe_mode
+            self.sim.ri_saba.safe_mode = 1 if safe_mode is None else safe_mode
 
         self.sim.move_to_com()
 
-    def run_integration(self, bodies: List[Body], times, progress=False):
-        """Run the numerical integration."""
+    def run_integration(self, bodies: List[Body], times, progress=False, planets=None):
+        """Run the numerical integration.
+
+        `planets` names the planets whose elements are kept in `planets_data` (`Simulation.planets_needed`); None
+        keeps all of them unless `save_planets` is 'none'. Only these are held in memory and written.
+        """
         for body in bodies:
             body.setup_vars_for_simulation(times)
 
         self.setup_integrator()
+        self.warn_unresolved_orbits(bodies)
         ps = self.sim.particles
         n = len(times)
 
         # Pre-allocate planets data arrays (avoids per-timestep dict allocation)
-        save_planets = self.config.save_planets
+        if planets is None:
+            planets = self.planets_without_sun if self.config.save_planets else []
+        kept = [planet for planet in self.planets_without_sun if planet in set(planets)]
+        save_planets = bool(kept)
+        self.planets_data = {}
         if save_planets:
-            self._init_planets_arrays(n)
-            planet_arrays = [self.planets_data[p] for p in self.planets_without_sun]
+            self._init_planets_arrays(n, kept)
+            # orbits[i] is particle i + 1: planets_without_sun is the particle order after the Sun
+            planet_arrays = [(self.planets_without_sun.index(p), self.planets_data[p]) for p in kept]
+            planet_times = self.planets_data[kept[0]]['times']  # one array, shared by the kept planets
 
         # Pre-resolve per-body array references to avoid repeated
         # dict lookups and to_s() calls in the inner loop
@@ -159,10 +186,31 @@ class IntegrationEngine:
             orbits = self.sim.orbits(primary=ps[0])
 
             if save_planets:
-                self._store_planets(orbits, i, time / two_pi, planet_arrays)
+                planet_times[i] = time / two_pi
+                self._store_planets(orbits, i, planet_arrays)
 
             for body, orbit_idx, mmr_refs, sec_refs, lk_refs in body_refs:
                 self._update_body(body, orbits, i, orbit_idx, mmr_refs, sec_refs, lk_refs)
+
+    def warn_unresolved_orbits(self, bodies: List[Body]):
+        """Log a warning for every body whose period holds fewer than MIN_STEPS_PER_ORBIT fixed steps.
+
+        Planet-crossing orbits are not detected: a fixed step does not resolve close encounters
+        whatever the period, and those need ias15 (docs/config.md).
+        """
+        if not is_fixed_step(self.config.integrator) or not bodies:
+            return
+        orbits = self.sim.orbits(primary=self.sim.particles[0])
+        for body in bodies:
+            orbit = orbits[body.index_in_simulation - 1]
+            if orbit.a <= 0:
+                continue
+            steps = abs(orbit.P / self.sim.dt)
+            if steps < MIN_STEPS_PER_ORBIT:
+                logger.warning(
+                    f"{body.name}: {steps:.1f} steps of dt={self.sim.dt} per orbit (P = {orbit.P / (2 * np.pi):.3f} yr), "
+                    f"fewer than {MIN_STEPS_PER_ORBIT}: {self.config.integrator} will misplace it. Use a smaller dt or ias15."
+                )
 
     @staticmethod
     def _build_body_refs(bodies):
@@ -177,11 +225,10 @@ class IntegrationEngine:
         return refs
 
     @staticmethod
-    def _store_planets(orbits, i, t_yrs, planet_arrays):
-        """Store planet orbital data into pre-allocated arrays."""
-        for pi, parr in enumerate(planet_arrays):
+    def _store_planets(orbits, i, planet_arrays):
+        """Store planet orbital data into pre-allocated arrays ((orbit index, arrays) per kept planet)."""
+        for pi, parr in planet_arrays:
             orbit = orbits[pi]
-            parr['times'][i] = t_yrs
             parr['a'][i] = orbit.a
             parr['e'][i] = orbit.e
             parr['inc'][i] = orbit.inc
@@ -216,8 +263,9 @@ class IntegrationEngine:
         for arr, lk in lk_refs:
             arr[i] = lk.calc_angle(orbit, None)
 
-    def _init_planets_arrays(self, n):
-        """Pre-allocate numpy arrays for planet data."""
-        fields = ('times', 'a', 'e', 'inc', 'Omega', 'omega', 'M', 'l', 'varpi')
-        for planet in self.planets_without_sun:
-            self.planets_data[planet] = {f: np.empty(n) for f in fields}
+    def _init_planets_arrays(self, n, planets=None):
+        """Pre-allocate numpy arrays for the kept planets (all by default); they share one `times` array."""
+        fields = ('a', 'e', 'inc', 'Omega', 'omega', 'M', 'l', 'varpi')
+        times = np.empty(n)
+        for planet in self.planets_without_sun if planets is None else planets:
+            self.planets_data[planet] = {'times': times, **{f: np.empty(n) for f in fields}}

@@ -12,7 +12,6 @@ import pandas as pd  # noqa: E402
 import pytest  # noqa: E402
 
 from resonances.resonance import coherence_analysis as ca  # noqa: E402
-from resonances.resonance.classify.models import ResonanceStatus  # noqa: E402
 from resonances.data.const import PLANETARY_FREQUENCIES  # noqa: E402
 from resonances.resonance.omega_free_gate import GateOutcome  # noqa: E402
 from resonances.secular import free_elements  # noqa: E402
@@ -36,6 +35,7 @@ def build_simulation(tmp_path, n=30_000, antiphase=True, **config_kwargs):
     years = float(n)
     kwargs = dict(
         name='coherence_pipeline',
+        plot_layout='flat',  # the figure paths below are written for the flat layout (default confidence/status)
         save=None,
         plot=None,
         save_summary=False,
@@ -96,6 +96,7 @@ def build_free_gate_simulation(tmp_path, free_rate_e, free_rate_i, **config_kwar
     years, n = 5e5, 5000
     kwargs = dict(
         name='free_gate',
+        plot_layout='flat',  # the figure paths below are written for the flat layout (default confidence/status)
         save=None,
         plot=None,
         save_summary=False,
@@ -136,8 +137,16 @@ def build_free_gate_simulation(tmp_path, free_rate_e, free_rate_i, **config_kwar
     return sim, body, resonance
 
 
+def status_without_coherence(tmp_path, antiphase):
+    """The verdict of the same body with the coherence check off: what the flag must leave alone."""
+    sim, body, resonance = build_simulation(tmp_path, antiphase=antiphase, coherence_enabled=False)
+    sim.identify_librations()
+    return body.statuses[resonance.to_s()]
+
+
 class TestEiExchangeInPipeline:
-    """The coherence check records a flag and leaves every status alone."""
+    """The coherence check records a flag and leaves every status alone (the synthetic omega librates with
+    ZLK_PERIOD = 1250 yr, faster than ZLK_LIBRATION_PERIOD_MIN_YR, so its status itself is not what is tested)."""
 
     def test_an_antiphase_line_is_recorded_as_an_exchange(self, tmp_path):
         sim, body, resonance = build_simulation(tmp_path, antiphase=True)
@@ -147,7 +156,8 @@ class TestEiExchangeInPipeline:
         key = resonance.to_s()
         assert body.zlk_gates[key].confirmed_ei is True
         assert body.zlk_gates[key].check == ca.CoherenceCheck.PASSED
-        assert body.statuses[key] == ResonanceStatus.LIBRATION
+        assert body.statuses[key] == status_without_coherence(tmp_path, antiphase=True)
+        assert body.librations[key].checks['check_zlk_ei'] == 'pass'
 
     def test_an_in_phase_line_no_longer_demotes(self, tmp_path):
         # This used to be a 2 -> -2 demotion. The e-i band on a short baseline sits below
@@ -158,13 +168,14 @@ class TestEiExchangeInPipeline:
 
         key = resonance.to_s()
         assert body.zlk_gates[key].confirmed_ei is False
-        assert body.statuses[key] == ResonanceStatus.LIBRATION
+        assert body.statuses[key] == status_without_coherence(tmp_path, antiphase=False)
+        assert body.librations[key].checks['check_zlk_ei'] == 'fail'
 
     def test_the_flag_reaches_summary_csv(self, tmp_path):
         sim, body, resonance = build_simulation(tmp_path, antiphase=False)
 
         sim.identify_librations()
-        summary, _ = sim.data_manager.get_simulation_summary(sim.bodies)
+        summary = sim.data_manager.get_simulation_summary(sim.bodies)
 
         row = summary.iloc[0]
         assert bool(row['confirmed_ei']) is False
@@ -178,7 +189,7 @@ class TestEiExchangeInPipeline:
 
         assert body.coherence == {}
         assert body.zlk_gates == {}
-        assert body.statuses[resonance.to_s()] == ResonanceStatus.LIBRATION
+        assert body.librations[resonance.to_s()].checks['check_zlk_ei'] == 'not_measured'
 
     def test_a_short_baseline_records_why_nothing_was_measured(self, tmp_path):
         # P_max = T/(5*n_seg) is 1500 yr at the coarsest level, so demanding periods above
@@ -186,7 +197,7 @@ class TestEiExchangeInPipeline:
         sim, body, resonance = build_simulation(tmp_path, antiphase=False, coherence_period_min=2000.0)
 
         sim.identify_librations()
-        summary, _ = sim.data_manager.get_simulation_summary(sim.bodies)
+        summary = sim.data_manager.get_simulation_summary(sim.bodies)
 
         assert body.zlk_gates[resonance.to_s()].check == ca.CoherenceCheck.SHORT_BASELINE
         assert summary.iloc[0]['zlk_check'] == 'short_baseline'
@@ -200,27 +211,27 @@ class TestFreeOmegaGateInPipeline:
         sim.identify_librations()
 
         key = resonance.to_s()
-        assert body.statuses[key] == ResonanceStatus.LIBRATION
+        assert body.statuses[key] == 'resonant'
         assert body.free_gates[key].outcome is GateOutcome.CONFIRMED
-        assert 'gate: 2 confirmed' in body.librations[key].comments
+        assert body.librations[key].checks['check_zlk_free_omega'] == 'pass'
 
     def test_a_carousel_is_demoted_and_reaches_summary_csv(self, tmp_path):
         # The osculating omega is bounded because both vectors are forced-dominated, but
         # the free pericentre and node turn 400 arcsec/yr apart. summary.csv builds its
-        # status from the flattened classification result, so the gate has to update that
-        # object too, not only body.statuses.
+        # status from the verdict, so the gate has to rebuild that too, not only body.statuses.
         sim, body, resonance = build_free_gate_simulation(tmp_path, free_rate_e=200.0, free_rate_i=-200.0)
 
         sim.identify_librations()
-        summary, _ = sim.data_manager.get_simulation_summary(sim.bodies)
+        summary = sim.data_manager.get_simulation_summary(sim.bodies)
 
         key = resonance.to_s()
-        assert body.statuses[key] == ResonanceStatus.LIBRATION_UNCERTAIN
+        assert body.statuses[key] == 'non_resonant'
+        assert body.librations[key].reason == 'kinematic_libration' and body.librations[key].status_code == -2
+        assert body.librations[key].checks['check_zlk_free_omega'] == 'fail'
         row = summary.iloc[0]
-        assert row['status'] == ResonanceStatus.LIBRATION_UNCERTAIN
+        assert row['status'] == 'non_resonant' and row['status_code'] == -2
         assert row['free_gate'] == 'kinematic'
         assert row['free_b_omega'] == pytest.approx(400.0, rel=0.05)
-        assert 'gate: 2->-2 kinematic libration' in row['comments']
 
     def test_a_disabled_gate_keeps_the_original_status(self, tmp_path):
         sim, body, resonance = build_free_gate_simulation(tmp_path, free_rate_e=200.0, free_rate_i=-200.0, free_gate_enabled=False)
@@ -228,7 +239,7 @@ class TestFreeOmegaGateInPipeline:
         sim.identify_librations()
 
         key = resonance.to_s()
-        assert body.statuses[key] == ResonanceStatus.LIBRATION
+        assert body.statuses[key] == 'resonant'
         assert body.free_gates[key].outcome is GateOutcome.DISABLED
 
     def test_a_window_too_short_for_the_libration_withholds_the_verdict(self, tmp_path):
@@ -237,8 +248,9 @@ class TestFreeOmegaGateInPipeline:
         sim.identify_librations()
 
         key = resonance.to_s()
-        assert body.statuses[key] == ResonanceStatus.UNCERTAIN
+        assert body.statuses[key] == 'uncertain' and body.librations[key].status_code == -9
         assert body.free_gates[key].outcome is GateOutcome.SHORT_WINDOW
+        assert body.librations[key].checks['check_zlk_free_omega'] == 'not_measured'
 
 
 class TestSummaryAndCoherenceCsv:
@@ -246,7 +258,7 @@ class TestSummaryAndCoherenceCsv:
         sim, body, _ = build_simulation(tmp_path)
 
         sim.identify_librations()
-        summary, _ = sim.data_manager.get_simulation_summary(sim.bodies)
+        summary = sim.data_manager.get_simulation_summary(sim.bodies)
 
         expected_forced, expected_free = body.forced_free_eccentricity()
         assert summary.iloc[0]['e_forced'] == pytest.approx(expected_forced)
@@ -258,7 +270,7 @@ class TestSummaryAndCoherenceCsv:
         sim, body, _ = build_simulation(tmp_path)
 
         sim.identify_librations()
-        summary, _ = sim.data_manager.get_simulation_summary(sim.bodies)
+        summary = sim.data_manager.get_simulation_summary(sim.bodies)
 
         row = summary.iloc[0]
         assert body.free_elements is not None
@@ -280,7 +292,7 @@ class TestSummaryAndCoherenceCsv:
 
         sim.data_manager.save_body(body, sim.times)
 
-        frame = pd.read_csv(tmp_path / 'synthetic-omega-free.csv')
+        frame = pd.read_csv(tmp_path / 'data' / 'synthetic-omega-free.csv')
         assert len(frame) == len(body.free_elements.times)
         assert {'varpi_free_unwrapped', 'Omega_free_unwrapped', 'omega_free_unwrapped', 'masked_e', 'masked_i'} <= set(frame.columns)
 
@@ -301,11 +313,11 @@ class TestSummaryAndCoherenceCsv:
         sim, _, _ = build_simulation(tmp_path)
 
         sim.identify_librations()
-        summary, _ = sim.data_manager.get_simulation_summary(sim.bodies)
+        summary = sim.data_manager.get_simulation_summary(sim.bodies)
 
         assert list(summary.columns)[-1] == 'comments'
 
-    def test_coherence_csv_is_written_and_appended(self, tmp_path):
+    def test_coherence_csv_writing_the_same_body_again_replaces_its_rows(self, tmp_path):
         sim, _, _ = build_simulation(tmp_path)
         sim.identify_librations()
 
@@ -316,8 +328,8 @@ class TestSummaryAndCoherenceCsv:
         assert path.exists()
         assert not first.empty
         assert {'body', 'resonance', 'pair', 'period', 'gamma2', 'phase_deg', 'amp_ratio'} <= set(first.columns)
-        # Appended a second time: twice the rows, header written only once.
-        assert sum(1 for _ in path.open()) == 2 * len(first) + 1
+        # A retried batch writes its bodies again: their rows are replaced, not repeated.
+        assert sum(1 for _ in path.open()) == len(first) + 1
 
     def test_empty_coherence_writes_no_file(self, tmp_path):
         sim, _, _ = build_simulation(tmp_path, coherence_enabled=False)
@@ -342,11 +354,12 @@ class TestPlotDispatch:
         sim.data_manager.plot_body(body, sim)
 
         key = resonance.to_s()
-        assert (tmp_path / 'synthetic-ecc-vector.png').exists()
-        assert (tmp_path / f'synthetic-{key}-coherence-e-i.png').exists()
-        assert (tmp_path / f'synthetic-{key}-free-omega-drift.png').exists()
-        assert (tmp_path / f'synthetic-{key}-free-omega-portrait.png').exists()
-        assert (tmp_path / f'synthetic-{key}-free-omega-vector.png').exists()
+        figures = tmp_path / 'figures'
+        assert (figures / 'synthetic-ecc-vector.png').exists()
+        assert (figures / f'synthetic-{key}-coherence-e-i.png').exists()
+        assert (figures / f'synthetic-{key}-free-omega-drift.png').exists()
+        assert (figures / f'synthetic-{key}-free-omega-portrait.png').exists()
+        assert (figures / f'synthetic-{key}-free-omega-vector.png').exists()
 
     def test_plot_kinds_are_opt_in(self, tmp_path):
         sim, body, _ = build_simulation(tmp_path, plot='all', plots=['evolution'])

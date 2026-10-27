@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List, Union
 
 import astdys
@@ -7,7 +6,7 @@ from resonances.data.util import convert_input_to_list
 from resonances.horizons import get_body_keplerian_elements
 from resonances.logger import logger
 from resonances.mmr.mmr import MMR
-from resonances.mmr.mmr_finder import find_mmrs
+from resonances.mmr.mmr_finder import candidate_mmrs
 from resonances.secular.secular_resonance_finder import SecularResonanceFinder
 from resonances.secular.secular_resonance import SecularResonance
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
@@ -25,7 +24,7 @@ ResonanceType = Union[
 
 
 def check(
-    asteroids: Union[int, str, List[Union[int, str]]],
+    asteroids,
     resonance: ResonanceType,
     name: str = None,
     **kwargs,
@@ -35,8 +34,8 @@ def check(
 
     Parameters:
     -----------
-    asteroids : Union[int, str, List[Union[int, str]]]
-        Asteroid ID(s) to check
+    asteroids : Union[int, str, List[Union[int, str]], DataFrame]
+        Asteroid ID(s) to check, or a selection (see find)
     resonance : Union[MMR, SecularResonance, str, List[...]]
         Resonance(s) to check. Can be:
         - Single resonance (MMR, SecularResonance, or string)
@@ -72,11 +71,12 @@ def check(
 
 
 def find(  # noqa: C901
-    asteroids: Union[int, str, List[Union[int, str]]],
+    asteroids,
     planets=None,
     name: str = None,
     sigma2: float = 0.1,
     sigma3: float = 0.02,
+    sigma_retro: float = 0.5,
     formulas: Union[str, List[str]] = None,
     type: str | List[str] = None,
     **kwargs,
@@ -88,8 +88,9 @@ def find(  # noqa: C901
 
     Parameters:
     -----------
-    asteroids : Union[int, str, List[Union[int, str]]]
-        Asteroid ID(s) to search resonances for
+    asteroids : Union[int, str, List[Union[int, str]], DataFrame]
+        Asteroid ID(s) to search resonances for, or a selection: a DataFrame of
+        resonances.mpcorb.query (for source='mpc') or of astdys (its 'name' column)
     planets : optional
         Planets to consider for MMR search (implies MMR search)
     name : str, optional
@@ -98,13 +99,20 @@ def find(  # noqa: C901
         Width parameter for two-body MMR search
     sigma3 : float, default=0.02
         Width parameter for three-body MMR search
+    sigma_retro : float, default=0.5
+        Width for the retrograde two-body MMR search. A body with i > 90 deg gets only
+        retrograde MMRs (all k, e.g. 1J-3r0..1J-3r2), any other body only prograde ones
     formulas : Union[str, List[str]], optional
         Secular resonance formulas to find (implies secular search)
     type:
         str or List[str], optional
             Type(s) of resonances to search for: 'mmr', 'secular', 'lidov_kozai'
     **kwargs
-        Additional parameters passed to Simulation constructor
+        Additional parameters passed to Simulation constructor. The elements are taken at its
+        `date` (from Horizons) or at the AstDyS/MPC catalog epoch, which must then equal `date`
+        (with source='mpc' MPC rows at another epoch are integrated to it, with a warning, unless
+        MPC_EPOCH_POLICY=strict). Bodies not in the catalog, or whose MPC elements are refused at `date`,
+        are left out with a warning.
 
     Returns:
     --------
@@ -120,9 +128,9 @@ def find(  # noqa: C901
 
     asteroids = convert_input_to_list(asteroids)
     formulas = convert_input_to_list(formulas) if formulas is not None else None
-    now = datetime.now()
     resonances_dict = {}
     elems = {}
+    refused = {}  # MPC rows at another epoch than the date: left out with their reason, as the missing ones
 
     secular_angle_mode = kwargs.pop('secular_angle_mode', 'proper' if shouldSearchSecular else "osculating")
     _verify_secular_parameters(kwargs)
@@ -131,19 +139,28 @@ def find(  # noqa: C901
     # Batch fetch all asteroid elements at once for better performance
     if sim.config.source == 'astdys':
         elems = astdys.search(asteroids)  # Returns dict: {name: elements_dict}
+    elif sim.config.source == 'mpc':
+        elems = sim.body_manager.mpc_elements(asteroids, refused=refused)  # {str(identifier): elements at the date}
+        gaps = [abs(e['epoch'] - e['propagated_from_epoch']) for e in elems.values() if 'propagated_from_epoch' in e]
+        if gaps:
+            logger.warning(f"{len(gaps)} bodies propagated from other epochs to {sim.config.date}, max gap {max(gaps):.1f} d")
     else:
+        # At the simulation date: the planets are built there
         for asteroid in asteroids:
-            elems[str(asteroid)] = get_body_keplerian_elements(asteroid, date=now)
+            elems[str(asteroid)] = get_body_keplerian_elements(asteroid, date=sim.config.date)
 
     for asteroid in asteroids:
         asteroid_key = str(asteroid)
         elem = elems.get(asteroid_key)
+        if asteroid_key in refused:
+            logger.warning(f'Asteroid {asteroid} left out: {refused[asteroid_key]}')
+            continue
         if elem is None:
             logger.warning(f'Asteroid {asteroid} not found in catalog')
             continue
         resonances_dict[asteroid_key] = []
         if shouldSearchMMR:
-            mmrs = find_mmrs(elem['a'], planets=planets, sigma2=sigma2, sigma3=sigma3)
+            mmrs = candidate_mmrs(elem, planets=planets, sigma2=sigma2, sigma3=sigma3, sigma_retro=sigma_retro)
             resonances_dict[asteroid_key] = mmrs
         if shouldSearchSecular:
             if formulas is None:
@@ -160,12 +177,45 @@ def find(  # noqa: C901
 
     sim.create_solar_system()
 
+    # Clones (CLONES > 0): the clones are checked in the MMR candidates of the whole cloud (docs/clones.md); the nominal
+    # keeps its own, so its rows and the auto output step planned from them are those of a run without clones
+    clouds = {}
+    if sim.config.clones > 0:
+        from resonances.simulation import ensemble_run
+
+        for asteroid_name in [key for key in elems if key in resonances_dict]:
+            try:
+                ensemble = ensemble_run.ensemble_of(sim, asteroid_name, sim.config.clones, asteroid_name)
+            except (OSError, ValueError) as error:  # no covariance there (404), a weak MPC orbit: the body runs alone
+                logger.warning(f'{asteroid_name}: no clones ({error})')
+                continue
+            _, clone_elements = ensemble_run.elements_at_date(ensemble, sim.config)
+            extra = []
+            if shouldSearchMMR:
+                cloud = ensemble_run.cloud_candidates(
+                    clone_elements, planets=planets, sigma2=sigma2, sigma3=sigma3, sigma_retro=sigma_retro
+                )
+                known = {r.to_s() for r in resonances_dict[asteroid_name]}
+                extra = [r for r in cloud if r.to_s() not in known]
+                if extra:
+                    logger.info(f'{asteroid_name}: {len(extra)} MMR candidates of its clones only: {[r.to_s() for r in extra]}')
+            clouds[asteroid_name] = (ensemble, clone_elements, extra)
+
     for asteroid_name, kepler_elements in elems.items():
         res_list = resonances_dict[asteroid_name]
         if len(res_list) == 0:
             logger.warning(f'No resonances found for an asteroid {asteroid_name}')
+            if asteroid_name in clouds and clouds[asteroid_name][2]:  # its clones have candidates: they run without it
+                ensemble, clone_elements, extra = clouds[asteroid_name]
+                ensemble_run.attach(sim, ensemble, asteroid_name, extra, clone_elements, float('nan'))
             continue
         sim.add_body(kepler_elements, res_list, name=f"{asteroid_name}")
+        if asteroid_name in clouds:
+            ensemble, clone_elements, extra = clouds[asteroid_name]
+            own = sim.bodies[-1].resonances()
+            mmrs = [r for r in own if r.type == 'mmr'] + extra  # the clones: the nominal's rows and the cloud's extra MMRs
+            offset = ensemble_run.offset_sigma(sim.bodies[-1].initial_data, clone_elements)
+            ensemble_run.attach(sim, ensemble, asteroid_name, mmrs + [r for r in own if r.type != 'mmr'], clone_elements, offset)
         logger.info(
             'Adding a possible resonance for an asteroid {} - {}'.format(
                 asteroid_name,

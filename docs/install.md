@@ -1,128 +1,84 @@
 # Installation
 
-The fastest way:
+`resonances` needs Python 3.11 or newer. It depends on [REBOUND](https://rebound.readthedocs.io) for the
+integration and on [Astropy](https://www.astropy.org)/astroquery for NASA Horizons; both are installed
+automatically.
+
+## With uv (recommended)
+
+[uv](https://docs.astral.sh/uv/) manages the Python version, the virtual environment and the dependencies:
 
 ```bash
-pip install resonances
-```
-
-## uv (recommended)
-
-The _best_ way to install and manage `resonances` is through [uv](https://docs.astral.sh/uv/), which is an extremely fast Python package and project manager. In this case, you only need to write:
-
-```bash
+uv init my-study        # a new project
+cd my-study
 uv add resonances
 ```
 
-It will install the package itself, as well as all dependencies.
+## With pip
 
-You might face some difficulties through the installation for a new project. Below is a detailed guide.
-
-### Guide
-
-**A.** Follow the instructions on the official website of [uv](https://docs.astral.sh/uv/) and install it.
-
-**B.** Create a new project:
+In a [virtual environment](https://docs.python.org/3/tutorial/venv.html):
 
 ```bash
-uv init example
-cd example
-```
-
-**C.** Add `resonances`:
-
-```bash
-uv add resonances
-```
-
-**D.** Now you can run your first simulation. Create `test.py` in the root directory of your project and place the following code there:
-
-```python
-import resonances
-
-sim = resonances.check(463, resonance='4J-2S-1')
-sim.run()
-```
-
-Note that the first run might take a while because the app needs to download AstDyS catalogue and initial data for the Solar system. You can see the progress in `cache/resonances.log` file.
-
-If the download of the planets from NASA Horizons fails with a certificate error, see [Horizons and TLS](config.md#horizons-and-tls).
-
-**E.** Now you can see the results in `cache/%current_datetime%` folder.
-
-## PIP
-
-However, if you prefer manual installation, you need to perform the following steps:
-
-```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install resonances
 ```
 
-Note that while `numpy`, `scipy`, `pandas`, and `matplotlib` are quite common, the package also requires [REBOUND integrator](https://rebound.readthedocs.io/en/latest/) and [Astropy](https://www.astropy.org). While it should be handled automatically, if something goes wrong, please verify that these packages are installed.
+## First run
 
-It is highly recommended to use [virtual environments](https://docs.python.org/3/tutorial/venv.html) to avoid possible conflicts.
-
-After installation, you can create the file `test.py` with the same content as described in the previous section and run it:
+Create `test.py`:
 
 ```python
-python test.py
+--8<-- "getting_started.py:install"
 ```
 
-## Jupyter Notebooks
+and run it with `uv run python test.py` (or `python test.py`). The [Quick start](quick-start.md) explains the
+output.
 
-Generally, it should work out of the box, just follow [any guide](https://jakevdp.github.io/blog/2017/12/05/installing-python-packages-from-jupyter/) that explains how to add a package to [Jupyter Notebooks](https://jupyter.org) and the instructions above.
+What happens on the first run:
 
-If you use virtual environment and [VSCode](https://code.visualstudio.com), do not forget to choose the right Python Kernel. Also, it is required to install `ipykernel` from the console (related to your virtual environment):
+- The elements of the asteroid and of the planets are downloaded from **NASA Horizons** at the start date (today,
+  by default; the default data source is `DATA_SOURCE=nasa`). The planets are cached in `cache/solar-*.bin`.
+  AstDyS and the MPC catalogue are optional sources ([Configuration](config.md), [Examples](examples.md)).
+- The catalogues of resonances are built once and cached in `cache/mmr-2body.csv`, `cache/mmr-3body.csv`
+  ([Resonance matrices](matrix.md)).
+- The default integration is 100 000 years with `SABA(10,6,4)` and a saved point every
+  15.9 years.
+- The results go to `sim.config.save_path`: `cache/resonance_find` for `check` and `find` (their default name), or
+  `cache/<name>` for `Simulation(name=...)`. If that folder is not empty, a time stamp is appended, so a new run
+  never overwrites an old one. The log is `cache/resonances.log`.
 
-```bash
-uv add ipykernel
-```
+All paths are relative to the working directory. Settings can be changed per run (`Simulation(...)` keywords) or in
+a `.env` file in the working directory ([Configuration](config.md)).
 
-or with pip:
+If the download from Horizons fails with a certificate error, see [Horizons and TLS](config.md#horizons-and-tls).
 
-```bash
-pip install ipykernel
-```
+## Jupyter
 
-## Manual installation
+Add `ipykernel` to the same environment (`uv add ipykernel` or `pip install ipykernel`) and choose that
+environment's kernel. On macOS and Windows, code that starts worker processes (batches of more than
+`BATCH_THRESHOLD` bodies, clones) must run in a script with an `if __name__ == '__main__':` guard, not in a notebook
+cell ([Examples](examples.md#clones)).
 
-If for some reason, you want to launch the project from the source code, you need to download it from `github` and install dependencies through `uv`:
+## From the source
 
 ```bash
 git clone https://github.com/smirik/resonances.git
 cd resonances
-uv sync
+uv sync          # the package, the test tools and the documentation tools
+make test-fast   # tests without numerical integration
+make docs        # build this site (mkdocs build --strict)
 ```
 
-You may verify the installation by running tests:
+## Agent skill
 
-```bash
-uv run pytest -v tests
-```
-
-or simply `make test`
+For a coding agent (Claude Code and others that read Agent Skills), install the package's skill into your
+project: `resonances skill install` (see [Using with AI agents](agents.md)). After upgrading the package, run
+`resonances skill install --force` to refresh it.
 
 ## Updating
 
-Use the same manager (`uv` or `pip`) and its standard workflow to update.
-
 ```bash
-uv lock --upgrade-package resonances
-uv sync
+uv lock --upgrade-package resonances && uv sync     # uv
+pip install --upgrade resonances                    # pip
 ```
-
-or with pip:
-
-```bash
-pip install --upgrade resonances
-```
-
-## Common issues
-
-An error when retrieving data from JPL Horizons (SSL certificate issue):
-
-```bash
-pip install --upgrade certifi
-```
-
-It will install the latest version of `certifi` package, which is required by `astroquery` to work properly.

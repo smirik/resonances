@@ -1,0 +1,1447 @@
+[
+  {
+    "case": "E01",
+    "example_id": "mmr2__2005_GQ107__40M-57+0+17",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16.md",
+        "line": 33,
+        "who": "author",
+        "text": "эпизод около 31000 отклонен с комментарием, что центр движется. Но визуально как будто бы он не отличается от других эпизодов. Можешь пояснить?",
+        "transcript": "65dd5462…jsonl 2026-10-16T10:41:54Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 16,
+        "who": "author",
+        "text": "C4 - понимаю, но кто сказал, что нельзя закончить эпизод раньше, на 10 циклах. Последний, судя по всему, испытывает какой-то влияние, а потому зашумлённый. По сути, просто неверно определена граница эпизода, а сам эпизод (без последнего цикла) хороший.",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E02",
+    "example_id": "mmr3__2001_HW7__5J+6S-2+0+0-9",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16.md",
+        "line": 40,
+        "who": "author",
+        "text": "тут как будто бы либрация на протяжении всего времени интегрирования, а ты почему-то выделил три эпизода",
+        "transcript": "65dd5462…jsonl 2026-10-16T10:41:54Z"
+      }
+    ]
+  },
+  {
+    "case": "E03",
+    "example_id": "coorbital__2002_AA29__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 30,
+        "who": "author",
+        "text": "эпизод AA29 закрашен куском, а либрация покрывает 0–1000 лет — поправить везде",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E04",
+    "example_id": "mmr2__2003_UG22__10E-17+0+7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 22,
+        "who": "author",
+        "text": "Во-первых, та же проблема, что и с предыдущем (на самом деле, весь график являет собой один эпизод).",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E05",
+    "example_id": "mmr3__52356__5J-2S-2+0+0-1",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 22,
+        "who": "author",
+        "text": "почему ты пишешь, что нет эпизода с 3.5 циклами. Разве последний - не такой?",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E06",
+    "example_id": "secular__1020__g-g6+s-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 22,
+        "who": "author",
+        "text": "Aprime__secular__1020__g-g6+s-s6.png - тоже пример, когда весь график есть либрация, а не отдельный эпизод.",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E07",
+    "example_id": "coorbital__524522__1V-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 14,
+        "who": "Claude question",
+        "text": "   - квазиспутник → головастик: 524522.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 20,
+        "who": "author",
+        "text": "Я считаю, что все объекты — resonant. 1-ый: high, 2 - high, 3 - high (не certain за счёт смены узла). Не транзиент, так как переход быстрый.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/E-coorb-TX9-CA138.md",
+        "line": 73,
+        "who": "review (Claude+Codex), accepted 2026-10-19 13:31 «ок»",
+        "text": "- **524522 (Венера, 1 тыс. лет).** Квазиспутник 52–476 лет: 6 точек, центр 0°, ±28–30°, период 170–206 лет. Один переходный размах 149° (476 → 678 лет). Головастик 678–965 лет: 5 точек, центр около 83°, ±27–33°, период 140–155 лет."
+      }
+    ]
+  },
+  {
+    "case": "E08",
+    "example_id": "coorbital__469219__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 13,
+        "who": "Claude question",
+        "text": "   - квазиспутник → подкова: 469219, 164207;",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 20,
+        "who": "author",
+        "text": "Я считаю, что все объекты — resonant. 1-ый: high, 2 - high, 3 - high (не certain за счёт смены узла). Не транзиент, так как переход быстрый.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/E-coorb-TX9-CA138.md",
+        "line": 71,
+        "who": "review, accepted",
+        "text": "- **469219.** Квазиспутник 24–257 лет: 12 точек, ±4.4–5.6°, период растёт с 38 до 56 лет. Затем один переходный размах 257 → 426 лет. Подкова 426–950 лет: 5 точек, размах ~342°, период ~264 года."
+      }
+    ]
+  },
+  {
+    "case": "E09",
+    "example_id": "coorbital__164207__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 13,
+        "who": "Claude question",
+        "text": "   - квазиспутник → подкова: 469219, 164207;",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 20,
+        "who": "author",
+        "text": "Я считаю, что все объекты — resonant. 1-ый: high, 2 - high, 3 - high (не certain за счёт смены узла). Не транзиент, так как переход быстрый.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E10",
+    "example_id": "mmr2__88710__9V-16+0+7",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 99,
+        "who": "DECISIONS paraphrase",
+        "text": "относится и к выходу из резонанса (524522 1V-1 20 кыр, 88710 9V-16: эпизоды, затем скачок a и циркуляция), и к"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 25,
+        "who": "author",
+        "text": "«Да, симметрично; метки 82831 и 31935 переведи в transient»",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E11",
+    "example_id": "coorbital__524522__1V-1+0+0__20kyr",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 99,
+        "who": "DECISIONS paraphrase",
+        "text": "относится и к выходу из резонанса (524522 1V-1 20 кыр, 88710 9V-16: эпизоды, затем скачок a и циркуляция), и к"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 25,
+        "who": "author",
+        "text": "«Да, симметрично; метки 82831 и 31935 переведи в transient»",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E12",
+    "example_id": "coorbital__277617__1M-1+0+0__20kyr",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 100,
+        "who": "DECISIONS paraphrase",
+        "text": "захвату после циркуляции (277617 1M-1 20 кыр: циркуляция до скачка a на ~9.2 кыр, затем квазиспутник до конца —"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 25,
+        "who": "author",
+        "text": "«Да, симметрично; метки 82831 и 31935 переведи в transient»",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E13",
+    "example_id": "mmr3__1864__3E-5S-5+0+0+7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 17,
+        "who": "author",
+        "text": "Посмотрел 1864. Да, явный non-resonant (это видно и по ФП по эпизоду). Давай делать обязательным замыкание цикла.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      }
+    ]
+  },
+  {
+    "case": "E14",
+    "example_id": "mmr2__33128__6N-7+0+1",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 29,
+        "who": "author",
+        "text": "Это же идеальный транзиент. Очень близкий к чистому резонансу. Посмотри на угол - либрирует.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 108,
+        "who": "author",
+        "text": "угол действительно в конце покидает резонанс, но при этом мы классифицируем это как транзиент.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      }
+    ]
+  },
+  {
+    "case": "E15",
+    "example_id": "mmr3__2012_KL9__5E-2M-10+0+0+7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 83,
+        "who": "author",
+        "text": "эпизоды выглядят уж очень короткими, глянь на 1 и 2 панель, как будто бы они реально длиннее? В целом, поведение напоминает просто дрейф вниз, а не либрацию.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-17b/ANSWERS.md",
+        "line": 35,
+        "who": "review (Claude+Codex)",
+        "text": "- «Эпизоды» с периодом 214 лет и полуамплитудой 1.3° — отражение волны a с периодом 222 года. Эта волна идёт через всю"
+      }
+    ]
+  },
+  {
+    "case": "E17",
+    "example_id": "mmr3__2013_VA14__2J+6S-1+0+0-7__60kyr_1yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "эпизоды не всегда иделаьно определяются. Возьми пример 2013 VA14. Там есть 4 и 5 эпизоды. По сути, это - один эпизод.",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E18",
+    "example_id": "mmr2__2001_PG14__33S-2+0-31",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 106,
+        "who": "author",
+        "text": "Как будто бы мы рано обрезаем эпизод. Судя по 2 панели, там есть три полных цикла, но эпизод захватывает и обрезан по первому, по сути. ФП говорит о транзиенте. Так что надо проверить, корректно ли мы определяем начало и конец эпизода...",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-17b/ANSWERS.md",
+        "line": 175,
+        "who": "review; author «Q11 ok»",
+        "text": "- **Вы правы.** Либрация идёт с 345 до 2816 лет: 26 точек поворота, период 188 лет."
+      }
+    ]
+  },
+  {
+    "case": "E19",
+    "example_id": "mmr3__2013_AS27__4E+9S-5+0+0-8",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 145,
+        "who": "author",
+        "text": "Тебе не кажется, что эпизоды как-то странно определены? ДО середины идёт как будто бы дрифт вверх, но медленный, и ты разбиваешь его на кучу эпизодов. Затем где-то с 14 kyr до где-то 17.5 kyr есть как будто бы захват.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-17c/ANSWERS.md",
+        "line": 165,
+        "who": "review",
+        "text": "- **Эпизоды до середины вы заметили верно — это был дефект.** Порог точек поворота (5.4°) стоял на высоте чужой трёхградусной волны и резал медленный дрейф на куски. После W16 (свой порог для каждой серии, 8.3°) нарезки нет."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 167,
+        "who": "author",
+        "text": "non-resonant/drift - согласен; owner - 31E-36 - ok.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E20",
+    "example_id": "mmr2__2013_AS27__31E-36+0+5",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-17c/ANSWERS.md",
+        "line": 187,
+        "who": "review",
+        "text": "- Пакет пока выдаёт transient, и это его ошибка: порог точек поворота (48.9°) наполовину складывается из самой либрации и режет её на 19 кусков"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 151,
+        "who": "author",
+        "text": "Резонанс с подвижным центром - это соответствует литературе? Проверь и субагентом, и codex'ом. Если да, то можно принимать.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      }
+    ]
+  },
+  {
+    "case": "E21",
+    "example_id": "mmr2__82831__13M-24+0+11",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 102,
+        "who": "author",
+        "text": "Выглядит как прекрасный пример перехода из одного субрезонанса в другой. Проверь это независимо (типа сначала либрирует в первом до 25-30 kyr, затем во втором).",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-17b/ANSWERS.md",
+        "line": 161,
+        "who": "review",
+        "text": "- **Физически это одна непрерывная либрация 13:24, примерно со 2 до 73 тыс. лет, вокруг подвижного центра.**"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 153,
+        "who": "author",
+        "text": "Q10\nСогласен с transient.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 36,
+        "who": "Claude question",
+        "text": "   - У 82831 это одна либрация около подвижного центра в интервале 2–73 тыс. лет, затем выход.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 38,
+        "who": "author",
+        "text": "Согласен с транзиентом.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E22",
+    "example_id": "coorbital__2016_CA138__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 49,
+        "who": "author",
+        "text": "Здесь я считаю, что это либо transient, либо uncertain. Ближе к transient, посмотри на ФП. Эпизод идёт с 100 лет до примерно 400 лет. Что думаешь?",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/E-coorb-TX9-CA138.md",
+        "line": 116,
+        "who": "review",
+        "text": "Ваш интервал «100–400 лет» — это верхняя ветвь подковы (a > 1), 165–355 лет, то есть половина цикла. Полный цикл занимает 80–454 года."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 23,
+        "who": "author",
+        "text": "CA138 и Cruithne/RB7  — согласен с твоей рекомендацией.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E23",
+    "example_id": "coorbital__3753__1E-1+0+0",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "benchmark/author_label_decisions_2026-10-15.csv",
+        "line": 57,
+        "who": "label",
+        "text": "coorbital__3753__1E-1+0+0,resonant,,libration,author:2026-10-19 13:31 (ANSWERS-2026-10-19b §4.2; phase-return closure 12.6->782.9 yr; replaces uncertain of 19.10 12:16)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 23,
+        "who": "author",
+        "text": "CA138 и Cruithne/RB7  — согласен с твоей рекомендацией.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E24",
+    "example_id": "coorbital__2025_RB7__1E-1+0+0",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "benchmark/author_label_decisions_2026-10-15.csv",
+        "line": 58,
+        "who": "label",
+        "text": "coorbital__2025_RB7__1E-1+0+0,resonant,,libration,author:2026-10-19 13:31 (ANSWERS-2026-10-19b §4.2; phase-return closure 72->782 yr; replaces uncertain of 19.10 12:16)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 23,
+        "who": "author",
+        "text": "CA138 и Cruithne/RB7  — согласен с твоей рекомендацией.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E25",
+    "example_id": "coorbital__2024_WJ__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 51,
+        "who": "Claude question",
+        "text": "8. **2024 WJ → transient.** В конце записи захват в подкову: 3 точки поворота и замкнутый цикл 754–928 лет. У вас non-resonant.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 53,
+        "who": "author",
+        "text": "Согласен с transient/medium.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E26",
+    "example_id": "mmr3__2003_TX9__3E+2J-10+0+0+5",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 58,
+        "who": "author",
+        "text": "А. Я вижу два типа либрации - амплитудная от 0 до где-то 6 kyr. Затем низко-амплитудная до конца.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 59,
+        "who": "author",
+        "text": "Б. Эпизодов должно быть либо 2 по этим типам либрации, либо же весь график - сплошной эпизод (нет перехода за 2pi).",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-25-w22/ANSWERS-2026-10-25.md",
+        "line": 3,
+        "who": "author",
+        "text": "у TX9 как будто бы неверно определены эпизоды",
+        "transcript": "65dd5462…jsonl 2026-10-25T10:19:32Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-25-w22/ANSWERS-2026-10-25.md",
+        "line": 3,
+        "who": "author",
+        "text": "Касательно TX9 я вижу 2 варианта: либо весь промежуток делать 1 эпизодом (сойдёт), либо, как видно из графика эволюции и ФП, разделить на начальные либрации до где-то 7 kyr, а затем всё остальное - во второй эпизод (там и амплитуда либраций ниже).",
+        "transcript": "65dd5462…jsonl 2026-10-25T10:19:32Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-26-w24/ANSWERS-2026-10-27.md",
+        "line": 34,
+        "who": "author",
+        "text": "resonant/low меня устроит. Поэтому давай попробуем доработать, чтобы разделение на эпизоды было корректным (и это же можно сделать тестом эпизодов, вроде, мы делали такие тесты на бенче). Можно 1б, если это несложно. Если же будет просто resonant/low по текущему коду, то и ок.",
+        "transcript": "author reply 2026-10-27 08:54 (W24 Q1), relayed to this session"
+      }
+    ]
+  },
+  {
+    "case": "E27",
+    "example_id": "mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-25-w22/ANSWERS-2026-10-25.md",
+        "line": 3,
+        "who": "author",
+        "text": "Касательно TX9 я вижу 2 варианта: либо весь промежуток делать 1 эпизодом (сойдёт), либо, как видно из графика эволюции и ФП, разделить на начальные либрации до где-то 7 kyr, а затем всё остальное - во второй эпизод (там и амплитуда либраций ниже).",
+        "transcript": "65dd5462…jsonl 2026-10-25T10:19:32Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-26-w24/ANSWERS-2026-10-27.md",
+        "line": 34,
+        "who": "author",
+        "text": "resonant/low меня устроит. Поэтому давай попробуем доработать, чтобы разделение на эпизоды было корректным (и это же можно сделать тестом эпизодов, вроде, мы делали такие тесты на бенче). Можно 1б, если это несложно. Если же будет просто resonant/low по текущему коду, то и ок.",
+        "transcript": "author reply 2026-10-27 08:54 (W24 Q1), relayed to this session"
+      }
+    ]
+  },
+  {
+    "case": "E28",
+    "example_id": "mmr3__285637__3M+7J-6+0+0-4",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 67,
+        "who": "author",
+        "text": "На 50 kyr это визуально чистая либрация?",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 41,
+        "who": "author",
+        "text": "ОК, давай оставим medium, так как реально неочевидный кейс - визуально чистая либрация, а в реальности - не резонанс.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E29",
+    "example_id": "mmr3__285637__3M+7J-6+0+0-4__2Myr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 67,
+        "who": "author",
+        "text": "И покажи график на 2 млн, чтобы я увидел медленную циркуляцию...",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 85,
+        "who": "author",
+        "text": "Согласен с твоими выводами. В принципе, можно дать и high, но и medium ok.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E30",
+    "example_id": "mmr2__385266__16N-27+0+11",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 114,
+        "who": "author",
+        "text": "Посмотри на 55 kyr - 100 kyr. Это должно было бы быть выделено как эпизод, и там идут норм либрации.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/D-385266-KQ18.md",
+        "line": 14,
+        "who": "review",
+        "text": "- **Колебания на 55–100 тыс. лет настоящие, но это не 27:16.** После фильтра 600 лет там 24 точки поворота, полуамплитуда 20° (медиана), период 4.4–4.5 тыс. лет."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 93,
+        "who": "author",
+        "text": "Согласен с вашими оценками non_resonant / episodic / induced.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E31",
+    "example_id": "mmr3__1997_GK3__3M+5S-3+0+0-5",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 116,
+        "who": "Claude question",
+        "text": "    - 1997 GK3 → episodic (до 11.7 тыс. лет центр уходит);",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 118,
+        "who": "author",
+        "text": "episodic — ok, хотя owner тут явно 10E-17.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E32",
+    "example_id": "mmr3__2003_KQ18__6J+2S-1+0+0-7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 124,
+        "who": "author",
+        "text": "А не кажется ли тебе, что uncertain/insufficient_time?",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/D-385266-KQ18.md",
+        "line": 64,
+        "who": "review",
+        "text": "Вы правы. Метка: **uncertain / insufficient_time (подтип arc)**"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 97,
+        "who": "author",
+        "text": "Да, давай вносить правки.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E33",
+    "example_id": "mmr3__2000_YG4__2R-8E-1+0+0+7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "benchmark/author_labels_2026-10-14_1612.csv",
+        "line": 36,
+        "who": "author",
+        "text": "А нет ли тут эпизода дрифта?"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 126,
+        "who": "Claude question",
+        "text": "    - 2000 YG4 → circulation с отметкой «дрейф 0.45–6.4 тыс. лет, наведён 7:23 с Землёй».",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 128,
+        "who": "author",
+        "text": "Согласен.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E34",
+    "example_id": "mmr3__8306__2M-5S-3+0+0+6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 147,
+        "who": "author",
+        "text": "По мне, так это non-resonant (эпизод либрации слишком мал), episodic можно оставить.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E35",
+    "example_id": "coorbital__2010_NT134__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 97,
+        "who": "author",
+        "text": "Да, resonant/libration. Согласен?",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E36",
+    "example_id": "coorbital__2017_UM52__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 10,
+        "who": "author",
+        "text": "Я всё же склоняюсь к формальному transient с уверенностью high за счёт того, что на графике wrapped явно видна транзиентная часть.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E37",
+    "example_id": "coorbital__2022_VR1__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 10,
+        "who": "author",
+        "text": "Я всё же склоняюсь к формальному transient с уверенностью high за счёт того, что на графике wrapped явно видна транзиентная часть.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E38",
+    "example_id": "coorbital__2026_FW12__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 10,
+        "who": "author",
+        "text": "Я всё же склоняюсь к формальному transient с уверенностью high за счёт того, что на графике wrapped явно видна транзиентная часть.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E39",
+    "example_id": "mmr3__24820__3J-1S-1+0+0-1",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "benchmark/author_labels_2026-10-14_1612.csv",
+        "line": 48,
+        "who": "author",
+        "text": "Тут есть вопрос —  в конце явно идёт выход на циркуляцию. Может, общий дать статус transient? Что думаешь?"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5b - transient/episodic/medium или high - тут очевидный захват...",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E40",
+    "example_id": "mmr2__182223__7N-19+0+12",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5 - 5a transient/episodic/high - это правильное (кейс очевиден, уверенность высокая, так как классический транзиент)",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E41",
+    "example_id": "coorbital__2014_OL339__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5c - transient/high",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E42",
+    "example_id": "coorbital__2016_CO246__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5c - transient/high",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E43",
+    "example_id": "coorbital__2021_XO3__1V-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5e - тут, кстати, эпизоды опять не до конца хорошо определены - идёт от 0 до примерно 300 лет, затем от 300 до где-то 600-700, потом поведение меняется на что-то иное; либо просто один большой эпизод на всё",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/README.md",
+        "line": 157,
+        "who": "Claude, for information",
+        "text": "- **XO3 (5e).** Вся тысяча лет — одна квазиспутниковая либрация; амплитуду меняют три толчка (350, 785, 942 г., Δa до 3·10⁻³ а.е.), по-видимому сближения с Землёй — отсюда ваши границы ~300 и ~700 лет. Разрез пакета на 608–668 г. физическому событию не соответствует."
+      }
+    ]
+  },
+  {
+    "case": "E44",
+    "example_id": "mmr2__433__47M-44+0-3",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/ANSWERS-2026-10-24.md",
+        "line": 24,
+        "who": "author",
+        "text": "По 433 - как будто бы есть два периода захвата... И даже ФП показывает замкнутые траектории...",
+        "transcript": "65dd5462…jsonl 2026-10-24T07:31:32Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 63,
+        "who": "review",
+        "text": "- **Два эпизода настоящие** (3.5–6.6 и 7.6–10.6 тыс. лет, период 610–650 лет), петли на портрете тоже."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 4,
+        "who": "author",
+        "text": "A2 - ok, понял объяснение",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "E45",
+    "example_id": "mmr2__433__47M-44+0-3__step0.5yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/ANSWERS-2026-10-24.md",
+        "line": 24,
+        "who": "author",
+        "text": "По 433 - как будто бы есть два периода захвата... И даже ФП показывает замкнутые траектории...",
+        "transcript": "65dd5462…jsonl 2026-10-24T07:31:32Z"
+      }
+    ]
+  },
+  {
+    "case": "E46",
+    "example_id": "mmr3__433__1R-5V+7+0+0-3",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/ANSWERS-2026-10-24.md",
+        "line": 24,
+        "who": "author",
+        "text": "По 433 - как будто бы есть два периода захвата... И даже ФП показывает замкнутые траектории...",
+        "transcript": "65dd5462…jsonl 2026-10-24T07:31:32Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 63,
+        "who": "review",
+        "text": "- **Два эпизода настоящие** (3.5–6.6 и 7.6–10.6 тыс. лет, период 610–650 лет), петли на портрете тоже."
+      }
+    ]
+  },
+  {
+    "case": "E47",
+    "example_id": "mmr3__433__1R-5V+7+0+0-3__step0.5yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/ANSWERS-2026-10-24.md",
+        "line": 24,
+        "who": "author",
+        "text": "По 433 - как будто бы есть два периода захвата... И даже ФП показывает замкнутые траектории...",
+        "transcript": "65dd5462…jsonl 2026-10-24T07:31:32Z"
+      }
+    ]
+  },
+  {
+    "case": "E48",
+    "example_id": "mmr3__37087__3J+8S-3+0+0-8",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5d -     non_resonant/episodic/medium",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      },
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 533,
+        "who": "DECISIONS (author Q16/Q21)",
+        "text": "- **F6. Эпизод — вынужденная волна, а не либрация этого угла**"
+      }
+    ]
+  },
+  {
+    "case": "E49",
+    "example_id": "mmr3__37087__3J+8S-3+0+0-8__1Myr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 93,
+        "who": "author",
+        "text": "Я считаю, что это non-resonant (угол растёт, видимых либраций нет, ФП зашумлённый). Что думаешь? angle_status можно сделать episodic теоретически.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E50",
+    "example_id": "mmr2__2897__35S-4+0-31",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "Я согласен, что там есть элементы циркуляции, но в самом начале идёт нечто, похожее на либрацию + рябь.",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 12,
+        "who": "author",
+        "text": "2897 - согласен с episodic",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "E51",
+    "example_id": "mmr2__2004_TK14__31M-34+0+3__step0.5yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "7 - слушай, а вот тут эпизоды ХОРОШО определены, я с ними согласен абсолютно, не надо менять...",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/ANSWERS-2026-10-24.md",
+        "line": 5,
+        "who": "author",
+        "text": "1 - а не логично ли сделать правило актуальным для любых резонансов. Если несколько эпизодов, но они покрывают всё пространство, то резонансный (естественно, если другие критерии норм).",
+        "transcript": "65dd5462…jsonl 2026-10-24T07:31:32Z"
+      }
+    ]
+  },
+  {
+    "case": "E52",
+    "example_id": "mmr2__2004_TK14__31M-34+0+3",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "7 - слушай, а вот тут эпизоды ХОРОШО определены, я с ними согласен абсолютно, не надо менять...",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E53",
+    "example_id": "mmr2__78085__2E-7+0+5",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5h - transient/episodic/medium - согласен; интересно, что явно идут захваты, но при этом значение резонансного угла (unwrapped) постоянно подымается.",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E54",
+    "example_id": "mmr2__78085__2E-7+0+5__step0.5yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5h - transient/episodic/medium - согласен; интересно, что явно идут захваты, но при этом значение резонансного угла (unwrapped) постоянно подымается.",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E55",
+    "example_id": "mmr3__2003_TG2__4E-1M-3+0+0+0__100kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "benchmark/author_labels_2026-10-14_1612.csv",
+        "line": 40,
+        "who": "author",
+        "text": "А почему не транзиент на 0-20 kyr? Там, вроде, резонансный угол практически константа, как и большая полуось. ФП непонятен, но всё же."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/F-37087-TG2-21028.md",
+        "line": 95,
+        "who": "review",
+        "text": "Обоснование: правило силы (≥ 1000× → non_resonant, вы приняли его в п. 4) для эпизода на 30 тыс. лет, и нет ни одного цикла в стоянии."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 106,
+        "who": "author",
+        "text": "ОК, согласен с твоими рассуждениями.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E56",
+    "example_id": "zlk__162474__LK__1500kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 44,
+        "who": "author",
+        "text": "Если ты хочешь обновить тест, можно, к примеру, взять первые 0.5 млн лет и проверять либрацию около 270 (для теста). То, что оно перескакивает на 90 - это ок, обычный транзиент.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      }
+    ]
+  },
+  {
+    "case": "E57",
+    "example_id": "zlk__162474__LK",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 44,
+        "who": "author",
+        "text": "можно, к примеру, взять первые 0.5 млн лет и проверять либрацию около 270 (для теста).",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      }
+    ]
+  },
+  {
+    "case": "E58",
+    "example_id": "mmr2__2003_UG22__10E-17+0+7__40kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 107,
+        "who": "DECISIONS",
+        "text": "- В бенчмарк (автор 16:43): 2003 UG22 10E-17+0+7 продление до 40 тыс. лет (выход из резонанса при ω ≈ 75°, яма"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 163,
+        "who": "author",
+        "text": "Текущий вариант — транзиент + episodic ОК.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E59",
+    "example_id": "mmr2__2002_XA__5J-2+0-3",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 235,
+        "who": "Claude question",
+        "text": "- **(b)** 1.5: ещё 2002 XA 5J-2 и 2001 WK15 32E-39 станут resonant/medium. Их стоит сначала посмотреть глазами."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 10,
+        "who": "author",
+        "text": "D1b - согласен с твоей рекомендацией",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "E60",
+    "example_id": "mmr2__2001_WK15__32E-39+0+7",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 235,
+        "who": "Claude question",
+        "text": "- **(b)** 1.5: ещё 2002 XA 5J-2 и 2001 WK15 32E-39 станут resonant/medium. Их стоит сначала посмотреть глазами."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 10,
+        "who": "author",
+        "text": "D1b - согласен с твоей рекомендацией",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "E61",
+    "example_id": "mmr2__138537__13N-25+0+12",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 127,
+        "who": "review",
+        "text": "- У 138537 13N-25 склеиваются 48 крошечных эпизодов (полуамплитуда ~1°), хотя центр за запись несколько раз обходит круг."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 10,
+        "who": "author",
+        "text": "D1b - согласен с твоей рекомендацией",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "E62",
+    "example_id": "mmr3__7343__1M+1J-2+0+0+0",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 128,
+        "who": "review",
+        "text": "- 7343 1M+1J-2 (ваш resonant) и 136108 7N-12 ломаются. Сейчас их правильно ловит медленная либрация на масштабе центра (G2c), а склейка мелких эпизодов перехватывает решение раньше."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 10,
+        "who": "author",
+        "text": "D1b - согласен с твоей рекомендацией",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "E63",
+    "example_id": "mmr2__136108__7N-12+0+5",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 128,
+        "who": "review",
+        "text": "- 7343 1M+1J-2 (ваш resonant) и 136108 7N-12 ломаются. Сейчас их правильно ловит медленная либрация на масштабе центра (G2c), а склейка мелких эпизодов перехватывает решение раньше."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 10,
+        "who": "author",
+        "text": "D1b - согласен с твоей рекомендацией",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "C01",
+    "example_id": "mmr2__117306__11M-20+0+9",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 194,
+        "who": "author",
+        "text": "controversial: could be a very short capture (author: capture near 40 kyr, phase portrait confirms)"
+      }
+    ]
+  },
+  {
+    "case": "C02",
+    "example_id": "mmr2__1221__3E-8+0+5",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 196,
+        "who": "author",
+        "text": "another excellent model transient (capture at centre)"
+      }
+    ]
+  },
+  {
+    "case": "C03",
+    "example_id": "mmr2__2000_SF8__8M-9+0+1",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 210,
+        "who": "author",
+        "text": "purest transient 8000-12000 yr, seen in angle and portrait"
+      }
+    ]
+  },
+  {
+    "case": "C04",
+    "example_id": "mmr2__1999_GL4__1V-5+0+4",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 208,
+        "who": "author",
+        "text": "more like a transient 500-3000 yr; 3 clear librations also repeated in a"
+      }
+    ]
+  },
+  {
+    "case": "C05",
+    "example_id": "mmr2__2001_ND13__1V-3+0+2",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 211,
+        "who": "author",
+        "text": "transient at start, visible in angle and portrait"
+      }
+    ]
+  },
+  {
+    "case": "C06",
+    "example_id": "mmr2__887__3J-1+0-2",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 238,
+        "who": "author",
+        "text": "excellent transient example: capture at start (very clear on portrait), then non-resonant; model example"
+      }
+    ]
+  },
+  {
+    "case": "C07",
+    "example_id": "mmr2__5026__3E-11+0+8",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 227,
+        "who": "author",
+        "text": "transient: classical capture"
+      }
+    ]
+  },
+  {
+    "case": "C08",
+    "example_id": "mmr2__1999_TJ10__19M-22+0+3",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 209,
+        "who": "author",
+        "text": "also transient, a double one: normal libration, then circulation, then apocentric/drifting libration; portrait shows it but not well"
+      }
+    ]
+  },
+  {
+    "case": "C09",
+    "example_id": "mmr3__1998_QA62__1V-5M+3+0+0+1",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 409,
+        "who": "author",
+        "text": "interesting, like 1685-1V-1E-1 but stronger: 8000-11000 yr short-period libration matching a"
+      }
+    ]
+  },
+  {
+    "case": "C10",
+    "example_id": "mmr2__17346__2J-1+0-1",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 203,
+        "who": "author",
+        "text": "Transient; libration only at the end"
+      }
+    ]
+  },
+  {
+    "case": "C11",
+    "example_id": "mmr2__6489__3J-1+0-2",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 235,
+        "who": "author",
+        "text": "Libration ~8000-20000 yrs"
+      }
+    ]
+  },
+  {
+    "case": "C12",
+    "example_id": "mmr3__1865__5E+4M-8+0+0-1",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 405,
+        "who": "author",
+        "text": "tiny capture at the very end (frequencies even match); portrait noisy; do not know how to classify"
+      }
+    ]
+  },
+  {
+    "case": "C13",
+    "example_id": "mmr3__1036__5J+8S-3+0+0-10",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 283,
+        "who": "author",
+        "text": "non-resonant, though an interesting interval 15000-16000 yr that is too short"
+      }
+    ]
+  },
+  {
+    "case": "C14",
+    "example_id": "mmr3__2003_TG2__4E-1M-3+0+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 270,
+        "who": "author",
+        "text": "very like slow circulation, but at the end angle starts to librate with downward drift; maybe transient; needs extended integration"
+      }
+    ]
+  },
+  {
+    "case": "C15",
+    "example_id": "mmr2__55913__40M-57+0+17",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 230,
+        "who": "author",
+        "text": "controversial: could be a short capture near the end, but I'm inclined to non-resonant"
+      }
+    ]
+  },
+  {
+    "case": "C16",
+    "example_id": "mmr3__154634__1M+1J-2+0+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 349,
+        "who": "author",
+        "text": "extend time -> resonant after 200 kyr (5 cycles). Author updated sheet to resonant"
+      }
+    ]
+  },
+  {
+    "case": "D01",
+    "example_id": "zlk__88899__LK__500kyr",
+    "tier": "D",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/QUESTIONS-2026-10-16.md",
+        "line": 94,
+        "who": "Codex sol (W5)",
+        "text": "(а) 88899 ZLK 500 кыр: эпизоды около 90° (60–175 кыр) и около 270° (190–300 кыр), но смена острова размазана по"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 44,
+        "who": "author",
+        "text": "То, что оно перескакивает на 90 - это ок, обычный транзиент.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      }
+    ]
+  }
+]

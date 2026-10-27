@@ -21,6 +21,7 @@ from typing import Optional
 
 import numpy as np
 
+from resonances.data.util import time_ordered
 from resonances.logger import logger
 from .base import BasePlotter, time_unit
 from .phase_plots import _scatter_colored_by_time
@@ -80,8 +81,9 @@ class FreeOmegaPlotter(BasePlotter):
         if elements is not None and body.omega is not None and body.times is not None:
             # body.omega lives on the integration grid; the free omega lives on a resampled
             # grid thinned further by the origin masks, so interpolate onto that one.
-            years = np.asarray(body.times) / (2 * np.pi)
-            osculating = np.unwrap(np.interp(elements.omega_times, years, np.unwrap(body.omega)))
+            # np.interp needs increasing abscissae: a backward run is put in time order first
+            years, omega = time_ordered(np.asarray(body.times) / (2 * np.pi), body.omega)
+            osculating = np.unwrap(np.interp(elements.omega_times, years, np.unwrap(omega)))
         return cls.from_elements(
             elements,
             omega_osculating=osculating,
@@ -117,7 +119,7 @@ class FreeOmegaPlotter(BasePlotter):
         # Both curves start at zero by construction, so the origin is a real data point:
         # anchoring the axes to it makes the total accumulated drift readable as the
         # distance from the corner, and puts the end of the integration at the right edge.
-        ax.set_xlim(0, times[-1])
+        ax.set_xlim(min(0.0, times[-1]), max(0.0, times[-1]))
         lowest = min(0.0, min(curve.min() for curve in curves) * scale)
         highest = max(0.0, max(curve.max() for curve in curves) * scale)
         ax.set_ylim(lowest, highest if highest > lowest else lowest + 1.0)

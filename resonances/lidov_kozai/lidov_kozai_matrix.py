@@ -10,7 +10,7 @@ from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiParameters
 
 class LidovKozaiMatrix:
     """
-    Build a catalog-wide table of Lidov–Kozai invariants (c1, c2, c) for
+    Build a catalog-wide table of Lidov–Kozai invariants (c1, c2, h_quad) for
     every asteroid available in the AstDyS osculating elements file.
     """
 
@@ -31,7 +31,7 @@ class LidovKozaiMatrix:
 
         astdys.set_type(catalog_type)
 
-        if not cls.CACHE_FILE.exists() or force:
+        if force or not cls._cache_is_current():
             df = cls._generate_dataframe()
             cls.CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
             df.to_csv(cls.CACHE_FILE, index=False)
@@ -40,9 +40,17 @@ class LidovKozaiMatrix:
         return pd.read_csv(cls.CACHE_FILE)
 
     @classmethod
+    def _cache_is_current(cls) -> bool:
+        """A cache written before the rename to Lidov's notation has 'c' and holds the
+        Hamiltonian under 'c2': rebuild it rather than read it."""
+        if not cls.CACHE_FILE.exists():
+            return False
+        return 'h_quad' in pd.read_csv(cls.CACHE_FILE, nrows=0).columns
+
+    @classmethod
     def _generate_dataframe(cls) -> pd.DataFrame:
         """
-        Build dataframe with c1, c2, c for every asteroid in the catalog.
+        Build dataframe with c1, c2, h_quad for every asteroid in the catalog.
         """
         # Ensure catalog is loaded
         astdys.search(1)
@@ -52,9 +60,7 @@ class LidovKozaiMatrix:
         inc = catalog_df['inc'].to_numpy(dtype=float)
         omega = catalog_df['omega'].to_numpy(dtype=float)
 
-        c1 = LidovKozaiParameters.compute_c1(ecc, inc)
-        c2 = LidovKozaiParameters.compute_c2(ecc, inc, omega)
-        c_value = LidovKozaiParameters.compute_c(ecc, inc, omega)
+        c1, c2, h_quad = LidovKozaiParameters.evaluate(ecc, inc, omega)
 
         return pd.DataFrame(
             {
@@ -65,6 +71,6 @@ class LidovKozaiMatrix:
                 'omega': omega,
                 'c1': c1,
                 'c2': c2,
-                'c': c_value,
+                'h_quad': h_quad,
             }
         )

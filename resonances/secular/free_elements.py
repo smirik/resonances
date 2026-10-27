@@ -41,6 +41,7 @@ import numpy as np
 from scipy.signal import decimate
 
 from resonances.data.const import PLANETARY_FREQUENCIES
+from resonances.data.util import time_ordered
 from resonances.logger import logger
 from .proper_angle import non_singular_elements
 
@@ -95,8 +96,10 @@ def cluster(candidates: Dict[str, float], baseline: float) -> List[List[str]]:
     Two rates separated by less than 2/T accumulate less than two turns of relative phase
     over the window, so a fit cannot attribute amplitude between them. Grouping is by
     chaining: A joins B and B joins C puts all three together even when A and C are far
-    apart, because each link is individually unresolvable.
+    apart, because each link is individually unresolvable. The sign of `baseline` (a backward
+    run) does not matter.
     """
+    baseline = abs(baseline)
     threshold = 2.0 * ARCSEC_PER_TURN / baseline if baseline > 0 else float('inf')
     ordered = sorted(candidates, key=lambda label: candidates[label])
     groups: List[List[str]] = []
@@ -193,7 +196,7 @@ def _beat_window(basis: Dict[str, float], dt: float) -> int:
 class FreeElements:
     """Forced/free split of one body's eccentricity and inclination vectors."""
 
-    times: np.ndarray  # years, possibly resampled
+    times: np.ndarray  # years, increasing (a backward run is put in time order), possibly resampled
     z_e: np.ndarray  # osculating e * exp(i varpi)
     z_i: np.ndarray  # osculating sin(i/2) * exp(i Omega)
     z_e_free: np.ndarray
@@ -222,7 +225,7 @@ class FreeElements:
 
     @property
     def baseline(self) -> float:
-        return float(self.times[-1] - self.times[0])
+        return float(abs(self.times[-1] - self.times[0]))
 
     @property
     def resolution(self) -> float:
@@ -330,7 +333,7 @@ class FreeElements:
 
     def rho_envelope(self) -> Tuple[float, float]:
         """(rho_min, rho_max) over the beating of |z_e_forced|."""
-        dt = float(np.median(np.diff(self.times))) if len(self.times) > 1 else 0.0
+        dt = float(abs(np.median(np.diff(self.times)))) if len(self.times) > 1 else 0.0
         smoothed = _rolling_median(np.abs(self.z_e_forced), _beat_window(self.basis_e, dt))
         low, high = float(np.min(smoothed)), float(np.max(smoothed))
         e_free = self.e_free
@@ -395,7 +398,8 @@ def free_elements(
     Parameters
     ----------
     times : np.ndarray
-        Sampling times in years, uniform.
+        Sampling times in years, uniform. Decreasing times (a backward run) are put in time
+        order first, so the result is that of the time-ordered series.
     ecc, inc, Omega, omega : np.ndarray
         Osculating elements; angles in radians. `omega` is the argument of pericentre, the
         longitude is rebuilt internally as varpi = Omega + omega.
@@ -416,7 +420,7 @@ def free_elements(
     -------
     FreeElements, or None when the series are too short to say anything.
     """
-    times = np.asarray(times, dtype=float)
+    times, ecc, inc, Omega, omega = time_ordered(np.asarray(times, dtype=float), ecc, inc, Omega, omega)
     if len(times) < 16:
         logger.warning("Free elements: fewer than 16 samples, skipping")
         return None

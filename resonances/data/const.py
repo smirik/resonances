@@ -1,4 +1,5 @@
 import datetime
+import math
 
 import rebound
 
@@ -102,7 +103,99 @@ PLANETS_MASS = {
 }
 
 K = 0.0172020989484
+# Days in the model's (Gaussian) year, the unit of every time of the package (G M_sun = 4 pi^2 au^3/yr^2, REBOUND time
+# / 2 pi): 2 pi / k = 365.2569 d, not the Julian 365.25 d nor the tropical DAYS_IN_YEAR
+GAUSSIAN_YEAR_DAYS = 2 * math.pi / K
 DAYS_IN_YEAR = 365.2422
+
+# Mean mean motions of the planets in the package's own model, deg per Gaussian year (2 pi REBOUND
+# units = 365.2569 d): slopes of the turn-counted mean longitudes over 100 kyr of a SABA(10,6,4) run
+# (benchmark bench2-A, 2026-10; a 20-kyr ias15 run at another epoch agrees within 0.0016 deg/yr).
+# Kepler on PLANETS_AXIS errs by up to 0.014 deg/yr (Venus), enough to flip the alias branch near an
+# exact stroboscopic commensurability (1999 UQ at a 5.0012-yr step). The MMR analysis uses these
+# when a planet's longitudes are not saved; never 2 pi / P with DAYS_IN_YEAR.
+PLANET_N_DEG_PER_GAUSS_YR = {
+    "Mercury": 1494.756681,
+    "Venus": 585.189239,
+    "Earth": 360.000505,
+    "Mars": 191.406585,
+    "Jupiter": 30.349646,
+    "Saturn": 12.221327,
+    "Uranus": 4.284750,
+    "Neptune": 2.184902,
+}
+
+# How far the catalogue line lambda_j0 + n_j t (n_j above) strays from a planet's integrated mean longitude. The MMR
+# owner search uses that line when a planet's lambda is not saved (analysis/mmr/owner.py, catalogue longitudes) and
+# bounds its phase error over a span T by min(SPREAD T, 2 SLOW_MAX + OFFSET T). Measured on the package model:
+# ias15, 200 kyr, step 1 yr, JD 2461297.5 (benchmark run bench2-R-ias15-200kyr-1yr; script lam_linear.py of the
+# classifier-v2 W7 check, 2026-10-16), rounded up:
+#   SPREAD   max |slope of lambda_j over a 20-kyr window - n_j| [deg / Gaussian yr];
+#   OFFSET   |slope over the 200 kyr - n_j| [deg / Gaussian yr] (n_j is SABA's; ias15 runs this far off on average);
+#   SLOW_MAX max |lambda_j - its least-squares line| after a 100-yr running mean [deg].
+# Mercury has no entry and is never catalogued: in ias15 its rate is 1.5e-3 deg/yr off the table (31 deg in 20 kyr).
+PLANET_N_SPREAD_DEG_PER_GAUSS_YR = {
+    "Venus": 2.7e-5,
+    "Earth": 2.4e-5,
+    "Mars": 3.7e-5,
+    "Jupiter": 1.5e-4,
+    "Saturn": 3.7e-4,
+    "Uranus": 2.8e-5,
+    "Neptune": 1.2e-5,
+}
+PLANET_N_OFFSET_DEG_PER_GAUSS_YR = {
+    "Venus": 1.1e-5,
+    "Earth": 1.1e-5,
+    "Mars": 6.1e-6,
+    "Jupiter": 4.1e-6,
+    "Saturn": 8.5e-6,
+    "Uranus": 7.8e-6,
+    "Neptune": 3.6e-6,
+}
+PLANET_LAMBDA_SLOW_MAX_DEG = {
+    "Venus": 0.60,
+    "Earth": 0.37,
+    "Mars": 0.72,
+    "Jupiter": 1.91,
+    "Saturn": 4.69,
+    "Uranus": 1.29,
+    "Neptune": 0.88,
+}
+
+# J2000 mean eccentricities (Standish), only for the orbit-crossing test when a planet is not saved.
+PLANETS_ECCENTRICITY = {
+    "Mercury": 0.2056,
+    "Venus": 0.0068,
+    "Earth": 0.0167,
+    "Mars": 0.0934,
+    "Jupiter": 0.0484,
+    "Saturn": 0.0539,
+    "Uranus": 0.0473,
+    "Neptune": 0.0086,
+}
+
+# Long-period near-commensurabilities between the planets: the integer coefficients of the mean
+# longitudes and, where the member matters, of the perihelia (rate g_j of the planet's own mode).
+# Period = 2 pi / |sum k_j n_j + sum p_j g_j|; with PLANET_N_DEG_PER_GAUSS_YR: great inequality
+# 938 yr, Venus-Earth 13:8 239 yr, Saturn-Uranus 1:3 569 yr, Jupiter-Uranus 1:7 1010 yr,
+# Uranus-Neptune 1:2 4.2 kyr. Only the great inequality is subtracted from MMR angles (below).
+PLANET_NEAR_COMMENSURABILITIES = {
+    "great_inequality": {"mean_longitudes": {"Jupiter": 2, "Saturn": -5}, "perihelia": {"Saturn": 3}},
+    "venus_earth_8_13": {"mean_longitudes": {"Venus": 8, "Earth": -13}, "perihelia": {}},
+    "saturn_uranus_1_3": {"mean_longitudes": {"Saturn": 1, "Uranus": -3}, "perihelia": {}},
+    "jupiter_uranus_1_7": {"mean_longitudes": {"Jupiter": 1, "Uranus": -7}, "perihelia": {}},
+    "uranus_neptune_1_2": {"mean_longitudes": {"Uranus": 1, "Neptune": -2}, "perihelia": {}},
+}
+
+# The great inequality 2 lambda_J - 5 lambda_S + 3 varpi_S (Jupiter-Saturn 5:2): period and the
+# half-amplitudes of the wave it makes in the planets' mean longitudes, measured on the package's
+# planets (band-pass 300-3000 yr of their mean longitudes). A record's own value can differ: the
+# other members of the 5:2 multiplet (923, 907, 892 yr) beat with it (20 kyr: 0.23 and 0.57 deg).
+GREAT_INEQUALITY = {
+    "period_yr": 937.0,
+    "dlambda_jupiter_deg": 0.34,
+    "dlambda_saturn_deg": 0.83,
+}
 
 SOLAR_SYSTEM = ["Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"]
 SOLAR_SYSTEM_WITH_SUN = ['Sun'] + SOLAR_SYSTEM + ['Pluto']

@@ -35,6 +35,8 @@ def synthetic_mmr(tmp_path, resonance='2J-1', n=4000, years=4000.0, planets=True
         integration_years=years,
         Nout=n,
     )
+    if 'plot_layout' not in config_kwargs and 'plot_subfolder_strategy' not in config_kwargs:
+        kwargs['plot_layout'] = 'flat'  # the figure paths of these tests are written for it (default confidence/status)
     kwargs.update(config_kwargs)
     sim = Simulation(**kwargs)
     sim.body_manager.add_body({'a': A_BODY, 'e': 0.1, 'inc': 0.05, 'Omega': 0.0, 'omega': 0.0, 'M': 0.0}, resonance, name='synthetic')
@@ -86,22 +88,22 @@ class TestDispatch:
         sim, body, resonance = synthetic_mmr(tmp_path, plots=MMR_PLOTS)
         sim.data_manager.plot_body(body, sim)
         for kind in MMR_PLOTS:
-            folder = tmp_path / 'combined' if kind == 'combined' else tmp_path
+            folder = tmp_path / 'combined' if kind == 'combined' else tmp_path / 'figures'
             assert (folder / f'synthetic-{resonance.to_s()}-{kind}.png').exists(), kind
 
     def test_combined_goes_to_its_status_folder(self, tmp_path):
         sim, body, resonance = synthetic_mmr(tmp_path, plots=['combined', 'portrait'], plot_subfolder_strategy='status')
-        body.statuses[resonance.to_s()] = 1  # transient
+        body.statuses[resonance.to_s()] = 'transient'
         sim.data_manager.plot_body(body, sim)
         assert [p.relative_to(tmp_path).as_posix() for p in sorted(tmp_path.rglob('*.png'))] == [
             f'combined/transient/synthetic-{resonance.to_s()}-combined.png',
-            f'transient/synthetic-{resonance.to_s()}-portrait.png',
+            f'figures/transient/synthetic-{resonance.to_s()}-portrait.png',
         ]
 
     def test_kinds_are_opt_in(self, tmp_path):
         sim, body, _ = synthetic_mmr(tmp_path, plots=['portrait'])
         sim.data_manager.plot_body(body, sim)
-        assert [p.name.split('-')[-1] for p in tmp_path.glob('*.png')] == ['portrait.png']
+        assert [p.name.split('-')[-1] for p in tmp_path.rglob('*.png')] == ['portrait.png']
 
     def test_pdf(self, tmp_path):
         sim, body, resonance = synthetic_mmr(tmp_path, plots=['combined'], image_type='pdf', plot_options={'style': 'paper'})
@@ -119,7 +121,7 @@ class TestDispatch:
         sim, body, resonance = synthetic_mmr(tmp_path, planets=False, plots=['fair', 'combined'])
         with pytest.warns(UserWarning, match='save_planets'):
             sim.data_manager.plot_body(body, sim)
-        assert not (tmp_path / f'synthetic-{resonance.to_s()}-fair.png').exists()
+        assert not list(tmp_path.rglob(f'synthetic-{resonance.to_s()}-fair.png'))
         assert (tmp_path / 'combined' / f'synthetic-{resonance.to_s()}-combined.png').exists()
 
     def test_coarse_output_warns_but_draws(self, tmp_path):
@@ -127,13 +129,13 @@ class TestDispatch:
         sim, body, resonance = synthetic_mmr(tmp_path, n=800, plots=['fair'])
         with pytest.warns(UserWarning, match='aliased'):
             sim.data_manager.plot_body(body, sim)
-        assert (tmp_path / f'synthetic-{resonance.to_s()}-fair.png').exists()
+        assert (tmp_path / 'figures' / f'synthetic-{resonance.to_s()}-fair.png').exists()
 
     def test_dense_output_draws_fair_without_warning(self, tmp_path, recwarn):
         sim, body, resonance = synthetic_mmr(tmp_path, n=40_000, plots=['fair'])
         sim.data_manager.plot_body(body, sim)
         assert not [w for w in recwarn if 'FAIR' in str(w.message)]
-        assert (tmp_path / f'synthetic-{resonance.to_s()}-fair.png').exists()
+        assert (tmp_path / 'figures' / f'synthetic-{resonance.to_s()}-fair.png').exists()
 
     def test_three_body_combined_omits_fair_silently(self, tmp_path, recwarn):
         sim, body, resonance = synthetic_mmr(tmp_path, resonance='4J-2S-1', planets=False, plots=['combined'])
@@ -160,16 +162,24 @@ class TestRegenerationAfterRestore:
         assert isinstance(jupiter['l'], np.ndarray)
         np.testing.assert_allclose(jupiter['l'], sim.integration_engine.planets_data['Jupiter']['l'])
 
+        # sigma_f is not in the data file (SPEC §2.6): it is reproduced by re-running the analysis
         original = MMRDiagnostics.from_body(body, resonance, sim)
+        assert resonance.to_s() not in restored_body.angles_filtered_unwrapped
         again = MMRDiagnostics.from_body(restored_body, restored_resonance, restored)
         assert again.fair_unavailable_reason() is None
         assert len(again.cycles) == len(original.cycles) == 9
         np.testing.assert_allclose(again.sigma_filtered, original.sigma_filtered)
 
-        plotter = MMRPlotter(again, {'style': 'paper'}).plot_combined()
+        plotter = MMRPlotter(again, {'style': 'paper'})
+        plotter.plot('portrait')
         plotter.save(tmp_path / 'paper.pdf')
-        assert plotter.figure.get_size_inches()[0] == pytest.approx(7.09)
+        assert (tmp_path / 'paper.pdf').stat().st_size > 0
         plotter.close()
+
+        # the combined MMR figure is the verdict figure, re-drawn from a re-run analysis
+        restored.config.plot, restored.config.plots = 'all', ['combined']
+        restored.data_manager.plot_body(restored_body, restored)
+        assert (tmp_path / 'combined' / f'synthetic-{resonance.to_s()}-combined.png').exists()
 
     def test_restore_ignores_a_removed_plot_kind(self, tmp_path):
         import json

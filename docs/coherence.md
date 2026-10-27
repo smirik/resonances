@@ -1,36 +1,48 @@
-# Cross-Spectral Coherence
+# Cross-spectral coherence
 
 Periodograms answer "which periods are present in this series". Cross spectra answer
 a different question: **do two series share a period, and with what phase shift?**
 
 That is what distinguishes a real resonance from a coincidence:
 
-- in a mean-motion resonance, the resonant angle σ and the semi-major axis share the
-  libration frequency, with `a` a quarter period ahead (`da/dt ~ ∂R/∂σ`);
-- in a Lidov-Kozai resonance, `e` and `i` share the ZLK-cycle frequency **in
-  antiphase** — the body trades eccentricity for inclination at constant
-  `H = sqrt(1-e²)·cos i`.
+- in a mean-motion resonance, the resonant angle $\sigma$ and the semi-major axis share the
+  libration frequency, a quarter period apart. From $\dot\sigma = c\,(a - a_*)$ with $c = -3kn/(2a)$, a libration
+  $\sigma = A\sin\omega t$ gives $a - a_* = (A\omega/c)\cos\omega t$: $a$ leads $\sigma$ by +90° when $c > 0$
+  (the usual prograde angle, $k < 0$) and by −90° when $c < 0$. The preset target below is +90°, a convention for the
+  usual sign, not a law ([The resonant pendulum](physics/pendulum.md));
+- in a Lidov-Kozai resonance, $e$ and $i$ share the ZLK-cycle frequency **in antiphase**: the body trades
+  eccentricity for inclination at constant $H = \sqrt{1-e^2}\cos i$.
 
 The second point is not decorative. The argument of pericentre ω can librate without
 any Lidov-Kozai resonance: when the forced eccentricity vector dominates the free one,
 the geometry alone keeps ω bounded. Asteroid 591986 is exactly this case — its
 osculating ω librates, but its free ω circulates and `e`/`i` do not exchange.
 
-> **This page no longer describes a status decision.** The e-i criterion is now
-> corroboration (`confirmed_ei`); what demotes 591986 is the free-omega gate in
-> [free elements](free-elements.md). The reason is baselines — see
-> [below](#why-it-no-longer-decides-the-status).
+!!! note "No status depends on this page"
+    The cross spectra are diagnostics. The e-i criterion gives the flag `confirmed_ei`; what makes 591986
+    `non_resonant` is the free-ω gate ([Free elements](free-elements.md)). The reason is the baseline, see
+    [below](#why-it-does-not-decide-the-status).
 
 ## How it is measured
 
 Welch's method on **non-overlapping** segments, via `scipy.signal.coherence` and
-`scipy.signal.csd` with identical parameters.
+`scipy.signal.csd` with identical parameters. Each of the $n_{\rm seg}$ segments is linearly detrended and windowed
+(Hann by default), the two series are Fourier transformed ($X$, $Y$), and the spectra are averaged over segments:
+$P_{xx} = \langle |X|^2\rangle$, $P_{yy} = \langle |Y|^2\rangle$, $P_{xy} = \langle X^* Y\rangle$. Then
+
+$$
+\gamma^2(f) = \frac{|P_{xy}|^2}{P_{xx}P_{yy}} \in [0, 1], \qquad \varphi(f) = \arg P_{xy}, \qquad
+\text{amplitude ratio} = \sqrt{P_{yy}/P_{xx}} .
+$$
+
+$\gamma^2$ is the magnitude-squared coherence (1: the two series share that frequency with a fixed phase); a
+positive $\varphi$ means the second series leads.
 
 Non-overlapping is deliberate. The significance threshold
 
-```
-gamma2_crit = 1 - alpha ** (1 / (n_seg - 1))
-```
+$$
+\gamma^2_{\rm crit} = 1 - \alpha^{1/(n_{\rm seg} - 1)}
+$$
 
 is exact only for statistically independent segments. Measured false-alarm rate on
 white noise, `alpha = 0.01`:
@@ -40,14 +52,15 @@ white noise, `alpha = 0.01`:
 | non-overlapping | 0.785 (n=4) | 0.0100 |
 | 50% overlap | 0.785 (n=4) | 0.0001 |
 
-With overlap the same threshold is roughly a hundred times too conservative.
+With overlap the same threshold is roughly a hundred times too conservative. $\alpha$ is a false-alarm probability
+per frequency bin, not for the whole searched spectrum.
 
 ### Validity limits
 
-```
-P_min = 4 * dt              safety margin over Nyquist
-P_max = T / (5 * n_seg)     at least 5 cycles inside every segment
-```
+$$
+P_{\min} = 4\,\Delta t \quad\text{(a margin over Nyquist)}, \qquad
+P_{\max} = \frac{T}{5\,n_{\rm seg}} \quad\text{(at least 5 cycles in every segment)}.
+$$
 
 Nothing outside `[P_min, P_max]` is reported. This is the constraint that usually
 bites: to see a 50 kyr Lidov-Kozai cycle at `n_seg = 4` you need at least 1 Myr of
@@ -64,9 +77,10 @@ reported as invalid rather than silently dropped.
 
 ### Lines, not bins
 
-Contiguous runs of significant bins are grouped into *lines*. Each line is
-represented by its strongest bin (largest `|Pxy|`, not largest coherence — a wide
-coherent band's most coherent bin is often not the one carrying the power), and lines
+Contiguous runs of significant bins are grouped into *lines*. A line's period, $\gamma^2$ and amplitude ratio are
+those of its strongest bin (largest `|Pxy|`, not largest coherence — a wide
+coherent band's most coherent bin is often not the one carrying the power); its phase is the $|P_{xy}|$-weighted
+circular mean over all its bins (spread in `phase_std`). Lines
 are ranked by integrated cross-amplitude `sum(|Pxy|)`.
 
 **The phase criterion is applied to the top-ranked line only.** Ranking matters: in
@@ -82,7 +96,7 @@ A criterion is `(target_deg, tolerance_deg)` per pair, preset per resonance type
 | resonance type | pairs | phase target | search band |
 |---|---|---|---|
 | `lidov_kozai` | `e-i` | 180° ± 30° | periods > 10 kyr |
-| `mmr` | `sigma-a` | 90° ± 30° | full validity band |
+| `mmr` | `sigma-a` | 90° ± 30° (for $c > 0$, see above) | full validity band |
 | `secular` | `sigma-e` | — | periods > 10 kyr |
 
 Phase sign convention: **positive means the second series leads the first.**
@@ -91,17 +105,13 @@ Override per resonance type when creating the simulation; types you do not menti
 keep their presets:
 
 ```python
-sim = resonances.check(
-    463, '4J-2S-1',
-    coherence_pairs={'mmr': ['sigma-a', 'sigma-e', 'sigma-i']},
-    coherence_phase_targets={'mmr': {'sigma-a': (90.0, 20.0)}},
-)
+--8<-- "coherence_examples.py:pairs"
 ```
 
 ## Why phase alone is not enough
 
-A cross-phase is read off a **single frequency bin**, and a bin lies when several close
-lines blend into it. On 591986 the `e`–`i` line near 54 kyr is really a triplet
+A line's cross-phase is a weighted mean over a few adjacent bins, and those bins lie when several close
+lines blend into them. On 591986 the `e`–`i` line near 54 kyr is really a triplet
 (53.9 / 54.0 / 54.2 kyr). Truncating one 30 Myr integration to different lengths and
 running the same code gives:
 
@@ -114,13 +124,12 @@ running the same code gives:
 | 10–30 Myr | 27–56 kyr | +120…+128° | −0.12…−0.18 | ±0.00 |
 
 The phase says "antiphase" in exactly one window out of nine. The correlations say the
-same thing in all nine: **e and i never actually trade.** So the gate requires both.
+same thing in all nine: **e and i never actually trade.** So the flag requires both.
 
 ## The e-i exchange flag
 
-Applied in `Simulation.identify_librations()` after classification. It **changes no
-status** — it records `confirmed_ei`, corroboration that eccentricity and inclination
-really trade:
+Measured after the verdict, for Lidov-Kozai rows. It **changes no status**: it records
+`confirmed_ei`, the evidence that eccentricity and inclination really trade, as the check `check_zlk_ei`:
 
 | situation | `confirmed_ei` | `zlk_check` |
 |---|---|---|
@@ -129,15 +138,24 @@ really trade:
 | antiphase line, but no exchange | `False` | `weak_exchange` |
 | baseline too short to measure | empty | `short_baseline` |
 | `ZLK_COHERENCE_CHECK=False` | empty | `disabled` |
+| no `e-i` pair, or no phase target for it | empty | `no_target` |
+
+`no_target` appears when `coherence_pairs` or the phase targets of `lidov_kozai` were overridden without `e-i`;
+restoring `coherence_pairs['lidov_kozai'] = ['e-i']` with its target enables the check.
+
+The 180° target is a **prograde** diagnostic. At constant $H$ a retrograde orbit ($\cos i < 0$) has $e$ and $i$
+varying *in phase*, and the anticorrelation test does not confirm that branch. The exchange also assumes $i$ measured
+from the perturber's plane and $H$ conserved (quadrupole approximation); the package uses the ecliptic $i$ of an
+N-body run, so the comparison is approximate. No status depends on it.
 
 `short_baseline` is the important distinction: a check that could not run must not be read
 as a negative result, so the reason is recorded and a researcher can filter on the column
 instead of guessing.
 
-### Why it no longer decides the status
+### Why it does not decide the status
 
-Until this version the check demoted a librating Lidov-Kozai angle from 2 to −2 on its
-own. Baselines are what took that away. The validity band tops out at `T / (5 · n_seg)`,
+Earlier versions demoted a librating Lidov-Kozai angle on this check alone. The baseline is
+what took that away. The validity band tops out at `T / (5 · n_seg)`,
 which is **25 kyr on a 500 kyr run at four segments**, while the real Lidov-Kozai lines in
 the reference set sit at **27–58 kyr**. On the short integrations this package now targets,
 the check would be judging on a line outside its own validity band — it happened to agree
@@ -163,13 +181,13 @@ by construction. For MMR and secular resonances the cross spectrum is pure diagn
 In the `(k, h) = (e cos ω, e sin ω)` plane the forced term is the offset of the cloud
 from the origin and the free term is the radius it traces:
 
-```python
-e_forced = hypot(mean(k), mean(h))
-e_free   = sqrt(var(k) + var(h))
-```
+$$
+e_{\rm forced} = \sqrt{\langle k\rangle^2 + \langle h\rangle^2}, \qquad
+e_{\rm free} = \sqrt{\operatorname{var} k + \operatorname{var} h}.
+$$
 
 Note the **sum** of the two variances. A free vector of radius `R` sweeping the circle
-uniformly puts `R²/2` into each coordinate, so summing recovers `R`; averaging instead
+uniformly puts $R^2/2$ into each coordinate, so summing recovers `R`; averaging instead
 would under-report by a factor √2.
 
 Both go into `summary.csv`. On the 30 Myr integration of 591986 they come out as
@@ -184,7 +202,7 @@ under its older name), `zlk_check`, `zlk_line_period`, `zlk_line_phase`,
 `zlk_line_gamma2`, `zlk_line_r_band`.
 
 **`coherence.csv`** — one row per detected line, appended per run like `summary.csv`
-(and, like `segments.csv`, written only when `save_summary` is on):
+(written only when `save_summary` is on):
 
 | column | meaning |
 |---|---|
@@ -200,20 +218,23 @@ under its older name), `zlk_check`, `zlk_line_period`, `zlk_line_phase`,
 | `phase_target`, `phase_tolerance` | criterion applied, if any |
 | `n_levels_valid`, `n_levels_passed`, `n_levels_agreeing` | how many levels could be computed, how many satisfied the criterion, how many reproduce the decisive line |
 
-`amp_ratio` is a useful independent check. Conservation of `H` predicts
-`δi/δe = e·cos i / ((1-e²)·sin i)`; a line whose measured ratio is far from that is
-shared but not driven by the Lidov-Kozai mechanism.
+`amp_ratio` is a useful independent check. Conservation of $H = \sqrt{1-e^2}\cos i$ gives the signed derivative
+
+$$
+\frac{{\rm d}i}{{\rm d}e} = -\frac{e\cos i}{(1 - e^2)\sin i},
+$$
+
+so the amplitude ratio $\lvert\delta i\rvert/\lvert\delta e\rvert$ (i in radians) should be the absolute value of
+the right-hand side (with $i$ from the perturber's plane; for ecliptic elements this is approximate). The sign is
+negative only for a prograde orbit. `amp_ratio` is non-negative, an amplitude ratio, not the signed derivative. A line whose ratio is
+far from it is shared but not driven by the Lidov-Kozai mechanism.
 
 ## Plots
 
 Add to `plots`:
 
 ```python
-sim = resonances.check(
-    162474, 'lidov-kozai',
-    plots=['evolution', 'ecc_vector', 'cross_spectrum'],
-    plot='all',
-)
+--8<-- "coherence_examples.py:plots"
 ```
 
 - `ecc_vector` → `{body}-ecc-vector.png` — the `(k, h)` plane coloured by time, in a
@@ -261,23 +282,13 @@ across levels is reported but not used as a gate condition.
 Both plotters are usable directly:
 
 ```python
-resonances.EccentricityVectorPlotter.from_body(body, resonance, sim).plot().save('kh.png')
-
-analysis = body.coherence['LK']['e-i']
-resonances.CrossSpectrumPlotter.from_analysis(analysis, body_name='162474', resonance_key='LK').plot().save('coh.png')
+--8<-- "coherence_examples.py:plotters"
 ```
 
 ## Using the primitives directly
 
 ```python
-import numpy as np
-import resonances
-
-result = resonances.cross_spectrum(times_yrs, e, inc, n_seg=4, alpha=0.01, period_min=10_000)
-if result.valid and result.top_line:
-    line = result.top_line
-    print(line.period, line.gamma2, line.phase_deg, line.amp_ratio)
-    print(resonances.phase_matches(line.phase_deg, 180.0, 30.0))
+--8<-- "coherence_examples.py:primitives"
 ```
 
 Angles must be `np.unwrap`ed before being passed in; `a`, `e` and `i` must not be. The
@@ -286,17 +297,4 @@ than a wrong number.
 
 ## Configuration
 
-| Parameter | Environment variable | Default | Description |
-|---|---|---|---|
-| `coherence_enabled` | `COHERENCE_ENABLED` | `True` | Master switch for the whole feature |
-| `coherence_skip_non_resonant` | `COHERENCE_SKIP_NON_RESONANT` | `True` | Skip bodies with status 0, which dominate mass surveys |
-| `coherence_alpha` | `COHERENCE_ALPHA` | `0.01` | Per-bin false-alarm probability |
-| `coherence_n_segments` | `COHERENCE_N_SEGMENTS` | `4,8,16` | Segmentation levels |
-| `coherence_window` | `COHERENCE_WINDOW` | `hann` | Welch window |
-| `coherence_max_lines` | `COHERENCE_MAX_LINES` | `10` | Lines kept per pair per level in `coherence.csv` |
-| `coherence_period_min` | `COHERENCE_PERIOD_MIN` | empty | Extra lower bound, years; empty uses the per-type preset |
-| `coherence_period_max` | `COHERENCE_PERIOD_MAX` | empty | Extra upper bound, years |
-| `coherence_pairs` | — | presets | kwarg-only, per-resonance-type mapping |
-| `coherence_phase_targets` | — | presets | kwarg-only, per-resonance-type mapping |
-| `zlk_coherence_check` | `ZLK_COHERENCE_CHECK` | `True` | Whether to measure the e-i exchange flag. It no longer changes any status |
-| `zlk_min_anticorrelation` | `ZLK_MIN_ANTICORRELATION` | `0.5` | Minimum \|r\| of band-passed e vs i for the line to count as an exchange. **Provisional** |
+The options are listed in [Configuration](config.md#cross-spectral-coherence).

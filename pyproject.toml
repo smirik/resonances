@@ -34,6 +34,8 @@ dependencies = [
     "python-dotenv>=1.1.0",
     "lxml-html-clean>=0.1.1,<0.5.0",
     "click>=8.1.7",
+    "mpmath>=1.4.1",
+    "gmpy2>=2.3.2",  # the fast backend of mpmath (the direct-harmonic strength: 16126 6.2 -> 4.7 s, W23)
 ]
 
 [project.urls]
@@ -53,12 +55,18 @@ dev = [
     "black[jupyter]>=25.1.0,<26",
     "flake8>=7.2.0",
     "flake8-bugbear>=24.12.12",
-    # Documentation
-    "mkdocs==1.4.2",
-    "mkdocs-jupyter>=0.25.1",
     # Jupyter support
     "ipykernel>=6.29.5",
 ]
+# The documentation site (mkdocs-material, LaTeX through arithmatex + MathJax): `make docs`, `make run-docs`
+docs = [
+    "mkdocs>=1.6.1,<1.7",
+    "mkdocs-material>=9.5,<10",
+    "pymdown-extensions>=10.12",
+]
+
+[tool.uv]
+default-groups = ["dev", "docs"]
 
 [tool.coverage.run]
 omit = [".*", "tests/*", "*/site-packages/*"]
@@ -69,6 +77,7 @@ addopts = ["--import-mode=importlib"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "benchmark: marks tests as benchmark/stress tests (excluded by default)",
+    "long: integrations of several minutes and more (make test-long; excluded from test, test-fast and test-slow)",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:rebound",
@@ -83,6 +92,9 @@ omit = [".*", "tests/resonances/*", "*/site-packages/*"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+exclude = ["**/CLAUDE.md"]
 
 [tool.black]
 line-length = 140

@@ -39,9 +39,12 @@ def mode_phase(times_years, z, label: str, window: float = DEFAULT_WINDOW, frequ
     g_j*t (t as given). Fitted at window centres a tenth of a window apart and interpolated; within
     half a window of either end it goes on along the slope of the nearest centres (a line through
     up to six). A baseline shorter than the window is refused: a shorter fit cannot separate g3 from
-    g4 (a 200 kyr fit puts g3 51 deg off)."""
+    g4 (a 200 kyr fit puts g3 51 deg off). Decreasing times (a backward run) are fitted in time order;
+    the result follows the order of `times_years`."""
     freqs = PLANETARY_FREQUENCIES if frequencies is None else frequencies
     t = np.asarray(times_years, dtype=float)
+    if len(t) > 1 and t[-1] < t[0]:
+        return mode_phase(t[::-1], np.asarray(z)[::-1], label, window, frequencies)[::-1]
     z = np.asarray(z)
     labels = [f'{label[0]}{j}' for j in range(1, 9)]
     omegas = np.array([freqs[k] for k in labels]) * RAD_PER_ARCSEC
@@ -81,7 +84,7 @@ def measured_longitudes(
     freqs = PLANETARY_FREQUENCIES if frequencies is None else frequencies
     t = np.asarray(times_years, dtype=float)
     result = {}
-    if t[-1] - t[0] < window:  # too short to separate the modes: the linear law stays
+    if abs(t[-1] - t[0]) < window:  # too short to separate the modes: the linear law stays
         return result
     for label in sorted(set(labels)):
         if label == 's5' or label not in freqs or label[0] not in 'gs':

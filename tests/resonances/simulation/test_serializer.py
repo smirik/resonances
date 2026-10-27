@@ -160,3 +160,33 @@ def test_save_simulation_json_roundtrip(tmp_path):
 
     assert data["config"]["name"] == sim.config.name
     assert data["simulation"]["number_of_bodies"] == len(sim.bodies)
+
+
+def test_restore_a_retrograde_resonance(tmp_path):
+    """The key 1J-3r0 survives save and restore as a RetrogradeTwoBody with the same p, q, k."""
+    from resonances.mmr.retrograde_two_body import RetrogradeTwoBody
+
+    sim = Simulation(name="retro", save_path=str(tmp_path), plot_path=str(tmp_path), save="all", plot=None, tmax=10, Nout=5)
+    elem = {"a": 10.76, "e": 0.79, "inc": 2.26, "Omega": 4.88, "omega": 3.88, "M": 4.58}
+    sim.body_manager.add_body(elem, ["1J-3r0", "7N-9r6"], name="retro")
+    body = sim.bodies[0]
+    sim.times = np.linspace(0.0, sim.config.tmax, sim.config.Nout)
+    body.setup_vars_for_simulation(sim.times)
+    for name in ("axis", "ecc", "inc", "Omega", "omega", "M", "longitude", "varpi"):
+        setattr(body, name, np.linspace(0.1, 0.2, sim.config.Nout))
+    body.axis_filtered = body.axis.copy()
+    for resonance in body.resonances():
+        key = resonance.to_s()
+        for store in (body.angles_unwrapped, body.angles, body.angles_filtered_unwrapped, body.angles_filtered):
+            store[key] = np.linspace(0.0, 1.0, sim.config.Nout)
+    manager = DataManager(sim.config)
+    manager.save_body(body, sim.times)
+    manager.save_configuration_details(sim.bodies, sim)
+
+    restored = SimulationSerializer.restore(str(tmp_path / "simulation.json"), recompute_librations=False)
+    mmrs = restored.bodies[0].mmrs
+    assert [m.to_s() for m in mmrs] == ["1J-3r0", "7N-9r6"]
+    assert all(isinstance(m, RetrogradeTwoBody) for m in mmrs)
+    assert [(m.p, m.q, m.k) for m in mmrs] == [(1, 3, 0), (7, 9, 6)]
+    assert mmrs[1].index_of_planets == [8]  # Neptune in Sun, Mercury, ..., Neptune
+    np.testing.assert_allclose(restored.bodies[0].angles["1J-3r0"], np.linspace(0.0, 1.0, sim.config.Nout))

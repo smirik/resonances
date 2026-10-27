@@ -66,3 +66,23 @@ pip-delete-this-directory.txt
 .agents/
 .claude/skills/
 .playwright-mcp/
+
+# Benchmark: series, figures and run output stay outside git (benchmark/LAYOUT.md)
+benchmark/data/
+benchmark/dryrun/
+benchmark/runs/*/bench2-*/
+benchmark/runs/*/failed/
+benchmark/**/*.bak*
+benchmark/**/*.lock
+benchmark/**/*.tmp
+benchmark/render.log
+
+# benchmark: run outputs, the extraction sources and Claude's review scratch stay local
+benchmark/runs/
+benchmark/raw/
+benchmark/review_claude/
+benchmark/benchmark
+benchmark/extract.log
+# local Claude Code settings; the labelling page is generated (benchmark/tools/build_review_page.py)
+.claude/settings.local.json
+benchmark/review_page/

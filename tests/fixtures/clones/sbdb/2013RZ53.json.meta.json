@@ -1,0 +1,7 @@
+{
+  "bytes": 3822,
+  "downloaded_at": "2026-10-27T08:28:40+00:00",
+  "request_body": null,
+  "sha256": "73bd8fa456efa13673fbe0db5ef8e541c9d104963d72c159bf706a6b002bbc87",
+  "url": "https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=2013%20RZ53&cov=mat&full-prec=1"
+}

@@ -21,8 +21,8 @@ def test_get_and_has():
     assert resonances.config.has('INTEGRATION_DT')
     assert 1.0 == float(resonances.config.get('INTEGRATION_DT'))
 
-    assert resonances.config.has('CATALOG_PATH') is True
-    assert 'cache/allnum.csv' == resonances.config.get('CATALOG_PATH')
+    assert resonances.config.has('LIBRATION_FILTER_ORDER') is True
+    assert '2' == resonances.config.get('LIBRATION_FILTER_ORDER')
 
     assert resonances.config.has('This is the house that Jack built') is False
 
@@ -45,10 +45,12 @@ def test_default():
 
 
 def test_set():
-    catalog = 'cache/allnum.csv'
-    assert catalog == resonances.config.get('CATALOG_PATH')
-    resonances.config.set('CATALOG_PATH', 'tests/fixtures/small.csv')
-    assert 'tests/fixtures/small.csv' == resonances.config.get('CATALOG_PATH')
+    original = resonances.config.get('LOG_LEVEL')
+    try:
+        resonances.config.set('LOG_LEVEL', 'debug')
+        assert 'debug' == resonances.config.get('LOG_LEVEL')
+    finally:
+        resonances.config.set('LOG_LEVEL', original)
 
 
 def test_config_exception():

@@ -1,69 +1,70 @@
 ## Overview
 
-This package can identify mean-motion resonances (MMRs), secular resonances and Lidov-Kozai resonances in the Solar system. It loads the data from AstDyS catalog or NASA Horizon, set up a simulation, perform numerical integration using rebound python package (integrator), build resonant angles and periodograms for some times series, classify the results, depending on the configuration, save the data and plots to files.
+This package can identify mean-motion resonances (MMRs), secular resonances and Lidov-Kozai resonances in the Solar system. It loads the data from AstDyS catalog, NASA Horizons or the MPC, set up a simulation, perform numerical integration using rebound python package (integrator), build resonant angles and periodograms for some times series, classify the results, depending on the configuration, save the data and plots to files.
 
-Core modules in `resonances/`:
+Core modules in `resonances/` (* = own `CLAUDE.md` with detail, rules, traps):
 
 | Module | Purpose |
 |--------|---------|
 | `cli` | Command line interface (Click-based `resonances` command) |
-| `data` | Utility functions, constants |
+| `data` | Utility functions, constants (`const.py`) |
+| `clones` * | Virtual asteroids (orbit covariance → `Ensemble`); run side `simulation/ensemble_run.py` |
 | `finder` | High-level interface to resonance finders (MMR, secular, Lidov-Kozai) |
 | `lidov_kozai` | Lidov-Kozai resonance class, invariant computation |
-| `matrix` | MMR catalogs — `TwoBodyMatrix`, `ThreeBodyMatrix` with resonant semi-major axes |
-| `mmr` | MMR classes (`TwoBody`, `ThreeBody`), finder functions |
-| `plotting` | Evolution plots (flexible panel configurator), MMR diagnostics (combined, recurrence, FAIR, portrait, cycles; `screen`/`paper` styles), ecc-vector, cross-spectrum and free-omega plots |
-| `resonance` | Core: classify (`classify_resonance` → `classify_from_data` → `classify_from_metrics`), factory, filtering (Butterworth low-pass; feeds periodograms and classification, not just plots), periodogram (Lomb-Scargle via astropy), cross_spectrum (Welch coherence), coherence_analysis (pair presets + the e-i exchange flag), oscillations (cycles, recurrence, FAIR coordinates for the MMR plots), omega_free_gate (the Lidov-Kozai status decision), planets_mappings |
-| `secular` | Secular resonance class, formula parser, finder, proper angle builder, d'Alembert combinations near a body (`combinations`), free (proper) element decomposition |
-| `simulation` | Simulation engine: `batch_manager` (multicore), `body_manager`, `data_manager` (I/O), `integration` (rebound), `serializer`, `state_manager` |
+| `matrix` | MMR catalog base, cached with a build record (`Matrix.check_cached`); see `mmr/CLAUDE.md` |
+| `mmr` * | MMR classes (`TwoBody`, `ThreeBody`, `RetrogradeTwoBody`), catalogues (`TwoBodyMatrix`, `ThreeBodyMatrix`, `RetrogradeTwoBodyMatrix`), finder functions |
+| `mpcorb` * | `DATA_SOURCE=mpc`: the MPC catalogue, self-contained; package side `simulation/mpc_source.py` |
+| `plotting` * | Evolution plots, combined verdict figures, MMR/secular diagnostics, ecc-vector, cross-spectrum, free-omega, clones |
+| `resonance` | `analysis` * (libration analysis v2, the only classifier; MMR in `analysis/mmr` *), classify (`resonance/classify/util.py` only: `is_unphysical_orbit`, `check_chaos`, `merge_intervals`, `calc_sigma_derivative`), factory, filtering, periodogram, cross spectra and coherence, `oscillations`, `omega_free_gate` |
+| `secular` * | Secular resonances (also the ZLK science): formula parser, finder, `proper_angle`, `planet_modes`, `combinations`, `free_elements` |
+| `simulation` * | Simulation engine: batches, bodies, I/O and layout, `dry_run`, integration (rebound), `propagate`, serializer, `state_manager` |
+| `skills` | The agent skill (`skills/resonances/`: SKILL.md + generated `references/`) and `install_skill` behind `resonances skill install` |
 
-Key files in `resonances/`:
+Also `body.py` (`Body`), `config.py` (loads `.env.dist` + `.env`, exposes `SimulationConfig`), `horizons.py`, `logger.py`.
 
-| File | Purpose |
-|------|---------|
-| `body.py` | `Body` class — simulation data structure |
-| `config.py` | Loads `.env.dist` + `.env`, exposes `SimulationConfig` |
-| `horizons.py` | Fetch Keplerian elements from NASA Horizons |
-| `logger.py` | Logging (info/warning/error levels) |
-| `simulation/config.py` | `SimulationConfig`, `SavePlotMode` enum |
-| `simulation/data_manager.py` | Save/plot logic, summary.csv + segments.csv + coherence.csv generation |
-| `resonance/classify/classify.py` | Whole classifier: `classify_resonance` → `classify_from_data` → `classify_from_metrics` (window/segment TTO decision tree) |
-| `resonance/classify/models.py` | `ResonanceStatus` (IntEnum), `SegmentMetrics`, `SegmentCounts`, `ClassifyParams`, `ResonanceClassifyResult` |
-| `resonance/classify/util.py` | `is_unphysical_orbit`, `check_chaos`, `merge_intervals` |
-| `resonance/cross_spectrum.py` | Welch coherence + cross-phase, line extraction, phase criterion, e_forced/e_free. Pure math, no Body/Simulation |
-| `resonance/coherence_analysis.py` | Per-resonance-type pair presets, `analyse_resonance`, the `confirmed_ei` flag, CSV row builders. Changes no status |
-| `resonance/omega_free_gate.py` | The free-omega gate: confirms status 2, demotes to -2 (kinematic libration) or withholds at -9. The only status change of a Lidov-Kozai angle after classification |
-| `resonance/oscillations.py` | Cycles (max to max), recurrence distance, FAIR coordinates. Pure math feeding the MMR plots; changes no status |
-| `plotting/mmr_plots.py` | `MMRDiagnostics` + `draw_*` panels + `MMRPlotter` (standalone and combined figures); `plotting/style.py` holds styles and `plot_options` defaults/validation |
-| `secular/proper_angle.py` | The classified secular angle: body's varpi and Omega against the planets' mode longitudes g_j·t + phase_j (`PLANETARY_FREQUENCIES`, `PLANETARY_PHASES`) or the measured ones, reduced by default — forced terms at the fundamentals not in the angle subtracted (`reduced_vectors`). Also `free_rates`/`free_divisor` (diagnostic only) |
-| `secular/planet_modes.py` | The planets' mode longitudes measured in the integration (`secular_planet_phases='measured'`, needs `save_planets`): phase of mode j in planet j's own vector, least squares on all modes in sliding 5 Myr windows. The linear law drifts by tens of degrees over 20 Myr (inner modes, and s6) |
-| `resonance/secular_centre.py` | The centre check: a secular LIBRATION whose T/10-smoothed centre moves (> 30 deg) but turns back fewer than `secular_min_turning_points` (3 = a cycle and a half) times becomes BASELINE_TOO_SHORT (-6), a status of its own (not the classifier's -4). Runs in `identify_librations` right after classification |
-| `plotting/secular_plots.py` | `SecularDiagnostics` + `draw_*` + `SecularPlotter`: kinds `angle`, `rate`, `portrait`, `combined`. `SecularPlotter` and `MMRPlotter` share `DiagnosticPlotter` (`plotting/base.py`); `DataManager.DIAGNOSTIC_PLOTTERS` maps resonance types to them |
-| `secular/free_elements.py` | Forced/free split by least squares at the planetary fundamentals: cluster the candidates at 2/T, fit one representative each, mask the origin, measure the three rates. Pure signal processing, no Body or status |
+## Where knowledge lives
 
-Detailed documentation lives in `docs/` — see `docs/classify.md` for classification logic, `docs/coherence.md` for cross spectra and the ZLK gate, `docs/free-elements.md` for the forced/free split and the free omega, `docs/plots.md` for plot kinds and options, `docs/config.md` for all config options.
+- The `CLAUDE.md` of the code you touch (* above, `benchmark/`, `tests/`): read it first.
+- `dev/` (development notes, not on the docs site): history, decisions by topic, rejected approaches (do not retry), pitfalls, physics notes, verified facts, process, status (open questions).
+- `docs/` (user docs): start at `libration-analysis.md` (formulas, the status tree), `output.md`, `config.md`.
+- `benchmark/DECISIONS.md`: the author's decision log (Russian, append-only; a later entry overrides an earlier one).
+- `tmp/` is local and git-ignored (working notes, the author's verbatim answers); never cite it from code, tests or docs.
 
 ## Important notes
 
 - This is a scientific project. Methods and functions must be accurately tested and validated.
-- Two hooks change a status after classification: the secular centre check and the free-omega gate (Lidov-Kozai). Both go through `Simulation._set_status`, which updates `libration.status` and `body.statuses` together, and both leave a record in summary.csv.
-- `ResonanceStatus` (IntEnum in `resonance/classify/models.py`) is the central status type: values range from 2 (LIBRATION) to -99 (CHAOTIC). Save/plot modes (`SavePlotMode`) filter by these values.
-- Classification has side effects: `classify_resonance` sets `chaos_flag`/`chaos_comment` on the result and may short-circuit to CHAOTIC for unphysical orbits.
-- `Simulation.identify_librations()` is the only hook that runs on every path (single run, batch workers, and `SimulationSerializer.restore()`); post-classification status changes belong there. It must update BOTH `libration.status` and `body.statuses[key]` — summary.csv reads the former (through `to_flat_dict()`), save/plot filters read the latter.
-- The Lidov-Kozai status is decided by `omega_free_gate.apply_gate`, and only from LIBRATION(2): confirmed at 2, lowered to LIBRATION_UNCERTAIN(-2) when the libration is kinematic, or UNCERTAIN(-9) when no verdict is possible. -2 and -9 must never be merged in a statistic: -2 is a measurement, -9 is the absence of one.
-- The e-i coherence check no longer changes any status; it produces `confirmed_ei`. Its validity band (`T/(5·n_seg)`) sits below the real Lidov-Kozai periods on the short baselines the package now targets (see `docs/coherence.md`).
-- The cluster representative in `free_elements` (`PRIORITY_E`, `PRIORITY_I`) is a modelling assumption, not a free convention — a different member changes the verdict on 3752 and 591986. What must stay true, and is tested, is that no choice ever turns a non-librator into a libration.
-- The method does not apply to co-orbitals: their forced term is the perturber's own vector, not a planetary fundamental. A confident-looking straight line there is not a measurement (see `docs/free-elements.md`).
-- Secular angles must not be built from the planets' osculating elements: from the ecliptic, no planet's node circulates (the 1.58° invariable-plane tilt dominates) and only Mercury's, Jupiter's and Saturn's perihelia follow their mode. `secular_angle_mode='proper'` (default) is what the classifier reads; the osculating series is kept only for reference. The inner-planet frequencies and phases in `const.py` are measured on the package's own Newtonian model (`experiments/2026-10-planetary-frequencies`), not taken from the literature.
+- Statuses are strings (`analysis.verdict.Status`, with `angle_status`, `final_regime`, `confidence`, `reason`, `libration_origin`; the model: `resonance/analysis/CLAUDE.md`). `body.librations[key]` is always a `Verdict`, `body.statuses[key]` its status string; `Simulation._finalise_verdict` is their only writer. There is no integer status any more; `verdict.status_code` is a column for comparison with old runs.
+- No hook changes a status after the analysis: the secular centre scale and the free-omega gate (Lidov-Kozai) are steps of `analyse_secular`/`analyse_zlk`, decided in `analysis.secular.decide.decide_status`. Save/plot modes (`SavePlotMode`) filter on status strings through `simulation.config.status_selected`.
+- `Simulation.identify_librations()` is the only hook that runs on every path (single run, batch workers, `SimulationSerializer.restore(recompute_librations=True)`). It must update BOTH `body.librations[key]` and `body.statuses[key]` (through `_finalise_verdict`) — summary.csv reads the former (`Verdict.to_flat_dict()`), save/plot filters read the latter. Arrays of a row that will not be plotted are dropped right after its verdict (`_release_unplotted`; `drop_arrays` freezes the CSV rows first).
+- The Lidov-Kozai status takes the free-omega gate's outcome in `decide_status`: confirmed (resonant), kinematic (non_resonant, kinematic_libration, code -2) or without a verdict (uncertain, gate_unavailable, code -9); a transient, drift or short record changes only on a kinematic outcome. -2 and -9 must never be merged in a statistic: -2 is a measurement, -9 is the absence of one.
+- The e-i coherence check changes no status; it produces `confirmed_ei` (why: `secular/CLAUDE.md`).
+- The cluster representative in `free_elements` (`PRIORITY_E`, `PRIORITY_I`) is a modelling assumption, not a free convention. What must stay true, and is tested, is that no choice ever turns a non-librator into a libration.
+- The free-element method does not apply to co-orbitals (their forced term is the perturber's own vector); a confident-looking straight line there is not a measurement.
+- Secular angles must not be built from the planets' osculating elements; `secular_angle_mode='proper'` (default) is what the classifier reads. The inner-planet frequencies and phases in `const.py` are measured on the package's own Newtonian model, not taken from the literature (why: `secular/CLAUDE.md`).
 - The MMR diagnostic plots (recurrence D, cycles) are for reading figures: D uses the object's own scales and is not comparable between objects. Nothing there may feed a status.
+- A 1:1 (co-orbital) MMR angle is judged by its own force law (`analysis/mmr/coorbital.py`, K/K_theory = 1 is the planet's own mass), not the harmonic law; the owner search does not apply to it.
+- Never build an angle of an orbit with i > 90° from REBOUND's `orbit.l` or `orbit.pomega`: there they are −λ* and −ϖ* and jump when i crosses 90°. `RetrogradeTwoBody.calc_angle` uses Ω, ω, M only. The `longitude`/`varpi` data columns of such bodies are in different conventions, hence no FAIR for retrograde resonances.
 - Do NOT change `times / (2 * np.pi)` conversions or the `save_body(body, times)` signature. The per-call conversion is intentional.
+
+## Before changing the classifier
+
+- Read the latest `benchmark/DECISIONS.md` entry on the topic, `dev/rejected.md` and `dev/pitfalls.md`.
+- Every threshold is a setting: an `AnalysisSettings` field, an `.env.dist` key with a comment (say when it is a convention) and a `docs/config.md` line. Physical criteria, not counts.
+- Run `make test-benchmark`; explain every changed verdict row against the previous run.
+
+## Working with the author
+
+- His labels are tentative: argue on the merits, disagree openly; agreement with him is not evidence. Specifications from outside are measured before they are implemented; report which claims survived.
+- Questions go on one cheap-to-answer page (`dev/process.md`). No new iteration while disagreements are undiscussed; start on his explicit go.
+- Heavy runs: `nice -n 10`, at most 4 workers, no heavy suites in parallel agents; durable scratch in `tmp/<programme>/`.
 
 ## Documenting
 
 - In /docs there is actual documentation of the project. It's written for humans. Keep it up to date. Keep it short and concise but clear for understanding. Don't write too much.
 - In functions or classes, you may add comments for the files and functions if this is not obvious from the code or the names. E.g., the function sum(a,b) does not require any comments, whereas the function resolve_mmr_status requires a comment explaining what are the statuses and how they are resolved. But really keep it simple.
 - If you change a function or a class, update the documentation inside the code accordingly.
-- Update overall documentation at the end of the task.
+- Update overall documentation at the end of the task (including the relevant `CLAUDE.md` and `dev/` page).
+- The agent skill shipped with the package (`resonances/skills/resonances/`: `SKILL.md` + `references/`, installed by `resonances skill install [--user] [--path DIR] [--force]` into `.claude/skills/`; docs/agents.md) explains how to set up runs and read the results. `SKILL.md` holds the workflow and judgement and is written by hand: when a change alters the interface, the statuses/reasons/caps, the settings or the output layout in a way a user would notice, update it too. `references/` is GENERATED from the docs pages listed in `docs/tools/build_skill.py` (`make skill`; snippets inlined, links to omitted pages and images made absolute): never edit it by hand, run `make skill` after editing those pages — `tests/resonances/skills/test_skill.py` fails when it is out of date.
 
 ## How to run
 
@@ -77,12 +78,12 @@ uv run resonances      # CLI entry point
 ## Configuration
 
 - `resonances/.env.dist` contains all default config values with comments.
-- Place a `.env` file next to `.env.dist` to override values at runtime.
+- Place a `.env` file in the working directory to override values at runtime (precedence: `.env.dist` < environment variables < `.env`).
 - `config.py` loads both files and exposes `SimulationConfig`.
 
 ## Testing
 
-Any functionality except temporary should be tested. The package has the following conventions:
+Any functionality except temporary should be tested. The package has the following conventions (detail: `tests/CLAUDE.md`, `benchmark/CLAUDE.md`):
 
 - Code quality checks (run every time before saying "done"):
   ```bash
@@ -90,9 +91,13 @@ Any functionality except temporary should be tested. The package has the followi
   uv run flake8 --count     # linting
   ```
 - `make test-fast` to run all fast tests that do not require numerical integration, which takes time.
-- `make test-slow` to run all slow tests that require numerical integration, which takes enough time. Run them at the end of the task when all other fast tests and formatting are done and passed.
-- `make test` to run all tests - fast and slow.
+- `make test-slow` to run all slow tests that require numerical integration (a few minutes; real bodies at fixed Horizons dates). Run them at the end of the task when all other fast tests and formatting are done and passed.
+- `make test-long` (pytest marker `long`): the integrations of 10 min and more (z1 over 10 Myr); outside `test`, `test-fast` and `test-slow`.
+- `make test` to run all tests - fast and slow (not `long`, not `benchmark`).
+- `make test-benchmark`: the exact gate on the agreement with the author's labels (every type; no integration). It fails on any disagreement with the author that is not in `benchmark/KNOWN_DISAGREEMENTS.csv`, on a listed one that now agrees, and on a listed one whose values changed (`benchmark/tools/known_disagreements.py <run> [--secular-zlk <run>] [--write]`). A change that moves an author row updates the list with a reason.
+- The episode gate (same session, `benchmark/EPISODE_EXPECTATIONS.csv`): a tier A/B case that fails and is not `known_fail` fails the gate, so does a `known_fail` case that passes (clear the flag); C/D never gate.
 - Never change real (slow) tests unless you are absolutely sure that you know what you do; ask me if you are not sure.
+- Tests of the decision code build real result objects (`tests/resonances/analysis/builders.py`), not `SimpleNamespace` stubs: the decision reads dataclass fields directly, without `getattr` defaults.
 
 For tests:
 
@@ -100,9 +105,16 @@ For tests:
 - When you create a new test, make sure that it tests a case obtained from different sources. For example, if you need to test a sum(a,b) function, calculate first a few examples independently (e.g., 2+3=5, 4+9=13) and then use these examples to test the function in a functional way.
 - `KEEP_TEST_CACHE=1` (or `make <target> KEEP=1`) prevents cleanup of `cache/tests/` folder after tests.
 
+## Classification benchmark
+
+- The benchmark lives in `benchmark/` (tracked; `benchmark/CLAUDE.md`); series, figures and runs (`benchmark/data/`) stay outside git.
+- Whenever a session meets an object worth keeping as an example (a new regime, an edge case, a classifier error the author points out), propose adding it: name, resonance, integration settings, the author's verdict, why it is distinct. Add it only after the author's explicit confirmation, with `label_source=author:<date>`.
+- The author's visual verdict overrides old labels and algorithmic statuses. Labels produced by Claude or by an LLM judge are marked as such and never count as the author's.
+- The category and reason in `KNOWN_DISAGREEMENTS.csv` and `known_fail`/`known_reason` in `EPISODE_EXPECTATIONS.csv` are Claude's reading, not labels; a change that makes an episode case pass or fail updates its flag with a reason.
+
 ## Code style
 
 - Formatting: `black` (default settings). Linting: `flake8`.
-- Use `StrEnum`/`IntEnum` for typed constants (e.g., `SavePlotMode`, `ResonanceStatus`).
+- Use `StrEnum`/`IntEnum` for typed constants (e.g., `SavePlotMode`, `Status`, `AngleStatus`).
 - Plotting classes inherit `BasePlotter` (shared `save`/`show`/`close`).
 - `experiments/` contains one-off research scripts — not part of the package, not tested.

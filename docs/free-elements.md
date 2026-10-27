@@ -5,19 +5,19 @@ turning at *their* frequencies, and a **free** part carrying the object's own se
 motion. Splitting the two answers a question the osculating angle cannot: does ω really
 librate, or does it only look bounded because the forced eccentricity offsets the cloud?
 
-For a Lidov-Kozai resonance this is not a diagnostic — it is **the** decision. A librating
-osculating ω that fails here is demoted; the cross spectra no longer decide anything
-(see [coherence](coherence.md)).
+For a Lidov-Kozai resonance this is part of the decision: the free-ω gate below is a step of the ZLK analysis, and
+its outcome enters the status ([Secular and Lidov-Kozai](physics/secular-zlk.md)). The cross spectra decide nothing
+([Cross-spectral coherence](coherence.md)).
 
 ## What is computed
 
 Work happens in the non-singular variables (the same ones `secular/proper_angle.py`
 builds), because vectors add and angles do not:
 
-```
-z_e(t) = e · exp(i·ϖ)          driven by g5…g8
-z_i(t) = sin(i/2) · exp(i·Ω)   driven by s5…s8
-```
+$$
+z_e(t) = e\,e^{{\rm i}\varpi} \ \ (\text{driven by } g_5 \ldots g_8), \qquad
+z_i(t) = \sin\tfrac{i}{2}\,e^{{\rm i}\Omega} \ \ (\text{driven by } s_5 \ldots s_8).
+$$
 
 The forced part is removed by a **complex least-squares fit at the known planetary
 frequencies** from `resonances/data/const.py`. Fitting known frequencies rather than
@@ -28,20 +28,22 @@ planetary line and subtracted by accident.
 
 What is left gives
 
-```
-ϖ_free(t) = arg(z_e_free)          b_varpi   its least-squares rate, ″/yr
-Ω_free(t) = arg(z_i_free)          b_Omega
-ω_free(t) = ϖ_free − Ω_free        b_omega
-```
+$$
+\varpi_{\rm free} = \arg z_{e,\rm free}, \qquad \Omega_{\rm free} = \arg z_{i,\rm free}, \qquad
+\omega_{\rm free} = \varpi_{\rm free} - \Omega_{\rm free},
+$$
+
+with their least-squares rates `b_varpi`, `b_Omega`, `b_omega` in ″/yr.
 
 ## Which modes can be fitted
 
-Not all of them, and the rule is **pairwise**, not per-mode. Two modes whose rates differ
-by less than the Rayleigh resolution never drift a full turn apart over the window, so no
-fit can tell them apart and least squares splits their amplitude arbitrarily. Candidates
-are therefore grouped by single-linkage at `2/T`, and one member of each group is fitted.
+Not all of them, and the rule is **pairwise**, not per-mode. The Rayleigh width is $1/T$ cycles/yr
+($1\,296\,000/T$ ″/yr): two modes closer than that never drift a full turn apart over the window, so no
+fit can tell them apart and least squares splits their amplitude arbitrarily. To be conservative, candidates
+are grouped by single linkage at twice that width, $2/T$ (two relative turns over the window), and one member of each
+group is fitted. The gate's tolerance (below) is one width.
 
-At 500 kyr the threshold is 5.18 ″/yr and the candidate rates 0, 0.67, 3.09, 4.26, 28.25
+At 500 kyr the two widths are 2.592 and 5.184 ″/yr; the grouping threshold 5.18 ″/yr and the candidate rates 0, 0.67, 3.09, 4.26, 28.25
 have neighbour gaps 0.67, 2.42, 1.17, 23.99 — the first three chain together, the last one
 breaks:
 
@@ -56,7 +58,7 @@ breaks:
 Which member of a cluster gets fitted is fixed by a documented priority — `g5 > g6 > g7 >
 g8 > const` for the eccentricity vector, `const > s6 > s7 > s8` for the inclination one.
 That order is not a free convention. Fitting a different member measurably changes the
-verdict: on 3752 it moves 2 → −9, on 591986 −2 → −9. The order encodes what actually
+verdict: on 3752 the gate's outcome moves from *confirmed* to *no verdict*, on 591986 from *kinematic* to *no verdict*. The order encodes what actually
 dominates the forcing — Jupiter's g5 for a main-belt eccentricity vector, and the constant
 offset between the ecliptic and the invariable plane (the s5 mode, zero by construction)
 for the slow inclination modes — and it reproduces the {g5, g6} / {const, s6} basis that
@@ -76,29 +78,54 @@ tolerance, not an identity. In practice the masks remove 0–8% of a real series
 
 ## The gate
 
-Entered only at status 2 (LIBRATION), and it is the only hook that changes a Lidov-Kozai
-status after classification.
+The gate (`omega_free_gate.evaluate_gate`) reads the free elements and returns an outcome:
 
-```
-T < min_cycles · P_lib ───────────────────→ −9   window never held the libration
-more than half the samples masked ────────→ −9   no usable argument
-R < 360°:
-    b_varpi or b_Omega at a planetary rate → −9   residual is forcing
-    otherwise ────────────────────────────→ 2    confirmed
-R ≥ 360°:
-    any rate at a planetary rate ─────────→ −9   residual is forcing
-    otherwise ────────────────────────────→ −2   kinematic libration
-```
+| condition | outcome |
+|---|---|
+| no free elements (fewer than 16 samples after decimation, $T \lesssim 8$ kyr, or the split failed) | `unavailable` |
+| $T <$ `FREE_GATE_MIN_CYCLES` × $P_{\rm lib}$: the window never held the libration | `short_window` |
+| more than half the samples masked: no usable argument | `undefined_phase` |
+| $R < 360°$ and `b_varpi` at g5…g8 (or 0, see below) or `b_Omega` at s6…s8 | `planetary_residual` |
+| $R < 360°$ otherwise | `confirmed` |
+| $R \ge 360°$ and `b_varpi` at g5…g8, `b_Omega` at s6…s8, or `b_omega` at any $g_j - s_k$ ($j = 5…8$, $k = 5…8$, $s_5 = 0$) | `planetary_residual` |
+| $R \ge 360°$ otherwise: the free ω winds | `kinematic` |
+| `FREE_GATE_ENABLED=False` | `disabled` |
+| the osculating ω is not bounded (it circulates): no confirmation asked | `not_applicable` |
 
-`R` is the span of ω_free trimmed by half a percent at each end — a span is an extreme
-statistic and one surviving glitch ruins a strict maximum. The 360° threshold is
-topological and **must not be tightened**: inside a mean-motion resonance the Lidov-Kozai
-cycle is asymmetric and its centre shifts away from 90°/270°, to 0°/180° for Hildas and by
-±60° for Trojans (Vinogradova 2024).
+"At" means a signed difference below one Rayleigh width, $1\,296\,000/T$ ″/yr. The difference frequencies
+$g_j - s_k$ are tested on the winding branch only: $\omega = \varpi - \Omega$, so an unsubtracted term in either
+vector shows up in $\omega$ at such a frequency even when neither `b_varpi` nor `b_Omega` matches a mode.
+`not_applicable` is not a failed split; the geometric status stands.
 
-−2 and −9 mean different things and must never be merged in a statistic. −2 is a
-measurement: the libration was examined and found kinematic. −9 is the absence of one. For
-screening, −9 means "re-check on a longer baseline", so it belongs with the candidates.
+$R$ is the span of $\omega_{\rm free}$ trimmed by half a percent at each end (a span is an extreme statistic, and one
+surviving glitch ruins a strict maximum). The 360° threshold is topological and **must not be tightened**: inside a
+mean-motion resonance the Lidov-Kozai cycle is asymmetric and its centre shifts away from 90°/270°, to 0°/180° for
+Hildas and by ±60° for Trojans (Vinogradova 2024).
+
+The status decision (`analysis.secular.decide.decide_status`) reads the outcome:
+
+| angle | outcome | status, reason |
+|---|---|---|
+| ω librates over the record | `confirmed` (or `disabled`) | `resonant`, `dynamic_libration` |
+| | `kinematic` | `non_resonant`, `kinematic_libration` (origin kinematic, `free_omega_winds`) |
+| | any other | `uncertain`, `gate_unavailable` |
+| episodic, drift, too few cycles | `kinematic` and $\rho_{\max} < 1$ (the median free circle stays inside the forced envelope) | `non_resonant`, `kinematic_libration` |
+| | otherwise | the status of the geometry is kept |
+
+`kinematic` and `gate_unavailable` mean different things and must never be merged in a statistic: the first is a
+measurement (the libration was examined and found kinematic), the second is the absence of one. For screening,
+`uncertain` means "re-check on a longer baseline", so it belongs with the candidates (the `candidates` and
+`extended` save/plot modes keep it). The gate has no amplitude test of its own (below); the amplitude ratio $\rho_{\max}$ enters only the decision on an
+angle that does not librate over the whole record. With $E_{\rm free} = \operatorname{median}_t |z_{e,\rm free}(t)|$
+and $F(t)$ the rolling median of $|z_{e,\rm forced}(t)|$ over a tenth of the shortest beat period between the fitted
+modes (no smoothing for a single line),
+
+$$
+\rho_{\min} = \frac{E_{\rm free}}{\max_t F(t)}, \qquad \rho_{\max} = \frac{E_{\rm free}}{\min_t F(t)} .
+$$
+
+$\rho_{\max} < 1$ means a circle of the median free radius stays inside the forced-amplitude envelope; it is not the
+maximum of the instantaneous ratio $|z_{e,\rm free}|/|z_{e,\rm forced}|$.
 
 ### Why the same check stands on both branches
 
@@ -117,7 +144,7 @@ exactly what makes an angle look confined.
 The honest cost: an object whose own g or s sits within one Rayleigh width of a planetary
 fundamental is withheld rather than confirmed. That is a real ambiguity, not a gap.
 
-### There is no amplitude criterion
+### No amplitude criterion in the gate
 
 An earlier design compared the free eccentricity against an estimated floor of unsubtracted
 forcing. That floor cannot be measured: estimating how much forcing sits at a frequency the
@@ -135,7 +162,7 @@ only at known rates.
 For a **co-orbital** the forced term is the perturber's own eccentricity vector rather than
 a planetary fundamental — Jupiter's, rotated by ±60° for L4/L5 (Milani 1993; Vinogradova
 2015) — and the tadpole libration spreads it into a comb of sidebands. The g5…g8 basis
-cannot represent that, so for 591986 the −2 verdict is right for the right reason at the
+cannot represent that, so for 591986 the kinematic outcome is right at the
 level of "the ω libration is not Lidov-Kozai" (Vinogradova 2024 finds no Trojan at all with
 a librating ω), but its rates are not measurements. `free_rho = 0.23` is the symptom.
 A Trojan-specific forced model is a known limitation, not a bug.
@@ -145,25 +172,25 @@ A Trojan-specific forced model is a known limitation, not a bug.
 Measured on 500 kyr of mercurius integrations at 100 yr, the baseline the gate is
 calibrated for:
 
-| object | verdict | b_varpi | b_Omega | b_omega | R, deg | rho |
+| object | outcome | b_varpi | b_Omega | b_omega | R, deg | rho |
 |---|---|---|---|---|---|---|
-| 4257 | 2 confirmed | −19.08 | −19.05 | −0.02 | 34 | 26.5 |
-| 3040 | 2 confirmed | −21.27 | −21.30 | 0.02 | 63 | 9.7 |
-| 162474 | 2 confirmed | −15.55 | −15.55 | 0.00 | 55 | 12.1 |
-| 3752 | 2 confirmed | −13.81 | −15.60 | 1.79 | 352 | 6.4 |
-| 591986 | 2 → −2 | 221.62 | 4.09 | 217.53 | 29896 | 0.23 |
+| 4257 | confirmed | −19.08 | −19.05 | −0.02 | 34 | 26.5 |
+| 3040 | confirmed | −21.27 | −21.30 | 0.02 | 63 | 9.7 |
+| 162474 | confirmed | −15.55 | −15.55 | 0.00 | 55 | 12.1 |
+| 3752 | confirmed | −13.81 | −15.60 | 1.79 | 352 | 6.4 |
+| 591986 | kinematic | 221.62 | 4.09 | 217.53 | 29896 | 0.23 |
 
-The other five reference objects (373136, 797204, 88899, 555527, 10563) do not reach
-status 2 at 500 kyr, so the gate never sees them.
+The other five reference objects (373136, 797204, 88899, 555527, 10563) do not librate over the whole 500 kyr record;
+there the gate changes the status only on a kinematic outcome with $\rho_{\max} < 1$.
 
 ## How long an integration is needed
 
-| baseline | confirmed at 2 | 591986 | false positives |
+| baseline | librating and confirmed | 591986 | false positives |
 |---|---|---|---|
-| 300 kyr | 4257, 3040, 162474, 3752 | −2 | 88899 reaches 2, gate returns −9 |
-| **500 kyr** | **4257, 3040, 162474, 3752** | **−2** | **none** |
-| 1 Myr | 4257, 3040, 162474 | −2 | none |
-| 10 Myr | 4257 | −2 | none |
+| 300 kyr | 4257, 3040, 162474, 3752 | kinematic | 88899 librates, gate: no verdict |
+| **500 kyr** | **4257, 3040, 162474, 3752** | **kinematic** | **none** |
+| 1 Myr | 4257, 3040, 162474 | kinematic | none |
+| 10 Myr | 4257 | kinematic | none |
 
 Longer is not better here. Most of these objects lose the lock well before 10 Myr — 3752 at
 850 kyr, 162474 at 1.33 Myr, 3040 at 2.83 Myr — so a long baseline answers "does it stay?"
@@ -175,7 +202,7 @@ as numbers: the Rayleigh resolution there is 2.59 ″/yr, and the Lidov-Kozai si
 g − s = 0.09 ″/yr on 4257 sits thirty times below it. The verdict is safe because it comes
 from the winding, not the rate; for numbers use 2 Myr (0.65 ″/yr) or 10 Myr (0.13). And the
 calibration assumes Lidov-Kozai cycles of 27–58 kyr, as in this set — the rule of thumb is
-`T ≥ max(500 kyr, 10 · P_ZLK)`, which in practice means a short run to measure the period
+$T \ge \max(500\ {\rm kyr},\ 10\,P_{\rm ZLK})$, which in practice means a short run to measure the period
 and an extension if it turns out long.
 
 ## Columns in summary.csv
@@ -187,14 +214,15 @@ The decomposition: `free_basis_e`, `free_basis_i`, `free_e`, `free_e_forced`, `f
 `free_b_varpi`, `free_b_Omega`, `free_b_omega`, `free_drift_flag`, `free_mask_e`,
 `free_mask_i`, `free_resolution`.
 
-The gate: `free_gate` (the outcome), `free_n_cycles` (T / P_lib), `free_gate_matches` (the
-planetary rates a residual could not be told apart from). The same decision also leaves a
-`gate: …` trail in `comments`, so demotions can be counted either way.
+The gate: `free_gate` (the outcome), `free_n_cycles` ($T/P_{\rm lib}$), `free_gate_matches` (the
+planetary rates a residual could not be told apart from), and the same as the analysis read them: `zlk_gate`,
+`zlk_gate_n_cycles`, `zlk_gate_min_cycles`, `zlk_gate_period_yr`, `zlk_gate_matches`, `zlk_gate_rho_max`. The check
+`check_zlk_free_omega` is `pass` (confirmed), `fail` (kinematic) or `not_measured`.
 
 Two notes on reading them. `free_e` / `free_e_forced` come from this fit, while the older
 `e_free` / `e_forced` columns come from the (k, h) scatter in `cross_spectrum` and exist for
 every resonance type — different estimators, expected to differ. And `free_rho` is
-annotation, never a verdict: for a large-amplitude librator `e_forced` is inflated by the
+an annotation (the status reads $\rho_{\max}$ only as above): for a large-amplitude librator `e_forced` is inflated by the
 same free signal the fit could not represent, so read it in the small-amplitude regime.
 
 `free_drift_flag` marks a span under a full turn that nonetheless carries a reproducible
@@ -224,28 +252,23 @@ No figure carries numbers. Read `free_gate` and the rates from summary.csv.
 
 ## Configuration
 
-| option | default | meaning |
-|---|---|---|
-| `FREE_ELEMENTS_ENABLED` | `True` | compute the split for bodies with a Lidov-Kozai resonance |
-| `FREE_ELEMENTS_SAMPLING_YEARS` | `500` | decimate to about this step first, with an anti-aliasing filter; empty keeps the integration grid |
-| `FREE_GATE_ENABLED` | `True` | let the gate change the status; off leaves classification alone |
-| `FREE_GATE_MIN_CYCLES` | `3` | libration periods the baseline must hold before the gate will judge |
-| `FREE_GATE_MASK_QUANTILE` | `0.15` | drop samples where \|z_free\| falls below this fraction of its median |
+The options are listed in [Configuration](config.md#free-elements-and-the-free-gate).
 
 ## Using it directly
 
 ```python
-from resonances.resonance.omega_free_gate import apply_gate
-
-elements = body.build_free_elements()
-status, gate = apply_gate(result.status, elements, result.metrics.libration_period_1, config)
-print(gate.outcome, gate.comment, elements.b_omega)
+--8<-- "free_elements_examples.py:gate"
 ```
+
+`config` is `sim.config` of the run, `libration_period_yr` the period of the bounded ω in years.
+
+In a run the gate is a step of `analyse_zlk` (`resonances/resonance/analysis/zlk/`), and
+`analysis.secular.decide.decide_status` turns its outcome into the status (above).
 
 Or on bare arrays, without a `Body`:
 
 ```python
-from resonances.secular.free_elements import free_elements
-
-elements = free_elements(times_years, ecc, inc, Omega, omega)
+--8<-- "free_elements_examples.py:arrays"
 ```
+
+Times in years, angles in radians.

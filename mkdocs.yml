@@ -1,32 +1,109 @@
-site_name: Mean-Motion Resonances
-site_url: https://github.com/smirik/resonances
+site_name: resonances
+site_url: https://smirik.github.io/resonances/
 repo_url: https://github.com/smirik/resonances
-site_description: The python package that identifies two-body and three-body mean-motion resonances.
-edit_uri: blob/master/docs/
+repo_name: smirik/resonances
+edit_uri: edit/main/docs/
+site_description: >-
+  A Python package that finds mean-motion, secular and Lidov-Kozai resonances of small bodies in the Solar system
+  and decides, from a numerical integration, whether the resonant angle librates and why.
+site_author: Evgeny Smirnov
 
 theme:
-        name: readthedocs
-        include_homepage_in_sidebar: True
-nav:
-        - Home: index.md
-        - "Getting Started":
-                  - "Quick start": "quick-start.ipynb"
-                  - "Installation and updates": "install.md"
-                  - "Examples": "examples.ipynb"
-        - "Features":
-                  - "Simulations, Bodies, MMRs": core.ipynb
-                  - "Resonance Matrices": matrix.md
-                  - "Lidov-Kozai Resonances": "lidov-kozai.ipynb"
-                  - "Output data": output.ipynb
-                  - "Classification": classify.md
-                  - "Plots": plots.md
-                  - "Cross-spectral coherence": coherence.md
-                  - "Free elements": free-elements.md
-                  - "Config": config.md
-        - "About":
-                  - "Copyright, license, references": about.md
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - toc.follow
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle: {icon: material/weather-night, name: Dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle: {icon: material/weather-sunny, name: Light mode}
 
-plugins:
-        - mkdocs-jupyter
-          # include_source: True
-          # execute: True
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  # Code examples are included from the scripts that docs/examples/run_all.py runs (`--8<-- "file.py:section"`)
+  - pymdownx.snippets:
+      base_path: [docs/examples]
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js
+
+# Not part of the public site: the notebooks' cache, the example scripts and figure tools (development notes live in dev/)
+exclude_docs: |
+  cache/
+  examples/
+  tools/
+
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+  links:
+    not_found: warn
+    anchors: warn
+    absolute_links: info
+    unrecognized_links: warn
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: install.md
+      - Quick start: quick-start.md
+      - Simulations, bodies, resonances: core.md
+      - Examples: examples.md
+      - Using with AI agents: agents.md
+  - How the status is determined:
+      - Overview: physics/overview.md
+      - The resonant pendulum: physics/pendulum.md
+      - From the integration to the angle: physics/signal.md
+      - What the angle does: physics/geometry.md
+      - Is it this resonance?: physics/response.md
+      - The status tree: physics/status-tree.md
+      - Confidence: physics/confidence.md
+      - Secular and Lidov-Kozai: physics/secular-zlk.md
+      - Gallery: physics/gallery.md
+  - Features:
+      - Resonance matrices: matrix.md
+      - Secular resonances: secular.md
+      - Lidov-Kozai resonances: lidov-kozai.md
+      - Clones (virtual asteroids): clones.md
+      - Dry-run: dry-run.md
+      - Plots: plots.md
+      - Output data: output.md
+      - Serialization and restore: serialization.md
+      - Cross-spectral coherence: coherence.md
+      - Free elements: free-elements.md
+      - Configuration: config.md
+  - Reference:
+      - Libration analysis (full reference): libration-analysis.md
+      - Secular and ZLK classification details: classify.md
+      - Benchmark: benchmark.md
+      - References: references.md
+  - About: about.md

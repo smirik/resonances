@@ -1,11 +1,11 @@
-"""Secular diagnostics through Simulation, the classifier, the centre check and DataManager.
+"""Secular diagnostics through Simulation, the secular analysis (`analysis.secular`) and DataManager.
 
 The bodies are built by hand, not integrated, so these tests stay in the fast suite:
 - a nu6 librator like (1222) Tina: the forced term at g6 (0.2) is larger than the free one (0.07),
   which turns 2.2 arcsec/yr faster, so g - g6 librates about pi with a period of 1296000/2.2 = 589 kyr;
 - a drift like 2110 in g - g6 - 2g7 + 2g8: g sits 0.04 arcsec/yr off (110 deg in 10 Myr) and a forced
-  g6 term half the free one wiggles the angle by 30 deg at |g - g6| (268 kyr), which keeps the
-  classifier's trend-to-oscillation ratio low enough for a 2.
+  g6 term half the free one wiggles the angle by 30 deg at |g - g6| (268 kyr): a forced wave the filter removes
+  (P_c = 2 x 268 kyr), leaving an arc that never turns back.
 """
 
 import matplotlib
@@ -15,6 +15,7 @@ matplotlib.use('Agg')
 import os  # noqa: E402
 
 import numpy as np  # noqa: E402
+import pytest  # noqa: E402
 
 from resonances.data.const import PLANETARY_FREQUENCIES as F  # noqa: E402
 from resonances.data.const import PLANETARY_PHASES as PHASES  # noqa: E402
@@ -34,6 +35,7 @@ def synthetic_secular(tmp_path, resonance, g, forced6, free=0.07, drift6=0.0, pl
     linear law, `planets` goes to the integration engine's planets_data before the angles are built."""
     sim = Simulation(
         name='secular_plots',
+        plot_layout='flat',  # the figure paths below are written for the flat layout (default confidence/status)
         date='2000-01-01 12:00',  # J2000: the mode phases apply as tabulated
         save=None,
         plot='all',
@@ -71,13 +73,12 @@ def synthetic_secular(tmp_path, resonance, g, forced6, free=0.07, drift6=0.0, pl
 
 def test_nu6_librator_is_classified_plotted_and_its_libration_followed(tmp_path):
     sim, body, resonance = synthetic_secular(tmp_path, 'g-g6', g=F['g6'] + 2.2, forced6=0.2)
-    assert body.statuses['g-g6'] == 2
-    d = SecularDiagnostics.from_body(body, resonance, sim.config)
-    assert d.centre.drift_deg < sim.config.secular_centre_drift  # the 1 Myr centre stands still
-    # the 1 Myr centre stands still, so the curve follows the 589 kyr libration on a quarter of it:
-    # 17 cycles in 10 Myr, minus half a window at each end -> about 32 turning points
-    assert d.window < 0.2e6
-    assert 28 <= len(d.turning) <= 34
+    assert body.statuses['g-g6'] == 'resonant'
+    d = SecularDiagnostics.from_body(body, resonance, sim)
+    # the curve is sigma_f of the analysis: 17 cycles of 589 kyr in 10 Myr, the ends trimmed by P_c -> ~33 turning points
+    assert body.librations['g-g6'].angle_status == 'libration'
+    assert d.analysis.libration_period_yr == pytest.approx(1296000 / 2.2, rel=0.02)
+    assert 30 <= len(d.turning) <= 35
     assert abs(d.mean_rate) < 0.01
     # the angle is bounded by the forced g6 term; the free vector turns at g = g6 + 2.2"/yr, and the
     # 589 kyr is 2 pi / 2.2"/yr: a libration around the forced equilibrium, as Tina's
@@ -93,19 +94,16 @@ def test_nu6_librator_is_classified_plotted_and_its_libration_followed(tmp_path)
 DRIFT_G = F['g6'] + 2 * F['g7'] - 2 * F['g8'] - 0.04
 
 
-def test_a_drift_is_lowered_by_the_centre_check(tmp_path):
+def test_a_drift_that_never_turns_back_is_uncertain(tmp_path):
+    # the former centre check: bounded within a turn, but no turning point -> a longer integration would tell
     sim, body, _ = synthetic_secular(tmp_path, 'g-g6-2g7+2g8', g=DRIFT_G, forced6=0.05, free=0.1)
     key = 'g-g6-2g7+2g8'
-    assert body.statuses[key] == -6
-    assert body.librations[key].status.value == -6
-    assert 'centre: drifts' in body.librations[key].comments
-    assert body.centre_checks[key].lowered
+    verdict = body.librations[key]
+    assert body.statuses[key] == 'uncertain'
+    assert verdict.reason == 'baseline_needed' and verdict.angle_status == 'insufficient_time'
+    assert body.classifier_numbers[key]['geo_n_tp'] == 0
+    assert body.classifier_numbers[key]['flt_cutoff_binding'] == 'forced_wave'
     assert abs(body.secular_free_divisor(body.resonances()[0]) + 0.04) < 0.01  # built with divisor -0.04"/yr
-
-
-def test_without_the_centre_check_the_drift_stays_a_libration(tmp_path):
-    sim, body, _ = synthetic_secular(tmp_path, 'g-g6-2g7+2g8', g=DRIFT_G, forced6=0.05, free=0.1, secular_centre_check=False)
-    assert body.statuses['g-g6-2g7+2g8'] == 2
 
 
 def test_measured_planet_phases_follow_a_drifting_mode(tmp_path):
