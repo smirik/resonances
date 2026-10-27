@@ -267,11 +267,13 @@ measured and the floor is used.
 - a rotation is **above** if $h\,m - z\,\sigma_h > h_\text{hi}$;
 - every other cycle is in the **zone**; a cycle within one $\sigma$ of an edge sets `zone_edge_cycle`.
 
-$J/J_s$ is the action of the fitted potential's deepest well ([The resonant pendulum](pendulum.md#the-pendulum)). For
+$J/J_s$ is the action of the cycle's own loop over the separatrix action of the well it occupies (the basin of its
+fastest sample; [The resonant pendulum](pendulum.md#the-pendulum)). For
 a two-body episode whose planet was saved, the energy of each turning point in the directly averaged well,
 $h_\text{TP} = [\bar D(\sigma_\text{TP}) - \bar D_\text{min}]/[\bar D_\text{barrier} - \bar D_\text{min}]$, replaces the
 fitted class: an episode cycle is in the zone if any measured $h_\text{TP} \ge h_\text{lo}$ (the energy at
-$J_\text{lo}$), deep if all its turning points are measured and below it, and otherwise keeps its fitted class; this
+$J_\text{lo}$, over the barrier of the fitted potential's deepest well, as $h_\text{TP}$ is over its own well's barrier),
+deep if all its turning points are measured and below it, and otherwise keeps its fitted class; this
 uses no $\sigma_h$. The zone and the classes are diagnostics of the fitted model, not a measurement of N-body chaos.
 
 ## Near the separatrix

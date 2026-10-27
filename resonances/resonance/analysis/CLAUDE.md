@@ -31,7 +31,12 @@ tree: `docs/libration-analysis.md` (an example figure per status in `docs/physic
   `well_holding`, `cycle_period`: R0's period law reads each cycle in the well that holds its fastest sample (one
   well: the old law; two harmonics: every loop of one energy has one period in either well, so only a cycle below its
   well's bottom changes). For a multi-harmonic V the action J and J_s come from quadratures in the selected well; the
-  half-width 2√(V'')/|c| and the cosine action hold for one harmonic only.
+  half-width 2√(V'')/|c| and the cosine action hold for one harmonic only. W25: a libration cycle's J/J_s and its slope
+  are read in the well it occupies (`occupied_well`, `CycleEnergy.well_rad`, nan = the deepest; `WellActions` caches
+  each well's separatrix and J_s), not the deepest: with two harmonics J_deep(E) − J_shallow(E) is a constant, so the
+  deepest well's ratio of a shallow-well cycle is too large. One-well records keep the deepest path exactly.
+  `h_in_barrier_units` puts h_lo in the units of the averaged well's h_TP (1 at its own barrier) for
+  `zone.averaged_classes`.
 - `confidence`: the level from margins and caps; `certain` is shown. certain needs every applicable margin full; high
   allows thin or unmeasured evidence but no failed support; one failed support → medium, two → low; nothing physical
   measured and explicit caps limit it; uncertain/invalid have no level. The calibration cell's author-label counts are

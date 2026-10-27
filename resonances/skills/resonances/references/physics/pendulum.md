@@ -90,11 +90,15 @@ $$
 h = \frac{\dot\sigma^2/2 + V(\sigma) - V_\text{min}}{V_\text{max} - V_\text{min}} ,
 $$
 
-normalised by the **global** minimum and maximum of $V$. For one harmonic this is the expression above. For a
-potential with two wells the barrier of the shallower well lies below $V_\text{max}$, so its separatrix sits at
-$h<1$: $h<1$ alone does not say which well the orbit is in. The predicted period of a cycle is taken in the well
+normalised by the **global** minimum and maximum of $V$. For one harmonic this is the expression above. With two
+harmonics and two wells the two maxima alternate with the wells, so both wells are bounded by the lower maximum, the
+barrier between them, which lies below $V_\text{max}$: their separatrix sits at $h<1$, and $h<1$ alone does not say
+which well the orbit is in. $h = 1$ stays the boundary of circulation: a loop between the barrier and $V_\text{max}$
+librates around both wells; only $E > V_\text{max}$ lets the angle turn. The rules that read $h$ against 1 (crossings,
+the filter guard, the turns' zone edge $h_\text{hi}$) mean circulation, and the global normalisation is the right one
+there. The predicted period of a cycle is taken in the well
 that holds it (the basin of the cycle's fastest sample), up to that well's own barrier, the lower of the two maxima
-around it. The action (below) is not: it is integrated in the deepest well.
+around it, and so is its action (below).
 
 **Period.** A libration of amplitude $A$ (half the peak-to-peak swing) has the period
 
@@ -148,11 +152,15 @@ $$
 
 At $\omega_0 = 1$, $h = 0.5$ a direct quadrature gives $J = 1.0787$, $J_s = 2.5465$, $J/J_s = 0.4236$, as the
 closed form does. For a fitted potential with two harmonics the package evaluates the same integrals numerically
-in the **deepest** well of $V$, up to the lower of its two bounding maxima, with $J_s$ taken at that barrier. This
-is the deepest well's action even when an observed cycle sits in another, shallower well: for unequal double wells
-$J/J_s$ (and the separatrix-zone classes that read it, [What the angle does](geometry.md#the-separatrix-zone))
-is then not the occupied well's action. In a slowly changing well the action is the adiabatic invariant: the
-amplitude may change, the action does not, except near the separatrix (Wisdom 1985, pp. 274, 279).
+in the well the cycle occupies (the basin of its fastest sample, as for the period), up to the lower of that well's
+two bounding maxima, with $J_s$ taken at that barrier: the action is the area of the cycle's own loop over $2\pi$
+(M&D 1999, eq. 8.204, p. 376) and $J_s$ that of the separatrix that bounds it. With two harmonics both wells of a
+double well share their two maxima, have one period at one energy, and differ in action by a constant,
+$J_\text{deep}(E) - J_\text{shallow}(E) = J_\text{deep}(V_\text{shallow min})$ ($dJ/dE = P/2\pi$ in both). The
+deepest well's ratio of a shallow-well cycle, $(J + C)/(J_s + C)$, would always be too large: for
+$V = -\cos\sigma + 0.6\cos2\sigma - 0.25\sin\sigma$ at $h = 0.18$ it is 0.66 where the cycle's own is 0.10. In a slowly
+changing well the action is the adiabatic invariant: the amplitude may change, the action does not, except near the
+separatrix (Wisdom 1985, pp. 274, 279).
 
 ## How strong must the resonance be?
 

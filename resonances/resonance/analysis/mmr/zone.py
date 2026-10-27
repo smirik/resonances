@@ -854,7 +854,8 @@ def analyse_separatrix(
     edges = pendulum.edge_cycles(cycles, zone, sigma_h, settings, v_e) if classes else []
     turning = geometry.turning_points
     avgpot = tp_energies(well, geometry, cycles, settings)
-    classes, edges, zone_source = averaged_classes(cycles, cycle_kinds(geometry, cycles), classes, edges, avgpot, zone)
+    h_lo_barrier = pendulum.h_in_barrier_units(v_e, zone.h_lo) if zone is not None else NAN
+    classes, edges, zone_source = averaged_classes(cycles, cycle_kinds(geometry, cycles), classes, edges, avgpot, zone, h_lo_barrier)
 
     # crossings: changes between libration half-cycles and circulation events (slips, turns), from the angle itself;
     # the directed transitions (exits, captures) before their times are merged
@@ -968,6 +969,7 @@ def averaged_classes(
     edges: Sequence[bool],
     energies: TurningPointEnergies,
     zone: Optional[Zone],
+    h_lo: Optional[float] = None,
 ) -> Tuple[List[CycleClass], List[bool], str]:
     """(classes, edges, source) of the cycles with the energy of a two-body angle's turning points in its averaged well
     (W20 F5, the zone's source 'averaged_potential'): an episode cycle is in the zone when the highest h of its turning
@@ -978,9 +980,14 @@ def averaged_classes(
     well whose depth changes 100 times breaks it: 2004 TK14 31M-34 has h ~ 1.3 there and h 0.07 (max 0.59) in the
     averaged well, at least 80 deg from the barrier at every turning point (B, 2026-10-19). Turns and the cycles of
     rejected runs keep the pendulum's class. The pendulum's classes and source 'pendulum' without a measured h or a
-    zone."""
+    zone.
+
+    h of a turning point is 1 at the averaged well's own barrier, so the zone's edge is read in the same units: `h_lo`,
+    the energy at J_lo over the barrier of V_E's deepest well (`pendulum.h_in_barrier_units`, W25); zone.h_lo, over
+    V_E's global depth, when not given (the same for a V_E of one well)."""
     classes, edges = list(classes), list(edges)
-    if not classes or zone is None or not np.isfinite(zone.h_lo) or not np.any(np.isfinite(energies.h)):
+    edge = zone.h_lo if zone is not None and h_lo is None else h_lo
+    if not classes or zone is None or not np.isfinite(edge) or not np.any(np.isfinite(energies.h)):
         return classes, edges, SOURCE_PENDULUM
     changed = False
     for k, (cycle, kind) in enumerate(zip(cycles, kinds)):
@@ -988,7 +995,7 @@ def averaged_classes(
         finite = h[np.isfinite(h)]
         if kind != CYCLE_EPISODE or cycle.rotation or not len(finite):
             continue
-        if float(np.max(finite)) >= zone.h_lo:
+        if float(np.max(finite)) >= edge:
             classes[k] = CycleClass.ZONE
         elif len(finite) == len(h):
             classes[k] = CycleClass.DEEP

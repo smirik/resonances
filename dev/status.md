@@ -56,14 +56,17 @@ Replace this page at each programme step. Latest benchmark run: `v2-w24-tx9b`, 0
     transient (`5d/6`, or `<rule>/6` of `decide.py:1628`) for a promoted union.
 - Found by the docs review (2026-10-27), left under the code freeze (a fix changes `sep_*` columns and possibly zone
   classes):
-  - The two-harmonic action ratio uses the deepest well, not the cycle's own: `pendulum.cycle_energies`
-    (`resonance/analysis/pendulum.py:1070`) and `_well` (`:1147`, read by `classify_cycles`/`edge_cycles`) pass
-    `well_separatrix` (`:467`, the deepest well's lower barrier) to `action_ratio_in_potential` for every libration
-    cycle, while the period (`cycle_period`, `:1077`) uses the well that holds the cycle's fastest sample. For an
-    unequal double well a cycle of the shallower well gets J/J_s of the other well; J/J_s feeds the zone classes
-    (deep/zone, `sep_cycle_classes`, L2, Z, the cap `episodes_in_separatrix_zone`) and the `trend` mechanism. Single
-    wells and one-harmonic fits are unaffected; the averaged-well route (`zone.averaged_classes`) overrides the
-    class of saved-planet two-body episodes.
+  - Fixed 2026-10-27 (W25, `v2-w25-action-well`): the two-harmonic action ratio was read in the deepest well for
+    every cycle. Now J/J_s and its slope come from the well the cycle occupies (`pendulum.occupied_well`,
+    `CycleEnergy.well_rad`), as the period did; `zone.averaged_classes` compares h of the turning points (1 at the
+    averaged well's own barrier) with h_lo over V_E's deepest-well barrier (`pendulum.h_in_barrier_units`), not over
+    V_E's global depth. With two harmonics the old ratio of a shallow-well cycle was always too large
+    ((J + C)/(J_s + C), C constant). Benchmark: 62 rows with a two-well V_E, 36 with cycles in the shallower well; no
+    status, angle_status, confidence, reason, cap, flag, class or mechanism changed; J/J_s changed in 4 rows (17346
+    2J-1, 1916 3M-4S-5, 2012 KL9, 2013 VA14), whose shallow-well cycles stay zone because σ_h is comparable to the
+    shallow well's depth (or the averaged route decides). Left: the J_lo → h map of the averaged route uses V_E's
+    deepest-well shape, not the averaged well's; above the lower barrier J/J_s saturates at 1 (a loop around both
+    wells has no action ratio of one well).
   - ZLK `rho_max` is one radius: an episodic/drift ZLK angle turns kinematic on `rho_max < 1`
     (`resonance/analysis/secular/decide.py:145`), and `rho_max` is the median free radius over the minimum of the
     rolling-median forced amplitude (`secular/free_elements.py`, `rho_envelope`, `_beat_window`), not the maximum of the

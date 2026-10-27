@@ -10,11 +10,15 @@ Closed forms (M&D 1999, eqs. 8.50–8.58; scipy `ellipk(m)`/`ellipe(m)` take m =
   libration period 4 K(h) / Omega, revolution period 2 K(1/h) / (Omega sqrt(h)),
   J / J_s = E(h) - (1 - h) K(h)  (-> pi h / 4 as h -> 0, -> 1 as h -> 1),
   r_pend(h) = min/mean rate over a revolution = (2/pi) sqrt((h - 1)/h) K(1/h).
-These hold for one harmonic only. A fitted V with more harmonics gets quadratures over its deepest well
+These hold for one harmonic only. A fitted V with more harmonics gets quadratures over a well
 (`action_ratio_in_potential`, `period_in_potential`, `half_width_in_potential`): with
 J(E) = (1/pi) int sqrt(2 (E - V)) d sigma over the libration loop, J_s = J at the well's own separatrix
 energy (the lower of the two maxima that bound it). V = -cos s - 0.2 cos 2s at h = 0.5: J/J_s = 0.38417 where the
-cosine formula gives 0.42361.
+cosine formula gives 0.42361. A libration cycle's J/J_s is that of the well it occupies (the basin of its fastest
+sample, `occupied_well`), its loop over that well's separatrix loop, as its period; the deepest well is the default.
+With two harmonics both wells of a double well are bounded by the same two maxima, have the same period at one energy
+and J_deep(E) - J_shallow(E) is a constant (z = e^{i sigma} makes E - V a quartic over z^2: one elliptic period, and
+dJ/dE = T/2pi), so the deepest well's ratio of a shallow-well cycle is too large: (J + C)/(J_s + C) > J/J_s.
 """
 
 from __future__ import annotations
@@ -164,6 +168,9 @@ class CycleEnergy:
     period_law_ratio: float  # T_obs / T_pend(h)
     h_mean: float = float('nan')  # E / (2 Omega_bar^2): energy over the mean separatrix energy
     strength_rel_sq: float = 1.0  # m = Omega^2 / Omega_bar^2 averaged over the cycle
+    # the minimum of V [rad] whose well holds the libration cycle (`occupied_well`) when it is not the deepest; nan =
+    # the deepest well (every cycle of a one-well V, a turn): J/J_s and its slope are read in this well
+    well_rad: float = float('nan')
 
     @property
     def energy_over_mean(self) -> float:
@@ -452,10 +459,11 @@ def excursion(omega0_rad_yr, amplitude_rad, identity_coefficient):
     return float(result) if np.ndim(result) == 0 else result
 
 
-def _first_top(potential: Potential, direction: float) -> float:
-    """sigma of the first maximum of V from the well in `direction` (+1 or -1), refined; unwrapped near the well."""
+def _first_top(potential: Potential, direction: float, well_rad: Optional[float] = None) -> float:
+    """sigma of the first maximum of V from the well `well_rad` (default the deepest) in `direction` (+1 or -1),
+    refined; unwrapped near the well."""
     offsets = np.linspace(0.0, TWO_PI, GRID_POINTS + 1)
-    x = potential.well_rad + direction * offsets
+    x = (potential.well_rad if well_rad is None else well_rad) + direction * offsets
     values = potential.value(x)
     falling = np.flatnonzero(values[1:-1] >= values[2:])  # V stops growing at index i + 1
     i = int(falling[0]) + 1 if len(falling) else GRID_POINTS // 2
@@ -464,24 +472,25 @@ def _first_top(potential: Potential, direction: float) -> float:
     return float(res.x)
 
 
-def well_separatrix(potential: Potential) -> Tuple[float, float, float]:
-    """(sigma_left_top, sigma_right_top, E_sep) of the deepest well: the first maxima of V on either side (unwrapped
-    around `well_rad`) and the lower of their energies, the separatrix of this well [rad^2/yr^2]. One harmonic:
-    well -+ pi and V_max."""
+def well_separatrix(potential: Potential, well_rad: Optional[float] = None) -> Tuple[float, float, float]:
+    """(sigma_left_top, sigma_right_top, E_sep) of the well at `well_rad` (default the deepest, `Potential.well_rad`):
+    the first maxima of V on either side (unwrapped around the well) and the lower of their energies, the separatrix
+    of this well [rad^2/yr^2]. One harmonic: well -+ pi and V_max."""
     if potential.n_harmonics == 1:
         return potential.well_rad - np.pi, potential.well_rad + np.pi, potential.v_max
-    left, right = _first_top(potential, -1.0), _first_top(potential, 1.0)
+    left, right = _first_top(potential, -1.0, well_rad), _first_top(potential, 1.0, well_rad)
     energy = min(float(potential.value(np.atleast_1d(left))[0]), float(potential.value(np.atleast_1d(right))[0]))
     return left, right, energy
 
 
-def _loop_action(potential: Potential, energy: float, left_top: float, right_top: float) -> float:
-    """J(E) = (1/pi) int sqrt(2 (E - V)) d sigma between the turning points of the loop around the well [rad^2/yr]."""
+def _loop_action(potential: Potential, energy: float, left_top: float, right_top: float, well_rad: Optional[float] = None) -> float:
+    """J(E) = (1/pi) int sqrt(2 (E - V)) d sigma between the turning points of the loop around the well `well_rad`
+    (default the deepest), whose maxima are `left_top` < well < `right_top` [rad^2/yr]; 0 at or below its bottom."""
 
     def excess(x):
         return float(potential.value(np.atleast_1d(x))[0]) - energy
 
-    well = potential.well_rad
+    well = potential.well_rad if well_rad is None else well_rad
     if not excess(well) < 0:
         return 0.0
     upper = right_top if excess(right_top) <= 0 else optimize.brentq(excess, well, right_top)
@@ -495,12 +504,15 @@ def _loop_action(potential: Potential, energy: float, left_top: float, right_top
     return float(value / np.pi)
 
 
-def separatrix_action(potential: Potential, separatrix: Optional[Tuple[float, float, float]] = None) -> float:
-    """J_s of the deepest well: J at its separatrix energy (`well_separatrix`) [rad^2/yr]; 8 Omega / pi for one harmonic."""
+def separatrix_action(
+    potential: Potential, separatrix: Optional[Tuple[float, float, float]] = None, well_rad: Optional[float] = None
+) -> float:
+    """J_s of the well `well_rad` (default the deepest): J at its separatrix energy (`well_separatrix`) [rad^2/yr];
+    8 Omega / pi for one harmonic."""
     if potential.n_harmonics == 1:
         return 8 * potential.omega_rad_yr / np.pi
-    left, right, energy = separatrix if separatrix is not None else well_separatrix(potential)
-    return _loop_action(potential, energy, left, right)
+    left, right, energy = separatrix if separatrix is not None else well_separatrix(potential, well_rad)
+    return _loop_action(potential, energy, left, right, well_rad)
 
 
 def action_ratio_in_potential(
@@ -508,25 +520,28 @@ def action_ratio_in_potential(
     h: float,
     separatrix: Optional[Tuple[float, float, float]] = None,
     full_action: Optional[float] = None,
+    well_rad: Optional[float] = None,
 ) -> float:
-    """J/J_s of the libration of energy h (V_min + h (V_max - V_min)) in the deepest well of V.
+    """J/J_s of the libration of energy h (V_min + h (V_max - V_min)) in the well `well_rad` of V (default the
+    deepest; a cycle's own well: `occupied_well`).
 
     One harmonic: the closed form `action_ratio`. Otherwise quadratures over the well, J_s at the well's separatrix
-    energy; `separatrix` (`well_separatrix`) and `full_action` (`separatrix_action`) are computed when not given (a
-    caller with many cycles passes them once). 1 at and above the separatrix, 0 at h <= 0, nan for nan."""
+    energy; `separatrix` (`well_separatrix`) and `full_action` (`separatrix_action`) of that well are computed when not
+    given (a caller with many cycles passes them once). 1 at and above the separatrix, 0 at h <= 0 and at or below the
+    well's bottom, nan for nan."""
     if potential is None or h is None or not np.isfinite(h):
         return NAN
     if potential.n_harmonics == 1:
         return action_ratio(h)
     if h <= 0:
         return 0.0
-    separatrix = separatrix if separatrix is not None else well_separatrix(potential)
+    separatrix = separatrix if separatrix is not None else well_separatrix(potential, well_rad)
     left, right, separatrix_energy = separatrix
     energy = potential.v_min + h * potential.depth
     if energy >= separatrix_energy:
         return 1.0
-    full = full_action if full_action is not None else separatrix_action(potential, separatrix)
-    return _loop_action(potential, energy, left, right) / full if full > 0 else NAN
+    full = full_action if full_action is not None else separatrix_action(potential, separatrix, well_rad)
+    return _loop_action(potential, energy, left, right, well_rad) / full if full > 0 else NAN
 
 
 def action_slope_in_potential(
@@ -534,23 +549,39 @@ def action_slope_in_potential(
     h: float,
     separatrix: Optional[Tuple[float, float, float]] = None,
     full_action: Optional[float] = None,
+    well_rad: Optional[float] = None,
 ) -> float:
-    """d(J/J_s)/dh of the libration of energy h in the deepest well of V.
+    """d(J/J_s)/dh of the libration of energy h in the well `well_rad` of V (default the deepest).
 
     For J = (1/2 pi) oint sigma_dot d sigma, dJ/dE = T(E) / (2 pi) (Landau & Lifshitz, Mechanics, §49: dI/dE = T/2 pi),
-    and E = V_min + h (V_max - V_min), so d(J/J_s)/dh = depth T(h) / (2 pi J_s), T from `period_in_potential`.
-    One harmonic (or no potential): K(m = h)/2 (`_action_ratio_slope`; the formula gives 2 Omega^2 (4 K/Omega) /
-    (2 pi 8 Omega/pi) = K/2). inf at and above the well's separatrix (the period diverges), nan for nan."""
+    and E = V_min + h (V_max - V_min), so d(J/J_s)/dh = depth T(h) / (2 pi J_s), T from `period_in_potential` (the
+    deepest well) or the loop of that energy in the well `well_rad`, at or below its bottom the small-oscillation period
+    2 pi / sqrt(V''). One harmonic (or no potential): K(m = h)/2 (`_action_ratio_slope`; the formula gives
+    2 Omega^2 (4 K/Omega) / (2 pi 8 Omega/pi) = K/2). inf at and above the well's separatrix (the period diverges),
+    nan for nan."""
     if h is None or not np.isfinite(h):
         return NAN
     if potential is None or potential.n_harmonics == 1:
         return float(_action_ratio_slope(h))
-    separatrix = separatrix if separatrix is not None else well_separatrix(potential)
-    if potential.v_min + max(h, 0.0) * potential.depth >= separatrix[2]:
+    separatrix = separatrix if separatrix is not None else well_separatrix(potential, well_rad)
+    energy = potential.v_min + max(h, 0.0) * potential.depth
+    if energy >= separatrix[2]:
         return math.inf
-    full = full_action if full_action is not None else separatrix_action(potential, separatrix)
-    period = period_in_potential(potential, max(h, 0.0))
+    full = full_action if full_action is not None else separatrix_action(potential, separatrix, well_rad)
+    period = period_in_potential(potential, max(h, 0.0)) if well_rad is None else _period_in_well(potential, energy, well_rad)
     return float(potential.depth * period / (TWO_PI * full)) if full > 0 and np.isfinite(period) else NAN
+
+
+def _period_in_well(potential: Potential, energy: float, well_rad: float) -> float:
+    """Period [yr] of the loop of `energy` around the minimum `well_rad` (`loop_through`); at or below that minimum
+    the small-oscillation period 2 pi / sqrt(V''(well)) (nan for a non-positive curvature)."""
+    if energy > float(potential.value(np.atleast_1d(well_rad))[0]):
+        return loop_through(potential, energy, well_rad).period_yr
+    orders = np.arange(1, potential.n_harmonics + 1)
+    curvature = -float(
+        np.sum(orders**2 * (potential.cos_coeffs * np.cos(orders * well_rad) + potential.sin_coeffs * np.sin(orders * well_rad)))
+    )
+    return TWO_PI / np.sqrt(curvature) if curvature > 0 else NAN
 
 
 def h_from_action_ratio_in_potential(
@@ -664,6 +695,26 @@ def well_holding(potential: Potential, sigma_rad: float, found: Optional[Extrema
     return float(sigma_rad + offsets[i])
 
 
+def occupied_well(potential: Potential, sigma_rad: float, found: Optional[Extrema] = None) -> Optional[float]:
+    """The minimum of V [rad] whose basin holds `sigma_rad` (`well_holding`) when it is another well than the deepest;
+    None for the deepest well, a V of one well, a non-finite `sigma_rad`. The deepest well is the minimum of `found`
+    nearest `Potential.well_rad` (the two are the same minimum refined two ways), so None keeps the deepest well's
+    numbers exactly."""
+    if potential is None or potential.n_harmonics == 1 or not np.isfinite(sigma_rad):
+        return None
+    found = found if found is not None else extrema(potential)
+    minima = found.sigma_rad[found.is_min]
+    if len(minima) < 2:
+        return None
+
+    def nearest(angle: float) -> int:
+        return int(np.argmin(np.abs(np.angle(np.exp(1j * (minima - angle))))))
+
+    holding = well_holding(potential, sigma_rad, found)
+    index = nearest(holding)
+    return None if index == nearest(potential.well_rad) else float(minima[index])
+
+
 def _turning_point(potential: Potential, energy: float, start: float, direction: float, found: Extrema) -> Tuple[float, str]:
     """The first sigma from `start` in `direction` where V = E: V is monotone between neighbouring extrema, so the
     root is bracketed exactly on the first stretch whose far end reaches E (brentq); (nan, LOOP_CIRCULATES) when none
@@ -731,6 +782,17 @@ def well_count(potential: Optional[Potential]) -> int:
     """Number of minima of V over one turn (`extrema`); 0 without a potential. One harmonic: 1; V = -cos s + cos 2s: 2
     (wells at +-75.5 deg, cos s = 1/4; a barrier at 0)."""
     return extrema(potential).n_wells if potential is not None else 0
+
+
+def h_in_barrier_units(potential: Optional[Potential], h: float) -> float:
+    """h (over the global depth V_max - V_min) as the energy over the deepest well's own barrier,
+    (E - V_min) / (E_sep - V_min): 1 at that well's separatrix, as h of a turning point in the averaged well
+    (`averaged_potential.energy_in_well`). The same h for a V of one well (E_sep = V_max) or without a potential."""
+    if potential is None or not np.isfinite(h) or well_count(potential) < 2:
+        return h
+    _, _, separatrix_energy = well_separatrix(potential)
+    barrier = separatrix_energy - potential.v_min
+    return float(h * potential.depth / barrier) if barrier > 0 else NAN
 
 
 def half_width_in_potential(potential: Potential, identity_coefficient: float) -> float:
@@ -1038,9 +1100,10 @@ def cycle_energies(
     separatrix energy of that moment, the predicted period is that of the cycle's mean strength,
     T_pend(h) / sqrt(m_cycle), J/<J_s> = J/J_s(h) sqrt(m_cycle) and h_mean = h m_cycle (SEPARATRIX §2.3).
     J/J_s(h) is that of `potential` itself (`action_ratio_in_potential`): the closed form for one harmonic,
-    quadratures over the deepest well otherwise. The predicted period of a libration cycle is that of the loop of its
-    energy in the well that holds it (`cycle_period`: the basin of its fastest sample), so the period law holds in a
-    potential of several wells too; with one well it is the deepest well's (`period_in_potential`)."""
+    quadratures otherwise, in the well the libration cycle occupies (`occupied_well`: the basin of its fastest
+    sample; its loop over that well's separatrix loop, `CycleEnergy.well_rad`). The predicted period of a libration
+    cycle is that of the loop of its energy in the same well (`cycle_period`), so the period law and the action hold in
+    a potential of several wells too; with one well both are the deepest well's (`period_in_potential`)."""
     if potential is None or not len(bounds):
         return []
     t_yr = np.asarray(t_yr, dtype=float)
@@ -1061,28 +1124,52 @@ def cycle_energies(
     start = np.array([bound[0] for bound in bounds], dtype=float)
     end = np.array([bound[1] for bound in bounds], dtype=float)
     rotation = np.array([bool(bound[2]) for bound in bounds])
+    wells = [None] * len(bounds)  # the occupied well of each libration cycle, None = the deepest
     if potential.n_harmonics == 1:
         ratio = np.where(np.isfinite(h), action_ratio(h), NAN)
         with np.errstate(invalid='ignore'):
             libration = np.isfinite(h) & (h >= 0) & (h < 1)
         period = np.where(libration, libration_period(h, potential.omega_rad_yr), revolution_period(h, potential.omega_rad_yr))
     else:
-        separatrix = well_separatrix(potential)
-        full_action = separatrix_action(potential, separatrix)
-        ratio = np.array([NAN if r else action_ratio_in_potential(potential, x, separatrix, full_action) for x, r in zip(h, rotation)])
         found = extrema(potential)
         fastest = [
             phi[a + int(np.nanargmax(phi_rate[a:b] ** 2))] if np.any(np.isfinite(phi_rate[a:b])) else NAN for a, b in zip(first, stop)
         ]
+        wells = [None if r else occupied_well(potential, f, found) for f, r in zip(fastest, rotation)]
+        actions = WellActions(potential)
+        ratio = np.array(
+            [NAN if r else action_ratio_in_potential(potential, x, *actions.of(w), well_rad=w) for x, r, w in zip(h, rotation, wells)]
+        )
         period = np.array([cycle_period(potential, x, f, found) for x, f in zip(h, fastest)])
     ratio = np.where(rotation, NAN, ratio * scale)
     with np.errstate(invalid='ignore', divide='ignore'):
         predicted = period / scale
         law = np.where(np.isfinite(predicted) & (predicted > 0), (end - start) / predicted, NAN)
     return [
-        CycleEnergy(float(a), float(b), bool(r), float(x), float(j), float(b - a), float(w), float(x * m), float(m))
-        for a, b, r, x, j, w, m in zip(start, end, rotation, h, ratio, law, m_cycle)
+        CycleEnergy(
+            float(a), float(b), bool(r), float(x), float(j), float(b - a), float(w), float(x * m), float(m), NAN if v is None else v
+        )
+        for a, b, r, x, j, w, m, v in zip(start, end, rotation, h, ratio, law, m_cycle, wells)
     ]
+
+
+class WellActions:
+    """(separatrix, J_s) of the wells of a multi-harmonic potential, each computed once (`well_separatrix`,
+    `separatrix_action`); key None (or nan) = the deepest well. One harmonic (or no potential): (None, None), the
+    closed forms need neither."""
+
+    def __init__(self, potential: Optional[Potential]):
+        self.potential = potential
+        self._cache: dict = {}
+
+    def of(self, well_rad: Optional[float]) -> Tuple[Optional[Tuple[float, float, float]], Optional[float]]:
+        if self.potential is None or self.potential.n_harmonics == 1:
+            return None, None
+        key = None if well_rad is None or not np.isfinite(well_rad) else float(well_rad)
+        if key not in self._cache:
+            separatrix = well_separatrix(self.potential, key)
+            self._cache[key] = (separatrix, separatrix_action(self.potential, separatrix, key))
+        return self._cache[key]
 
 
 def _nan_means(values: np.ndarray, first: np.ndarray, stop: np.ndarray) -> np.ndarray:
@@ -1126,26 +1213,20 @@ def with_slow_check(sigma_only: CheckValue, window_correlations: Sequence[float]
     return CheckValue.PASS if fraction >= settings.separatrix_vevf_fraction else CheckValue.FAIL
 
 
-def _libration_action(cycle: CycleEnergy, potential: Optional[Potential], scatter: float, well) -> Tuple[float, float]:
+def _libration_action(cycle: CycleEnergy, potential: Optional[Potential], scatter: float, wells: WellActions) -> Tuple[float, float]:
     """(J/<J_s>, sigma_J) of a libration cycle in `potential` (the cosine without one): the cycle's own ratio (else
     J/J_s(h) of the potential) and the scatter of h carried by the slope, both times sqrt(m_cycle) (J/<J_s> =
-    J/J_s(h) sqrt(m)). `well` = (separatrix, J_s) of the potential, computed once by the caller."""
-    separatrix, full = well
+    J/J_s(h) sqrt(m)), in the well the cycle occupies (`CycleEnergy.well_rad`, nan = the deepest). `wells` holds each
+    well's (separatrix, J_s), computed once per potential by the caller."""
+    well = cycle.well_rad if np.isfinite(cycle.well_rad) else None
+    separatrix, full = wells.of(well)
     scale = np.sqrt(cycle.strength_rel_sq) if cycle.strength_rel_sq > 0 else 1.0
     ratio = cycle.action_ratio
     if not np.isfinite(ratio):
         ratio = (
-            action_ratio_in_potential(potential, cycle.h, separatrix, full) if potential is not None else action_ratio(cycle.h)
+            action_ratio_in_potential(potential, cycle.h, separatrix, full, well) if potential is not None else action_ratio(cycle.h)
         ) * scale
-    return ratio, action_slope_in_potential(potential, cycle.h, separatrix, full) * scale * scatter
-
-
-def _well(potential: Optional[Potential]):
-    """(separatrix, J_s) of a multi-harmonic potential, (None, None) otherwise (the closed forms need neither)."""
-    if potential is None or potential.n_harmonics == 1:
-        return None, None
-    separatrix = well_separatrix(potential)
-    return separatrix, separatrix_action(potential, separatrix)
+    return ratio, action_slope_in_potential(potential, cycle.h, separatrix, full, well) * scale * scatter
 
 
 def classify_cycles(
@@ -1158,14 +1239,14 @@ def classify_cycles(
     hence J/<J_s> and h_mean of the cycle."""
     scatter = sigma_h if np.isfinite(sigma_h) else settings.separatrix_sigma_floor
     margin = settings.separatrix_sigma_margin
-    well = _well(potential)
+    wells = WellActions(potential)
     classes = []
     for cycle in cycles:
         if cycle.rotation:
             above = cycle.energy_over_mean - margin * scatter > zone.h_hi
             classes.append(CycleClass.ABOVE if above else CycleClass.ZONE)
             continue
-        ratio, sigma_j = _libration_action(cycle, potential, scatter, well)
+        ratio, sigma_j = _libration_action(cycle, potential, scatter, wells)
         deep = ratio + margin * sigma_j < zone.j_lo
         classes.append(CycleClass.DEEP if deep else CycleClass.ZONE)
     return classes
@@ -1177,13 +1258,13 @@ def edge_cycles(
     """Per cycle: lies within one sigma (sigma_J or sigma_h) of a zone edge, so its class is not stable (zone_edge_cycle).
     sigma_J as in `classify_cycles` (the slope of J/J_s in `potential`)."""
     scatter = sigma_h if np.isfinite(sigma_h) else settings.separatrix_sigma_floor
-    well = _well(potential)
+    wells = WellActions(potential)
     edges = []
     for cycle in cycles:
         if cycle.rotation:
             edges.append(bool(abs(cycle.energy_over_mean - zone.h_hi) < scatter))
             continue
-        ratio, sigma_j = _libration_action(cycle, potential, scatter, well)
+        ratio, sigma_j = _libration_action(cycle, potential, scatter, wells)
         edges.append(bool(abs(ratio - zone.j_lo) < sigma_j))
     return edges
 

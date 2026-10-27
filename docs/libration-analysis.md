@@ -89,8 +89,8 @@ $$
 $h$ is normalised by the **global** extrema of the fitted $V$ (`Potential.energy_h`): $h < 1$ is libration and
 $h > 1$ circulation for a single-well potential. With two harmonics a well may be bounded by a lower, local barrier;
 then the separatrix of that well has $h_{\text{sep}} = (E_{\text{barrier}} - V_{\min})/(V_{\max} - V_{\min}) < 1$, and
-$h < 1$ does not by itself mean confinement in that well. The per-cycle period uses the well that holds the cycle;
-the action uses the deepest well (below); the separatrix zone of §8.6 has its own normalisation.
+$h < 1$ does not by itself mean confinement in that well. The per-cycle period and action use the well that holds
+the cycle (below); the separatrix zone of §8.6 has its own normalisation.
 
 For one harmonic, $V = -\omega_0^2\cos(\sigma - \sigma_s)$, a libration of half-amplitude $A$ has
 (M&D 1999, eqs. 8.49–8.52, p. 337)
@@ -120,11 +120,12 @@ J(E) = \frac{1}{2\pi}\oint p\,d\sigma = \frac{1}{\pi}\int_{\sigma_-}^{\sigma_+}\
 $$
 
 For the cosine well $J_s = 8\omega_0/\pi$ on the separatrix and $J/J_s = \mathsf E(h) - (1-h)\,\mathsf K(h)$. For a
-fitted $V$ with two harmonics, $J$ and $J_s$ are quadratures in the **deepest** well of $V$, up to the lower of the two
-maxima that bound it (`pendulum.well_separatrix`), for every cycle; only the per-cycle period
-(`pendulum.cycle_period`) is taken in the well whose basin holds the cycle's fastest sample. In an unequal double
-well a cycle of the shallower well therefore gets a period of its own well but an action ratio $J/J_s$ (`sep_cycle_J`,
-the zone classes of §8.6) of the deepest one. The revolution period above the separatrix is $2\mathsf K(1/h)/(\omega_0\sqrt h)$, and the ratio of the
+fitted $V$ with two harmonics, $J$ and $J_s$ of a libration cycle are quadratures in the well whose basin holds the
+cycle's fastest sample (`pendulum.occupied_well`), up to the lower of the two maxima that bound it
+(`pendulum.well_separatrix`), as its period (`pendulum.cycle_period`); $d(J/J_s)/dh$ uses that well's $J_s$
+(`CycleEnergy.well_rad`, nan for the deepest well). With two harmonics the two wells differ in $J$ by a constant at one
+energy, so the deepest well's ratio of a shallow-well cycle would be too large (W25, [The resonant
+pendulum](physics/pendulum.md)). The revolution period above the separatrix is $2\mathsf K(1/h)/(\omega_0\sqrt h)$, and the ratio of the
 slowest to the mean rate of a revolution is $r_{\text{pend}}(h) = \frac{2}{\pi}\sqrt{(h-1)/h}\,\mathsf K(1/h)$.
 
 These are model diagnostics fitted to the record, not exact integrals of the N-body motion: a well that moves or
@@ -634,11 +635,13 @@ $$
 
 a libration cycle is `deep` when $j_j + z\sigma_J < J_{\text{lo}}$, a revolution `above` when
 $h_{\text{mean}} - z\sigma_h > h_{\text{hi}}$, any other cycle `zone`; a cycle within one $\sigma$ of an edge sets
-`zone_edge_cycle`. ($J/J_s$ of a two-harmonic $V$ is that of the deepest well, §2.) For a two-body angle with its
+`zone_edge_cycle`. ($J/J_s$ of a two-harmonic $V$ is that of the well the cycle occupies, §2; $h_{\text{lo}}$, a property
+of the zone, is read in the deepest well.) For a two-body angle with its
 planet saved, an episode's cycle is instead read at its turning points in the averaged well,
 $h_{TP} = (\langle D\rangle(\sigma_{TP}) - \langle D\rangle_{\min})/(\langle D\rangle_{\text{barrier}} - \langle D\rangle_{\min})$,
 the barrier being the lower of the two tops around the well: `zone` when any $h_{TP} \ge h_{\text{lo}}$ (the energy of
-$J_{\text{lo}}$ in $V_E$), `deep` when every $h_{TP}$ is measured and below it, otherwise the class above stays; no
+$J_{\text{lo}}$ in $V_E$, over the barrier of $V_E$'s deepest well, `pendulum.h_in_barrier_units`; over $V_E$'s
+global depth before W25, which a two-well $V_E$ makes smaller), `deep` when every $h_{TP}$ is measured and below it, otherwise the class above stays; no
 $\sigma_h$ enters there. These are classes of the fitted model, not a measurement of chaos. The zone gives the flags
 `libration_in_separatrix_zone`, `episodes_in_separatrix_zone`, `near_separatrix_energy`, the margins L2 and Z, and
 the cap `episodes_in_separatrix_zone`. It changes no status, with one exception: when the episodes lie in the zone,
