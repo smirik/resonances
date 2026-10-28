@@ -104,17 +104,7 @@ alone. The time series are `body.axis`, `body.ecc`, `body.inc`, `body.Omega`, `b
 
 ## What is saved and plotted
 
-`save` and `plot` select the (body, resonance) rows by their status:
-
-| mode | rows |
-|---|---|
-| `none` | nothing |
-| `all` | everything |
-| `resonant` | `resonant`, `transient` |
-| `candidates` | `resonant`, `transient`, `near_separatrix`, `uncertain` |
-| `extended` | the candidates and a `non_resonant` row with a libration origin (kinematic, induced, subresonance, ...) |
-| `nonzero` (default) | everything except a `non_resonant` row without a libration origin |
-| `negative` | `near_separatrix`, `uncertain`, `invalid` |
-
+`save` and `plot` select the (body, resonance) rows by their status; the modes (`nonzero` by default, `all`,
+`resonant`, `candidates`, ...) are listed in [Configuration](config.md#saving-and-plotting).
 `summary.csv` always holds every row (`save_summary=True`). The files and folders are described in
 [Output data](output.md); a saved run can be read back with [`SimulationSerializer.restore`](serialization.md).

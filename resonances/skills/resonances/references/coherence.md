@@ -18,10 +18,12 @@ That is what distinguishes a real resonance from a coincidence:
 The second point is not decorative. The argument of pericentre ω can librate without
 any Lidov-Kozai resonance: when the forced eccentricity vector dominates the free one,
 the geometry alone keeps ω bounded. Asteroid 591986 is exactly this case — its
-osculating ω librates, but its free ω circulates and `e`/`i` do not exchange.
+osculating ω librates, but its free ω circulates; at its 6-kyr cycle `e` and `i` move
+in phase (a forced-eccentricity beat), not in the ZLK antiphase.
 
 !!! note "No status depends on this page"
-    The cross spectra are diagnostics. The e-i criterion gives the flag `confirmed_ei`; what makes 591986
+    The cross spectra are diagnostics. The e-i criterion gives the columns `zlk_coherent` and `zlk_check`
+    (`confirmed_ei` is now the e–i coupling at the row's own period, [Free elements](free-elements.md#beyond-the-gate)); what makes 591986
     `non_resonant` is the free-ω gate ([Free elements](free-elements.md)). The reason is the baseline, see
     [below](#why-it-does-not-decide-the-status).
 
@@ -138,10 +140,15 @@ same thing in all nine: **e and i never actually trade.** So the flag requires b
 
 ## The e-i exchange flag
 
-Measured after the verdict, for Lidov-Kozai rows. It **changes no status**: it records
-`confirmed_ei`, the evidence that eccentricity and inclination really trade, as the check `check_zlk_ei`:
+Measured after the verdict, for Lidov-Kozai rows that are not `non_resonant` (with
+`COHERENCE_SKIP_NON_RESONANT`). It **changes no status**: it records whether the strongest coherent e–i line is an
+exchange, as `zlk_coherent` and `zlk_check`. The flag `confirmed_ei` and the check `check_zlk_ei` no longer come
+from here: they are the e–i coupling measured at the row's own decisive period, for every ZLK row
+(`zlk_ei_coupling`, [Free elements: beyond the gate](free-elements.md#beyond-the-gate)), because this line can sit
+on a harmonic or outside the ZLK band (3040, 4257 and 162474 pass here on lines at 10–21 kyr while their ZLK periods
+are 40–59 kyr).
 
-| situation | `confirmed_ei` | `zlk_check` |
+| situation | `zlk_coherent` | `zlk_check` |
 |---|---|---|
 | antiphase line **and** e/i anticorrelate | `True` | `passed` |
 | no antiphase line | `False` | `failed` |
@@ -155,8 +162,9 @@ restoring `coherence_pairs['lidov_kozai'] = ['e-i']` with its target enables the
 
 The 180° target is a **prograde** diagnostic. At constant $H$ a retrograde orbit ($\cos i < 0$) has $e$ and $i$
 varying *in phase*, and the anticorrelation test does not confirm that branch. The exchange also assumes $i$ measured
-from the perturber's plane and $H$ conserved (quadrupole approximation); the package uses the ecliptic $i$ of an
-N-body run, so the comparison is approximate. No status depends on it.
+from the perturber's plane and $H$ conserved (quadrupole approximation); this line uses the ecliptic $i$ of an
+N-body run, so the comparison is approximate. The period-specific coupling (`zlk_ei_coupling`) reads $i$ from the
+invariable plane and the tilt of a retrograde orbit. No status depends on either.
 
 `short_baseline` is the important distinction: a check that could not run must not be read
 as a negative result, so the reason is recorded and a researcher can filter on the column
@@ -174,7 +182,7 @@ by measurement.
 
 The status decision moved to the forced/free split, which has no such band: see
 [free elements](free-elements.md). The cross spectra, `coherence.csv` and the figures are
-unchanged, and `confirmed_ei` sits next to the status as independent evidence.
+unchanged; the line columns sit next to the status as independent evidence.
 
 > **The `ZLK_MIN_ANTICORRELATION = 0.5` default is provisional.** It sits between the
 > only two objects measured so far — 591986 never exceeds 0.38 and is not in resonance,
@@ -207,8 +215,7 @@ proper eccentricity `e_p = 0.0308`.
 ## Output
 
 **`summary.csv`** gains, per body and resonance:
-`e_forced`, `e_free`, `confirmed_ei` (True/False/empty), `zlk_coherent` (the same value
-under its older name), `zlk_check`, `zlk_line_period`, `zlk_line_phase`,
+`e_forced`, `e_free`, `zlk_coherent` (True/False/empty), `zlk_check`, `zlk_line_period`, `zlk_line_phase`,
 `zlk_line_gamma2`, `zlk_line_r_band`.
 
 **`coherence.csv`** — one row per detected line, appended per run like `summary.csv`
@@ -254,47 +261,16 @@ sim = resonances.check(
 sim.run()
 ```
 
-- `ecc_vector` → `{body}-ecc-vector.png` — the `(k, h)` plane coloured by time, in a
-  square window centred on the origin. The offset of the cloud from the origin is
-  `e_forced`, its radius `e_free`; a cloud that does not enclose the origin keeps ω
-  bounded whatever the dynamics. It explains *why*
-  ω librates, but does not say whether the libration is a resonance: genuine librators
-  and forced-geometry cases both show an offset cloud, and `e_free/e_forced` comes out
-  below 1 for both (0.27–0.35 for 3040, 4257 and 162474, 0.79 for 591986).
-- `cross_spectrum` → `{body}-{resonance}-coherence-{pair}.png` per pair — three panels
-  read together:
-
-  1. **coherence** — a stem per detected line over a faint full spectrum, one colour per
-     segmentation level, each with its own dotted threshold, the strongest lines circled
-     in red;
-  2. **cross-phase** — one marker per detected line, sized by cross-amplitude, filled
-     when the consensus is unanimous and hollow otherwise, over the target band;
-  3. **band-passed series** — the two quantities filtered around the decisive line, over
-     16 of its cycles. This is the panel that settles it: two curves in antiphase are an
-     exchange, two curves drifting past each other are not.
-
-  Everything is cropped to the search band — bins outside it cannot be claimed as
-  significant, and the short-period forest only distracts. Period and time axes pick
-  their own unit (yr / kyr / Myr), so the same figure reads at 1 kyr and at 50 Myr.
-
-### What the shading means
-
-The yellow band marks **where to look**: an interval that every level entitled to vote
-clears — you can check it by eye, all the faint curves are above their own dotted
-thresholds across it — *and* that carries one of the three strongest lines by
-cross-amplitude.
-
-Agreement alone is not selective enough to be worth a highlight. For the `e-i` pair it
-mostly measures conservation of the Kozai integral `H = √(1−e²)·cos i`: when H holds, i
-is a smooth monotone function of e, so the two are coherent at every frequency that
-carries power. The share of the band where all levels agree tracks that almost exactly —
-3040 78%, 4257 44%, 88899 24%, 10563 0%, in the same order as how well i is predicted
-from e through H (R² = 0.86, 0.64, 0.06, 0). Highlighting all of it would say only "H is
-conserved", which is not the question.
-
-A level whose validity band does not reach a period **abstains** rather than objects: it
-cannot see the line, so it must not block a consensus. That distinction is why agreement
-across levels is reported but not used as a gate condition.
+- `ecc_vector` → `{body}-ecc-vector.png` ([How to read the figures](reading-figures.md#ecc_vector)): the offset of the cloud is
+  `e_forced`, its radius `e_free`. It explains *why* ω is bounded, not whether that is a resonance: genuine
+  librators and forced-geometry cases both show an offset cloud, with `e_free/e_forced` below 1 for both
+  (0.27–0.35 for 3040, 4257 and 162474, 0.79 for 591986).
+- `cross_spectrum` → `{body}-{resonance}-coherence-{pair}.png` per pair: coherence, cross-phase and the two series
+  band-passed at the decisive line ([How to read the figures](reading-figures.md#cross_spectrum)). The yellow
+  bands there mark agreement across levels at one of the strongest lines; agreement alone is reported but is not a
+  gate condition, since for `e-i` it mostly measures the conservation of `H = √(1−e²)·cos i`: the share of the band
+  where all levels agree tracks how well i is predicted from e through H (3040 78 %, 4257 44 %, 88899 24 %,
+  10563 0 %; R² = 0.86, 0.64, 0.06, 0).
 
 Both plotters are usable directly:
 

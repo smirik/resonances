@@ -1,7 +1,7 @@
 # Physics notes the code relies on
 
 Conclusions measured during the programme, with the objects that showed them. The formulas are in
-`docs/libration-analysis.md`; here is why the code is built the way it is.
+`docs/physics/` (rule IDs: `docs/libration-analysis.md`); here is why the code is built the way it is.
 
 ## The a↔σ identity and what it forbids
 
@@ -119,7 +119,16 @@ Conclusions measured during the programme, with the objects that showed them. Th
 
 - A bounded osculating ω in a Trojan can be forced-eccentricity geometry (591986; Vinogradova 2024 on shifted ZLK
   centres): the free ω winds while the forced e holds the osculating one.
-- e–i exchange also occurs with circulating ω (41/186 bodies), so it cannot decide ZLK.
+- e–i exchange also occurs with circulating ω (41/186 bodies), so it cannot decide ZLK. Two laws tell its mechanism:
+  constant √(1−e²)cos i (ZLK: di/de = −e cot i/(1−e²), antiphase) and constant √(1−e²)(1−cos i), the momentum
+  conjugate to Ω when the forcing acts on ϖ only (a forced-eccentricity beat: +e tan(i/2)/(1−e²), in phase). 591986's
+  6-kyr cycle follows the second (δi 0.0041° vs 0.0037°); 15527 (circulating) follows the first at its cos 2ω harmonic.
+- 591986 has two scales that are both forcing: 6 kyr = 2π/(g_free − g5) (free circle around the forced tip) and
+  54 kyr = 2π/(g6 − g5), the forced vector's direction swinging ±arcsin(|c6|/|c5|) = 22.8° (reconstruction r 0.991).
+  A clean synthetic of it decided at the 54-kyr centre scale until the scale guard (forced beat + ρ_max < 1).
+- One median e_free over the whole record hides a free circle that grows in part of it: compare rolling medians of
+  both radii over one libration cycle (555527: 0.59 global, 0.66 local at 100 kyr; an instantaneous ratio reaches
+  1.03 on noise).
 - A planetary-frequency free residual means leakage or a true secular resonance; either makes the ZLK reading
   ambiguous (withhold, do not call it kinematic; 4257).
 - Different baselines are different evidence: 162474 is episodic over 1.5 Myr, resonant on its first 0.5 Myr alone.

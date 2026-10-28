@@ -2164,11 +2164,14 @@ def onset_clear(
 
 
 def _episode_zone_class(classes: Sequence[CycleClass]) -> str:
-    """'zone' if any cycle is in the zone, else the common class of the cycles ('' without cycles)."""
+    """'zone' if any cycle is in the zone, else 'not_measured' if a cycle is not measured (a loop around several wells:
+    it may be the one in the zone), else the common class of the cycles ('' without cycles)."""
     if not classes:
         return ''
     if CycleClass.ZONE in classes:
         return str(CycleClass.ZONE)
+    if CycleClass.NOT_MEASURED in classes:
+        return str(CycleClass.NOT_MEASURED)
     return str(CycleClass.DEEP) if CycleClass.DEEP in classes else str(CycleClass.ABOVE)
 
 

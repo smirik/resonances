@@ -37,13 +37,13 @@ separatrix) never make a margin U. Which settings are conventions is marked "(co
 | id | class | physical question | full when |
 |---|---|---|---|
 | L1 | D | Does the libration survive a different filter? | the decisive episode keeps ≥ `MMR_L1_TP_FULL` = 7 turning points at $P_c/2$, $P_c$ and $2P_c$ |
-| L2 | D | Is it far from the separatrix? | no cycle lies in the separatrix zone; without a measured zone, amplitude ≤ `MMR_L2_AMP_FULL_DEG` = 120° |
+| L2 | D | Is it far from the separatrix? | no cycle lies in the separatrix zone; without a measured zone, amplitude ≤ `MMR_L2_AMP_FULL_DEG` = 120° (thin to `MMR_L2_AMP_THIN_DEG` = 160°) |
 | L3 | S | Does $\dot\sigma \simeq c\,(a - a_*)$ hold? | the identity passes (not applicable to a kinematic verdict) |
 | L4 | D | Does $\dot a$ follow the force law? | $R^2 \ge$ `MMR_FORCE_R2_FULL` = 0.7 in both halves of the record |
-| L5 | S | Is it one pendulum? | the small-amplitude period $T_0$ varies by ≤ `MMR_L5_RATIO_FULL` = 1.15 × what the modulation of the force allows |
+| L5 | S | Is it one pendulum? | $r$ = max/min of $T_0$ over the amplitude regimes ≤ $b$ = `MMR_L5_RATIO_FULL` = 1.15 × $\omega_{\max}/\omega_{\min}$ (the modulation of the force; 1 without one); thin to `MMR_L5_RATIO_FAIL` = 2 × $b$, failed above; above $b$ only thin when the median $e$ > `MMR_L5_E_CAVEAT` = 0.2 |
 | L6 | D | Is the centre fixed? | the centre shifts by ≤ `MMR_L6_SHIFT_FULL` = 0.5 of the mean amplitude |
 | L7 | D | Does the libration reach both ends of the record? | the gaps at the edges are ≤ `MMR_L7_GAP_FULL` = 0.7 periods |
-| L8 | S | Do the step and the filter resolve the cycle? | $\sigma$ turns by < `MMR_L8_STEP_FULL_DEG` = 10° per step, the filter keeps ≥ `MMR_L8_GAIN_FULL` = 0.94 of the cycle, no aliased line in the band |
+| L8 | S | Do the step and the filter resolve the cycle? | $\sigma$ turns by < `MMR_L8_STEP_FULL_DEG` = 10° per step, the filter keeps ≥ `MMR_L8_GAIN_FULL` = 0.94 of the cycle (failed below 0.5), no aliased line in the band; not graded for a circulation ≥ `MMR_FAR_FROM_RES_FACTOR` = 10 $a$-scales from $a_*$ |
 | O1 | cap | Is this a capture, not a wave that was already there? | the $a$-wave before the episode is < `MMR_O1_RATIO_THIN` = 0.25 of the one inside (≥ `MMR_O1_RATIO_FAIL` = 0.5: cap low) |
 | Z | D | Is the separatrix zone measured? | measured without caveats |
 | R0 | D | Is the energy from $a$ conserved in a potential of $\sigma$? | passes |
@@ -143,7 +143,7 @@ and the panel that decides between the two.
 | `near_separatrix_without_zone`, `l2_without_zone` | medium | a circulation, or a libration close to the separatrix |
 | `second_capture_unresolved` | medium | $\sigma$ is held by its own term as well: both resonances at once |
 | `owner_search_skipped`, `catalogue_longitudes` | medium | another resonance drives $a$ (rerun with the search on, the planets saved) |
-| `planets_missing`, `subresonance_*`, `nodal_subresonance_candidate` | medium | a member of the multiplet holds the centre |
+| `planets_missing`, `nodal_subresonance_candidate`, `subresonance_tie`, `subresonance_t6_only`, `subresonance_theory_unconfirmed`, `subresonance_undetermined` | medium | a member of the multiplet holds the centre |
 | `jitter_low_e` | medium | invalid: $\varpi$ is undefined at small $e$ |
 | `short_period_aliased` | medium | the turning points are partly the output step's: short-period terms folded into $\sigma_f$ and $a_f$ |
 | `one_cycle_energy_not_conserved` | medium | (1:1) the one cycle may be a passage, not motion in the averaged well |
@@ -199,6 +199,15 @@ T_{\rm next} = \mathrm{round\ up}\big(\max(f_{\min}T,\ \min(N,\ f_{\rm next}T))\
 $$
 
 with $f_{\rm next}$ = `MMR_NEXT_CHECK_SPAN_FACTOR` = 4: a budget after which the record is analysed again, not a promise that it is enough.
+A drift or another `uncertain` verdict asks for $N$ itself. When $T_{\rm req} \le T$, time is not what is missing:
+`base_cause` names what is, and the action is `review`.
+
+??? info "Which time scale decides (`base_period_source`)"
+    For `few_cycles`: twice the median spacing of the turning points, and the slow scales. For `arc`: twice the
+    longest stretch without a turn of the slow centre, the $2\omega$ or $e$-cycle when the kinematic test fails, and
+    B5's bound. For `stall`: one revolution at the stall's mean rate, and the force bound $P_\text{lib,min}$
+    ([The lower bound of an arc or a stall](geometry.md#the-centre-and-circulation)). The column `base_period_source`
+    names the one that decided.
 
 **Which step to resample at.** For an alias or a coarse step, `resample_step_yr` is the largest value of
 `MMR_RESAMPLE_STEPS_YR` that keeps one alias branch over the range of $a$, samples the libration at least
@@ -206,6 +215,16 @@ with $f_{\rm next}$ = `MMR_NEXT_CHECK_SPAN_FACTOR` = 4: a budget after which the
 the record's step already meets these bounds. When the cap `short_period_aliased` alone holds the level down, the
 step is `smp_fold_free_step_yr`: the largest grid step below the record's at which no short period folds.
 
-Secular and Lidov-Kozai verdicts follow the same table; `uncertain / gate_unavailable` asks to extend (a longer
-baseline resolves the planetary frequencies better). No length is computed for them (`extend_to_years` stays
-empty); the planning rule $T_{\rm req}$ above, with $P$ the expected libration period, is the guide.
+**Secular and Lidov-Kozai.** The same table, and every extension is a next check $T_{\rm next}$ with an $N$ by
+cause (column `base_extend_cause`; module `analysis/secular/extend.py`). No status changes:
+
+| cause | $N$ | action |
+|---|---|---|
+| `baseline` (`baseline_needed`: drift, `insufficient_time`) | $T_{\rm req}$ with $P = \max(P_{\rm floor}, P_{\rm cyc})$, $P_c$ the decisive cutoff (secular with no cycle, $P_c$ = 100 kyr: 500 kyr) | `extend` |
+| `gate_cycles` (gate `short_window`) | $n_{\min} P_{\rm cyc}$ + what the free elements lose of the record ($T - T_{\rm free}$), $n_{\min}$ = `FREE_GATE_MIN_CYCLES` | `extend` |
+| `gate_resolution` (gate `planetary_residual`) | a free rate $d_{\min}$″/yr from a planetary one, inside the Rayleigh width $1\,296\,000/T_{\rm free}$: $m \cdot 1\,296\,000/d_{\min} + (T - T_{\rm free})$, $m$ = `ZLK_EXTEND_RESOLUTION_MARGIN` = 1.25 (373136 at 100 kyr, $d$ = 3.5: 400 kyr; 1981 at 500 kyr, $d$ = 1.9: 1 Myr) | `extend` |
+| `gate_unresolvable` | that baseline above `ZLK_EXTEND_MAX_YR` = 100 Myr, or $d_{\min} = 0$ | `review` |
+| `gate_undefined_phase`, `gate_unavailable`, `unusable_series` | a longer record does not define the free phase, build missing free elements or repair a series | `review` |
+
+The geometric $T_{\rm req}$ joins every gate cause (the larger $N$). Columns as for an MMR: `base_required_kyr`,
+`base_period_yr`, `base_period_source` (`cycle` or `period_floor`), `base_extend_to_years`.

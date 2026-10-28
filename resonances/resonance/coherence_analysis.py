@@ -6,8 +6,11 @@ from the per-resonance-type presets.
 
 Nothing here decides a resonance status. The Lidov-Kozai status decision moved to
 `resonance/omega_free_gate.py`, which works on the forced/free split rather than on
-cross spectra; what the e-i coherence contributes is `confirmed_ei`, independent
-corroboration that eccentricity and inclination really trade at constant H.
+cross spectra. The e-i coherence of a ZLK row is the line columns `zlk_coherent`,
+`zlk_check`, `zlk_line_*` (the strongest coherent line in the Welch band); the flag
+`confirmed_ei` and the check `check_zlk_ei` now come from the e-i coupling measured at
+the row's own decisive period (`analysis.zlk.diagnostics`, columns `zlk_ei_*`), which is
+measured for every ZLK row whatever its status.
 
 The move was forced by baselines. The coherence band tops out at `T / (5 * n_seg)`,
 which is 25 kyr on a 500 kyr run at four segments, while real Lidov-Kozai lines in
@@ -246,7 +249,8 @@ class ZLKGate:
 
     @property
     def confirmed_ei(self) -> Optional[bool]:
-        """Whether e and i were seen exchanging; None when the check could not run."""
+        """Whether e and i were seen exchanging at the strongest coherent line; None when the check could not run.
+        The summary column `confirmed_ei` is no longer this: it is the period-specific coupling (`zlk_ei_coupling`)."""
         return self.coherent
 
 
@@ -308,7 +312,6 @@ def _exchanges(r_band: float, config) -> bool:
 
 
 SUMMARY_COLUMNS = (
-    'confirmed_ei',
     'zlk_coherent',
     'zlk_check',
     'zlk_line_period',
@@ -319,15 +322,13 @@ SUMMARY_COLUMNS = (
 
 
 def summary_fields(analyses: Dict[str, PairAnalysis], gate: Optional[ZLKGate]) -> dict:
-    """The coherence columns of one `summary.csv` row.
-
-    `confirmed_ei` is the spec's flag: e and i were seen trading at the strongest coherent
-    line. It is corroboration next to the status, not an input to it.
+    """The coherence columns of one `summary.csv` row: the strongest coherent e-i line and
+    whether it passed the antiphase criterion (`zlk_coherent`). Corroboration next to the
+    status, not an input to it; `confirmed_ei` is the analysis' own column (`zlk_ei_coupling`).
     """
     if gate is None:
         return {column: None for column in SUMMARY_COLUMNS}
     return {
-        'confirmed_ei': gate.confirmed_ei,
         'zlk_coherent': gate.coherent,
         'zlk_check': str(gate.check),
         'zlk_line_period': gate.line_period,

@@ -17,14 +17,10 @@ import tests.tools as tools  # noqa: E402
 from resonances.plotting import MMRDiagnostics, MMRPlotter  # noqa: E402
 from resonances.plotting.mmr_plots import (  # noqa: E402
     PlanetSeries,
-    centre_line,
-    lone_points,
     portrait_coordinates,
-    envelope_bins,
     recurrence_points,
 )
-from resonances.resonance.oscillations import Cycle  # noqa: E402
-from resonances.plotting.style import DEFAULT_PLOT_OPTIONS, PlotStyle, PortraitY, SeriesMode, resolve_plot_options  # noqa: E402
+from resonances.plotting.style import DEFAULT_PLOT_OPTIONS, PlotStyle, PortraitY, resolve_plot_options  # noqa: E402
 
 
 def diagnostics(centre=np.pi, turns=3, n=4000, years=4000.0, planet=True, focus=None):
@@ -118,26 +114,6 @@ class TestDiagnostics:
         assert d.label == key
         assert 'prograde resonances only' in d.fair_unavailable_reason()
 
-    def test_envelope_bins(self):
-        # 400-yr cycles over 4000 yr = 10 cycles. On 900 px with a 2.5-px line a cycle gets
-        # 90 px >= 4 x 2.5: lines. On 30 px it gets 3 px: bands of two cycles, 10 / 2 = 5.
-        d = diagnostics()
-        assert envelope_bins(d, SeriesMode.AUTO, 900, 2.5) == 0
-        assert envelope_bins(d, SeriesMode.AUTO, 30, 2.5) == 5
-        assert envelope_bins(d, SeriesMode.ENVELOPE, 900, 2.5) == 5
-        assert envelope_bins(d, SeriesMode.LINES, 30, 2.5) == 0
-
-    def test_envelope_contains_every_sample(self):
-        from resonances.plotting.mmr_plots import _envelope
-
-        fig, ax = plt.subplots()
-        t = np.linspace(0, 100, 1001)
-        y = np.sin(2 * np.pi * t / 3.0)
-        _envelope(ax, t, y, 10)
-        band = ax.collections[0].get_paths()[0].vertices
-        plt.close(fig)
-        assert band[:, 1].min() == pytest.approx(y.min()) and band[:, 1].max() == pytest.approx(y.max())
-
     @pytest.mark.parametrize('centre, degrees', [(np.pi, 180.0), (0.0, 0.0)])
     def test_portrait_keeps_the_libration_centre(self, centre, degrees):
         # The unwrapped angle sits 3 turns away; only whole turns are removed, so the
@@ -223,39 +199,64 @@ class TestDiagnostics:
         assert MMRPlotter(backward).plot('cycles')
 
 
-class TestCentreLine:
-    def cycle(self, start, end):
-        return Cycle(start=start, end=end, diameter=1.0, centre=0.0)
+class TestCyclesAxis:
+    """1921 2J-1 kind of record: a librates with sigma at 400 yr, 2 milli-au; the body's a low-passed at the run's
+    2000-yr cutoff has lost it (here a constant, what that low-pass leaves of a 400-yr wave). The cycles panel folds
+    the analysis' own a_f: by hand a - median over a whole cycle of 0.002 cos spans 4 milli-au (+-2)."""
 
-    def test_neighbours_are_joined(self):
-        cycles = [self.cycle(0, 1), self.cycle(1, 2), self.cycle(2, 3)]
-        (mid,) = centre_line(cycles, [0.5, 1.5, 2.5])
-        assert mid.tolist() == [0.5, 1.5, 2.5]
+    N, YEARS = 4000, 4000.0
 
-    def test_gap_breaks_the_line(self):
-        # The third cycle starts 2 periods after the second ends.
-        cycles = [self.cycle(0, 1), self.cycle(1, 2), self.cycle(4, 5)]
-        (mid,) = centre_line(cycles, [0.5, 1.5, 4.5])
-        assert np.isnan(mid).tolist() == [False, False, True, False]
+    def body(self, analyses=True):
+        from types import SimpleNamespace
 
-    def test_bridging_cycle_stands_alone(self):
-        # Median period 1; the 10-yr cycle bridges circulation: breaks on both sides.
-        cycles = [self.cycle(0, 1), self.cycle(1, 2), self.cycle(2, 12), self.cycle(12, 13)]
-        mid, values = centre_line(cycles, [0.5, 1.5, 7.0, 12.5], [1, 2, 3, 4])
-        assert np.isnan(mid).tolist() == [False, False, True, False, True, False]
-        assert values[~np.isnan(values)].tolist() == [1, 2, 3, 4]
+        t = np.linspace(0, self.YEARS, self.N)
+        sigma = np.pi + 0.6 * np.sin(2 * np.pi * t / 400)
+        a_f = 3.2776 + 0.002 * np.cos(2 * np.pi * t / 400)
+        raw = a_f + 1e-4 * np.cos(2 * np.pi * t / 7.3)  # the short-period terms of the osculating a
+        prep = SimpleNamespace(a_f=a_f, angle_f=sigma)
+        return SimpleNamespace(
+            name='synthetic',
+            times=t * 2 * np.pi,
+            angles={'2J-1+0-1': np.mod(sigma, 2 * np.pi)},
+            angles_unwrapped={'2J-1+0-1': sigma},
+            angles_filtered_unwrapped={'2J-1+0-1': sigma},
+            axis=raw,
+            axis_filtered=np.full(self.N, 3.2776),
+            M=None,
+            longitude=None,
+            mmr_analyses={'2J-1+0-1': SimpleNamespace(prep=prep)} if analyses else {},
+        )
 
-    @pytest.mark.parametrize(
-        'line, lone',
-        [
-            ([0.5], [True]),  # one cycle: a point, no line
-            ([0.5, 1.5], [False, False]),  # two joined centres (np.convolve 'same' returned 3 values here)
-            ([0.5, np.nan, 4.5], [True, False, True]),
-            ([0.5, 1.5, np.nan, 7.0, np.nan, 12.5, 13.5], [False, False, False, True, False, False, False]),
-        ],
-    )
-    def test_lone_points(self, line, lone):
-        assert lone_points(np.array(line)).tolist() == lone
+    RESONANCE = type('R', (), {'to_s': lambda self: '2J-1+0-1', 'to_short': lambda self: '2J-1', 'planets_names': ['Jupiter']})()
+
+    def folded_range(self, d):
+        fig, (ax_sigma, ax_axis) = plt.subplots(1, 2)
+        from resonances.plotting.mmr_plots import draw_cycles
+        from resonances.plotting.style import STYLES
+
+        draw_cycles(ax_sigma, ax_axis, d, STYLES[PlotStyle.SCREEN], d.time_norm())
+        ys = np.concatenate([segment[:, 1] for segment in ax_axis.collections[0].get_segments()])
+        plt.close(fig)
+        return float(ys.min()), float(ys.max())
+
+    def test_cycles_fold_the_analysis_a(self):
+        body = self.body()
+        d = MMRDiagnostics.from_body(body, self.RESONANCE)
+        assert np.array_equal(d.axis_cycles, body.mmr_analyses['2J-1+0-1'].prep.a_f)
+        low, high = self.folded_range(d)  # each sampled cycle's median is within ~0.02 of 0
+        assert high - low == pytest.approx(4.0, abs=0.05) and abs(high + low) < 0.05
+
+    def test_without_the_analysis_arrays_the_raw_a(self):
+        d = MMRDiagnostics.from_body(self.body(analyses=False), self.RESONANCE)
+        assert np.array_equal(d.axis_cycles, d.axis)
+        low, high = self.folded_range(d)  # the 400-yr wave plus up to +-0.1 milli-au of short-period terms
+        assert 4.1 < high - low < 4.3
+
+    def test_the_body_low_pass_would_be_flat(self):
+        """The defect: folded, `axis_filtered` (the 2000-yr low-pass) is a flat line."""
+        d = MMRDiagnostics.from_body(self.body(), self.RESONANCE)
+        d.axis_cycles = d.axis_filtered
+        assert self.folded_range(d) == (0.0, 0.0)
 
 
 class TestFigures:

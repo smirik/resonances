@@ -12,7 +12,7 @@
 Nothing here changes a status. Reading guide: docs/plots.md, "Secular diagnostics".
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import cached_property
 from typing import Any, Optional
 
@@ -92,9 +92,6 @@ class SecularDiagnostics:
             radius = np.abs(z_e) if p else np.degrees(inclination_from_vector(z_i))
         osculating = body.secular_angles_osculating.get(key) if secular else None
         extra = {} if secular else free_module.summary_fields(body.free_elements)
-        gate = getattr(body, 'zlk_gates', {}).get(key)
-        if gate is not None:
-            extra['confirmed_ei'] = gate.confirmed_ei
         return cls(
             times=times,
             sigma=np.asarray(body.angles_unwrapped[key], dtype=float),
@@ -223,7 +220,7 @@ LONG_PERIOD_PANELS = (
     ('c', 'sigma_dot_f'),
     ('d', 'e: raw band and filtered, min-max written'),
     ('e', 'i: raw band and filtered, min-max written'),
-    ('f', 'secular: e_dot_f against A sin(sigma_f) + B cos(sigma_f) + C (R^2); ZLK: the free omega against the osculating'),
+    ('f', 'secular: e_dot_f against A sin(sigma_f) + B cos(sigma_f) + C (R^2); ZLK: the drift of the free and the osculating omega, turns'),
     ('g', 'the centre of sigma_f (smoothed over W_c), its turns and largest monotone pass'),
 )
 LONG_PERIOD_LEGEND = (
@@ -234,8 +231,9 @@ LONG_PERIOD_LEGEND = (
     '(b) grey dots: osculating σ; black: σ_f.  (c) dσ_f/dt, red: σ̇ = 0; pale dashed ends of (c), (f): the filter\'s edge '
     'spread, not analysed.  (d, e) grey band: osculating e, i; black: filtered at P_c, min – max.',
     '(f) secular: black the rate of the element σ contains (de_f/dt for ϖ, d sin(i_f/2)/dt for Ω; both, i dashed on the '
-    'right axis), blue: A sin σ_f + B cos σ_f + C (R² written; a column, no status). ZLK: grey osculating ω, blue free ω '
-    '(forced terms removed): a free ω that winds makes the libration kinematic.',
+    'right axis), blue: A sin σ_f + B cos σ_f + C (R² written; a column, no status). ZLK: the drift of ω from its first '
+    'value in turns, grey osculating, blue free (forced terms removed; net turns written): a free ω that winds makes the '
+    'libration kinematic.',
     '(g) grey: σ_f; red: its centre; ▼▲ turns of the centre; shaded: its largest monotone pass, when ≥ 1 rev.',
     '(h) (e cos σ, e sin σ), (sin(i/2) cos σ, sin(i/2) sin σ) for an angle of Ω alone; colour: time. (i) secular: σ_f '
     'against dσ_f/dt; ZLK: the free eccentricity vector.',
@@ -492,39 +490,30 @@ def _draw_element(ax, frame, layout, values, letter, label, fmt):
 
 def _draw_physics(ax, frame, layout, free_elements):
     from resonances.plotting.mmr_combined import _edge_line, _multiplier, _note, _power_of_ten, _style_axis, _view, edge_overflow_markers
-    from resonances.resonance.analysis.filtering import time_derivative
 
     analysis = frame.analysis
     if str(analysis.verdict.resonance_type) == 'lidov_kozai':
-        if free_elements is not None and len(free_elements.omega_free):
-            ax.plot(frame.x, np.degrees(analysis.series.angle), color=RAW, alpha=RAW_ALPHA, lw=1.2)
-            ax.plot(frame.times(free_elements.omega_times), np.degrees(free_elements.omega_free), color=MODEL, lw=0.8)
-        else:
-            _note(ax, 'free elements not built', layout.font_note_pt)
-        _style_axis(ax, 'f', 'ω, °', layout)
+        _draw_free_omega_drift(ax, frame, layout, free_elements)
         return
     variables = response_variables(analysis)
     names = {name: RESPONSE_VARIABLES[name] for name in variables}
-    if analysis.angle is None or any(_filtered(analysis, values(analysis.series)) is None for _, values, _ in names.values()):
+    fits = {name: _response_fit(analysis, frame, name) for name in names}
+    if analysis.angle is None or any(fit is None for fit in fits.values()):
         _note(ax, 'not measured', layout.font_note_pt)
         _style_axis(ax, 'f', ' and '.join(label for label, _, _ in names.values()) + ', /kyr', layout)
         return
-    inside = (frame.t_yr >= analysis.angle.window[0]) & (frame.t_yr <= analysis.angle.window[1])
-    sigma = np.asarray(analysis.angle.angle_f, dtype=float)
-    design = np.column_stack([np.sin(sigma), np.cos(sigma), np.ones_like(sigma)])
     texts = []
-    for index, (name, (label, values, r2_of)) in enumerate(names.items()):
+    for index, (name, (label, _, r2_of)) in enumerate(names.items()):
         target = ax if index == 0 else ax.twinx()  # the second variable (e and i): its own scale, on the right
         style = {} if index == 0 else {'ls': '--'}
-        rate = time_derivative(frame.t_yr, _filtered(analysis, values(analysis.series))) * KYR
-        power = _power_of_ten(rate[inside])
-        rate = rate * 10.0**-power
-        _edge_line(target, frame, rate, inside=inside, color=INK, lw=0.8, **style)
-        if inside.sum() > 3:
-            coef, *_ = np.linalg.lstsq(design[inside], rate[inside], rcond=None)
-            target.plot(frame.x, np.where(inside, design @ coef, np.nan), color=MODEL, lw=0.8, **style)
-            _view(target, rate[inside])
-            edge_overflow_markers(target, frame, rate, inside=inside)
+        fit = fits[name]  # the analysis' own fit: x and sigma at the decisive cutoff, on its window
+        inside = fit.mask
+        power = _power_of_ten(fit.rate[inside] * KYR)
+        scale = KYR * 10.0**-power
+        _edge_line(target, frame, fit.rate * scale, inside=inside, color=INK, lw=0.8, **style)
+        target.plot(frame.x, np.where(inside, fit.model * scale, np.nan), color=MODEL, lw=0.8, **style)
+        _view(target, fit.rate[inside] * scale)
+        edge_overflow_markers(target, frame, fit.rate * scale, inside=inside)
         ylabel = label + '\n' + _multiplier(power, '/kyr')
         if index == 0:
             _style_axis(ax, 'f', ylabel, layout)
@@ -533,7 +522,52 @@ def _draw_physics(ax, frame, layout, free_elements):
             target.tick_params(labelsize=layout.font_ticks_pt, length=2.5, pad=1.5)
         r2 = r2_of(analysis.response) if analysis.response is not None else float('nan')
         texts.append(f'R² {r2:.3g}' if len(names) == 1 else f'R² {name} {r2:.3g}')
+    if analysis.scale == 'centre':  # the fit of the decisive scale: the centre's cutoff, not P_c of panels (d), (e)
+        texts.append(f'at the centre scale {analysis.angle.cutoff_yr / KYR:.4g} kyr')
     ax.text(0.99, 0.92, '   '.join(texts), transform=ax.transAxes, ha='right', va='top', fontsize=layout.font_note_pt, color=MODEL)
+
+
+def _draw_free_omega_drift(ax, frame, layout, free_elements):
+    """ZLK (f): the drift of omega from its first value, in turns (as the standalone free-omega drift figure): grey the
+    osculating omega, blue the free one (forced terms removed); a free omega that winds while the osculating one stays
+    within a turn is the kinematic case. The free omega's net turns are written."""
+    from resonances.plotting.mmr_combined import _note, _style_axis, _view
+
+    if free_elements is None or not len(free_elements.omega_free):
+        _note(ax, 'free elements not built', layout.font_note_pt)
+        _style_axis(ax, 'f', 'ω drift, turns', layout)
+        return
+    turn = 2 * np.pi
+    osculating = np.asarray(frame.analysis.series.angle, dtype=float)
+    free = np.asarray(free_elements.omega_free, dtype=float)
+    ax.plot(frame.x, (osculating - osculating[0]) / turn, color=RAW, alpha=RAW_ALPHA, lw=2.0, label='osculating ω')
+    ax.plot(frame.times(free_elements.omega_times), (free - free[0]) / turn, color=MODEL, lw=0.9, label='free ω')
+    ax.axhline(0.0, color=REFERENCE, lw=0.5, alpha=0.6)
+    _view(ax, np.concatenate([(osculating - osculating[0]) / turn, (free - free[0]) / turn, [0.0]]), extra_top=0.3)
+    ax.legend(loc='upper left', fontsize=layout.font_note_pt, frameon=False, ncol=2, handlelength=1.5, borderaxespad=0.2)
+    ax.text(
+        0.99,
+        0.92,
+        f'free ω: {free_elements.revolutions:+.3g} turns',
+        transform=ax.transAxes,
+        ha='right',
+        va='top',
+        fontsize=layout.font_note_pt,
+        color=MODEL,
+    )
+    _style_axis(ax, 'f', 'ω drift, turns', layout)
+
+
+def _response_fit(analysis, frame, name: str):
+    """The response fit of `name` ('e' or 'i') exactly as the analysis made it (`secular.response.fit_response`: the
+    decisive angle's cutoff and window, the run's filter order), so the curve of panel (f) is the fit of its R²."""
+    from resonances.resonance.analysis.secular.response import fit_response, response_series
+    from resonances.resonance.analysis.settings import AnalysisSettings
+
+    if analysis.angle is None:
+        return None
+    settings = replace(frame.settings if frame.settings is not None else AnalysisSettings(), filter_order=analysis.filter_order)
+    return fit_response(frame.t_yr, response_series(analysis.series, name), analysis.angle, settings)
 
 
 # The response variables of a secular angle (`secular.response`): label of panel (f), the series, its R² on the Response
@@ -752,7 +786,7 @@ LONG_PERIOD_EXPLAINED_GROUPS = (
         'SCALE, FILTER',
         ('sec_scale', 'sec_scale_cutoff_yr', 'flt_cutoff_yr', 'flt_cutoff_binding', 'sec_fine_n_tp', 'sec_fine_period_cycle_yr'),
     ),
-    ('FREE-ω GATE', ('zlk_gate', 'zlk_gate_n_cycles', 'zlk_gate_min_cycles', 'zlk_gate_period_yr', 'confirmed_ei')),
+    ('FREE-ω GATE', ('zlk_gate', 'zlk_gate_n_cycles', 'zlk_gate_min_cycles', 'zlk_gate_period_yr', 'zlk_gate_rho_max', 'zlk_ei_coupling')),
     ('RESPONSE OF e AND i (a column)', ('rsp_variables', 'rsp_e_R2', 'rsp_i_R2')),
     ('ORBIT', ('ctx_e_min', 'ctx_e_max', 'ctx_inc_min_deg', 'ctx_inc_max_deg')),
     ('RECORD', ('smp_span_yr', 'smp_step_yr', 'flags', 'status_code', 'settings_hash', 'confidence_cells_sha')),

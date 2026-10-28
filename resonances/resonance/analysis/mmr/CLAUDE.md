@@ -49,7 +49,8 @@ guards) → io.
   insufficient_time verdict asks for the next check round_up(max(2T, min(N, 4T))) in `extend_to_years`
   (`MMR_EXTEND_MIN_SPAN_FACTOR`, `MMR_NEXT_CHECK_SPAN_FACTOR`); a budget, not a proof. No physical 1:1 exit estimate.
 - **W22 rules**:
-  - `promote_union`: a G2u union read as episodic becomes resonant only from a dynamic transient (6u; `union_read`).
+  - `promote_union`: a G2u union read as episodic becomes resonant only from a dynamic transient (6u; `union_read`);
+    the rule becomes the leaf's + 'u' (`rec_rule` 5d/6u, 5c/6u; the prefix keeps the branch for `_l4`).
   - R-ALIAS-A `short_period_unmeasured`: on a folding step with F direct passing and a's short-period scatter >
     `MMR_SHORT_PERIOD_A_RATIO`, a failed L4/L3 is not_measured for the tree and the level.
   - R-F `_geometry_cap` (5u/6): reasons `geometric_libration`/`geometric_episode` since 2026-10-26 (old files'

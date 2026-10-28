@@ -32,14 +32,14 @@ $\alpha_j$ for an outer one. It is omitted (taken as 0) for planet-crossers and 
 | check | formula | columns |
 |---|---|---|
 | rate of σ | $\nu(a) = \sum_j k_j n_j + k\,n(a) + p\dot\varpi + \sum_j p_j g_j + v\dot\Omega + \sum_j v_j s_j$, $n = 2\pi a^{-3/2}$; $n_j$ of the package model (Murray & Dermott 1999, eq. 8.22); static $\dot\varpi = A$, $\dot\Omega = -A$ (above) | `rate_deg_yr`, `rate_min`, `rate_max` over `a_lo..a_hi` |
-| alias | branch $m = \mathrm{round}(\nu\Delta t/2\pi)$, apparent rate $\nu - 2\pi m/\Delta t$; `resolved` if $\max_{a_{lo} \le a \le a_{hi}}\lvert\nu(a)\rvert\Delta t \le (\pi/180°)\,$`MMR_STEP_RESOLVED_DEG`, `marginal` (branch 0 throughout, above that limit), `aliased_unambiguous` (one m ≠ 0: a true circulation), `ambiguous` | `turns_per_step`, `branches`, `verdict`, `apparent_deg_yr`, `expected_angle_status` |
+| alias | branch $m = \mathrm{round}(\nu\Delta t/2\pi)$ and apparent rate $\nu - 2\pi m/\Delta t$ over `a_lo..a_hi`: `resolved`, `marginal`, `aliased_unambiguous` (one m ≠ 0: a true circulation) or `ambiguous`, by [the analysis' rule](physics/signal.md#what-the-output-step-can-resolve) | `turns_per_step`, `branches`, `verdict`, `apparent_deg_yr`, `expected_angle_status` |
 | Nyquist half-width | $\delta a_N = a^{5/2}/(3\lvert k\rvert\Delta t)$, where $\lvert\nu\rvert\Delta t = \pi$ | `nyquist_halfwidth_au` |
 | ghosts | the sampled angle stands still at $\nu(a_m) = 2\pi m/\Delta t$ and imitates a resonance there | `ghost_axis_au`, `nearest_ghost_au` |
 | safe steps | plain unwrap ηπ/max\|ν\|; predictive unwrap η a^(5/2)/(3\|k\| δa_sp), η = `MMR_STEP_RESOLVED_DEG`/180° | `max_safe_step_plain`, `max_safe_step_pred`, `action` |
 | perihelion jitter | \|p\| δe_sp / e > `MMR_JITTER_MAX_RAD` | `jitter`, `jitter_flag` |
-| cutoff | the analysis' rule $P_c = \max(f_s P_{\rm syn},\ P_{\rm floor}/f_l)$, $P_{\rm syn}$ the longest synodic period $2\pi/\lvert n - n_j\rvert$ ($2\pi/(n + n_j)$ for a retrograde body) of a planet in the angle, the co-orbital's own planet excluded (its synodic motion is the resonant signal; $P_{\rm syn} \to \infty$ at 1:1), with $f_s$ = `MMR_FILTER_SYNODIC_FACTOR`, $f_l$ = `FILTER_MIN_LIBRATION_CUTOFFS`, independent of $\Delta t$; P_floor = `MMR_LIBRATION_PERIOD_MIN_YR` (150 yr → 75 yr), or for a co-orbital `MMR_COORBITAL_PERIOD_FLOOR_FACTOR` × the tadpole period (Jupiter 73.9 yr → 36.9 yr) | `cutoff_pred_yr`, `cutoff_binding`, `samples_per_cutoff`, `libration_floor_yr` |
-| validity | $P_c \le 2\Delta t$: the analysis returns `invalid/undersampled` (Δt ≥ 37.5 yr, a Jupiter Trojan 18.5 yr); resample at the largest of `MMR_RESAMPLE_STEPS_YR` ≤ P_floor / `MMR_RESAMPLE_STEPS_PER_CYCLE` within the alias bounds (Trojan 2.5 yr) | `step_valid_yr`, `expected_status`, `expected_reason`, `resample_step_yr`, `action` |
-| short periods | Δt ≥ min(P_orb, P_syn of the angle's planets)/2, or below it a harmonic m ≤ `MMR_SHORT_PERIOD_HARMONICS` (2) of P_orb or P_syn folded slower than the period floor: the analysis flags `short_period_aliased` and caps the confidence at medium (not on a plain circulation, reason `circulation` or `alias` without forced-wave runs: `MMR_SHORT_PERIOD_CAP_CIRCULATION` is off, since a circulation reads no a-based check; the flag stays). The row reads the analysis' own predicate (`sampling.short_period_trigger`) on its own inputs: the static level takes P_orb(a₀), the analysis P_orb(⟨a⟩), so the two agree for equal P_orb, P_syn and floor (the pilot replans with the measured ⟨a⟩; a record whose ⟨a⟩ moves the fold across the floor can still differ). The auto step avoids both cases | `step_short_period_yr`, `folded_slowest_yr`, `short_period_trigger` (nyquist, harmonic), `expected_flags` |
+| cutoff | the analysis' cutoff $P_c$ from the longest synodic period of the angle's planets and the shortest libration it allows, `MMR_LIBRATION_PERIOD_MIN_YR` (a co-orbital: a share of its tadpole period); independent of $\Delta t$ ([rule](physics/signal.md#the-cutoff-what-is-libration-and-what-is-noise)) | `cutoff_pred_yr`, `cutoff_binding`, `samples_per_cutoff`, `libration_floor_yr` |
+| validity | $P_c \le 2\Delta t$: the analysis returns `invalid/undersampled` ([rule](physics/signal.md#can-the-record-be-filtered-at-all); Δt ≥ 37.5 yr, a Jupiter Trojan 18.5 yr); the resample step is the largest of `MMR_RESAMPLE_STEPS_YR` that gives `MMR_RESAMPLE_STEPS_PER_CYCLE` points per shortest libration within the alias bounds (Trojan 2.5 yr) | `step_valid_yr`, `expected_status`, `expected_reason`, `resample_step_yr`, `action` |
+| short periods | the step folds the orbital or a synodic period of the angle's planets, or one of their harmonics up to `MMR_SHORT_PERIOD_HARMONICS` slower than the period floor: the analysis flags `short_period_aliased` and caps the confidence at medium, except on a plain circulation ([rule](physics/signal.md#short-periods-folded-by-the-step)). The row reads the analysis' own predicate (`sampling.short_period_trigger`) with P_orb(a₀), the analysis with P_orb(⟨a⟩); the pilot replans with the measured ⟨a⟩. The auto step avoids both cases | `step_short_period_yr`, `folded_slowest_yr`, `short_period_trigger` (nyquist, harmonic), `expected_flags` |
 | shortest libration | P_floor / `MMR_RESAMPLE_STEPS_PER_CYCLE` (20 points per cycle: 7.5 yr; Trojan 3.69 yr) | `step_libration_yr` |
 | baseline | (`LIBRATION_MIN_TURNING_POINTS`/2) × P_floor + 2 × `FILTER_EDGE_TRIM_CUTOFFS` × P_c | `baseline_min_yr`, `baseline_ok` |
 | pilot only | leak of short-period lines into the filtered angle and the filtered ȧ at Δt (decimate, unwrap, filter, compare with the fine record): σ largest deviation, ȧ relative rms error ε; the step is accepted when 2 × leak_σ ≤ the TP prominence of the fine σ_f (a wave of half-amplitude L turns by up to 2L) and ε ≤ √(b/(1−b)) = 0.33, b = `CONFIDENCE_THIN_BAND` (a force law of R² = 1/(1+ε²) stays in the thin band); lines the filter passes, named \|p n_j − q n\| when they are near-commensurabilities | `leak_deg`, `leak_adot_rel`, `leak_tp_prominence_deg`, `pilot_step_ok`, `leak_slips`, `forced_terms` |
@@ -47,6 +47,23 @@ $\alpha_j$ for an outer one. It is omitted (taken as 0) for planet-crossers and 
 `action`: `none` (resolved), `predictive_unwrap` (the analysis' unwrap recovers the angle), `resample` (it cannot,
 or the step is too coarse for the filter: integrate again with a smaller step), `drop` (only with `DRYRUN_DROP_ALIASED`: a guaranteed aliased circulation
 more than `DRYRUN_DROP_GHOST_FACTOR` × δa_N from a*).
+
+## Secular and Lidov-Kozai rows
+
+Advisory and static (also at the pilot level): warnings only, no step and no verdict change. Table `long_period`
+(file `dryrun_long_period.csv`), one row per secular or ZLK angle, with the analysis' own rules
+([secular signal](physics/secular-zlk.md#signal-what-is-not-the-libration)):
+
+| check | formula | columns |
+|---|---|---|
+| cutoff | $P_c$ of `choose_cutoff`: the great inequality, the shortest libration and, for a secular angle of two or more modes, its forced waves $2\pi/\lvert f - f_j\rvert$ with the static $g = A$, $s = -A$ (none for crossers and retrograde orbits: `forced_waves` = `unknown`, the analysis' cutoff may then be longer) | `cutoff_pred_yr`, `cutoff_binding`, `forced_waves`, `g_static_arcsec_yr` |
+| baseline | N = (`LIBRATION_MIN_TURNING_POINTS`/2) × P_floor + 2 × `FILTER_EDGE_TRIM_CUTOFFS` × P_c, P_floor = max(the type's shortest libration, `FILTER_MIN_LIBRATION_CUTOFFS` × P_c): secular 1.5 × 200 + 2 × 100 = 500 kyr, ZLK 1.5 × 3748 + 2 × 1874 = 9370 yr at the defaults | `libration_floor_yr`, `floor_setting`, `baseline_min_yr` |
+| free-ω gate (ZLK, gate on) | `FREE_GATE_MIN_CYCLES` × τ, τ the quadrupole ZLK time $1/\sum_j \tau_j^{-1}$, $\tau_j = \frac{2}{3\pi}\frac{M_\odot}{m_j}\frac{P_j^2}{P}(1-e_j^2)^{3/2}$ over the planets outside the orbit (Antognini 2015, eq. 27; 153 Hilda: τ = 3.8 kyr, 11.3 kyr for the gate). Optimistic: a libration lasts several τ | `zlk_time_yr`, `gate_min_yr` |
+| record | span ≥ max(baseline, gate) | `required_yr`, `baseline_ok` |
+| step | Δt < P_c/2, else the filter cannot be built (`uncertain / unusable_series`) | `step_valid_yr`, `step_ok` |
+
+A 100-kyr run of a secular angle warns `span 100000 yr < 500000 yr …`: no libration can be confirmed there, and the
+verdict will be `uncertain / baseline_needed` with a next check of 400 kyr ([How long to extend](physics/confidence.md#actions)).
 
 ## Per body
 

@@ -24,9 +24,13 @@ hold no turning point, labelled episode / diagnostic / turn (`labelled_cycle_bou
 evaluates the model once per start time and is skipped when the small period 2 pi / Omega_bar is shorter than the
 smoothing of sigma (`_zone_of`: a degenerate V_E).
 
-Everything here is a column (DELTA 13b): the zone, the cycle energies, the mechanism, the exits and captures
-(`pendulum.regime_transitions`) and `episodes_in_separatrix_zone` (crossings with every cycle inside the model's zone)
-never change a status. R0 (sigma-only and with a) is a check of the tree (§5.3).
+The zone leaf 6 does not read a status from the zone (DELTA 13b): libration, episodic and near_separatrix decide.
+The classes are not columns only, though (W25 review): the cycle classes give L2 (thin with a cycle in the zone,
+not_measured with a cycle not measured and none in the zone) and the flag libration_in_separatrix_zone;
+`episodes_in_separatrix_zone` (crossings with every cycle inside the model's zone) caps a transient at medium, makes O1
+not applicable and withholds the onset objection of the unmeasured-force branch (leaf 5o: uncertain/origin_unknown);
+zone_edge_cycle thins Z. R0 (sigma-only and with a) is a check of the tree (§5.3). The mechanism, the exits and
+captures (`pendulum.regime_transitions`) and the cycle energies themselves are columns.
 """
 
 from __future__ import annotations
@@ -537,7 +541,8 @@ def build_zone(
     otherwise the numeric zone, reported as `method` (NUMERIC for the members' modulation, EQ_ONLY for e^q).
     The zone is computed on the one-harmonic model of the header (its J0 <-> h is the cosine one); J_lo is a ratio
     J/<J_s>, so h_lo, the energy of the cycles' normalisation at that ratio, is read in the measured `potential` V_E
-    (`pendulum.h_from_action_ratio_in_potential`, W3-G7; the cosine without one)."""
+    (`pendulum.h_from_action_ratio_in_potential`, W3-G7; the cosine without one; its deepest well). h_lo is a column and
+    the figure's band: the classes compare actions with J_lo (`pendulum.classify_cycles`, `averaged_classes`)."""
     t = np.asarray(t_yr, dtype=float)
     omega2 = np.clip(np.asarray(omega_squared, dtype=float), 0, None)
     omega = np.sqrt(omega2)
@@ -853,9 +858,10 @@ def analyse_separatrix(
     classes = pendulum.classify_cycles(cycles, zone, sigma_h, settings, v_e) if zone is not None and np.isfinite(zone.j_lo) else []
     edges = pendulum.edge_cycles(cycles, zone, sigma_h, settings, v_e) if classes else []
     turning = geometry.turning_points
-    avgpot = tp_energies(well, geometry, cycles, settings)
-    h_lo_barrier = pendulum.h_in_barrier_units(v_e, zone.h_lo) if zone is not None else NAN
-    classes, edges, zone_source = averaged_classes(cycles, cycle_kinds(geometry, cycles), classes, edges, avgpot, zone, h_lo_barrier)
+    # J/<J_s> of the turning points needs the record's mean J_s only when there is a zone edge to compare it with
+    record = (float(t[0]), float(t[-1])) if zone is not None and np.isfinite(zone.j_lo) else None
+    avgpot = tp_energies(well, geometry, cycles, settings, record)
+    classes, edges, zone_source = averaged_classes(cycles, cycle_kinds(geometry, cycles), classes, edges, avgpot, zone)
 
     # crossings: changes between libration half-cycles and circulation events (slips, turns), from the angle itself;
     # the directed transitions (exits, captures) before their times are merged
@@ -872,7 +878,7 @@ def analyse_separatrix(
         if zone
         else (SeparatrixMechanism.UNEXPLAINED if crossing_times else SeparatrixMechanism.NONE)
     )
-    in_zone = bool(crossing_times) and bool(classes) and all(CycleClass(c) == CycleClass.ZONE for c in classes)
+    in_zone = episodes_in_zone(crossing_times, classes)
 
     flags = _zone_flags(modulation, zone, edges, in_zone)
     h_finite = [h for h in h_values if np.isfinite(h)]
@@ -923,16 +929,27 @@ def analyse_separatrix(
         cycle_kinds=cycle_kinds(geometry, cycles),
         zone_source=zone_source,
         h_avgpot=tuple(float(h) for h in avgpot.h[np.isfinite(avgpot.h)]),
+        j_avgpot=tuple(float(j) for j in avgpot.j[np.isfinite(avgpot.j)]),
     )
+
+
+def episodes_in_zone(crossing_times: Sequence[float], classes: Sequence[CycleClass]) -> bool:
+    """`episodes_in_separatrix_zone`: the angle crosses and every cycle lies in the model's zone. A cycle not measured
+    (a loop around several wells, W25) is not known to be in the zone, so it cannot satisfy 'every cycle'."""
+    return bool(crossing_times) and bool(classes) and all(CycleClass(c) == CycleClass.ZONE for c in classes)
 
 
 @dataclass(frozen=True)
 class TurningPointEnergies:
-    """h of the turning points of the librating episodes in the averaged well (`centre_track.turning_point_energies`):
-    their times and values (nan where not measured)."""
+    """h and J/<J_s> of the turning points of the librating episodes in the averaged well
+    (`centre_track.turning_point_energies`): their times and values (nan where not measured; J/<J_s> also nan for a
+    loop around several wells of the profile, and for all of them when the record's mean <J_s> is not measured). h is
+    in the units of its own moment (0 at the bottom, 1 at the barrier); J/<J_s> is the action over the record's mean
+    separatrix action, the normalisation of the zone's J_lo."""
 
     t_yr: np.ndarray
     h: np.ndarray
+    j: np.ndarray
 
 
 def tp_energies(
@@ -940,12 +957,20 @@ def tp_energies(
     geometry: Geometry,
     cycles: Sequence[pendulum.CycleEnergy],
     settings: AnalysisSettings,
+    record_yr: Optional[Tuple[float, float]] = None,
 ) -> TurningPointEnergies:
-    """The turning points of the episode cycles (`cycle_kinds`) with their h in the averaged well at their own time;
-    empty without a well (three-body, 1:1, the planet not saved) or without such cycles."""
+    """The turning points of the episode cycles (`cycle_kinds`) with their h and J/<J_s> in the averaged well at their
+    own time; empty without a well (three-body, 1:1, the planet not saved) or without such cycles.
+
+    J/<J_s> = (J/J_s(t)) x J_s(t) / <J_s>: the ratio in the profile at the turning point's time times that moment's
+    separatrix action (the profile's scale included) over its time mean on `record_yr` (`centre_track.
+    mean_separatrix_action`, the reference of J_lo). The action of a libration scales as the square root of the well's
+    strength, so in a well at a quarter of its mean strength J/J_s(t) = 0.6 is J/<J_s> = 0.3 (Codex W25 #3). J/<J_s>
+    is all nan without `record_yr` (no zone to compare with: the mean is not computed) or when the mean is not
+    measured."""
     turning = geometry.turning_points
     times, values = np.asarray(turning.times_yr, dtype=float), np.asarray(turning.values_rad, dtype=float)
-    empty = TurningPointEnergies(np.zeros(0), np.zeros(0))
+    empty = TurningPointEnergies(np.zeros(0), np.zeros(0), np.zeros(0))
     if well is None or not well.available or not len(times):
         return empty
     inside = np.zeros(len(times), dtype=bool)
@@ -958,8 +983,12 @@ def tp_energies(
     # the swing of each turning point to its neighbour in the record (the next, the previous for the last)
     neighbour = np.where(index + 1 < len(times), index + 1, index - 1)
     middles = (values[index] + values[neighbour]) / 2
-    h = centre_track_module.turning_point_energies(well, times[index], values[index], settings, middles)
-    return TurningPointEnergies(times[index], h)
+    h, j_local, j_s = centre_track_module.turning_point_energies(well, times[index], values[index], settings, middles)
+    reference = NAN
+    if record_yr is not None and np.any(np.isfinite(j_local) & np.isfinite(j_s)):
+        reference = centre_track_module.mean_separatrix_action(well, record_yr[0], record_yr[1], times[index], middles, settings)
+    j = j_local * j_s / reference if np.isfinite(reference) and reference > 0 else np.full(len(index), NAN)
+    return TurningPointEnergies(times[index], h, j)
 
 
 def averaged_classes(
@@ -969,35 +998,37 @@ def averaged_classes(
     edges: Sequence[bool],
     energies: TurningPointEnergies,
     zone: Optional[Zone],
-    h_lo: Optional[float] = None,
 ) -> Tuple[List[CycleClass], List[bool], str]:
-    """(classes, edges, source) of the cycles with the energy of a two-body angle's turning points in its averaged well
-    (W20 F5, the zone's source 'averaged_potential'): an episode cycle is in the zone when the highest h of its turning
-    points reaches the zone's lower edge h_lo, deep when every one of them is measured and below it; its edge flag is
-    off (h is measured at each turning point, not fitted, so the fit's scatter sigma_h does not apply). A cycle with a
-    turning point not measured (nan) and none at h_lo keeps the pendulum's class and edge: the missing one may be the
-    high one (Codex W20 A #5). The fitted pendulum's h assumes fixed parameters, and a
-    well whose depth changes 100 times breaks it: 2004 TK14 31M-34 has h ~ 1.3 there and h 0.07 (max 0.59) in the
-    averaged well, at least 80 deg from the barrier at every turning point (B, 2026-10-19). Turns and the cycles of
-    rejected runs keep the pendulum's class. The pendulum's classes and source 'pendulum' without a measured h or a
-    zone.
+    """(classes, edges, source) of the cycles with the action of a two-body angle's turning points in its averaged well
+    (W20 F5, the zone's source 'averaged_potential'): an episode cycle is in the zone when the largest J/<J_s> of its
+    turning points reaches the zone's J_lo, deep when every one of them is measured and below it; its edge flag is
+    off (J/J_s is measured at each turning point, not fitted, so the fit's scatter sigma_h does not apply). A cycle with
+    a turning point not measured (nan: a failed profile, or a loop around several wells of the profile, which has no
+    single-well ratio) and none at J_lo keeps the pendulum's class and edge: the missing one may be the high one (Codex
+    W20 A #5). The fitted pendulum's h assumes fixed parameters, and a well whose depth changes 100 times breaks it:
+    2004 TK14 31M-34 has h ~ 1.3 there and h 0.07 (max 0.59) in the averaged well, at least 80 deg from the barrier at
+    every turning point (B, 2026-10-19). Turns and the cycles of rejected runs keep the pendulum's class. The
+    pendulum's classes and source 'pendulum' without a measured J/J_s or a zone.
 
-    h of a turning point is 1 at the averaged well's own barrier, so the zone's edge is read in the same units: `h_lo`,
-    the energy at J_lo over the barrier of V_E's deepest well (`pendulum.h_in_barrier_units`, W25); zone.h_lo, over
-    V_E's global depth, when not given (the same for a V_E of one well)."""
+    Actions, not energies (W25): J/J_s of a turning point is computed in the averaged profile at its own time
+    (`averaged_potential.action_in_well`), J_s at that well's own barrier. Mapping J_lo to an energy through V_E's
+    action-energy law misreads another well's shape (V = -cos s and V = -cos s - 0.2 cos 2s have J/J_s = 0.5 at
+    h = 0.5808 and 0.6278). J_lo is J0/<J_s>, the action over the record's mean separatrix action, so the ratio is
+    carried to that normalisation by J_s(t)/<J_s> of the averaged well itself (`tp_energies`, `energies.j`): a well whose
+    depth changes is not read in its own units at each time (Codex W25 #3). Without the mean (a profile on the record's
+    grid not measured) every J/<J_s> is nan and the pendulum's classes stay."""
     classes, edges = list(classes), list(edges)
-    edge = zone.h_lo if zone is not None and h_lo is None else h_lo
-    if not classes or zone is None or not np.isfinite(edge) or not np.any(np.isfinite(energies.h)):
+    if not classes or zone is None or not np.isfinite(zone.j_lo) or not np.any(np.isfinite(energies.j)):
         return classes, edges, SOURCE_PENDULUM
     changed = False
     for k, (cycle, kind) in enumerate(zip(cycles, kinds)):
-        h = energies.h[(energies.t_yr >= cycle.t_start_yr) & (energies.t_yr <= cycle.t_end_yr)]
-        finite = h[np.isfinite(h)]
+        j = energies.j[(energies.t_yr >= cycle.t_start_yr) & (energies.t_yr <= cycle.t_end_yr)]
+        finite = j[np.isfinite(j)]
         if kind != CYCLE_EPISODE or cycle.rotation or not len(finite):
             continue
-        if float(np.max(finite)) >= edge:
+        if float(np.max(finite)) >= zone.j_lo:
             classes[k] = CycleClass.ZONE
-        elif len(finite) == len(h):
+        elif len(finite) == len(j):
             classes[k] = CycleClass.DEEP
         else:
             continue

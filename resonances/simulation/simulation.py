@@ -6,7 +6,7 @@ from resonances.resonance import coherence_analysis, omega_free_gate
 from resonances.resonance.analysis import confidence as confidence_module
 from resonances.resonance.analysis.mmr import analyse_mmr
 from resonances.resonance.analysis.secular import analyse_secular
-from resonances.resonance.analysis.verdict import CheckValue, ResonanceType, Status, Verdict
+from resonances.resonance.analysis.verdict import ResonanceType, Status, Verdict
 from resonances.resonance.analysis.zlk import analyse_zlk
 from resonances.resonance.periodogram import Periodogram
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
@@ -120,19 +120,22 @@ class Simulation:
 
         First the static dry-run (`dry_run.prepare_run`, docs/dry-run.md): its warnings go to the log and
         OUTPUT_STEP='auto' becomes the step and Nout; once per simulation, never in batch workers, never raises.
-        The MPC table loaded to add the bodies (source 'mpc', ~0.5 GB for MPCORB) is released first."""
+        The MPC table loaded to add the bodies (source 'mpc', ~0.5 GB for MPCORB) is released first.
+
+        With ensembles (clones) the ordinary bodies and then the clones run under one checkpoint, resumed as a whole
+        (`ensemble_run.run_with_clones`, docs/clones.md)."""
         mpcorb.clear_cache()
         prepare_run(self)
         self.times = np.linspace(0.0, self.config.tmax, self.config.Nout)
 
-        if self.batch_manager.should_batch(len(self.bodies)):
+        if self.ensembles:  # the ordinary bodies, then the clones (simulation/ensemble_run.py)
+            from . import ensemble_run
+
+            ensemble_run.run_with_clones(self, progress)
+        elif self.batch_manager.should_batch(len(self.bodies)):
             self._run_batched(progress)
         else:
             self._run_single(progress)
-        if self.ensembles:  # the clones, after the ordinary bodies (simulation/ensemble_run.py)
-            from . import ensemble_run
-
-            ensemble_run.run_ensembles(self, progress)
         self.running_time["stop"] = logger.get_current_time()
 
     def _run_single(self, progress=False):
@@ -153,11 +156,12 @@ class Simulation:
         self.identify_librations(bodies=[body])
         self.build_periodograms(bodies=[body])
 
-    def _run_batched(self, progress=False):
-        """Run batched execution with multi-core support."""
+    def _run_batched(self, progress=False, clear_state=True):
+        """Run batched execution with multi-core support. `clear_state=False` keeps simulation_state.json after the
+        last batch (a run with clones removes it once the clones are done too)."""
         self.running_time["adding_bodies_started"] = logger.get_current_time()
         self.running_time["integration_started"] = logger.get_current_time()
-        self.batch_manager.execute_batches(self, self.bodies, self.times, progress)
+        self.batch_manager.execute_batches(self, self.bodies, self.times, progress, clear_state=clear_state)
         self.running_time["integration_finished"] = logger.get_current_time()
         self.running_time["librations_identified"] = logger.get_current_time()
         self.running_time["bodies_saved"] = logger.get_current_time()
@@ -462,9 +466,11 @@ class Simulation:
             )
 
     def _analyse_coherence(self, body: Body, resonance: Resonance, psd_cache):
-        """Run the cross spectrum for a body-resonance and record the e-i exchange flag.
+        """Run the cross spectrum for a body-resonance and record its strongest e-i line (zlk_coherent, zlk_check).
 
-        Diagnostic only: nothing here changes a status. See `coherence_analysis`.
+        Diagnostic only: nothing here changes a status. See `coherence_analysis`. `check_zlk_ei` / `confirmed_ei` are
+        the e-i coupling at the row's own period, measured by `analyse_zlk` for every ZLK row whatever its status
+        (so COHERENCE_SKIP_NON_RESONANT does not hide them).
         """
         if not self.config.coherence_enabled:
             return
@@ -478,10 +484,6 @@ class Simulation:
 
         if isinstance(resonance, LidovKozaiResonance):
             body.zlk_gates[res_key] = coherence_analysis.evaluate_ei_exchange(analyses, self.config)
-            # the e-i flag is a check of the verdict (it changes no status)
-            verdict = body.librations[res_key]
-            verdict.checks['check_zlk_ei'] = _ei_check(body.zlk_gates[res_key])
-            self._finalise_verdict(body, res_key, verdict)
 
     def planets_needed(self) -> list:
         """The planets this run keeps (`save_planets`): all, none, or those the analysis reads — the planets of the
@@ -511,9 +513,15 @@ class Simulation:
 
     def planets_saved(self) -> list:
         """The planets whose series this run holds (written to simulation.json): those integrated here, or, in the
-        parent of a batched run (no integration of its own), the list its workers kept."""
+        parent of a batched run (no integration of its own), the list its workers kept; with clones, also those the
+        clone batches kept (the planets of the clones' own rows)."""
         held = [name for name, data in self.integration_engine.planets_data.items() if data and len(data.get('a', ())) > 0]
-        return held if held else self.planets_needed()
+        planets = held if held else self.planets_needed()
+        if self.ensembles:
+            from .ensemble_run import _planets_for_clones
+
+            planets = planets + [planet for planet in _planets_for_clones(self) if planet not in planets]
+        return planets
 
     def dry_run(self, level: str = 'static'):
         """Check the run before integrating: 'static' (elements only) or 'pilot' (a short fine integration per body).
@@ -571,11 +579,3 @@ def _gate_config(config):
     return SimpleNamespace(
         free_gate_enabled=bool(config.free_elements_enabled and config.free_gate_enabled), free_gate_min_cycles=config.free_gate_min_cycles
     )
-
-
-def _ei_check(gate) -> CheckValue:
-    """check_zlk_ei from the e-i exchange flag `confirmed_ei` (it changes no status): pass, fail, or not_measured."""
-    confirmed = None if gate is None else gate.confirmed_ei
-    if confirmed is None:
-        return CheckValue.NOT_MEASURED
-    return CheckValue.PASS if confirmed else CheckValue.FAIL

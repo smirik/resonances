@@ -3,7 +3,7 @@ import hashlib
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Set, List, Dict, Any
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 
 from resonances.logger import logger
 
@@ -19,6 +19,10 @@ class SimulationState:
     batch_config: Dict[str, Any]
     progress: Dict[str, Any]
     config_hash: str
+    # One record per body, in batch order: {'name', 'elements' (digest of its canonical initial elements),
+    # 'getorb_sha256' (None unless from MPC get-orb)}; lets a refused resume name the bodies whose elements changed.
+    # Absent (None) in the states of versions before it.
+    body_elements: Optional[List[Dict[str, Any]]] = field(default=None)
 
     @classmethod
     def create_new(
@@ -29,6 +33,7 @@ class SimulationState:
         batch_threshold: int,
         n_cores: int,
         config_hash: str,
+        body_elements: Optional[List[Dict[str, Any]]] = None,
     ) -> "SimulationState":
         """Create a new simulation state."""
         now = datetime.now().isoformat()
@@ -55,6 +60,7 @@ class SimulationState:
                 "error_message": None,
             },
             config_hash=config_hash,
+            body_elements=body_elements,
         )
 
     def mark_batch_complete(self, batch_index: int, body_names: List[str]):

@@ -131,7 +131,7 @@ SABA-задачи объединяют до 8 тел в одну Simulation: т�
 
 ## Переклассификация и `make test-benchmark`
 
-`tools/reclassify.py` классифицирует сохранённые примеры без интеграции (docs/classify.md). `--workers auto`
+`tools/reclassify.py` классифицирует сохранённые примеры без интеграции (docs/libration-analysis.md). `--workers auto`
 (по умолчанию) = min(CPU − 2, доступная память / 3 ГБ, 8): пик воркера ≈ 2.6 ГБ (v2-w21a, 37087 на 1 млн лет).
 Если число воркеров ограничивает память, а не ядра, воркеры запускаются с экономным аллокатором и считаются по 1.6 ГБ
 (`LOW_MEMORY_ALLOCATOR`, docs/config.md; на macOS это `MallocLargeCache=0`). Измерено 2026-10-25 на всех 719 при

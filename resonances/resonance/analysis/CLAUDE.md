@@ -2,7 +2,7 @@
 
 The only classifier, wired into `Simulation.identify_librations`. It gives the verdict of every type (MMR, secular,
 ZLK) on shared geometry. Pure: no Body/Simulation imports, and no bare numbers in decision code. Formulas and the status
-tree: `docs/libration-analysis.md` (an example figure per status in `docs/physics/gallery.md`, figures in `docs/img/gallery/`, rebuilt by `make docs-figures`). MMR steps and rule IDs: `mmr/CLAUDE.md`. Secular and ZLK science:
+tree: `docs/physics/` (one home per topic; the rule IDs with their settings and modules: `docs/libration-analysis.md`; an example figure per status in `docs/physics/gallery.md`, figures in `docs/img/gallery/`, rebuilt by `make docs-figures`). MMR steps and rule IDs: `mmr/CLAUDE.md`. Secular and ZLK science:
 `resonances/secular/CLAUDE.md`. Reasons, rejected variants and traps: `dev/`.
 
 ## Shared modules
@@ -35,8 +35,16 @@ tree: `docs/libration-analysis.md` (an example figure per status in `docs/physic
   are read in the well it occupies (`occupied_well`, `CycleEnergy.well_rad`, nan = the deepest; `WellActions` caches
   each well's separatrix and J_s), not the deepest: with two harmonics J_deep(E) − J_shallow(E) is a constant, so the
   deepest well's ratio of a shallow-well cycle is too large. One-well records keep the deepest path exactly.
-  `h_in_barrier_units` puts h_lo in the units of the averaged well's h_TP (1 at its own barrier) for
-  `zone.averaged_classes`.
+  W25 (topology): above its well's lower saddle in a V of several wells a cycle's loop encloses both wells: no
+  single-well J/J_s (nan, `libration_topology` merged_wells/rotation, class `not_measured`, never "in the zone";
+  `_libration_action` never regenerates a clipped 1); its own J_loop (`loop_action_through`) and T_loop/2π are columns.
+  A one-well V keeps J/J_s = 1 above its top (separatrix). The averaged route compares actions: J/J_s of each turning
+  point's loop in the averaged profile itself (`averaged_potential.action_in_well`) against J_lo, never an h mapped
+  through V_E (`h_in_barrier_units` is gone). J_lo is J0/<J_s> (the record's mean separatrix action), so each local
+  ratio is carried by J_s(t)/<J_s> of the averaged well, the scale 3k²μn²a included (`zone.tp_energies`,
+  `centre_track.mean_separatrix_action`; Codex W25 #3: at a quarter of the mean strength 0.6 local is 0.3); no mean
+  (a failed profile on the record's grid) → the pendulum's classes stay. The pendulum route does the same with
+  √m_cycle. The zone classes reach L2, Z, caps and leaf 5o: not columns only.
 - `confidence`: the level from margins and caps; `certain` is shown. certain needs every applicable margin full; high
   allows thin or unmeasured evidence but no failed support; one failed support → medium, two → low; nothing physical
   measured and explicit caps limit it; uncertain/invalid have no level. The calibration cell's author-label counts are
@@ -89,7 +97,7 @@ tree: `docs/libration-analysis.md` (an example figure per status in `docs/physic
 - Tests of decision code build real result objects (`tests/resonances/analysis/builders.py`), not stubs; decision
   code reads dataclass fields directly.
 - Secular and ZLK: `analysis/secular/` (`analyse_secular`: cutoff from the forced waves, centre scale,
-  `decide_status` with the free-omega gate's outcome) and `analysis/zlk/` (`analyse_zlk`). Gate disabled ≠ gate
+  `decide_status` with the free-omega gate's outcome, `extend.recommend`: the action and `extend_to_years` of an uncertain verdict, `slow`: the centre's slow line, a column) and `analysis/zlk/` (`analyse_zlk`; `diagnostics`: e-i coupling, attribution and the centre-scale guard `centre_guard`, columns only; the guard runs only with the gate enabled, a split and no unfitted co-orbital, and rejects only a measured forced beat that explains the centre). Gate disabled ≠ gate
   unavailable: disabled keeps the geometric status with `check_zlk_free_omega` not_measured.
 
 ## Do not retry here

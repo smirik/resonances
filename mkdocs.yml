@@ -96,14 +96,14 @@ nav:
       - Clones (virtual asteroids): clones.md
       - Dry-run: dry-run.md
       - Plots: plots.md
+      - How to read the figures: reading-figures.md
       - Output data: output.md
       - Serialization and restore: serialization.md
       - Cross-spectral coherence: coherence.md
       - Free elements: free-elements.md
       - Configuration: config.md
   - Reference:
-      - Libration analysis (full reference): libration-analysis.md
-      - Secular and ZLK classification details: classify.md
+      - Rule index: libration-analysis.md
       - Benchmark: benchmark.md
       - References: references.md
   - About: about.md

@@ -2,7 +2,7 @@
 
 Expected values are derived here, not read from the implementation.
 
-Response cutoff (docs/libration-analysis.md §2, `MMR_RESPONSE_CUTOFF_CYCLES` = 0.1): the derivatives of the force law
+Response cutoff (docs/physics/signal.md "Smoothing for derivatives", `MMR_RESPONSE_CUTOFF_CYCLES` = 0.1): the derivatives of the force law
 (L4) are read after a second smoothing at P_r = max(P_c, 0.1 P_cyc).
 
 - A 2J-1 pendulum sigma_ddot = -w0^2 sin(sigma - pi), w0 = 2 pi / 600 yr, half-amplitude 90 deg, has the period

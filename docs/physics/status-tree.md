@@ -11,7 +11,7 @@ other resonances (a member of the same multiplet, another commensurability), the
 perihelion term), and only then is its own force law measured.
 
 This page describes mean-motion resonances (two-body, three-body, retrograde, co-orbital). Secular and Lidov-Kozai
-angles use a shorter tree, given [at the end](#secular-and-lidov-kozai-angles).
+angles use a shorter tree, given in [Secular and Lidov-Kozai](secular-zlk.md#geometry-and-status).
 
 ## The tree
 
@@ -58,14 +58,17 @@ librates before a jump of $a$, or is captured after one, is judged as the episod
 reported `angle_status` may then differ from the word the tree read; see [below](#the-reported-angle-word).
 
 **G6. Too short.** `angle_status = insufficient_time` (too few turning points, an arc, a stall): `uncertain`,
-`baseline_needed`, action `extend` ([Confidence](confidence.md#actions) gives the length asked for).
+`baseline_needed`, action `extend` ([Confidence](confidence.md#actions) gives the length asked for); action `review`
+when the period that decides already fits the record (`base_cause`): more time would decide nothing.
 
 **C. Circulation.** The centre of $\sigma$ runs through a full turn.
 
 - If the sampled angle is an *alias* (the true rate $\nu$ folded by the output step), the record can still exclude
   a libration when the alias branch is the same over the whole range of $a$ and the body is far from the
-  resonance: the distance $|\langle a\rangle - a_*|$ in units of the $a$-range is at least `MMR_C5_FAR_RATIO_MIN` = 3.
-  Then `non_resonant / alias`; otherwise a libration may hide behind the step: `invalid / alias`, action `resample`.
+  resonance: the far ratio (the distance $|\langle a\rangle - a_*|$ over half the $a$-range, or over the offset of
+  the $a$ implied by the measured mean motion when that is larger; [signal](signal.md#what-the-output-step-can-resolve))
+  is at least `MMR_C5_FAR_RATIO_MIN` = 3 (rule C5). Then `non_resonant / alias`; otherwise a libration may hide
+  behind the step: `invalid / alias`, action `resample`.
 - If a member of the multiplet has a librating verdict of its own, the row takes the member's status (as in step 1
   below).
 - If $\sigma$ turns back at times but the energy measured from $a$ does not follow a potential of $\sigma$ (R0 fails):
@@ -99,7 +102,8 @@ $a$ does not answer and the librating stretches are only a ripple on it (their s
 `MMR_KIN_RIPPLE_SHARE_MAX` = 0.5 of the centre's range), or a kinematic libration's centre moves more than
 `MMR_KIN_DRIFT_SHIFT_RATIO` = 1 amplitude: `non_resonant / kinematic_drift`. If a libration slower than the record
 cannot be excluded and the centre's rate is consistent with an exact commensurability (within
-`MMR_B5_EXACT_SIGMA` = 2 standard errors): `uncertain / baseline_needed`. Examples:
+`MMR_B5_EXACT_SIGMA` = 2 standard errors, [B5](response.md#kinematic-origins)): `uncertain / baseline_needed`. The
+kinematic drift is rule K2 (`rec_rule` 3k2), the exact commensurability `rec_rule` 3b5. Examples:
 [285637](gallery.md#kinematic-libration), [62243](gallery.md#kinematic-drift).
 
 **4. A drift without a cause.** `angle_status = drift` with no kinematic explanation: `uncertain /
@@ -113,8 +117,8 @@ force needed for the observed period against the force the disturbing function g
 | leaf | measurements | status / reason | origin |
 |---|---|---|---|
 | 5f | L4 cannot be told from a forced line of the angle's lattice at the same period, and the $\sigma$-only potential test does not fail | uncertain / origin_unknown (flag `force_law_contaminated`) | unknown |
-| 5s | L4 and R0 do not pass, and the period needs ≥ `MMR_STRENGTH_IMPLAUSIBLE_RATIO` = $10^3$ × the strength computed from the disturbing function | non_resonant / implausible_strength | unknown |
-| 5a | L4 fails, R0 does not pass | uncertain / origin_unknown | unknown |
+| 5s | L4 and R0 do not pass, and the period needs ≥ `MMR_STRENGTH_IMPLAUSIBLE_RATIO` = $10^3$ × the strength computed from the disturbing function (two-body: direct or harmonic, not `centre_outside_well` unless `MMR_STRENGTH_FIRST_OUTSIDE_WELL`; three-body: $\mu_i\mu_j e^q$ with the small-divisor residual still ≥ $10^3$); cap ≤ low | non_resonant / implausible_strength | unknown |
+| 5a | L4 fails, R0 does not pass (5a\* when R0 is not measured rather than failed) | uncertain / origin_unknown | unknown |
 | 5b | L4 passes, R0 fails | uncertain / origin_unknown (flag `force_law_disagrees`) | unknown |
 | 5e | R0 fails, L4 not measured | uncertain / origin_unknown | unknown |
 | 5g | L4 and R0 not measured, the identity fails on an episode and passes on none | uncertain / origin_unknown | unknown |
@@ -160,7 +164,8 @@ of the unmeasured branch.
 
 **6u. A union of episodes.** Librating episodes that together cover the record, with no circulation between them,
 are read first as episodic. Only if that reading reaches `transient / dynamic_episode` with a measured force (leaf 6,
-origin dynamic) is the record promoted to `resonant / dynamic_libration`. Every other outcome stays as it is. (For a
+origin dynamic) is the record promoted to `resonant / dynamic_libration` (`rec_rule` gets the suffix u: 5d/6u). Every
+other outcome stays as it is. (For a
 co-orbital 1:1 angle the union is a libration directly: its episodes are the tadpole, horseshoe and quasi-satellite
 regimes of one resonance.)
 
@@ -200,6 +205,10 @@ planet longitudes caps the level (`catalogue_longitudes`). These change the conf
 The columns `libration_origin`, `origin_detail` and `owner` are described in [Output data](../output.md); the leaf
 that decided is the column `rec_rule` of `mmr_numbers.csv` (5d/6, 5u/6, 3k2, C5, …).
 
+Older files wrote `dynamic_libration` / `dynamic_episode` also for the geometric leaf; a row with one of these
+reasons and origin `unknown` is read back as `geometric_libration` / `geometric_episode`. This renames the reason
+only; it is not a new classification.
+
 ## The reported angle word
 
 The tree reads the angle as the status needs it; the reported `angle_status` describes what $\sigma$ did over the
@@ -221,17 +230,8 @@ Only the output changes; the margins and the confidence read the angle as the tr
 
 ## Secular and Lidov-Kozai angles
 
-The secular and ZLK tree has no owner, subresonance or force law step:
-
-| angle_status | secular | Lidov-Kozai (with the free-$\omega$ gate) |
-|---|---|---|
-| `libration` | resonant / dynamic_libration | confirmed: resonant; kinematic: non_resonant / kinematic_libration; no verdict: uncertain / gate_unavailable |
-| `episodic` | transient / dynamic_episode | transient, or non_resonant / kinematic_libration when the gate is kinematic and $\rho_{\max} < 1$ |
-| `drift`, `insufficient_time` | uncertain / baseline_needed | the same, or non_resonant / kinematic_libration as above |
-| `circulation` | non_resonant / circulation | non_resonant / circulation |
-| `undefined` | invalid / unphysical, or uncertain / unusable_series | the same |
-
-The gate and $\rho_{\max}$ are explained in [Secular and Lidov-Kozai](secular-zlk.md).
+Secular and Lidov-Kozai angles use their own shorter tree, without an owner, a subresonance or a force law step:
+[geometry and status](secular-zlk.md#geometry-and-status) and, for Lidov-Kozai, [the free-ω gate](secular-zlk.md#zlk-free-omega).
 
 ## Legacy integer codes
 
@@ -241,7 +241,7 @@ Old runs stored one integer per angle. The column `status_code` keeps it for com
 |---|---|---|
 | 2 | resonant | resonant |
 | 1 | transient | transient |
-| 0 | non_resonant | non_resonant (circulation) |
+| 0 | non_resonant (kinematic, induced, subresonance and alias included) | non_resonant (circulation) |
 | −2 | — | non_resonant / kinematic_libration (ZLK: the gate measured a kinematic libration) |
 | −3 | near_separatrix | near_separatrix (old files) |
 | −4 | — | uncertain / insufficient_time |

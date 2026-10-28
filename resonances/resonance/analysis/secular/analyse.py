@@ -10,9 +10,14 @@
                    fine scale when it shows a libration (or libration episodes the fine scale lacks): a slow secular
                    libration carries faster waves (518 z1, 52773 z2), and its centre is what librates. This is the
                    former secular centre check with the scale of the centre measured instead of 10% of the record.
+                   A `centre_guard` (ZLK) can refuse the centre scale: a period that is a beat of the forced vector
+                   while the free circle stays off the origin is no libration of omega (`sec_centre_rejected`).
     5 physics      secular: response.analyse_response (a column); ZLK: the free-omega gate (analysis.zlk)
     6 status       decide.decide_status
     7 confidence   decide.margins_and_caps, confidence.assess
+    8 action       an uncertain verdict: extend (with extend_to_years) or review, `extend.recommend`; no status changes
+    9 columns      a modulated secular angle: the slow line of its centre (`slow.secular_centre_line`); ZLK: the
+                   slow line, e-i coupling and attribution (`analysis.zlk`). No status reads them.
 
 Pure: arrays in (`LongPeriodSeries`), `LongPeriodAnalysis` out.
 """
@@ -28,11 +33,12 @@ from resonances.resonance.analysis import confidence as confidence_module, orbit
 from resonances.resonance.analysis.confidence import ConfidenceCells
 from resonances.resonance.analysis.geometry import measure_geometry
 from resonances.resonance.analysis.ledger import Ledger
-from resonances.resonance.analysis.secular import decide, preprocess
+from resonances.resonance.analysis.secular import decide, extend as extend_module, preprocess, slow as slow_module
 from resonances.resonance.analysis.secular.models import GateResult, LongPeriodAnalysis, LongPeriodSeries
 from resonances.resonance.analysis.secular.response import analyse_response
 from resonances.resonance.analysis.settings import AnalysisSettings, settings_hash
 from resonances.resonance.analysis.verdict import (
+    Action,
     AngleStatus,
     AngleSubtype,
     CheckValue,
@@ -53,6 +59,9 @@ SCALE_CENTRE = 'centre'  # ... on the angle filtered at the scale of its centre 
 
 # gate(angle decision, geometry) -> GateResult: the free-omega gate of a Lidov-Kozai angle (analysis.zlk)
 GateFunction = Callable[[decide.AngleDecision, object], Optional[GateResult]]
+# centre_guard(centre geometry, fine geometry, ledger) -> '' or why a libration at the centre scale is not the angle's
+# (ZLK: a beat of the forced vector, `zlk.diagnostics.forced_beat_centre`); its comparisons join the ledger
+CentreGuard = Callable[[object, object, Ledger], str]
 
 
 def unphysical_reason(series: LongPeriodSeries) -> str:
@@ -68,13 +77,15 @@ def _unusable(series: LongPeriodSeries) -> bool:
 
 def _empty_verdict(series: LongPeriodSeries, status: Status, subtype: AngleSubtype, reason: Reason, ledger: Ledger) -> Verdict:
     checks = unmeasured_checks(series.resonance_type)
+    # unusable_series: review, no length would repair it (`extend.recommend`); invalid: review by default
+    action = Action.REVIEW if reason == Reason.UNUSABLE_SERIES else default_action(status, reason, Confidence.NONE)
     return Verdict(
         resonance_type=series.resonance_type,
         status=status,
         angle_status=AngleStatus.UNDEFINED,
         angle_subtype=subtype,
         reason=reason,
-        action=default_action(status, reason, Confidence.NONE),
+        action=action,
         checks=checks,
         decision_path=list(ledger),
     )
@@ -85,6 +96,7 @@ def analyse_long_period(
     settings: AnalysisSettings,
     cells: Optional[ConfidenceCells] = None,
     gate: Optional[GateFunction] = None,
+    centre_guard: Optional[CentreGuard] = None,
 ) -> LongPeriodAnalysis:
     """The analysis of a secular (no `gate`) or Lidov-Kozai (`gate`) angle; the steps of the module docstring."""
     cells = cells if cells is not None else confidence_module.cells_from_settings(settings)
@@ -105,10 +117,11 @@ def analyse_long_period(
         return LongPeriodAnalysis(series, verdict, ledger, cutoff=cutoff, **common)
     geometry = measure_geometry(angle, cutoff.prominence_rad, settings)
     angle_decision = decide.decide_angle(geometry, settings, ledger)
-    fine_geometry, scale = geometry, SCALE_FINE
+    fine_geometry, scale, rejected = geometry, SCALE_FINE, ''
     if angle_decision.angle_status != AngleStatus.LIBRATION:
         slow = _centre_scale(series, cutoff, angle, geometry, angle_decision, settings, ledger)
-        if slow is not None:
+        rejected = centre_guard(slow[1], geometry, ledger) if slow is not None and centre_guard is not None else ''
+        if slow is not None and not rejected:
             angle, geometry, angle_decision = slow
             scale = SCALE_CENTRE
 
@@ -126,6 +139,16 @@ def analyse_long_period(
         ledger.thin_margins(),
         decide.PHYSICS_MARGINS[series.resonance_type],
         cells,
+    )
+    extension = extend_module.recommend(
+        status.status,
+        status.reason,
+        gate_result,
+        angle.period_floor_yr,
+        geometry.period_cycle_yr,
+        angle.cutoff_yr,
+        series.span_yr,
+        settings,
     )
     checks = unmeasured_checks(series.resonance_type)
     if response is not None:
@@ -148,13 +171,17 @@ def analyse_long_period(
         thin_margins=assessment.thin_margins,
         failed_support=assessment.failed_support,
         caps=assessment.caps,
-        action=default_action(status.status, status.reason, assessment.confidence),
+        action=extension.action if extension.action is not None else default_action(status.status, status.reason, assessment.confidence),
+        extend_to_years=extension.extend_to_years,
         libration_origin=status.origin,
         origin_detail=status.origin_detail,
         checks=checks,
         margins=margins,
         decision_path=list(ledger),
     )
+    centre_line = None
+    if series.resonance_type == ResonanceType.SECULAR and angle_decision.subtype == AngleSubtype.MODULATED:
+        centre_line = slow_module.secular_centre_line(fine_geometry.centre, cutoff.forced_waves_yr, series.span_yr, settings)
     return LongPeriodAnalysis(
         series,
         verdict,
@@ -164,9 +191,12 @@ def analyse_long_period(
         geometry=geometry,
         response=response,
         gate=gate_result,
+        extension=extension,
         decisive_episode_id=angle_decision.decisive_episode_id,
         scale=scale,
         fine_geometry=fine_geometry if scale == SCALE_CENTRE else None,
+        centre_rejected=rejected,
+        centre_line=centre_line,
         n_librating_episodes=len(decide.librating_episodes(geometry)),
         **common,
     )

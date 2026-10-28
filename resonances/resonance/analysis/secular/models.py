@@ -155,16 +155,55 @@ class GateResult:
     matches: Tuple[str, ...] = ()
     min_cycles: float = float('nan')
     libration_period_yr: float = float('nan')
-    rho_max: float = float('nan')  # e_free / e_forced at its largest over the beating of the forced vector
+    # max over the record of rollmed(|z_free|, W) / rollmed(|z_forced|, W), W ~ one libration cycle (`rho_local_max`)
+    rho_max: float = float('nan')
+    rho_global: float = float('nan')  # median e_free / the smallest smoothed |z_forced| (the former rho_max, descriptive)
+    baseline_yr: float = float('nan')  # the free elements' baseline (after their resampling), nan without them
+    # planetary_residual: the smallest distance of a residual rate to a planetary one [arcsec/yr]
+    min_distance_arcsec_yr: float = float('nan')
+    detail: str = ''  # unavailable: coorbital_unfitted_forcing (a co-orbital of a planet whose modes are not fitted)
 
     def to_columns(self) -> Dict[str, Any]:
         return {
             'zlk_gate': self.outcome,
+            'zlk_gate_detail': self.detail,
             'zlk_gate_rho_max': self.rho_max,
+            'zlk_gate_rho_global': self.rho_global,
             'zlk_gate_n_cycles': self.n_cycles,
             'zlk_gate_min_cycles': self.min_cycles,
             'zlk_gate_matches': join_list(self.matches),
             'zlk_gate_period_yr': self.libration_period_yr,
+            'zlk_gate_baseline_yr': self.baseline_yr,
+            'zlk_gate_d_min_arcsec_yr': self.min_distance_arcsec_yr,
+        }
+
+
+@dataclass
+class CentreLine:
+    """The slow line of the centre of an angle (`analysis.secular.slow`): its strongest sinusoid between the centre's
+    smoothing W_c and the track span / LIBRATION min cycles, measured even when the fine scale decided, and what it is.
+
+    `origin` (ZLK): forced_beat:<gk>-<gj> (the phase wave of the fitted forced eccentricity vector at 2 pi/|g_k - g_j|
+    reproduces the centre, 591986: g6-g5 at 54.0 kyr, r 0.99), node (the node's own wave does), unexplained; secular:
+    forced_wave:<mode> (within a Rayleigh width of a forced wave of the angle's modes) or unexplained; '' not measured.
+    A column only: no status reads it."""
+
+    prefix: str  # 'zlk_centre' | 'sec_centre'
+    period_yr: float = float('nan')
+    half_amp_rad: float = float('nan')
+    origin: str = ''
+    model_r: float = float('nan')  # correlation of the named model with the centre
+    model_gain: float = float('nan')  # std of the smoothed model / std of the centre (both less a quadratic trend)
+    model_half_amp_rad: float = float('nan')  # forced_beat: arcsin(|c_k| / |c_j|), the model's own half-swing
+
+    def to_columns(self) -> Dict[str, Any]:
+        return {
+            f'{self.prefix}_period_yr': self.period_yr,
+            f'{self.prefix}_half_amp_deg': self.half_amp_rad * RAD_TO_DEG,
+            f'{self.prefix}_origin': self.origin,
+            f'{self.prefix}_model_r': self.model_r,
+            f'{self.prefix}_model_gain': self.model_gain,
+            f'{self.prefix}_model_half_amp_deg': self.model_half_amp_rad * RAD_TO_DEG,
         }
 
 
@@ -180,10 +219,16 @@ class LongPeriodAnalysis:
     geometry: Optional[Geometry] = None
     response: Optional[Response] = None
     gate: Optional[GateResult] = None
+    extension: Optional[Any] = None  # `extend.Extension`: the action of an uncertain verdict (columns base_*)
     decisive_episode_id: Optional[int] = None
     n_librating_episodes: Optional[int] = None  # accepted episodes not faster than the shortest libration
     scale: str = ''  # fine | centre: the geometry the verdict rests on (`analyse.SCALE_*`)
     fine_geometry: Optional[Geometry] = None  # the geometry at P_c when the verdict rests on the centre scale
+    # why a libration at the centre scale was not taken (ZLK: forced_beat:<gk>-<gj>, its period a beat of the forced
+    # vector while the free circle stays off the origin); '' none
+    centre_rejected: str = ''
+    centre_line: Optional[CentreLine] = None  # the slow line of the centre (a column)
+    zlk: Optional[Any] = None  # `analysis.zlk.diagnostics.ZlkDiagnostics`: e-i coupling and attribution (columns)
     unphysical: bool = False
     unphysical_reason: str = ''
     filter_order: int = 2  # FILTER_ORDER of the settings (the figure filters e and i the same way)
@@ -216,8 +261,9 @@ class LongPeriodAnalysis:
             'sec_scale_cutoff_yr': self.angle.cutoff_yr if self.angle is not None else None,
             'sec_fine_n_tp': len(self.fine_geometry.turning_points) if self.fine_geometry is not None else None,
             'sec_fine_period_cycle_yr': self.fine_geometry.period_cycle_yr if self.fine_geometry is not None else None,
+            'sec_centre_rejected': self.centre_rejected,
         }
-        for result in (self.cutoff, self.geometry, self.response, self.gate):
+        for result in (self.cutoff, self.geometry, self.response, self.gate, self.extension, self.centre_line, self.zlk):
             if result is not None:
                 row.update(result.to_columns())
         for column in [column for column in row if column.startswith(MMR_ONLY_PREFIXES) or column in MMR_ONLY_COLUMNS]:

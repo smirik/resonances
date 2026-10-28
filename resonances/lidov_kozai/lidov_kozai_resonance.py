@@ -1,5 +1,6 @@
 import numpy as np
 
+from resonances.data.invariable_plane import to_invariable_plane
 from resonances.resonance.resonance import Resonance
 
 
@@ -14,7 +15,12 @@ class LidovKozaiParameters:
 
     omega librates when c1 < 3/5 and c2 < 0, and circulates otherwise. The sign of h_quad
     is not a libration criterion. The criterion is exact only for a/a_pert -> 0; for
-    main-belt asteroids (a/a_J ~ 0.5) it is indicative: 1373 Cincinnati librates at c2 > 0.
+    main-belt asteroids (a/a_J ~ 0.5) it is indicative.
+
+    The integrals are defined against the perturber's orbital plane; the package reads them
+    against the invariable plane (`evaluate_invariable`, the columns c1, c2, h_quad: osculating,
+    at the epoch, invariable plane). From the ecliptic they shift by up to 0.02 in c1, and the
+    sign of c2 of 1373 Cincinnati flips (+0.0014 ecliptic, -0.0011 invariable).
     """
 
     @staticmethod
@@ -47,12 +53,19 @@ class LidovKozaiParameters:
 
     @classmethod
     def evaluate(cls, eccentricity, inclination, argument_of_pericenter):
-        """(c1, c2, h_quad)."""
+        """(c1, c2, h_quad) of elements given in the plane they are wanted in."""
         return (
             cls.compute_c1(eccentricity, inclination),
             cls.compute_c2(eccentricity, inclination, argument_of_pericenter),
             cls.compute_h_quad(eccentricity, inclination, argument_of_pericenter),
         )
+
+    @classmethod
+    def evaluate_invariable(cls, eccentricity, inclination, node, argument_of_pericenter):
+        """(c1, c2, h_quad) of ecliptic elements (radians), read in the invariable plane: i and omega
+        rotated exactly (`data.invariable_plane.to_invariable_plane`), e unchanged."""
+        inc, node_new, varpi = to_invariable_plane(inclination, node, argument_of_pericenter)
+        return cls.evaluate(eccentricity, inc, varpi - node_new)
 
 
 class LidovKozaiResonance(Resonance):

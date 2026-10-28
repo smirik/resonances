@@ -18,17 +18,11 @@ Capital letters are MMR notation, so `2S-1` and `4J-2S-1` are MMRs with Saturn.
 
 ## How the angle is built
 
-With `secular_angle_mode='proper'` (the default), the angle that is classified, plotted and saved is
-
-$$
-\sigma = p\,\varpi + q\,\Omega + \sum_j \big[p_j\,(g_j t + \phi_{g_j}) + q_j\,(s_j t + \phi_{s_j})\big]
-$$
-
-- the planets enter through their **mode longitudes** $g_j t + \phi_j$, with the frequencies
-  `PLANETARY_FREQUENCIES` and the phases at J2000 `PLANETARY_PHASES` (`resonances/data/const.py`),
-  shifted to the simulation date;
-- the body's `Omega` is measured from the **invariable plane** (`INVARIABLE_PLANE`): its constant
-  vector is subtracted from $\sin\frac i2\,(\cos\Omega, \sin\Omega)$.
+With `secular_angle_mode='proper'` (the default), the angle that is classified, plotted and saved compares the
+body's perihelion and node with the planets' **mode longitudes** $g_j t + \phi_j$ (the frequencies
+`PLANETARY_FREQUENCIES` and the J2000 phases `PLANETARY_PHASES` of `resonances/data/const.py`, shifted to the
+simulation date), with the body's node measured from the **invariable plane** (`INVARIABLE_PLANE`). The formulas
+and the fitted basis: [The secular angle](physics/secular-zlk.md#the-secular-angle). This section explains why.
 
 Both matter. Measured from the ecliptic, the node of every planet is dominated by the constant
 1.58° tilt of the invariable plane and does not circulate at all (Jupiter's and Saturn's mean rate
@@ -46,8 +40,7 @@ they decide whether the angle turns at all: (363) Padua's z1 angle from the oscu
 circulates for 6 of 10 Myr while the resonance holds. The literature removes them by low-pass
 filtering (Carruba et al. 2016 filter the z2 angle at 700 kyr "to eliminate all short-period
 perturbations such as the g5 frequency"); here they are subtracted by least squares at the known
-frequencies (`proper_angle.reduced_vectors`, with the fitting of `free_elements.remove_forced`), for the
-fundamentals of the free-element basis absent from the angle. The terms at the angle's own frequencies
+frequencies (`proper_angle.reduced_vectors`). The terms at the angle's own frequencies
 (g6, s6 for z1; g6 for ν6) are the resonance and stay — one rule for linear and nonlinear resonances.
 Removing all of them would give the free-phase angle of Vokrouhlický et al. (2006, Agnia), which for a
 linear resonance removes the resonance itself.
@@ -56,7 +49,7 @@ The angle from the osculating elements (same mode longitudes, nothing removed) i
 `<resonance>_angle_osculating`; `secular_angle_mode='osculating'` classifies the integration's angle
 instead. The analysis of the angle (cutoff, centre scale, turning points: a libration needs
 `LIBRATION_MIN_TURNING_POINTS` = 3 turning points, one full cycle) is described in
-[Secular and Lidov-Kozai](physics/secular-zlk.md) and [Secular and ZLK classification details](classify.md).
+[Secular and Lidov-Kozai](physics/secular-zlk.md).
 
 **Free divisor** (summary.csv `free_divisor`, ″/yr; a diagnostic, no status depends on it):
 $p g + q s + \sum_j(p_j g_j + q_j s_j)$ with the body's own $g$ and $s$ — the rates of its free vectors, every fundamental
@@ -108,17 +101,16 @@ temporary interactions (Warner et al. 2009; Milani et al. 2010; Knežević 2022)
 combinations with `g1, g2, s1, s2` or mixed degree-4 terms of the inner planets with Uranus or Neptune;
 their divisors in this model are also off by 0.1–0.3″/yr (no general relativity). A degree-4 resonance
 (half-width ~0.3″/yr) librates in ~9 Myr, a degree-6 one (~0.1″/yr) in ~26 Myr. To plan the baseline, use the
-rule of the MMR analysis' own estimate: $(N_{\rm TP}/2)\,P + 2\,x\,P_c$ with $N_{\rm TP}$ = `LIBRATION_MIN_TURNING_POINTS` (3),
-$x$ = `FILTER_EDGE_TRIM_CUTOFFS` (1) and $P_c$ the filter cutoff: one and a half periods plus the two filter edges
-(three turning points span one full cycle, and the first may come up to half a period after the start).
+rule $T_{\rm req}$ of [Confidence](physics/confidence.md#actions) (one and a half periods plus the two filter edges).
 
 `SecularResonanceFinder` evaluates the catalogue's divisors on AstDyS synthetic proper elements
 (`resonances secular-candidates` on the command line).
 
 ## Example: (1020) Arcadia in z1
 
-The benchmark example of a z1 librator (SABA, dt = 0.5, 10 Myr from 2026-09-29, a 100-yr output step;
-[Gallery](physics/gallery.md#secular-z1-resonant)):
+The benchmark example of a z1 librator (SABA(10,6,4), dt = 0.5, 10 Myr from 2026-09-29, a 100-yr output step;
+the benchmark keeps every fifth point, a 500-yr step, which the [Gallery](physics/gallery.md#secular-z1-resonant)
+verdict reads):
 
 ```python
 --8<-- "secular_examples.py:arcadia"

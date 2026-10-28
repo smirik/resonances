@@ -78,6 +78,9 @@ class TestConfirmation:
 
         assert gate.outcome is GateOutcome.PLANETARY_RESIDUAL
         assert any('b_varpi~g8' in match for match in gate.matches)
+        # the distance a longer baseline must resolve (the extension of the verdict reads it): |b_varpi - g8|
+        assert gate.min_distance == pytest.approx(abs(elements.b_varpi - PLANETARY_FREQUENCIES['g8']))
+        assert gate.min_distance < elements.resolution
 
     def test_the_zero_target_tracks_whether_the_constant_was_fitted(self, times, config):
         # A constant left in the residual is the most dangerous leak of all, since it makes

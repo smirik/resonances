@@ -11,8 +11,11 @@
   particle's record depend at 1e-10 AU on how many share its simulation), run by the batch workers after the ordinary
   bodies; each clone is a body named `<parent>~c001`, ..., with its rows in summary.csv like any body.
 - Output. clones.csv (one row per parent and resonance: the six status shares with Wilson 95 % intervals, the modal
-  status, the nominal's verdict and agreement), the draw manifest `ensemble-<parent>.csv/.json` in the data folder, and
-  one figure per parent and resonance (`plotting.clone_plots`).
+  status, the nominal's verdict and agreement), the draw manifest `ensemble-<parent>.csv/.json` and the clones' results
+  `ensemble-<parent>-results.npz` in the data folder, and one figure per parent and resonance (`plotting.clone_plots`).
+- Resume and restore (`run_with_clones`, `simulation/clone_store.py`). The ordinary part and the clone batches share one
+  checkpoint, `clones_state/`, removed (with simulation_state.json) only after the whole run succeeded; a resume skips
+  the finished clone batches and a finished ordinary part. simulation.json lists the ensembles; restore rebuilds them.
 """
 
 import copy
@@ -54,7 +57,7 @@ AUTO_SOURCE = {'astdys': 'astdys', 'mpc': 'mpc', 'nasa': 'sbdb'}
 class EnsembleRun:
     """One ensemble in a run: its clones' names and elements at the run's date (None: a draw that is no bound orbit),
     the resonances they are checked in, the nominal's name (`parent`; a body of the run, or '' without one), and after
-    the run the workers' `results` ({clone name: {'rows', 'a0', 'series', 'half_width'}})."""
+    the run the workers' `results` ({clone name: {'rows', 'a0', 'series', 'half_width', 'derived'}})."""
 
     ensemble: Ensemble
     parent: str
@@ -63,6 +66,12 @@ class EnsembleRun:
     elements: List[Optional[dict]]
     nominal_offset_sigma: float = float('nan')
     results: dict = field(default_factory=dict)
+    # Every clone batch finished (False while the run is going or after an interruption)
+    complete: bool = False
+    # {key: (years, degrees)}: the nominal's angle thinned for the figure, when neither memory nor its data file has it
+    nominal_series: dict = field(default_factory=dict)
+    # 'run': the verdicts of this run; 'stored': read back by restore (a recompute does not reclassify the clones)
+    clone_verdicts: str = 'run'
 
     @property
     def keys(self) -> List[str]:
@@ -325,36 +334,169 @@ def clone_batches(simulation) -> list:
     return [(i, bodies[start : start + size]) for i, start in enumerate(range(0, len(bodies), size))]
 
 
-def run_ensembles(simulation, progress: bool = False):
-    """Integrate and classify every clone in batch workers, then write clones.csv, the manifests and the figures."""
+def run_with_clones(simulation, progress: bool = False):
+    """`Simulation.run` with ensembles: the ordinary bodies, then the clones, under one checkpoint
+    (`clone_store.CloneCheckpoint`, `<save_path>/clones_state/`).
+
+    With `resume_enabled` (default) a run interrupted anywhere is resumed by running the same script again: the clone
+    batches with a valid result file are not run again, and an ordinary part that had finished is not either (one
+    simulation: its verdicts come back from summary.csv, which needs save_summary; batched: simulation_state.json). A
+    checkpoint of another run identity (bodies, elements, settings, clone layout, the clones' starts, the provider's
+    file, the code's versions) raises ValueError before anything runs. The checkpoint and simulation_state.json are
+    removed only after the whole run succeeded; the coordinating simulation alone owns them (workers have no
+    ensembles)."""
+    from . import clone_store
+
     config = simulation.config
-    batches = clone_batches(simulation)
-    kwargs = simulation.batch_manager._prepare_simulation_kwargs(simulation)
-    kwargs.update(clones=0, _planets_needed=_planets_for_clones(simulation), _clone_batch=True)
-    if not config.clones_plot_each:
-        kwargs['plot'] = None
-    results = {}
-    bar = tqdm.tqdm(total=len(batches), desc='Clones', unit='batch') if progress and batches else None
+    batched = simulation.batch_manager.should_batch(len(simulation.bodies))
+    layout = clone_batches(simulation)
+    identity = clone_store.run_identity(simulation, layout, batched)
+    starts = {run.parent: (run.names, clone_store.starts_array(run.elements)) for run in simulation.ensembles}
+    checkpoint = clone_store.CloneCheckpoint(config.save_path)
+    checkpoint.open(identity, starts, resume=bool(config.resume_enabled), name=str(config.name))
+    try:
+        _run_ordinary(simulation, checkpoint, batched, progress)
+        run_ensembles(simulation, checkpoint, layout, progress)
+    except BaseException as error:  # an interruption too: the checkpoint stays for the resume
+        checkpoint.mark_failed(error)
+        raise
+    if config.resume_enabled:
+        simulation.batch_manager.state_manager.clear_state()
+    checkpoint.clear()
 
-    def drop_old_rows(pending):
+
+def _run_ordinary(simulation, checkpoint, batched: bool, progress: bool):
+    """The ordinary bodies, as without clones (one simulation, or batches with their own resume, kept until the clones
+    are done); skipped when the interrupted run had finished them in one simulation (`_restore_ordinary`). Never run
+    through another grouping: SABA's round-off makes a trajectory depend on its simulation's particles."""
+    if not batched and checkpoint.state['ordinary']['complete'] and _restore_ordinary(simulation, checkpoint):
+        logger.info('Ordinary bodies: finished in the interrupted run, their verdicts read from summary.csv')
+    elif batched:
+        simulation._run_batched(progress, clear_state=False)
+    else:
+        simulation._run_single(progress)
+    checkpoint.ordinary_done(nominal_thumbnails(simulation))
+
+
+def _restore_ordinary(simulation, checkpoint) -> bool:
+    """Put the verdicts of a finished one-simulation ordinary part back on the bodies (summary.csv, as `_run_batched`
+    does), when summary.csv has a row for every body and requested resonance; False (the part runs again) otherwise."""
+    from .serializer import SimulationSerializer
+
+    config = simulation.config
+    if not simulation.bodies:
+        return True
+    if not config.save_summary:
+        logger.info('Ordinary bodies run again: without save_summary their verdicts were not kept')
+        return False
+    summary = Path(config.save_path) / 'summary.csv'
+    frame = SimulationSerializer._summary_frame(summary)
+    have = set() if frame is None else set(zip(frame['name'], frame['resonance']))
+    missing = [(str(b.name), r.to_s()) for b in simulation.bodies for r in b.resonances() if (str(b.name), r.to_s()) not in have]
+    if missing:
+        logger.warning(f'Ordinary bodies run again: summary.csv has no row for {missing[:3]}')
+        return False
+    SimulationSerializer.restore_statuses(simulation.bodies, summary)
+    thumbnails = checkpoint.ordinary_thumbnails()
+    for run in simulation.ensembles:
+        run.nominal_series = thumbnails.get(run.parent, {})
+    return True
+
+
+def run_ensembles(simulation, checkpoint, layout: list, progress: bool = False):
+    """Integrate and classify the clones of the pending batches in batch workers, each finished batch's results
+    published in the checkpoint at once; then clones.csv, the manifests and results, the figures and simulation.json.
+    A batch with a valid result file in the checkpoint is not run again."""
+    config = simulation.config
+    members = {
+        index: ([body['name'] for body in batch], {body['name']: [r.to_s() for r in body['resonances']] for body in batch})
+        for index, batch in layout
+    }
+    results, pending = _finished_batches(checkpoint, layout, members)
+    kwargs = _clone_kwargs(simulation)
+    bar = tqdm.tqdm(total=len(layout), initial=len(layout) - len(pending), desc='Clones', unit='batch') if progress and layout else None
+
+    def drop_old_rows(batches):
         if config.save_summary:
-            simulation.data_manager.drop_rows([body['name'] for _, batch in pending for body in batch])
+            simulation.data_manager.drop_rows([body['name'] for _, batch in batches for body in batch])
 
-    def collect(_index, result):
-        results.update(result.get('clones') or {})
+    def collect(index, result):
+        results.update(_publish_batch(checkpoint, index, members[index], result))
         if bar is not None:
             bar.update(1)
 
     try:
-        if batches:
-            logger.info(f'Clones: {sum(len(b) for _, b in batches)} in {len(batches)} batches on {config.n_cores} cores')
-            ParallelExecutor(config.n_cores).execute_batches(batches, kwargs, collect, before_run=drop_old_rows)
+        if pending:
+            logger.info(f'Clones: {sum(len(b) for _, b in pending)} in {len(pending)} batches on {config.n_cores} cores')
+            ParallelExecutor(config.n_cores).execute_batches(pending, kwargs, collect, before_run=drop_old_rows)
     finally:
         if bar is not None:
             bar.close()
     for run in simulation.ensembles:
         run.results = {name: results[name] for name in run.names if name in results}
+        run.complete = True
     write_outputs(simulation)
+
+
+def _publish_batch(checkpoint, index: int, membership: tuple, result: dict) -> dict:
+    """A finished clone batch's results (with its clones' derived rows) written to the checkpoint, and read back: what a
+    resume would read is what this run uses too."""
+    payload = result.get('clones') or {}
+    for name, rows in (result.get('derived') or {}).items():
+        if name in payload:
+            payload[name]['derived'] = rows
+    checkpoint.write_batch(index, *membership, payload)
+    loaded = checkpoint.load_batch(index, *membership)
+    if loaded is None:
+        raise RuntimeError(f'Clone batch {index}: its results could not be saved in {checkpoint.folder}')
+    return loaded
+
+
+def _finished_batches(checkpoint, layout: list, members: dict) -> tuple:
+    """(results of the batches with a valid file in the checkpoint, the other batches)."""
+    results, pending = {}, []
+    for index, batch in layout:
+        loaded = checkpoint.load_batch(index, *members[index])
+        if loaded is None:
+            pending.append((index, batch))
+        else:
+            results.update(loaded)
+    if len(pending) < len(layout):
+        logger.info(f'Clones: {len(layout) - len(pending)} of {len(layout)} batches finished in the interrupted run')
+    return results, pending
+
+
+def _clone_kwargs(simulation) -> dict:
+    """The clone workers' Simulation kwargs: the ordinary workers' plus the clones' planets; no figures unless
+    CLONES_PLOT_EACH."""
+    kwargs = simulation.batch_manager._prepare_simulation_kwargs(simulation)
+    kwargs.update(clones=0, _planets_needed=_planets_for_clones(simulation), _clone_batch=True)
+    if not simulation.config.clones_plot_each:
+        kwargs['plot'] = None
+    return kwargs
+
+
+def _thin(years, degrees) -> tuple:
+    """Every k-th sample, at most FIGURE_POINTS (a figure, not an analysis)."""
+    step = max(1, math.ceil(len(years) / FIGURE_POINTS))
+    return np.asarray(years[::step], dtype=float), np.asarray(degrees[::step], dtype=float)
+
+
+def nominal_thumbnails(simulation) -> dict:
+    """{parent: {key: (years, degrees)}}: each nominal's angle thinned for the ensemble figure, so that a resumed or
+    restored run can draw it when the nominal's series are neither in memory nor in a data file."""
+    out = {}
+    for run in simulation.ensembles:
+        body = _nominal_body(simulation, run)
+        if body is None:
+            continue
+        series = {}
+        for key in run.keys:
+            found = _nominal_series(simulation, body, key, run)
+            if found is not None:
+                series[key] = _thin(*found)
+        out[run.parent] = series
+    return out
 
 
 def worker_results(simulation) -> dict:
@@ -451,13 +593,14 @@ def clone_rows(simulation) -> list:
     return rows
 
 
-def write_clones_table(simulation, rows: list) -> Optional[str]:
-    """clones.csv at the top of save_path: these parents' rows replace any they had."""
+def write_clones_table(simulation, rows: list, folder=None) -> Optional[str]:
+    """clones.csv at the top of save_path (or of `folder`: a restored run's own folder): these parents' rows replace
+    any they had."""
     if not rows:
         return None
     from .data_manager import DataManager
 
-    path = Path(simulation.config.save_path) / CLONES_TABLE
+    path = Path(simulation.config.save_path if folder is None else folder) / CLONES_TABLE
     path.parent.mkdir(parents=True, exist_ok=True)
     frame = pd.DataFrame(rows)
     parents = set(frame['name'].astype(str))
@@ -486,16 +629,34 @@ def write_manifest(simulation, run: EnsembleRun) -> tuple:
     return manifest.save(path)
 
 
+def write_results(simulation, run: EnsembleRun, thumbnails: Optional[dict] = None) -> str:
+    """`ensemble-<parent>-results.npz` in the data folder: every clone's row verdicts, initial a, half-widths, derived
+    rows and thinned angles, and the nominal's thinned angle (`clone_store.encode_results`); read by restore."""
+    from . import clone_store
+
+    thumbnails = nominal_thumbnails(simulation) if thumbnails is None else thumbnails
+    nominal = thumbnails.get(run.parent) or dict(run.nominal_series)
+    header = {'kind': 'ensemble-results', 'parent': run.parent, 'names': list(run.names), 'resonances': run.keys, 'complete': run.complete}
+    path = clone_store.results_path(simulation, run.parent)
+    clone_store.write_npz(path, clone_store.encode_results(run.results, header, {run.parent: nominal}))
+    return str(path)
+
+
 def write_outputs(simulation):
-    """clones.csv, the manifests and the figures of the run's ensembles."""
+    """clones.csv, the manifests, the results archives and the figures of the run's ensembles, then simulation.json
+    again (now with the ensembles complete)."""
     rows = clone_rows(simulation)
     if simulation.config.save_summary:
         write_clones_table(simulation, rows)
     if simulation.config.save is not None:
+        thumbnails = nominal_thumbnails(simulation)
         for run in simulation.ensembles:
             write_manifest(simulation, run)
+            write_results(simulation, run, thumbnails)
     simulation.clone_summary = pd.DataFrame(rows)
     plot_ensembles(simulation, rows)
+    if not simulation.data_manager.skip_simulation_json:
+        simulation.data_manager.save_configuration_details(simulation.bodies, simulation)
 
 
 def _figure_wanted(simulation, run: EnsembleRun, key: str) -> bool:
@@ -516,8 +677,9 @@ def _figure_wanted(simulation, run: EnsembleRun, key: str) -> bool:
     return False
 
 
-def _nominal_series(simulation, body, key: str):
-    """(years, degrees) of the nominal's angle: in memory after a single run, else from its data file, else None."""
+def _nominal_series(simulation, body, key: str, run: Optional[EnsembleRun] = None):
+    """(years, degrees) of the nominal's angle: in memory after a single run, else from its data file, else the
+    thumbnail kept with the ensemble (`run.nominal_series`: a resumed or restored run), else None."""
     if body is None:
         return None
     angle = body.angles.get(key)
@@ -529,6 +691,8 @@ def _nominal_series(simulation, body, key: str):
         frame = pd.read_csv(path, usecols=lambda c: c in ('times', column))
         if column in frame.columns:
             return frame['times'].to_numpy(), np.mod(np.degrees(frame[column].to_numpy()), 360.0)
+    if run is not None and key in run.nominal_series:
+        return run.nominal_series[key]
     return None
 
 
@@ -559,7 +723,7 @@ def plot_ensembles(simulation, rows: list):
                 key=key,
                 members=members,
                 row=by_key[(run.parent, key)],
-                nominal_series=_nominal_series(simulation, body, key),
+                nominal_series=_nominal_series(simulation, body, key, run),
                 nominal_a0=nominal_a0,
                 nominal_status=nominal_status,
                 a_star=a_star,

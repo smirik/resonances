@@ -5,7 +5,6 @@ oscillation quantities once (see `resonances.resonance.oscillations`). Every pan
 a `draw_*` function drawing onto given axes (the standalone figures of `MMRPlotter`;
 the combined MMR figure is the verdict figure of `plotting/mmr_combined.py`):
 
-    series      unwrapped sigma, wrapped sigma and semi-major axis against time
     recurrence  distance between states (sigma, sigma_dot) at two times
     fair        mean anomaly against the mean-longitude difference (prograde two-body only)
     portrait    sigma against sigma_dot (or a), coloured by time
@@ -30,8 +29,6 @@ from resonances.resonance import oscillations as osc
 from resonances.resonance.classify.util import calc_sigma_derivative
 from .base import DiagnosticPlotter, time_unit
 from .style import (
-    CENTRE,
-    ENVELOPE,
     INK,
     MMR_PLOT_KINDS,
     OUT_OF_FOCUS,
@@ -40,7 +37,6 @@ from .style import (
     FigureStyle,
     PortraitY,
     RawMode,
-    SeriesMode,
     resolve_plot_options,
     time_cmap,
     time_colorbar,
@@ -72,7 +68,7 @@ class MMRDiagnostics:
     sigma_raw: np.ndarray  # raw angle, unwrapped
     sigma_filtered: np.ndarray  # low-pass filtered angle, unwrapped
     axis: np.ndarray
-    axis_filtered: np.ndarray
+    axis_filtered: np.ndarray  # the body's a low-passed at the run's cutoff (`body.axis_filtered`): portrait, a0
     body_name: str = ''
     resonance: str = ''  # full key, e.g. 2J-1+0-1
     label: str = ''  # short notation for titles, e.g. 2J-1
@@ -84,6 +80,9 @@ class MMRDiagnostics:
     focus: Optional[Tuple[float, float]] = None
     prominence: Optional[float] = None
     edge: float = 0.0  # years dropped at both ends of the portrait: the low-pass filter's edge transient
+    # a over the cycles: the analysis' own a_f (at the angle's cutoff, as the combined figure's (d)), else the raw a;
+    # never `axis_filtered`, whose low-pass at the run's cutoff (2000 yr by default) erases a faster libration
+    axis_cycles: Optional[np.ndarray] = None
 
     mask: np.ndarray = field(init=False)
     rate: np.ndarray = field(init=False)  # d sigma_filtered / dt, rad/yr
@@ -94,9 +93,11 @@ class MMRDiagnostics:
     unit: str = field(init=False)  # 'yr', 'kyr' or 'Myr'
     _recurrences: Dict[Tuple[int, int], osc.Recurrence] = field(init=False, default_factory=dict, repr=False)
 
-    _SERIES = ('times', 'sigma', 'sigma_raw', 'sigma_filtered', 'axis', 'axis_filtered', 'mean_anomaly', 'longitude')
+    _SERIES = ('times', 'sigma', 'sigma_raw', 'sigma_filtered', 'axis', 'axis_filtered', 'mean_anomaly', 'longitude', 'axis_cycles')
 
     def __post_init__(self):
+        if self.axis_cycles is None:
+            self.axis_cycles = self.axis
         for name in self._SERIES:
             value = getattr(self, name)
             if value is not None:
@@ -175,14 +176,18 @@ class MMRDiagnostics:
         """From a simulated body; the portrait edge is one period of the filter cutoff.
 
         sigma_f is the analysis' filtered angle (`body.angles_filtered_unwrapped`); after a restore it is not in the
-        data file and is reproduced by re-running the analysis on the saved series (`refiltered_angle`)."""
+        data file and is reproduced by re-running the analysis on the saved series (`refiltered_angle`). The a of the
+        cycles is the analysis' a_f when its arrays are held (`body.mmr_analyses`, or that re-run), else the raw a."""
         key = resonance.to_s()
         times = sim.times if sim is not None else body.times
         names = list(resonance.planets_names)
         planet = _planet_series(sim, names[0]) if len(names) == 1 and sim is not None else None
         sigma_filtered = body.angles_filtered_unwrapped.get(key)
+        analysis = getattr(body, 'mmr_analyses', {}).get(key)
         if sigma_filtered is None:
-            sigma_filtered = refiltered_angle(body, resonance, sim)
+            analysis = _rerun_analysis(body, resonance, sim)
+            sigma_filtered = _in_body_order(body, analysis.prep.angle_f)
+        axis_cycles = _in_body_order(body, analysis.prep.a_f) if analysis is not None and analysis.prep is not None else None
         return cls(
             times=np.asarray(times) / (2 * np.pi),
             sigma=body.angles[key],
@@ -201,26 +206,36 @@ class MMRDiagnostics:
             focus=focus,
             prominence=prominence,
             edge=1.0 / sim.config.oscillations_cutoff if sim is not None else 0.0,
+            axis_cycles=axis_cycles,
         )
 
 
-def refiltered_angle(body, resonance, sim) -> np.ndarray:
-    """sigma_f of an MMR angle reproduced from the saved series: the analysis is re-run with the run's settings
-    (same input, same cutoff as the verdict) and its filtered angle is put back in the body's row order.
+def _rerun_analysis(body, resonance, sim):
+    """The MMR analysis re-run on the saved series with the run's settings (same input, same cutoff as the verdict).
 
     ValueError when it cannot be: no simulation (planets, settings), or an analysis stopped at G0 (no sigma_f)."""
     key = resonance.to_s()
     if sim is None:
         raise ValueError(f'{body.name} {key}: no filtered angle in memory, and no simulation to re-run the analysis')
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr
-    from resonances.simulation.mmr_adapter import series_from_body, time_order
+    from resonances.simulation.mmr_adapter import series_from_body
 
     analysis = analyse_mmr(series_from_body(body, resonance, sim), sim.config.analysis_settings, scan_subresonances=False, scan_owner=False)
     if analysis.prep is None:
         raise ValueError(f'{body.name} {key}: the analysis is undefined ({analysis.verdict.reason}), there is no filtered angle')
-    filtered = np.empty(len(analysis.prep.angle_f))
-    filtered[time_order(body)] = analysis.prep.angle_f
-    return filtered
+    return analysis
+
+
+def _in_body_order(body, values) -> Optional[np.ndarray]:
+    """A time-ordered series of the analysis in the body's row order (None unless it has one value per row)."""
+    from resonances.simulation.mmr_adapter import in_body_order, time_order
+
+    return in_body_order(values, time_order(body), len(body.times))
+
+
+def refiltered_angle(body, resonance, sim) -> np.ndarray:
+    """sigma_f of an MMR angle reproduced from the saved series (`_rerun_analysis`), in the body's row order."""
+    return _in_body_order(body, _rerun_analysis(body, resonance, sim).prep.angle_f)
 
 
 def _planet_series(sim, name: str) -> Optional[PlanetSeries]:
@@ -264,29 +279,6 @@ def recurrence_points(d: MMRDiagnostics, requested: Optional[int] = None) -> int
     return int(min(len(d.times), np.clip(wanted, 700, 2500)))
 
 
-def centre_line(cycles: List[osc.Cycle], *series) -> Tuple[np.ndarray, ...]:
-    """Per-cycle `series` with NaN where the line must not join two cycles.
-
-    That is a gap between them, or a cycle more than three times the median period (two
-    maxima bridging a stretch of circulation). Such a cycle's centre stays as a lone
-    point; only the straight line across it is not drawn. The cycles are unchanged.
-    """
-    median = np.median([c.period for c in cycles])
-    outlier = [c.period > 3 * median for c in cycles]
-    breaks = [
-        i + 1
-        for i in range(len(cycles) - 1)
-        if cycles[i + 1].start - cycles[i].end > 0.5 * cycles[i].period or outlier[i] or outlier[i + 1]
-    ]
-    return tuple(np.insert(np.asarray(values, dtype=float), breaks, np.nan) for values in series)
-
-
-def lone_points(line: np.ndarray) -> np.ndarray:
-    """Finite entries of a NaN-broken line with no finite neighbour on either side."""
-    finite = np.pad(np.isfinite(line), 1)
-    return finite[1:-1] & ~(finite[:-2] | finite[2:])
-
-
 # --------------------------------------------------------------------------- panels
 
 
@@ -308,94 +300,6 @@ def _dim_outside_focus(ax, d: MMRDiagnostics):
     inside = d.t[d.mask]
     ax.axvspan(d.t[0], inside[0], color='white', alpha=0.65, zorder=6, lw=0)
     ax.axvspan(inside[-1], d.t[-1], color='white', alpha=0.65, zorder=6, lw=0)
-
-
-def _raw_line(ax, x, y, style: FigureStyle, raw: RawMode):
-    if raw == RawMode.NONE:
-        return
-    ax.plot(x, y, color=RAW, lw=style.raw_line, zorder=2)
-    if raw == RawMode.MARKERS:
-        ax.plot(x, y, ls='none', marker='o', markevery=max(len(x) // 100, 1), ms=2.5, mfc='none', mec=RAW, mew=0.6, zorder=2)
-
-
-def _envelope(ax, t, y, bins: int, **fill):
-    """Min-max band of `y` in `bins` equal time bins: every sample is inside, at the display resolution."""
-    edges = np.unique(np.linspace(0, len(t), bins + 1).astype(int))[:-1]
-    lo, hi = np.minimum.reduceat(y, edges), np.maximum.reduceat(y, edges)
-    centre = np.add.reduceat(t, edges) / np.diff(np.append(edges, len(t)))
-    ax.fill_between(centre, lo, hi, linewidth=0, **fill)
-
-
-def envelope_bins(d: MMRDiagnostics, mode: SeriesMode, pixels: float, line_pixels: float) -> int:
-    """Number of min-max bins for the time series, or 0 to draw lines.
-
-    `envelope` always bins, `lines` never; `auto` bins when a median cycle is narrower
-    than four line widths, where single oscillations merge into a solid block. A bin spans
-    about two cycles, so the band traces the amplitude (and its modulation), not the
-    oscillation itself.
-    """
-    if mode == SeriesMode.LINES or not d.cycles:
-        return 0
-    cycles = abs(d.times[-1] - d.times[0]) / np.median([c.period for c in d.cycles])
-    if mode == SeriesMode.AUTO and pixels / cycles >= 4 * line_pixels:
-        return 0
-    return int(round(max(2, min(pixels, cycles / 2))))
-
-
-def draw_series(axes, d: MMRDiagnostics, style: FigureStyle, options: Dict[str, Any]):
-    """Unwrapped sigma, wrapped sigma and a - a0 on three axes sharing the time axis.
-
-    Raw series in grey, filtered in black. When the oscillations are too dense for the
-    panel width (see `envelope_bins`), both are drawn as min-max bands instead and
-    the wrapped points become translucent, so their density shows.
-    """
-    ax_u, ax_w, ax_a = axes
-    t, raw = d.t, options['raw']
-    pixels = ax_u.get_position().width * ax_u.figure.get_figwidth() * style.dpi
-    bins = envelope_bins(d, options['series'], pixels, style.line / 72 * style.dpi)
-    envelope = bins > 0
-
-    for ax, raw_values, filtered in ((ax_u, d.sigma_raw, d.sigma_filtered), (ax_a, d.milli_au(d.axis), d.milli_au(d.axis_filtered))):
-        if envelope:
-            if raw != RawMode.NONE:
-                _envelope(ax, t, raw_values, bins, color=RAW, zorder=2)
-            _envelope(ax, t, filtered, bins, color=ENVELOPE, zorder=3)
-        else:
-            _raw_line(ax, t, raw_values, style, raw)
-            ax.plot(t, filtered, color=INK, lw=style.line, zorder=3)
-    ax_u.set_ylabel(r'$\sigma$ (rad)')
-    ax_a.set_ylabel('$\\Delta a$\n($10^{-3}$ au)')
-
-    ax_w.scatter(t, d.sigma, s=style.series_marker, color=INK, alpha=0.25 if envelope else 1.0, linewidths=0, rasterized=True)
-    ax_w.set_ylim(0, TWO_PI)
-    ax_w.set_yticks([0, np.pi, TWO_PI], ['0', r'$\pi$', r'$2\pi$'])
-    # The extreme labels sit on the panel edges; keep them inside, clear of the neighbours.
-    ax_w.get_yticklabels()[0].set_va('bottom')
-    ax_w.get_yticklabels()[-1].set_va('top')
-    ax_w.set_ylabel(r'$\sigma$ (rad)')
-
-    if d.cycles:
-        mid, centre, axis_mid = centre_line(d.cycles, *osc.cycle_centres(d.cycles, d.times, d.axis_filtered))
-        # A centre cut off from both neighbours would be invisible as a line: mark it as a point.
-        lone = lone_points(mid)
-        for ax, values in ((ax_u, centre), (ax_a, d.milli_au(axis_mid))):
-            ax.plot(mid / d.divisor, values, color=CENTRE, lw=style.line, zorder=4)
-            ax.plot(mid[lone] / d.divisor, values[lone], ls='none', marker='o', ms=2.5 * style.line, color=CENTRE, zorder=4)
-
-    for ax in axes:
-        _dim_outside_focus(ax, d)
-        ax.set_xlim(t[0], t[-1])
-        ax.grid(alpha=0.15, lw=0.5)
-    # Stacked without gaps: drop the ticks that would touch the neighbour's.
-    ax_u.yaxis.set_major_locator(MaxNLocator(nbins=4, prune='lower'))
-    ax_a.yaxis.set_major_locator(MaxNLocator(nbins=4, prune='upper'))
-    for ax in axes[:-1]:
-        ax.tick_params(labelbottom=False)
-    ax_a.set_xlabel(f'Time ({d.unit})')
-    # One x for the three y labels, whatever the tick label widths (a fixed distance in inches).
-    width = ax_a.get_position().width * ax_a.figure.get_figwidth()
-    for ax in axes:
-        ax.yaxis.set_label_coords(-0.06 * style.font_size / width, 0.5)
 
 
 def draw_recurrence(ax, d: MMRDiagnostics, options: Dict[str, Any], cax=None):
@@ -466,10 +370,11 @@ def draw_portrait(ax, d: MMRDiagnostics, style: FigureStyle, options: Dict[str, 
 
 
 def draw_cycles(ax_sigma, ax_axis, d: MMRDiagnostics, style: FigureStyle, norm: Normalize):
-    """sigma over each cycle, and a - median(a) over the same cycle, on one period."""
+    """sigma_f over each cycle, and a - median(a) over the same cycle, on one period; a is the analysis' a_f
+    (`MMRDiagnostics.axis_cycles`), else the raw a."""
     if d.cycles:
         mids = np.array([(c.start + c.end) / 2 for c in d.cycles]) / d.divisor
-        for ax, series, scale, centred in ((ax_sigma, d.sigma_filtered, 1.0, False), (ax_axis, d.axis_filtered, MILLI, True)):
+        for ax, series, scale, centred in ((ax_sigma, d.sigma_filtered, 1.0, False), (ax_axis, d.axis_cycles, MILLI, True)):
             folded = [np.column_stack(osc.fold_cycle(c, d.times, series, subtract_median=centred)) * (1.0, scale) for c in d.cycles]
             # One collection for all cycles: thousands of separate lines would dominate drawing.
             lines = LineCollection(folded, cmap=time_cmap(), norm=norm, linewidth=style.line, alpha=0.85)

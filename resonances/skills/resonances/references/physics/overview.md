@@ -34,12 +34,18 @@ The verdict answers two separate questions:
 | | `non_resonant` | $\sigma$ circulates, or it is bounded by something other than this resonance |
 | | `uncertain` | the record cannot decide: too short, an unexplained drift, or contradicting physics |
 | | `invalid` | the record cannot be measured at these settings: an aliased or too coarse output step, an unphysical orbit |
-| `angle_status` | `libration`, `episodic`, `near_separatrix`, `circulation`, `drift`, `insufficient_time`, `undefined` | the geometry of $\sigma$ over the whole record |
-| `final_regime` | `libration`, `circulation`, `drift`, … | how the record ends (a capture, an exit) |
-| `reason` | e.g. `dynamic_libration`, `kinematic_libration`, `alias` | the one main explanation of the status |
+| `angle_status` | `libration`, `episodic`, `near_separatrix`, `circulation`, `drift`, `insufficient_time`, `undefined` | the geometry of $\sigma$ over the whole record ([What the angle does](geometry.md#from-geometry-to-angle_status)) |
+| `angle_subtype` | `stationary`, `modulated`, `moving_centre`, `regime_change`; `recurrent`; `pattern_a`, `pattern_b`; `alias`; `arc`, `stall`, `few_cycles`; `unphysical`, `undefined_phase` | the kind of `angle_status` |
+| `final_regime`, `final_regime_start_yr` | `libration`, `circulation`, `drift`, `near_separatrix`, `insufficient_time`, empty | how the record ends (a capture, an exit) and from when |
+| `orbit_type` | `tadpole L4`, `horseshoe`, `interior, symmetric libration about 0°`, … | the header of the figure; descriptive, decides nothing |
+| `reason` | e.g. `dynamic_libration`, `kinematic_libration`, `alias` | the one main explanation of the status ([every reason](status-tree.md#every-reason)) |
 | `libration_origin` | `dynamic`, `induced`, `subresonance`, `kinematic`, `unknown` | who makes the bounded oscillation |
-| `confidence` | `certain`, `high`, `medium`, `low` | how well the evidence supports the status ([Confidence](confidence.md)); empty for `uncertain` and `invalid` |
-| `action` | `none`, `spot_check`, `review`, `extend`, `resample` | what to do next with this body |
+| `origin_detail` | `varpi_term`, `secular_cycle`, `planet_ripple`, `owner_libration`, `owner_forced_wave`, `fixed_subresonance`, `composite_multiplet`, `free_omega_winds` | the concrete cause ([Is it this resonance?](response.md)) |
+| `owner` | e.g. `11M-20+0+9` | the resonance that carries the oscillation (induced, subresonance) |
+| `confidence`, `confidence_raw` | `certain`, `high`, `medium`, `low` | how well the evidence supports the status, after and before the caps ([Confidence](confidence.md)); empty for `uncertain` and `invalid` |
+| `action` | `none`, `spot_check`, `review`, `extend`, `resample` | what to do next with this body ([Actions](confidence.md#actions)) |
+| `check_mmr_*` | `pass`, `fail`, `not_measured`, `not_applicable` | each physical test: `pass` supports the resonant reading, `fail` refutes it |
+| `flags`, `caps`, `thin_margins`, `failed_support` | `;`-separated lists | what lowered the confidence and why |
 
 A body can therefore be `non_resonant` while `angle_status = libration`: the angle librates, but not because of
 this resonance. The origins of such a *kinematic* or *induced* libration are explained in
@@ -66,6 +72,19 @@ flowchart LR
    `status`, `reason` and `libration_origin`.
 5. [**Confidence**](confidence.md). Every comparison of the analysis has a margin; the margins and a few caps
    give the confidence level and the suggested action.
+
+??? info "The exact order of the steps (MMR)"
+    `analyse_mmr` (`resonances/resonance/analysis/mmr/analyse.py`) runs in a fixed order: input check → context
+    (rates, $a_*$, $c$, synodic periods, the great inequality) → sampling (predictive unwrap, alias) → preprocessing
+    (ripple, cutoff, filter) → geometry → slow parts → response of $a$ → energy and zone → kinematics →
+    `angle_status` → filter guard → subresonances → strength → owner (with that strength) → the verdicts of derived
+    members → status → margins, caps, confidence.
+
+    The analysis reads only the saved series, so a run can be classified again without integrating
+    (`SimulationSerializer.restore(..., recompute_librations=True)`, `benchmark/tools/reclassify.py`). Every
+    comparison is written to a ledger (`decision_path`, the right-hand column of the combined figure), and every
+    threshold is a setting. The rule IDs used in the figure and the output columns (G0, L4, 5u, …) are listed in the
+    [Rule index](../libration-analysis.md).
 
 Secular and Lidov-Kozai angles go through the same geometry with their own signal step and physics
 ([Secular and Lidov-Kozai](secular-zlk.md)). The [Gallery](gallery.md) shows one benchmark example of every

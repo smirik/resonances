@@ -1,5 +1,5 @@
 """Independent tests of W18 item 2: the turning-point threshold no longer takes the libration's own swing for noise
-(docs/libration-analysis.md §3 "The libration is not its own noise"; W17 Q8, 2013 AS27 31E-36+0+5).
+(docs/physics/geometry.md "Turning points"; W17 Q8, 2013 AS27 31E-36+0+5).
 
 p_TP = max(floor, 4 r), r the 95th percentile of |sigma_f - lowpass(sigma, P_f)|. For a sine of period P and
 half-amplitude A the filters are Butterworth of order 2 applied forward and backward: gain G(P; P_c) =

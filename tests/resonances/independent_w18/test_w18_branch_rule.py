@@ -1,5 +1,5 @@
-"""Independent tests of W18 item 3: the branch "L4 and R0 both not measured" (docs/libration-analysis.md §6, the table
-under "The branch: L4 and R0 both not measured"; author's table in ANSWERS 2026-10-17c).
+"""Independent tests of W18 item 3: the branch "L4 and R0 both not measured" (docs/physics/status-tree.md, the table
+under "The unmeasured branch"; author's table in ANSWERS 2026-10-17c).
 
 Every record here is a three-body pendulum of half-amplitude 20 deg: below the 45-deg floor of the force law (L4) and
 of R0 without a turn, so both are not measured by design, and the leaf is chosen by the strength alone.

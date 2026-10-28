@@ -58,7 +58,8 @@ in time on the left, and the verdict with every number behind it on the right. T
 
 [![463 Lola in 4J-2S-1](img/gallery/mmr3__463__4J-2S-1+0+0-1.png)](img/gallery/mmr3__463__4J-2S-1+0+0-1.png)
 
-The [Gallery](physics/gallery.md#quick-start-463) explains how to read it and shows one example of every status.
+[How to read the figures](reading-figures.md) explains every panel; the [Gallery](physics/gallery.md#quick-start-463)
+shows one example of every status.
 
 ## A secular resonance
 

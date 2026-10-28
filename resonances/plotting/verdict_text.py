@@ -1498,7 +1498,9 @@ def _detail_l2(f: MMRFacts, margin) -> Tuple[str, str, str]:
     energy, s = f.a.energy, f.s
     if energy is not None and energy.zone is not None and energy.cycle_classes:
         n_zone = sum(1 for c in energy.cycle_classes if str(c) == 'zone')
-        detail = f'{n_zone} of {len(energy.cycle_classes)} cycles in the zone (max half-amplitude {fmt(margin.value)}°)'
+        n_unmeasured = sum(1 for c in energy.cycle_classes if str(c) == 'not_measured')
+        unmeasured = f', {n_unmeasured} not measured (above a lower saddle)' if n_unmeasured else ''
+        detail = f'{n_zone} of {len(energy.cycle_classes)} cycles in the zone{unmeasured} ' f'(max half-amplitude {fmt(margin.value)}°)'
         note = f'{n_zone} of {len(energy.cycle_classes)} cycles in the separatrix zone' if n_zone else ''
         return detail, 'no cycle in the zone', note
     return f'max half-amplitude {compare(margin.value, "<=", s.mmr_l2_amp_full_deg, "°")}', f'≤ {fmt(s.mmr_l2_amp_full_deg)}°', ''
@@ -2227,7 +2229,7 @@ def _force_conclusion(l4: str, r0: str, unmeasured: str = '') -> str:
 
 
 def _zone_step(f: MMRFacts) -> Step:
-    if not f.rule.endswith('/6'):
+    if not f.rule.endswith(('/6', '/6u')):  # 6u: a union promoted after leaf 6 (`decide.promote_union`)
         return Step('zone', '6. dynamic leaf', StepState.NOT_REACHED)
     energy, note = f.a.energy, ''
     if energy is not None and energy.cycle_classes:
@@ -3544,7 +3546,8 @@ LONG_PERIOD_DETAILS = {
     'S': _long_s,
     'F': _long_f,
     'P': lambda margin, settings, where: (f'smallest pass {fmt(margin.value)} rev', '≥ 1', ''),
-    'G': lambda margin, settings, where: (f'{fmt(margin.value)} cycles of the free ω', 'the minimum + 10%', ''),
+    # n_cycles = baseline / P_cyc of the decisive osculating scale (not turns of the free omega)
+    'G': lambda margin, settings, where: (f'{fmt(margin.value)} cycles of the osculating ω (T / P_cyc)', 'the minimum + 10%', ''),
 }
 
 
@@ -3601,7 +3604,10 @@ def _long_period_status_sentence(analysis, settings, episodes: Sequence[Mapping[
     gate = getattr(analysis, 'gate', None)
     if gate is not None and _text(gate.outcome):
         words = GATE_WORDS.get(gate.outcome, gate.outcome.replace('_', ' '))
-        cycles = f' ({fmt(gate.n_cycles)} cycles of the free ω, need ≥ {fmt(gate.min_cycles)})' if finite(gate.n_cycles) else ''
+        # n_cycles is the record over P_cyc of the decisive osculating scale, the gate's cycle count; not free-ω turns
+        cycles = (
+            f' ({fmt(gate.n_cycles)} cycles of the osculating ω, T / P_cyc, need ≥ {fmt(gate.min_cycles)})' if finite(gate.n_cycles) else ''
+        )
         return f'{head}: {words}{cycles}.'
     if reason == 'gate_unavailable':
         return f'{head}: the free-ω gate could not run, so the Lidov-Kozai libration has no verdict.'
@@ -3615,6 +3621,59 @@ def _long_period_status_sentence(analysis, settings, episodes: Sequence[Mapping[
     if angle == 'episodic':
         return f'{head}: the libration does not cover the record.'
     return f'{head}: {reason.replace("_", " ")}.'
+
+
+EI_WORDS = {'zlk': 'ZLK (antiphase, constant H)', 'forced_beat': 'forced beat (in phase)', 'none': 'neither law'}
+
+
+def _ei_line(ei) -> str:
+    """'e-i at 6 kyr: forced beat (in phase): i against e 328°, r +0.78, δi/δe 1.2 × the beat law (0.36 × H)'."""
+    if ei.coupling == 'not_measured':
+        return f'e-i coupling not measured ({ei.reason.replace("_", " ") or "no period"})'
+    where = f'at {years(ei.period_yr)}' + (' (ω harmonic)' if ei.period_source == 'circulation_harmonic' else '')
+    return (
+        f'e-i {where}: {EI_WORDS.get(ei.coupling, ei.coupling)}: i against e {ei.phase_deg:.0f}°, r {ei.band_r:+.2f}, '
+        f'δi/δe {fmt(ei.ratio_h)} × the H law, {fmt(ei.ratio_beat)} × the beat law (a column only; coupling is not libration)'
+    )
+
+
+def _attribution_line(attribution, gate) -> str:
+    """The forced mode that holds a kinematic libration, or why none is named; '' when the gate is not kinematic."""
+    if gate is None or gate.outcome != 'kinematic':
+        return ''
+    if not attribution.attributed:
+        return f'forcing not attributed ({attribution.reason.replace("_", " ")})'
+    return (
+        f'held by the forced mode {attribution.mode}: |c| {fmt(attribution.forcing_e)}, e_free/|c| '
+        f'{fmt(attribution.free_over_forcing)}, beat 2π/|b_ϖ − g| {years(attribution.beat_period_yr)} = P_cyc, node − mode '
+        f'{attribution.node_minus_mode_arcsec_yr:+.2f}″/yr ({fmt(attribution.node_minus_mode_turns)} turn)'
+    )
+
+
+def _centre_line(line) -> str:
+    """'slow line of the centre: 53.8 kyr, ±21.6°: forced beat g6-g5 (r 0.99, model ±22.8°)'; '' when not measured."""
+    if line is None or not finite(line.period_yr):
+        return ''
+    origin = line.origin.replace('forced_beat:', 'forced beat ').replace('forced_wave:', 'forced wave ')
+    model = ''
+    if finite(line.model_r):
+        model = (
+            f' (r {line.model_r:.2f}'
+            + (f', model ±{math.degrees(line.model_half_amp_rad):.1f}°' if finite(line.model_half_amp_rad) else '')
+            + ')'
+        )
+    return f'slow line of the centre: {years(line.period_yr)}, ±{math.degrees(line.half_amp_rad):.3g}°: {origin}{model}'
+
+
+def zlk_column_lines(analysis) -> List[str]:
+    """The measured facts of a ZLK row that change no status (e-i coupling, attribution, the centre's slow line), and
+    the slow line of a modulated secular angle; one line each, '' lines left out."""
+    lines = []
+    zlk = getattr(analysis, 'zlk', None)
+    if zlk is not None:
+        lines += [_ei_line(zlk.ei), _attribution_line(zlk.attribution, getattr(analysis, 'gate', None))]
+    lines.append(_centre_line(getattr(analysis, 'centre_line', None)))
+    return [line for line in lines if line]
 
 
 def explain_long_period(analysis, settings, episodes: Sequence[Mapping[str, Any]]) -> VerdictText:
@@ -3648,10 +3707,10 @@ def explain_long_period(analysis, settings, episodes: Sequence[Mapping[str, Any]
     else:
         steps.append(Step('leaf', 'secular leaf', StepState.LEAF, f'{v.angle_status} → {v.status} (the shape of the angle decides)'))
     info = []
-    for column in ('check_secular_e_response', 'check_zlk_ei'):
-        value = str(v.checks.get(column, ''))
-        if value in ('pass', 'fail'):
-            info.append(f'{_response_words(analysis) if "secular" in column else "e-i coherence"}: {value} (a column only)')
+    value = str(v.checks.get('check_secular_e_response', ''))
+    if value in ('pass', 'fail'):
+        info.append(f'{_response_words(analysis)}: {value} (a column only)')
+    info += zlk_column_lines(analysis)
     head = [_long_period_angle_sentence(analysis, eps, settings), _long_period_status_sentence(analysis, settings, episodes)]
     subtitle = f'reason {v.reason}' + (f' · origin {v.libration_origin}' if str(v.libration_origin) else '')
     return _verdict_text(v, subtitle, head, steps, checks, info)

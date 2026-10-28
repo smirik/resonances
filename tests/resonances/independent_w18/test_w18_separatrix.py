@@ -1,5 +1,5 @@
-"""Independent tests of W18 items 4 and 5 (docs/libration-analysis.md §5 "Separatrix crossings: what is counted",
-§7 caps; docs/output.md `flags`, `sep_`):
+"""Independent tests of W18 items 4 and 5 (docs/physics/geometry.md "The separatrix zone", crossings;
+docs/physics/confidence.md caps; docs/output.md `flags`, `sep_`):
 
 - the near_separatrix cap: a near_separatrix of the geometry (G3) whose zone is not measured is at most medium;
 - the counts of exits and captures and the mark exit_and_capture on a pendulum with one slip and a separate exit;

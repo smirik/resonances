@@ -112,3 +112,10 @@ mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr,uncertain,,libration,"author:2026-10-2
 mmr2__523899__3N-5+0+2,near_separatrix,,,"author:2026-10-27 17:06 (W24 final page Q2: ""я согласен с оценкой claude (near-separatrix)""; gallery example)"
 zlk__189865__LK,non_resonant,,,"author:2026-10-27 17:06 (W24 final page Q7: ias15 record; the old invalid came from a SABA blow-up)"
 zlk__477492__LK,resonant,,,"author:2026-10-27 17:06 (W24 final page Q7: ias15 record, free-omega gate confirmed)"
+coorbital__2015_SO2__1E-1+0+0,transient,high,episodic,author:2026-10-28 16:04 (W25: accepted the verdicts after the separatrix-zone fix; confidence changed in this iteration)
+coorbital__2019_GM1__1E-1+0+0,transient,high,episodic,author:2026-10-28 16:04 (W25: accepted the verdicts after the separatrix-zone fix; confidence changed in this iteration)
+coorbital__2020_SB__1V-1+0+0,transient,high,episodic,author:2026-10-28 16:04 (W25: accepted the verdicts after the separatrix-zone fix; confidence changed in this iteration)
+coorbital__2024_TY11__1M-1+0+0__20kyr,transient,high,episodic,author:2026-10-28 16:04 (W25: accepted the verdicts after the separatrix-zone fix; confidence changed in this iteration)
+coorbital__2025_PN7__1E-1+0+0,transient,high,episodic,author:2026-10-28 16:04 (W25: accepted the verdicts after the separatrix-zone fix; confidence changed in this iteration)
+coorbital__439908__1M-1+0+0__20kyr,transient,high,episodic,author:2026-10-28 16:04 (W25: accepted the verdicts after the separatrix-zone fix; confidence changed in this iteration)
+mmr2__82831__13M-24+0+11,transient,medium,episodic,author:2026-10-28 16:04 (W25: accepted the verdicts after the separatrix-zone fix; confidence changed in this iteration)

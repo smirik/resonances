@@ -417,6 +417,96 @@ class TestResumeHash:
         assert any('older version' in r.getMessage() for r in caplog.records)
 
 
+class TestResumeElements:
+    """The resume hash covers the initial elements each body was run with (exact floats, with the sha256 of a get-orb
+    answer), so that completed batches are never mixed with batches computed from a refreshed orbit
+    (docs/serialization.md, "Resuming interrupted batch simulations")."""
+
+    # A get-orb body as BodyManager._getorb_elements gives it: the elements and the sha256 of the cached answer
+    OLD = {**ELEMENTS, 'a': 2.5, 'getorb_identifier': 'API-only', 'getorb_sha256': 'old-get-orb'}
+    NEW = {**ELEMENTS, 'a': 2.6, 'getorb_identifier': 'API-only', 'getorb_sha256': 'new-get-orb'}
+
+    @staticmethod
+    def _sim(path, first):
+        sim = Simulation(name='resume', date='2020-01-01', save_path=str(path), plot_path=str(path), batch_size=2, n_cores=1)
+        sim.body_manager.add_body(dict(first), [LIB], name='API-only')
+        for name in ('b', 'c'):
+            sim.body_manager.add_body(ELEMENTS, [LIB], name=name)
+        return sim
+
+    @staticmethod
+    def _run(sim, monkeypatch, stop_after=None):
+        """execute_batches with workers that finish every batch they get (none integrated), or that stop the run
+        after finishing batch `stop_after`; returns the batch indices the workers were given."""
+        given = []
+
+        def workers(batches, kwargs, progress_callback=None, before_run=None):
+            for index, batch in batches:
+                given.append(index)
+                progress_callback(index, {'body_names': [body['name'] for body in batch], 'num_bodies': len(batch)})
+                if index == stop_after:
+                    raise RuntimeError('interrupted')
+            return []
+
+        monkeypatch.setattr(sim.batch_manager.parallel_executor, 'execute_batches', workers)
+        if stop_after is None:
+            sim.batch_manager.execute_batches(sim, sim.bodies, np.linspace(0, 10, 5))
+        else:
+            with pytest.raises(RuntimeError, match='interrupted'):
+                sim.batch_manager.execute_batches(sim, sim.bodies, np.linspace(0, 10, 5))
+        return given
+
+    @staticmethod
+    def _hash(sim):
+        manager = sim.batch_manager
+        return StateManager.compute_config_hash(manager._get_config_dict(manager.create_batches(sim.bodies)))
+
+    def test_the_same_elements_give_the_same_hash(self, tmp_path):
+        assert self._hash(self._sim(tmp_path, self.OLD)) == self._hash(self._sim(tmp_path, dict(self.OLD)))
+
+    @pytest.mark.parametrize(
+        'change',
+        [{'a': 2.6, 'getorb_sha256': 'new-get-orb'}, {'getorb_sha256': 'new-get-orb'}, {'a': float(np.nextafter(2.5, 3.0))}],
+        ids=['refreshed-get-orb', 'get-orb-answer-only', 'one-ulp-in-a'],
+    )
+    def test_changed_elements_change_the_hash(self, tmp_path, change):
+        # the hash of the previous version (names and resonances only) was the same for all of these
+        assert self._hash(self._sim(tmp_path, self.OLD)) != self._hash(self._sim(tmp_path, {**self.OLD, **change}))
+
+    def test_a_refreshed_get_orb_orbit_is_not_mixed_with_completed_batches(self, tmp_path, monkeypatch):
+        # batch 0 = API-only and b, completed from the old get-orb answer; then the run is interrupted
+        assert self._run(self._sim(tmp_path, self.OLD), monkeypatch, stop_after=0) == [0]
+        state = StateManager(str(tmp_path), 'resume').load_state()
+        assert state.progress['completed_batches'] == [0]
+        assert [record['name'] for record in state.body_elements] == ['API-only', 'b', 'c']
+
+        refreshed = self._sim(tmp_path, self.NEW)
+        with pytest.raises(ValueError, match='Cannot resume') as refusal:
+            self._run(refreshed, monkeypatch)
+        assert 'API-only (get-orb answer sha256 old-get-orb -> new-get-orb)' in str(refusal.value)
+        assert ' b' not in str(refusal.value).split('differ')[0]  # the unchanged bodies are not named
+        assert StateManager(str(tmp_path), 'resume').load_state().progress['completed_batches'] == [0]  # left as it was
+
+    def test_the_same_elements_resume_the_pending_batches_only(self, tmp_path, monkeypatch):
+        assert self._run(self._sim(tmp_path, self.OLD), monkeypatch, stop_after=0) == [0]
+        assert self._run(self._sim(tmp_path, dict(self.OLD)), monkeypatch) == [1]
+        assert not (tmp_path / 'simulation_state.json').exists()
+
+    def test_a_state_written_before_the_elements_were_recorded_is_resumed_with_a_warning(self, tmp_path, monkeypatch, caplog):
+        sim = self._sim(tmp_path, self.OLD)
+        manager = sim.batch_manager
+        # The hash of the version before this one: config and batch layout (names, resonances), no elements
+        previous = StateManager.compute_config_hash(manager._get_config_dict(manager.create_batches(sim.bodies), elements=False))
+        state = SimulationState.create_new('resume', 3, 2, 100, 1, previous)
+        state.mark_batch_complete(0, ['API-only', 'b'])
+        manager.state_manager.save_state(state)
+        assert StateManager(str(tmp_path), 'resume').load_state().body_elements is None
+
+        with caplog.at_level('WARNING'):
+            assert self._run(sim, monkeypatch) == [1]
+        assert any('cannot be checked' in r.getMessage() for r in caplog.records)
+
+
 class TestSafeMode:
     def test_the_env_value_is_read(self):
         original = resonances.config.get('INTEGRATION_SAFE_MODE')

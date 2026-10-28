@@ -1,10 +1,10 @@
 """Regenerate every figure of the documentation, idempotently, without integrating anything.
 
     make docs-figures                                   # everything
-    make docs-figures ONLY=alias,pendulum_portrait      # a few (gallery anchors or schematic names)
+    make docs-figures ONLY=alias,pendulum_portrait      # a few (gallery anchors, schematic or kind-set names)
     uv run python docs/tools/build_figures.py --list    # the names
 
-Two kinds of figures:
+Three kinds of figures:
 
 - the gallery (docs/img/gallery/<example_id>.png, docs/physics/gallery.md): one-page verdict figures of benchmark
   examples. Each example's saved series (benchmark/data/examples/<id>, or $RESONANCES_BENCHMARK_DATA) is analysed
@@ -14,7 +14,10 @@ Two kinds of figures:
   each verdict is compared with the latest saved benchmark run (`SAVED_RUNS`): a difference is printed, never hidden.
   Without the benchmark data the gallery figures are kept as they are and only the page is rewritten;
 - schematics (docs/img/physics/*.png): pure numpy/matplotlib drawings of the physics pages, using the package's own
-  formulas (pendulum period factor, filter gain, closure of a cycle) where it has them.
+  formulas (pendulum period factor, filter gain, closure of a cycle) where it has them;
+- standalone kinds (docs/img/figures/*.png, `KIND_SETS`): the figure kinds other than `combined` (recurrence, FAIR,
+  portrait, cycles; secular angle, rate, portrait; ecc_vector and free_omega) of a few benchmark examples, drawn by
+  the package's own plotters for docs/reading-figures.md.
 
 Nothing is written outside docs/img/ and docs/physics/gallery.md; a file whose bytes did not change is not rewritten.
 """
@@ -48,13 +51,15 @@ REPO = Path(__file__).resolve().parents[2]
 DOCS = REPO / 'docs'
 GALLERY_DIR = DOCS / 'img' / 'gallery'
 PHYSICS_DIR = DOCS / 'img' / 'physics'
+FIGURES_DIR = DOCS / 'img' / 'figures'
 GALLERY_PAGE = DOCS / 'physics' / 'gallery.md'
 VERDICTS = GALLERY_DIR / 'verdicts.json'
 TOOLS = REPO / 'benchmark' / 'tools'
-SAVED_RUNS = {'mmr': 'v2-w24-tx9b', 'long_period': 'v2-w23-secular-zlk'}  # under the benchmark data folder
+SAVED_RUNS = {'mmr': 'v2-w25-final', 'long_period': 'v2-w25-final-secular-zlk'}  # under the benchmark data folder
 
 GALLERY_WIDTH_PX = 2000  # the verdict figures are 24 in wide: 83 dpi
 GALLERY_COLOURS = 256  # palette PNG: the figures are flat colours and text
+KIND_WIDTH_PX = 1100  # the standalone kinds of docs/reading-figures.md
 SCHEMATIC_DPI = 150
 COMPARED = ('status', 'angle_status', 'final_regime', 'reason', 'confidence', 'libration_origin', 'action')
 
@@ -405,12 +410,12 @@ def write_if_changed(path: Path, data: bytes) -> bool:
     return True
 
 
-def gallery_png(fig) -> bytes:
-    """The figure at GALLERY_WIDTH_PX wide, as a palette PNG without metadata (the same figure gives the same bytes)."""
+def gallery_png(fig, width_px: int = GALLERY_WIDTH_PX) -> bytes:
+    """The figure at `width_px` wide, as a palette PNG without metadata (the same figure gives the same bytes)."""
     from PIL import Image
 
     buffer = stdio.BytesIO()
-    fig.savefig(buffer, format='png', dpi=GALLERY_WIDTH_PX / fig.get_size_inches()[0], metadata={'Software': None})
+    fig.savefig(buffer, format='png', dpi=width_px / fig.get_size_inches()[0], metadata={'Software': None})
     buffer.seek(0)
     image = Image.open(buffer).convert('RGB').quantize(colors=GALLERY_COLOURS, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
     out = stdio.BytesIO()
@@ -434,13 +439,18 @@ def text(value: Any) -> str:
 def regime_fields(meta: Dict[str, Any], t_yr: np.ndarray) -> Dict[str, Any]:
     regime = meta.get('regime') or {}
     steps = np.diff(np.asarray(t_yr, dtype=float))
-    return {
+    fields = {
         'name': str(meta.get('name', '')),
         'integrator': text(regime.get('integrator')),
         'span_yr': float(t_yr[-1] - t_yr[0]),
         'step_yr': float(np.median(steps)) if len(steps) else math.nan,
         'moon': bool(regime.get('moon')),
     }
+    thinned = regime.get('decimation') or {}
+    if thinned.get('factor'):  # the benchmark keeps every k-th row of a finer output (no smoothing)
+        fields['output_step_yr'] = float(thinned['source_step_yr'])
+        fields['thinning'] = int(thinned['factor'])
+    return fields
 
 
 def verdict_fields(row: Dict[str, Any]) -> Dict[str, str]:
@@ -579,7 +589,10 @@ def verdict_line(entry: Dict[str, Any]) -> str:
         words.insert(2, f"ends: {entry['final_regime']}")
     verdict = ' · '.join(f'`{word}`' for word in words if word)
     integrator = entry['integrator'] + (' + Moon' if entry.get('moon') else '')
-    record = f"{fmt_years(entry['span_yr'])}, step {fmt_years(entry['step_yr'])}, {integrator}"
+    step = f"step {fmt_years(entry['step_yr'])}"
+    if entry.get('thinning'):
+        step += f" (one point in {entry['thinning']} of a {fmt_years(entry['output_step_yr'])} output)"
+    record = f"{fmt_years(entry['span_yr'])}, {step}, {integrator}"
     name = entry['name'].replace('_', ' ')
     return f"**{name}**, `{entry['resonance']}`: {verdict}. Record: {record}."
 
@@ -600,51 +613,29 @@ Lidov-Kozai angle $\\omega$.
 
 ## How to read the figure
 
-**Mean-motion resonances.** The left half holds the time series, all on one time axis:
-
-| panel | what it shows |
-|---|---|
-| (a) | $\\sigma$ unwrapped: osculating (grey) and filtered $\\sigma_f$ (black), centre, episodes (numbered), turning points |
-| (b) | $\\sigma$ in a 360° window around the centre: every osculating sample and $\\sigma_f$ |
-| (c) | $\\dot\\sigma / 2\\omega_0$ on a symmetric-log axis: $\\pm 1$ is the speed at the separatrix |
-| (d) | $a$ in au: osculating, filtered, the exact resonance $a_*$, the catalogue value and the band of the resonance's half-width |
-| (e) | $\\dot a$ with the fitted force law $R \\sin(\\sigma_f - \\phi_0) + C$ in windows, with its $R^2$ |
-| (f), (g) | $e$ and $i$ |
-| (h) | the pendulum's energy $h$ of every cycle (log axis), the separatrix zone and $h = 1$ |
-| (i) | the slow centre of $\\sigma$ over $\\sigma_f$ |
-| (j) | the centres of the other members of the multiplet and of an owner resonance: a flat line is the member that librates |
-
-Below them: (k) the phase portrait of the whole record coloured by time, (l) the portrait of the accepted episodes,
-(m) the FAIR portrait of two-body angles, and the legend. The right half is the verdict: the plaque with the
-status, the verdict explained in words, the steps of the [status tree](status-tree.md), the margins and caps of the
-[confidence](confidence.md) (✓ passes, ⚠ thin, ✗ fails, – not applicable, ? not measured) and the numbers behind
-them. Every number there is a column of the [output files](../output.md).
-
-**Secular and Lidov-Kozai.** (a) $\\sigma$ unwrapped, filtered at the scale the verdict rests on, with turning
-points and episodes; (b) $\\sigma$ modulo 360°; (c) its rate; (d), (e) $e$ and $i$; (f) for a secular angle the
-rate of the element the angle contains against $A \\sin\\sigma_f + B\\cos\\sigma_f + C$, for Lidov-Kozai the free
-$\\omega$ against the osculating one (a free $\\omega$ that winds makes the libration kinematic); (g) the centre of
-$\\sigma_f$; (h) the portrait $(e\\cos\\sigma, e\\sin\\sigma)$; (i) $\\sigma_f$ against its rate (secular) or the free
-eccentricity vector (Lidov-Kozai). The right half is as above.
+The left half of each figure holds the time series and the phase portraits, the right half the verdict: the plaque
+with the status, the verdict in words, the steps of the [status tree](status-tree.md), the margins and caps of the
+[confidence](confidence.md) and the numbers behind them, each a column of the [output files](../output.md). What
+every panel, line and icon means: [How to read the figures](../reading-figures.md).
 """
 
 PAGE_OUTRO = """\
 ## Regenerating the figures
 
-Every figure of this documentation (this gallery and the schematic drawings of the physics pages) is made by one
-command from the repository root:
+Every figure of this documentation (this gallery, the schematic drawings of the physics pages and the standalone
+figures of [How to read the figures](../reading-figures.md)) is made by one command from the repository root:
 
 ```bash
 make docs-figures                                  # everything (a few minutes, no integration)
-make docs-figures ONLY=alias,pendulum_portrait     # some figures, by anchor or schematic name
+make docs-figures ONLY=alias,pendulum_portrait     # some figures, by anchor, schematic or set name
 uv run python docs/tools/build_figures.py --list   # the names
 ```
 
 The script (`docs/tools/build_figures.py`) reads the saved series of the benchmark examples (`benchmark/data`, or
 the folder in `RESONANCES_BENCHMARK_DATA`), analyses each again with the installed package and draws it with the
 package's own figure code; nothing is integrated. It rewrites this page from the fresh verdicts and prints any
-difference from the last saved benchmark run. Without the benchmark data the gallery figures are kept and only the
-schematics are redrawn. Running it twice changes nothing: a file whose content is the same is not rewritten.
+difference from the last saved benchmark run. Without the benchmark data the gallery and standalone figures are kept
+and only the schematics are redrawn. Running it twice changes nothing: a file whose content is the same is not rewritten.
 """
 
 
@@ -911,30 +902,173 @@ SCHEMATICS: Dict[str, Callable] = {
 }
 
 
-def build_schematics(names: List[str]) -> int:
+# ------------------------------------------------------------------ the standalone kinds (docs/reading-figures.md)
+
+# Each set draws the standalone figure kinds of one benchmark example with the package's own plotters, as
+# `DataManager.plot_body` does in a run; the files are docs/img/figures/<stem>.png.
+KIND_EXAMPLES = {
+    'kinds_mmr': 'mmr3__463__4J-2S-1+0+0-1',  # a libration of ~10 kyr: slower than the body-level filter of a
+    'kinds_fair': 'mmr2__1921__2J-1+0-1',
+    'kinds_secular': 'secular__1222__g-g6',
+    'kinds_zlk': 'zlk__3040__LK',
+    'kinds_zlk_kinematic': 'zlk__591986__LK',
+}
+
+
+def _mmr_kinds(example_id: str, kinds: Tuple[str, ...]) -> Dict[str, Any]:
+    """MMR standalone kinds: the body rebuilt from the saved series, sigma_f the analysis' own."""
+    sys.path.insert(0, str(TOOLS))
+    import bench_io as bio
+
+    from resonances.plotting.mmr_plots import MMRPlotter
+    from resonances.resonance.analysis.mmr import io
+    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
+    from resonances.resonance.analysis.settings import settings_from_config
+
+    analysis = analyse_mmr(io.load_series(example_id), settings_from_config(), scan_subresonances=False, scan_owner=False)
+    body, resonance, sim = bio.to_body(bio.load_example(example_id, with_planets=True))
+    body.angles_filtered_unwrapped[resonance.to_s()] = analysis.prep.angle_f  # as after a run: the analysis' sigma_f
+    body.mmr_analyses[resonance.to_s()] = analysis  # and its a_f (the a of `cycles`), as for a plotted row
+    plotter = MMRPlotter.from_body(body, resonance, sim)
+    figures = {}
+    for kind in kinds:
+        if plotter.plot(kind):
+            figures[f'mmr_{kind}'] = plotter.figure
+            plotter._figure = None  # keep it open: written below
+    return figures
+
+
+def kinds_mmr(example_id: str) -> Dict[str, Any]:
+    return _mmr_kinds(example_id, ('recurrence', 'portrait', 'cycles'))
+
+
+def kinds_fair(example_id: str) -> Dict[str, Any]:
+    return _mmr_kinds(example_id, ('fair',))
+
+
+def _long_period_simulation(example_id: str):
+    sys.path.insert(0, str(TOOLS))
+    import bench_io as bio
+    import reclassify_secular_zlk as rsz
+
+    sim, body, resonance = rsz.build_simulation(bio.load_example(example_id, with_planets=False))
+    sim.identify_librations()
+    return sim, body, resonance
+
+
+def kinds_secular(example_id: str) -> Dict[str, Any]:
+    """angle, rate, portrait of a secular row (`SecularPlotter`)."""
+    from resonances.plotting.secular_plots import SecularPlotter
+
+    from resonances.plotting.plotter import Plotter
+
+    sim, body, resonance = _long_period_simulation(example_id)
+    plotter = SecularPlotter.from_body(body, resonance, sim)
+    figures = {}
+    for kind in ('angle', 'rate', 'portrait'):
+        if plotter.plot(kind):
+            figures[f'secular_{kind}'] = plotter.figure
+            plotter._figure = None
+    sim.build_periodograms(bodies=[body])  # the evolution figure's bottom panel, as after a run
+    figures['evolution'] = Plotter.from_body(body, resonance, sim).configure(sim.config.plot_config or 'full').plot().figure
+    return figures
+
+
+def _free_omega_figures(example_id: str, prefix: str, kinds: Tuple[str, ...]) -> Dict[str, Any]:
+    """ecc_vector and the free_omega figures of a Lidov-Kozai row, as `DataManager._plot_ecc_vector` and
+    `_plot_free_omega` draw them (the free vector on the window of the osculating one)."""
+    from resonances.plotting.free_omega_plots import FreeOmegaPlotter
+    from resonances.plotting.phase_plots import EccentricityVectorPlotter
+
+    sim, body, resonance = _long_period_simulation(example_id)
+    figures = {}
+    if 'ecc_vector' in kinds:
+        figures[f'{prefix}_ecc_vector'] = EccentricityVectorPlotter.from_body(body, sim=sim).plot().figure
+    for kind in ('drift', 'portrait', 'vector'):
+        if f'free_omega_{kind}' not in kinds:
+            continue
+        plotter = FreeOmegaPlotter.from_body(body, resonance)
+        if kind == 'vector':
+            plotter.plot_vector(limit=EccentricityVectorPlotter.from_body(body, resonance).extent())
+        else:
+            getattr(plotter, f'plot_{kind}')()
+        figures[f'{prefix}_free_omega_{kind}'] = plotter.figure
+    return figures
+
+
+def kinds_zlk(example_id: str) -> Dict[str, Any]:
+    return _free_omega_figures(example_id, 'zlk', ('free_omega_drift', 'free_omega_portrait'))
+
+
+def kinds_zlk_kinematic(example_id: str) -> Dict[str, Any]:
+    return _free_omega_figures(example_id, 'zlk_kinematic', ('ecc_vector', 'free_omega_drift', 'free_omega_vector'))
+
+
+KIND_SETS: Dict[str, Callable] = {
+    'kinds_mmr': kinds_mmr,
+    'kinds_fair': kinds_fair,
+    'kinds_secular': kinds_secular,
+    'kinds_zlk': kinds_zlk,
+    'kinds_zlk_kinematic': kinds_zlk_kinematic,
+}
+
+
+def figure_png(fig, width_px: int = KIND_WIDTH_PX) -> bytes:
+    """A standalone figure at `width_px` wide, as a palette PNG without metadata (as `gallery_png`)."""
+    return gallery_png(fig, width_px)
+
+
+def build_kinds(names: List[str]) -> int:
+    """Draw the standalone kinds of the named sets (skipped without the benchmark data); returns the errors."""
     import matplotlib.pyplot as plt
 
-    _style()
-    written = 0
+    errors = 0
     for name in names:
-        fig = SCHEMATICS[name]()
-        written += write_if_changed(PHYSICS_DIR / f'{name}.png', schematic_png(fig))
-        plt.close(fig)
+        example_id = KIND_EXAMPLES[name]
+        if not (data_root() / 'examples' / example_id).is_dir():
+            print(f'{name}: benchmark data not found under {data_root()}: its figures are kept as they are')
+            continue
+        start = time.perf_counter()
+        warnings.simplefilter('ignore')
+        try:
+            figures = KIND_SETS[name](example_id)
+        except Exception:  # noqa: BLE001 - one broken set must not stop the others
+            print(f'ERROR {name}:\n{traceback.format_exc()}', file=sys.stderr)
+            errors += 1
+            continue
+        for stem, fig in figures.items():
+            write_if_changed(FIGURES_DIR / f'{stem}.png', figure_png(fig))
+            plt.close(fig)
+        print(f'  {name:<26} {len(figures)} figure(s), {time.perf_counter() - start:6.1f} s', flush=True)
+    return errors
+
+
+def build_schematics(names: List[str]) -> int:
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+
+    written = 0
+    with mpl.rc_context():  # the schematics' style must not reach the package's own plotters
+        _style()
+        for name in names:
+            fig = SCHEMATICS[name]()
+            written += write_if_changed(PHYSICS_DIR / f'{name}.png', schematic_png(fig))
+            plt.close(fig)
     return written
 
 
 # ------------------------------------------------------------------ main
 
 
-def select(only: Optional[str]) -> Tuple[List[str], List[str]]:
-    """(gallery anchors, schematic names) to build; `only` is a comma-separated list of either."""
+def select(only: Optional[str]) -> Tuple[List[str], List[str], List[str]]:
+    """(gallery anchors, schematic names, kind sets) to build; `only` is a comma-separated list of any of them."""
     if not only:
-        return [case.anchor for case in CASES], list(SCHEMATICS)
+        return [case.anchor for case in CASES], list(SCHEMATICS), list(KIND_SETS)
     names = [name.strip() for name in only.split(',') if name.strip()]
-    unknown = [name for name in names if name not in CASE_BY_ANCHOR and name not in SCHEMATICS]
+    unknown = [name for name in names if name not in CASE_BY_ANCHOR and name not in SCHEMATICS and name not in KIND_SETS]
     if unknown:
         raise SystemExit(f'unknown figure(s): {", ".join(unknown)} (see --list)')
-    return [n for n in names if n in CASE_BY_ANCHOR], [n for n in names if n in SCHEMATICS]
+    return [n for n in names if n in CASE_BY_ANCHOR], [n for n in names if n in SCHEMATICS], [n for n in names if n in KIND_SETS]
 
 
 def load_verdicts() -> Dict[str, Dict[str, Any]]:
@@ -977,12 +1111,16 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f'{case.anchor:<26} {case.example_id}')
         for name in SCHEMATICS:
             print(f'{name:<26} schematic')
+        for name, example_id in KIND_EXAMPLES.items():
+            print(f'{name:<26} standalone kinds of {example_id}')
         return 0
-    anchors, schematics = select(args.only)
+    anchors, schematics, kinds = select(args.only)
     start = time.perf_counter()
     written = build_schematics(schematics)
     print(f'schematics: {len(schematics)} drawn, {written} changed')
-    errors = run_gallery(anchors, max(1, min(args.workers, 2))) if anchors or not args.only else 0
+    errors = build_kinds(kinds)
+    # the gallery page is always rewritten from verdicts.json (cheap); only the named cases are analysed again
+    errors += run_gallery(anchors, max(1, min(args.workers, 2)))
     print(f'done in {time.perf_counter() - start:.0f} s')
     return 1 if errors else 0
 

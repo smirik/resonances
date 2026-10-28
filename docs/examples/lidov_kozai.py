@@ -6,14 +6,15 @@ import numpy as np
 import resonances
 from resonances import LidovKozaiParameters
 
-# osculating e, i, omega of three main-belt asteroids
+# osculating ecliptic e, i, Omega, omega of three main-belt asteroids (the benchmark's epoch)
 samples = {
-    '1373 Cincinnati': (0.3157, 38.947, 99.010),
-    '3040 Kozai': (0.2003, 46.648, 290.189),
-    '15527': (0.1537, 21.270, 169.132),
+    '1373 Cincinnati': (0.3152, 38.953, -62.561, 98.882),
+    '3040 Kozai': (0.2003, 46.647, 143.473, 290.213),
+    '15527': (0.1529, 21.259, 173.771, 168.872),
 }
-for name, (e, inc_deg, omega_deg) in samples.items():
-    c1, c2, h_quad = LidovKozaiParameters.evaluate(e, np.radians(inc_deg), np.radians(omega_deg))
+for name, (e, inc_deg, node_deg, omega_deg) in samples.items():
+    # i and omega read from the invariable plane (an exact rotation), as the summary columns c1, c2, h_quad
+    c1, c2, h_quad = LidovKozaiParameters.evaluate_invariable(e, *np.radians([inc_deg, node_deg, omega_deg]))
     print(f'{name:16s} c1 = {c1:.3f}  c2 = {c2:+.4f}  h_quad = {h_quad:.3f}')
 # --8<-- [end:integrals]
 

@@ -63,6 +63,14 @@ Formulas (a in au, t in Gaussian years of 2 pi REBOUND units, n = 2 pi a^(-3/2) 
   in the Trojans at 16 yr, 12.5 deg and 190 % in 62243 1M-4J-1).
 - Baseline: (LIBRATION_MIN_TURNING_POINTS / 2) cycles of the shortest libration plus FILTER_EDGE_TRIM_CUTOFFS x P_c
   trimmed at each end.
+- Secular and ZLK rows (`long_period`, advisory, static only): the analysis' own cutoff and period floor
+  (`analysis.secular.preprocess.choose_cutoff`, `period_floor`) with the body's g, s from Laplace-Lagrange (the forced
+  waves of a multi-mode angle; unknown without them, and the analysis' cutoff may then be longer), the baseline
+  N = (LIBRATION_MIN_TURNING_POINTS / 2) P_floor + 2 FILTER_EDGE_TRIM_CUTOFFS P_c (`analysis.secular.extend`; secular
+  500 kyr, ZLK 9.4 kyr at the defaults), for ZLK with the free-omega gate on also FREE_GATE_MIN_CYCLES x the quadrupole
+  ZLK time tau = 1 / sum_j 1/tau_j, tau_j = (2 / 3 pi) (M_sun / m_j) P_j^2 / P (1 - e_j^2)^(3/2) over the planets
+  outside the orbit (Antognini 2015, the coefficient of eq. 27; 3.9 kyr at 4 au: optimistic, a libration lasts several
+  tau), and the step against P_c / 2 (the filter needs P_c > 2 dt). Warnings only: no step, no verdict changes.
 - Integrator: ias15 when the radial band [q, Q] overlaps a planet's [q_j - h R_H, Q_j + h R_H]
   (R_H = a_j (mu_j / 3)^(1/3), h = DRYRUN_HILL_MARGIN; ias15 has adaptive steps for close encounters, Rein &
   Spiegel 2015, abstract) or when q < DRYRUN_NEA_Q (nodes precess: a non-crossing NEA today is not one in 20 kyr);
@@ -801,11 +809,15 @@ class DryRunReport:
     run: dict
     warnings: List[str] = field(default_factory=list)
     simulation: object = field(default=None, repr=False, compare=False)
+    long_period: pd.DataFrame = field(default_factory=pd.DataFrame)  # body x secular/ZLK angle (advisory)
 
     def summary(self, echo: bool = True) -> str:
         """A table per row and per body, the run's step and cost, then the warnings (printed when `echo`)."""
         run = self.run
-        lines = [f"Dry-run ({self.level}): {run['n_bodies']} bodies, {run['n_mmr_rows']} MMR rows, span {run['span_yr']:.0f} yr"]
+        lines = [
+            f"Dry-run ({self.level}): {run['n_bodies']} bodies, {run['n_mmr_rows']} MMR rows, "
+            f"{run.get('n_long_period_rows', 0)} secular/ZLK rows, span {run['span_yr']:.0f} yr"
+        ]
         lines.append(
             f"  output step: configured {run['step_configured_yr']:.4g} yr (Nout {run['Nout_configured']}), "
             f"auto {_fmt(run['step_auto_yr'])} yr ({run['binding_rule'] or 'n/a'}), used {run['step_used_yr']:.4g} yr"
@@ -836,6 +848,10 @@ class DryRunReport:
             columns += [c for c in ('expected_status', 'expected_flags') if c in self.rows]
             columns += [c for c in ('leak_deg', 'leak_adot_rel', 'pilot_step_ok') if self.level == 'pilot']
             lines.append(self.rows[columns].to_string(index=False, float_format=lambda x: f'{x:.4g}'))
+        if not self.long_period.empty:
+            columns = ['body', 'resonance', 'cutoff_pred_yr', 'libration_floor_yr', 'baseline_min_yr', 'gate_min_yr', 'required_yr']
+            columns += ['baseline_ok', 'step_ok']
+            lines.append(self.long_period[columns].to_string(index=False, float_format=lambda x: f'{x:.4g}'))
         if not self.bodies.empty:
             columns = ['body', 'class', 'q', 'P_yr', 'crossing', 'integrator_recommended', 'dt_recommended_yr', 'fair_step_yr']
             lines.append(self.bodies[columns].to_string(index=False, float_format=lambda x: f'{x:.4g}'))
@@ -889,6 +905,9 @@ class DryRunReport:
         files = {name: os.path.join(path, name) for name in ('dryrun_rows.csv', 'dryrun_bodies.csv', 'dryrun_run.json')}
         self.rows.to_csv(files['dryrun_rows.csv'], index=False)
         self.bodies.to_csv(files['dryrun_bodies.csv'], index=False)
+        if not self.long_period.empty:
+            files['dryrun_long_period.csv'] = os.path.join(path, 'dryrun_long_period.csv')
+            self.long_period.to_csv(files['dryrun_long_period.csv'], index=False)
         with open(files['dryrun_run.json'], 'w') as handle:
             json.dump({**self.run, 'level': self.level, 'warnings': self.warnings}, handle, indent=1, default=_json_default)
         return files
@@ -922,6 +941,123 @@ def _body_rows(body, inputs: BodyInputs, step_yr: float, span_yr: float, setting
         limits = _row_limits(spec, inputs, settings, tables)
         out.append((spec, limits, _row_at_step(spec, inputs, limits, step_yr, span_yr, settings, dry, tables)))
     return out
+
+
+# ----------------------------------------------------------------------------------------------- secular and ZLK rows
+def zlk_quadrupole_time_yr(a_au: float, e: float) -> float:
+    """The quadrupole ZLK time tau = 1 / sum_j 1/tau_j [yr], tau_j = (2 / 3 pi) (M_sun / m_j) P_j^2 / P (1 - e_j^2)^(3/2)
+    over the planets whose orbit lies outside the body's (q_j > Q) (Antognini 2015, the coefficient of eq. 27; the
+    ZLK_LIBRATION_PERIOD_MIN_YR comment); nan when none does. An order of magnitude: a libration lasts several tau."""
+    period = orbital_period_yr(a_au)
+    rate = 0.0
+    for planet in const.SOLAR_SYSTEM:
+        a_j, e_j = const.PLANETS_AXIS[planet], const.PLANETS_ECCENTRICITY[planet]
+        if a_j * (1 - e_j) <= a_au * (1 + e):
+            continue
+        tau = 2 / (3 * math.pi) / const.PLANETS_MASS[planet] * orbital_period_yr(a_j) ** 2 / period * (1 - e_j**2) ** 1.5
+        rate += 1 / tau
+    return 1 / rate if rate > 0 else float('nan')
+
+
+def _long_period_series(body, resonance, inputs: BodyInputs):
+    """An empty `LongPeriodSeries` of the angle: what the cutoff rule reads (type and terms), no samples."""
+    from resonances.resonance.analysis.secular import LongPeriodSeries
+    from resonances.resonance.analysis.secular.preprocess import terms_from_formula
+    from resonances.resonance.analysis.verdict import ResonanceType
+
+    secular = str(resonance.type) == 'secular'
+    empty = np.empty(0)
+    return LongPeriodSeries(
+        ResonanceType.SECULAR if secular else ResonanceType.LIDOV_KOZAI,
+        resonance.to_s(),
+        inputs.name,
+        empty,
+        empty,
+        empty,
+        empty,
+        empty,
+        terms=terms_from_formula(resonance.formula.terms) if secular else (),
+    )
+
+
+def long_period_row(body, resonance, inputs: BodyInputs, step_yr: float, span_yr: float, settings, config) -> dict:
+    """The advisory row of a secular or ZLK angle (module docstring): cutoff, period floor, the baseline the analysis
+    needs to confirm a libration, the ZLK gate's cycles, the step against P_c / 2, warnings."""
+    from resonances.resonance.analysis.secular import preprocess as long_preprocess
+    from resonances.resonance.analysis.secular.extend import geometric_need
+
+    series = _long_period_series(body, resonance, inputs)
+    secular = str(resonance.type) == 'secular'
+    rates = None
+    if inputs.varpi_rate_rad_yr is not None and inputs.node_rate_rad_yr is not None:
+        rates = (inputs.varpi_rate_rad_yr / ARCSEC, inputs.node_rate_rad_yr / ARCSEC)
+    cutoff = long_preprocess.choose_cutoff(series, settings, rates=rates if rates is not None else (math.nan, math.nan))
+    floor, floor_setting = long_preprocess.period_floor(series, cutoff.cutoff_yr, settings)
+    baseline = geometric_need(floor, math.nan, cutoff.cutoff_yr, settings)[0]
+    modes = {(term.mode, term.index) for term in series.terms if term.index is not None}
+    if cutoff.forced_waves_yr:
+        waves = '; '.join(f'{label} {period:.4g} yr' for label, period in cutoff.forced_waves_yr.items())
+    else:
+        waves = 'unknown (no static g, s)' if len(modes) >= 2 else ''
+    tau = math.nan if secular else zlk_quadrupole_time_yr(inputs.a_au, inputs.e)
+    gate_on = not secular and bool(getattr(config, 'free_elements_enabled', True) and getattr(config, 'free_gate_enabled', True))
+    min_cycles = float(getattr(config, 'free_gate_min_cycles', 3.0))
+    gate_need = min_cycles * tau if gate_on and math.isfinite(tau) else math.nan
+    required = max(baseline, gate_need) if math.isfinite(gate_need) else baseline
+    row = {
+        'body': inputs.name,
+        'resonance': series.key,
+        'type': 'secular' if secular else 'lidov_kozai',
+        'step_yr': step_yr,
+        'span_yr': span_yr,
+        'cutoff_pred_yr': cutoff.cutoff_yr,
+        'cutoff_binding': cutoff.binding,
+        'forced_waves': waves,
+        'g_static_arcsec_yr': rates[0] if rates is not None else math.nan,
+        'libration_floor_yr': floor,
+        'floor_setting': floor_setting,
+        'baseline_min_yr': baseline,
+        'zlk_time_yr': tau,
+        'gate_min_yr': gate_need,
+        'required_yr': required,
+        'baseline_ok': bool(span_yr >= required),
+        'step_valid_yr': cutoff.cutoff_yr / 2,
+        'step_ok': bool(step_yr < cutoff.cutoff_yr / 2),
+        'source': inputs.source,
+    }
+    row['warnings'] = '; '.join(_long_period_warnings(row, settings, min_cycles))
+    return row
+
+
+def _long_period_warnings(row: dict, settings, min_cycles: float) -> List[str]:
+    out = []
+    if not row['step_ok']:
+        out.append(
+            f"step {row['step_yr']:.4g} yr >= P_c / 2 = {row['step_valid_yr']:.4g} yr: the filter of the angle cannot be built "
+            '(uncertain, unusable_series)'
+        )
+    if row['span_yr'] < row['baseline_min_yr']:
+        out.append(
+            f"span {row['span_yr']:.0f} yr < {row['baseline_min_yr']:.0f} yr = {settings.libration_min_turning_points / 2:g} x the "
+            f"shortest libration {row['libration_floor_yr']:.0f} yr ({row['floor_setting']}) + {2 * settings.filter_edge_trim_cutoffs:g} "
+            f"x P_c {row['cutoff_pred_yr']:.0f} yr: no libration can be confirmed (uncertain, baseline_needed)"
+        )
+    if math.isfinite(row['gate_min_yr']) and row['span_yr'] < row['gate_min_yr']:
+        out.append(
+            f"span {row['span_yr']:.0f} yr < {row['gate_min_yr']:.0f} yr = FREE_GATE_MIN_CYCLES {min_cycles:g} x the quadrupole "
+            f"ZLK time {row['zlk_time_yr']:.0f} yr: the free-omega gate will lack cycles (short_window), an optimistic "
+            'bound: a libration lasts several such times'
+        )
+    return out
+
+
+def _long_period_rows(prepared, step_yr: float, span_yr: float, settings, config) -> List[dict]:
+    """The advisory rows of every secular and ZLK angle of the bodies."""
+    rows = []
+    for body, inputs, _ in prepared:
+        resonances = list(getattr(body, 'secular_resonances', []) or []) + list(getattr(body, 'lidov_kozai_resonances', []) or [])
+        rows += [long_period_row(body, resonance, inputs, step_yr, span_yr, settings, config) for resonance in resonances]
+    return rows
 
 
 def _step_plan(simulation, all_rows, bodies_rows: List[dict], settings, dry) -> dict:
@@ -1069,6 +1205,9 @@ def dry_run(simulation, level: str = 'static') -> DryRunReport:
     for _, limits, row in plan["rows"]:  # the step-against-libration warning is stated once, for the run
         notes = _row_warnings(row, limits, span, settings, libration=False) + row.get('pilot_notes', [])
         warnings += [f"{row['body']} {row['resonance']}: {note}" for note in notes]
+    long_period = _long_period_rows(prepared, plan['steps']['used'], span, settings, config)
+    for row in long_period:
+        warnings += [f"{row['body']} {row['resonance']}: {note}" for note in row['warnings'].split('; ') if note]
     bodies_rows = [body_row for _, _, body_row in prepared]
     integrator = _integrator_plan(bodies_rows, config)
     steps = plan['steps']
@@ -1092,6 +1231,7 @@ def dry_run(simulation, level: str = 'static') -> DryRunReport:
         'level': level,
         'n_bodies': len(bodies_rows),
         'n_mmr_rows': len(rows),
+        'n_long_period_rows': len(long_period),
         'n_rows_not_resolved': sum(1 for row in rows if row['verdict'] != str(StepVerdict.RESOLVED)),
         'span_yr': span,
         'output_step': getattr(config, 'output_step', None),
@@ -1117,7 +1257,7 @@ def dry_run(simulation, level: str = 'static') -> DryRunReport:
     if exceeded:
         above = ', '.join(f'the {name} limit {value:.4g} yr' for name, value in exceeded.items())
         warnings.append(f"output step {steps['configured']:.4g} yr is above {above} (OUTPUT_STEP=auto would take {steps['auto']:.4g} yr)")
-    return DryRunReport(level, pd.DataFrame(rows), pd.DataFrame(bodies_rows), run, warnings, simulation)
+    return DryRunReport(level, pd.DataFrame(rows), pd.DataFrame(bodies_rows), run, warnings, simulation, pd.DataFrame(long_period))
 
 
 def _exceeded_limits(steps: dict, rows: List[dict]) -> dict:

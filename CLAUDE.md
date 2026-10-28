@@ -26,7 +26,7 @@ Also `body.py` (`Body`), `config.py` (loads `.env.dist` + `.env`, exposes `Simul
 
 - The `CLAUDE.md` of the code you touch (* above, `benchmark/`, `tests/`): read it first.
 - `dev/` (development notes, not on the docs site): history, decisions by topic, rejected approaches (do not retry), pitfalls, physics notes, verified facts, process, status (open questions).
-- `docs/` (user docs): start at `libration-analysis.md` (formulas, the status tree), `output.md`, `config.md`.
+- `docs/` (user docs): start at `physics/overview.md` (the physics pages hold the formulas and the status tree; `libration-analysis.md` is the rule index), `output.md`, `config.md`.
 - `benchmark/DECISIONS.md`: the author's decision log (Russian, append-only; a later entry overrides an earlier one).
 - `tmp/` is local and git-ignored (working notes, the author's verbatim answers); never cite it from code, tests or docs.
 
@@ -37,9 +37,9 @@ Also `body.py` (`Body`), `config.py` (loads `.env.dist` + `.env`, exposes `Simul
 - No hook changes a status after the analysis: the secular centre scale and the free-omega gate (Lidov-Kozai) are steps of `analyse_secular`/`analyse_zlk`, decided in `analysis.secular.decide.decide_status`. Save/plot modes (`SavePlotMode`) filter on status strings through `simulation.config.status_selected`.
 - `Simulation.identify_librations()` is the only hook that runs on every path (single run, batch workers, `SimulationSerializer.restore(recompute_librations=True)`). It must update BOTH `body.librations[key]` and `body.statuses[key]` (through `_finalise_verdict`) — summary.csv reads the former (`Verdict.to_flat_dict()`), save/plot filters read the latter. Arrays of a row that will not be plotted are dropped right after its verdict (`_release_unplotted`; `drop_arrays` freezes the CSV rows first).
 - The Lidov-Kozai status takes the free-omega gate's outcome in `decide_status`: confirmed (resonant), kinematic (non_resonant, kinematic_libration, code -2) or without a verdict (uncertain, gate_unavailable, code -9); a transient, drift or short record changes only on a kinematic outcome. -2 and -9 must never be merged in a statistic: -2 is a measurement, -9 is the absence of one.
-- The e-i coherence check changes no status; it produces `confirmed_ei` (why: `secular/CLAUDE.md`).
+- The e-i coupling changes no status; `confirmed_ei` is `zlk_ei_coupling == zlk`, measured at the row's decisive period for every ZLK row (why: `secular/CLAUDE.md`).
 - The cluster representative in `free_elements` (`PRIORITY_E`, `PRIORITY_I`) is a modelling assumption, not a free convention. What must stay true, and is tested, is that no choice ever turns a non-librator into a libration.
-- The free-element method does not apply to co-orbitals (their forced term is the perturber's own vector); a confident-looking straight line there is not a measurement.
+- The free-element method does not apply to co-orbitals of a planet whose modes are not in the fitted basis (Jupiter Trojans are covered: their forced vector is Jupiter's, g5+g6); a confident-looking straight line there is not a measurement. Such a body (Mercury to Mars, `ZLK_COORBITAL_HILL_FACTOR`) gets the gate outcome unavailable (`coorbital_unfitted_forcing`), never not_applicable.
 - Secular angles must not be built from the planets' osculating elements; `secular_angle_mode='proper'` (default) is what the classifier reads. The inner-planet frequencies and phases in `const.py` are measured on the package's own Newtonian model, not taken from the literature (why: `secular/CLAUDE.md`).
 - The MMR diagnostic plots (recurrence D, cycles) are for reading figures: D uses the object's own scales and is not comparable between objects. Nothing there may feed a status.
 - A 1:1 (co-orbital) MMR angle is judged by its own force law (`analysis/mmr/coorbital.py`, K/K_theory = 1 is the planet's own mass), not the harmonic law; the owner search does not apply to it.
@@ -63,6 +63,7 @@ Also `body.py` (`Body`), `config.py` (loads `.env.dist` + `.env`, exposes `Simul
 - In /docs there is actual documentation of the project. It's written for humans. Keep it up to date. Keep it short and concise but clear for understanding. Don't write too much.
 - In functions or classes, you may add comments for the files and functions if this is not obvious from the code or the names. E.g., the function sum(a,b) does not require any comments, whereas the function resolve_mmr_status requires a comment explaining what are the statuses and how they are resolved. But really keep it simple.
 - If you change a function or a class, update the documentation inside the code accordingly.
+- A change to what a figure shows (panels, lines, markers, colours, text, file names) updates `docs/reading-figures.md` and `docs/plots.md` in the same change and regenerates the docs images (`make docs-figures`).
 - Update overall documentation at the end of the task (including the relevant `CLAUDE.md` and `dev/` page).
 - The agent skill shipped with the package (`resonances/skills/resonances/`: `SKILL.md` + `references/`, installed by `resonances skill install [--user] [--path DIR] [--force]` into `.claude/skills/`; docs/agents.md) explains how to set up runs and read the results. `SKILL.md` holds the workflow and judgement and is written by hand: when a change alters the interface, the statuses/reasons/caps, the settings or the output layout in a way a user would notice, update it too. `references/` is GENERATED from the docs pages listed in `docs/tools/build_skill.py` (`make skill`; snippets inlined, links to omitted pages and images made absolute): never edit it by hand, run `make skill` after editing those pages — `tests/resonances/skills/test_skill.py` fails when it is out of date.
 

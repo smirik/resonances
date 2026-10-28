@@ -67,6 +67,7 @@ from typing import Callable, Optional, Sequence, Tuple
 import mpmath as mp
 import numpy as np
 from mpmath import libmp
+from scipy import optimize
 from scipy.interpolate import CubicSpline
 
 from resonances.resonance.analysis.mmr.coorbital import Orbit, kepler_position
@@ -505,19 +506,36 @@ def _periods_on_line(
     return WellPeriods(periods, REASON_NONE, nearest, in_well), bounds
 
 
-def energy_in_well(sigma: np.ndarray, values: np.ndarray, point_rad: float, middle_rad: float) -> float:
-    """h = (<D>(point) - <D>_min) / (<D>_barrier - <D>_min) of a turning point at `point_rad` in the well whose basin
-    holds `middle_rad` (the middle of its swing), from <D> on a coarse periodic grid `sigma` (increasing, one turn):
-    0 at the bottom, 1 at the barrier, the lower of the two tops that bound the basin (a turning point of a libration
-    lies below it). The bottom and the barrier are refined on the periodic cubic spline through the grid, within one
-    grid step of the discrete extremes. nan without a finite profile, a basin or a positive depth."""
+@dataclass(frozen=True)
+class _Basin:
+    """The well of a periodic profile that holds a point (`_basin`): the periodic cubic spline through the grid, its
+    refined bottom and the two tops that bound it (angles unwrapped about the bottom: left < bottom < right), the
+    barrier (the lower top) and the number of minima of the grid over the turn."""
+
+    spline: CubicSpline
+    origin: float  # sigma[0]: the spline covers [origin, origin + 2 pi]
+    bottom_rad: float
+    low: float
+    left_rad: float
+    right_rad: float
+    barrier: float
+    n_minima: int
+
+    def value(self, x) -> np.ndarray:
+        return self.spline(np.mod(np.asarray(x, dtype=float) - self.origin, TWO_PI) + self.origin)
+
+
+def _basin(sigma: np.ndarray, values: np.ndarray, middle_rad: float) -> Optional[_Basin]:
+    """The well whose basin holds `middle_rad` on the coarse periodic grid `sigma` (increasing, one turn); its bottom and
+    tops refined on the periodic cubic spline within one grid step of the discrete extremes. None without a finite
+    profile, a basin or a positive depth."""
     sigma, values = np.asarray(sigma, dtype=float), np.asarray(values, dtype=float)
     n = len(values)
     if n < MIN_FIT_POINTS + 1 or not np.all(np.isfinite(values)):
-        return NAN
+        return None
     bottom = basin_minimum(values, int(np.argmin(circular_distance(sigma, middle_rad))))
     if bottom < 0:
-        return NAN
+        return None
 
     def uphill(direction: int) -> int:
         i = bottom
@@ -529,18 +547,93 @@ def energy_in_well(sigma: np.ndarray, values: np.ndarray, point_rad: float, midd
         return i
 
     step = TWO_PI / n
-    spline = CubicSpline(np.append(sigma, sigma[0] + TWO_PI), np.append(values, values[0]), bc_type='periodic')
+    origin = float(sigma[0])
+    spline = CubicSpline(np.append(sigma, origin + TWO_PI), np.append(values, values[0]), bc_type='periodic')
 
-    def refined(index: int, sign: float) -> float:
-        near = np.mod(sigma[index] + np.linspace(-step, step, EXTREME_REFINE_POINTS), TWO_PI)
-        return float(sign * np.max(sign * spline(near)))
+    def refined(index: int, sign: float, direction: int) -> Tuple[float, float]:
+        """(sigma, value) of the extreme near a grid index, the sigma unwrapped from the bottom's grid node in
+        `direction` (0: the bottom itself)."""
+        offset = direction * np.mod(direction * (sigma[index] - sigma[bottom]), TWO_PI) if direction else 0.0
+        near = sigma[bottom] + offset + np.linspace(-step, step, EXTREME_REFINE_POINTS)
+        sampled = sign * spline(np.mod(near - origin, TWO_PI) + origin)
+        k = int(np.argmax(sampled))
+        return float(near[k]), float(sign * sampled[k])
 
-    low = refined(bottom, -1.0)
-    barrier = min(refined(uphill(-1), 1.0), refined(uphill(1), 1.0))
-    depth = barrier - low
-    if not depth > 0:
+    bottom_rad, low = refined(bottom, -1.0, 0)
+    left_rad, left_value = refined(uphill(-1), 1.0, -1)
+    right_rad, right_value = refined(uphill(1), 1.0, 1)
+    if not left_rad < bottom_rad < right_rad:
+        return None
+    barrier = min(left_value, right_value)
+    if not barrier - low > 0:
+        return None
+    following, preceding = np.roll(values, -1), np.roll(values, 1)
+    n_minima = int(np.count_nonzero((values < following) & (values <= preceding)))
+    return _Basin(spline, origin, bottom_rad, low, left_rad, right_rad, barrier, n_minima)
+
+
+def energy_in_well(sigma: np.ndarray, values: np.ndarray, point_rad: float, middle_rad: float) -> float:
+    """h = (<D>(point) - <D>_min) / (<D>_barrier - <D>_min) of a turning point at `point_rad` in the well whose basin
+    holds `middle_rad` (the middle of its swing), from <D> on a coarse periodic grid `sigma` (increasing, one turn):
+    0 at the bottom, 1 at the barrier, the lower of the two tops that bound the basin (a turning point of a libration
+    lies below it). The bottom and the barrier are refined on the periodic cubic spline through the grid, within one
+    grid step of the discrete extremes. nan without a finite profile, a basin or a positive depth."""
+    basin = _basin(sigma, values, middle_rad)
+    if basin is None:
         return NAN
-    return float((spline(np.mod(point_rad, TWO_PI)) - low) / depth)
+    return float((basin.value(point_rad) - basin.low) / (basin.barrier - basin.low))
+
+
+def _profile_loop_action(basin: _Basin, energy: float) -> float:
+    """(1/pi) int sqrt(2 (E - V)) d sigma over the loop of energy E <= barrier around the basin's bottom, V the spline
+    (in the profile's own units: a positive scale of V multiplies J by its square root and cancels in J/J_s); the
+    turning points are the roots of V = E between the bottom and each top (the lower top itself at the barrier)."""
+
+    def excess(x: float) -> float:
+        return float(basin.value(x)) - energy
+
+    sides = []
+    for top in (basin.left_rad, basin.right_rad):
+        far = excess(top)
+        if far <= 0:  # E at this top (the barrier): the turning point is the top
+            sides.append(top)
+            continue
+        sides.append(float(optimize.brentq(excess, *sorted((basin.bottom_rad, top)), xtol=1e-14)))
+    lower, upper = sides
+    middle, half = (upper + lower) / 2, (upper - lower) / 2
+    theta = GAUSS_THETA
+    kinetic = 2 * (energy - basin.value(middle + half * np.sin(theta)))
+    return float(np.sum(GAUSS_WEIGHTS * half * np.cos(theta) * np.sqrt(np.clip(kinetic, 0.0, None))) / np.pi)
+
+
+def action_in_well(sigma: np.ndarray, values: np.ndarray, point_rad: float, middle_rad: float) -> float:
+    """J/J_s of a turning point at `point_rad` in the averaged profile itself (W25): the action of the loop of its
+    energy E = <D>(point) around the bottom of the well whose basin holds `middle_rad`, over the action of that well's
+    separatrix loop (E at its barrier, the lower top), both quadratures of sqrt(2 (E - V)) on the profile's periodic
+    cubic spline (`_profile_loop_action`); scale-free, so <D> stands for V = scale <D>. 0 at or below the bottom; at or
+    above the barrier 1 in a profile of one well (the separatrix) and nan in a profile of several wells (the loop
+    encloses another well: no single-well ratio, as `pendulum.libration_topology`); nan where `energy_in_well` is."""
+    basin = _basin(sigma, values, middle_rad)
+    if basin is None:
+        return NAN
+    energy = float(basin.value(point_rad))
+    if energy <= basin.low:
+        return 0.0
+    if energy >= basin.barrier:
+        return 1.0 if basin.n_minima < 2 else NAN
+    full = _profile_loop_action(basin, basin.barrier)
+    return float(_profile_loop_action(basin, energy) / full) if full > 0 else NAN
+
+
+def separatrix_action_in_well(sigma: np.ndarray, values: np.ndarray, middle_rad: float) -> float:
+    """J_s of the well whose basin holds `middle_rad`: the action of its separatrix loop (E at its barrier) in the
+    profile's own units (`_profile_loop_action`; V = scale <D> multiplies it by sqrt(scale)). nan where `energy_in_well`
+    is (no finite profile, basin or depth)."""
+    basin = _basin(sigma, values, middle_rad)
+    if basin is None:
+        return NAN
+    full = _profile_loop_action(basin, basin.barrier)
+    return float(full) if full > 0 else NAN
 
 
 def averaged_profile(

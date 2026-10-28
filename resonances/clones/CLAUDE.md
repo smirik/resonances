@@ -17,8 +17,15 @@ parameters only flagged, `find` takes the whole cloud's candidates.
   ordinary body (its verdict does not change); clones `<name>~c001` run after the ordinary bodies in `CLONES_BATCH`
   batches by the batch workers (`_clone_batch`, `worker_results`, `simulation/ensemble_run.py`).
 - Output: clones.csv (six shares + Wilson, modal, nominal agreement, `nominal_offset_sigma`),
-  `data/ensemble-<name>.csv/.json`, figure kind `clones` (`plotting/clone_plots.py`). Not resumed, not in
-  simulation.json.
+  `data/ensemble-<name>.csv/.json`, `data/ensemble-<name>-results.npz` (kept: verdict rows, a0, half-widths, derived
+  rows, thinned angles), figure kind `clones` (`plotting/clone_plots.py`).
+- Resume and restore (author 2026-10-28; `simulation/clone_store.py`, `ensemble_run.run_with_clones`): one checkpoint
+  `clones_state/` for the ordinary part and the clones, cleared (with simulation_state.json) only after both succeed;
+  the identity covers what was run (ordinary elements and grouping, planets' initial state, settings, clone layout,
+  provider sha256, solution, draws, the starts bit for bit, code versions). simulation.json `ensembles` (versioned);
+  restore rebuilds `sim.ensembles` + `sim.clone_summary`; a recompute reclassifies the nominal only.
+- No triage (author 2026-10-28): never give clones the nominal's verdict without classifying them (docs/clones.md,
+  "Limits").
 
 ## Rules (why: `dev/rejected.md`, `docs/clones.md`)
 
@@ -33,6 +40,8 @@ parameters only flagged, `find` takes the whole cloud's candidates.
 - The nominal runs in its own simulation, as without clones: with SABA `safe_mode = 1` round-off makes a trajectory
   depend on the number of particles (shifts ~5e-10 au), so a chaotic nominal would change verdict with the clone
   batching. The same holds for ordinary batches: reproduce a nominal only with the same batch composition.
+- `Ensemble.load` reads with `float_precision='round_trip'`: the default parser changes the last bit of some
+  `%.17g` values, and restore promises the starts to the bit.
 - Never propagate a covariance linearly over years (`.eq1` for weak NEAs inflates σ_λ by hundreds through encounters).
 - The nominal has no special weight ("without any special significance"); `nominal_agreement` is a diagnostic.
 - Keep ZLK −2 and −9 apart in the shares, as everywhere.

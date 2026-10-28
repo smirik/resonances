@@ -331,13 +331,67 @@ class FreeElements:
         """
         return float(abs(self.b_omega - (self.b_varpi - self.b_Omega)))
 
+    @property
+    def step(self) -> float:
+        """The sampling step of the split, years."""
+        return float(abs(np.median(np.diff(self.times)))) if len(self.times) > 1 else 0.0
+
     def rho_envelope(self) -> Tuple[float, float]:
-        """(rho_min, rho_max) over the beating of |z_e_forced|."""
-        dt = float(abs(np.median(np.diff(self.times)))) if len(self.times) > 1 else 0.0
-        smoothed = _rolling_median(np.abs(self.z_e_forced), _beat_window(self.basis_e, dt))
+        """(rho_min, rho_max) of the median e_free over the beating of |z_e_forced| (the columns free_rho_min/max).
+
+        Descriptive only: one median of the free radius over the whole record against the extremes of the smoothed
+        forced one, so a free circle that grows in part of the record is not seen. The gate reads `rho_local_max`.
+        """
+        smoothed = _rolling_median(np.abs(self.z_e_forced), _beat_window(self.basis_e, self.step))
         low, high = float(np.min(smoothed)), float(np.max(smoothed))
         e_free = self.e_free
         return (e_free / high if high > 0 else float('nan'), e_free / low if low > 0 else float('nan'))
+
+    def rho_local_max(self, period_yr: Optional[float] = None, window_cycles: float = 1.0) -> float:
+        """max over the record of rollmed(|z_e_free|, W) / rollmed(|z_e_forced|, W): below one the free circle never
+        reaches round the origin, varpi cannot turn and the forced vector pins omega throughout.
+
+        W = max(a tenth of the shortest beat of the fitted modes, `window_cycles` x `period_yr`) samples: each radius
+        is read over about one libration cycle (`period_yr`, P_cyc of the osculating omega; none: the beat window), so
+        the free radius of every part of the record is compared with the forced one of the same part (555527: 0.66 at
+        100 kyr, where the global ratio says 0.59). A window holding fewer samples than the record is the whole record.
+        """
+        step = self.step
+        window = _beat_window(self.basis_e, step)
+        if period_yr is not None and np.isfinite(period_yr) and period_yr > 0 and step > 0:
+            window = max(window, int(round(window_cycles * period_yr / step)))
+        free = _rolling_median(np.abs(self.z_e_free), window)
+        forced = _rolling_median(np.abs(self.z_e_forced), window)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ratio = np.where(forced > 0, free / forced, np.inf)
+        return float(np.max(ratio)) if len(ratio) else float('nan')
+
+    def forced_beats(self) -> Dict[str, float]:
+        """{'gk-gj': period [yr]} of every pair of fitted eccentricity modes with nonzero measured amplitudes (j the
+        larger): the length and the direction of the forced vector beat at 2 pi/|g_k - g_j| (591986: g6-g5, 54.0 kyr).
+        Empty without the per-mode amplitudes (a file written before they were persisted): basis membership is not a
+        measured term, and a zero amplitude has no beat."""
+        amplitude = {label: abs(self.amplitudes_e.get(label, 0.0)) for label in self.basis_e}
+        labels = [label for label, value in amplitude.items() if np.isfinite(value) and value > 0]
+        beats = {}
+        for index, first in enumerate(labels):
+            for second in labels[index + 1 :]:
+                gap = abs(self.basis_e[first] - self.basis_e[second])
+                if gap > 0:
+                    big, small = (first, second) if amplitude[first] >= amplitude[second] else (second, first)
+                    beats[f'{small}-{big}'] = ARCSEC_PER_TURN / gap
+        return beats
+
+    def forced_vector(self, times: np.ndarray) -> Optional[np.ndarray]:
+        """The fitted forced eccentricity vector sum_j c_j exp(i g_j t) on `times` [yr]; None without the amplitudes
+        (an old restored run)."""
+        if not self.amplitudes_e:
+            return None
+        times = np.asarray(times, dtype=float)
+        total = np.zeros(len(times), dtype=complex)
+        for label, coefficient in self.amplitudes_e.items():
+            total += coefficient * np.exp(1j * self.basis_e.get(label, 0.0) * RAD_PER_ARCSEC * times)
+        return total
 
     def drift_flag(self) -> int:
         """Whether the free omega shows a reproducible monotonic drift inside its span.
@@ -540,8 +594,16 @@ def summary_fields(elements: Optional[FreeElements]) -> dict:
     }
 
 
+AMPLITUDE_PREFIX = 'amp_'  # omega-free.csv: amp_<e|i>_<mode>_re / _im on the first row, t = 0 of `times`
+
+
 def series_rows(elements: Optional[FreeElements]) -> Optional[dict]:
-    """Columns of the per-body `omega_free.csv`, as equal-length arrays on the full grid."""
+    """Columns of the per-body `omega_free.csv`, as equal-length arrays on the full grid.
+
+    The fitted complex amplitude of every mode goes in `amp_<e|i>_<mode>_re`/`_im`, written on the first row only
+    (NaN below): c_j is the term's value at t = 0 of the `times` column (`remove_forced`), so a restored run rebuilds
+    the forced vectors with their phases and the attribution of a kinematic libration (`analysis.zlk.diagnostics`).
+    """
     if elements is None:
         return None
     both = elements.keep_e & elements.keep_i
@@ -562,7 +624,27 @@ def series_rows(elements: Optional[FreeElements]) -> Optional[dict]:
         full = np.full(len(elements.times), np.nan)
         full[mask] = values
         columns[name] = full
+    for kind, amplitudes in (('e', elements.amplitudes_e), ('i', elements.amplitudes_i)):
+        for label, coefficient in amplitudes.items():
+            for part, value in (('re', complex(coefficient).real), ('im', complex(coefficient).imag)):
+                column = np.full(len(elements.times), np.nan)
+                column[:1] = value
+                columns[f'{AMPLITUDE_PREFIX}{kind}_{label}_{part}'] = column
     return columns
+
+
+def _restored_amplitudes(frame, kind: str) -> Dict[str, complex]:
+    """{mode: c_j} of one vector from the amp_ columns of an omega-free.csv frame ({} in a file written before them)."""
+    prefix = f'{AMPLITUDE_PREFIX}{kind}_'
+    labels = [column[len(prefix) : -len('_re')] for column in frame.columns if column.startswith(prefix) and column.endswith('_re')]
+    amplitudes = {}
+    for label in labels:
+        if f'{prefix}{label}_im' not in frame.columns:
+            continue
+        real, imag = frame[f'{prefix}{label}_re'].iloc[0], frame[f'{prefix}{label}_im'].iloc[0]
+        if np.isfinite(real) and np.isfinite(imag):
+            amplitudes[label] = complex(float(real), float(imag))
+    return amplitudes
 
 
 def from_series_frame(frame, setup: Optional[dict] = None) -> Optional[FreeElements]:
@@ -594,17 +676,26 @@ def from_series_frame(frame, setup: Optional[dict] = None) -> Optional[FreeEleme
 
     z_e_free = restored_complex('abs_ze_free', 'varpi_free_unwrapped', keep_e)
     z_i_free = restored_complex('abs_zi_free', 'Omega_free_unwrapped', keep_i)
-    # Only the forced magnitudes are needed by the saved diagnostics.  Give them a stable
-    # zero phase so rho/rho_envelope remain exactly reproducible from the persisted data.
-    z_e_forced = np.asarray(frame['abs_ze_forced'], dtype=float).astype(complex)
-    z_i_forced = np.asarray(frame['abs_zi_forced'], dtype=float).astype(complex)
-    varpi_free = np.asarray(frame.loc[keep_e, 'varpi_free_unwrapped'], dtype=float)
-    Omega_free = np.asarray(frame.loc[keep_i, 'Omega_free_unwrapped'], dtype=float)
-    omega_free = np.asarray(frame.loc[both, 'omega_free_unwrapped'], dtype=float)
     frequencies = dict(setup.get('frequencies') or PLANETARY_FREQUENCIES)
 
     def basis(kind: str) -> Dict[str, float]:
         return {label: (0.0 if label == 'const' else frequencies[label]) for label in setup.get(f'basis_{kind}', [])}
+
+    amplitudes_e, amplitudes_i = _restored_amplitudes(frame, 'e'), _restored_amplitudes(frame, 'i')
+
+    def forced(kind: str, column: str, amplitudes: Dict[str, complex]) -> np.ndarray:
+        """The forced vector from its persisted amplitudes; a file without them keeps the magnitudes at a stable zero
+        phase, so rho/rho_envelope remain exactly reproducible from the persisted data."""
+        rates = basis(kind)
+        if amplitudes and set(amplitudes) <= set(rates):
+            return sum(c * np.exp(1j * rates[label] * RAD_PER_ARCSEC * times) for label, c in amplitudes.items())
+        return np.asarray(frame[column], dtype=float).astype(complex)
+
+    z_e_forced = forced('e', 'abs_ze_forced', amplitudes_e)
+    z_i_forced = forced('i', 'abs_zi_forced', amplitudes_i)
+    varpi_free = np.asarray(frame.loc[keep_e, 'varpi_free_unwrapped'], dtype=float)
+    Omega_free = np.asarray(frame.loc[keep_i, 'Omega_free_unwrapped'], dtype=float)
+    omega_free = np.asarray(frame.loc[both, 'omega_free_unwrapped'], dtype=float)
 
     return FreeElements(
         times=times,
@@ -618,8 +709,8 @@ def from_series_frame(frame, setup: Optional[dict] = None) -> Optional[FreeEleme
         basis_i=basis('i'),
         dropped_e=list(setup.get('dropped_e', [])),
         dropped_i=list(setup.get('dropped_i', [])),
-        amplitudes_e={},
-        amplitudes_i={},
+        amplitudes_e=amplitudes_e,
+        amplitudes_i=amplitudes_i,
         keep_e=keep_e,
         keep_i=keep_i,
         varpi_free=varpi_free,

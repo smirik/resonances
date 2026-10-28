@@ -648,6 +648,7 @@ class Preprocessed:
     flags: List[str] = field(default_factory=list)
     # the series the response read (smoothed again at response_cutoff_yr, `response.response_series`): drawn in the figure
     response_cutoff_yr: float = NAN
+    angle_response: Optional[np.ndarray] = None  # rad: the angle the single force law was fitted on (panel (e))
     rate_response: Optional[np.ndarray] = None  # rad/yr
     adot_response: Optional[np.ndarray] = None  # au/yr
 
@@ -1651,7 +1652,8 @@ class MMRAnalysis:
             self.geometry.forget_derived()  # they read the centre and the averaged angle dropped here
         if self.energy is not None:
             self.energy.model_frame = None
-            self.energy.h_avgpot = ()  # sep_h_avgpot_* are frozen in the numbers above
+            self.energy.h_avgpot = ()  # sep_h_avgpot_* and sep_J_avgpot_* are frozen in the numbers above
+            self.energy.j_avgpot = ()
         for derived in self.derived:
             derived.drop_arrays()
 

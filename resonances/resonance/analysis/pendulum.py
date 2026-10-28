@@ -19,6 +19,10 @@ sample, `occupied_well`), its loop over that well's separatrix loop, as its peri
 With two harmonics both wells of a double well are bounded by the same two maxima, have the same period at one energy
 and J_deep(E) - J_shallow(E) is a constant (z = e^{i sigma} makes E - V a quartic over z^2: one elliptic period, and
 dJ/dE = T/2pi), so the deepest well's ratio of a shallow-well cycle is too large: (J + C)/(J_s + C) > J/J_s.
+Above the lower saddle of its well (a V of several wells) a loop encloses both wells: it has no single-well J/J_s (nan,
+topology 'merged_wells', `libration_topology`); its own action J_loop (`loop_action_through`) and dJ_loop/dE = T_loop/2pi
+are reported instead, and its zone class is not measured. V = -cos s + cos 2s at E = 1: J_loop = 2.605103537913,
+T_loop = 6.890547807067, turning points +-2.466703808004 (W25).
 """
 
 from __future__ import annotations
@@ -61,6 +65,18 @@ class CycleClass(StrEnum):
     DEEP = 'deep'  # below the zone the separatrix reaches (with margin)
     ZONE = 'zone'  # inside the zone
     ABOVE = 'above'  # revolution above the zone
+    # a libration cycle without a single-well J/J_s (a loop around several wells, W25): neither deep nor zone, so a
+    # record with one cannot have every cycle in the zone
+    NOT_MEASURED = 'not_measured'
+
+
+# the topology of the model's orbit at a libration cycle's energy, in the well it occupies (`libration_topology`)
+TOPOLOGY_SINGLE_WELL = 'single_well'  # below the well's own separatrix (its lower bounding maximum)
+TOPOLOGY_MERGED_WELLS = 'merged_wells'  # above that maximum but below the top of V: the loop encloses several wells
+# on the well's separatrix; also (convention kept from before W25) a libration whose mean energy reaches the top of a V
+# of one well, an observed libration on the separatrix within its scatter: J/J_s = 1 there
+TOPOLOGY_SEPARATRIX = 'separatrix'
+TOPOLOGY_ROTATION = 'rotation'  # a turn, or a libration above the top of a V of several wells (the model circulates)
 
 
 class ZoneMethod(StrEnum):
@@ -171,6 +187,13 @@ class CycleEnergy:
     # the minimum of V [rad] whose well holds the libration cycle (`occupied_well`) when it is not the deepest; nan =
     # the deepest well (every cycle of a one-well V, a turn): J/J_s and its slope are read in this well
     well_rad: float = float('nan')
+    # TOPOLOGY_* of the cycle in its well ('' = not known: J/J_s is then recomputed from h, topology-aware); a
+    # merged_wells or rotation cycle has no single-well J/J_s (action_ratio nan)
+    topology: str = ''
+    # J_loop [rad^2/yr]: the action (1/pi) int sqrt(2 (E - V)) d sigma of the connected loop of the cycle's energy (the
+    # single-well loop or the loop around several wells) times sqrt(m); nan without a loop
+    loop_action: float = float('nan')
+    loop_action_slope: float = float('nan')  # dJ_loop/dE = T_loop / (2 pi) [yr] of that loop (finite between the saddles)
 
     @property
     def energy_over_mean(self) -> float:
@@ -196,7 +219,7 @@ class Zone:
 
 
 def has_zone_cycle(cycle_classes: Sequence) -> bool:
-    """Some cycle lies in the separatrix zone (`EnergyAnalysis.cycle_classes`)."""
+    """Some cycle lies in the separatrix zone (`EnergyAnalysis.cycle_classes`; a not_measured cycle does not)."""
     return CycleClass.ZONE in [CycleClass(c) for c in cycle_classes]
 
 
@@ -256,10 +279,13 @@ class EnergyAnalysis:
     episodes_in_separatrix_zone: bool = False
     model_frame: Optional[ModulatedFrame] = None  # the frame of V_E (not a column; the filter guard re-reads energies in it)
     series_cutoff_yr: float = float('nan')  # sigma and a were smoothed at this cutoff for the energies
-    # where the libration cycles' classes come from: 'pendulum' (the fitted V_E) or 'averaged_potential' (the energy h of
-    # each turning point in a two-body angle's averaged well, `mmr.zone.averaged_classes`); h of those turning points
+    # where the libration cycles' classes come from: 'pendulum' (the fitted V_E) or 'averaged_potential' (J/<J_s> of each
+    # turning point in a two-body angle's averaged well, `mmr.zone.averaged_classes`); h of those turning points
     zone_source: str = 'pendulum'
     h_avgpot: Tuple[float, ...] = ()
+    # J/<J_s> of those turning points' loops in the averaged well itself (finite ones): J/J_s(t) of the profile times
+    # J_s(t)/<J_s>, the record's mean (W25, Codex #3); the averaged classes compare these with J_lo
+    j_avgpot: Tuple[float, ...] = ()
 
     @property
     def n_crossings(self) -> int:
@@ -278,8 +304,13 @@ class EnergyAnalysis:
 
     @property
     def n_outside(self) -> int:
-        """Cycles outside the zone (deep or above)."""
-        return sum(1 for c in self.cycle_classes if CycleClass(c) != CycleClass.ZONE)
+        """Cycles outside the zone (deep or above); a cycle not measured is neither."""
+        return sum(1 for c in self.cycle_classes if CycleClass(c) in (CycleClass.DEEP, CycleClass.ABOVE))
+
+    @property
+    def n_not_measured(self) -> int:
+        """Libration cycles without a single-well J/J_s (CycleClass.NOT_MEASURED)."""
+        return sum(1 for c in self.cycle_classes if CycleClass(c) == CycleClass.NOT_MEASURED)
 
     @property
     def turn_zone_widths(self) -> float:
@@ -335,9 +366,13 @@ class EnergyAnalysis:
             'sep_h_avgpot_med': float(np.median(self.h_avgpot)) if self.h_avgpot else NAN,
             'sep_h_avgpot_max': float(np.max(self.h_avgpot)) if self.h_avgpot else NAN,
             'sep_h_avgpot_n': len(self.h_avgpot),
+            'sep_J_avgpot_med': float(np.median(self.j_avgpot)) if self.j_avgpot else NAN,
+            'sep_J_avgpot_max': float(np.max(self.j_avgpot)) if self.j_avgpot else NAN,
+            'sep_J_avgpot_n': len(self.j_avgpot),
             'sep_n_deep': classes.count(CycleClass.DEEP),
             'sep_n_zone': classes.count(CycleClass.ZONE),
             'sep_n_above': classes.count(CycleClass.ABOVE),
+            'sep_n_not_measured': classes.count(CycleClass.NOT_MEASURED),
             'sep_n_crossings': self.n_crossings,
             'sep_n_exits': self.n_exits,
             'sep_n_captures': self.n_captures,
@@ -357,6 +392,9 @@ class EnergyAnalysis:
             'sep_well_wobble_deg': float(np.degrees(self.well_wobble_rad)) if np.isfinite(self.well_wobble_rad) else NAN,
             'sep_cycle_h': join_list(f'{c.h:.4g}' for c in self.cycles),
             'sep_cycle_J': join_list(f'{c.action_ratio:.4g}' for c in self.cycles),
+            'sep_cycle_topology': join_list(c.topology for c in self.cycles),
+            'sep_cycle_J_loop_rad2_yr': join_list(f'{c.loop_action:.4g}' for c in self.cycles),
+            'sep_cycle_dJdE_loop_yr': join_list(f'{c.loop_action_slope:.4g}' for c in self.cycles),
             'sep_cycle_classes': join_list(str(c) for c in self.cycle_classes),
             'sep_episodes_in_separatrix_zone': self.episodes_in_separatrix_zone,
             'sep_n_outside': self.n_outside,
@@ -515,20 +553,53 @@ def separatrix_action(
     return _loop_action(potential, energy, left, right, well_rad)
 
 
+def _several_wells(potential: Potential, found: Optional[Extrema] = None) -> bool:
+    """V has two minima or more over one turn (`extrema`)."""
+    return potential.n_harmonics > 1 and (found if found is not None else extrema(potential)).n_wells >= 2
+
+
+def libration_topology(
+    potential: Optional[Potential],
+    h: float,
+    separatrix: Optional[Tuple[float, float, float]] = None,
+    well_rad: Optional[float] = None,
+    found: Optional[Extrema] = None,
+) -> str:
+    """TOPOLOGY_* of the libration of energy h in the well `well_rad` of V (default the deepest): single_well below the
+    well's separatrix energy E_lim (the lower of its two bounding maxima), separatrix at E_lim; above E_lim in a V of
+    several wells merged_wells below V_max (the loop encloses both wells: V = -cos s + cos 2s at 0 < E < 2) and
+    rotation from V_max; above E_lim = V_max in a V of one well (one harmonic: h >= 1) separatrix, the convention of an
+    observed libration whose mean energy reaches the top. '' for nan h or without a potential."""
+    if potential is None or h is None or not np.isfinite(h):
+        return ''
+    if potential.n_harmonics == 1:
+        return TOPOLOGY_SINGLE_WELL if h < 1 else TOPOLOGY_SEPARATRIX
+    separatrix = separatrix if separatrix is not None else well_separatrix(potential, well_rad)
+    energy = potential.v_min + max(h, 0.0) * potential.depth
+    if energy < separatrix[2]:
+        return TOPOLOGY_SINGLE_WELL
+    if energy == separatrix[2] or not _several_wells(potential, found):
+        return TOPOLOGY_SEPARATRIX
+    return TOPOLOGY_MERGED_WELLS if energy < potential.v_max else TOPOLOGY_ROTATION
+
+
 def action_ratio_in_potential(
     potential: Potential,
     h: float,
     separatrix: Optional[Tuple[float, float, float]] = None,
     full_action: Optional[float] = None,
     well_rad: Optional[float] = None,
+    found: Optional[Extrema] = None,
 ) -> float:
     """J/J_s of the libration of energy h (V_min + h (V_max - V_min)) in the well `well_rad` of V (default the
     deepest; a cycle's own well: `occupied_well`).
 
     One harmonic: the closed form `action_ratio`. Otherwise quadratures over the well, J_s at the well's separatrix
-    energy; `separatrix` (`well_separatrix`) and `full_action` (`separatrix_action`) of that well are computed when not
-    given (a caller with many cycles passes them once). 1 at and above the separatrix, 0 at h <= 0 and at or below the
-    well's bottom, nan for nan."""
+    energy; `separatrix` (`well_separatrix`), `full_action` (`separatrix_action`) of that well and V's `extrema`
+    (`found`) are computed when not given (a caller with many cycles passes them once). 1 at the separatrix and, in a V
+    of one well, above it (`libration_topology`: separatrix); nan above the well's separatrix in a V of several wells
+    (merged_wells, rotation: a loop around several wells has no single-well ratio, W25); 0 at h <= 0 and at or below
+    the well's bottom, nan for nan."""
     if potential is None or h is None or not np.isfinite(h):
         return NAN
     if potential.n_harmonics == 1:
@@ -539,7 +610,7 @@ def action_ratio_in_potential(
     left, right, separatrix_energy = separatrix
     energy = potential.v_min + h * potential.depth
     if energy >= separatrix_energy:
-        return 1.0
+        return 1.0 if libration_topology(potential, h, separatrix, well_rad, found) == TOPOLOGY_SEPARATRIX else NAN
     full = full_action if full_action is not None else separatrix_action(potential, separatrix, well_rad)
     return _loop_action(potential, energy, left, right, well_rad) / full if full > 0 else NAN
 
@@ -550,6 +621,7 @@ def action_slope_in_potential(
     separatrix: Optional[Tuple[float, float, float]] = None,
     full_action: Optional[float] = None,
     well_rad: Optional[float] = None,
+    found: Optional[Extrema] = None,
 ) -> float:
     """d(J/J_s)/dh of the libration of energy h in the well `well_rad` of V (default the deepest).
 
@@ -557,8 +629,8 @@ def action_slope_in_potential(
     and E = V_min + h (V_max - V_min), so d(J/J_s)/dh = depth T(h) / (2 pi J_s), T from `period_in_potential` (the
     deepest well) or the loop of that energy in the well `well_rad`, at or below its bottom the small-oscillation period
     2 pi / sqrt(V''). One harmonic (or no potential): K(m = h)/2 (`_action_ratio_slope`; the formula gives
-    2 Omega^2 (4 K/Omega) / (2 pi 8 Omega/pi) = K/2). inf at and above the well's separatrix (the period diverges),
-    nan for nan."""
+    2 Omega^2 (4 K/Omega) / (2 pi 8 Omega/pi) = K/2). inf at the well's separatrix and above it in a V of one well (the
+    period diverges), nan above it in a V of several wells (no single-well ratio: `libration_topology`), nan for nan."""
     if h is None or not np.isfinite(h):
         return NAN
     if potential is None or potential.n_harmonics == 1:
@@ -566,7 +638,7 @@ def action_slope_in_potential(
     separatrix = separatrix if separatrix is not None else well_separatrix(potential, well_rad)
     energy = potential.v_min + max(h, 0.0) * potential.depth
     if energy >= separatrix[2]:
-        return math.inf
+        return math.inf if libration_topology(potential, h, separatrix, well_rad, found) == TOPOLOGY_SEPARATRIX else NAN
     full = full_action if full_action is not None else separatrix_action(potential, separatrix, well_rad)
     period = period_in_potential(potential, max(h, 0.0)) if well_rad is None else _period_in_well(potential, energy, well_rad)
     return float(potential.depth * period / (TWO_PI * full)) if full > 0 and np.isfinite(period) else NAN
@@ -606,7 +678,10 @@ def h_from_action_ratio_in_potential(
     full = full_action if full_action is not None else separatrix_action(potential, separatrix)
 
     def excess(h):
-        return action_ratio_in_potential(potential, h, separatrix, full) - j
+        # below h_top the loop stays in the well; at its upper end E may round above the saddle (a nan ratio in a V of
+        # several wells), where the ratio's limit is 1
+        ratio = action_ratio_in_potential(potential, h, separatrix, full)
+        return (ratio if np.isfinite(ratio) else 1.0) - j
 
     return float(optimize.brentq(excess, 0.0, float(np.nextafter(h_top, 0.0)), xtol=1e-12))
 
@@ -772,6 +847,24 @@ def loop_through(potential: Optional[Potential], energy: float, sigma_rad: float
     return Loop(float(lower), float(upper), float(2 * value))
 
 
+def loop_action_through(potential: Optional[Potential], energy: float, sigma_rad: float, found: Optional[Extrema] = None) -> float:
+    """J_loop = (1/pi) int sqrt(2 (E - V)) d sigma [rad^2/yr] of the libration loop of energy `energy` through
+    `sigma_rad`, between the turning points of `loop_through` (the first V = E on either side): the loop of one well,
+    or the connected loop around several wells above a lower saddle (V = -cos s + cos 2s at E = 1: 2.605103537913).
+    dJ_loop/dE = T_loop / (2 pi). nan without a loop (V >= E there, a side circulates, no potential)."""
+    loop = loop_through(potential, energy, sigma_rad, found)
+    if not (np.isfinite(loop.lower_rad) and np.isfinite(loop.upper_rad)):
+        return NAN
+    middle, half = (loop.upper_rad + loop.lower_rad) / 2, (loop.upper_rad - loop.lower_rad) / 2
+
+    def integrand(theta):  # sigma = middle + half sin(theta) takes the square-root ends smoothly
+        kinetic = 2 * (energy - float(potential.value(np.atleast_1d(middle + half * np.sin(theta)))[0]))
+        return half * np.cos(theta) * np.sqrt(max(kinetic, 0.0))
+
+    value, _ = integrate.quad(integrand, -np.pi / 2, np.pi / 2, limit=200)
+    return float(value / np.pi)
+
+
 def period_through(potential: Optional[Potential], energy: float, sigma_rad: float) -> float:
     """Period [yr] of the libration loop of energy `energy` through `sigma_rad` (`loop_through`); nan without a loop,
     inf on the separatrix. V = -cos s at E = -cos A: 4 K(sin^2(A/2)) (A = 90 deg: 7.416; E = 1 - 1e-8: 43.773)."""
@@ -782,17 +875,6 @@ def well_count(potential: Optional[Potential]) -> int:
     """Number of minima of V over one turn (`extrema`); 0 without a potential. One harmonic: 1; V = -cos s + cos 2s: 2
     (wells at +-75.5 deg, cos s = 1/4; a barrier at 0)."""
     return extrema(potential).n_wells if potential is not None else 0
-
-
-def h_in_barrier_units(potential: Optional[Potential], h: float) -> float:
-    """h (over the global depth V_max - V_min) as the energy over the deepest well's own barrier,
-    (E - V_min) / (E_sep - V_min): 1 at that well's separatrix, as h of a turning point in the averaged well
-    (`averaged_potential.energy_in_well`). The same h for a V of one well (E_sep = V_max) or without a potential."""
-    if potential is None or not np.isfinite(h) or well_count(potential) < 2:
-        return h
-    _, _, separatrix_energy = well_separatrix(potential)
-    barrier = separatrix_energy - potential.v_min
-    return float(h * potential.depth / barrier) if barrier > 0 else NAN
 
 
 def half_width_in_potential(potential: Potential, identity_coefficient: float) -> float:
@@ -1103,7 +1185,12 @@ def cycle_energies(
     quadratures otherwise, in the well the libration cycle occupies (`occupied_well`: the basin of its fastest
     sample; its loop over that well's separatrix loop, `CycleEnergy.well_rad`). The predicted period of a libration
     cycle is that of the loop of its energy in the same well (`cycle_period`), so the period law and the action hold in
-    a potential of several wells too; with one well both are the deepest well's (`period_in_potential`)."""
+    a potential of several wells too; with one well both are the deepest well's (`period_in_potential`).
+
+    Each libration cycle carries its topology (`libration_topology`) and its loop's own action J_loop with
+    dJ_loop/dE = T_pred/(2 pi) (times sqrt(m) and over sqrt(m)): a cycle above its well's lower saddle (merged_wells)
+    has no single-well J/J_s (nan, W25) but J_loop of the connected loop (`loop_action_through`, the same turning points
+    as its period); a cycle on the separatrix keeps J/J_s = 1 and has no finite slope; a turn has topology rotation."""
     if potential is None or not len(bounds):
         return []
     t_yr = np.asarray(t_yr, dtype=float)
@@ -1130,6 +1217,8 @@ def cycle_energies(
         with np.errstate(invalid='ignore'):
             libration = np.isfinite(h) & (h >= 0) & (h < 1)
         period = np.where(libration, libration_period(h, potential.omega_rad_yr), revolution_period(h, potential.omega_rad_yr))
+        topology = [TOPOLOGY_ROTATION if r else libration_topology(potential, x) for x, r in zip(h, rotation)]
+        loop = np.where(libration, ratio * separatrix_action(potential), NAN)
     else:
         found = extrema(potential)
         fastest = [
@@ -1137,20 +1226,58 @@ def cycle_energies(
         ]
         wells = [None if r else occupied_well(potential, f, found) for f, r in zip(fastest, rotation)]
         actions = WellActions(potential)
+        topology = [
+            TOPOLOGY_ROTATION if r else libration_topology(potential, x, actions.of(w)[0], w, found) for x, r, w in zip(h, rotation, wells)
+        ]
         ratio = np.array(
-            [NAN if r else action_ratio_in_potential(potential, x, *actions.of(w), well_rad=w) for x, r, w in zip(h, rotation, wells)]
+            [
+                NAN if r else action_ratio_in_potential(potential, x, *actions.of(w), well_rad=w, found=found)
+                for x, r, w in zip(h, rotation, wells)
+            ]
         )
         period = np.array([cycle_period(potential, x, f, found) for x, f in zip(h, fastest)])
+        loop = np.array(
+            [_loop_of(potential, x, f, kind, j, actions.of(w)[1], found) for x, f, kind, j, w in zip(h, fastest, topology, ratio, wells)]
+        )
     ratio = np.where(rotation, NAN, ratio * scale)
     with np.errstate(invalid='ignore', divide='ignore'):
         predicted = period / scale
         law = np.where(np.isfinite(predicted) & (predicted > 0), (end - start) / predicted, NAN)
+        looped = np.array([kind in (TOPOLOGY_SINGLE_WELL, TOPOLOGY_MERGED_WELLS) for kind in topology], dtype=bool)
+        loop = np.where(looped, loop * scale, NAN)
+        slope = np.where(looped & np.isfinite(predicted), predicted / TWO_PI, NAN)
     return [
         CycleEnergy(
-            float(a), float(b), bool(r), float(x), float(j), float(b - a), float(w), float(x * m), float(m), NAN if v is None else v
+            float(a),
+            float(b),
+            bool(r),
+            float(x),
+            float(j),
+            float(b - a),
+            float(w),
+            float(x * m),
+            float(m),
+            NAN if v is None else v,
+            kind,
+            float(action),
+            float(dj),
         )
-        for a, b, r, x, j, w, m, v in zip(start, end, rotation, h, ratio, law, m_cycle, wells)
+        for a, b, r, x, j, w, m, v, kind, action, dj in zip(start, end, rotation, h, ratio, law, m_cycle, wells, topology, loop, slope)
     ]
+
+
+def _loop_of(
+    potential: Potential, h: float, sigma_fast_rad: float, topology: str, ratio: float, full_action: Optional[float], found: Extrema
+) -> float:
+    """J_loop [rad^2/yr] of a libration cycle at unit strength: J/J_s x J_s in one well (the same quadrature as its
+    ratio), the connected loop through the minimum that holds its fastest sample (`loop_action_through`, the turning
+    points of its period `cycle_period`) above a lower saddle; nan otherwise."""
+    if topology == TOPOLOGY_SINGLE_WELL:
+        return float(ratio * full_action) if full_action is not None and np.isfinite(ratio) else NAN
+    if topology != TOPOLOGY_MERGED_WELLS or not np.isfinite(sigma_fast_rad):
+        return NAN
+    energy = potential.v_min + h * potential.depth
+    return loop_action_through(potential, energy, well_holding(potential, sigma_fast_rad, found), found)
 
 
 class WellActions:
@@ -1217,7 +1344,11 @@ def _libration_action(cycle: CycleEnergy, potential: Optional[Potential], scatte
     """(J/<J_s>, sigma_J) of a libration cycle in `potential` (the cosine without one): the cycle's own ratio (else
     J/J_s(h) of the potential) and the scatter of h carried by the slope, both times sqrt(m_cycle) (J/<J_s> =
     J/J_s(h) sqrt(m)), in the well the cycle occupies (`CycleEnergy.well_rad`, nan = the deepest). `wells` holds each
-    well's (separatrix, J_s), computed once per potential by the caller."""
+    well's (separatrix, J_s), computed once per potential by the caller. (nan, nan) for a cycle without a single-well
+    ratio (topology merged_wells or rotation); the recomputed ratio is topology-aware too (nan above a lower saddle),
+    so a clipped value is never regenerated."""
+    if cycle.topology in (TOPOLOGY_MERGED_WELLS, TOPOLOGY_ROTATION):
+        return NAN, NAN
     well = cycle.well_rad if np.isfinite(cycle.well_rad) else None
     separatrix, full = wells.of(well)
     scale = np.sqrt(cycle.strength_rel_sq) if cycle.strength_rel_sq > 0 else 1.0
@@ -1233,7 +1364,8 @@ def classify_cycles(
     cycles: Sequence[CycleEnergy], zone: Zone, sigma_h: float, settings: AnalysisSettings, potential: Optional[Potential] = None
 ) -> List[CycleClass]:
     """Deep: J/<J_s> + margin sigma_J < J_lo (libration side); above: h_mean - margin sigma_h > h_hi; else zone
-    (margin = separatrix_sigma_margin). sigma_J = d(J/J_s)/dh sigma_h sqrt(m), the slope in `potential`
+    (margin = separatrix_sigma_margin). A libration cycle without a single-well J/J_s (nan: a loop around several
+    wells, W25) is not_measured: neither deep nor zone. sigma_J = d(J/J_s)/dh sigma_h sqrt(m), the slope in `potential`
     (`action_slope_in_potential`: depth T / (2 pi J_s), K(h)/2 for one harmonic, W3-G7); a missing sigma_h counts as
     the floor separatrix_sigma_floor. The zone edges are in the mean normalisation (J0/<J_s>, h0 over 2 Omega_bar^2),
     hence J/<J_s> and h_mean of the cycle."""
@@ -1247,6 +1379,9 @@ def classify_cycles(
             classes.append(CycleClass.ABOVE if above else CycleClass.ZONE)
             continue
         ratio, sigma_j = _libration_action(cycle, potential, scatter, wells)
+        if not np.isfinite(ratio):
+            classes.append(CycleClass.NOT_MEASURED)
+            continue
         deep = ratio + margin * sigma_j < zone.j_lo
         classes.append(CycleClass.DEEP if deep else CycleClass.ZONE)
     return classes

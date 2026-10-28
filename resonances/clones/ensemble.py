@@ -177,7 +177,8 @@ class Ensemble:
         path = Path(path)
         base = path.with_suffix('') if path.suffix in ('.csv', '.json') else path
         meta = json.loads(base.with_name(base.name + '.json').read_text())
-        clones = pd.read_csv(base.with_name(base.name + '.csv'))
+        # round_trip: the default parser may change the last bit of a '%.17g' number (1e-16 on MPC CAR values)
+        clones = pd.read_csv(base.with_name(base.name + '.csv'), float_precision='round_trip', dtype={'name': str})
         clones['valid'] = clones['valid'].astype(bool)
         solution = OrbitSolution.from_dict(meta['solution']) if meta.get('solution') else None
         return cls(

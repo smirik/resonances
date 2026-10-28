@@ -1001,7 +1001,9 @@ def zone_rule(
     libration -> resonant (flag libration_in_separatrix_zone when a cycle lies in the zone), episodic -> transient,
     near_separatrix -> near_separatrix (the a-response was checked by the tree before this leaf). The flag
     episodes_in_separatrix_zone (crossings, every cycle inside the model's zone) goes with any of them; it changes no
-    status (52356 stays transient, DECISIONS 2026-10-15 evening).
+    status of this leaf (52356 stays transient, DECISIONS 2026-10-15 evening). Elsewhere the classes are not columns
+    only: they set L2 and Z, the cap episodes_in_separatrix_zone, O1's applicability, and withhold the onset objection
+    of leaf 5o (uncertain/origin_unknown) when the episodes lie in the zone (W25 review).
     """
     flags = []
     zone_cycles = energy is not None and has_zone_cycle(energy.cycle_classes)
@@ -1882,7 +1884,9 @@ def promote_union(angle: AngleDecision, decision: StatusDecision, energy: Option
     6 with origin dynamic: the force law L4, the potential with a R0 or the directly averaged strength F measured and
     passing) the libration over the record makes it resonant/dynamic_libration (TK14 31M-34 at 0.5 yr). Every other
     outcome stays: induced, kinematic, implausible_strength, uncertain (5o, 5n, 5f, 5s*), the geometry alone (5u/6),
-    a subresonance (2003 TX9 3E+2J-10 stays uncertain). In place, on the ledger only for a union."""
+    a subresonance (2003 TX9 3E+2J-10 stays uncertain). In place, on the ledger only for a union. The final rule
+    (`rec_rule`) names the promotion: the leaf's rule plus 'u' (5d/6 → 5d/6u); its prefix keeps the leaf's branch for
+    the readers after the status (`_l4` reads 5c)."""
     if angle.rule != RULE_UNION:
         return
     dynamic = decision.status == Status.TRANSIENT and decision.reason == Reason.DYNAMIC_EPISODE
@@ -1890,6 +1894,7 @@ def promote_union(angle: AngleDecision, decision: StatusDecision, energy: Option
     if not ledger.compare(UNION_PROMOTED, _flag(dynamic), Op.EQ, 1, '', ''):
         return
     decision.status, decision.reason, decision.union_promoted = Status.RESONANT, Reason.DYNAMIC_LIBRATION, True
+    decision.rule += 'u'
     if energy is not None and has_zone_cycle(energy.cycle_classes):  # as `zone_rule`
         decision.flags.append(str(Flag.LIBRATION_IN_SEPARATRIX_ZONE))
 
@@ -2418,11 +2423,14 @@ def _l1(episode: Episode, counts: Optional[Mapping[str, Optional[int]]], scratch
 
 
 def _l2(episode: Episode, energy: Optional[EnergyAnalysis], scratch: Ledger, settings: AnalysisSettings) -> MarginValue:
-    """Distance to the separatrix: the cycle classes when the zone is known, else the amplitude (above the thin
-    band it stays thin and the cap l2_without_zone limits the level)."""
+    """Distance to the separatrix: the cycle classes when the zone is known (thin with a cycle in the zone,
+    not_measured with a cycle whose single-well J/J_s does not exist and none in the zone, W25), else the amplitude
+    (above the thin band it stays thin and the cap l2_without_zone limits the level)."""
     amplitude = math.degrees(episode.half_amp_max_rad)
     if energy is not None and energy.zone is not None and energy.cycle_classes:
         in_zone = has_zone_cycle(energy.cycle_classes)
+        if not in_zone and energy.n_not_measured:
+            return _margin(Margin.NOT_MEASURED, amplitude, 'L2')
         return _margin(Margin.THIN if in_zone else Margin.FULL, amplitude, 'L2')
     return _grade(scratch, 'L2', amplitude, (Op.LE, settings.mmr_l2_amp_full_deg))
 

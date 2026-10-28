@@ -31,8 +31,8 @@ from resonances.resonance.analysis.mmr import decide, io
 from resonances.resonance.analysis.mmr.analyse import _centre_scale_union_word
 from resonances.resonance.analysis.mmr.decide import AngleDecision, StatusDecision
 from resonances.resonance.analysis.settings import settings_from_config
-from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, Flag, LibrationOrigin, Reason, Status
-from tests.resonances.analysis.builders import make_sampling
+from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, CheckValue, Flag, LibrationOrigin, Margin, Reason, Status
+from tests.resonances.analysis.builders import make_response, make_sampling
 
 S = settings_from_config()
 ONE_DEG = math.radians(1.0)
@@ -176,9 +176,19 @@ def test_a_dynamic_transient_of_a_union_becomes_resonant():
     ledger = Ledger.from_settings(S)
     decide.promote_union(UNION, decision, None, ledger)
     assert (decision.status, decision.reason, decision.union_promoted) == (Status.RESONANT, Reason.DYNAMIC_LIBRATION, True)
+    assert decision.rule == '5d/6u'  # the final rule names the promotion (rec_rule)
     assert next(e for e in ledger if e.name == decide.UNION_PROMOTED).result is True
     read = decide.union_read(UNION, decision)
     assert read.rule == 'G2' and decide.status_basis(read).angle_status == AngleStatus.LIBRATION
+
+
+def test_a_promoted_5c_union_keeps_its_branch_for_the_margins():
+    """5c/6 (the potential carries a failed force law) promoted: rule 5c/6u, and L4 stays thin as on 5c/6."""
+    decision = _decision(Status.TRANSIENT, Reason.DYNAMIC_EPISODE, LibrationOrigin.DYNAMIC, rule='5c/6')
+    decide.promote_union(UNION, decision, None, Ledger.from_settings(S))
+    assert decision.rule == '5c/6u' and decision.status == Status.RESONANT
+    response = make_response(a_response=CheckValue.FAIL, force_r2_h1=0.2, force_r2_h2=0.3)
+    assert decide._l4(response, decision).margin == Margin.THIN
 
 
 def test_the_zone_flag_of_a_promoted_libration():
@@ -200,7 +210,7 @@ def test_the_zone_flag_of_a_promoted_libration():
 def test_every_other_reading_stays(status, reason, origin, rule):
     decision = _decision(status, reason, origin, rule)
     decide.promote_union(UNION, decision, None, Ledger.from_settings(S))
-    assert (decision.status, decision.reason, decision.union_promoted) == (status, reason, False)
+    assert (decision.status, decision.reason, decision.union_promoted, decision.rule) == (status, reason, False, rule)
     assert decide.union_read(UNION, decision) is UNION
     assert decide.status_basis(UNION).angle_status == AngleStatus.EPISODIC
     reported = decide.reported_angle(UNION, None, S, decision)

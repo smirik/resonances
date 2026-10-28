@@ -1,10 +1,10 @@
 """Independent tests of W8 confidence: the level without a calibration gate, the calibration columns, the orbit type,
 the subresonance degree from the catalogue, and the explanation text of the right column.
 
-Expected values are derived here, not read from the code: the level rule and the caps from docs/libration-analysis.md
-§7, the Wilson interval from its formula (Wilson 1927), the orbit types from the regimes of synthetic angles, the
-member counts by brute force over the d'Alembert rule, and the explanation from synthetic pendulum records whose
-episodes and periods are known by construction.
+Expected values are derived here, not read from the code: the level rule and the caps from docs/physics/confidence.md,
+the Wilson interval from its formula (Wilson 1927), the orbit types from the regimes of synthetic angles, the member
+counts by brute force over the d'Alembert rule, and the explanation from synthetic pendulum records whose episodes and
+periods are known by construction.
 """
 
 import dataclasses

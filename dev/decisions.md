@@ -3,7 +3,7 @@
 An English map of `benchmark/DECISIONS.md` (the author's log, Russian, append-only) and of the decisions recorded in
 the wave reports. Each line: date, the decision, why. "Superseded" marks an entry a later one replaced; the log keeps
 both. "(author)" means the author decided; "(measured)" means the decision followed a measurement he accepted.
-The exact current behaviour is in the code and in `docs/libration-analysis.md`; the rule IDs are explained in
+The exact current behaviour is in the code and in `docs/physics/`; the rule IDs are indexed in `docs/libration-analysis.md` and are explained in
 `resonances/resonance/analysis/mmr/CLAUDE.md`.
 
 ## Status model
@@ -66,6 +66,27 @@ The exact current behaviour is in the code and in `docs/libration-analysis.md`; 
   qualified the scale. Rules (b) and (c) of the design were not shipped (see [rejected.md](rejected.md)).
 - **Oct 27 (W24, author accepted 12:35).** G2a action step: implemented with test 7 (`regime_periods`) after review;
   TX9 fails test 7 and stays one episode, uncertain. The author accepted uncertain.
+- **Oct 28 (W25, author approved both; Codex's conservative variant).** Separatrix zone: (1) above the lower saddle of
+  its well a cycle's loop encloses several wells and has no single-well J/J_s (nan, topology `merged_wells`, class
+  `not_measured`, never "in the zone"; J_loop and T_loop/2π reported); (2) the averaged route compares actions (J/J_s
+  of each turning point's loop in the averaged profile) with J_lo, not h with an h_lo mapped through V_E. Measured on
+  all 719 MMR examples (frozen trees, settings 59c557f7a08b): no status changes; 45 rows change flags, caps or confidence;
+  medium → high for 2015 SO2, 2019 GM1, 2020 SB, 2024 TY11 (20 kyr), 2025 PN7, 439908 (20 kyr) (cap
+  `episodes_in_separatrix_zone` gone), high → medium for 82831 13M-24 (both rows: its turning points' J/J_s
+  0.106–0.119 ≥ J_lo 0.1 at h 0.105–0.124 below the old edge 0.125). The zone classes are not columns only: L2, Z, caps
+  and leaf 5o read them.
+- **Oct 28 (W25, Codex final review #3).** The averaged route compared J/J_s(t) (the profile's units at each time) with
+  J_lo = J0/<J_s> (the record's mean separatrix action; `numeric_zone`: J/J_s(t0) = J0/√m0). Action at fixed h scales
+  as √strength, so at m = 0.25 a local 0.6 is 0.3. The pre-W25 h-route had the same mismatch (local h against h(J_lo)).
+  Now each ratio is carried by J_s(t)/<J_s> of the averaged well itself (absolute J_s = √(3k²μn²a) × the profile's,
+  <J_s> its time mean on MMR_SEPARATRIX_AVGPOT_TP_MAX even times, the basin of the nearest turning point's swing
+  middle); no mean (a failed profile) → the pendulum's classes. Not the zone model's √m: J_lo and the classes would
+  then share a model the averaged route exists to replace (2004 TK14: depth ×100). Measured on 719 MMR examples
+  against test-benchmark: no status or confidence changes; 23 rows change cycle classes, 4 change flags/thin margins:
+  2000 SF8 8M-9 (3 cycles deep → zone, its episode in the well's strong phase, J_s(t)/<J_s> 1.6–3.05: L2 thin),
+  2003 UG22 10E-17 and 2004 TK14 31M-34 0.5 yr (zone → deep: flag libration_in_separatrix_zone and thin L2 gone),
+  87555 4N-5 (deep → zone: zone_edge_cycle gone); 3233 30M-53 loses the route (a failed profile on the grid). 82831
+  13M-24 (both rows, J/<J_s> ≤ 0.47 ≥ J_lo 0.1) and the 1:1 rows (no averaged route) are unchanged.
 
 ## Response, force and strength (MMR)
 
@@ -141,6 +162,21 @@ The exact current behaviour is in the code and in `docs/libration-analysis.md`; 
 - **Oct 17 (author).** 162474 over 1.5 Myr is an ordinary transient (island 270° → 90°); no `island_switch` flag.
 - **Oct 27 (author, W24 Q5).** The secular/ZLK author verdicts are gated in `make test-benchmark` (14/14); 189865 and
   477492 lose the "invalid" expectation (it came only from SABA failing on planet-crossers).
+- **Oct 28 (author, W25 items 7, 8).** An uncertain secular/ZLK verdict names its next check (`analysis/secular/
+  extend.py`, MMR's `next_check` with N by cause: baseline 1.5 P + 2 P_c; gate short_window FREE_GATE_MIN_CYCLES
+  P_cyc; planetary_residual 1.25 × 1296000/d_min, review beyond 100 Myr); undefined_phase, unavailable and
+  unusable_series now ask for review instead of extend (no length cures them). No status changes. The dry-run has
+  advisory secular/ZLK rows (baseline 500 kyr / 9.4 kyr, the ZLK gate's 3 quadrupole times). Panel (f) draws the
+  analysis' own response fit (it refitted at the fine P_c while printing the decisive scale's R²).
+- **Oct 28 (author, W25 items 3, 4, 5, 10 and the ZLK double-scale studies).** ZLK ρ_max is local: max over the
+  record of rollmed(|z_free|, W)/rollmed(|z_forced|, W), W = max(beat window, `ZLK_RHO_WINDOW_CYCLES` P_cyc); the old
+  median ratio stays a column (`zlk_gate_rho_global`). Co-orbital guard, variant (a): only for planets whose modes are
+  not fitted (Mercury to Mars), outcome unavailable (`coorbital_unfitted_forcing`), never not_applicable; Trojans
+  covered. c1, c2, h_quad in the invariable plane. e–i coupling at the decisive period for every ZLK row
+  (`zlk_ei_coupling`: zlk / forced_beat / none / not_measured; `confirmed_ei` = zlk). Attribution of a kinematic
+  libration (`zlk_forcing_*`), the centre's slow line (`zlk_centre_*`, 591986: g6−g5), and a scale guard: a
+  centre-scale libration at a forced beat with ρ_max < 1 never decides. n_cycles is T/P_cyc of the osculating ω (the
+  figure said "free ω"). No status changed on the benchmark. Pending (author): a node-lock flag (Ω − ϖ5, ≥ 3 Myr).
 
 ## Figures
 
@@ -172,3 +208,11 @@ The exact current behaviour is in the code and in `docs/libration-analysis.md`; 
   candidates.
 - **Oct 27 (author, W24 Q3).** MPC source: query by elements as for AstDyS; a separate module that can become its own
   package; a body at another epoch is integrated to the run date by default.
+- **Oct 28 (author + main session, W25).** Clones: a run with clones resumes as a whole (one checkpoint
+  `clones_state/`, cleared with simulation_state.json only after ordinary part and clones succeed: the old early clear
+  re-ran every ordinary batch after a stop in the clones); the identity covers what was run, the starts are kept and
+  compared bit for bit, a mismatch refuses. Q1: a finished one-simulation ordinary part is skipped (verdicts from
+  summary.csv, coverage checked), never moved into another grouping. Q2: `ensemble-<parent>-results.npz` kept. Q3:
+  restore reclassifies the nominal only and rewrites clones.csv's nominal columns; clones keep stored verdicts. No
+  triage (docs/clones.md "Limits"). MPC: `MPC_LOOKUP=file_then_api` (default `file`) takes a missing identifier's
+  nominal from get-orb without a covariance; names are documented by the MPC API, so no name mapping was added.

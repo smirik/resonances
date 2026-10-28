@@ -104,9 +104,7 @@ def summary_row(example_id: str, body, resonance) -> Dict[str, Any]:
     row.update(numbers)
     if resonance.type == 'lidov_kozai':
         row.update(omega_free_gate.summary_fields(body.free_gates.get(key)))
-        row.update(free_elements.summary_fields(body.free_elements))
-        gate = body.zlk_gates.get(key)
-        row['confirmed_ei'] = None if gate is None else gate.confirmed_ei
+        row.update(free_elements.summary_fields(body.free_elements))  # confirmed_ei is in the numbers (zlk_ei_coupling)
     return row
 
 

@@ -1,4 +1,4 @@
-"""The output step as a validity condition of the MMR filter (inv-09, inv-15; docs/libration-analysis.md).
+"""The output step as a validity condition of the MMR filter (inv-09, inv-15; docs/physics/signal.md).
 
 The cutoff no longer grows with the step: P_c = max(1.5 P_syn, P_floor / 2). The step only decides
 - whether the record can be filtered at all: P_c <= 2 dt -> invalid / undersampled, resample at the largest round step

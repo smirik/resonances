@@ -5,74 +5,79 @@
 Secular and Lidov-Kozai (ZLK) angles evolve over $10^4$–$10^7$ yr instead of $10^2$–$10^4$ yr, and they involve only
 the slow angles $\varpi$, $\Omega$, $\omega$. They go through the same [geometry](geometry.md) as mean-motion
 resonances (turning points, cycles, episodes, coverage), with their own signal step and their own physics. The
-status tree is short ([Status tree](status-tree.md#secular-and-lidov-kozai-angles)): there is no semi-major axis
-to respond, no owner and no subresonance.
+status tree is short ([below](#geometry-and-status)): there is no semi-major axis to respond, no owner and no
+subresonance.
+
+`analysis.secular.analyse_secular(series, settings)` and `analysis.zlk.analyse_zlk(series, settings, free_elements=...)`
+read a `LongPeriodSeries`: the classified angle (the reduced proper angle of a secular resonance, $\omega$ for ZLK) with
+$a$, $e$, $i$, $\varpi$, $\Omega$ on a uniform grid of years. `Simulation.identify_librations` calls them on every path
+(a run, a batch worker, `restore(recompute_librations=True)`).
+
+??? info "The steps of the analysis"
+
+    | step | what |
+    |---|---|
+    | 0 input | an unphysical orbit ($e > 1.3$, $a < 0$, non-finite $a$ or $e$) → `invalid` / `unphysical`; fewer than three samples, or non-finite times or angles → `uncertain` / `unusable_series` (angle `undefined` in both) |
+    | 1 cutoff | $P_c$ and the turning-point prominence (below) |
+    | 2 filter | $\sigma_f$ at $P_c$, $P_c/2$ and $2P_c$; the window $[t_0 + P_c,\ t_1 - P_c]$. When $\sigma$ cannot be filtered at $P_c$ (a grid not uniform and increasing within `FILTER_GRID_RTOL`, or $P_c \le 2\Delta t$) → `uncertain` / `unusable_series`, no geometry (an MMR gives `invalid` / `undersampled` there) |
+    | 3 geometry | turning points, runs, episodes, the centre and its passes, exit and entry (shared with MMRs) |
+    | 4 angle | `angle_status` from the geometry (below); without a libration at $P_c$, the same at the scale of the centre |
+    | 5 physics | secular: the $e$/$i$ response (a column); ZLK: the free-$\omega$ gate |
+    | 6 status | `analysis.secular.decide.decide_status` |
+    | 7 confidence | the margins N, S, F, P, G and the caps (below) |
 
 ## The secular angle
 
 **What should librate?** A linear secular resonance locks a precession frequency of the body to one of the
 planetary system's eigenfrequencies: $g \approx g_6$ ($\nu_6$), $s \approx s_6$ ($\nu_{16}$), or a combination such
 as $g + s - g_6 - s_6$ ($z_1$). In the Laplace-Lagrange theory the planets' eccentricity and inclination vectors are
-sums of eigenmodes, each turning at its own rate $g_j$ or $s_j$ (Murray & Dermott 1999, eqs. 7.28–7.29, p. 278;
-the vector variables themselves are defined by their eqs. 7.18–7.19, p. 277). The resonant angle compares the body's
-$\varpi$ and $\Omega$ with the **mode longitudes**
+sums of eigenmodes, each turning at its own rate $g_j$ or $s_j$ (Murray & Dermott 1999, eqs. 7.28–7.29, p. 278).
+The resonant angle therefore compares the body's $\varpi$ and $\Omega$ with the planets' **mode longitudes**, not
+with their osculating elements, after removing the forced terms that are not in the angle. Why both matter, and the
+measured phases: [Secular resonances](../secular.md#how-the-angle-is-built).
 
-$$
-\ell_{g_j}(t) = g_j\,(t + t_{\rm epoch}) + \phi_{g_j}, \qquad \ell_{s_j}(t) = s_j\,(t + t_{\rm epoch}) + \phi_{s_j},
-$$
+??? info "The angle σ and the reduced vectors"
 
-with the phases quoted at J2000 ($t_{\rm epoch}$ the offset of the run's start from J2000).
+    The mode longitudes are
 
-**Units.** In the formulas of this page $g$, $s$ and every frequency $f$ are angular frequencies in rad/yr. The
-stored `PLANETARY_FREQUENCIES` are in ″/yr and are multiplied by $\pi/648\,000$; one cycle per year is
-1 296 000 ″/yr. A record of length $T$ resolves frequencies $2\pi/T$ rad/yr apart (one Rayleigh width, $1/T$ in
-cycles/yr).
+    $$
+    \ell_{g_j}(t) = g_j\,(t + t_{\rm epoch}) + \phi_{g_j}, \qquad \ell_{s_j}(t) = s_j\,(t + t_{\rm epoch}) + \phi_{s_j},
+    $$
 
-not with the planets' osculating elements. Seen from the ecliptic, no planet's node circulates (the 1.58° tilt of
-the invariable plane dominates), and only Mercury's, Jupiter's and Saturn's perihelia follow their own mode. An
-angle built from osculating planetary elements would therefore be wrong for most terms.
+    with the phases quoted at J2000 ($t_{\rm epoch}$ the offset of the run's start from J2000).
 
-**The body's vectors.** The body enters through its complex eccentricity and inclination vectors, built from the
-saved (ecliptic) elements:
+    **Units.** In the formulas of this page $g$, $s$ and every frequency $f$ are angular frequencies in rad/yr. The
+    stored `PLANETARY_FREQUENCIES` are in ″/yr and are multiplied by $\pi/648\,000$; one cycle per year is
+    1 296 000 ″/yr. A record of length $T$ resolves frequencies $2\pi/T$ rad/yr apart (one Rayleigh width, $1/T$ in
+    cycles/yr).
 
-$$
-z_e = e\,e^{i\varpi}, \qquad z_i = \sin\tfrac{i}{2}\,e^{i\Omega}.
-$$
+    The body enters through its complex eccentricity and inclination vectors, built from the saved (ecliptic)
+    elements, $z_e = e\,e^{i\varpi}$ and $z_i = \sin\tfrac{i}{2}\,e^{i\Omega}$ (Murray & Dermott use $I$ in radians;
+    since $\sin\frac i2 \simeq I/2$, phases and frequencies agree, while inclination amplitudes here are **half**
+    theirs). The forced terms at the fundamentals that are **not** in the angle only shake it, so they are removed by a
+    least-squares fit at their known frequencies $f_j$:
 
-Murray & Dermott use the inclination $I$ in radians; since $\sin\frac i2 \simeq I/2$ at small inclination, phases and
-frequencies agree, while inclination-vector amplitudes and fitted coefficients here are **half** theirs. Each vector is
-a forced part, made by the planetary modes, plus the body's free part. The forced terms at the fundamentals that are
-**not** in the angle only shake it, so they are removed by a least-squares fit at their known frequencies $f_j$:
+    $$
+    z_{\rm red} = z - \sum_{j \in B} C_j\, e^{i f_j t}.
+    $$
 
-$$
-z_{\rm red} = z - \sum_{j \in B} C_j\, e^{i f_j t}.
-$$
+    The basis $B$ is that of the [free elements](../free-elements.md): $g_5$–$g_8$ plus a constant for $z_e$, and the
+    constant ($s_5 = 0$, the invariable plane) plus $s_6$–$s_8$ for $z_i$; inner-planet modes are not subtracted. Modes
+    closer than two Rayleigh widths cannot be separated, so the candidates are first clustered and one representative
+    of each cluster is kept; the representatives whose labels occur in the angle are dropped (their terms are the
+    resonance), and the rest is fitted and removed. With $\varpi = \arg z_{e,\rm red}$ and $\Omega = \arg z_{i,\rm red}$:
 
-The basis $B$ is that of the [free elements](../free-elements.md): $g_5$–$g_8$ plus a constant for $z_e$, and the
-constant ($s_5 = 0$, the invariable plane) plus $s_6$–$s_8$ for $z_i$; inner-planet modes are not subtracted. Modes
-closer than two Rayleigh widths, $4\pi/T$ rad/yr, cannot be separated over a record of length $T$, so the candidates
-are first clustered and one representative of each cluster is kept; then the representatives whose labels occur in
-the angle are dropped (their terms are the resonance), and the rest is fitted and removed. Removing the constant of
-$z_i$ refers the node to the invariable plane; this is a vector reduction, not an exact rotation of the orbit into
-that plane. With $\varpi = \arg z_{e,\rm red}$ and $\Omega = \arg z_{i,\rm red}$ the angle is
-
-$$
-\sigma = p\,\varpi + q\,\Omega + \sum_j \big(p_j\,\ell_{g_j} + q_j\,\ell_{s_j}\big),
-\qquad p + q + \sum_j (p_j + q_j) = 0 .
-$$
-
-The frequencies and phases are those of the package's own planetary model (`PLANETARY_FREQUENCIES`,
-`PLANETARY_PHASES` in `resonances/data/const.py`, `SECULAR_PLANET_PHASES` = linear). The linear law drifts by tens
-of degrees over 20 Myr for the inner modes and $s_6$; with `SECULAR_PLANET_PHASES` = measured the mode longitudes
-are fitted in the integration itself, in sliding windows of `SECULAR_PHASE_WINDOW` = 5 Myr (needs the planets
-saved). Details: [Secular resonances](../secular.md).
+    $$
+    \sigma = p\,\varpi + q\,\Omega + \sum_j \big(p_j\,\ell_{g_j} + q_j\,\ell_{s_j}\big),
+    \qquad p + q + \sum_j (p_j + q_j) = 0 .
+    $$
 
 ### Signal: what is not the libration
 
-The filter must remove everything faster than the slowest possible libration and nothing slower:
+The filter must remove everything faster than the shortest-period libration allowed, and nothing slower:
 
 $$
-P_c = \max\Big(F_{\rm GI}\,P_{\rm GI},\ \ F_w \max_j \frac{2\pi}{\lvert f - f_j\rvert},\ \ \frac{P_{\min}}{2}\Big).
+P_c = \max\Big(F_{\rm GI}\,P_{\rm GI},\ \ F_w \max_j \frac{2\pi}{\lvert f - f_j\rvert},\ \ \frac{P_{\min}}{f_{\min}}\Big).
 $$
 
 - $P_{\rm GI}$ = 937 yr, the Jupiter-Saturn great inequality, the longest short-period term of an asteroid's
@@ -81,25 +86,39 @@ $$
   relative to the free one at $f - f_j$ ($f$ the body's own $g$ or $s$). These waves are not librations; $F_w$ =
   `SECULAR_FILTER_FORCED_FACTOR` = 2. A single-mode angle ($\nu_6$) has none: its forced term is the resonance.
 - $P_{\min}$ = `SECULAR_LIBRATION_PERIOD_MIN_YR` = 200 kyr, the shortest secular libration accepted (a convention:
-  the widest linear resonances are a few ″/yr wide, so their periods exceed ~1 Myr). The divisor 2 is
-  `FILTER_MIN_LIBRATION_CUTOFFS`.
+  the widest linear resonances are a few ″/yr wide, so their periods exceed ~1 Myr); $f_{\min}$ =
+  `FILTER_MIN_LIBRATION_CUTOFFS` = 2.
 
-The filter acts on the unwrapped angle with its trend removed and restored, so it cannot turn a circulation into a
-libration. A turning point must stand out by at least $\max(5°,\ 4r)$, where $r$ is the 95th percentile of what the
-filtered angle still holds faster than $P_{\rm floor} = \max(P_{\min},\ 2P_c)$, the same shortest period as for an
-episode (`SECULAR_TP_PROMINENCE_DEG`, `SECULAR_TP_RIPPLE_FACTOR`).
+The output step does not enter. The filter acts on the unwrapped angle with its trend removed and restored, so it
+cannot turn a circulation into a libration. A turning point must stand out by at least $\max(5°,\ 4r)$, where $r$ is
+the 95th percentile of what the filtered angle still holds faster than $P_{\rm floor} = \max(P_{\min},\ 2P_c)$, the
+same shortest period as for an episode (`SECULAR_TP_PROMINENCE_DEG`, `SECULAR_TP_RIPPLE_FACTOR`; $r = 0$ when
+$P_{\rm floor} \le P_c$).
 
 ### Geometry and status
 
 A librating episode needs `LIBRATION_MIN_TURNING_POINTS` = 3 turning points (max–min–max: one full cycle), a period
-not shorter than $\max(P_{\min},\ 2P_c)$, and a centre that does not run a full turn inside it. One that reaches both
-ends of the record, within `LIBRATION_COVERAGE_PERIODS` = 1 period, makes `libration`; otherwise the record is
-`episodic`.
+not shorter than $\max(P_{\min},\ 2P_c)$ (a faster one is a forced wave), and a centre that does not run a full turn
+inside it. One that reaches both ends of the record, within `LIBRATION_COVERAGE_PERIODS` = 1 period, makes
+`libration`; otherwise the record is `episodic`.
 
 **The centre scale.** A slow secular libration often carries faster waves that break its turning points into
 fragments. When the fine scale shows no libration, the angle is filtered again at the scale of its centre,
 $W_c$ = `LIBRATION_CENTRE_CYCLES` × $P_{\rm cyc}$ = $3P_{\rm cyc}$; if the centre itself librates there (or shows episodes
-the fine scale lacks), that scale decides.
+the fine scale lacks), that scale decides (`sec_scale` = `centre`). There the shortest libration is
+$\max(P_{\min},\ 2W_c)$ and a turning point needs the prominence of a centre turn.
+
+??? info "Every `angle_status` rule"
+
+    | condition | angle_status |
+    |---|---|
+    | an accepted episode covering the record (both ends within `LIBRATION_COVERAGE_PERIODS` periods) | `libration` (`stationary` or `modulated` centre) |
+    | accepted episodes, none covering | `episodic` |
+    | no episode; the centre's largest monotone pass ≥ 1 turn | `circulation` |
+    | no turning point; the filtered angle turns ≥ 1 time | `circulation` |
+    | no turning point, less than a turn | `insufficient_time` (`arc` when it spans at least half a turn, else `stall`) |
+    | runs rejected for a moving centre cover ≥ `LIBRATION_DRIFT_MIN_WINDOW_FRACTION` (0.5) of the window | `drift` |
+    | otherwise (fewer turning points than one cycle) | `insufficient_time` (`few_cycles`) |
 
 | angle_status | status | reason |
 |---|---|---|
@@ -119,16 +138,11 @@ free amplitudes: a phase and shape diagnostic that does not enforce the theoreti
 `check_secular_e_response` (pass at $R^2 \ge$ `SECULAR_RESPONSE_R2_MIN` = 0.5), a column only: it changes no status
 and no confidence.
 
-**How long to integrate.** A libration of period $P$ needs at least
-
-$$
-T \ge \frac{N_{\rm TP}}{2}\,P + 2\,f_{\rm trim}\,P_c ,
-$$
-
-with $N_{\rm TP}$ = `LIBRATION_MIN_TURNING_POINTS` = 3 and $f_{\rm trim}$ = `FILTER_EDGE_TRIM_CUTOFFS` = 1: one and a half
-periods for the turning points of one cycle, plus the stretches the filter trims at both ends. A degree-4 resonance
-(half-width ~0.3″/yr) librates in ~9 Myr, a degree-6 one in ~26 Myr. The package does not compute this length for
-secular angles (an `uncertain` verdict asks to extend without a number); use the rule to plan the integration.
+**How long to integrate.** An `uncertain` verdict names the next check in `extend_to_years`: the baseline
+$\tfrac32 P + 2P_c$ with $P$ at least the shortest libration (500 kyr for a secular angle at the defaults), capped at
+four and at least twice the record; for ZLK the free-ω gate's cycles or frequency resolution, or `review` when no
+length would help ([How long to extend](confidence.md#actions)). Before a run, the dry-run warns about a record
+shorter than that baseline ([Dry-run](../dry-run.md#secular-and-lidov-kozai-rows)).
 
 Examples: [1222 in $\nu_6$](gallery.md#secular-nu6), [1020 in $z_1$](gallery.md#secular-z1-resonant),
 [2306 transient](gallery.md#secular-z1-transient), [847 circulates](gallery.md#secular-z1-circulation),
@@ -136,99 +150,94 @@ Examples: [1222 in $\nu_6$](gallery.md#secular-nu6), [1020 in $z_1$](gallery.md#
 
 ## The Lidov-Kozai angle
 
-**What should librate?** For a highly inclined orbit perturbed by a distant planet, the double-averaged quadrupole
-problem has two integrals (Lidov 1962, eqs. 58–60, p. 741; Kozai 1962, eqs. 26–28, p. 594):
+**What should librate?** For a highly inclined orbit perturbed by a distant planet, the quadrupole problem makes the
+argument of perihelion $\omega$ librate about 90° or 270° ([Lidov's integrals](../lidov-kozai.md#lidovs-integrals)).
+The package reports $c_1$, $c_2$ and $h_{\rm quad}$ as diagnostics only; no threshold on them enters the status.
 
-$$
-c_1 = (1 - e^2)\cos^2 i_{\rm rel}, \qquad c_2 = e^2\Big(\frac25 - \sin^2 i_{\rm rel}\,\sin^2\omega_{\rm rel}\Big),
-$$
+The geometry of $\omega$ is that of a secular angle with $P_c = \max(F_{\rm GI} P_{\rm GI},\ P_{\min}/f_{\min})$ and
+no forced waves: $F_{\rm GI}$ = `ZLK_FILTER_GI_FACTOR` = 2, $P_{\min}$ = `ZLK_LIBRATION_PERIOD_MIN_YR` = 2 kyr, the
+prominence from `ZLK_TP_PROMINENCE_DEG` and `ZLK_TP_RIPPLE_FACTOR`. The shortest libration is then
+$\max(P_{\min},\ 2P_c)$ = 3748 yr, not 2 kyr.
 
-with $i_{\rm rel}$ the inclination to the perturber's orbital plane and $\omega_{\rm rel}$ measured in that plane; the
-argument of perihelion librates about 90° or 270° when $c_1 < 3/5$ and $c_2 < 0$. The package reports $c_1$, $c_2$ and
-$h_{\rm quad} = 6c_1 - 2 + 30c_2$ as **diagnostics only**, evaluated on the body's initial saved (ecliptic) $e$, $i$,
-$\omega$, not in the perturber's plane: the classical invariants additionally assume a single distant perturber, exact
-for $a/a_{\rm pert} \to 0$, while a main-belt asteroid has $a/a_J \approx 0.5$ (1373 Cincinnati librates at
-$c_2 > 0$). No threshold on them enters the status. See [Lidov-Kozai resonances](../lidov-kozai.md).
-
-The geometry of $\omega$ is that of a secular angle with $P_c = \max(F_{\rm GI} P_{\rm GI},\ P_{\min}/2)$, $P_{\min}$ =
-`ZLK_LIBRATION_PERIOD_MIN_YR` = 2 kyr.
-
-### Why a bounded $\omega$ is not enough
+### Why a bounded $\omega$ is not enough {#zlk-free-omega}
 
 The osculating $\omega$ can be bounded without any Lidov-Kozai dynamics. When the forced eccentricity vector is longer
-than the free one, the point $(e\cos\varpi, e\sin\varpi)$ circles around the forced vector without enclosing the
-origin; $\varpi$ cannot turn, and $\omega = \varpi - \Omega$ looks confined by geometry alone. A true ZLK libration
-lives in the body's **free** elements.
+than the free one, the point $(e\cos\varpi, e\sin\varpi)$ circles around the tip of the forced vector without
+enclosing the origin, so $\varpi$ follows the forced vector's phase instead of turning on its own. The forced vector
+itself turns at the planets' frequencies, so this does not fix $\varpi$; but when its phase and the node move
+together, $\omega = \varpi - \Omega$ stays confined by the forcing alone. A true ZLK libration lives in the body's
+**free** elements, which is why the gate tests the free perihelion against the free node.
 
-**The free-$\omega$ gate.** The forced parts at the planetary fundamentals ($g_5$–$g_8$ for $z_e$; the invariable
-plane $s_5 = 0$ and $s_6$–$s_8$ for $z_i$) are fitted and removed ([Free elements](../free-elements.md)), and
+**The free-$\omega$ gate** removes the forced parts of $z_e$ and $z_i$ at the planetary fundamentals and asks whether
+$\omega_{\rm free} = \arg z_{e,\rm free} - \arg z_{i,\rm free}$ stays within a turn. Its outcome is `confirmed`
+(confined), `kinematic` (the free $\omega$ winds) or no verdict (`short_window`, `undefined_phase`,
+`planetary_residual`, `unavailable`); the conditions are in [Free elements: the gate](../free-elements.md#the-gate).
+It judges every $\omega$ that stays within a turn (`libration`, `episodic`, `drift`, `insufficient_time`).
 
-$$
-\omega_{\rm free} = \arg z_{e,\rm free} - \arg z_{i,\rm free}.
-$$
-
-Samples where $\lvert z_{\rm free}\rvert$ falls below `FREE_GATE_MASK_QUANTILE` = 0.15 of its median are dropped (the
-argument is undefined near the origin). The free $\omega$ is **confined** when its range, trimmed by half a percent
-at each end, is less than one turn:
-
-$$
-R_\omega = Q_{0.995}(\omega_{\rm free}) - Q_{0.005}(\omega_{\rm free}) < 2\pi .
-$$
-
-The threshold is topological: inside a mean-motion resonance the ZLK centre moves away from 90°/270°, so no
-narrower window is safe. The outcome:
-
-| outcome | condition | meaning |
-|---|---|---|
-| `confirmed` | confined, and no planetary match (below) | a ZLK libration of the body's own elements |
-| `kinematic` | $\omega_{\rm free}$ winds, and no planetary match | the osculating libration is geometry: the forced vector holds $\varpi$ |
-| `short_window` | the record holds fewer than `FREE_GATE_MIN_CYCLES` = 3 libration periods | no verdict |
-| `undefined_phase` | more than half of the samples masked | no verdict |
-| `planetary_residual` | a planetary match | no verdict: a leak of the forcing, or a linear secular resonance where the split is undefined |
-| `unavailable` | the free elements could not be built | no verdict |
-
-**Planetary match.** The signed free rates $b_\varpi$, $b_\Omega$, $b_\omega$ (slopes of the unwrapped free angles)
-are compared with targets; a match is a difference smaller than one Rayleigh width ($2\pi/T$ rad/yr, 1 296 000/$T$
-″/yr). On both branches $b_\varpi$ is compared with $g_5$–$g_8$ and $b_\Omega$ with $s_6$–$s_8$. On the winding branch
-$b_\omega$ is also compared with every difference $g_j - s_k$ ($j = 5\ldots8$, $k = 5\ldots8$, $s_5 = 0$), since
-$\omega = \varpi - \Omega$ carries an unsubtracted term of either vector at that difference. On the confined branch
-$b_\varpi$ is also compared with zero when the constant of $z_e$ was clustered out of the fit (an unsubtracted constant
-is exactly what makes an angle look confined).
-
-The libration period is $P_{\rm cyc}$, the median full period of the accepted episodes; the number of cycles is
-$T/P_{\rm cyc}$. There is no amplitude criterion: the frequency is the observable, because unsubtracted forcing lives
-only at known rates.
-
-**From the outcome to the status** (`check_zlk_free_omega`):
+**From the outcome to the status** (`decide_status`, check `check_zlk_free_omega`):
 
 | angle_status | confirmed | kinematic | no verdict |
 |---|---|---|---|
-| libration | resonant | non_resonant / kinematic_libration (detail `free_omega_winds`) | uncertain / gate_unavailable |
+| libration | resonant / dynamic_libration (check `pass`) | non_resonant / kinematic_libration, origin `kinematic`, detail `free_omega_winds` (check `fail`) | uncertain / gate_unavailable, origin `unknown` |
 | episodic, drift, insufficient_time | unchanged | non_resonant / kinematic_libration **only if** $\rho_{\max} < 1$, else unchanged | unchanged |
 
-Here $e_{\rm free} = \operatorname{median}_t\lvert z_{e,\rm free}(t)\rvert$ is one radius for the whole record, and
-$F(t)$ is $\lvert z_{e,\rm forced}(t)\rvert$ smoothed by a rolling median over a tenth of the shortest beat period
-between the fitted modes (no smoothing for a single line); $\rho_{\max} = e_{\rm free}/\min_t F(t)$. This is the
-envelope of a circle of the median free radius, not the largest instantaneous ratio. $\rho_{\max} < 1$ means that this
-circle stays inside the forced offset over the whole record: $\varpi$ cannot turn and $\omega$ is pinned by the
-forced vector throughout. Without it, free elements fitted over the whole record
-cannot judge a record that changes regime, and the geometry's status stands.
+With `FREE_GATE_ENABLED` off the outcome is `disabled` and the geometry's status stands. On a record that does not
+librate throughout, free elements fitted over the whole record cannot judge a change of regime, so only the
+strongest case changes it:
 
-!!! warning "Kinematic is not the same as no verdict"
-    `non_resonant / kinematic_libration` (legacy code −2) is a measurement: the libration was found to be geometry.
-    `uncertain / gate_unavailable` (−9) is the absence of a measurement; it asks for a longer record. The two must
-    never be merged in a statistic.
+$$
+\rho_{\max} = \max_t \frac{\operatorname{rollmed}_W \lvert z_{e,\rm free}\rvert}{\operatorname{rollmed}_W \lvert z_{e,\rm forced}\rvert} < 1,
+\qquad W = \max\bigl(\tfrac{1}{10}\text{ of the shortest beat of the fitted modes},\ k\,P_{\rm cyc}\bigr),
+$$
 
-**Co-orbitals.** The method does not apply to a body in 1:1 resonance with a planet: its forced term is the
-perturber's own vector, not a planetary fundamental, and a confident-looking result there is not a measurement.
+$k$ = `ZLK_RHO_WINDOW_CYCLES` (1, a convention). Each radius is a rolling median over about one libration cycle, so
+the free radius of every part of the record is compared with the forced one of the same part: a free circle that grows
+in part of the record (and there encloses the origin) is seen, which one median free radius for the whole record
+missed. Below one, $\varpi$ stays tied to the forced phase throughout; the condition is applied only together with a
+`kinematic` gate outcome (the free $\omega$ winds). 555527: 0.66 at 100 kyr, 0.63 at 500 kyr (`non_resonant`, as the
+author labelled it). The former median ratio is the column `zlk_gate_rho_global`.
 
-**The e–i exchange.** The cross-spectral coherence of $e$ and $i$ ([Cross-spectral coherence](../coherence.md))
-gives the column `check_zlk_ei`; it changes no status.
+`kinematic_libration` is a measurement and `gate_unavailable` the absence of one: keep them apart
+([legacy codes](status-tree.md#legacy-integer-codes)). A co-orbital of a planet whose own modes the split does not
+fit (Mercury to Mars) gets no verdict (`unavailable`, detail `coorbital_unfitted_forcing`); a Jupiter Trojan is
+covered, its forced vector being Jupiter's g5 + g6 ([Free elements](../free-elements.md#where-the-method-stops-working)).
 
-**Confidence.** The margin G is full when the gate confirmed with its number of cycles clear of the minimum by more
-than the thin band (10 %), or when it measured a kinematic libration ([Confidence](confidence.md)).
+**The scale.** The gate's period is $P_{\rm cyc}$ of the decisive geometry and `zlk_gate_n_cycles` = $T/P_{\rm cyc}$
+counts cycles of the osculating $\omega$. A libration at the centre scale whose period is within a Rayleigh width of a
+beat $2\pi/|g_k - g_j|$ of two fitted forced modes with nonzero amplitudes, whose reconstructed forced phase wave
+explains the centre (correlation $\ge$ `ZLK_CENTRE_MODEL_R_MIN`, swing within a factor `ZLK_CENTRE_MODEL_AMP_FACTOR`),
+while $\rho_{\max} < 1$ at the fine period, is the forced vector turning its direction, not a libration of $\omega$:
+the fine scale stays decisive (`sec_centre_rejected` = `forced_beat:<gk>-<gj>`). Without the per-mode amplitudes (an
+old file) there is no measured beat and no rejection. The guard acts only where the gate does: with the gate disabled,
+without a split or for a co-orbital whose forcing the split does not fit, the geometric scale stands.
+
+**Columns that change no status** ([Free elements: beyond the gate](../free-elements.md#beyond-the-gate)): the $e$–$i$
+coupling at the decisive period (`zlk_ei_coupling`, every row; `check_zlk_ei` and `confirmed_ei` are `zlk` coupling),
+the attribution of a kinematic libration to a forced mode (`zlk_forcing_*`) and the slow line of the centre
+(`zlk_centre_*`, 591986: the g6−g5 beat). The strongest coherent line of the $e$–$i$ cross-spectrum
+([Cross-spectral coherence](../coherence.md)) is the columns `zlk_coherent`, `zlk_check`.
 
 Examples: [3040 librates](gallery.md#zlk-resonant), [591986 kinematic](gallery.md#zlk-kinematic),
 [162474 over 1.5 Myr](gallery.md#zlk-transient), [1981 without a verdict](gallery.md#zlk-gate-unavailable),
 [15527 circulates](gallery.md#zlk-circulation), [2010 HY22 unphysical](gallery.md#zlk-invalid).
-More detail: [Secular and ZLK classification details](../classify.md).
+
+## Confidence and output
+
+The level follows the shared rule ([Confidence](confidence.md)); a visible exit or entry caps it at medium. A secular
+angle has no physics margin; for ZLK it is G.
+
+??? info "The margins and their classes"
+
+    S = support, D = decisive ([Confidence](confidence.md#margins)).
+
+    | margin | what | full when |
+    |---|---|---|
+    | N (S) | turning points of the decisive episode | above the minimum (thin at it, with the cap `three_tp_episode`, ≤ high) |
+    | S (S) | its centre | every cycle's band overlaps, with enough independent cycles; not measured with one; not applicable to a modulated centre |
+    | F (S) | the filter | the libration period ≥ `FILTER_MIN_LIBRATION_CUTOFFS` × $P_c$; else not measured (flag `filter_too_slow`) |
+    | P (D) | a circulation | its largest centre pass ≥ 1 turn at every smoothing (×0.5, ×1, ×2); else thin |
+    | G (D) | ZLK: the gate | confirmed with its cycle count clear of `FREE_GATE_MIN_CYCLES` by `CONFIDENCE_THIN_BAND`; a kinematic outcome that decided the status is full |
+
+The summary row carries the analysis' columns (`flt_*`, `geo_*`, `sec_*`, `rsp_*`, `zlk_gate*`, `ep_*`;
+[Output data](../output.md)); the runs of turning points go to episodes.csv; the figure is the one-page `combined`
+figure ([Plots](../plots.md)).

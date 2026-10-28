@@ -162,6 +162,25 @@ $V = -\cos\sigma + 0.6\cos2\sigma - 0.25\sin\sigma$ at $h = 0.18$ it is 0.66 whe
 changing well the action is the adiabatic invariant: the amplitude may change, the action does not, except near the
 separatrix (Wisdom 1985, pp. 274, 279).
 
+**Above a lower saddle.** In a potential of several wells a cycle whose energy exceeds its well's barrier but not
+$V_\text{max}$ librates on one loop around both wells. That loop has no single-well $J/J_s$: the package leaves it
+undefined (`sep_cycle_J` nan, topology `merged_wells` in `sep_cycle_topology`; `rotation` above $V_\text{max}$) and
+reports the loop's own action $J_\text{loop}$, the same integral between the loop's turning points
+(`sep_cycle_J_loop_rad2_yr`), with $dJ_\text{loop}/dE = P_\text{loop}/2\pi$ (`sep_cycle_dJdE_loop_yr`), finite
+between the saddles. For $V = -\cos\sigma + \cos2\sigma$ at $E = 1$ the turning points are
+$\pm\arccos\big((1 - \sqrt{17})/4\big) = \pm 2.4667$, $J_\text{loop} = 2.6051$ and $P_\text{loop} = 6.8905$; just above
+the barrier $J_\text{loop}$ is the sum of the two lobes' actions. Before W25 the ratio was clipped to 1 there, which
+put such a cycle in the separatrix zone. A libration whose mean energy reaches the top of a potential of one well keeps
+$J/J_s = 1$ (the separatrix, within the energy's scatter).
+
+??? info "Above the separatrix, and the code"
+    For the cosine pendulum the revolution period above the separatrix ($h > 1$) is
+    $2\mathsf K(1/h)/(\omega_0\sqrt h)$, and the ratio of the slowest to the mean rate of a revolution is
+    $r_\text{pend}(h) = \frac{2}{\pi}\sqrt{(h-1)/h}\,\mathsf K(1/h)$. In the code, $h$ is `Potential.energy_h`; the
+    well of a cycle is `pendulum.occupied_well`, its barrier `pendulum.well_separatrix`, its period
+    `pendulum.cycle_period`; $d(J/J_s)/dh$ uses that well's $J_s$ (`CycleEnergy.well_rad`, empty for the deepest
+    well). The topology is `pendulum.libration_topology`, $J_\text{loop}$ `pendulum.loop_action_through`. `pendulum.py` keeps both the cosine-equivalent and the physical half-width.
+
 ## How strong must the resonance be?
 
 The pendulum frequency fixes the strength of the resonance. Writing $\omega_0 = \lvert k\rvert n\sqrt{3\mu_\text{eff}}$,
@@ -201,6 +220,12 @@ $$
 
 since a term $2\lvert C\rvert\cos$ has curvature $2\lvert C\rvert$ at its minimum.
 
+??? info "Extended precision: when and how"
+    `MMR_STRENGTH_MP` = `auto` switches to the harmonic when the double-precision profile is rounding (its curvature
+    below `MMR_STRENGTH_DOUBLE_FLOOR` × $\lvert D_0\rvert$). The harmonic is
+    $C = \langle D\,e^{-i(k_P\lambda_P + kM)}\rangle$ over the two mean anomalies, a 2-D trapezoidal sum in mpmath
+    (`MMR_STRENGTH_MP_*`) checked against two grids shifted by half a node.
+
 The **strength check** compares the two: it passes when the range of $\mu_\text{req}/\mu_\text{eff,th}$ overlaps
 $[1/x, x]$, $x$ = `MMR_STRENGTH_CHECK_RATIO` = 10, and fails when the whole range lies outside. A ratio beyond
 `MMR_STRENGTH_IMPLAUSIBLE_RATIO` = 1000 either way is called **implausible**: the observed period would need a force a
@@ -234,6 +259,19 @@ $$
 with $\Delta$ the smallest rate of a nearby two-body angle of those planets. The strength is implausible only when the
 residual also stays $\ge$ 1000. The envelope is a diagnostic convention, not a bound on every three-body harmonic.
 
+??? info "The small-divisor envelope in detail"
+    The two-body angles searched are those of a planet of the term with order ≤ 20 and $k_1 \le 60$ whose rate
+    $\lvert\Delta\rvert$ comes within $1.5 \times 2\pi/P$ somewhere in the record's range of $a$
+    (`strength.small_divisor_envelope`). The column `str_divisor_residual` is the residual above; `str_method` is
+    `eq_scale` for this route.
+
+??? info "What the figure prints"
+    Block A of the combined figure ("is $\sigma$ the own pendulum") shows
+    $T_{0,\text{th}} = 2\pi/(\lvert k\rvert n\sqrt{3\mu_\text{eff,th}})$ against the observed $T_0$, the ratio
+    $\mu_\text{req}/\mu_\text{eff,th} = (T_{0,\text{th}}/T_0)^2$, and the cosine-equivalent half-width
+    $2\omega_0/\lvert c\rvert = \tfrac43 a\sqrt{3\mu_\text{eff,th}}$ against the swing of $a$ (B1). The width is a scale,
+    not a bound for a non-cosine well; its tolerance is $\sqrt x$, since the width goes as $\sqrt\mu$.
+
 ## Co-orbitals (1:1)
 
 A 1:1 angle, $\theta = \lambda - \lambda_P$, is not a cosine pendulum: its averaged potential is singular at
@@ -263,7 +301,15 @@ tadpole period $P_\text{orb}/\sqrt{27\mu/4}$ (Jupiter 148 yr, Earth 222 yr). A q
 from the same averaged potential: $\omega_{QS}^2 = 3\mu n^2\tilde R''(\theta_c)$ in the well about 0. When the
 orbit-averaged angle stays in that well for at least half `LIBRATION_MIN_TURNING_POINTS` small-amplitude periods
 $P_{QS} = 2\pi/\omega_{QS}$ and the first pass found no libration, the record is analysed again with the floor
-0.5 $P_{QS}$ (`MMR_COORBITAL_QS_FLOOR`).
+0.5 $P_{QS}$ (`MMR_COORBITAL_QS_FLOOR`, rule G1q).
+
+??? info "The quasi-satellite pass in detail"
+    $\theta_c$ is the local minimum of $\tilde R$ nearest 0 whose basin holds $\theta = 0$. The pass is kept when it
+    holds a librating episode centred in the well and no fewer episodes outside the well than the first pass. An
+    episode takes the quasi-satellite floor only where the well exists on at least `MMR_COORBITAL_QS_WELL_SHARE` = 0.5
+    of its samples. The 1:1 force law is then tabulated on blocks of $\min(P_c, P_{QS})$, at most
+    `MMR_COORBITAL_QS_MAX_BLOCKS` = 4000 over the record. When the step cannot filter the quasi-satellite cutoff the
+    action is `resample` or `review`, never `extend` ([Actions](confidence.md#actions)).
 
 The co-orbital law has **no free shape and a fixed scale**: fitting $\dot a_\text{data} = K\,\dot a_\text{model} + C$
 should give $K/K_\text{theory} = 1$, the planet's own mass. That is the 1:1 force-law test

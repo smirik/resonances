@@ -268,7 +268,7 @@ def confirmed_jumps(analysis):
 
 
 def record_prominence(analysis):
-    """p_TP of docs/libration-analysis.md §3 over the whole record: max(floor, factor x max(ripple, fast residual))."""
+    """p_TP of docs/physics/geometry.md ("Turning points") over the whole record: max(floor, factor x max(ripple, fast residual))."""
     ripple = max(analysis.prep.unremoved_ripple_rad, fast_residual(analysis.prep, SETTINGS))
     return max(math.radians(SETTINGS.mmr_tp_prominence_floor_deg), SETTINGS.mmr_tp_ripple_factor * ripple)
 

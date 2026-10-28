@@ -3,7 +3,7 @@ without the phi0 spread; planets: the great-inequality ripple and the catalogue 
 
 Expected values are derived here, not read from the code:
 
-- geometry: the band test of docs/libration-analysis.md §3 written out (the band of a full cycle TP_i..TP_i+2 is
+- geometry: the band test of docs/physics/geometry.md ("Runs and episodes") written out (the band of a full cycle TP_i..TP_i+2 is
   m ± A with m, A the means of its two half-cycle midpoints and half-amplitudes, i.e. [middle TP, mean of the outer
   TPs]); for a uniform drift b per half-cycle its margin is 2A - (N - 3) b. The runs below are built so that each
   cut (none, left, right, both) passes or fails by a margin of >= 0.1 rad under that rule;

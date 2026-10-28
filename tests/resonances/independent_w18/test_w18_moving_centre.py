@@ -1,5 +1,5 @@
-"""Independent tests of W18 item 1 (docs/libration-analysis.md §3 "Libration about a moving centre", §5 R0 "the period
-in the full averaged well"): the moving-centre acceptance, a wrong track that must not help, and R0's period in the
+"""Independent tests of W18 item 1 (docs/physics/geometry.md "Runs and episodes", the moving centre; docs/physics/response.md
+"Energy and potential", the period in the full averaged well): the moving-centre acceptance, a wrong track that must not help, and R0's period in the
 full well.
 
 The reference here is our own averaged disturbing function, written from the definition and checked against Murray &

@@ -27,7 +27,7 @@ from resonances.resonance.analysis import filtering
 from resonances.resonance.analysis.confidence import Cap
 from resonances.resonance.analysis.mmr import averaged_potential, io, response, zone
 from resonances.resonance.analysis.mmr.analyse import analyse_mmr
-from resonances.resonance.analysis.pendulum import CycleClass
+from resonances.resonance.analysis.pendulum import CycleClass, CycleEnergy, Zone, ZoneMethod
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import CheckValue
 
@@ -162,29 +162,39 @@ def test_energy_in_a_cosine_well():
     assert averaged_potential.energy_in_well(sigma, two, math.radians(60), math.radians(10)) == pytest.approx(1.25 / 2.25, abs=2e-3)
 
 
+def _zone(j_lo):
+    return Zone(ZoneMethod.NUMERIC, j_lo, float('nan'), 1.0, 1.0, 1.0, False)
+
+
+def _two_cycles():
+    return [CycleEnergy(0.0, 2.0, False, 0.1, 0.1, 2.0, 1.0), CycleEnergy(2.0, 4.0, False, 0.1, 0.1, 2.0, 1.0)]
+
+
 def test_averaged_classes_read_the_zone_edge():
-    cycles = [SimpleNamespace(t_start_yr=0.0, t_end_yr=2.0, rotation=False), SimpleNamespace(t_start_yr=2.0, t_end_yr=4.0, rotation=False)]
-    kinds = [zone.CYCLE_EPISODE, zone.CYCLE_EPISODE]
-    energies = zone.TurningPointEnergies(np.array([0.0, 1.0, 2.0, 3.0, 4.0]), np.array([0.05, 0.06, 0.07, 0.3, 0.2]))
-    classes, edges, source = zone.averaged_classes(cycles, kinds, [CycleClass.ZONE] * 2, [True, True], energies, SimpleNamespace(h_lo=0.25))
+    """W25: the turning points' J/J_s in the averaged well (`TurningPointEnergies.j`) against J_lo; h is not read."""
+    cycles, kinds = _two_cycles(), [zone.CYCLE_EPISODE, zone.CYCLE_EPISODE]
+    times, h = np.array([0.0, 1.0, 2.0, 3.0, 4.0]), np.full(5, 0.9)
+    energies = zone.TurningPointEnergies(times, h, np.array([0.05, 0.06, 0.07, 0.3, 0.2]))
+    classes, edges, source = zone.averaged_classes(cycles, kinds, [CycleClass.ZONE] * 2, [True, True], energies, _zone(0.25))
     assert classes == [CycleClass.DEEP, CycleClass.ZONE] and edges == [False, False] and source == zone.SOURCE_AVERAGED_POTENTIAL
     # no zone edge: the pendulum's classes stay
-    kept = zone.averaged_classes(cycles, kinds, [CycleClass.ZONE] * 2, [True, True], energies, SimpleNamespace(h_lo=float('nan')))
+    kept = zone.averaged_classes(cycles, kinds, [CycleClass.ZONE] * 2, [True, True], energies, _zone(float('nan')))
     assert kept == ([CycleClass.ZONE] * 2, [True, True], zone.SOURCE_PENDULUM)
 
 
 def test_a_cycle_with_an_unmeasured_turning_point_keeps_the_pendulum_class():
-    """FIX1 (Codex A #5): a cycle's class is DEEP only when every turning point's h is measured and below h_lo; one at
-    or above h_lo makes it ZONE whatever the others are."""
-    cycles = [SimpleNamespace(t_start_yr=0.0, t_end_yr=2.0, rotation=False), SimpleNamespace(t_start_yr=2.0, t_end_yr=4.0, rotation=False)]
-    kinds = [zone.CYCLE_EPISODE, zone.CYCLE_EPISODE]
+    """FIX1 (Codex A #5): a cycle's class is DEEP only when every turning point's J/J_s is measured and below J_lo; one
+    at or above J_lo makes it ZONE whatever the others are. W25: a loop around several wells of the profile is such an
+    unmeasured point."""
+    cycles, kinds = _two_cycles(), [zone.CYCLE_EPISODE, zone.CYCLE_EPISODE]
     nan = float('nan')
-    energies = zone.TurningPointEnergies(np.array([0.0, 1.0, 2.0, 3.0, 4.0]), np.array([0.05, nan, 0.07, nan, 0.3]))
-    classes, edges, source = zone.averaged_classes(cycles, kinds, [CycleClass.ZONE] * 2, [True, True], energies, SimpleNamespace(h_lo=0.25))
+    times, h = np.array([0.0, 1.0, 2.0, 3.0, 4.0]), np.full(5, 0.5)
+    energies = zone.TurningPointEnergies(times, h, np.array([0.05, nan, 0.07, nan, 0.3]))
+    classes, edges, source = zone.averaged_classes(cycles, kinds, [CycleClass.ZONE] * 2, [True, True], energies, _zone(0.25))
     # first cycle: 0.05, nan, 0.07 -> not decided by the averaged well; second: 0.07, nan, 0.3 -> zone
     assert classes == [CycleClass.ZONE, CycleClass.ZONE] and edges == [True, False] and source == zone.SOURCE_AVERAGED_POTENTIAL
-    nothing = zone.TurningPointEnergies(np.array([0.0, 1.0, 2.0]), np.array([0.05, nan, 0.07]))
-    assert zone.averaged_classes(cycles[:1], kinds[:1], [CycleClass.ZONE], [True], nothing, SimpleNamespace(h_lo=0.25)) == (
+    nothing = zone.TurningPointEnergies(np.array([0.0, 1.0, 2.0]), np.full(3, 0.5), np.array([0.05, nan, 0.07]))
+    assert zone.averaged_classes(cycles[:1], kinds[:1], [CycleClass.ZONE], [True], nothing, _zone(0.25)) == (
         [CycleClass.ZONE],
         [True],
         zone.SOURCE_PENDULUM,
@@ -193,18 +203,26 @@ def test_a_cycle_with_an_unmeasured_turning_point_keeps_the_pendulum_class():
 
 def test_turning_point_energies_do_not_bridge_a_failed_profile(monkeypatch):
     """FIX1 (Codex A #5): 9 turning points at t = 0..8, h evaluated at 5 of them (0, 2, 4, 6, 8) as h = 0.01 t, the one
-    at t = 4 failed (nan): t = 1 and 7 are interpolated (0.01, 0.07), t = 3 and 5 next to the failure stay nan."""
+    at t = 4 failed (nan): t = 1 and 7 are interpolated (0.01, 0.07), t = 3 and 5 next to the failure stay nan. W25:
+    J/J_s (here 0.02 t) is interpolated the same way, on its own: J alone nan at t = 6 (a loop around two wells) keeps
+    t = 5 and 7 nan while h bridges them. W25 (Codex #3): J_s(t) (here 1 + t) is a third column, interpolated the
+    same way."""
     from resonances.resonance.analysis.mmr import centre_track
 
-    monkeypatch.setattr(
-        centre_track, 'turning_point_energy', lambda well, time, value, middle: float('nan') if time == 4.0 else 0.01 * time
-    )
+    def fake(well, time, value, middle):
+        if time == 4.0:
+            return float('nan'), float('nan'), float('nan')
+        return 0.01 * time, float('nan') if time == 6.0 else 0.02 * time, 1.0 + time
+
+    monkeypatch.setattr(centre_track, 'turning_point_energy', fake)
     well = SimpleNamespace(available=True)
     times = np.arange(9.0)
     settings = SimpleNamespace(mmr_separatrix_avgpot_tp_max=5)
-    h = centre_track.turning_point_energies(well, times, np.zeros(9), settings, np.zeros(9))
-    expected = [0.0, 0.01, 0.02, float('nan'), float('nan'), float('nan'), 0.06, 0.07, 0.08]
-    assert h == pytest.approx(expected, nan_ok=True)
+    h, j, j_s = centre_track.turning_point_energies(well, times, np.zeros(9), settings, np.zeros(9))
+    nan = float('nan')
+    assert h == pytest.approx([0.0, 0.01, 0.02, nan, nan, nan, 0.06, 0.07, 0.08], nan_ok=True)
+    assert j == pytest.approx([0.0, 0.02, 0.04, nan, nan, nan, nan, nan, 0.16], nan_ok=True)
+    assert j_s == pytest.approx([1.0, 2.0, 3.0, nan, nan, nan, 7.0, 8.0, 9.0], nan_ok=True)
 
 
 # --------------------------------------------------------------------------------------------- benchmark
@@ -226,9 +244,9 @@ def test_tk14_energy_in_the_averaged_well():
     # W20 round D: the record no longer lifts the cap (its fast residual << 34 deg did before)
     assert str(Cap.SHORT_PERIOD_ALIASED) in analysis.verdict.caps
     analysis.drop_arrays()  # W20 round C (review B #8): the per-TP h goes, its columns stay frozen
-    assert analysis.energy.h_avgpot == ()
-    assert {k: analysis.numbers_row()[k] for k in row if k.startswith('sep_h_avgpot')} == {
-        k: row[k] for k in row if k.startswith('sep_h_avgpot')
+    assert analysis.energy.h_avgpot == () and analysis.energy.j_avgpot == ()
+    assert {k: analysis.numbers_row()[k] for k in row if k.startswith(('sep_h_avgpot', 'sep_J_avgpot'))} == {
+        k: row[k] for k in row if k.startswith(('sep_h_avgpot', 'sep_J_avgpot'))
     }
 
 

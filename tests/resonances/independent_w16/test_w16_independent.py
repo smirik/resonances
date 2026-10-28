@@ -2,8 +2,8 @@
 gain, per-run turning-point thresholds, the L4 jump guard, O1 inside its regime, the zone e-fit on a short segment,
 the subresonance swing gate).
 
-Every expected number below is derived here from the documented formulas (docs/libration-analysis.md §2-§5,
-docs/dry-run.md) or measured on synthetic records whose answer is known by construction, not read from the code.
+Every expected number below is derived here from the documented formulas (docs/physics/signal.md,
+docs/physics/geometry.md, docs/dry-run.md) or measured on synthetic records whose answer is known by construction, not read from the code.
 
 Synthetic records: sigma is a pendulum (or a prescribed kinematic angle) and the body's mean longitude and a follow
 from it exactly (sigma = k_J lambda_J + k lambda + p varpi, n = d lambda / dt, a = (2 pi / n)^(2/3) au, yr), so the

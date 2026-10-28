@@ -48,13 +48,13 @@ PAGES = (
     'clones.md',
     'dry-run.md',
     'plots.md',
+    'reading-figures.md',
     'output.md',
     'serialization.md',
     'coherence.md',
     'free-elements.md',
     'config.md',
     'libration-analysis.md',
-    'classify.md',
 )
 
 HEADER = '<!-- Generated from docs/{page} by docs/tools/build_skill.py (make skill). Edit the docs, not this file. -->\n'

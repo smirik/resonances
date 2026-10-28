@@ -6,7 +6,7 @@ motion. Splitting the two answers a question the osculating angle cannot: does �
 librate, or does it only look bounded because the forced eccentricity offsets the cloud?
 
 For a Lidov-Kozai resonance this is part of the decision: the free-ω gate below is a step of the ZLK analysis, and
-its outcome enters the status ([Secular and Lidov-Kozai](physics/secular-zlk.md)). The cross spectra decide nothing
+its outcome enters the status ([Secular and Lidov-Kozai](physics/secular-zlk.md#zlk-free-omega)). The cross spectra decide nothing
 ([Cross-spectral coherence](coherence.md)).
 
 ## What is computed
@@ -83,6 +83,7 @@ The gate (`omega_free_gate.evaluate_gate`) reads the free elements and returns a
 | condition | outcome |
 |---|---|
 | no free elements (fewer than 16 samples after decimation, $T \lesssim 8$ kyr, or the split failed) | `unavailable` |
+| a co-orbital of a planet whose own modes are not fitted: $\lvert\langle a\rangle/a_P - 1\rvert < k\,(m_P/3M_\odot)^{1/3}$ (`ZLK_COORBITAL_HILL_FACTOR` $k = 3$: 0.030 for the Earth), $P$ = Mercury … Mars | `unavailable` (`zlk_gate_detail` = `coorbital_unfitted_forcing`) |
 | $T <$ `FREE_GATE_MIN_CYCLES` × $P_{\rm lib}$: the window never held the libration | `short_window` |
 | more than half the samples masked: no usable argument | `undefined_phase` |
 | $R < 360°$ and `b_varpi` at g5…g8 (or 0, see below) or `b_Omega` at s6…s8 | `planetary_residual` |
@@ -102,30 +103,17 @@ surviving glitch ruins a strict maximum). The 360° threshold is topological and
 mean-motion resonance the Lidov-Kozai cycle is asymmetric and its centre shifts away from 90°/270°, to 0°/180° for
 Hildas and by ±60° for Trojans (Vinogradova 2024).
 
-The status decision (`analysis.secular.decide.decide_status`) reads the outcome:
-
-| angle | outcome | status, reason |
-|---|---|---|
-| ω librates over the record | `confirmed` (or `disabled`) | `resonant`, `dynamic_libration` |
-| | `kinematic` | `non_resonant`, `kinematic_libration` (origin kinematic, `free_omega_winds`) |
-| | any other | `uncertain`, `gate_unavailable` |
-| episodic, drift, too few cycles | `kinematic` and $\rho_{\max} < 1$ (the median free circle stays inside the forced envelope) | `non_resonant`, `kinematic_libration` |
-| | otherwise | the status of the geometry is kept |
-
-`kinematic` and `gate_unavailable` mean different things and must never be merged in a statistic: the first is a
-measurement (the libration was examined and found kinematic), the second is the absence of one. For screening,
-`uncertain` means "re-check on a longer baseline", so it belongs with the candidates (the `candidates` and
-`extended` save/plot modes keep it). The gate has no amplitude test of its own (below); the amplitude ratio $\rho_{\max}$ enters only the decision on an
-angle that does not librate over the whole record. With $E_{\rm free} = \operatorname{median}_t |z_{e,\rm free}(t)|$
-and $F(t)$ the rolling median of $|z_{e,\rm forced}(t)|$ over a tenth of the shortest beat period between the fitted
-modes (no smoothing for a single line),
-
-$$
-\rho_{\min} = \frac{E_{\rm free}}{\max_t F(t)}, \qquad \rho_{\max} = \frac{E_{\rm free}}{\min_t F(t)} .
-$$
-
-$\rho_{\max} < 1$ means a circle of the median free radius stays inside the forced-amplitude envelope; it is not the
-maximum of the instantaneous ratio $|z_{e,\rm free}|/|z_{e,\rm forced}|$.
+The status decision (`analysis.secular.decide.decide_status`) turns the outcome into the status: on a librating ω,
+*confirmed* (or `disabled`) keeps `resonant`, *kinematic* gives `non_resonant` / `kinematic_libration` and any
+other outcome `uncertain` / `gate_unavailable`; on episodes, a drift or too few cycles only *kinematic* with
+$\rho_{\max} < 1$ changes it ($\rho_{\max}$ = the largest ratio of the free to the forced radius, each a rolling
+median over about one libration cycle, `FreeElements.rho_local_max`). The table and $\rho_{\max}$:
+[Secular and Lidov-Kozai](physics/secular-zlk.md#zlk-free-omega). For screening, `uncertain` means "re-check on a
+longer baseline", so the `candidates` and `extended` save/plot modes keep it; `extend_to_years` says how long
+(`short_window`: the missing cycles; `planetary_residual`: the baseline that resolves the residual's distance to the
+planetary rate, `zlk_gate_d_min_arcsec_yr`), and `undefined_phase` or `unavailable` asks for `review`
+([How long to extend](physics/confidence.md#actions)). The gate itself has no amplitude test
+(below).
 
 ### Why the same check stands on both branches
 
@@ -160,12 +148,66 @@ only at known rates.
 ## Where the method stops working
 
 For a **co-orbital** the forced term is the perturber's own eccentricity vector rather than
-a planetary fundamental — Jupiter's, rotated by ±60° for L4/L5 (Milani 1993; Vinogradova
-2015) — and the tadpole libration spreads it into a comb of sidebands. The g5…g8 basis
-cannot represent that, so for 591986 the kinematic outcome is right at the
-level of "the ω libration is not Lidov-Kozai" (Vinogradova 2024 finds no Trojan at all with
-a librating ω), but its rates are not measurements. `free_rho = 0.23` is the symptom.
-A Trojan-specific forced model is a known limitation, not a bug.
+a planetary fundamental. For a Jupiter Trojan that vector is Jupiter's, g5 + g6, rotated by
+±60° for L4/L5 (Milani 1993; Vinogradova 2015), and the split fits it: on 591986 the fitted
+g5 amplitude is 1.02 × Jupiter's own g5 term (g6: 1.12 ×) and the forced direction swings ±arcsin(|c₆|/|c₅|)
+= ±22.8° at the g6 − g5 beat, which is the slow wave of the osculating ω's centre. So the
+kinematic outcome stands (Vinogradova 2024 finds no Trojan with a librating ω); the tadpole
+sidebands are not modelled, and the free rates there are not proper elements.
+
+A co-orbital of **Mercury to Mars** is different: those planets' own modes (g1–g4, s1–s4)
+are not candidates of the split, so its forced term is simply not subtracted. Such a body
+(inside `ZLK_COORBITAL_HILL_FACTOR` Hill radii of the planet's axis) gets the outcome
+`unavailable`, detail `coorbital_unfitted_forcing`: a libration becomes `uncertain` /
+`gate_unavailable`, an episodic row keeps its status (2020 PP1, an Earth co-orbital, stays
+`transient`). Never `not_applicable`, which would keep the geometric status of a libration.
+
+## Beyond the gate
+
+Columns of a ZLK row that change no status (`analysis.zlk.diagnostics`, `analysis.secular.slow`):
+
+- **The e–i coupling** at the decisive period $P$ ($P_{\rm cyc}$; for a circulating ω the
+  $\cos 2\omega$ harmonic $\pi/|\dot\omega|$), for every row whatever its status. One sinusoid
+  of $e$ and one of $i$ (from the invariable plane by an exact rotation; the tilt
+  $\min(i, 180° - i)$ of a retrograde orbit; an orbit that crosses 90° is `not_measured`) on the
+  record less one period at each edge, and $e$, $i$ band-passed to $[(1 \mp 0.2)/P]$ for their
+  correlation $r$. Two laws predict $\delta i/\delta e$: constant $\sqrt{1-e^2}\cos i$ (ZLK,
+  $-e\cot i/(1-e^2)$, antiphase) and constant $\sqrt{1-e^2}(1-\cos i)$ (the momentum conjugate to Ω
+  when the forcing acts on ϖ only, as a forced-eccentricity beat does: $+e\tan(i/2)/(1-e^2)$, in
+  phase). `zlk_ei_coupling` is `zlk` or `forced_beat` when the phase is within
+  `ZLK_EI_PHASE_TOL_DEG` of the law's sign, $r$ has that sign with $|r| \ge$ `ZLK_EI_MIN_BAND_R`
+  and $|\delta i|/|\delta e|$ is within a factor `ZLK_EI_AMPLITUDE_FACTOR` of the law; `none` when
+  every number is finite and neither law matches. A band the sampling cannot hold (above the Nyquist
+  frequency: `undersampled`), one the filter cannot pass (`band_unmeasured`) or a law that is not
+  finite (`law_undefined`) is `not_measured` (`zlk_ei_reason`), never `none`.
+  The librators 3040, 162474, 4257, 1373, 1981: `zlk`, phase 177–182°, $r \approx -0.995$, 1.0–1.6 × the
+  law. 591986's 6-kyr cycle: `forced_beat`, phase 328°, $\delta i$ 1.2 × the beat law. **Coupling is
+  not libration**: 15527 circulates and shows `zlk` coupling at its 2.05-kyr harmonic.
+- **Attribution** of a kinematic libration: the fitted mode with the largest $|c_j|$ (named with the
+  modes the baseline merged into it) holds ϖ, provided the free circle stays off the origin
+  ($\rho_{\max} < 1$, or the strict pin $\max_t|z_{\rm free}| + \sum_{k \ne j}|c_k| < |c_j|$: the
+  largest free radius of the record, not its median, since the bound must hold at every sample), the predicted beat
+  $2\pi/|b_\varpi - g_j|$ is $P_{\rm cyc}$ within a Rayleigh width, and the free node follows the
+  mode ($|b_\Omega - g_j|\,T$ under one turn). 591986: g5 (g5+g7+g8+const), $e_{\rm free}/|c_5| = 0.25$,
+  beat 5.96 kyr against $P_{\rm cyc}$ 6.0 kyr, node − g5 = −0.17″/yr (0.06 turn). Otherwise "forcing
+  not attributed" with the condition that failed. The per-mode amplitudes are persisted in
+  `{body}-omega-free.csv`; a file written before them restores no attribution.
+- **The slow line of the centre** of a libration or a drift (`zlk_centre_*`): the strongest
+  sinusoid of the centre between its smoothing $W_c$ and half the record, and its origin:
+  `forced_beat:<gk>-<gj>` when its period is a beat $2\pi/|g_k - g_j|$ of two fitted forced modes
+  with nonzero amplitudes within a Rayleigh width and the phase wave of the fitted forced vector,
+  smoothed like the centre, explains it in shape ($r \ge$ `ZLK_CENTRE_MODEL_R_MIN`) and in size
+  (`zlk_centre_model_gain`, its swing over the centre's, within a factor
+  `ZLK_CENTRE_MODEL_AMP_FACTOR`: correlation alone is blind to size), `node` when the node's own
+  wave does, else `unexplained`. No per-mode amplitudes (an old file): no forced beat.
+  591986: 53.8 kyr, ±21.6°, `forced_beat:g6-g5`, $r = 0.991$, gain 1.00, model ±22.8°. A modulated secular
+  angle gets the same line (`sec_centre_*`), named `forced_wave:<mode>` after a forced wave of its
+  own modes.
+- **The scale guard**: a libration at the centre scale whose period is such a forced beat, whose
+  forced phase wave explains the centre (as above), while $\rho_{\max} < 1$ never becomes the
+  decisive libration (`sec_centre_rejected`); the gate's period stays the fast one (a clean synthetic
+  591986 otherwise decided at 54 kyr instead of 5.95 kyr). It acts only where the gate does: a
+  disabled gate, no split, or a co-orbital with unfitted forcing keeps the geometric scale.
 
 ## Reference values
 
@@ -210,19 +252,23 @@ and an extension if it turns out long.
 Written for Lidov-Kozai rows only, since ω = ϖ − Ω is the angle they describe.
 
 The decomposition: `free_basis_e`, `free_basis_i`, `free_e`, `free_e_forced`, `free_rho`,
-`free_rho_min`, `free_rho_max`, `free_omega_range_deg`, `free_omega_revolutions`,
+`free_rho_min`, `free_rho_max` (the median free radius over the largest and the smallest smoothed forced amplitude;
+descriptive, the status reads `zlk_gate_rho_max`), `free_omega_range_deg`, `free_omega_revolutions`,
 `free_b_varpi`, `free_b_Omega`, `free_b_omega`, `free_drift_flag`, `free_mask_e`,
 `free_mask_i`, `free_resolution`.
 
 The gate: `free_gate` (the outcome), `free_n_cycles` ($T/P_{\rm lib}$), `free_gate_matches` (the
 planetary rates a residual could not be told apart from), and the same as the analysis read them: `zlk_gate`,
-`zlk_gate_n_cycles`, `zlk_gate_min_cycles`, `zlk_gate_period_yr`, `zlk_gate_matches`, `zlk_gate_rho_max`. The check
-`check_zlk_free_omega` is `pass` (confirmed), `fail` (kinematic) or `not_measured`.
+`zlk_gate_n_cycles` ($T/P_{\rm cyc}$: cycles of the osculating ω, not turns of the free one), `zlk_gate_min_cycles`,
+`zlk_gate_period_yr`, `zlk_gate_matches`, `zlk_gate_detail` (`coorbital_unfitted_forcing`), `zlk_gate_rho_max` (the
+local ratio the status reads), `zlk_gate_rho_global` (the former median ratio, descriptive). The check
+`check_zlk_free_omega` is `pass` (confirmed), `fail` (kinematic) or `not_measured`. The columns of
+[Beyond the gate](#beyond-the-gate) are listed in [Output](output.md).
 
 Two notes on reading them. `free_e` / `free_e_forced` come from this fit, while the older
 `e_free` / `e_forced` columns come from the (k, h) scatter in `cross_spectrum` and exist for
 every resonance type — different estimators, expected to differ. And `free_rho` is
-an annotation (the status reads $\rho_{\max}$ only as above): for a large-amplitude librator `e_forced` is inflated by the
+an annotation (the status reads only $\rho_{\max}$, [Secular and Lidov-Kozai](physics/secular-zlk.md#zlk-free-omega)): for a large-amplitude librator `e_forced` is inflated by the
 same free signal the fit could not represent, so read it in the small-amplitude regime.
 
 `free_drift_flag` marks a span under a full turn that nonetheless carries a reproducible
@@ -232,21 +278,17 @@ monotonic ramp — worth a longer integration, but not a demotion.
 
 `{body}-omega-free.csv` carries the series themselves — the free and forced amplitudes of
 both vectors, the three unwrapped angles, and the two masks. Masked samples are NaN rather
-than dropped, so the file stays aligned with its times column.
+than dropped, so the file stays aligned with its times column. The fitted complex amplitude
+of every mode is in `amp_<e|i>_<mode>_re` / `_im` on the first row (its value at $t = 0$ of
+the `times` column), so a restored run rebuilds the forced vectors with their phases.
 
-Add `free_omega` to `PLOTS` (or `plots=[...]`) for three figures:
+Add `free_omega` to `PLOTS` (or `plots=[...]`) for three figures
+([How to read them](reading-figures.md#free_omega-lidov-kozai)):
 
-- `…-free-omega-drift.png` — ω accumulated over the baseline, free against osculating. A
-  confined band is libration, a ramp is circulation at g − s. Both curves start at zero by
-  construction, so the total drift reads as the distance from the bottom-left corner. The
-  osculating curve is drawn wide and underneath, so it stays visible as a grey halo where
-  the two coincide — which they usually do.
-- `…-free-omega-portrait.png` — the Kozai diagram in free variables, free e against free ω,
-  coloured by time.
-- `…-free-omega-vector.png` — the free eccentricity vector, on **exactly the same axes** as
-  the osculating `ecc_vector` figure of the same body. Side by side the two answer what the
-  osculating plane alone cannot: whether the ring bounding ω is the object's own or the
-  forced offset.
+- `…-free-omega-drift.png` — ω accumulated over the baseline, free against osculating;
+- `…-free-omega-portrait.png` — the Kozai diagram in free variables, free e against free ω;
+- `…-free-omega-vector.png` — the free eccentricity vector, on the same axes as the osculating `ecc_vector` figure
+  of the same body: side by side they show whether the ring bounding ω is the object's own or the forced offset.
 
 No figure carries numbers. Read `free_gate` and the rates from summary.csv.
 

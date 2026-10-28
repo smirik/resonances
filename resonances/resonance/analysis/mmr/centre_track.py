@@ -209,13 +209,20 @@ class WellAlongRecord:
         return result.periods
 
 
-def turning_point_energy(well: WellAlongRecord, time_yr: float, value_rad: float, middle_rad: float) -> float:
-    """h of one turning point in the averaged well at its own time (`averaged_potential.energy_in_well`, the well whose
-    basin holds `middle_rad`, the middle of its swing): <D> on the coarse sigma grid with L nodes per turn, L doubled up
-    to mmr_strength_max_nodes_per_turn until h with L and with L / 2 agree within mmr_strength_quadrature_tol (in units
-    of the well's depth). nan when it does not converge or there is no well."""
+def turning_point_energy(well: WellAlongRecord, time_yr: float, value_rad: float, middle_rad: float) -> Tuple[float, float, float]:
+    """(h, J/J_s, J_s) of one turning point in the averaged well at its own time, in the well whose basin holds
+    `middle_rad` (the middle of its swing): h over that well's barrier (`averaged_potential.energy_in_well`), the action
+    of the loop of its energy over that well's separatrix action, both on the profile itself
+    (`averaged_potential.action_in_well`, W25), and that separatrix action J_s(t) [rad^2/yr] in absolute units,
+    sqrt(scale) times the profile's (V = scale <D>, `WellAlongRecord.scale`): J/J_s(t) is in the units of that moment,
+    J_s(t) carries the well's depth to the record's mean (`mean_separatrix_action`). <D> on the coarse sigma grid with L
+    nodes per turn, L doubled up to mmr_strength_max_nodes_per_turn until h with L and with L / 2 agree within
+    mmr_strength_quadrature_tol (in units of the well's depth), and so do the two J/J_s when either is finite and the
+    two J_s (relative). (nan, nan, nan) when h does not converge or there is no well; J/J_s nan alone where it does not
+    converge or the loop encloses another well; J_s nan alone where it does not converge."""
     rule = well.rule
     nodes = int(rule.nodes_per_turn)
+    root = float(np.sqrt(well.scale(well.elements(time_yr)[0])))
     while True:
         line = well.line(time_yr, nodes)
         coarse = np.unique(np.round(np.arange(rule.sigma_grid) * nodes / rule.sigma_grid).astype(np.int64))
@@ -224,38 +231,102 @@ def turning_point_energy(well: WellAlongRecord, time_yr: float, value_rad: float
         h_full = averaging.energy_in_well(sigma, full, value_rad, middle_rad)
         h_half = averaging.energy_in_well(sigma, half, value_rad, middle_rad)
         if not (np.isfinite(h_full) and np.isfinite(h_half)):
-            return NAN
-        if abs(h_full - h_half) <= rule.tolerance:
-            return h_full
+            return NAN, NAN, NAN
+        j_full = averaging.action_in_well(sigma, full, value_rad, middle_rad)
+        j_half = averaging.action_in_well(sigma, half, value_rad, middle_rad)
+        both_nan = np.isnan(j_full) and np.isnan(j_half)
+        j_agree = both_nan or abs(j_full - j_half) <= rule.tolerance
+        s_full = averaging.separatrix_action_in_well(sigma, full, middle_rad)
+        s_half = averaging.separatrix_action_in_well(sigma, half, middle_rad)
+        s_agree = _relative_agree(s_full, s_half, rule.tolerance)
+        if abs(h_full - h_half) <= rule.tolerance and j_agree and s_agree:
+            return h_full, j_full, root * s_full
         if 2 * nodes > rule.max_nodes_per_turn:
+            h = h_full if abs(h_full - h_half) <= rule.tolerance else NAN
+            return h, (j_full if np.isfinite(h) and j_agree else NAN), (root * s_full if np.isfinite(h) and s_agree else NAN)
+        nodes *= 2
+
+
+def _relative_agree(first: float, second: float, tolerance: float) -> bool:
+    """Both finite and |first - second| <= tolerance x |first|."""
+    return bool(np.isfinite(first) and np.isfinite(second) and abs(first - second) <= tolerance * abs(first))
+
+
+def separatrix_action(well: WellAlongRecord, time_yr: float, middle_rad: float) -> float:
+    """J_s(t) [rad^2/yr] of the well whose basin holds `middle_rad` in the averaged profile at `time_yr` (as
+    `turning_point_energy`, L doubled until J_s with L and L / 2 agree within mmr_strength_quadrature_tol, relative);
+    nan without a basin or convergence."""
+    rule = well.rule
+    nodes = int(rule.nodes_per_turn)
+    root = float(np.sqrt(well.scale(well.elements(time_yr)[0])))
+    while True:
+        line = well.line(time_yr, nodes)
+        coarse = np.unique(np.round(np.arange(rule.sigma_grid) * nodes / rule.sigma_grid).astype(np.int64))
+        full, half, _ = line.evaluate(coarse)
+        sigma = line.sigma(coarse)
+        s_full = averaging.separatrix_action_in_well(sigma, full, middle_rad)
+        s_half = averaging.separatrix_action_in_well(sigma, half, middle_rad)
+        if _relative_agree(s_full, s_half, rule.tolerance):
+            return root * s_full
+        if not (np.isfinite(s_full) and np.isfinite(s_half)) or 2 * nodes > rule.max_nodes_per_turn:
             return NAN
         nodes *= 2
 
 
+def mean_separatrix_action(
+    well: Optional[WellAlongRecord],
+    t_start_yr: float,
+    t_end_yr: float,
+    tp_times: np.ndarray,
+    middles_rad: np.ndarray,
+    settings: AnalysisSettings,
+) -> float:
+    """<J_s> [rad^2/yr]: the time mean of the averaged well's separatrix action over the record [t_start, t_end], the
+    reference of the zone's J_lo = J0/<J_s> (`zone.build_zone`: <J_s> is J_s at the record's mean Omega, J_s ~ Omega).
+    J_s(t) on mmr_separatrix_avgpot_tp_max even times (`separatrix_action`), each in the well whose basin holds the
+    swing middle of the turning point nearest in time (`middles_rad`, at `tp_times`): the well the angle librates in,
+    followed when it moves. nan when any of them is not measured (a failed profile, no well, a close approach): the
+    record's mean is then unknown and the averaged route keeps the pendulum's classes. nan without a well or turning
+    points."""
+    times, middles = np.asarray(tp_times, dtype=float), np.asarray(middles_rad, dtype=float)
+    if well is None or not well.available or not len(times) or not t_end_yr >= t_start_yr:
+        return NAN
+    grid = np.linspace(t_start_yr, t_end_yr, max(int(settings.mmr_separatrix_avgpot_tp_max), 2))
+    values = []
+    for time in grid:
+        value = separatrix_action(well, float(time), float(middles[int(np.argmin(np.abs(times - time)))]))
+        if not np.isfinite(value):
+            return NAN
+        values.append(value)
+    return float(np.mean(values))
+
+
 def turning_point_energies(
     well: Optional[WellAlongRecord], tp_times: np.ndarray, tp_values: np.ndarray, settings: AnalysisSettings, middles_rad: np.ndarray
-) -> np.ndarray:
-    """h of every turning point in the averaged well at its own time (`turning_point_energy`, in the well that holds
-    `middles_rad`, the middle of each one's swing), measured at no more than mmr_separatrix_avgpot_tp_max of them chosen
-    evenly in order and interpolated linearly in time between two neighbouring evaluated points that are both finite
-    (the well changes over many cycles: 2004 TK14 31M-34 deepens 100 times over 20 kyr). A point whose evaluation
-    failed stays nan, and so do the points between it and its evaluated neighbours: nothing is bridged across a failed
-    profile (a close approach, no well). All nan without a well."""
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """(h, J/J_s, J_s) of every turning point in the averaged well at its own time (`turning_point_energy`, in the well
+    that holds `middles_rad`, the middle of each one's swing), measured at no more than mmr_separatrix_avgpot_tp_max of
+    them chosen evenly in order and interpolated linearly in time between two neighbouring evaluated points that are
+    both finite (the well changes over many cycles: 2004 TK14 31M-34 deepens 100 times over 20 kyr), each quantity on
+    its own. A point whose evaluation failed stays nan, and so do the points between it and its evaluated neighbours:
+    nothing is bridged across a failed profile (a close approach, no well) or a loop around several wells. All nan
+    without a well."""
     times, values = np.asarray(tp_times, dtype=float), np.asarray(tp_values, dtype=float)
     middles = np.asarray(middles_rad, dtype=float)
-    out = np.full(len(times), NAN)
+    outs = tuple(np.full(len(times), NAN) for _ in range(3))
     if well is None or not well.available or not len(times):
-        return out
+        return outs
     chosen = np.unique(np.round(np.linspace(0, len(times) - 1, min(len(times), settings.mmr_separatrix_avgpot_tp_max))).astype(int))
-    measured = []
-    for i in chosen:
-        measured.append(turning_point_energy(well, float(times[i]), float(values[i]), float(middles[i])))
-    measured = np.asarray(measured, dtype=float)
-    out[chosen] = measured
-    for (i, j), (h_i, h_j) in zip(zip(chosen[:-1], chosen[1:]), zip(measured[:-1], measured[1:])):
-        if j > i + 1 and np.isfinite(h_i) and np.isfinite(h_j):
-            out[i + 1 : j] = np.interp(times[i + 1 : j], [times[i], times[j]], [h_i, h_j])
-    return out
+    measured = np.asarray(
+        [turning_point_energy(well, float(times[i]), float(values[i]), float(middles[i])) for i in chosen], dtype=float
+    ).reshape(-1, 3)
+    for k, out in enumerate(outs):
+        column = measured[:, k]
+        out[chosen] = column
+        for (i, j), (x_i, x_j) in zip(zip(chosen[:-1], chosen[1:]), zip(column[:-1], column[1:])):
+            if j > i + 1 and np.isfinite(x_i) and np.isfinite(x_j):
+                out[i + 1 : j] = np.interp(times[i + 1 : j], [times[i], times[j]], [x_i, x_j])
+    return outs
 
 
 def full_well_periods(

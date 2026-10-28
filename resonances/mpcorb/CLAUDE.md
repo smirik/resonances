@@ -3,7 +3,8 @@
 A self-contained subpackage: it imports nothing of `resonances` (standard library, numpy, pandas; settings through
 `Settings`/arguments, logger `mpcorb`) so that it can become its own package (author 2026-10-27). Keep it so: tests
 copy it out of the tree and import it alone. The package side lives in `simulation/mpc_source.py` (MPC_* keys →
-`mpcorb.Settings`, registered as its defaults; `epoch_refusal`). User docs: `docs/config.md`, "Minor Planet Center".
+`mpcorb.Settings`, registered as its defaults; `epoch_refusal`) and `simulation/mpc_getorb.py` (`MPC_LOOKUP`: the
+get-orb fallback for identifiers the snapshot lacks). User docs: `docs/config.md`, "Minor Planet Center".
 
 ## What it does
 

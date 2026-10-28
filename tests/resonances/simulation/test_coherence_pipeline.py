@@ -145,8 +145,11 @@ def status_without_coherence(tmp_path, antiphase):
 
 
 class TestEiExchangeInPipeline:
-    """The coherence check records a flag and leaves every status alone (the synthetic omega librates with
-    ZLK_PERIOD = 1250 yr, faster than ZLK_LIBRATION_PERIOD_MIN_YR, so its status itself is not what is tested)."""
+    """The coherence step records the strongest e-i line (zlk_check, zlk_coherent) and leaves every status alone; the
+    check `check_zlk_ei` and the column `confirmed_ei` are the analysis' own e-i coupling at the row's decisive period
+    (`analysis.zlk.diagnostics`), which the coherence step no longer overwrites. The synthetic omega librates with
+    ZLK_PERIOD = 1250 yr, faster than ZLK_LIBRATION_PERIOD_MIN_YR: no libration period, so the coupling is not
+    measured, whatever the Welch line says."""
 
     def test_an_antiphase_line_is_recorded_as_an_exchange(self, tmp_path):
         sim, body, resonance = build_simulation(tmp_path, antiphase=True)
@@ -157,7 +160,8 @@ class TestEiExchangeInPipeline:
         assert body.zlk_gates[key].confirmed_ei is True
         assert body.zlk_gates[key].check == ca.CoherenceCheck.PASSED
         assert body.statuses[key] == status_without_coherence(tmp_path, antiphase=True)
-        assert body.librations[key].checks['check_zlk_ei'] == 'pass'
+        coupling = body.secular_analyses[key].zlk.ei
+        assert body.librations[key].checks['check_zlk_ei'] == coupling.check
 
     def test_an_in_phase_line_no_longer_demotes(self, tmp_path):
         # This used to be a 2 -> -2 demotion. The e-i band on a short baseline sits below
@@ -169,18 +173,20 @@ class TestEiExchangeInPipeline:
         key = resonance.to_s()
         assert body.zlk_gates[key].confirmed_ei is False
         assert body.statuses[key] == status_without_coherence(tmp_path, antiphase=False)
-        assert body.librations[key].checks['check_zlk_ei'] == 'fail'
+        assert body.librations[key].checks['check_zlk_ei'] == body.secular_analyses[key].zlk.ei.check
 
-    def test_the_flag_reaches_summary_csv(self, tmp_path):
+    def test_the_line_and_the_coupling_reach_summary_csv(self, tmp_path):
         sim, body, resonance = build_simulation(tmp_path, antiphase=False)
 
         sim.identify_librations()
         summary = sim.data_manager.get_simulation_summary(sim.bodies)
 
         row = summary.iloc[0]
-        assert bool(row['confirmed_ei']) is False
         assert row['zlk_check'] == 'failed'
         assert row['zlk_line_period'] == pytest.approx(ZLK_PERIOD, rel=0.02)
+        assert row['zlk_ei_coupling'] == body.secular_analyses[resonance.to_s()].zlk.ei.coupling
+        if row['zlk_ei_coupling'] == 'not_measured':
+            assert row['confirmed_ei'] is None or pd.isna(row['confirmed_ei'])
 
     def test_disabled_coherence_computes_nothing(self, tmp_path):
         sim, body, resonance = build_simulation(tmp_path, antiphase=False, coherence_enabled=False)
@@ -189,7 +195,8 @@ class TestEiExchangeInPipeline:
 
         assert body.coherence == {}
         assert body.zlk_gates == {}
-        assert body.librations[resonance.to_s()].checks['check_zlk_ei'] == 'not_measured'
+        # the coupling is the analysis' own: it does not need the coherence step
+        assert body.librations[resonance.to_s()].checks['check_zlk_ei'] == body.secular_analyses[resonance.to_s()].zlk.ei.check
 
     def test_a_short_baseline_records_why_nothing_was_measured(self, tmp_path):
         # P_max = T/(5*n_seg) is 1500 yr at the coarsest level, so demanding periods above
@@ -201,7 +208,7 @@ class TestEiExchangeInPipeline:
 
         assert body.zlk_gates[resonance.to_s()].check == ca.CoherenceCheck.SHORT_BASELINE
         assert summary.iloc[0]['zlk_check'] == 'short_baseline'
-        assert summary.iloc[0]['confirmed_ei'] is None
+        assert summary.iloc[0]['zlk_coherent'] is None
 
 
 class TestFreeOmegaGateInPipeline:

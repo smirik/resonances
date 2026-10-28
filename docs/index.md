@@ -34,7 +34,8 @@ each.
 - [Simulations, bodies, resonances](core.md) and [Examples](examples.md): the main objects and practical
   recipes (catalogues, clones, many bodies, restore).
 - [Configuration](config.md): every option; [Output data](output.md): every column.
-- [Libration analysis: full reference](libration-analysis.md): every rule of the classifier.
+- [How to read the figures](reading-figures.md): every panel of the verdict figures.
+- [Rule index](libration-analysis.md): every rule of the classifier, with its settings.
 - [Using with AI agents](agents.md): `resonances skill install` gives a coding agent (Claude Code and others)
   the package's skill: how to set up runs and how to read the verdicts.
 

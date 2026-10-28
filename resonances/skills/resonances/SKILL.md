@@ -38,7 +38,8 @@ Keys: two-body `3J-1` (full key `3J-1+0-2`), three-body `4J-2S-1` (`4J-2S-1+0+0-
 The output files use the full key. Notation: references/matrix.md, references/core.md.
 
 Data source (`source=`): `nasa` (default; Horizons elements at `date`, which defaults to **today's midnight**),
-`astdys` and `mpc` (the catalogue epoch is the default date). The planets always come from Horizons at `date`, so a
+`astdys` and `mpc` (the catalogue epoch is the default date; `mpc_lookup='file_then_api'` takes an object missing from
+the catalogue, e.g. an alias or one outside an `MPC_CATALOG` subset, from MPC's get-orb). The planets always come from Horizons at `date`, so a
 run needs the network once per date. Pin `date=` whenever the result must be reproducible or a batch run may need a
 resume. A bare number sent to Horizons is an asteroid number. Your own elements: heliocentric J2000 ecliptic, angles in
 radians; an `epoch` that differs from `date` is refused.
@@ -80,7 +81,9 @@ resonances dry-run --asteroids=463 --resonances=4J-2S-1 --years=100000 --step=au
 
 or `report = sim.dry_run(level='pilot'); report.summary(); report.apply()`. Read the alias verdict and `action` per
 row (`none`, `predictive_unwrap`, `resample`), `integrator_recommended`, the short-period warnings and the cost
-(`cpu_hours`, `disk_GB`, `ram_per_worker_GB`). `sim.run()` runs the static dry-run itself and logs its warnings.
+(`cpu_hours`, `disk_GB`, `ram_per_worker_GB`). Secular and ZLK angles get advisory rows (`report.long_period`): the
+baseline the analysis needs (secular 500 kyr, ZLK ~9.4 kyr plus the gate's 3 ZLK times at the defaults) and a warning
+when the span is shorter. `sim.run()` runs the static dry-run itself and logs its warnings.
 
 **Cost.** Integration is cheap; the analysis is not (1–2 CPU-min per body × resonance for a 1-Myr record). Before
 anything longer than a few minutes, tell the user the estimate, then run it in the background with `nice`.
@@ -98,11 +101,13 @@ anything longer than a few minutes, tell the user the estimate, then run it in t
   `sim.add_ensemble(ensemble, resonances=[...])`. 100 clones give a share to ±10 %, 400 to ±5 %, 1000 to ±3 % (Wilson
   95 %). `clones_source='auto'` follows the data source (nasa → JPL SBDB); for NEAs `neodys` (the fit's epoch);
   MPC refuses U ≥ 3. A numbered main-belt asteroid has σ_a ~ 10⁻⁹ au: its clones differ only through chaos.
-- Resume an interrupted batch run: the same script, bodies, settings, `save_path` and **date**; a changed hash raises
-  `ValueError` (references/serialization.md).
+- Resume an interrupted batch run, or any run with clones: the same script, bodies, settings, `save_path` and
+  **date**; a changed hash raises `ValueError` naming what changed. A run with clones skips its finished clone batches
+  and its finished ordinary part (checkpoint `clones_state/`; references/clones.md, references/serialization.md).
 - Restore a finished run: `resonances.SimulationSerializer.restore('<save_path>/simulation.json')` reads the verdicts
-  from summary.csv; `recompute_librations=True` analyses the saved series again without integrating
-  (`current_settings=True`: with today's `.env`).
+  from summary.csv, and with clones `sim.ensembles` and `sim.clone_summary`; `recompute_librations=True` analyses the
+  saved series again without integrating (`current_settings=True`: with today's `.env`); clones keep their stored
+  verdicts, only the nominal is reclassified.
 - Settings: argument of `Simulation`/`check`/`find` (lower case) > `.env` in the working directory > environment >
   `resonances/.env.dist` (references/config.md).
 
@@ -149,12 +154,18 @@ Distinctions that matter when you report:
   undefined at e ≈ 0. A non_resonant `alias` (one branch, far from a*) is a real circulation seen through the step.
 - **Lidov-Kozai.** A libration of the osculating ω is not enough; the free-ω gate decides. `non_resonant /
   kinematic_libration` is a **measurement** (the free ω winds: geometry); `uncertain / gate_unavailable` is the
-  **absence** of one (extend). Never merge them in a statistic (legacy codes −2 and −9). The free-element split does
-  not apply to co-orbitals (Trojans, quasi-satellites): there a ZLK verdict is not a measurement, and the package has
-  no guard for it (references/physics/secular-zlk.md).
+  **absence** of one (`extend_to_years` for a short window or a residual near a planetary rate; `review` for an
+  undefined free phase or missing free elements). Never merge them in a statistic (legacy codes −2 and −9). A co-orbital
+  of Mercury to Mars gets no gate verdict (`zlk_gate_detail` = `coorbital_unfitted_forcing`: its planet's modes are not
+  in the split); Jupiter Trojans are covered (forced vector g5 + g6), and 591986 stays kinematic.
+  Columns that change no status (references/free-elements.md, "Beyond the gate"): `zlk_ei_coupling` (e–i at the
+  decisive period, every row: `zlk` antiphase at constant H, `forced_beat` in phase; coupling is not libration — a
+  circulating ω can show it), `zlk_forcing_*` (which forced mode holds a kinematic libration, or `not_attributed` and
+  why), `zlk_centre_*` (the centre's slow line and its origin, e.g. `forced_beat:g6-g5`).
 - **Clones.** `clones.csv` gives the share of each status with its Wilson interval: a probability under the
   provider's covariance, the model and the span, not of the classifier's errors. The nominal has no special weight.
-- `confirmed_ei` (e-i coherence) and the diagnostic plots (recurrence, cycles, FAIR) never change a status.
+- `confirmed_ei` (= `zlk_ei_coupling == zlk`), `zlk_coherent` (the Welch line) and the diagnostic plots (recurrence,
+  cycles, FAIR) never change a status.
 - `status_code` is the legacy integer; use the string columns.
 
 ## 5. Traps
@@ -181,15 +192,15 @@ Distinctions that matter when you report:
 
 ## 6. Read the combined figure
 
-One page per plotted row (references/physics/gallery.md, "How to read the figure"; references/plots.md). The right
+One page per plotted row (references/reading-figures.md, panel by panel; examples in references/physics/gallery.md; files in references/plots.md). The right
 column is the verdict: the plaque `STATUS · angle_status · CONFIDENCE` (and `ends: …`), the verdict in words, the
-steps of the status tree, the margins and caps (✓ passes, ⚠ thin, ✗ fails, – not applicable, ? not measured) with
+steps of the status tree, the margins and caps (✓ passes, ⚠ thin, ✗ fails, – skipped by design, · not applicable, ? not measured, ▼ cap) with
 the other reading each cap leaves open, and the next check in years. For an MMR the left panels are: (a) σ raw and
-filtered with turning points and numbered episodes, (b) σ wrapped, (c) σ̇/2ω₀ (±1 = the separatrix speed), (d) a with
+filtered with turning points and numbered episodes, (b) σ wrapped, (c) σ̇/2ω₀ (±1 = the separatrix speed of a cosine well; each episode's own limits are dashed), (d) a with
 a* and the resonance's half-width, (e) ȧ with the fitted force law and its R², (f), (g) e and i, (h) the energy of
 each cycle against the separatrix h = 1, (i) the slow centre, (j) the centres of other multiplet members and of an
-owner (a flat line librates). For secular/ZLK rows, (f) is the rate fit (secular) or the free ω against the osculating
-one (ZLK: a free ω that winds makes the libration kinematic). If you can view images, open the figure of every
+owner (a flat line librates). For secular/ZLK rows, (f) is the rate fit (secular) or the drift of the free and the
+osculating ω in turns (ZLK: a free ω that winds makes the libration kinematic). If you can view images, open the figure of every
 `medium`/`low` verdict before reporting it.
 
 ## 7. Before you report a status
@@ -224,11 +235,12 @@ Record 100 kyr at 1 yr, SABA(10,6,4), Horizons 2026-01-01. Next: none.
 | physics/confidence.md | margins, caps and the other reading of each cap, actions, how long to extend, which step to resample at |
 | physics/gallery.md | one example figure of every status, with its record (span, step, integrator) |
 | physics/pendulum.md, physics/geometry.md, physics/response.md | the physics of a single check (turning points, episodes, force law, identity, owner, strength) |
-| physics/secular-zlk.md, secular.md, lidov-kozai.md, free-elements.md, classify.md, coherence.md | secular and Lidov-Kozai angles, the free-ω gate, `confirmed_ei` |
+| physics/secular-zlk.md, secular.md, lidov-kozai.md, free-elements.md, coherence.md | secular and Lidov-Kozai angles, the free-ω gate, e–i coupling, attribution |
 | matrix.md | resonance notation, catalogues, retrograde resonances, the catalogue cache |
 | clones.md | clones: sources, epochs, how many, clones.csv |
 | output.md | every file and column of a run |
 | plots.md | figure kinds and options, redrawing after a run |
+| reading-figures.md | how to read every figure, panel by panel, and what to look at first for each status |
 | serialization.md | simulation.json, restore, resuming a batch run |
 | config.md | every setting and threshold with its default |
-| libration-analysis.md | the full reference of the MMR analysis (every rule and formula) |
+| libration-analysis.md | the rule index: what a rule ID (G2a, L4, 5s, …) means, its settings, the page that explains it |

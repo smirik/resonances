@@ -31,7 +31,10 @@ the whole record) and again **on every librating episode** with its own period. 
 force law passes with full margin while the amplitude test does not fail and the identity is not measured to fail
 (or the force law passes thinly with both of those passing). With a witness, the status tree reads the identity, the
 force law and the amplitude from the witness with most turning points: one episode decides, nothing is counted over
-windows. Windows that overlap a confirmed jump of $a$ ([What the angle does](geometry.md)) are left out.
+windows (rule R; columns `rsp_*_source`). Without a witness it reads the pooled measurement (after a jump with no
+episode in the last regime, G1e: pooled over the episodes before the jump). A witness next to an episode whose force
+law fails gives the cap `episode_force_law_mixed` (at most `medium`). Windows that overlap a confirmed jump of $a$
+([What the angle does](geometry.md)) are left out.
 
 ## The identity
 
@@ -93,11 +96,12 @@ $$
 \dot a_f = \sum_{k=1}^{N}\big[A_k\sin k\psi + B_k\cos k\psi\big] + C .
 $$
 
-When the one-harmonic law fails or passes thinly (never for a 1:1 angle), $N$ grows from 2 while $R^2$ gains at least
-0.1, up to `MMR_FORCE_HARMONICS_MAX` = 2. The law is taken only if it passes, in order: a shifted null test exists;
-its coefficients are coherent (0.8); its $R^2$ beats the null by `MMR_FORCE_NULL_GAIN` = 0.2; $R^2 \ge 0.4$; and the law
-fitted on one half of the windows predicts the other half with $R^2 \ge 0.4$, both ways. It can only lift the check,
-never lower it. A purely kinematic linear swing wider than about $\pm150°$ can also fit two harmonics, so the force
+When the one-harmonic law fails or passes thinly (never for a 1:1 angle, never inside a null test), $N$ grows from 2
+(the one-harmonic law is $N = 1$) while $R^2$ gains at least `MMR_FORCE_MULTI_GAIN` = 0.1, up to
+`MMR_FORCE_HARMONICS_MAX` = 2. The law is taken only if it passes, in order: a shifted null test exists; its
+coefficients are coherent (0.8); its $R^2$ beats the null by `MMR_FORCE_NULL_GAIN` = 0.2; $R^2 \ge 0.4$; and the law
+fitted on the earlier half (in time) of the windows' samples predicts the later half with $R^2 \ge 0.4$, and the
+reverse. It can only lift the check, never lower it. A purely kinematic linear swing wider than about $\pm150°$ can also fit two harmonics, so the force
 law is necessary, not sufficient: the kinematic tests, the energy and the strength decide the origin.
 
 **Guards.** Three effects can fake or spoil the force law, and each has a guard:
@@ -120,6 +124,20 @@ law is necessary, not sufficient: the kinematic tests, the energy and the streng
   short-period scatter of $a$ exceeds `MMR_SHORT_PERIOD_A_RATIO` = 0.5 of the libration's half-excursion in $a$. A
   fail never becomes a pass.
 
+??? info "The guards in detail"
+    - *Lines.* Each measurement fits the law at its base cutoff, takes the amplitude $K$, and reads the spectrum of
+      $\dot a$ from `MMR_RESPONSE_LINE_BAND_CUTOFFS` = 0.5 × that cutoff to $P/2$, leaving out the libration's
+      harmonics. The raised cutoff is at most $P$ / `MMR_RESPONSE_MAX_FRACTION` = 4. The null shifts reach up to half the
+      record; without a null (half the record shorter than $1.75P$) the force law is not measured, and below the null
+      gain it fails.
+    - *Jumps.* Windows within $\tau/2$ + `FILTER_EDGE_TRIM_CUTOFFS` × the response cutoff of a confirmed jump are
+      dropped; kicks do not count.
+    - *Forced lines.* The lattice holds $1 \le m \le \lvert k\rvert$, $\lvert l_j\rvert \le \lvert k_j\rvert$; a line is
+      "at the period" when $\lvert 1/T - 1/P\rvert < 1/(WP)$, $W$ = `MMR_FORCE_WINDOW_CYCLES`. A contaminated L4
+      (`rsp_force_contaminated`) never makes a libration dynamic (leaf 5f of [the status tree](status-tree.md)).
+    - *Folded short periods* (`MMR_SHORT_PERIOD_A_UNMEASURED`): the check columns keep the measured fail
+      (`rsp_short_period_unmeasured`), and the cap `short_period_aliased` stays.
+
 *Meaning.* A pass is support for a physical mechanism: $a$ is pushed back and forth by a force in phase with the
 angle. A fail with a bounded angle points to a kinematic or induced origin. *In the output:* `check_mmr_a_response`;
 the law taken in `rsp_force_law` (`mmr_numbers.csv`), the harmonic law in `rsp_force_harm_*`.
@@ -139,7 +157,12 @@ overall and in both halves; the pass is thin while the smaller half's $R^2 < 0.7
 `MMR_FORCE_R2_FULL` = 0.7, `MMR_COORBITAL_SCALE_RATIO_MAX` = 3). $K/K_\text{theory} = 1$ means the libration period is the one the planet's mass
 gives, which a kinematic oscillation does not reproduce, so the 45° amplitude floor does not apply and even a small
 tadpole is measured. The owner search does not apply to 1:1 angles: every candidate is a multiple of $\sigma$ plus a
-combination of the planets alone.
+combination of the planets alone. The pendulum test (below) is the energy integral of this law, fitted per cycle.
+
+??? info "The retrograde 1/−1"
+    The retrograde co-orbital `1J-1r<k>` ($i > 90°$) is judged by the same law, with the body placed at
+    $M = \sigma + \lambda' - ((2k-1)\omega + \Omega)$: the angle of Li et al. (2019), built from $\Omega$, $\omega$ and
+    $M$ only.
 
 ## Energy and potential
 
@@ -172,6 +195,12 @@ coherence of the per-cycle wells is reported but not required; the period law ca
 Not measured when $V_E$ explains less than `SEPARATRIX_VE_R2_MIN` = 0.7 of $\dot\sigma^2$ within the cycles, when the
 filter is too slow for the cycles, and (the part with $a$) below 45° without a slip over the top. For a 1:1 angle the
 energy integral of the co-orbital law replaces this test.
+
+??? info "The order of the two parts"
+    `zone.r0_checks` decides the part on $\sigma$ alone (R0σ) first. If it fails or is not measured, the part with
+    $a$ takes the same value: a failed period law stays an objection even at a small amplitude. Only when R0σ passes is
+    the part with $a$ not measured below `MMR_A_RESPONSE_MIN_AMP_DEG` = 45° without a turn (there the identity alone
+    makes $V_E \approx V_F$); above it the window fraction decides.
 
 *Meaning.* A pass says the cycles have the period a pendulum of their energy would have; with $a$, that the force on
 $a$ is the gradient of the same potential. The full-well period law reads the theory's strength, so it is not
@@ -208,10 +237,41 @@ three mechanisms (`origin_detail`):
 - **planetary ripple** (`planet_ripple`): the period matches a planetary inequality that survived the filter.
 
 **Kinematic drift.** Some angles show episodes that are only a ripple on a drifting centre. The angle is a kinematic
-drift when the force law fails under every law, the largest episode swing is below `MMR_KIN_RIPPLE_SHARE_MAX` = 0.5 of
-the range of the slow centre, and the rate of the slow centre correlates ($\ge 0.9$) with the rate of the angle's
-secular part. A kinematic libration whose centre moves by more than `MMR_KIN_DRIFT_SHIFT_RATIO` = 1 amplitude over its
-episode is read the same way. *In the output:* `check_mmr_kinematic`, `kin_*`.
+drift (rule K2, `rec_rule` 3k2) when the force law fails under every law, the largest episode swing is below
+`MMR_KIN_RIPPLE_SHARE_MAX` = 0.5 of the range of the slow centre, and the rate of the slow centre correlates
+($\ge 0.9$) with the rate of the angle's secular part $s = \sigma - \psi_\lambda$ low-passed at the same $W_c$. A
+kinematic libration whose centre moves by more than `MMR_KIN_DRIFT_SHIFT_RATIO` = 1 amplitude over its episode is
+read the same way. *In the output:* `check_mmr_kinematic`, `kin_*`.
+
+??? info "The perihelion rate of a two-mode eccentricity vector"
+    With $z = e\,e^{i\varpi} = e_f e^{igt} + e_F e^{ig_5t}$ (free and forced parts, $\theta$ the angle between them),
+
+    $$
+    \dot\varpi = g_5 + (g - g_5)\,\frac{e_f^2 + e_f e_F\cos\theta}{e_f^2 + e_F^2 + 2e_f e_F\cos\theta} ,
+    $$
+
+    so $\varpi$, and with it $p\varpi$, can be held by the forced mode while $a$ does nothing.
+
+**A slower libration (B5).** A drifting centre could still be a libration slower than the record. B5 excludes it when
+the centre moves faster than any libration through the observed arc could, given how little $a$ moves; else the cap
+`slow_libration_not_excluded` (at most `medium`). In step 3 of [the status tree](status-tree.md), a kinematic
+reading whose centre rate is consistent with an exact commensurability (within `MMR_B5_EXACT_SIGMA` = 2 standard
+errors) becomes `uncertain / baseline_needed` (`rec_rule` 3b5). *In the output:* `rsp_b5_ratio`, `rsp_b5_route`.
+
+??? info "B5: formula"
+    On the analysis window of length $T_w$ the centre is fitted by a line, $\sigma_c(t) = b + \nu_c t$, with residual
+    standard deviation $s_c$; then
+
+    $$
+    \delta\nu_c = \frac{2\sqrt3\,s_c}{T_w},\qquad S = \lvert\nu_c\rvert\,T_w,\qquad
+    K_{\max} = \frac{\lvert\nu_c\rvert\,\delta a}{1 - \cos(\min(S, 2\pi)/2)},\qquad \omega_{0,\max} = \sqrt{\lvert c\rvert K_{\max}},
+    $$
+
+    $\delta a$ the range of the slow $a$ on the window: $K_{\max}$ is the largest force a libration through the
+    observed arc could have without moving $a$ by more than observed (worst case: the arc centred on the stable
+    point). The slow libration is excluded when $\lvert\nu_c\rvert - \delta\nu_c \ge 2\omega_{0,\max}$ (full at the ratio
+    `MMR_B5_RATIO_FULL` = 2), when the centre completes a revolution at every smoothing over an interval that overlaps
+    the deciding episode, or by an owner.
 
 ## Another resonance owns the oscillation
 
@@ -259,6 +319,23 @@ harmonics), a second capture is excluded; otherwise it stays unresolved and caps
 or Lidov-Kozai angle never demotes an MMR verdict: it has no $\lambda$, so no identity ties them. *In the output:*
 `check_mmr_owner`, `owner`, `own_*`; the candidates are in `candidates.csv`.
 
+??? info "Owner routes and the second capture in detail"
+    - *Identity route.* The two-body $\varphi$ follows $\sigma$ on the decisive window as $\sigma_f = c\,\varphi_f + a + bt$
+      with $\lvert c/(k_\sigma/k_\varphi) - 1\rvert \le$ `MMR_OWNER_IDENTITY_COEF_TOL` and a residual at most
+      `MMR_OWNER_IDENTITY_RESID_MAX` × the half-amplitude; $\varphi$ librates there by its own analysis, and its directly
+      averaged strength passes. Nothing is measured on $a$.
+    - *Multiplet owner* (`MMR_OWNER_LAW` = `multiplet`). An owner whose single phase drifts is fitted with all its
+      members $\varphi_j = \varphi_o + j(\varpi - \varpi_P)$, and must then beat $\sigma$'s own constant-coefficient $R^2$
+      by 0.2.
+    - *Outside the episode.* An owner whose intervals cover less than `MMR_OWNER_COVER_MIN` of the episode (rule F7)
+      sets the flag `owner_outside_episode`, and the tree goes on.
+    - *Second capture.* $x = \Psi/u$ is low-passed at `MMR_OWNER_CAPTURE_LOWPASS_PERIODS` = 3 periods; $\dot x^2$ is
+      fitted as a function of $x$ with `MMR_OWNER_CAPTURE_HARMONICS` = 2 harmonics. Unresolved: the cap
+      `second_capture_unresolved`.
+    - *Catalogue longitudes.* A planet whose $\lambda$ was not saved enters the owner search (and nothing else) as the
+      line $\lambda_{j0} + n_jt$. Candidates whose decision lies within the phase error this causes are
+      neither accepted nor rejected (flag `owner_catalogue_ambiguous`), and every such search carries the cap `catalogue_longitudes` (at most `medium`).
+
 ## Subresonances
 
 The members of one multiplet, $\sigma_s = \sigma + \Delta_s$, share the fast part and differ by a slow angle
@@ -280,6 +357,23 @@ unique; and its theoretical small-amplitude period is at most `MMR_SUBRESONANCE_
 period (it is a resonance at all). An accepted member gets a row of its own
 (`added_by = subresonance_check`) and the catalogue angle gets origin `subresonance`
 ([Gallery](gallery.md#transient-subresonance)). *In the output:* `check_mmr_subresonances`, `sub_*`.
+
+??? info "The subresonance scan in detail"
+    The scan runs on a trigger: a drift; a moving, modulated or unclosed centre; $a$ responding with a rotating
+    $\phi_0$; a kinematic or unexplained-drift verdict; another member leading by the averaged coefficients. Members are
+    every d'Alembert-valid split of the slow coefficients up to the catalogue's largest order
+    (`MATRIX_2BODY_ORDER_MAX`, `MATRIX_3BODY_ORDER_MAX`); nodal members are built wholly in the invariable plane.
+
+    The tests, as the columns name them: E′ (the d'Alembert factor), L (the member librates in the scan window), A
+    (a coherent force-law phase), B (centre near 0 or $\pi$), C (unique; a tie goes to the lower degree), E (a
+    resonance at all: the period ratio). Test D compares the centre with the composite multiplet theory
+    $c_0(\beta) = \pi - \arg\sum_j C_j e^{ij\beta}$ (Morbidelli 2002, §9.3–9.4) and only raises the confidence. When
+    several members pass and only A could tell them apart, no member is accepted (cap `subresonance_undetermined`);
+    the other subresonance caps are `subresonance_tie`, `subresonance_t6_only` and `subresonance_theory_unconfirmed`.
+
+    `sub_top` lists the best `MMR_SUBRESONANCE_TOP_N` = 10 members as `key:W/W0:E:N:A/W`: the range $W$ of the
+    member's slow centre against $W_0$ of the catalogue angle, $E = 1 - \operatorname{var}(c_s)/\operatorname{var}(c_0)$,
+    $N$ the number of its slow cycles the window holds, $A/W$ the swing over $W$. The list decides nothing.
 
 ## Onset of an episode (O1)
 
@@ -326,15 +420,7 @@ angles, which have their own law. *In the output:* `check_mmr_strength`, `str_*`
 
 ## What the tests decide
 
-| outcome of the tests | origin | reason (when this decides) |
-|---|---|---|
-| force law, energy or strength passes | `dynamic` | `dynamic_libration`, `dynamic_episode` |
-| nothing measured the force; geometry alone | `unknown` | `geometric_libration`, `geometric_episode` |
-| $a$ does not respond; perihelion term, secular cycle or ripple | `kinematic` | `kinematic_libration`, `kinematic_drift` |
-| an owner explains $\dot a$ | `induced` | `induced_libration` |
-| a member of the multiplet librates | `subresonance` | `subresonance_librates` |
-| far too weak for the observed period | `unknown` | `implausible_strength` |
-| measured physics contradicts the geometry | `unknown` | `origin_unknown` |
-
-The order in which these are applied, and what happens when tests disagree, is on [The status tree](status-tree.md).
-How much each pass, thin pass or failure weighs is on [Confidence](confidence.md).
+The tests give `libration_origin` as in the table at the top; the reason each combination gives is listed in
+[Every reason](status-tree.md#every-reason), and the order in which the tests are applied, and what happens when
+they disagree, is on [The status tree](status-tree.md). How much each pass, thin pass or failure weighs is on
+[Confidence](confidence.md).

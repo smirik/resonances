@@ -531,6 +531,7 @@ def test_promoted_union_reads_episodic_then_resonant():
     steps = {step.key: step.outcome for step in text.steps}
     assert steps['shape'].startswith('3 episodes without a circulation between them cover the record (union rule')
     assert steps['zone'].startswith('episodic → transient; the union covers the record → resonant (6u)')
+    assert analysis.numbers_row()['rec_rule'] == '5d/6u'  # the final rule names the promotion (`decide.promote_union`)
     assert 'through 3 episodes without a circulation between them (union rule); the deciding one' in text.sentences[0]
 
 

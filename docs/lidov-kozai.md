@@ -21,8 +21,12 @@ Here $i$ is the inclination to the perturber's orbital plane and $\omega$ is mea
 $c_1$ is then the squared normalised component of the angular momentum normal to the perturber's orbit. In that limit
 $\omega$ librates about 90° or 270° when $c_1 < 3/5$ and $c_2 < 0$, and circulates otherwise; for an initially
 circular orbit this needs $\arccos\sqrt{3/5} \approx 39.2° < i < 140.8°$ (not a classifier threshold).
-`LidovKozaiParameters` rotates nothing: it uses the angles it is given. The ecliptic osculating elements below are
-an approximate Solar-system diagnostic. The quadrupole energy,
+`LidovKozaiParameters.evaluate` rotates nothing: it uses the angles it is given. The package reads them from the
+**invariable plane** (`evaluate_invariable`: the angular momentum and the perihelion rotated exactly, no angle
+subtracted), the plane of the planets' total angular momentum, as an approximate Solar-system stand-in for the
+perturber's plane. The summary columns `c1`, `c2`, `h_quad` are these: osculating, at the epoch, invariable plane. From
+the ecliptic $c_1$ moves by up to 0.02 and the sign of $c_2$ can flip (1373 Cincinnati: $+0.0014$ ecliptic, $-0.0011$
+invariable). The quadrupole energy,
 without its constant factor, is
 
 $$
@@ -34,15 +38,16 @@ $$
 ```
 
 ```text
-1373 Cincinnati  c1 = 0.545  c2 = +0.0015  h_quad = 1.311
-3040 Kozai       c1 = 0.452  c2 = -0.0026  h_quad = 0.635
-15527            c1 = 0.848  c2 = +0.0093  h_quad = 3.367
+1373 Cincinnati  c1 = 0.521  c2 = -0.0011  h_quad = 1.091
+3040 Kozai       c1 = 0.474  c2 = -0.0021  h_quad = 0.778
+15527            c1 = 0.855  c2 = +0.0092  h_quad = 3.404
 ```
 
 These numbers are **diagnostics, not the verdict**. The criterion is exact only for $a/a_\text{pert} \to 0$; a
-main-belt asteroid has $a/a_J \approx 0.5$ and several perturbers, and 1373 Cincinnati librates although $c_2 > 0$.
-The sign of $h_\text{quad}$ is not a criterion either: $e = 0.1$, $i = 70°$, $\omega = 0$ gives
-$h_\text{quad} < 0$ while $\omega$ circulates ($c_2 > 0$). The osculating elements are used here, at one instant.
+main-belt asteroid has $a/a_J \approx 0.5$ and several perturbers, and a value this close to zero (1373's
+$c_2 = -0.0011$; $+0.0014$ from the ecliptic) says nothing on its own. The sign of $h_\text{quad}$ is not a criterion
+either: $e = 0.1$, $i = 70°$, $\omega = 0$ gives $h_\text{quad} < 0$ while $\omega$ circulates ($c_2 > 0$). The
+osculating elements are used here, at one instant.
 
 ## Checking a body
 
@@ -70,20 +75,24 @@ eccentricity, driven by the planets, can hold the osculating perihelion while th
 circulates. The **free-ω gate** splits $e$ and $i$ into forced and free parts and asks whether the free
 $\omega$ is confined ([Free elements](free-elements.md), [Secular and Lidov-Kozai](physics/secular-zlk.md)).
 
-On a libration of $\omega$:
-
-| the gate's outcome | status | reason |
-|---|---|---|
-| confirmed: the free $\omega$ is confined | `resonant` | `dynamic_libration` |
-| kinematic: the free $\omega$ winds | `non_resonant` | `kinematic_libration` (origin `kinematic`) |
-| no outcome (too short a window, an undefined phase, a residual at a planetary rate, no free elements) | `uncertain` | `gate_unavailable` |
-
-On episodes, a drift or too few cycles only a kinematic outcome changes the status, and only when the free
-eccentricity vector never circles the origin; the status then becomes `non_resonant` / `kinematic_libration`.
-
-A kinematic libration is a measurement; `gate_unavailable` is the absence of one. Never count them together.
+On a librating $\omega$ the gate's outcome sets the status: confirmed keeps `resonant`, kinematic gives
+`non_resonant` / `kinematic_libration`, no verdict gives `uncertain` / `gate_unavailable`; the full rule, also for
+episodes and short records: [Secular and Lidov-Kozai](physics/secular-zlk.md#zlk-free-omega).
 [Gallery](physics/gallery.md#zlk-kinematic) shows the Jupiter Trojan 591986, whose osculating $\omega$ librates
 while its free $\omega$ winds.
 
-The e–i cross-spectrum ([Cross-spectral coherence](coherence.md)) adds the flag `confirmed_ei` when $e$ and $i$
-oscillate in antiphase at the libration period; it does not change the status.
+Four measurements sit next to the status and change none of it ([Free elements](free-elements.md#beyond-the-gate)):
+
+- **e–i coupling** at the row's decisive period (`zlk_ei_coupling`, every row whatever its status): `zlk` when $e$
+  and the inclination to the invariable plane trade in antiphase at the amplitude of constant $\sqrt{1-e^2}\cos i$,
+  `forced_beat` when they move in phase at the amplitude of constant $\sqrt{1-e^2}(1-\cos i)$ (a forced
+  eccentricity beating against the free one), `none`, or `not_measured`. Coupling is not libration: 15527 circulates
+  and still trades $e$ for $i$ at its 2.05-kyr $\cos 2\omega$ harmonic. `confirmed_ei` (and `check_zlk_ei`) is
+  `zlk_ei_coupling == zlk`.
+- **Attribution** of a kinematic libration (`zlk_forcing_*`): the forced mode that holds $\varpi$ (591986: g5 with the
+  modes merged into it), when the free circle stays off the origin, the predicted beat is the libration period and
+  the node follows the mode; otherwise "forcing not attributed".
+- **The slow line of the centre** (`zlk_centre_*`): its period and half-amplitude, and its origin (591986: the g6−g5
+  beat of the forced vector, 54 kyr, ±22°).
+- **Co-orbitals** of Mercury to Mars have no gate verdict (`zlk_gate_detail` = `coorbital_unfitted_forcing`): their
+  forced term is the planet's own vector, which the split does not fit; Jupiter's Trojans are covered.

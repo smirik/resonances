@@ -15,6 +15,8 @@ by geometry alone. 591986 is the worked example: its osculating omega is confine
 The outcomes:
 
     no free elements (too short, or failed)      -> unavailable       (never measured)
+    co-orbital of a planet whose own modes the
+    split does not fit (Mercury to Mars)         -> unavailable       (coorbital_unfitted_forcing)
     baseline shorter than min_cycles * P_lib     -> short_window      (never measured)
     more than half the samples masked            -> undefined_phase   (no usable argument)
     free omega spans less than a full turn:
@@ -37,6 +39,11 @@ measured: estimating how much forcing sits at a frequency the baseline cannot re
 requires resolving it. Frequency is the direct observable — unsubtracted forcing lives, by
 construction, only at known rates.
 
+Co-orbitals. The forced term of a co-orbital is its planet's own vector. For a Jupiter Trojan that vector is
+Jupiter's, g5 + g6, which the split fits (591986 stays kinematic); for a co-orbital of Mercury to Mars the planet's
+own modes are not candidates at all, so whatever the residual does is no measurement: the outcome is unavailable
+(`coorbital_planet`, detail coorbital_unfitted_forcing), never not_applicable, which would keep the geometric status.
+
 The honest cost: an object whose own g or s happens to sit within one Rayleigh width of a
 planetary fundamental is withheld rather than confirmed. That is a real ambiguity, not a
 missing feature. For screening, uncertain means "re-check on a longer baseline", so it
@@ -49,6 +56,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
+from resonances.data.const import PLANETS_AXIS, PLANETS_MASS
 from resonances.secular.free_elements import FreeElements
 
 # Modes the residual rates are compared against. 'const' is deliberately absent from the
@@ -60,6 +68,8 @@ I_MODES = ('s6', 's7', 's8')
 
 DEFAULT_MIN_CYCLES = 3.0
 MAX_MASKED_FRACTION = 0.5
+COORBITAL_UNFITTED = 'coorbital_unfitted_forcing'
+PLANET_ORDER = ('Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune')
 
 
 class GateOutcome(StrEnum):
@@ -82,17 +92,26 @@ class OmegaFreeGate:
     outcome: GateOutcome
     matches: List[str] = field(default_factory=list)  # e.g. ['b_varpi~g8 (d=0.4)']
     n_cycles: Optional[float] = None  # baseline / P_lib
+    # planetary_residual: the smallest |rate - target| of the matches [arcsec/yr] (what a longer baseline must resolve)
+    min_distance: Optional[float] = None
+    detail: str = ''  # unavailable: why ('' = no free elements; COORBITAL_UNFITTED)
 
 
-def _matches(label: str, value: float, targets: Dict[str, float], tolerance: float) -> List[str]:
-    """Which targets the signed rate `value` cannot be told apart from.
+def _close(label: str, value: float, targets: Dict[str, float], tolerance: float) -> List[Tuple[str, float]]:
+    """(text, |value - target|) of the targets the signed rate `value` cannot be told apart from.
 
     Signed, not absolute: every s_j is retrograde, so a prograde free node is not s8 no
     matter how close the magnitudes are.
     """
     if not np.isfinite(value):
         return []
-    return [f'{label}~{name} (d={abs(value - target):.1f})' for name, target in targets.items() if abs(value - target) < tolerance]
+    distances = ((name, abs(value - target)) for name, target in targets.items())
+    return [(f'{label}~{name} (d={distance:.1f})', float(distance)) for name, distance in distances if distance < tolerance]
+
+
+def _residual(close: List[Tuple[str, float]], cycles: Optional[float]) -> OmegaFreeGate:
+    """planetary_residual with its matches and the smallest distance."""
+    return OmegaFreeGate(GateOutcome.PLANETARY_RESIDUAL, [text for text, _ in close], cycles, min(d for _, d in close))
 
 
 def _mode_targets(names: Tuple[str, ...], frequencies: Dict[str, float]) -> Dict[str, float]:
@@ -129,18 +148,43 @@ def _demotion_targets(frequencies: Dict[str, float]) -> Tuple[dict, dict, dict]:
     return g_targets, s_targets, combos
 
 
-def evaluate_gate(elements: Optional[FreeElements], libration_period: Optional[float], config) -> OmegaFreeGate:
+def _modes_fitted(index: int, elements: FreeElements) -> bool:
+    """Whether planet `index`'s own modes g_index and s_index (s5 is the constant) are among the split's candidates:
+    fitted, or merged into a fitted neighbour by the baseline."""
+    covered_e = set(elements.basis_e) | set(elements.dropped_e) | {label for group in elements.clusters_e for label in group}
+    covered_i = set(elements.basis_i) | set(elements.dropped_i) | {label for group in elements.clusters_i for label in group}
+    s_label = 'const' if index == 5 else f's{index}'
+    return f'g{index}' in covered_e and s_label in covered_i
+
+
+def coorbital_planet(semi_major_axis: float, elements: Optional[FreeElements], hill_factor: float) -> str:
+    """The planet whose co-orbital region holds the body's mean semi-major axis and whose own modes the split does not
+    fit ('' when none): |<a>/a_P - 1| < hill_factor x (m_P / 3 M_sun)^(1/3) (ZLK_COORBITAL_HILL_FACTOR). Earth:
+    0.030 at the default 3; Jupiter's Trojans are covered (g5, g6 fitted) and never named."""
+    if elements is None or not (semi_major_axis is not None and np.isfinite(semi_major_axis) and semi_major_axis > 0):
+        return ''
+    for index, name in enumerate(PLANET_ORDER, start=1):
+        width = hill_factor * (PLANETS_MASS[name] / 3.0) ** (1.0 / 3.0)
+        if abs(semi_major_axis / PLANETS_AXIS[name] - 1.0) < width and not _modes_fitted(index, elements):
+            return name
+    return ''
+
+
+def evaluate_gate(elements: Optional[FreeElements], libration_period: Optional[float], config, coorbital: str = '') -> OmegaFreeGate:
     """The free-omega verdict on a bounded Lidov-Kozai angle (`libration_period` its period in years).
 
     The caller asks only for an angle that librates (or has libration episodes); the outcome is then confirmed,
     kinematic, or one of the reasons why no verdict is possible (short_window, undefined_phase, planetary_residual,
     unavailable). The two outcomes below confirmed are distinct and must stay that way in any statistics: kinematic
-    is a measurement (the libration was found to be geometry), the others are the absence of one.
+    is a measurement (the libration was found to be geometry), the others are the absence of one. `coorbital` names
+    the planet of a co-orbital whose modes the split does not fit (`coorbital_planet`): unavailable.
     """
     if not getattr(config, 'free_gate_enabled', True):
         return OmegaFreeGate(GateOutcome.DISABLED)
     if elements is None:
         return OmegaFreeGate(GateOutcome.UNAVAILABLE)
+    if coorbital:
+        return OmegaFreeGate(GateOutcome.UNAVAILABLE, [f'{COORBITAL_UNFITTED}:{coorbital}'], detail=COORBITAL_UNFITTED)
 
     # The fundamentals the split actually subtracted, not a fresh lookup: judging a
     # residual against numbers other than the ones removed would be meaningless.
@@ -156,19 +200,19 @@ def evaluate_gate(elements: Optional[FreeElements], libration_period: Optional[f
 
     if elements.librates:
         g_targets, s_targets = _confirmation_targets(elements, frequencies)
-        matches = _matches('b_varpi', elements.b_varpi, g_targets, tolerance) + _matches('b_Omega', elements.b_Omega, s_targets, tolerance)
-        if matches:
-            return OmegaFreeGate(GateOutcome.PLANETARY_RESIDUAL, matches, cycles)
+        close = _close('b_varpi', elements.b_varpi, g_targets, tolerance) + _close('b_Omega', elements.b_Omega, s_targets, tolerance)
+        if close:
+            return _residual(close, cycles)
         return OmegaFreeGate(GateOutcome.CONFIRMED, n_cycles=cycles)
 
     g_targets, s_targets, combos = _demotion_targets(frequencies)
-    matches = (
-        _matches('b_varpi', elements.b_varpi, g_targets, tolerance)
-        + _matches('b_Omega', elements.b_Omega, s_targets, tolerance)
-        + _matches('b_omega', elements.b_omega, combos, tolerance)
+    close = (
+        _close('b_varpi', elements.b_varpi, g_targets, tolerance)
+        + _close('b_Omega', elements.b_Omega, s_targets, tolerance)
+        + _close('b_omega', elements.b_omega, combos, tolerance)
     )
-    if matches:
-        return OmegaFreeGate(GateOutcome.PLANETARY_RESIDUAL, matches, cycles)
+    if close:
+        return _residual(close, cycles)
     return OmegaFreeGate(GateOutcome.KINEMATIC, n_cycles=cycles)
 
 

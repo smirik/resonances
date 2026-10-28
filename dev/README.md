@@ -28,7 +28,7 @@ Related files in the repository:
   [decisions.md](decisions.md) is its English map by topic, not a translation.
 - `benchmark/tools/RUN.md`, `benchmark/LAYOUT.md`, `benchmark/INVENTORY.md`, `benchmark/PAPER-EXAMPLES.md`: how the
   benchmark is built and run.
-- `docs/libration-analysis.md`: every formula and the status tree, for users.
+- `docs/physics/*.md`: every formula and the status tree, for users; `docs/libration-analysis.md` is the rule index.
 
 Conventions of these pages: dates are 2026 unless stated; "W12" is a wave of the v2 programme (see
 [history.md](history.md)); an object is named by number or designation and resonance (`2003 TX9 3E+2J-10`); a rule

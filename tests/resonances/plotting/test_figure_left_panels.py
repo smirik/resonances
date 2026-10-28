@@ -760,3 +760,70 @@ def test_planar_members_of_a_nodal_angle_keep_its_nodes():
         assert member.body_node_coefficient == 2 and member.planet_node_coefficient(0) == 0
         p_e = member.planet_varpi_coefficients[0]
         assert mc.varpi_offset(nodal, member) == (-p_e, (p_e,))  # sigma_s - sigma0 = p_E (varpi_E - varpi)
+
+
+# --------------------------------------------------------------------------------------------- (e) the force law
+
+
+def _adot_frame(response):
+    """A record of 2000 yr (1-yr step): sigma at the response cutoff a 400-yr libration of 1 rad, sigma_f the same plus
+    a 40-yr wave of 0.5 rad that the response cutoff removed; a_dot at the response cutoff of order 1e-6 au/yr."""
+    t = np.arange(0.0, 2000.0, 1.0)
+    angle_response = np.sin(2 * np.pi * t / 400.0)
+    adot = 2e-6 * np.sin(angle_response - 0.3) + 1e-7
+    prep = SimpleNamespace(
+        angle_f=angle_response + 0.5 * np.sin(2 * np.pi * t / 40.0), angle_response=angle_response, adot_response=adot, adot_f=adot
+    )
+    analysis = SimpleNamespace(response=response, geometry=None, episode_physics=[])
+    return SimpleNamespace(
+        analysis=analysis,
+        prep=prep,
+        inside=np.ones(len(t), dtype=bool),
+        t=t,
+        x=t / 1e3,
+        px_per_unit=LAYOUT.panels[2] * LAYOUT.dpi / 2.0,
+        times=lambda values: np.asarray(values, dtype=float) / 1e3,
+    )
+
+
+def _model_lines(ax):
+    return [line for line in ax.lines if to_hex(line.get_color()) == style.MODEL]
+
+
+def test_force_window_is_drawn_on_the_angle_the_fit_read():
+    """One window over the record, R = 2e-6 au/yr, phi0 = 0.3, C = 1e-7: the drawn law is R sin(sigma - phi0) + C on
+    sigma at the response cutoff (what the fit read), by hand 2e-6 sin(sin(2 pi t / 400) - 0.3) + 1e-7, not on sigma_f
+    with its 40-yr wave (which differs from it by up to ~1e-6)."""
+    from resonances.resonance.analysis.mmr.models import ForceWindow
+    from tests.resonances.analysis.builders import make_response
+
+    window = ForceWindow(0.0, 2000.0, 0.81, 2e-6, 0.3, 1e-7)
+    frame = _adot_frame(make_response(windows=[window], force_law='single'))
+    ax = _axis()
+    mc.draw_adot_panel(ax, frame, LAYOUT)
+    (line,) = _model_lines(ax)
+    t = np.arange(0.0, 2000.0, 1.0)
+    expected = 2e-6 * np.sin(np.sin(2 * np.pi * t / 400.0) - 0.3) + 1e-7  # in units of 10^-6 au/yr: x 1e6
+    np.testing.assert_allclose(line.get_ydata(), expected * 1e6, rtol=1e-12, atol=1e-12)
+    on_sigma_f = 2e-6 * np.sin(frame.prep.angle_f - 0.3) + 1e-7
+    assert np.max(np.abs(line.get_ydata() - on_sigma_f * 1e6)) > 0.5
+    assert '0.81' in _texts(ax)
+
+
+def test_harmonic_law_draws_no_sine_and_prints_its_r2():
+    """2001 ND13 1V-3 (W23 CS12): the two-harmonic law decided L4 with R² 0.646 where one harmonic gave 0.18; the
+    single-sine windows (R² 0.18/0.19) are not the law that was tested, so none is drawn and (e) reads
+    'harmonic law N=2: R² 0.65 (single 0.18)'. A law not taken (or no force law 'harmonic') keeps the windows."""
+    from resonances.resonance.analysis.mmr.models import ForceWindow, HarmonicLaw
+    from tests.resonances.analysis.builders import make_response
+
+    windows = [ForceWindow(0.0, 1000.0, 0.18, 2e-6, 0.3, 1e-7), ForceWindow(1000.0, 2000.0, 0.19, 2e-6, 0.3, 1e-7)]
+    taken = HarmonicLaw(2, 0.646, 0.18, 2, taken=True)
+    ax = _axis()
+    mc.draw_adot_panel(ax, _adot_frame(make_response(windows=windows, force_law='harmonic', force_harmonic=taken)), LAYOUT)
+    assert not _model_lines(ax)
+    assert 'harmonic law N=2: R² 0.65 (single 0.18)' in _texts(ax)
+    refused = HarmonicLaw(2, 0.646, 0.18, 2, taken=False, reason='null')
+    ax = _axis()
+    mc.draw_adot_panel(ax, _adot_frame(make_response(windows=windows, force_law='single', force_harmonic=refused)), LAYOUT)
+    assert len(_model_lines(ax)) == 2 and not any(text.startswith('harmonic law') for text in _texts(ax))

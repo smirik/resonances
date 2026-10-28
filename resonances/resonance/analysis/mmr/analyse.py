@@ -1078,7 +1078,9 @@ def _analyse_mmr(
         decision_path=list(ledger),
     )
     # the series the response read, for the figure: made last, so they are not held through the scans above
-    _, prep.rate_response, _, prep.adot_response, prep.response_cutoff_yr = response_module.response_series(prep, period, settings)
+    prep.angle_response, prep.rate_response, _, prep.adot_response, prep.response_cutoff_yr = response_module.response_series(
+        prep, period, settings
+    )
     analysis = MMRAnalysis(
         series_name=series.name,
         resonance=series.resonance,

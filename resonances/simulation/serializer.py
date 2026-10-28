@@ -31,8 +31,11 @@ class SimulationSerializer:
         data = cls._build_simulation_json(config, bodies, simulation)
         save_path = Path(config.save_path)
         save_path.mkdir(parents=True, exist_ok=True)
-        with (save_path / "simulation.json").open("w") as f:
+        # a temporary file renamed into place: an interruption never leaves half a simulation.json
+        temporary = save_path / "simulation.json.tmp"
+        with temporary.open("w") as f:
             json.dump(data, f, indent=4)
+        os.replace(temporary, save_path / "simulation.json")
 
     @classmethod
     def restore(cls, json_file_path: str, recompute_librations: bool = False, current_settings: bool = False) -> "Simulation":
@@ -47,6 +50,10 @@ class SimulationSerializer:
         produced again by it), a secular/ZLK angle by its classifier and hooks. The others keep their summary.csv
         verdict. `current_settings=True` analyses with the analysis settings of the current .env/.env.dist instead
         of those of simulation.json (everything else still comes from simulation.json).
+
+        A run with clones also gets its ensembles back (`clone_store.restore_ensembles`: `sim.ensembles` with the
+        clones' names, starts and stored verdicts, `sim.clone_summary` from clones.csv). Recomputing reclassifies the
+        nominals only: the clones keep their stored verdicts, and the nominal columns of clones.csv are rewritten.
         """
         json_path = Path(json_file_path)
         logger.info(f"Restoring simulation from {json_path}")
@@ -91,6 +98,10 @@ class SimulationSerializer:
         if not restored and not recompute_librations:
             logger.warning(f"No statuses restored for {json_path}: summary.csv is missing or has none of these bodies")
 
+        from resonances.simulation import clone_store
+
+        summary_only = clone_store.restore_ensembles(sim, json_path.parent, simulation_data)
+
         if recompute_librations and sim.bodies:
             saved = {body.name: cls._saved_resonances(body) for body in sim.bodies}
             skipped = sum(len(body.resonances()) - len(saved[body.name]) for body in sim.bodies)
@@ -99,6 +110,8 @@ class SimulationSerializer:
             logger.info("Identifying librations")
             sim.identify_librations(only=saved)
             sim.build_periodograms(only=saved)  # the spectra of the recomputed angles, as after a run
+        if recompute_librations and (sim.ensembles or summary_only):
+            clone_store.recompute_clone_rows(sim, json_path.parent, summary_only)
 
         return sim
 
@@ -221,6 +234,10 @@ class SimulationSerializer:
         }
         if simulation is not None and hasattr(simulation, "planets_saved"):
             data["simulation"]["planets_saved"] = list(simulation.planets_saved())
+        if simulation is not None and getattr(simulation, "ensembles", None):
+            from resonances.simulation import clone_store
+
+            data["simulation"]["ensembles"] = clone_store.ensembles_entry(simulation)
 
         free = cls._free_elements_setup(bodies, config)
         if free is not None:
@@ -343,7 +360,7 @@ class SimulationSerializer:
         free_omega = written(f"{body.name}-omega-free.csv" for body in bodies)
         if free_omega:
             manifest["free_omega"] = free_omega
-        for name in ("summary", "coherence") + MMR_TABLES:
+        for name in ("summary", "coherence", "clones") + MMR_TABLES:
             if (save_path / f"{name}.csv").exists():
                 manifest[name] = f"{name}.csv"
         if config.save_planets:

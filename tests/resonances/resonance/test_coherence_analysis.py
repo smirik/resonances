@@ -246,7 +246,8 @@ class TestReporting:
 
         fields = ca.summary_fields({}, gate)
 
-        assert fields['confirmed_ei'] is False
+        # confirmed_ei is the analysis' own column now (the e-i coupling at the decisive period), not the line's
+        assert 'confirmed_ei' not in fields
         assert fields['zlk_coherent'] is False
         assert fields['zlk_check'] == 'failed'
         assert fields['zlk_line_gamma2'] == 0.8

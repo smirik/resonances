@@ -54,31 +54,23 @@ class BatchManager:
 
         return default_batch_size
 
-    def execute_batches(self, simulation, bodies: List[Body], times: np.ndarray, progress: bool = False):
+    def execute_batches(self, simulation, bodies: List[Body], times: np.ndarray, progress: bool = False, clear_state: bool = True):
         """Run the pending batches in worker processes, recording each finished batch in simulation_state.json
-        (resume); RuntimeError when a batch fails."""
+        (resume); RuntimeError when a batch fails. The state file is removed after the last batch unless
+        `clear_state` is False (a run with clones keeps it until its clones are done)."""
         existing_state = self.state_manager.check_existing_simulation()
         if existing_state is not None:
             self._handle_existing_simulation(existing_state, simulation)
 
         batches = self.create_batches(bodies)
         config_hash = StateManager.compute_config_hash(self._get_config_dict(batches))
+        body_elements = self._body_elements(batches)
 
-        # Create or load state. A resume must continue the same run: same epoch, bodies, batches and settings.
+        # Create or load state. A resume must continue the same run: same epoch, bodies, initial elements, batches
+        # and settings; anything else is refused before a completed batch is reused.
         if existing_state and self.config.resume_enabled:
             state = existing_state
-            if self.state_manager.validate_config_match(state, self._legacy_config_hash()):
-                logger.warning(
-                    f"Resuming '{self.config.name}' from a state written by an older version: only tmax, Nout, the "
-                    "integrator, dt, batch_threshold and secular_angle_mode are checked, and the new batches are "
-                    "computed by this version"
-                )
-            elif not self.state_manager.validate_config_match(state, config_hash):
-                raise ValueError(
-                    f"Cannot resume '{self.config.name}' in {self.config.save_path}: the date, source, bodies, batch "
-                    "layout or settings differ from the interrupted run (a run without date= starts today). Pass the "
-                    "original settings, or remove simulation_state.json to start over in an empty folder."
-                )
+            self._check_resume(state, batches, config_hash, body_elements)
         else:
             state = SimulationState.create_new(
                 simulation_name=self.config.name,
@@ -87,12 +79,15 @@ class BatchManager:
                 batch_threshold=self.config.batch_threshold,
                 n_cores=self.config.n_cores,
                 config_hash=config_hash,
+                body_elements=body_elements,
             )
 
         # Filter to pending batches
         pending_batch_indices = state.get_pending_batches()
         if not pending_batch_indices:
             logger.info("All batches already completed")
+            if self.config.resume_enabled and clear_state:
+                self.state_manager.clear_state()
             return
 
         pending_batches = [(i, batches[i]) for i in pending_batch_indices]
@@ -105,7 +100,7 @@ class BatchManager:
             logger.info("All batches completed successfully")
 
             # Clear state file after successful completion
-            if self.config.resume_enabled:
+            if self.config.resume_enabled and clear_state:
                 self.state_manager.clear_state()
 
         except Exception as e:
@@ -113,6 +108,26 @@ class BatchManager:
             self.state_manager.save_state(state)
             logger.error(f"Batch execution failed: {e}")
             raise
+
+    def _check_resume(self, state: SimulationState, batches: List[List[Dict]], config_hash: str, body_elements: List[Dict]):
+        """Accept the saved state when its hash is this run's, or one of an older version's (with a warning: less is
+        checked); else ValueError (`_resume_refusal`), before any completed batch is reused."""
+        if state.config_hash == config_hash:
+            return
+        if state.config_hash == self._legacy_config_hash():
+            logger.warning(
+                f"Resuming '{self.config.name}' from a state written by an older version: only tmax, Nout, the "
+                "integrator, dt, batch_threshold and secular_angle_mode are checked, and the new batches are "
+                "computed by this version"
+            )
+        elif state.config_hash == StateManager.compute_config_hash(self._get_config_dict(batches, elements=False)):
+            logger.warning(
+                f"Resuming '{self.config.name}' from a state written before the bodies' initial elements were "
+                "recorded: the settings and batch layout match, the elements cannot be checked"
+            )
+        else:
+            logger.warning("Configuration mismatch: the saved simulation_state.json is of another run")
+            raise ValueError(self._resume_refusal(state, body_elements))
 
     def _handle_existing_simulation(self, state: SimulationState, simulation):
         """Log what an existing simulation_state.json says (another name, a failure, the batches done)."""
@@ -130,7 +145,8 @@ class BatchManager:
         logger.info(f"Resuming simulation: {completed}/{total} batches already completed")
 
     # Settings that change no saved number: names and paths, the figures, how the work is spread.
-    # The clone settings too: the clones run after these batches, outside them (simulation/ensemble_run.py).
+    # The clone settings (every `clones*` key) too: the clones run after these batches, outside them, and their own
+    # checkpoint covers them (simulation/ensemble_run.py, clone_store.py).
     RESUME_IGNORED = (
         'name',
         'save_path',
@@ -139,34 +155,77 @@ class BatchManager:
         'n_cores',
         'batch_enabled',
         'resume_enabled',
-        'clones',
-        'clones_source',
-        'clones_epoch',
-        'clones_seed',
-        'clones_batch',
-        'clones_plot_each',
     )
     # data_folder values a resumed run may switch between: the manifest looks in both (serializer.MANIFEST_DATA_FOLDERS),
     # and leaving them out of the hash keeps resuming the runs started before the data folder. Any other value is in
     # the hash: changing it would leave the completed batches' series where the manifest does not look.
     RESUME_DATA_FOLDERS = ('', 'data')
 
-    def _get_config_dict(self, batches: List[List[Dict]] | None = None) -> Dict[str, Any]:
+    def _get_config_dict(self, batches: List[List[Dict]] | None = None, elements: bool = True) -> Dict[str, Any]:
         """What a resumed run must share with the interrupted one, for the resume hash.
 
         The whole serialised config (date and source included: a run without date= starts at today's
         midnight) except RESUME_IGNORED and the plot settings, plus the batch layout as body names and
-        resonances, since completed batches are matched by index.
+        resonances, since completed batches are matched by index, and every body's initial elements as
+        they were used (`clone_store.canonical_elements`: exact float reprs, with the get-orb sha256 of a
+        get-orb body). The elements are what was obtained, not how: a refreshed get-orb answer, a new
+        catalogue or a Horizons re-query that returns another solution is another run. `elements=False`
+        gives the hash of the versions before the elements were included.
         """
         from .serializer import SimulationSerializer
 
         config = SimulationSerializer._config_to_dict(self.config)
-        config_dict = {k: v for k, v in config.items() if k not in self.RESUME_IGNORED and not k.startswith('plot')}
+        config_dict = {
+            k: v for k, v in config.items() if k not in self.RESUME_IGNORED and not k.startswith('plot') and not k.startswith('clones')
+        }
         if config_dict.get('data_folder') in self.RESUME_DATA_FOLDERS:
             config_dict.pop('data_folder')
         if batches is not None:
             config_dict["batches"] = [[[body["name"], [r.to_s() for r in body["resonances"]]] for body in batch] for batch in batches]
+            if elements:
+                from .clone_store import canonical_elements
+
+                config_dict["elements"] = [[canonical_elements(body["elem_or_num"]) for body in batch] for batch in batches]
         return config_dict
+
+    @staticmethod
+    def _body_elements(batches: List[List[Dict]]) -> List[Dict[str, Any]]:
+        """Per body, in batch order: its name, the digest of its canonical initial elements and its get-orb sha256
+        (None unless the elements came from MPC get-orb). Kept in simulation_state.json for `_resume_refusal`."""
+        from .clone_store import canonical_elements, digest
+
+        records = []
+        for batch in batches:
+            for body in batch:
+                elements = canonical_elements(body["elem_or_num"])
+                records.append({"name": str(body["name"]), "elements": digest(elements), "getorb_sha256": elements.get("getorb_sha256")})
+        return records
+
+    def _resume_refusal(self, state: SimulationState, body_elements: List[Dict[str, Any]]) -> str:
+        """The message of a refused resume: the bodies whose initial elements changed when the state names them,
+        else the general list of what the hash covers."""
+        where = f"Cannot resume '{self.config.name}' in {self.config.save_path}"
+        start_over = "remove simulation_state.json to start over in an empty folder."
+        old = {record["name"]: record for record in (state.body_elements or [])}
+        changed = []
+        for record in body_elements:
+            before = old.get(record["name"])
+            if before is None or before["elements"] == record["elements"]:
+                continue
+            if before.get("getorb_sha256") != record["getorb_sha256"]:
+                changed.append(f"{record['name']} (get-orb answer sha256 {before.get('getorb_sha256')} -> {record['getorb_sha256']})")
+            else:
+                changed.append(record["name"])
+        if changed:
+            return (
+                f"{where}: the initial elements of {', '.join(changed)} differ from those of the interrupted run (a "
+                "refreshed get-orb answer, another catalogue or a Horizons re-query with a new solution); its completed "
+                f"batches were computed from the old elements. Restore the original elements, or {start_over}"
+            )
+        return (
+            f"{where}: the date, source, bodies, their initial elements, batch layout or settings differ from the "
+            f"interrupted run (a run without date= starts today). Pass the original settings, or {start_over}"
+        )
 
     def _legacy_config_hash(self) -> str:
         """The resume hash of versions before the full-config one (simulation_state.json written by them)."""

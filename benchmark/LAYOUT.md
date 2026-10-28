@@ -142,7 +142,7 @@ example_id, tier, scope, mechanism, expected, checks, sources, known_fail, known
 
 Калибровка уверенности: `tools/calibrate.py [--run v2] [--report FILE]` считает ячейки (status, angle_status,
 reason) по вердиктам автора на прогоне и пишет `resonances/data/confidence_cells.json` и `<run>/calibration_rows.csv`
-(docs/classify.md).
+(docs/physics/confidence.md).
 
 Корзины: `resonant, transient, non-resonant, near-separatrix, slow-circulation, insufficient-time, uncertain,
 chaotic, kinematic-libration`. Уверенность: `high, medium, low`.

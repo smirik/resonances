@@ -150,25 +150,61 @@ resonance for a 1-Myr record. Choose the span and the output step with that in m
   the nominal has no special weight); `nominal_offset_sigma`; `source`, `product` (eq0, eq1, sbdb, get-orb), `epoch_mjd`
   (the covariance's), `run_date_mjd`, `propagated`, `propagation` (none, kepler, ias15), `propagation_days` (run date
   − epoch), `seed`, `nongrav`. The shares' denominator is `n_classified` (the draw-invalid clones included as
-  `invalid`; clones without a verdict are `n_missing`, left out). A Lidov-Kozai libration found kinematic
-  (non_resonant) and one without a gate verdict (uncertain) stay in different statuses, never merged.
+  `invalid`; clones without a verdict are `n_missing`, left out). A kinematic Lidov-Kozai libration and one without
+  a gate verdict stay apart ([why](physics/status-tree.md#legacy-integer-codes)).
 - `data/ensemble-<name>.csv` and `.json`: every draw (clone index and name, Keplerian elements at the covariance's
   epoch, `valid`, `d2`, the draw in the fit's coordinates `x_<label>`, the elements at the run's date `<element>_start`)
-  and the orbit solution with its provenance. `resonances.Ensemble.load` reads it back.
+  and the orbit solution with its provenance. `resonances.Ensemble.load` reads it back (to the bit).
+- `data/ensemble-<name>-results.npz` (with `SAVE` on, kept): every clone's verdict per row (status, confidence,
+  angle_status, reason, libration_origin), its initial a, half-widths and derived rows, and the angles of the clones and
+  of the nominal thinned to 2000 points for the figure (years float64, degrees float32: a thumbnail, never analysed).
+  Restore reads it ([below](#resume-and-restore)).
 - `figures/<layout>/<name>-<resonance>-clones.png` (plot kind `clones`, also drawn with `combined`; in the folder of the
   nominal's row; drawn when `PLOT` selects the nominal's row or any clone's): (a) the angle of every clone coloured by its
-  status, the nominal in black; (b) the status of every clone against its initial a, with a* and a* ± the libration
-  half-width the clones' episodes measured; (c) the shares with their Wilson intervals.
+  status, the nominal in black; (b) the status of every clone against its initial a (a jitter separates the points
+  vertically), with the catalogue resonant axis $a_{\rm res}$ of an MMR (dotted, legend `a_res (catalogue)`) and
+  $a_{\rm res}$ ± the median libration half-width the clones' episodes measured (dashed); (c) the shares with their
+  Wilson intervals, the nominal's status starred ([How to read the figures](reading-figures.md#clones)).
 
-## Settings
+The settings (`CLONES`, `CLONES_SOURCE`, `CLONES_EPOCH`, `CLONES_SEED`, `CLONES_BATCH`, `CLONES_PLOT_EACH`,
+`CLONES_CACHE_DIR`) are listed in [Configuration](config.md#clone-options).
 
-`CLONES` (0 = off), `CLONES_SOURCE` (`auto`, `astdys`, `neodys`, `sbdb`, `mpc`), `CLONES_EPOCH` (`fit`, `standard`, empty
-= the source's default), `CLONES_SEED` (0), `CLONES_BATCH` (20), `CLONES_PLOT_EACH` (False), `CLONES_CACHE_DIR`
-(`cache/clones`); see [Configuration](config.md#clone-options).
+## Resume and restore
 
-Not done: the clones' batches are not resumed after an interruption, and `simulation.json`/restore know only the
-ordinary bodies (the clones' rows and series are in summary.csv and `data/`); no line-of-variations sampling or
-statistical ranging for orbits too weak for a Gaussian; no weighted ensembles.
+**Resume.** A run with clones keeps one checkpoint for the ordinary bodies and the clones, `clones_state/` in
+`save_path`, and removes it (and `simulation_state.json`) only after the whole run has succeeded. An interrupted run is
+resumed by running the same script again with the same `save_path` (`resume_enabled`, on by default):
+
+- each finished clone batch left `clones_state/batch-<i>.npz` (published atomically; checked when read: run, members,
+  rows, numbers): it is not run again; a batch without a valid file runs again and its old rows are replaced;
+- a finished ordinary part is not run again: in one simulation its verdicts are read back from summary.csv (this needs
+  `save_summary`; without it the ordinary bodies run again), in batches through `simulation_state.json`. The nominal
+  is never moved into another grouping (its trajectory depends on its simulation's particles);
+- the run's identity is checked first: the ordinary bodies with their elements and grouping, the planets' initial
+  state, the settings, the clone settings and batches, each ensemble (the provider's file sha256, the solution, the
+  draws, seed and rank) and the clones' starting elements at the date, which `clones_state/starts.npz` keeps and a
+  resume compares bit for bit; and the versions of resonances, rebound and numpy. Any difference raises `ValueError`
+  saying what changed (an orbit solution fetched again with `orbit_solution(..., refresh=True)` is another cloud). To
+  start over, remove `clones_state/`.
+
+**Restore.** `simulation.json` lists the ensembles (`simulation.ensembles`, [Serialization](serialization.md));
+`SimulationSerializer.restore` rebuilds `sim.ensembles` (names, starting elements, the stored verdicts and thumbnails)
+and `sim.clone_summary` (clones.csv), and `ensemble_run.plot_ensembles` draws the figure again. With `SAVE` off there
+is no manifest: only `sim.clone_summary` comes back (a warning). `recompute_librations=True` reclassifies the nominal
+from its saved series; the clones keep their stored verdicts (`clone_verdicts = 'stored'`), and the nominal columns of
+clones.csv (`nominal_status`, `nominal_confidence`, `nominal_agreement`) are rewritten in the run's folder.
+
+## Limits
+
+Not done: a clone's own series are not reclassified by a restore; no line-of-variations sampling or statistical ranging
+for orbits too weak for a Gaussian; no weighted ensembles.
+
+No shortcut that gives every clone the nominal's verdict without classifying it (author 2026-10-28). A small spread of
+the cloud in a does not certify that every clone shares the nominal's verdict: chaos inside a resonance separates
+clones of any spread over a long enough span (33128 6N-7 librates with a Lyapunov time of about 4 kyr), the classifier
+has thresholds a tiny difference can cross, and a nominal from another source can lie off its own cloud
+(`nominal_offset_sigma`). And integrating the clones is cheap next to classifying them, so skipping the integration
+would save little.
 
 References: Milani, A., Chesley, S. R. & Valsecchi, G. B. (2000), Planet. Space Sci. 48, 945; Milani, A. et al. (2005),
 A&A 431, 729 (multiple solutions, the line of variations); Broucke, R. A. & Cefola, P. J. (1972), Celest. Mech. 5, 303

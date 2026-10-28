@@ -13,32 +13,10 @@ Lidov-Kozai angle $\omega$.
 
 ## How to read the figure
 
-**Mean-motion resonances.** The left half holds the time series, all on one time axis:
-
-| panel | what it shows |
-|---|---|
-| (a) | $\sigma$ unwrapped: osculating (grey) and filtered $\sigma_f$ (black), centre, episodes (numbered), turning points |
-| (b) | $\sigma$ in a 360° window around the centre: every osculating sample and $\sigma_f$ |
-| (c) | $\dot\sigma / 2\omega_{0,\rm ref}$ on a symmetric-log axis; $\omega_{0,\rm ref}$ is the decisive episode's (else the longest librating episode's, else theory), and dashed lines mark each episode's own $\pm 2\omega_0$. These are cosine-equivalent scales: for a cosine well $2\omega_0$ is the speed on the separatrix at the bottom of the well; a non-cosine or co-orbital well has its own $\sqrt{2(E_{\rm sep} - V_{\rm min})}$ |
-| (d) | $a$ in au: osculating, filtered, the exact resonance $a_*$, the catalogue value and the band of the resonance's half-width |
-| (e) | $\dot a$ with the fitted force law $R \sin(\sigma_f - \phi_0) + C$ in windows, with its $R^2$ |
-| (f), (g) | $e$ and $i$ |
-| (h) | the pendulum's energy $h$ of every cycle (log axis), the separatrix zone and $h = 1$ |
-| (i) | the slow centre of $\sigma$ over $\sigma_f$ |
-| (j) | the centres of the other members of the multiplet and of an owner resonance: a flat line is the member that librates |
-
-Below them: (k) the phase portrait of the whole record coloured by time, (l) the portrait of the accepted episodes,
-(m) the FAIR portrait of two-body angles, and the legend. The right half is the verdict: the plaque with the
-status, the verdict explained in words, the steps of the [status tree](status-tree.md), the margins and caps of the
-[confidence](confidence.md) (✓ passes, ⚠ thin, ✗ fails, – not applicable, ? not measured) and the numbers behind
-them. Every number there is a column of the [output files](../output.md).
-
-**Secular and Lidov-Kozai.** (a) $\sigma$ unwrapped, filtered at the scale the verdict rests on, with turning
-points and episodes; (b) $\sigma$ modulo 360°; (c) its rate; (d), (e) $e$ and $i$; (f) for a secular angle the
-rate of the element the angle contains against $A \sin\sigma_f + B\cos\sigma_f + C$, for Lidov-Kozai the free
-$\omega$ against the osculating one (a free $\omega$ that winds makes the libration kinematic); (g) the centre of
-$\sigma_f$; (h) the portrait $(e\cos\sigma, e\sin\sigma)$; (i) $\sigma_f$ against its rate (secular) or the free
-eccentricity vector (Lidov-Kozai). The right half is as above.
+The left half of each figure holds the time series and the phase portraits, the right half the verdict: the plaque
+with the status, the verdict in words, the steps of the [status tree](status-tree.md), the margins and caps of the
+[confidence](confidence.md) and the numbers behind them, each a column of the [output files](../output.md). What
+every panel, line and icon means: [How to read the figures](../reading-figures.md).
 
 ## Resonant
 
@@ -148,11 +126,11 @@ The episode ends where $a$ jumps (a kick, as at a close approach to a planet); a
 
 The catalogue angle drifts with $\varpi$, but its member $\sigma + 2(\varpi_M - \varpi)$ (13M-24+2+9) librates about a fixed centre: the episodes belong to that member (reason subresonance_librates). The second figure is the member's own verdict.
 
-**82831**, `13M-24+0+11`: `transient` · `episodic` · `ends: circulation` · `subresonance_librates` · `high`. Record: 100 kyr, step 0.5 yr, SABA(10,6,4).
+**82831**, `13M-24+0+11`: `transient` · `episodic` · `ends: circulation` · `subresonance_librates` · `medium`. Record: 100 kyr, step 0.5 yr, SABA(10,6,4).
 
 [![mmr2__82831__13M-24+0+11](../img/gallery/mmr2__82831__13M-24+0+11.png){ loading=lazy }](../img/gallery/mmr2__82831__13M-24+0+11.png)
 
-**82831**, `13M-24+2+9`: `transient` · `episodic` · `ends: circulation` · `dynamic_episode` · `high`. Record: 100 kyr, step 0.5 yr, SABA(10,6,4).
+**82831**, `13M-24+2+9`: `transient` · `episodic` · `ends: circulation` · `dynamic_episode` · `medium`. Record: 100 kyr, step 0.5 yr, SABA(10,6,4).
 
 [![mmr2__82831__13M-24+0+11__13M-24+2+9](../img/gallery/mmr2__82831__13M-24+0+11__13M-24+2+9.png){ loading=lazy }](../img/gallery/mmr2__82831__13M-24+0+11__13M-24+2+9.png)
 
@@ -292,7 +270,7 @@ Angles of the proper perihelion and node against the planets' secular modes.
 
 The angle of the proper perihelion against the phase of Saturn's g6 mode librates over the whole record.
 
-**1222**, `g-g6`: `resonant` · `libration` · `dynamic_libration` · `certain`. Record: 10 Myr, step 500 yr, SABA(10,6,4).
+**1222**, `g-g6`: `resonant` · `libration` · `dynamic_libration` · `certain`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
 
 [![secular__1222__g-g6](../img/gallery/secular__1222__g-g6.png){ loading=lazy }](../img/gallery/secular__1222__g-g6.png)
 
@@ -300,7 +278,7 @@ The angle of the proper perihelion against the phase of Saturn's g6 mode librate
 
 A slow libration of g − g6 + s − s6: few cycles fit in the record, so the confidence is high rather than certain.
 
-**1020**, `g-g6+s-s6`: `resonant` · `libration` · `dynamic_libration` · `high`. Record: 10 Myr, step 500 yr, SABA(10,6,4).
+**1020**, `g-g6+s-s6`: `resonant` · `libration` · `dynamic_libration` · `high`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
 
 [![secular__1020__g-g6+s-s6](../img/gallery/secular__1020__g-g6+s-s6.png){ loading=lazy }](../img/gallery/secular__1020__g-g6+s-s6.png)
 
@@ -308,7 +286,7 @@ A slow libration of g − g6 + s − s6: few cycles fit in the record, so the co
 
 The z1 angle librates in part of the record and circulates in the rest.
 
-**2306**, `g-g6+s-s6`: `transient` · `episodic` · `dynamic_episode` · `certain`. Record: 10 Myr, step 500 yr, SABA(10,6,4).
+**2306**, `g-g6+s-s6`: `transient` · `episodic` · `dynamic_episode` · `certain`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
 
 [![secular__2306__g-g6+s-s6](../img/gallery/secular__2306__g-g6+s-s6.png){ loading=lazy }](../img/gallery/secular__2306__g-g6+s-s6.png)
 
@@ -316,7 +294,7 @@ The z1 angle librates in part of the record and circulates in the rest.
 
 The z1 angle circulates slowly over the whole record: the body is close to the resonance but not in it.
 
-**847**, `g-g6+s-s6`: `non_resonant` · `circulation` · `circulation` · `certain`. Record: 10 Myr, step 500 yr, SABA(10,6,4).
+**847**, `g-g6+s-s6`: `non_resonant` · `circulation` · `circulation` · `certain`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
 
 [![secular__847__g-g6+s-s6](../img/gallery/secular__847__g-g6+s-s6.png){ loading=lazy }](../img/gallery/secular__847__g-g6+s-s6.png)
 
@@ -324,7 +302,7 @@ The z1 angle circulates slowly over the whole record: the body is close to the r
 
 The period of the angle is comparable with the record: too few cycles to decide, extend the integration.
 
-**363**, `g-g6+s-s6`: `uncertain` · `insufficient_time` · `baseline_needed`. Record: 10 Myr, step 500 yr, SABA(10,6,4).
+**363**, `g-g6+s-s6`: `uncertain` · `insufficient_time` · `baseline_needed`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
 
 [![secular__363__g-g6+s-s6](../img/gallery/secular__363__g-g6+s-s6.png){ loading=lazy }](../img/gallery/secular__363__g-g6+s-s6.png)
 
@@ -352,7 +330,7 @@ The osculating $\omega$ librates, but the free $\omega$ (the forced terms remove
 
 Two long episodes of libration of $\omega$, separated by an interval without libration.
 
-**162474**, `LK`: `transient` · `episodic` · `dynamic_episode` · `certain`. Record: 1.5 Myr, step 10 yr, SABA(10,6,4).
+**162474**, `LK`: `transient` · `episodic` · `dynamic_episode` · `certain`. Record: 1.5 Myr, step 10 yr (one point in 5 of a 2 yr output), SABA(10,6,4).
 
 [![zlk__162474__LK__1500kyr](../img/gallery/zlk__162474__LK__1500kyr.png){ loading=lazy }](../img/gallery/zlk__162474__LK__1500kyr.png)
 
@@ -382,17 +360,17 @@ The body is ejected: $e$ grows above 1 and $a$ becomes negative, so the record c
 
 ## Regenerating the figures
 
-Every figure of this documentation (this gallery and the schematic drawings of the physics pages) is made by one
-command from the repository root:
+Every figure of this documentation (this gallery, the schematic drawings of the physics pages and the standalone
+figures of [How to read the figures](../reading-figures.md)) is made by one command from the repository root:
 
 ```bash
 make docs-figures                                  # everything (a few minutes, no integration)
-make docs-figures ONLY=alias,pendulum_portrait     # some figures, by anchor or schematic name
+make docs-figures ONLY=alias,pendulum_portrait     # some figures, by anchor, schematic or set name
 uv run python docs/tools/build_figures.py --list   # the names
 ```
 
 The script (`docs/tools/build_figures.py`) reads the saved series of the benchmark examples (`benchmark/data`, or
 the folder in `RESONANCES_BENCHMARK_DATA`), analyses each again with the installed package and draws it with the
 package's own figure code; nothing is integrated. It rewrites this page from the fresh verdicts and prints any
-difference from the last saved benchmark run. Without the benchmark data the gallery figures are kept and only the
-schematics are redrawn. Running it twice changes nothing: a file whose content is the same is not rewritten.
+difference from the last saved benchmark run. Without the benchmark data the gallery and standalone figures are kept
+and only the schematics are redrawn. Running it twice changes nothing: a file whose content is the same is not rewritten.

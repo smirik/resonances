@@ -11,22 +11,10 @@ elements, before the integration starts.
 
 ## The angle and its rate
 
-For the resonant angle (Murray & Dermott 1999, eq. 8.18, p. 329)
-
-$$
-\sigma = k\lambda + \sum_j k_j\lambda_j + p\varpi + \sum_j p_j\varpi_j + v\Omega + \sum_j v_j\Omega_j ,
-$$
-
-the package uses the rate model (Murray & Dermott 1999, eq. 8.22, p. 331)
-
-$$
-\nu(a) = k\,n(a) + \sum_j k_j n_j + \nu_\text{slow}, \qquad n(a) = 2\pi a^{-3/2}\ \text{rad/yr},
-$$
-
-where $n_j$ are the planets' mean motions measured in the same integration (the slope of the saved $\lambda_j$) and
-$\nu_\text{slow}$ collects the fitted precession terms $p\dot\varpi + \dots$. The exact resonance $a_*$ solves
-$\nu(a_*) = 0$. This is a model of the rate, not an identity of the N-body motion; whether $\dot\sigma$ really
-follows it is tested later ([Is it this resonance?](response.md)).
+The angle $\sigma$, its rate model $\nu(a)$ and the exact resonance $a_*$, where $\nu(a_*) = 0$, are defined on
+[The resonant pendulum](pendulum.md#the-resonant-angle-and-its-rate). Here $\nu(a)$ is used only to predict how far
+the angle turns between two saved points; whether $\dot\sigma$ really follows it is tested later
+([Is it this resonance?](response.md)).
 
 $\sigma \bmod 2\pi$ is exact at every saved point. What can go wrong is the count of whole turns between two points,
 and the presence of short-period terms that the step cannot resolve.
@@ -88,16 +76,20 @@ $$
 \qquad \bar\nu_{\lambda,i} = \nu\!\left(\tfrac{a_{i-1} + a_i}{2}\right) - \nu_\text{slow},
 $$
 
-with $\operatorname{wrap}$ into $[-\pi, \pi)$. The slow part is then put back with its own winding: the body's
+with $\operatorname{wrap}$ into $[-\pi, \pi)$ and $\nu_\text{slow}$ the mean rate of the slow part measured on the record
+(column `ctx_slow_rate_arcsec_yr`). The slow part is then put back with its own winding: the body's
 $\varpi$ takes its turns from the low-passed eccentricity vector $\operatorname{LP}[e\,e^{i\varpi}]$ (band
 `MMR_JITTER_BAND_YR`), not from the osculating $\varpi$, so that fast loops of the eccentricity vector around zero
 insert no spurious slow turns. If a planet's slow element needed by $s$ was not saved, the full angle is unwrapped
 with the full $\nu$. The residual of the $\lambda$ part measures how well the model predicts every step. **Question: can the record be stitched?** Yes when its 99th percentile is
 $\le$ `MMR_UNWRAP_MAX_RESID_P99_DEG` = 45° and its largest value $\le$ `MMR_UNWRAP_MAX_RESID_DEG` = 135°.
 Otherwise the angle is `undefined` / `alias` and the verdict `invalid`. Where the eccentricity passes near zero,
-$\varpi$ itself can turn by up to $\pi$ between two points at any step; this is not an alias. When $\varpi$ is
-undefined over most of the record (its own scatter about the low-passed vector $e\,e^{i\varpi}$ exceeds
-`MMR_JITTER_MAX_RAD` = 0.785 rad), the verdict is `invalid` / `undefined_phase`.
+$\varpi$ itself can turn by up to $\pi$ between two points at any step; this is not an alias (flag
+`varpi_fast_low_e`). **Question: is the phase defined at all?** The verdict is `invalid` / `undefined_phase` when
+three things hold together: the perihelion jitter $\lvert p\rvert\,\delta e/\bar e$ exceeds `MMR_JITTER_MAX_RAD` =
+0.785 rad, the full angle fails the residual limits above, and $\varpi$'s own scatter about the low-passed vector
+$e\,e^{i\varpi}$ exceeds that limit on more than `MMR_VARPI_UNDEFINED_MAX_SHARE` = 0.5 of the record. The jitter
+alone, with $\varpi$ defined, is only a flag and the cap `jitter_low_e` (at most `medium`).
 
 ![True and sampled rate of an angle, and the ghost of an aliased branch](https://smirik.github.io/resonances/img/physics/aliasing.png)
 
@@ -105,7 +97,8 @@ undefined over most of the record (its own scatter about the low-passed vector $
 
 **Question: which periods can a libration of this angle have?** The filtered angle $\sigma_f$ must keep every
 libration and remove the short-period terms: the orbital period and the synodic periods with the planets of the
-angle, $P_{\text{syn},j} = 2\pi/\lvert n - n_j\rvert$. The cutoff period is
+angle, $P_{\text{syn},j} = 2\pi/\lvert n - n_j\rvert$ ($2\pi/(n + n_j)$ for a retrograde orbit, with $n, n_j > 0$). The
+cutoff period is
 
 $$
 P_c = \max\!\left(1.5\,\max_j P_{\text{syn},j},\ \ \frac{P_\text{floor}}{2}\right),
@@ -139,13 +132,21 @@ G(P) = \left[1 + \left(\frac{\tan(\pi\Delta t/P)}{\tan(\pi\Delta t/P_c)}\right)^
 \ \xrightarrow{\ \Delta t \ll P_c\ }\ \left[1 + \left(\frac{P_c}{P}\right)^{4}\right]^{-1}.
 $$
 
-So $G(2P_c) = 0.94$, $G(P_c) = 0.5$, $G(P_c/1.5) = 0.165$: where the floor sets $P_c$, the shortest libration keeps
-94 % of its amplitude, and the synodic terms, at most $P_c/1.5$, keep at most 16.5 %. The filter's edges spread over
+$G(P_c) = 0.5$ exactly. In the small-step limit $G(2P_c) \approx 0.94$ and $G(P_c/1.5) \approx 0.165$: where the
+floor sets $P_c$, the shortest libration keeps 94 % of its amplitude, and the synodic terms, at most $P_c/1.5$, keep
+at most 16.5 %. At a finite step the digital expression is sharper (for $\Delta t = P_c/3$, $G(2P_c) = 81/82$);
+the analysis uses it. The filter's edges spread over
 about $P_c$; turning points and everything measured on them are taken in the window
 $[t_0 + P_c,\ t_1 - P_c]$ (`FILTER_EDGE_TRIM_CUTOFFS` = 1).
 
 When the planets' longitudes are saved, the planets' own slow inequalities (the 900-yr Jupiter–Saturn great
 inequality) enter $\sigma$ linearly through $\sum_j k_j\lambda_j$ and are subtracted exactly before filtering.
+
+??? info "The ripple in detail"
+    $\sigma_\text{clean} = \sigma - \sum_j k_j\,\delta\lambda_j^\text{slow}$ (`MMR_RIPPLE_REMOVE`, band
+    `MMR_RIPPLE_BAND_YR`). Without saved planets the flag `ripple_not_removed` is set and the predicted ripple raises
+    the turning-point prominence ([What the angle does](geometry.md#turning-points)). A co-orbital angle keeps its
+    planet's longitude as it is: the body follows the planet's slow longitude.
 
 ![Gain of the forward-backward Butterworth filter against period](https://smirik.github.io/resonances/img/physics/filter_gain.png)
 
@@ -162,7 +163,9 @@ $\Delta t \ge 37.5$ yr; for a Jupiter Trojan at $\Delta t \ge 18.5$ yr.
 **Question: does the filter keep the observed libration?** If the gain at the measured libration period is below
 `MMR_L8_GAIN_FULL` = 0.94 (roughly $P_\text{cyc} < 2P_c$), the shape of the libration (its amplitude, centre and
 energy) is partly the filter's. The flag `filter_too_slow` is set and the checks that read the shape are
-`not_measured`.
+`not_measured`: the identity L3, the force law L4 and the amplitude check B1 of the response, both potential checks R0,
+one pendulum, and the margins L2 (separatrix distance), L5 and L6 (centre shift). A margin that already failed or does
+not apply keeps its value; the numbers themselves stay in the output.
 
 ## Short periods folded by the step
 
@@ -184,8 +187,12 @@ $\sigma_f$ little, but they enter $a_f$, and the checks that read $a$ (the ident
 - **except** a plain geometric circulation (reason `circulation` or `alias` with no forced-wave runs): it reads
   neither the identity nor the force law, so the flag stays and the cap does not apply
   (`MMR_SHORT_PERIOD_CAP_CIRCULATION` = False);
+- the record itself never lifts the cap (`MMR_SHORT_PERIOD_CAP_RATIO` = 0; a positive value enables an opt-in lift);
 - the record gets `smp_fold_free_step_yr`, the largest step of `MMR_RESAMPLE_STEPS_YR` below its own at which
-  nothing folds. When the cap is what holds the confidence down, the action is `resample` at that step.
+  nothing folds (`sampling.fold_free_step`). When the cap is what holds the confidence down
+  (`confidence.cap_binds`), the action is `resample` at that step.
+
+The same test (`sampling.short_period_trigger`) is the dry-run's predicate.
 
 The scatter of $a$ at short periods against the libration's own swing of $a$ (`smp_da_sp_over_a_excursion`) above
 `MMR_SHORT_PERIOD_A_RATIO` = 0.5 sets the warning flag `a_short_period_scatter`. On a folding step with that much

@@ -161,30 +161,3 @@ def test_deep_well_and_one_well_cycles_are_unchanged():
     assert np.isnan(single.well_rad)
     assert single.action_ratio == p.action_ratio_in_potential(SINGLE, single.h)
     assert single.action_ratio == pytest.approx(0.3841667556, abs=1e-6)
-
-
-def test_h_in_barrier_units():
-    """h over the global depth -> h over the deepest well's barrier: for DOUBLE the barrier sits at h = 0.249494
-    (mpmath above), so h = 0.1 is 0.1 / 0.249494 = 0.400811 of the way to it; a V of one well keeps h."""
-    h_barrier = float((_v(BARRIER) - V_MIN) / (V_MAX - V_MIN))
-    assert p.h_in_barrier_units(DOUBLE, 0.1) == pytest.approx(0.1 / h_barrier, rel=1e-9)
-    assert p.h_in_barrier_units(DOUBLE, h_barrier) == pytest.approx(1.0, rel=1e-9)
-    assert p.h_in_barrier_units(SINGLE, 0.3) == 0.3 and p.h_in_barrier_units(None, 0.3) == 0.3
-
-
-def test_averaged_classes_read_h_lo_over_the_wells_own_barrier():
-    """A turning point's h in the averaged well is 1 at its own barrier; the zone's h_lo is read in the same units. With
-    a V_E barrier at h 0.2495, h_lo = 0.2 (global) is 0.80 of the way to the barrier: a cycle whose turning points reach
-    0.5 of its own well is deep, not zone (it was zone against the global 0.2)."""
-    from resonances.resonance.analysis.mmr import zone as zone_module
-
-    cycles = [p.CycleEnergy(0.0, 2.0, False, 0.1, 0.3, 2.0, 1.0)]
-    kinds = [zone_module.CYCLE_EPISODE]
-    energies = zone_module.TurningPointEnergies(np.array([0.0, 1.0, 2.0]), np.array([0.4, 0.5, 0.45]))
-    edge = Zone(ZoneMethod.NUMERIC, 0.9, 0.2, 1.0, 1.0, 1.0, False)
-    barrier = p.h_in_barrier_units(DOUBLE, edge.h_lo)
-    assert barrier == pytest.approx(0.2 / 0.249494, rel=1e-5)
-    classes, edges, source = zone_module.averaged_classes(cycles, kinds, [CycleClass.ZONE], [True], energies, edge, barrier)
-    assert classes == [CycleClass.DEEP] and edges == [False] and source == zone_module.SOURCE_AVERAGED_POTENTIAL
-    # without the barrier edge (the default) zone.h_lo, global: the same as before W25 for a V_E of one well
-    assert zone_module.averaged_classes(cycles, kinds, [CycleClass.ZONE], [True], energies, edge)[0] == [CycleClass.ZONE]

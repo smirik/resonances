@@ -1,8 +1,8 @@
 {
  "version": 1,
  "note": "Written by benchmark/tools/calibrate.py from the author verdicts. n_examples/n_errors/accuracy_95: labelled verdicts of the cell at confidence high or certain; uncertain/invalid verdicts and author-uncertain labels are abstentions. Reported in summary.csv (cell_* columns); the file changes no confidence level.",
- "run": "v2-w24-tx9b",
- "labelled_rows": 299,
+ "run": "v2-w25-final",
+ "labelled_rows": 302,
  "cells": [
   {
    "status": "non_resonant",
@@ -15,6 +15,20 @@
     1.0
    ],
    "n_labelled_all": 139,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "transient",
+   "angle_status": "episodic",
+   "reason": "dynamic_episode",
+   "n_examples": 35,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.9011,
+    1.0
+   ],
+   "n_labelled_all": 59,
    "n_errors_all": 0,
    "error_examples": []
   },
@@ -33,20 +47,6 @@
    "error_examples": []
   },
   {
-   "status": "transient",
-   "angle_status": "episodic",
-   "reason": "dynamic_episode",
-   "n_examples": 29,
-   "n_errors": 0,
-   "accuracy_95": [
-    0.883,
-    1.0
-   ],
-   "n_labelled_all": 57,
-   "n_errors_all": 0,
-   "error_examples": []
-  },
-  {
    "status": "non_resonant",
    "angle_status": "circulation",
    "reason": "alias",
@@ -61,20 +61,6 @@
    "error_examples": []
   },
   {
-   "status": "transient",
-   "angle_status": "episodic",
-   "reason": "subresonance_librates",
-   "n_examples": 2,
-   "n_errors": 0,
-   "accuracy_95": [
-    0.3424,
-    1.0
-   ],
-   "n_labelled_all": 2,
-   "n_errors_all": 0,
-   "error_examples": []
-  },
-  {
    "status": "non_resonant",
    "angle_status": "episodic",
    "reason": "kinematic_libration",
@@ -85,6 +71,20 @@
     1.0
    ],
    "n_labelled_all": 5,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "transient",
+   "angle_status": "episodic",
+   "reason": "subresonance_librates",
+   "n_examples": 1,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.2065,
+    1.0
+   ],
+   "n_labelled_all": 2,
    "n_errors_all": 0,
    "error_examples": []
   },
@@ -159,6 +159,16 @@
    "n_examples": 0,
    "n_errors": 0,
    "n_labelled_all": 2,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "near_separatrix",
+   "angle_status": "near_separatrix",
+   "reason": "separatrix_zone",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 1,
    "n_errors_all": 0,
    "error_examples": []
   },

@@ -1,6 +1,7 @@
 # plotting — figure conventions
 
-User docs: `docs/plots.md`. Every rule below was decided with the author (dates in `dev/decisions.md`, Figures).
+User docs: `docs/plots.md` (files, settings) and `docs/reading-figures.md` (how to read each panel). A change to what a
+figure shows updates both and reruns `make docs-figures`. Every rule below was decided with the author (dates in `dev/decisions.md`, Figures).
 
 ## Modules
 
@@ -17,13 +18,16 @@ User docs: `docs/plots.md`. Every rule below was decided with the author (dates 
   capture); `CAP_ALTERNATIVES`: every cap down to medium/low names the other reading and what decides it. A withheld
   G2a step and the direction of an a-swing change ("shrank"/"grew") are worded here.
 - `plotting/mmr_plots.py`: `MMRDiagnostics` + `draw_*` panels + `MMRPlotter` (standalone panels: recurrence, FAIR, portrait,
-  cycles; the combined figure is `mmr_combined`). `plotting/style.py` holds the `screen`/`paper` styles and `plot_options`
-  defaults/validation.
+  cycles; the combined figure is `mmr_combined`). The a of `cycles` is the analysis' a_f (`axis_cycles`), else the
+  raw a, never `body.axis_filtered` (a 2000-yr low-pass erases a faster MMR libration: 1921 2J-1).
+  `plotting/style.py` holds the `screen`/`paper` styles and `plot_options` defaults/validation.
 - `plotting/secular_plots.py`: `SecularDiagnostics` + `draw_*` + `SecularPlotter` (secular and ZLK rows): kinds `angle`,
   `rate`, `portrait`, `combined` (the one-page V1 figure, `draw_long_period_combined`). `SecularPlotter` and
   `MMRPlotter` share `DiagnosticPlotter` (`plotting/base.py`); `DataManager.DIAGNOSTIC_PLOTTERS` maps resonance types to them;
   panel (f) draws the rate of each element in `Response.variables` (d sin(i/2)/dt for an Ω-only angle, with `r2_i`),
-  (h) is sin(i/2) cos/sin σ there.
+  (h) is sin(i/2) cos/sin σ there. ZLK (f): the drift of the osculating and the free ω from their first values, in
+  turns, with a legend (`_draw_free_omega_drift`); the right column's "also measured" lines (e-i coupling, attribution,
+  the centre's slow line) come from `verdict_text.zlk_column_lines`, measured facts only.
 - `clone_plots.py`: the `clones` kind (angles of every clone coloured by status, status against initial a, shares
   with Wilson intervals).
 - Evolution plots (flexible panel configurator), ecc-vector, cross-spectrum and free-omega plots.
@@ -46,6 +50,8 @@ User docs: `docs/plots.md`. Every rule below was decided with the author (dates 
 - Plaque `STATUS · angle_status · CONFIDENCE`, "ends: …" last.
 - σ̇ axis symlog σ̇/2ω₀ for every record, the σ̇ = 0 line highlighted; the osculating a envelope clipped at the axis
   (triangle at the edge).
+- Panel (e): the windows' sine on σ at the response cutoff (`prep.angle_response`); none when the harmonic law (CS12)
+  or the 1:1 law decided, the panel prints that law's numbers instead.
 - Panel (d): three levels of a; a_res on top, style B (width 1.3, alpha 0.8, white halo); a* alpha 0.8
   (`AXIS_LEVEL_ALPHA`).
 - Angle labels in [0°, 360°) (270°, not −90°).
@@ -56,7 +62,7 @@ User docs: `docs/plots.md`. Every rule below was decided with the author (dates 
 
 ## Known defects (open)
 
-- Panel (e) draws the single-sine windows even when CS12 selects the harmonic law (ND13: 0.18/0.19 drawn, 0.646
-  decided).
+- Panel (e) still draws the single-sine windows on σ at the response cutoff without the moving-well shift and for a
+  multiplet or a line-rule (raised-cutoff) law; only the harmonic (CS12) and 1:1 laws replace them by their numbers.
 - Three ▼-marker overlaps remain on the benchmark.
 - `benchmark/tools/reclassify.py --figures` writes into `benchmark/data/examples/`; saved figures can be stale.

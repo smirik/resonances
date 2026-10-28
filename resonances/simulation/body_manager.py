@@ -72,6 +72,10 @@ class BodyManager:
         to config.date with a warning (MPC_EPOCH_POLICY=propagate, the default; refused beyond MPC_PROPAGATE_MAX_DAYS
         when that is set) or refused (strict). A refusal raises ValueError, or, when a `refused` dict is given (a
         find over many bodies), is put there as {str(identifier): message} and the body left out.
+
+        With MPC_LOOKUP=file_then_api an identifier the catalogue does not have (no row; a malformed or ambiguous
+        identifier still raises in the lookup) gets its nominal orbit from MPC get-orb (`mpc_getorb`), with the same
+        epoch policy; a failed request is a refusal as above.
         """
         settings = mpc_settings(self.config.mpc_catalog)
         snapshot = mpcorb.snapshot(settings=settings)
@@ -86,6 +90,9 @@ class BodyManager:
         date_mjd = mjd_from_datetime(self.config.date)
         policy, max_days = self.config.mpc_epoch_policy, self.config.mpc_propagate_max_days
         found, off_epoch = {}, []
+        if getattr(self.config, 'mpc_lookup', 'file') == 'file_then_api':
+            missing = [str(i) for i in dict.fromkeys(str(i) for i in identifiers) if i not in rows]
+            off_epoch += self._getorb_elements(missing, found, refused, date_mjd, settings.warn_u)
         for key, row in rows.items():
             span = float(row['epoch_mjd']) - date_mjd
             on_date = abs(span) <= EPOCH_TOLERANCE_DAYS
@@ -111,7 +118,42 @@ class BodyManager:
         if off_epoch:
             for key, elem in zip(off_epoch, propagate_elements([found[key] for key in off_epoch], self.config)):
                 found[key] = elem
-        return found
+        return {key: found[key] for key in dict.fromkeys(str(i) for i in identifiers) if key in found}  # the order asked for
+
+    def _getorb_elements(self, identifiers, found: dict, refused: Optional[dict], date_mjd: float, warn_u: int) -> list:
+        """MPC_LOOKUP=file_then_api: the get-orb nominal of each identifier the catalogue lacks, put in `found` (or a
+        refusal: raised, or put in `refused`); returns those at another epoch than the date, to be propagated."""
+        from . import mpc_getorb
+
+        policy, max_days = self.config.mpc_epoch_policy, self.config.mpc_propagate_max_days
+        off_epoch = []
+        for key in identifiers:
+            try:
+                elem = mpc_getorb.fetch_elements(key)
+                span = elem['epoch'] - date_mjd
+                if abs(span) > EPOCH_TOLERANCE_DAYS and (policy != 'propagate' or (max_days is not None and abs(span) > max_days)):
+                    why = 'MPC_EPOCH_POLICY=strict' if policy != 'propagate' else f'beyond MPC_PROPAGATE_MAX_DAYS = {max_days:g}'
+                    raise ValueError(
+                        f"The MPC get-orb elements of {mpc_getorb.label(elem, key)} are at epoch MJD {elem['epoch']:.5f} TT, "
+                        f'{span:+.1f} days from the simulation date {self.config.date} ({why})'
+                    )
+            except ValueError as error:
+                message = f"{key} is not in the MPC catalogue {self.config.mpc_snapshot['catalog']}, and get-orb: {error}"
+                if refused is None:
+                    raise ValueError(message) from None
+                refused[key] = message
+                continue
+            logger.info(f'{key}: not in the MPC catalogue; nominal orbit of {mpc_getorb.label(elem, key)} from MPC get-orb')
+            for warning in mpc_getorb.quality_warnings(elem, key, warn_u):
+                logger.warning(warning)
+            found[key] = elem
+            if abs(elem['epoch'] - date_mjd) > EPOCH_TOLERANCE_DAYS:
+                off_epoch.append(key)
+                logger.warning(
+                    f"{mpc_getorb.label(elem, key)}: get-orb epoch MJD {elem['epoch']:.5f} is {date_mjd - elem['epoch']:+.1f} days "
+                    f'from the run date {self.config.date}; propagated to it (MPC_EPOCH_POLICY=propagate; U = {elem["U"] or "blank"})'
+                )
+        return off_epoch
 
     def add_body(self, elem_or_num, resonance: Union[Resonance, str, list[Resonance], list[str]], name='asteroid'):
         body = Body()

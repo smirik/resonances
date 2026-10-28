@@ -94,16 +94,17 @@ def _type_settings(series: LongPeriodSeries, settings: AnalysisSettings) -> Tupl
     )
 
 
-def choose_cutoff(series: LongPeriodSeries, settings: AnalysisSettings) -> Cutoff:
+def choose_cutoff(series: LongPeriodSeries, settings: AnalysisSettings, rates: Optional[Tuple[float, float]] = None) -> Cutoff:
     """P_c = max(F_GI x P_GI, SECULAR_FILTER_FORCED_FACTOR x P_w, P_min / FILTER_MIN_LIBRATION_CUTOFFS) [yr] (module
     docstring). The output step does not enter (the MMR rule, `mmr.preprocess.choose_cutoff`): P_min / 2 is kyr to Myr,
-    far above any step that resolves a secular angle."""
+    far above any step that resolves a secular angle. `rates` = (g, s) [arcsec/yr] replaces the rates measured on the
+    series (the dry-run's static estimate; the series then needs no elements)."""
     gi_factor, _, period_min, _, _ = _type_settings(series, settings)
     gi_bound = gi_factor * GREAT_INEQUALITY['period_yr']
     g = s = NAN
     waves: Dict[str, float] = {}
     if series.resonance_type == ResonanceType.SECULAR and series.terms:
-        g, s = body_rates(series)
+        g, s = rates if rates is not None else body_rates(series)
         waves = forced_waves(series.terms, g, s, series.planet_frequencies or None)
     forced_bound = settings.secular_filter_forced_factor * max(waves.values()) if waves else NAN
     libration_bound = period_min / settings.filter_min_libration_cutoffs

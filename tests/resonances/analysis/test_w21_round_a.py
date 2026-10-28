@@ -398,7 +398,7 @@ def test_b_471155_a_withdrawn_r0_is_not_measured_for_the_tree():
 
 
 # ------------------------------------------------------------------- C. onset_failed only on a verdict claiming a capture
-# docs/libration-analysis.md §7, O1: graded only for a verdict that claims a capture (`decide.capture_claimed`: the
+# docs/physics/response.md ("Onset of an episode (O1)"): graded only for a verdict that claims a capture (`decide.capture_claimed`: the
 # angle's own, a subresonance's or the owner's libration). facts-a (2026-10-23) found the cap on 2897 35S-4
 # non_resonant/implausible_strength: that verdict denies the angle's own libration and names no other.
 # By hand (CAP_CEILING: implausible_strength, onset_failed <= low; transient_unexplained <= medium): raw medium with
@@ -484,7 +484,7 @@ def test_c_benchmark_onset_cap(example, expected, onset):
 
 
 # ------------------------------------------------- D. O1's background holds no accepted episode of the angle (Q2)
-# docs/libration-analysis.md §7, O1 (`response.onset_group`): the 2P before the episode, but an accepted episode of the
+# docs/physics/response.md ("Onset of an episode (O1)", `response.onset_group`): the 2P before the episode, but an accepted episode of the
 # same angle ending there joins the episode's group when no full turn of sigma_f lies between them (the background
 # is then the 2P before the group's first episode, P still the episode's own), and cuts the background at its end
 # when one does; less than P left: not measured, 'episode'.

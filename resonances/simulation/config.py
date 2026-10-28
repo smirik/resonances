@@ -7,6 +7,7 @@ import numpy as np
 import astdys
 from resonances import mpcorb
 from resonances.simulation.mpc_source import EPOCH_POLICIES as MPC_EPOCH_POLICIES, mpc_settings
+from resonances.simulation.mpc_getorb import LOOKUP_MODES as MPC_LOOKUP_MODES
 from resonances.data.util import datetime_from_string
 from resonances.config import config as c
 from resonances.logger import logger
@@ -313,6 +314,10 @@ class SimulationConfig:
         # None (empty key): no cap on the propagated span
         max_days = kwargs.get('mpc_propagate_max_days', _config_or(c, 'MPC_PROPAGATE_MAX_DAYS', ''))
         self.mpc_propagate_max_days = None if max_days in (None, '') else float(max_days)
+        # file: the catalogue only; file_then_api: an identifier it lacks is asked of MPC get-orb (simulation/mpc_getorb.py)
+        self.mpc_lookup = str(kwargs.get('mpc_lookup', _config_or(c, 'MPC_LOOKUP', 'file')) or 'file').lower()
+        if self.mpc_lookup not in MPC_LOOKUP_MODES:
+            raise ValueError(f"mpc_lookup is one of {', '.join(MPC_LOOKUP_MODES)}, got {self.mpc_lookup!r}")
         snapshot = kwargs.get('mpc_snapshot')
         self.mpc_snapshot = dict(snapshot) if snapshot else mpcorb.provenance(mpcorb.snapshot(settings=mpc_settings(self.mpc_catalog)))
 
@@ -429,7 +434,8 @@ class SimulationConfig:
 
         Returns original path if:
         - _skip_path_verification is True (batch workers)
-        - State file exists (resuming simulation)
+        - State file exists (resuming simulation): simulation_state.json, or the clone checkpoint
+          clones_state/clones_state.json (simulation/clone_store.py)
         - Directory doesn't exist or is empty
 
         Returns timestamped path if directory exists and is not empty.
@@ -437,8 +443,8 @@ class SimulationConfig:
         if self._skip_path_verification:
             return path
 
-        state_file = os.path.join(path, "simulation_state.json")
-        if os.path.exists(state_file):
+        state_files = (os.path.join(path, "simulation_state.json"), os.path.join(path, "clones_state", "clones_state.json"))
+        if any(os.path.exists(state_file) for state_file in state_files):
             return path
 
         is_non_empty_dir = os.path.isdir(path) and os.listdir(path)
@@ -477,7 +483,8 @@ class SimulationConfig:
     def _setup_coherence_params(self, kwargs):
         """Setup cross-spectral coherence parameters, the free elements and the free-omega gate.
 
-        The e-i coherence changes no status (`confirmed_ei` only); the gate's outcome is a step of `analyse_zlk`.
+        The e-i coherence changes no status (the columns zlk_coherent, zlk_check, zlk_line_*); the gate's outcome and
+        the period-specific e-i coupling (`confirmed_ei`, zlk_ei_*) are steps of `analyse_zlk`.
         `coherence_pairs` and `coherence_phase_targets` are structured per-resonance-type
         overrides and are kwarg-only (a nested mapping has no sensible .env encoding).
         Both are merged per resonance type over the presets in `cross_spectrum.py`, so
@@ -512,7 +519,7 @@ class SimulationConfig:
         self.free_gate_mask_quantile = kwargs.get('free_gate_mask_quantile', float(c.get('FREE_GATE_MASK_QUANTILE', 0.15)))
 
         # e-i coherence. Diagnostic since the free-omega gate took over the status decision:
-        # this now only produces the `confirmed_ei` flag.
+        # this now only produces the strongest-line columns (zlk_coherent, zlk_check, zlk_line_*).
         self.zlk_coherence_check = kwargs.get('zlk_coherence_check', c.get('ZLK_COHERENCE_CHECK', 'True') == 'True')
         # PROVISIONAL default, calibrated on two objects only — see docs/coherence.md.
         self.zlk_min_anticorrelation = kwargs.get('zlk_min_anticorrelation', float(c.get('ZLK_MIN_ANTICORRELATION', 0.5)))

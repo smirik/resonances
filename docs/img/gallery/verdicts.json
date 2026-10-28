@@ -208,9 +208,9 @@
   "step_yr": 1.0
  },
  "mmr2__82831__13M-24+0+11": {
-  "action": "none",
+  "action": "spot_check",
   "angle_status": "episodic",
-  "confidence": "high",
+  "confidence": "medium",
   "example_id": "mmr2__82831__13M-24+0+11",
   "final_regime": "circulation",
   "integrator": "SABA(10,6,4)",
@@ -224,9 +224,9 @@
   "step_yr": 0.5
  },
  "mmr2__82831__13M-24+0+11__13M-24+2+9": {
-  "action": "none",
+  "action": "spot_check",
   "angle_status": "episodic",
-  "confidence": "high",
+  "confidence": "medium",
   "example_id": "mmr2__82831__13M-24+0+11",
   "final_regime": "circulation",
   "integrator": "SABA(10,6,4)",
@@ -457,11 +457,13 @@
   "libration_origin": "dynamic",
   "moon": false,
   "name": "1020",
+  "output_step_yr": 99.99999988572381,
   "reason": "dynamic_libration",
   "resonance": "g-g6+s-s6",
   "span_yr": 9999999.98857,
   "status": "resonant",
-  "step_yr": 500.0
+  "step_yr": 500.0,
+  "thinning": 5
  },
  "secular__1222__g-g6": {
   "action": "none",
@@ -473,11 +475,13 @@
   "libration_origin": "dynamic",
   "moon": false,
   "name": "1222",
+  "output_step_yr": 99.99999988572381,
   "reason": "dynamic_libration",
   "resonance": "g-g6",
   "span_yr": 9999999.98857,
   "status": "resonant",
-  "step_yr": 500.0
+  "step_yr": 500.0,
+  "thinning": 5
  },
  "secular__2306__g-g6+s-s6": {
   "action": "none",
@@ -489,11 +493,13 @@
   "libration_origin": "dynamic",
   "moon": false,
   "name": "2306",
+  "output_step_yr": 99.99999988572381,
   "reason": "dynamic_episode",
   "resonance": "g-g6+s-s6",
   "span_yr": 9999999.98857,
   "status": "transient",
-  "step_yr": 500.0
+  "step_yr": 500.0,
+  "thinning": 5
  },
  "secular__363__g-g6+s-s6": {
   "action": "extend",
@@ -505,11 +511,13 @@
   "libration_origin": "",
   "moon": false,
   "name": "363",
+  "output_step_yr": 99.99999988572381,
   "reason": "baseline_needed",
   "resonance": "g-g6+s-s6",
   "span_yr": 9999999.98857,
   "status": "uncertain",
-  "step_yr": 500.0
+  "step_yr": 500.0,
+  "thinning": 5
  },
  "secular__847__g-g6+s-s6": {
   "action": "none",
@@ -521,11 +529,13 @@
   "libration_origin": "",
   "moon": false,
   "name": "847",
+  "output_step_yr": 99.99999988572381,
   "reason": "circulation",
   "resonance": "g-g6+s-s6",
   "span_yr": 9999999.98857,
   "status": "non_resonant",
-  "step_yr": 500.0
+  "step_yr": 500.0,
+  "thinning": 5
  },
  "zlk__15527__LK": {
   "action": "none",
@@ -553,11 +563,13 @@
   "libration_origin": "dynamic",
   "moon": false,
   "name": "162474",
+  "output_step_yr": 1.9999997961167537,
   "reason": "dynamic_episode",
   "resonance": "LK",
   "span_yr": 1499999.84709,
   "status": "transient",
-  "step_yr": 9.999998999992386
+  "step_yr": 9.999998999992386,
+  "thinning": 5
  },
  "zlk__1981__LK": {
   "action": "extend",

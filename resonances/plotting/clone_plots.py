@@ -1,8 +1,10 @@
 """The figure of an ensemble of clones in one resonance (docs/clones.md): three panels.
 
 (a) the angle of every clone against time, coloured by its status, the nominal in black;
-(b) the status of every clone against its initial semi-major axis, with the resonance's a* and, when the clones' accepted
-    MMR episodes measured it, a* +- the libration half-width: where the resonance's border cuts the cloud;
+(b) the status of every clone against its initial (osculating) semi-major axis, with the MMR's catalogue resonant axis
+    a_res (`resonance.resonant_axis`, from the mean motions; not moved into the osculating frame, so an offset of the
+    osculating a from the mean one shifts it) and, when the clones' accepted MMR episodes measured it, a_res +- the
+    median libration half-width: roughly where the resonance's border cuts the cloud;
 (c) the share of each status with its Wilson 95 % interval; the nominal's status marked.
 """
 
@@ -33,7 +35,8 @@ class EnsemblePlotter(BasePlotter):
         half_width: Optional[float] = None,
     ):
         """`members`: one dict per clone (status or None, a0 [AU], series = (years, degrees) or None); `row`: the
-        clones.csv row (shares and their Wilson bounds)."""
+        clones.csv row (shares and their Wilson bounds); `a_star`: the catalogue resonant axis a_res of an MMR
+        (`resonance.resonant_axis`), drawn in (b) as 'a_res (catalogue)'."""
         import matplotlib.pyplot as plt
 
         self.close()
@@ -103,11 +106,11 @@ class EnsemblePlotter(BasePlotter):
         if nominal_a0 is not None and nominal_status in position:
             ax.plot(0.0, position[nominal_status], '*', ms=13, color='black', label='nominal')
         if a_star is not None and np.isfinite(a_star):
-            ax.axvline(a_star - reference, color='#4d4d4d', ls=':', lw=1.2, label='a* (exact commensurability)')
+            ax.axvline(a_star - reference, color='#4d4d4d', ls=':', lw=1.2, label='a_res (catalogue)')
             if half_width is not None and np.isfinite(half_width):
                 for edge in (a_star - half_width, a_star + half_width):
                     ax.axvline(edge - reference, color='#2c7bb6', ls='--', lw=1.0)
-                ax.plot([], [], color='#2c7bb6', ls='--', label='a* +- half-width (clones\' episodes)')
+                ax.plot([], [], color='#2c7bb6', ls='--', label='a_res +- half-width (clones\' episodes)')
         ax.set_yticks(range(len(STATUS_ORDER)))
         ax.set_yticklabels(STATUS_ORDER)
         ax.set_ylim(-0.6, len(STATUS_ORDER) - 0.4)

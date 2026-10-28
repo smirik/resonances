@@ -808,7 +808,11 @@ class DataManager:
         key = resonance.to_s()
         row = {column: body.initial_data.get(element) for column, element in self.INITIAL_ELEMENTS}
         if isinstance(resonance, LidovKozaiResonance):
-            c1, c2, h_quad = LidovKozaiParameters.evaluate(body.initial_data['e'], body.initial_data['inc'], body.initial_data['omega'])
+            initial = body.initial_data  # osculating, at the epoch, invariable plane
+            c1, c2, h_quad = (
+                float(value)
+                for value in LidovKozaiParameters.evaluate_invariable(initial['e'], initial['inc'], initial['Omega'], initial['omega'])
+            )
         else:
             c1, c2, h_quad = None, None, None
         e_forced, e_free = body.forced_free_eccentricity()

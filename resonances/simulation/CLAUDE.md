@@ -35,16 +35,29 @@ User docs: `docs/output.md`, `docs/dry-run.md`, `docs/serialization.md`, `docs/c
   cutoff (physics only) and whether the step can filter it (undersampled) or folds short periods
   (`short_period_aliased`, by the analysis' own predicate `sampling.short_period_trigger`; the pilot's leak of σ and ȧ
   accepts or rejects such a step), integrator recommendation, cost; `OUTPUT_STEP=auto` (walked down to a step that
-  folds no harmonic, `fold_free_step`); `prepare_run` is the first step of `Simulation.run`.
+  folds no harmonic, `fold_free_step`); `prepare_run` is the first step of `Simulation.run`. Secular/ZLK angles get
+  advisory static rows only (`long_period`, `dryrun_long_period.csv`: the analysis' cutoff, period floor and
+  baseline, the ZLK gate's cycles of the quadrupole time); they never set the step.
 - `batch_manager.py`, `parallel_executor.py`: spawn workers, `max_tasks_per_child=1`, BLAS threads pinned, the
   low-memory allocator on macOS. Workers get element dicts and the serialised config; they never open a catalogue.
-  The resume hash includes date, source, body list, settings and the MPC snapshot.
+  The resume hash includes date, source, body list, settings, the MPC snapshot and every body's initial elements
+  (`clone_store.canonical_elements`, shared with the clone-run identity; a get-orb body's `getorb_sha256` with them);
+  simulation_state.json's `body_elements` lets a refusal name the changed bodies. States of the hash without elements
+  resume with a warning (`_get_config_dict(elements=False)`).
 - `body_manager.py`: elements from AstDyS, Horizons or MPC; `check_epoch` raises when elements and the run date differ
   by > 1e-4 d. `mpc_elements` (see `resonances/mpcorb/CLAUDE.md`).
 - `mpc_source.py`: MPC_* keys → `mpcorb.Settings`, registered as its defaults; `epoch_refusal`.
 - `propagate.py`: integrates a body given at another epoch to the run date (IAS15 among the run's planets taken at the
   body's own epoch; never a linear covariance map). Used by the MPC `propagate` policy and by clones.
-- `ensemble_run.py`: clones in a run (see `resonances/clones/CLAUDE.md`).
+- `ensemble_run.py`: clones in a run (see `resonances/clones/CLAUDE.md`); with ensembles `Simulation.run` goes
+  through `run_with_clones` (ordinary part, then clones, one checkpoint). `clone_store.py`: the checkpoint
+  `clones_state/` (identity, starts, `batch-<i>.npz` published by tmp + `os.replace`, existence after validation =
+  done), the results archives (JSON header as uint8 + numeric arrays, `allow_pickle=False`), simulation.json's
+  `ensembles` and their restore. Only the coordinating simulation owns run-level state: workers have no ensembles and
+  never create or clear it. `_verify_existing_path` treats `clones_state/clones_state.json` as a resume, like
+  simulation_state.json.
+- `mpc_getorb.py`: `MPC_LOOKUP=file_then_api`, the get-orb nominal (KEP, else CAR; no covariance) of an identifier the
+  snapshot lacks, through the clones' cache; called from `BodyManager.mpc_elements` in the parent only.
 - `integration.py`: rebound; planets from Horizons (`cache/solar-<timestamp>.bin`), the asteroid added with
   `primary=Sun`; clones and asteroids are test particles (`N_active` = the massive bodies).
 

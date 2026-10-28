@@ -114,9 +114,8 @@ The clones run in worker processes, so a script needs the `if __name__ == '__mai
 
 Tables (`summary.csv`, `episodes.csv`, ...) and `simulation.json` stay at the top of `save_path`; the series go to
 `data/`, the figures to `figures/` and the one-page verdict figures to `combined/`. Both figure folders are split
-into subfolders by a layout: levels from `status`, `confidence`, `type`, `resonance`, `body`, joined by `/`. Presets:
-`flat`, `status`, `confidence`, `confidence/status` (the default), `status/confidence`, `type/status`,
-`type/confidence/status`, `resonance`, `body`.
+into subfolders by a layout, levels from `status`, `confidence`, `type`, `resonance`, `body` joined by `/`
+(`confidence/status` by default; the presets: [Output data](output.md#layout)).
 
 ```python
 sim = resonances.Simulation(
@@ -136,7 +135,7 @@ print(sim.config.plot_path)
 
 On this short run both angles are `uncertain`, so the evolution figures go to `figures/mmr/uncertain/` and
 `figures/secular/uncertain/`, the verdict figures to `combined/none/uncertain/` (`none` is the confidence folder of
-a verdict without a level). See [Output data](output.md).
+a verdict without a level).
 
 ## Restoring a run
 

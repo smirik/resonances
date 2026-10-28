@@ -108,6 +108,7 @@ from resonances.resonance import oscillations as osc
 from resonances.data.const import GAUSSIAN_YEAR_DAYS
 from resonances.resonance.analysis.filtering import circular_mean, is_finite, lowpass
 from resonances.resonance.analysis.geometry import RejectReason, wrap_pi
+from resonances.resonance.analysis.mmr.decide import taken_harmonic_law
 from resonances.resonance.analysis.mmr.models import MMRAnalysis, MMRSeries, ResonanceKind, ResonanceSpec
 from resonances.resonance.analysis.mmr.owner import FLAG_CATALOGUE, wrapped_angle as owner_wrapped_angle
 from resonances.resonance.analysis.orbit_type import accepted_runs
@@ -194,7 +195,11 @@ PANELS = (
     ('b', 'sigma in a 360-degree window around the centre: every osculating sample, sigma_f, centre; owner/subresonance'),
     ('c', 'sigma_dot / 2 omega0 (symlog, linear inside +-1) with +-1 (separatrix) of each episode and nu(lambda_dot); slips'),
     ('d', 'a (au): raw, a_f, a* and a_res moved by <a> - a(lambda_dot), band +- half-width, cycle means'),
-    ('e', 'a_dot at the response cutoff with R sin(sigma_f - phi0) + C per window (R^2) and per episode half'),
+    (
+        'e',
+        'a_dot at the response cutoff with R sin(sigma - phi0) + C per window on sigma at that cutoff (R^2) and per '
+        'episode half; under the harmonic or 1:1 law its numbers, no sine',
+    ),
     ('f', 'e: raw band, filtered line, min - max'),
     ('g', 'i: raw band, filtered line, min - max'),
     ('h', 'h per cycle on a log axis (libration dots, revolutions open) with the separatrix zone [h_lo, h_hi] and h = 1'),
@@ -652,6 +657,12 @@ def _rate(prep) -> np.ndarray:
     """sigma_dot as the response read it (smoothed at the response cutoff), else sigma_dot_f."""
     rate = getattr(prep, 'rate_response', None)
     return np.asarray(rate if rate is not None else prep.rate_f, dtype=float)
+
+
+def _angle_response(prep) -> np.ndarray:
+    """sigma as the force law read it (smoothed at the response cutoff, `response.response_series`), else sigma_f."""
+    angle = getattr(prep, 'angle_response', None)
+    return np.asarray(angle if angle is not None else prep.angle_f, dtype=float)
 
 
 def _adot(prep) -> np.ndarray:
@@ -1536,8 +1547,11 @@ def _cycle_means(ax, frame: _Frame, values):
 
 
 def draw_adot_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
-    """(e) a_dot_f with the force law R sin(sigma_f - phi0) + C fitted per window, and the R² of the episode halves; for
-    a 1:1 angle a_dot_f with the numbers of its own law (`coorbital.CoorbitalLaw`) instead."""
+    """(e) a_dot at the response cutoff with the force law R sin(sigma - phi0) + C fitted per window (sigma at the same
+    cutoff, as the fit read it), and the R² of the episode halves. When the law that decided is not that single sine,
+    no sine is drawn and the panel prints the numbers of the law that decided: the N-harmonic law (CS12,
+    `decide.taken_harmonic_law`: 'harmonic law N=k: R² … (single …)') or, for a 1:1 angle, its own law
+    (`coorbital.CoorbitalLaw`)."""
     analysis, prep = frame.analysis, frame.prep
     if prep is None:
         _style_axis(ax, 'e', r'$\dot a$', layout)
@@ -1558,6 +1572,12 @@ def draw_adot_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
         numbers = [f'{value:.2f}' if is_finite(value) else '–' for value in (law.r2, law.r2_h1, law.r2_h2, law.scale)]
         _value_text(ax, f'R² {numbers[0]} ({numbers[1]} / {numbers[2]})   K/K_th {numbers[3]}', layout)
         return
+    harmonic = taken_harmonic_law(response)
+    if harmonic is not None:
+        # the N-harmonic law decided L4: the single-sine windows are not the law that was tested, none is drawn
+        _style_axis(ax, 'e', label, layout)
+        _value_text(ax, harmonic_law_text(harmonic), layout)
+        return
     windows = response.windows if response is not None else []
     labels = [_draw_window(ax, frame, window, i, len(windows), scale) for i, window in enumerate(windows)]
     if len(windows) <= WINDOW_LABELS_MAX:
@@ -1575,11 +1595,23 @@ def _draw_window(ax, frame: _Frame, window, i: int, n: int, scale: float) -> Opt
     start = window.t_start_yr if i == 0 else window.t_start_yr + quarter
     end = window.t_end_yr if i == n - 1 else window.t_end_yr - quarter
     mask = (frame.t >= start) & (frame.t < end) & frame.inside
-    model = window.amplitude_au_yr * np.sin(frame.prep.angle_f[mask] - window.phi0_rad) + window.offset_au_yr
+    model = window_model(window, _angle_response(frame.prep)[mask])
     _line(ax, frame.x[mask], model * scale, color=MODEL, lw=1.0, alpha=0.9, zorder=3)
     if not is_finite(window.r2):
         return None
     return float(frame.times(start)), float(frame.times(end)), float(window.r2)
+
+
+def window_model(window, angle: np.ndarray) -> np.ndarray:
+    """The single force law of one window, R sin(sigma - phi0) + C [au/yr], on `angle` [rad]."""
+    return window.amplitude_au_yr * np.sin(angle - window.phi0_rad) + window.offset_au_yr
+
+
+def harmonic_law_text(law) -> str:
+    """'harmonic law N=2: R² 0.65 (single 0.18)': the N-harmonic law that decided L4 against the one-harmonic law,
+    both the smaller of the two half medians of the window R² (`models.HarmonicLaw`)."""
+    r2, single = (f'{value:.2f}' if is_finite(value) else '–' for value in (law.r2, law.single_r2))
+    return f'harmonic law N={law.n_harmonics}: R² {r2} (single {single})'
 
 
 def _r2_text(values: Sequence[float]) -> str:
