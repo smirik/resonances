@@ -265,6 +265,7 @@ def record():
     return EXAMPLE
 
 
+@pytest.mark.benchmark
 def test_101703_at_the_physical_cutoff(record):
     # no episode of its own any more: a circulation whose origin is the 3:1 multiplet (the author's non_resonant/induced)
     row, _ = _row(S)
@@ -277,6 +278,7 @@ def test_101703_at_the_physical_cutoff(record):
     assert row['flt_cutoff_yr'] == 75.0 and row['geo_n_librating_episodes'] == 0
 
 
+@pytest.mark.benchmark
 def test_101703_is_induced_by_the_3_1_multiplet(record):
     row, owners = _row(STUDY)
     assert (row['status'], row['reason'], row['libration_origin']) == ('non_resonant', 'induced_libration', 'induced')
@@ -291,6 +293,7 @@ def test_101703_is_induced_by_the_3_1_multiplet(record):
     assert row['geo_forced_wave_period_yr'] == pytest.approx(166.2, abs=0.5)
 
 
+@pytest.mark.benchmark
 def test_101703_without_the_multiplet_is_not_dynamic(record):
     # the single phase alone (multiplet law and potential route off). Before W20 CS7 the contamination rule kept it
     # uncertain (5f); since then the episode on the line 3J-1 is a forced wave (F6), and the remaining episodes need
@@ -305,6 +308,7 @@ def test_101703_without_the_multiplet_is_not_dynamic(record):
     assert (row['status'], row['libration_origin'], row['rec_rule']) == ('transient', 'dynamic', '5d/6')
 
 
+@pytest.mark.benchmark
 def test_101703_single_phase_owner_is_accepted_by_its_averaged_potential(record):
     # W20 F3: the averaged disturbing function at fixed phi_o holds every member of the 3:1 multiplet, so the potential
     # route accepts the owner the single phase cannot fix

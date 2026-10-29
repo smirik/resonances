@@ -23,7 +23,9 @@ parameters only flagged, `find` takes the whole cloud's candidates.
   `clones_state/` for the ordinary part and the clones, cleared (with simulation_state.json) only after both succeed;
   the identity covers what was run (ordinary elements and grouping, planets' initial state, settings, clone layout,
   provider sha256, solution, draws, the starts bit for bit, code versions). simulation.json `ensembles` (versioned);
-  restore rebuilds `sim.ensembles` + `sim.clone_summary`; a recompute reclassifies the nominal only.
+  restore rebuilds `sim.ensembles` + `sim.clone_summary`; a recompute reclassifies the nominal only and rewrites its
+  clones.csv columns and summary.csv rows together (`clone_store._rewrite_nominal_rows`); clones keep stored verdicts
+  (a `SAVE` filter makes the saved clone series a status-selected subset).
 - No triage (author 2026-10-28): never give clones the nominal's verdict without classifying them (docs/clones.md,
   "Limits").
 

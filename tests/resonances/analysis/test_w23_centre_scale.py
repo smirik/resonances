@@ -56,6 +56,7 @@ def test_the_setting_is_on_by_default():
     assert S.libration_centre_scale_tp_at_centre is True
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', [TX9, TX9_HALF])
 def test_tx9_one_slow_libration_at_the_scale_of_the_centre(example):
     series = _load(example)
@@ -76,6 +77,7 @@ def test_tx9_one_slow_libration_at_the_scale_of_the_centre(example):
     assert analysis.extra_columns['geo_cs_rej_status'] == '' and np.isnan(analysis.extra_columns['geo_cs_rej_cutoff_yr'])
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example, fine', [(TX9, (0.58, 13.59, 17)), (TX9_HALF, (0.58, 11.25, 12))])
 def test_tx9_without_the_rule_keeps_the_fine_episode(example, fine):
     analysis = _analysis(example, replace(OFF, libration_action_step=False))
@@ -85,6 +87,7 @@ def test_tx9_without_the_rule_keeps_the_fine_episode(example, fine):
     assert str(analysis.verdict.status) == 'uncertain'
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('settings, n_tp, confidence', [(S, 9, 'high'), (OFF, 11, 'medium')])
 def test_523653_without_the_one_degree_loops(settings, n_tp, confidence):
     """12N-19 at W_c 3597 yr: two 1-deg loops were two more cycles and made L5 fail as support (medium)."""
@@ -96,6 +99,7 @@ def test_523653_without_the_one_degree_loops(settings, n_tp, confidence):
     assert (str(verdict.status), str(verdict.angle_status), str(verdict.confidence)) == ('resonant', 'libration', confidence)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('settings, episode, cutoff', [(S, (29.35, 292.17, 9), 4608.0), (OFF, (68.12, 264.79, 7), 32216.0)])
 def test_385458_first_centre_scale_suffices(settings, episode, cutoff):
     """9N-17 300 kyr: the first centre scale (3 P_cyc) succeeds without sub-p_c loops; the coarse retry is not needed."""
@@ -120,6 +124,7 @@ def centre_angle(monkeypatch):
     return caught
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', [TX9, TX9_HALF])
 def test_tx9_at_a_fixed_centre_scale_any_centre_prominence_finds_the_same_episode(example, centre_angle):
     """Sensitivity of rule (a) alone: at the W_c of the default run, every p_c in 8-18 deg qualifies the scale and the
@@ -136,6 +141,7 @@ def test_tx9_at_a_fixed_centre_scale_any_centre_prominence_finds_the_same_episod
         assert str(at_scale.verdict.status) == 'uncertain'
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example, p_c', [(TX9, 13.0), (TX9_HALF, 7.0), (TX9_HALF, 13.0), (TX9_HALF, 16.0)])
 def test_tx9_episode_over_the_centre_prominence(example, p_c):
     """The whole analysis with LIBRATION_CENTRE_TP_PROMINENCE_DEG moved from 10 deg: p_c sets W_c too (the turns of the
@@ -158,6 +164,7 @@ def test_tx9_episode_over_the_centre_prominence(example, p_c):
 TX9_STEP = {TX9: 6.96, TX9_HALF: 6.96}
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', [TX9, TX9_HALF])
 def test_tx9_g2a_finds_the_mars_kick_but_one_potential_does_not_hold_the_late_cycles(example):
     analysis = _analysis(example)
@@ -176,6 +183,7 @@ def test_tx9_g2a_finds_the_mars_kick_but_one_potential_does_not_hold_the_late_cy
     assert 'action_step' not in verdict.flags and verdict.checks['check_mmr_potential'] == 'fail'
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', [TX9, TX9_HALF])
 def test_tx9_r0_of_the_whole_record_is_guarded_like_every_check(example):
     """R0 (check_mmr_potential) is no longer set apart by the guard (W24 review): a cut that left it unmeasured would
@@ -189,6 +197,7 @@ def test_tx9_r0_of_the_whole_record_is_guarded_like_every_check(example):
     assert columns['geo_action_step_n_cuts'] == 0 and columns['geo_action_step_failed'] == 'regime_periods'
 
 
+@pytest.mark.benchmark
 @pytest.mark.xfail(strict=True, reason='W_c from the centre turns moves with p_c and the precheck fails there (not rule a)')
 @pytest.mark.parametrize('p_c', [7.0, 16.0])
 def test_tx9_five_years_keeps_the_episode_when_p_c_moves_the_scale(p_c):

@@ -207,6 +207,7 @@ def test_capture_after_a_jump_is_transient_with_final_regime_libration():
     assert analysis.extra_columns['geo_n_episodes_before_jump'] == 0
 
 
+@pytest.mark.slow
 def test_capture_after_a_long_fast_circulation_is_transient():
     series, t_jump, _ = capture_record(20.0, 12000.0)
     v = analyse_mmr(series, SETTINGS).verdict
@@ -215,6 +216,7 @@ def test_capture_after_a_long_fast_circulation_is_transient():
     assert v.final_regime == AngleStatus.LIBRATION
 
 
+@pytest.mark.slow
 def test_centre_of_a_capture_stays_inside_the_swing():
     """A low-pass of a libration bounded in [pi - 60 deg, pi + 60 deg] (one branch) stays near that band."""
     series, t_jump, sigma = capture_record(20.0, 12000.0)
@@ -271,6 +273,7 @@ def member_record(span=20000.0, step=1.0, varpi_period=5000.0):
     )
 
 
+@pytest.mark.slow
 def test_catalogue_row_takes_the_status_of_its_librating_member():
     analysis = analyse_mmr(member_record(), SETTINGS)
     v = analysis.verdict

@@ -230,6 +230,7 @@ def _rows(text):
     return {(section.title.split()[0], row.key): row for section in text.physics for row in section.rows}
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', PHYSICS_RECORDS)
 def test_every_physics_number_is_its_column(example):
     """Each number of the block, as printed, is its column times the unit factor (3 digits: 0.5 %; 2 digits and
@@ -253,6 +254,7 @@ def test_every_physics_number_is_its_column(example):
                 assert abs(shown - value) <= tolerance, (example, column, printed, value)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', PHYSICS_RECORDS)
 def test_no_sigma_amplitude_predicted_from_the_identity(example):
     """Only the a-wave is predicted (δa = K/ν); σ's wave is measured only, and no row compares a predicted σ."""
@@ -265,6 +267,7 @@ def test_no_sigma_amplitude_predicted_from_the_identity(example):
                 assert physics_row.key in ('amplitude', 'theory') and 'σ' not in physics_row.text.split('predicted')[0][-12:]
 
 
+@pytest.mark.benchmark
 def test_385266_block_against_the_r1_prototype():
     """385266 16N-27: T0_th within 200–270 kyr (prototype 209–260 over 10 snapshots), μ_req/μ_th ≥ 1000 (prototype
     2.2–2.8e3), the a-wave wider than the zone (prototype 0.0196 against 0.0023–0.0028 au); owner 3N-5: K/K_th within
@@ -289,6 +292,7 @@ def test_385266_block_against_the_r1_prototype():
     assert not any('strength' in item for item in text.info)  # shown in section A, not under 'also measured'
 
 
+@pytest.mark.benchmark
 def test_82157_owner_theory():
     """82157 20N-29 owner 2N-3: K/K_th within [0.9, 1.1] (prototype 0.98–1.01)."""
     *_, row, text = _analysis('mmr2__82157__20N-29+0+9')
@@ -296,6 +300,7 @@ def test_82157_owner_theory():
     assert _rows(text)[('What', 'theory')].icon == '✓'
 
 
+@pytest.mark.benchmark
 def test_rows_say_why_when_not_measured():
     """Three-body: the e^q scale only; 1:1: its own law, no owner section; an owner search that could not run says why;
     no owner after a valid search names the best candidate; an episode without a required strength says so."""
@@ -317,6 +322,7 @@ def test_rows_say_why_when_not_measured():
     assert _rows(text)[('What', 'phases')].grey  # accepted by R², the phases are context
 
 
+@pytest.mark.benchmark
 def test_hw7_second_capture_and_its_cap():
     """2001 HW7 5J+6S-2 (R5: x sweep 46°, energy R² 0.04–0.06 → unresolved): the block says unresolved with the
     comparisons, and the medium cap names the other reading."""
@@ -337,6 +343,7 @@ W20_WORDING = {
 }
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', sorted(W20_WORDING))
 def test_w20_rules_in_words(example):
     """The W20 rules that decided a record are said in words with their numbers (the ledger values of the CS10 run:
@@ -360,6 +367,7 @@ def test_w20_rules_in_words(example):
 LAYOUT_RECORDS = ('mmr2__385266__16N-27+0+11', 'mmr2__82157__20N-29+0+9', 'mmr2__119066__4N-7+0+3', 'mmr2__1627__13E-33+0+20')
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', LAYOUT_RECORDS)
 def test_block_is_drawn_and_nothing_overflows(example):
     from resonances.plotting import mmr_combined as mc
@@ -376,6 +384,7 @@ def test_block_is_drawn_and_nothing_overflows(example):
 # --------------------------------------------------------------------------------------------- W20 round C: figure text
 
 
+@pytest.mark.benchmark
 def test_ca138_return_times_are_printed_once():
     """2016 CA138: the return 79 -> 453 yr is said in the angle-shape step; the cap one_return_cycle names the cycle's
     length (453 - 79 = 374 yr) and points there instead of printing the times again."""

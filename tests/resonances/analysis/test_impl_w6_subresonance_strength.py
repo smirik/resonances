@@ -50,6 +50,7 @@ def test_strongest_factor_by_hand(q, x_e, x_n, expected):
     assert sr.strongest_factor(q, [x_e], [x_n]) == pytest.approx(expected)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('q', [-3, -1, 0, 2, 5])
 def test_strongest_factor_is_the_maximum_over_every_term(q):
     # brute force over (u, u_P1, u_P2, v, v_P1, v_P2) with sum q, an even node sum, degree <= |q| + 4
@@ -123,6 +124,7 @@ def _scan(example_id, **overrides):
     return series, analysis, result
 
 
+@pytest.mark.benchmark
 def test_ug22_rejects_the_earth_eccentricity_member():
     # C3: 10E-17+7+0 was accepted because test E is skipped without the theory (the orbits cross); E' always runs
     series, _, result = _scan('mmr2__2003_UG22__10E-17+0+7')
@@ -139,6 +141,7 @@ def test_ug22_rejects_the_earth_eccentricity_member():
     assert analysis.derived == [] and str(analysis.verdict.reason) != 'subresonance_librates'
 
 
+@pytest.mark.benchmark
 def test_low_inclination_keeps_the_accepted_planar_member():
     # 12218 4M-7 (i = 5.5 deg from the invariable plane): no nodal members, 4M-7+1+2 still accepted (factor 0.99)
     _, _, result = _scan('mmr2__12218__4M-7+0+3')
@@ -148,6 +151,7 @@ def test_low_inclination_keeps_the_accepted_planar_member():
     assert result.accepted.strength_rel > 0.9 and max(sr.member_degree(c.spec) for c in result.candidates) == 9
 
 
+@pytest.mark.benchmark
 def test_the_ranked_list_reaches_the_catalogue_order():
     # C14: 3J-1S-1+2-2-1 (degree 5 = q + 4, mixed signs) of 24820 3J-1S-1+0+0-1 is enumerated and ranked: the members
     # go up to MATRIX_3BODY_ORDER_MAX = 6, i.e. degree 5 for q = 1 (parity)

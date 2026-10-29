@@ -472,6 +472,7 @@ def test_g1e_witness_before_the_jump_with_conflict():
     assert v.checks['check_mmr_potential'] == NM  # the energy is not measured per episode
 
 
+@pytest.mark.slow
 def test_g1e_without_witness_reads_the_pool_before_the_jump_functionally():
     _, analysis = analysed('g1e_no_witness')
     jump = analysis.geometry.jumps[-1].time_yr

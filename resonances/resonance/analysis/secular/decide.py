@@ -24,7 +24,9 @@ status:
     libration, confirmed keeps the status; kinematic (the free omega winds) -> non_resonant, kinematic_libration,
     origin kinematic; no verdict (short window, phase undefined, a residual at a planetary rate, no free elements)
     -> uncertain, gate_unavailable. On an episodic angle, a drift or too few cycles only a kinematic verdict with
-    rho_max < 1 (the free circle never around the origin) changes the status, to non_resonant, kinematic_libration.
+    rho_max < 1 (the free circle never around the origin) changes the status, to non_resonant, kinematic_libration;
+    an episodic one also when inside every librating episode the median local rho < 1 and the free omega advances
+    >= ZLK_EPISODE_FREE_TURNS_PER_CYCLE turns per cycle (the episodes are the forced vector's, 624 Hektor).
     The two lower outcomes are different statuses and stay apart (CLAUDE.md).
 """
 
@@ -141,8 +143,25 @@ def decide_status(resonance_type: ResonanceType, angle: AngleDecision, gate: Opt
     ledger.compare('gate_cycles', gate.n_cycles, Op.GE, gate.min_cycles, 'cycles', 'zlk_gate_n_cycles')
     if angle.angle_status != AngleStatus.LIBRATION:
         # an episodic angle, a drift, too few cycles: the free elements of the whole record judge them only when they
-        # find the forced vector holding omega throughout (kinematic, free circle never around the origin)
-        pinned = gate.outcome == GATE_KINEMATIC and ledger.compare('free_circle_rho_max', gate.rho_max, Op.LT, 1.0, '', 'zlk_gate_rho_max')
+        # find the forced vector holding omega throughout (kinematic, free circle never around the origin), or, for an
+        # episodic one, inside every librating episode (free circle off the origin there, rho < 1 the geometric bound;
+        # the free vector turning about the forced one with each cycle: `zlk.analyse._episode_pinning`)
+        pinned = gate.outcome == GATE_KINEMATIC and (
+            ledger.compare('free_circle_rho_max', gate.rho_max, Op.LT, 1.0, '', 'zlk_gate_rho_max')
+            or (
+                angle.angle_status == AngleStatus.EPISODIC
+                and ledger.compare('free_circle_rho_episodes', gate.rho_episodes, Op.LT, 1.0, '', 'zlk_gate_rho_episodes')
+                and ledger.compare(
+                    'free_omega_turns_episodes',
+                    gate.free_turns_episodes,
+                    Op.GE,
+                    gate.free_turns_min,
+                    'turns/cycle',
+                    'zlk_gate_free_turns_episodes',
+                    setting='zlk_episode_free_turns_per_cycle',
+                )
+            )
+        )
         if not pinned:
             status.checks['check_zlk_free_omega'] = CheckValue.NOT_MEASURED
             return status

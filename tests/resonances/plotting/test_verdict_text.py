@@ -141,10 +141,12 @@ def assert_comparisons_hold(text: vt.VerdictText) -> None:
         assert HOLDS[op](a, b) or (op in '<>' and left == right), whole
 
 
+@pytest.mark.benchmark
 def test_every_printed_comparison_holds(record):
     assert_comparisons_hold(record[-1])
 
 
+@pytest.mark.benchmark
 def test_plaque_holds_the_verdict(record):
     _, analysis, _, text = record
     v = analysis.verdict
@@ -193,6 +195,7 @@ def test_plaque_wording():
     assert vt.angle_text(Verdict()) == 'episodic'
 
 
+@pytest.mark.benchmark
 def test_coverage_wording(record):
     """'over the whole record' only when the angle librates over it; 'episodes' only when there are several."""
     _, analysis, episodes, text = record
@@ -209,6 +212,7 @@ def test_coverage_wording(record):
         assert int(covered.group(1) or covered.group(2)) == round(expected)
 
 
+@pytest.mark.benchmark
 def test_status_and_confidence_sentences(record):
     _, analysis, _, text = record
     v = analysis.verdict
@@ -226,6 +230,7 @@ def test_status_and_confidence_sentences(record):
     assert text.arithmetic.endswith(f'→  {v.confidence}') and f'= {v.confidence_raw}' in text.arithmetic
 
 
+@pytest.mark.benchmark
 def test_checks_follow_the_margins(record):
     _, analysis, _, text = record
     v = analysis.verdict
@@ -257,6 +262,7 @@ RAW_CEILING = {2: 'low', 1: 'medium'}  # failed support tests -> the highest raw
 LEVELS = ('certain', 'high', 'medium', 'low')
 
 
+@pytest.mark.benchmark
 def test_arithmetic_agrees_with_the_raw_level(record):
     """The printed count of failed tests never allows less than the raw level printed next to it (433 47M-44 at 5 yr
     printed '2 failed (≥ 2 failed → low) = high' before W22's fix)."""
@@ -269,6 +275,7 @@ def test_arithmetic_agrees_with_the_raw_level(record):
     assert LEVELS.index(str(v.confidence_raw)) >= LEVELS.index(ceiling), text.arithmetic
 
 
+@pytest.mark.benchmark
 def test_one_leaf_and_nothing_after_it(record):
     *_, text = record
     states = [step.state for step in text.steps]
@@ -277,6 +284,7 @@ def test_one_leaf_and_nothing_after_it(record):
     assert all(state == vt.StepState.NOT_REACHED for state in after)
 
 
+@pytest.mark.benchmark
 def test_52356_force_law_windows():
     """The author's question (16b): the last episode has 8 turning points, yet no force window: it lasts 19.6 kyr =
     3.2 cycles of P_cyc 6.14 kyr (3.3 of its own 5.93 kyr), and a window needs 3.5 cycles."""
@@ -295,6 +303,7 @@ def test_52356_force_law_windows():
     assert '3.3 of its own 5.93 kyr' in text.sentences[1]
 
 
+@pytest.mark.benchmark
 def test_secular_record_over_the_whole_record():
     """1020 g-g6+s-s6 (author, 16b): the whole record librates — no 'episode' in its text."""
     tools = Path(__file__).resolve().parents[3] / 'benchmark' / 'tools'
@@ -384,6 +393,7 @@ def test_numbers_fit_by_layout_before_the_explanation_turns_compact(n_lines, n_c
     assert sum(1 for t in texts if t.startswith('✓ full')) == 1  # the legend, once
 
 
+@pytest.mark.benchmark
 def test_branch_and_mark_wording(record):
     """The leaves of the branch where L4 and R0 are not measured name their rule's numbers; the mark
     exit_and_capture is listed with its counts."""
@@ -418,6 +428,7 @@ def test_branch_and_mark_wording(record):
             assert lifted and 'transient_unexplained' not in analysis.verdict.caps
 
 
+@pytest.mark.benchmark
 def test_force_law_after_the_jump_names_the_regime():
     """W9 (TODO 5) and W10 rule R: when the status rests on episodes before the last jump of a (G1e), the force law is
     measured on them; the column names the episode it was read on (the witness with most turning points). Without any
@@ -472,6 +483,7 @@ def _explained(example, settings=S):
 ALIAS_RECORDS = {'mmr2__2004_TK14__31M-34+0+3': 0.73, 'mmr2__433__47M-44+0-3': 0.79}
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', sorted(ALIAS_RECORDS))
 def test_alias_text_names_the_rule_that_decided(example):
     analysis, text = _explained(example)
@@ -495,6 +507,7 @@ def test_alias_text_names_the_rule_that_decided(example):
     assert text.arithmetic.startswith('raw: 0 failed') and 'thin or not measured → high) = high' in text.arithmetic
 
 
+@pytest.mark.benchmark
 def test_a_fail_the_rule_did_not_touch_stays_failed():
     """2001 ND13 1V-3: the scatter 0.09 < 0.5 keeps its failed force law (R-ALIAS-A does not apply). With one harmonic
     only (W23 CS12 off): the two-harmonic law lifts its L4 (`test_nd13_harmonic_force_law_sentence`)."""
@@ -504,6 +517,7 @@ def test_a_fail_the_rule_did_not_touch_stays_failed():
     assert 'R-ALIAS-A' not in ' '.join(text.sentences + [step.outcome for step in text.steps])
 
 
+@pytest.mark.benchmark
 def test_nd13_harmonic_force_law_sentence():
     """2001 ND13 1V-3 (W23 CS12): one harmonic of σ explains 0.18 of ȧ, two explain 0.65 (thin); the L4 detail names the
     law and its four guards, each as the record's numbers say."""
@@ -522,6 +536,7 @@ def test_nd13_harmonic_force_law_sentence():
     assert_comparisons_hold(text)
 
 
+@pytest.mark.benchmark
 def test_promoted_union_reads_episodic_then_resonant():
     """TK14 31M-34 at 0.5 yr: three accepted episodes (episodes.csv) without a circulation between them; the tree read
     them as episodic, reached transient/dynamic_episode and rule 6u promoted the union."""
@@ -535,6 +550,7 @@ def test_promoted_union_reads_episodic_then_resonant():
     assert 'through 3 episodes without a circulation between them (union rule); the deciding one' in text.sentences[0]
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', ['mmr3__2003_TX9__3E+2J-10+0+0+5', 'mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr'])
 def test_centre_scale_union_does_not_lend_the_fine_episode(example):
     """2003 TX9 without the W23 centre-scale TP rule (with it G2c keeps the slow libration): the union was found at the
@@ -555,6 +571,7 @@ def test_centre_scale_union_does_not_lend_the_fine_episode(example):
 # --------------------------------------------------------------------------------------------- W23 S7 (F5, F6)
 
 
+@pytest.mark.benchmark
 def test_header_and_sentence_read_one_centre_test(record):
     """F5: the header's ', moving centre' and the words 'σ librates ... with a fixed centre' / 'the centre is
     stationary' come from one test (`orbit_type.centre_moves`): no figure says both of σ's own centre (a subresonance
@@ -565,6 +582,7 @@ def test_header_and_sentence_read_one_centre_test(record):
         assert 'the whole record with a fixed centre' not in words and 'the centre is stationary' not in words
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', ['mmr3__2003_TX9__3E+2J-10+0+0+5', 'mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr'])
 def test_tx9_names_its_moving_centre_and_the_scale_of_the_centre(example):
     """2003 TX9 3E+2J-10 after W23 rule (a): one episode at the scale of the centre whose cycles' bands overlap (subtype
@@ -591,6 +609,7 @@ def test_tx9_names_its_moving_centre_and_the_scale_of_the_centre(example):
     assert 'turns of the centre' not in ' '.join(step.outcome for step in without.steps)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', ['mmr3__2003_TX9__3E+2J-10+0+0+5', 'mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr'])
 def test_tx9_names_the_action_step_it_did_not_cut_and_why(example):
     """W24 G2a after the review: the step at the Mars kick passes tests 1-6 but not 7 (one potential does not hold the

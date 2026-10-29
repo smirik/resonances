@@ -45,6 +45,8 @@ from resonances.resonance.analysis.mmr.models import (
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import CheckValue, Status
 
+pytestmark = pytest.mark.slow  # a shared setup of more than 1 s (tests/CLAUDE.md)
+
 TWO_PI = 2.0 * np.pi
 DEG = np.pi / 180.0
 ARCSEC = DEG / 3600.0

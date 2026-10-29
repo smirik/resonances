@@ -107,7 +107,8 @@ sim.data_manager.plot_body(body, sim)  # the verdict figures, from a re-run anal
 figure is redrawn by `sim.data_manager.plot_body(body, sim)` or `draw_combined(analysis, series)`.
 `MMRPlotter.from_body(..., focus=(t0, t1))` restricts cycles, portrait and the recurrence scales to an interval in years.
 Only bodies that passed the `save` filter have series on disk. `MMRDiagnostics(...)` builds the same figures from
-plain arrays (times in years; `axis_cycles`, the a of the cycles, defaults to the osculating `axis`). A backward integration is put in time order internally; the axes show the actual
+plain arrays (times in years; `axis_analysis`, the a of the cycles, of the portrait with `portrait.y='axis'` and of
+its reference $a_0$, defaults to the osculating `axis`). A backward integration is put in time order internally; the axes show the actual
 negative times.
 
 ## Secular figures
@@ -119,8 +120,11 @@ In the `combined` figure, panel (f) of a secular angle draws the analysis' own r
 $\sigma_f$ at the decisive cutoff, the centre's when the centre scale decided), the one whose $R^2$ it prints
 ([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)). For a Lidov-Kozai angle panel (f) draws
 the drift of the free and the osculating $\omega$ in turns with a legend, as the `free_omega` drift figure; the right
-column adds the measured e–i coupling, the forcing of a kinematic libration and the slow line of the centre
-([Free elements: beyond the gate](free-elements.md#beyond-the-gate)).
+column adds the measured e–i coupling, the node lock and the slow line of the centre, and names the cause of a
+kinematic libration in a sentence ([Free elements: beyond the gate](free-elements.md#beyond-the-gate)). An induced ZLK
+libration (attributed to a forced mode, or a centre at a beat of the forced vector) gets one more time panel, (a′)
+under (a): $\omega_f$ with the forced direction and the dominant mode against the node
+([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)); every other row keeps seven.
 
 ## Eccentricity vector
 

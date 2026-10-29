@@ -72,6 +72,7 @@ def test_a_trojan_step_above_half_the_cutoff_is_undersampled():
     assert str(Flag.SHORT_PERIOD_ALIASED) in verdict.flags  # 20 yr >= 11.87 / 2
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('step, flagged', [(1.0, False), (5.0, False), (15.92, True), (18.0, True)])
 def test_a_trojan_below_the_limit_keeps_its_libration(step, flagged):
     analysis = analyse(trojan(step))
@@ -92,6 +93,7 @@ def test_a_trojan_below_the_limit_keeps_its_libration(step, flagged):
     assert analysis.sampling.short_period_step_yr == pytest.approx(5.2026**1.5 / 2, rel=2e-3)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('step, flagged', [(5.0, False), (15.92, True)])
 def test_the_short_period_cap_with_the_opt_in_lift(step, flagged):
     # MMR_SHORT_PERIOD_CAP_RATIO = 0.1 (the W20 F5 lift, opt-in since round D): the clean tadpole's fast residual is far

@@ -20,6 +20,8 @@ from resonances.data.const import SOLAR_SYSTEM_WITH_SUN
 from resonances.simulation import Simulation, SimulationSerializer
 from resonances.simulation.integration import horizons_tls
 
+pytestmark = pytest.mark.slow  # a shared setup of more than 1 s (tests/CLAUDE.md)
+
 GM_SUN = 1.32712440041279419e11  # BODY10_GM
 GM_EARTH = 3.9860043550702266e5  # BODY399_GM
 GM_MOON = 4.9028001184575496e3  # BODY301_GM

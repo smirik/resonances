@@ -5,9 +5,19 @@ the detail. Benchmark gates: `benchmark/CLAUDE.md`.
 
 ## Layout and markers
 
-- `make test-fast`: no integration. `make test-slow` (marker `slow`): real bodies at fixed Horizons dates, about
-  6 minutes. `make test-long` (marker `long`): integrations of 10 min and more (z1 over 10 Myr); outside `test`,
-  `test-fast` and `test-slow`. `make test-benchmark` (marker `benchmark`). `make test` = fast + slow.
+- `make test-fast`: tests of at most 1 s, about 3 min. `make test-slow` (marker `slow`): integrations and any test of
+  more than 1 s (a shared module setup of more than 1 s: `pytestmark = pytest.mark.slow` on the module), about
+  15 min. `make test-long` (marker `long`): integrations of 10 min and more (z1 over 10 Myr); outside `test`,
+  `test-fast` and `test-slow`. `make test-benchmark` (marker `benchmark`): local-only data and the author gates.
+  `make test` = fast + slow. Measure with `--durations=0` before marking; on 2026-10-29 the split moved 234 functions
+  to benchmark and 46 functions + 6 modules to slow (test-fast 30 min → 3 min).
+- Local-only data (`benchmark/data`, `RESONANCES_BENCHMARK_DATA`; the cached solar system in `cache/`): the test is
+  marked `benchmark` (a parameter: `pytest.param(..., marks=pytest.mark.benchmark)`), and its paths are resolved when
+  it runs (`tests/resonances/local_data.py`), not at import. `tests/conftest.py` points every other test at a folder
+  that does not exist and turns a skip for missing data into a failure; `make test-portable` runs test-fast on a
+  fresh copy (no `benchmark/data`, no `cache/`). Never `pytest.skip` a fast or slow test for missing local data.
+- Committed fixtures (`tests/fixtures/`): a few tens of KB each, 1 MB in all; larger ones live in
+  `benchmark/data/fixtures/` (the free-omega series, ~147 KB each, moved there on 2026-10-29).
 - `tests/resonances/independent_wN/`: tests written by a context-free subagent for wave N. When one fails, check the
   code first (on 2026-10-15, 6 of 9 failures were the code's fault); record a dispute with its reason.
 - Decision tests build real result objects (`tests/resonances/analysis/builders.py`: `make_geometry`,

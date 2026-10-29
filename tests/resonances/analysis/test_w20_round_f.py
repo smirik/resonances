@@ -191,6 +191,7 @@ def test_step_five_says_which_test_passed_it(l4, r0, expected):
     assert vt._force_conclusion(l4, r0) == expected
 
 
+@pytest.mark.benchmark
 def test_step_five_of_1999_tj10_names_the_direct_strength():
     """Rule 5d/6 (i): L4 and R0 both not measured, the directly averaged strength passes (1.58 within [0.1, 10])."""
     example = 'mmr2__1999_TJ10__19M-22+0+3'
@@ -208,6 +209,7 @@ def test_step_five_of_1999_tj10_names_the_direct_strength():
     )
 
 
+@pytest.mark.benchmark
 def test_wj_step_five_names_the_failed_energy_integral():
     example = 'coorbital__2024_WJ__1E-1+0+0'
     if not io.example_path(example).exists():
@@ -236,6 +238,7 @@ def test_a_regime_in_a_sentence_is_plain_words(regime, phrase):
     assert '_' not in vt.regime_phrase(regime)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, phrase',
     [
@@ -292,6 +295,7 @@ def _overflowing_text():
     return vt.VerdictText('resonant', 'libration', 'medium', 'reason x', ['A sentence. ' * 30] * 3, [], checks, 'raw: …')
 
 
+@pytest.mark.slow
 def test_the_grey_numbers_go_first_and_the_cap_and_decisive_lines_stay():
     """Review E #6: the same 700 numbers with 690 plain lines do not fit even compact in five columns (a count of what
     is left); as grey lines (tests skipped by design) they are dropped first (W23 F1: before any other change of the
@@ -371,6 +375,7 @@ def test_step_five_never_calls_a_failed_test_unmeasured(l4, r0, expected):
     assert vt._force_conclusion(l4, r0) == expected
 
 
+@pytest.mark.benchmark
 def test_117306_step_five_names_the_potential_that_decided():
     """Review F #1, revised by W21 Q9: R0 passed when step 5 was decided (V_E ~ V_F 0.667 >= 0.666, rule 5d/6). The
     filter guard now runs before the tree and compares the decisive cycle with its own counterpart at 2 P_c, so it no

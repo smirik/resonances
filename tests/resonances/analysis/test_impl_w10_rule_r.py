@@ -233,6 +233,7 @@ def _analyse(example, settings=S):
     return analyse_mmr(io.load_series(example), settings)
 
 
+@pytest.mark.benchmark
 def test_33128_6n7_a_thin_witness_makes_the_transient():
     """33128 6N-7: the pooled force law fails, episode 0 passes thin with L3 and B1 (the study: uncertain ->
     transient/medium, the only status change of rule R on the benchmark). Since 2026-10-18 the mark exit_and_capture
@@ -252,6 +253,7 @@ def test_33128_6n7_a_thin_witness_makes_the_transient():
     assert vt._detail_l3(facts, None)[0].endswith(vt.measured_on(facts, 'identity_source'))
 
 
+@pytest.mark.benchmark
 def test_524522_g1e_measured_on_a_witness_before_the_jump():
     """524522 1V-1 20 kyr (G1e): the force law is measured on the episodes before the jumps; the cap
     all_physics_not_measured goes, episode_before_jump stays (the study). W18: without the libration's own image in
@@ -266,6 +268,7 @@ def test_524522_g1e_measured_on_a_witness_before_the_jump():
     assert witness.before_jump and witness.witness
 
 
+@pytest.mark.benchmark
 def test_88710_g1e_without_a_witness_reads_the_pool_before_the_jump():
     """At the old response cutoff the 9.8-yr forced line (16 P_Venus) fails the force law of the 121-cycle episode before
     the jump (R^2 0.44/0.34): no witness, the pool decides. At 0.1 P_cyc the same episode passes (0.91/0.76) and is the
@@ -297,6 +300,7 @@ def test_88710_g1e_without_a_witness_reads_the_pool_before_the_jump():
     assert str(analysis.verdict.status) == 'transient'
 
 
+@pytest.mark.benchmark
 def test_34706_mixed_episodes_flag_and_cap():
     """34706 7J-2 at the old response cutoff: episode 0 is a witness, another librating episode's force law fails (the
     study's conflict). That failure was the 23.7-yr forced line (2 P_Jupiter): at 0.1 P_cyc both episodes pass, the

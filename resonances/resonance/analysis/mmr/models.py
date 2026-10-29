@@ -687,13 +687,22 @@ class ForceWindow:
 
 @dataclass(frozen=True)
 class MultipletFit:
-    """a_dot_f = sum_j [A_j sin sigma_j + B_j cos sigma_j] + C, sigma_j = sigma + j (varpi - varpi_P)."""
+    """a_dot_f = sum_j [A_j sin sigma_j + B_j cos sigma_j] + C, sigma_j = sigma + j (varpi - varpi_P).
+
+    The law whose R^2 L4 reads is the one fit over the union of `windows` (`pooled`, `constant_au_yr`); panel (e) of
+    the figure draws it (`response.members_model`, varpi - varpi_P from `response.multiplet_offset` with the planet's
+    rate). These fields only describe the fit; nothing decides on them."""
 
     harmonics: Tuple[int, ...]  # j values
     coefficients: np.ndarray  # complex A_j + i B_j per window x harmonic
     r2: float
     coefficient_coherence: float  # |<(A+iB)/|A+iB|>| of the leading terms over windows
     eps: Tuple[float, ...]  # |C_j| / |C_0|
+    pooled: Optional[np.ndarray] = None  # complex A_j + i B_j of the one fit over the union of the windows
+    constant_au_yr: float = NAN  # its C
+    windows: Tuple[Tuple[float, float], ...] = ()  # [start, end] yr of the windows
+    planet: str = ''  # the planet P of varpi_P ('' when the caller fitted another offset: the owner's law)
+    planet_varpi_rate_rad_yr: float = NAN  # g_P the offset was built with
 
 
 @dataclass(frozen=True)

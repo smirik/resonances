@@ -4,7 +4,7 @@
    2 sampling       analyse_sampling (predictive)      10 angle_status   decide_angle (geometry only)
    0 input          MMRSeries.validate (structure) and domain_problems (k = 0, a <= 0, e outside [0, 1), NaN):
                     invalid with its reason before anything is computed, never an exception
-   3 G0             unphysical or unwrap failed -> undefined verdict, the rest not_measured; P_c <= 2 dt (the step
+   3 G0             unwrap failed -> undefined verdict, the rest not_measured; P_c <= 2 dt (the step
                     is too coarse for the angle's own filter) -> invalid / undersampled, resample
    4 prep           preprocess (ripple, cutoff, filter) 11 subresonances run_subresonances when triggered
    5 geometry       measure_geometry, last regime      12 owner          run_owner when required
@@ -107,7 +107,6 @@ from resonances.resonance.analysis.verdict import (
     join_list,
     unmeasured_checks,
 )
-from resonances.resonance.classify.util import unphysical_arrays
 
 NAN = float('nan')
 BYTES_PER_MB = 1e6
@@ -151,15 +150,6 @@ def _period_floor(prep: Preprocessed, settings: AnalysisSettings) -> float:
     return prep.period_floor_yr if np.isfinite(prep.period_floor_yr) else settings.mmr_libration_period_min_yr
 
 
-def is_unphysical(series: MMRSeries) -> bool:
-    """check_chaos flag 1 on arrays: a < 0, e > 1.3 or non-finite values anywhere (the package rule,
-    `resonance.classify.util.unphysical_arrays`)."""
-    a, e = np.asarray(series.a, float), np.asarray(series.e, float)
-    if not (np.all(np.isfinite(series.angle_wrapped)) and np.all(np.isfinite(series.t_yr))):
-        return True
-    return bool(unphysical_arrays(a, e)[0])
-
-
 # --------------------------------------------------------------------------------------------- geometry and energy
 
 
@@ -195,76 +185,17 @@ def fast_part(prep: Preprocessed, settings: AnalysisSettings) -> Optional[np.nda
 
 
 def libration_image(prep: Preprocessed, period_floor_yr: float, settings: AnalysisSettings) -> np.ndarray:
-    """lowpass(x, P_c) - lowpass(x, P_floor) on the samples of every libration run, 0 elsewhere [rad, signed]: what
-    the run's own oscillation x leaves in `fast_part`.
-
-    The runs are those `geometry.local_thresholds` selects at its own prominence: the turning points of sigma_f at the
-    floor mmr_tp_prominence_floor_deg split by `geometry.split_runs`, of >= libration_min_turning_points TPs. A run is
-    a libration when the median of its full periods t_i+2 - t_i is not shorter than P_floor, the test
-    `decide.librating_episodes` applies to an episode; a run without a full period (two TPs) is none. A run it would
-    reject as a forced wave keeps its image (a 115-yr wave: the threshold stays above its swing). The mean full period
-    would not do: a slow swing among the turns of a 121-yr wave stretches it (52356 5J-2S-2, 60-67 kyr: median 122 yr,
-    mean 155 yr). The TP times here are the vertices of the parabola through the three samples about each extremum
-    (`_vertex_times`): on the grid a full period is a whole number of steps, and a 150-yr libration sampled at 5.1 yr
-    measured 147.9 yr. Only this test reads them; the episode's period test still reads the sample times.
-
-    x passes through the run's turning points, a half-cosine between neighbours, and holds its end values beyond
-    them; its image is formed on the run and filter_edge_trim_cutoffs x P_floor on each side (where a stretch's
-    residual is not read: `regime_prominence`). For a steady sine x = G(P; P_c) of it, so (G(P; P_c) - G(P; P_floor))
-    (1 - G(P; P_c)) of the swing stays (0.026 at P_floor); a changing amplitude, centre or shape leaves more. A wave
-    that rides on the run without turns of its own is partly taken out with it (x passes through the turns it shifts:
-    about 70 % of a 6-deg 115-yr wave on a 25-deg 160-yr libration)."""
-    t = np.asarray(prep.t_yr, float)
-    image = np.zeros(len(t))
-    angle_f = np.asarray(prep.angle_f, float)
-    floor_rad = math.radians(settings.mmr_tp_prominence_floor_deg)
-    turning = geometry_module.find_turning_points(t, angle_f, floor_rad, tuple(prep.window))
-    if len(turning) < settings.libration_min_turning_points:
-        return image
-    step = float(np.median(np.diff(t)))
-    margin = int(math.ceil(settings.filter_edge_trim_cutoffs * period_floor_yr / step))
-    vertices = _vertex_times(t, angle_f, np.asarray(turning.indices, int))
-    for run in geometry_module.split_runs(turning, settings):
-        times = vertices[run]
-        periods = times[2:] - times[:-2]
-        if len(run) < settings.libration_min_turning_points or not len(periods) or float(np.median(periods)) < period_floor_yr:
-            continue
-        index = np.asarray(turning.indices, int)[run]
-        lo, hi = max(int(index[0]) - margin, 0), min(int(index[-1]) + margin, len(t) - 1)
-        span = t[lo : hi + 1]
-        x = _through_turning_points(span, times, np.asarray(turning.values_rad, float)[run])
-        fast = filtering.lowpass_or_none(span, x, prep.cutoff.cutoff_yr, settings)
-        slow = filtering.lowpass_or_none(span, x, period_floor_yr, settings)
-        if fast is None or slow is None:
-            continue
-        own = slice(int(index[0]), int(index[-1]) + 1)
-        image[own] = (fast - slow)[own.start - lo : own.stop - lo]
-    return image
-
-
-def _vertex_times(t: np.ndarray, y: np.ndarray, indices: np.ndarray) -> np.ndarray:
-    """The times of the extrema y[indices] refined to the vertex of the parabola through the samples i - 1, i, i + 1
-    (uniform grid); the sample's own time at the record's ends or where the three samples are collinear."""
-    times = np.asarray(t, float)[indices]
-    inner = (indices > 0) & (indices < len(y) - 1)
-    i = indices[inner]
-    curvature = y[i - 1] - 2 * y[i] + y[i + 1]
-    with np.errstate(divide='ignore', invalid='ignore'):
-        shift = np.where(curvature != 0, 0.5 * (y[i - 1] - y[i + 1]) / curvature, 0.0)
-    times[inner] += np.clip(shift, -0.5, 0.5) * (t[i + 1] - t[i - 1]) / 2
-    return times
-
-
-def _through_turning_points(t: np.ndarray, times: np.ndarray, values: np.ndarray) -> np.ndarray:
-    """The curve through the turning points (times, values): a half-cosine between neighbours (its slope is 0 at both),
-    the end values before the first and after the last."""
-    x = np.interp(t, times, values)
-    k = np.clip(np.searchsorted(times, t, side='right') - 1, 0, len(times) - 2)
-    t0, t1, v0, v1 = times[k], times[k + 1], values[k], values[k + 1]
-    inside = (t > times[0]) & (t < times[-1]) & (t1 > t0)
-    phase = np.pi * (t - t0) / np.where(t1 > t0, t1 - t0, 1.0)
-    x[inside] = ((v0 + v1) / 2 + (v0 - v1) / 2 * np.cos(phase))[inside]
-    return x
+    """`geometry.libration_image` of sigma_f with the turning points at mmr_tp_prominence_floor_deg (the shared rule,
+    also the secular/ZLK prominence's)."""
+    return geometry_module.libration_image(
+        prep.t_yr,
+        prep.angle_f,
+        tuple(prep.window),
+        prep.cutoff.cutoff_yr,
+        period_floor_yr,
+        math.radians(settings.mmr_tp_prominence_floor_deg),
+        settings,
+    )
 
 
 def fast_residual(
@@ -587,10 +518,12 @@ def _derived(series: MMRSeries, subresonances: Optional[SubresonanceResult], set
 # --------------------------------------------------------------------------------------------- the analysis
 
 
-def _undefined(series, context, sampling, settings, cells, unphysical, parent: str) -> MMRAnalysis:
-    """G0: an unphysical orbit or a failed unwrap: the verdict from the sampling alone."""
+def _undefined(series, context, sampling, settings, cells, parent: str) -> MMRAnalysis:
+    """G0: a failed unwrap: the verdict from the sampling alone. The orbit is physical here: one outside the elliptic
+    domain never reaches G0 (`MMRSeries.domain_problems` refuses it first, `_invalid_input`), so `decide_angle` gets
+    unphysical = False and its G0 line reads 0."""
     ledger = Ledger.from_settings(settings)
-    angle = decide.decide_angle(sampling, unphysical, None, None, settings, ledger)
+    angle = decide.decide_angle(sampling, False, None, None, settings, ledger)
     decision = decide.decide_status(angle, sampling, None, None, None, None, None, None, None, settings, ledger)
     action, resample = _resample_action(default_action(decision.status, decision.reason, Confidence.NONE), sampling)
     verdict = Verdict(
@@ -613,17 +546,18 @@ def _undefined(series, context, sampling, settings, cells, unphysical, parent: s
         context=context,
         sampling=sampling,
         parent=parent,
-        extra_columns={'rec_unphysical': float(unphysical)},
+        extra_columns={'rec_unphysical': 0.0},
         filter_order=settings.filter_order,
     )
 
 
 def _g0(series, context, sampling, settings, cells, parent: str) -> Optional[MMRAnalysis]:
-    """G0, the verdicts before any measurement: an unphysical orbit or a failed unwrap (`_undefined`), a step too coarse
-    for the angle's filter (`_undersampled`); None when the record goes on to the measurements."""
-    unphysical = is_unphysical(series)
-    if unphysical or not sampling.unwrap_ok:
-        return _undefined(series, context, sampling, settings, cells, unphysical, parent)
+    """G0, the verdicts before any measurement: a failed unwrap (`_undefined`), a step too coarse for the angle's filter
+    (`_undersampled`); None when the record goes on to the measurements. An unphysical orbit never gets here: the
+    package rule (`classify.util.unphysical_arrays`: non-finite a or e, e > 1.3, a < 0) and non-finite angles or times
+    are all inside `MMRSeries.domain_problems` (non-finite, e >= 1, a <= 0), checked first (`_invalid_input`)."""
+    if not sampling.unwrap_ok:
+        return _undefined(series, context, sampling, settings, cells, parent)
     cutoff, floor, _ = preprocess_module.angle_cutoff(series.resonance, context, sampling.step_yr, settings)
     if not preprocess_module.filter_realizable(cutoff.cutoff_yr, sampling.step_yr):
         return _undersampled(series, context, sampling, settings, cells, parent, cutoff, floor)
@@ -636,7 +570,7 @@ def _undersampled(series, context, sampling, settings, cells, parent: str, cutof
     dt >= 37.5 yr when the floor bound sets P_c). Invalid / undersampled with every check not_measured (check_mmr_filter
     fails) and resample at the largest round step <= P_floor / mmr_resample_steps_per_cycle that also meets the alias
     bounds and filters P_c (`sampling.resample_step`; Jupiter Trojans 2.5 yr); review when none fits. It comes after
-    the unphysical and unwrap checks (`_g0`): a record failing those as well is reported by them."""
+    the unwrap check (`_g0`): a record failing that as well is reported by it."""
     step = float(sampling.step_yr)
     ledger = Ledger.from_settings(settings)
     ledger.compare('G0 sampling: the cutoff is longer than two output steps', cutoff.cutoff_yr, Op.GT, 2 * step, 'yr', 'flt_cutoff_yr')

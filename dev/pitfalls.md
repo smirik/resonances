@@ -69,7 +69,9 @@ Things that cost a session hours. Each says what happens and what to do instead.
 - **The flat-a force bound** is K_max = |ν|Δa/(1 − cos(S/2)) for an observed arc S ≤ 2π, else |ν|Δa/2
   (`response.py`); the old Δa/T_window bound was too strong. Do not revert it.
 - **A libration can raise its own turning-point threshold:** its image leaking through the two filters (2013 AS27:
-  48.9°, alternate TPs lost, period doubled to 310 yr). `analyse.fast_part` subtracts `libration_image` first.
+  48.9°, alternate TPs lost, period doubled to 310 yr). `analyse.fast_part` subtracts `libration_image` first. The secular/ZLK prominence (`secular.preprocess._set_prominence`)
+  missed it until W26 (591986 4 Myr: 17.4° against a 16° libration, three episodes instead of one); the rule now lives
+  in `geometry.libration_image`, shared.
 - **Lomb-Scargle in [2/T, 1/500 yr] hides long periods**, so T/P passes a "three cycles" gate spuriously (2023 RS2:
   2.1 real cycles, 3.68 inferred). Count cycles from turning points.
 - **Cubic potential extrapolation beyond the record** drove DOP853 to ~1e-6 steps (385266: 4.4 M calls, > 6 GB per

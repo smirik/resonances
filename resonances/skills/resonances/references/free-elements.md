@@ -192,8 +192,20 @@ Columns of a ZLK row that change no status (`analysis.zlk.diagnostics`, `analysi
   $2\pi/|b_\varpi - g_j|$ is $P_{\rm cyc}$ within a Rayleigh width, and the free node follows the
   mode ($|b_\Omega - g_j|\,T$ under one turn). 591986: g5 (g5+g7+g8+const), $e_{\rm free}/|c_5| = 0.25$,
   beat 5.96 kyr against $P_{\rm cyc}$ 6.0 kyr, node − g5 = −0.17″/yr (0.06 turn). Otherwise "forcing
-  not attributed" with the condition that failed. The per-mode amplitudes are persisted in
-  `{body}-omega-free.csv`; a file written before them restores no attribution.
+  not attributed" with the condition that failed. An episodic $\omega$ that the gate demoted inside its episodes
+  (median local $\rho < 1$ in each, the free $\omega$ turning with each cycle) is attributed with
+  `zlk_attribution_scope` `episodes`: the node need not follow the mode there (624 Hektor: node − g5 =
+  −17.2″/yr, 6.6 turns of the centre $\varpi_5 - \Omega$, which keeps the librations apart). The per-mode amplitudes
+  are persisted in `{body}-omega-free.csv`; a file written before them restores no attribution.
+- **Node lock** (`zlk_node_lock`, a flag no status reads): the osculating node against the longitude of the fitted
+  mode with the nearest rate, $\varpi_j(t) = g_j t + \arg c_j$. Locked when $|b_\Omega - g_j| < 1296000/T$ (one
+  Rayleigh width), $\Omega - \varpi_j$ stays within a turn, and, low-passed at the node's longest forced wave
+  ($2\pi/|b_\Omega - s_k|$) inside the filter's edge trim, it closes at least `ZLK_NODE_LOCK_MIN_CYCLES` full cycles
+  ((turning points − 1)/2): a drift or a slow circulation within the resolution closes none. 591986 over 4 Myr:
+  g5, 50–130°, 2 cycles of 1.4 Myr; over 500 kyr the rate matches and $\Omega - \varpi_5$ stays within 52–91°, but
+  no cycle closes: `unresolved` (one period of 1.4 Myr does not fit). Columns: the mode, the reason when none
+  (`rate_mismatch`, `unbounded`, `unresolved`, …), the candidate, $b_\Omega - g_j$ and the resolution, the range,
+  the period and the cycles.
 - **The slow line of the centre** of a libration or a drift (`zlk_centre_*`): the strongest
   sinusoid of the centre between its smoothing $W_c$ and half the record, and its origin:
   `forced_beat:<gk>-<gj>` when its period is a beat $2\pi/|g_k - g_j|$ of two fitted forced modes
@@ -201,7 +213,9 @@ Columns of a ZLK row that change no status (`analysis.zlk.diagnostics`, `analysi
   smoothed like the centre, explains it in shape ($r \ge$ `ZLK_CENTRE_MODEL_R_MIN`) and in size
   (`zlk_centre_model_gain`, its swing over the centre's, within a factor
   `ZLK_CENTRE_MODEL_AMP_FACTOR`: correlation alone is blind to size), `node` when the node's own
-  wave does, else `unexplained`. No per-mode amplitudes (an old file): no forced beat.
+  wave does, `forced_direction` when $\arg z_{\rm forced} - \Omega$ does (the centre of $\omega$ itself when the
+  forced vector holds $\varpi$: 591986 over 4 Myr, a 1.43-Myr wave of the node locked to g5 plus the g6−g5 beat,
+  $r = 0.998$; the node alone gives 0.82), else `unexplained`. No per-mode amplitudes (an old file): no forced beat.
   591986: 53.8 kyr, ±21.6°, `forced_beat:g6-g5`, $r = 0.991$, gain 1.00, model ±22.8°. A modulated secular
   angle gets the same line (`sec_centre_*`), named `forced_wave:<mode>` after a forced wave of its
   own modes.

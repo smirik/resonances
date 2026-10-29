@@ -288,7 +288,7 @@ A slow libration of g − g6 + s − s6: few cycles fit in the record, so the co
 
 The z1 angle librates in part of the record and circulates in the rest.
 
-**2306**, `g-g6+s-s6`: `transient` · `episodic` · `dynamic_episode` · `certain`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
+**2306**, `g-g6+s-s6`: `uncertain` · `drift` · `baseline_needed`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
 
 [![secular__2306__g-g6+s-s6](https://smirik.github.io/resonances/img/gallery/secular__2306__g-g6+s-s6.png)](https://smirik.github.io/resonances/img/gallery/secular__2306__g-g6+s-s6.png)
 

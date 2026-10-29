@@ -234,6 +234,7 @@ def _analysis(example):
     return analyse_mmr(io.load_series(example), S)
 
 
+@pytest.mark.benchmark
 def test_tk14_energy_in_the_averaged_well():
     analysis = _analysis('mmr2__2004_TK14__31M-34+0+3')
     row = analysis.numbers_row()
@@ -250,6 +251,7 @@ def test_tk14_energy_in_the_averaged_well():
     }
 
 
+@pytest.mark.benchmark
 def test_tk14_half_year_force_law_above_the_64_yr_line():
     analysis = _analysis('mmr2__2004_TK14__31M-34+0+3__step0.5yr')
     read = analysis.response
@@ -257,6 +259,7 @@ def test_tk14_half_year_force_law_above_the_64_yr_line():
     assert min(read.force_r2_h1, read.force_r2_h2) >= 0.7 and read.force_r2_null_max <= 0.35
 
 
+@pytest.mark.benchmark
 def test_433_force_law_above_the_83_yr_line():
     analysis = _analysis('mmr2__433__47M-44+0-3')
     read = analysis.response

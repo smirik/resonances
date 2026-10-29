@@ -38,6 +38,8 @@ from resonances.simulation.data_manager import DataManager  # noqa: E402
 from resonances.simulation.serializer import SimulationSerializer  # noqa: E402
 from resonances.simulation.simulation import Simulation  # noqa: E402
 
+pytestmark = pytest.mark.slow  # a shared setup of more than 1 s (tests/CLAUDE.md)
+
 A_BODY, A_JUPITER = 3.2776, 5.2026
 LIBRATION_PERIOD = 400.0  # yr
 LIBRATION_CENTRE = 0.0  # rad

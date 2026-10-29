@@ -410,6 +410,7 @@ def _catalogue_only(series, example_id):
     return dataclasses.replace(series, planets={}, catalogue_longitudes=io._catalogue(meta, float(series.t_yr[0]), {}))
 
 
+@pytest.mark.benchmark
 def test_hw7_reads_the_linked_planets_and_the_catalogue_finds_the_same_owner():
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 
@@ -426,6 +427,7 @@ def test_hw7_reads_the_linked_planets_and_the_catalogue_finds_the_same_owner():
     assert str(approx.verdict.confidence) == 'medium' and 'catalogue_longitudes' in str(approx.verdict.caps)
 
 
+@pytest.mark.benchmark
 def test_ug22_catalogue_owner_is_ambiguous_not_accepted():
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 

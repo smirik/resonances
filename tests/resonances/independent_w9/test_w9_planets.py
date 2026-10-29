@@ -302,6 +302,7 @@ CAPTURES = [
 ]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('da_before, da_after', CAPTURES)
 def test_capture_after_jump_is_transient_with_final_libration(da_before, da_after):
     series, t_jump = _capture(da_before, da_after)
@@ -313,6 +314,7 @@ def test_capture_after_jump_is_transient_with_final_libration(da_before, da_afte
     assert t_jump <= verdict.final_regime_start_yr <= t_jump + 450.0
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     'da_before, da_after',
     [

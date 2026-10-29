@@ -23,7 +23,7 @@ from resonances.data.util import time_ordered
 from resonances.secular.free_elements import RAD_PER_ARCSEC, rate
 from resonances.secular.proper_angle import inclination_from_invariable_plane, inclination_from_vector, reduced_vectors
 from .base import DiagnosticPlotter, time_unit
-from .style import CENTRE, EPISODE_COLOURS, INK, MODEL, RATE_ZERO, RAW, RAW_ALPHA, REFERENCE
+from .style import CENTRE, EPISODE_COLOURS, INK, MODEL, OWNER, RATE_ZERO, RAW, RAW_ALPHA, REFERENCE, SUBRESONANCE
 from .style import SECULAR_PLOT_KINDS, NumbersMode, resolve_plot_options, time_cmap, time_label
 
 
@@ -238,6 +238,15 @@ LONG_PERIOD_LEGEND = (
     '(h) (e cos σ, e sin σ), (sin(i/2) cos σ, sin(i/2) sin σ) for an angle of Ω alone; colour: time. (i) secular: σ_f '
     'against dσ_f/dt; ZLK: the free eccentricity vector.',
 )
+# (a′) of a ZLK row whose libration is induced (`forcing_panel_drawn`), drawn under (a); other rows keep seven panels
+FORCING_PANEL = ('a′', 'omega_f with the forced direction against the node and the dominant mode\'s longitude against it')
+FORCING_LEGEND = (
+    '(a′) ZLK, an induced libration only: grey ω_f; orange arg z_forced − Ω, the direction of the fitted forced '
+    'eccentricity vector against the node (the centre the free circle turns about; it carries the beat of the modes); '
+    'purple dashed ϖ_j − Ω, the longitude of the dominant mode against the node (bounded: a node lock).'
+)
+FORCED_DIRECTION = SUBRESONANCE  # arg z_forced - Omega in (a′)
+MODE_LINE = OWNER  # varpi_j - Omega in (a′): the mode that holds omega
 LONG_PERIOD_BLOCK_ORDER = (
     'verdict',
     'path',
@@ -421,6 +430,137 @@ def _draw_angle(ax, frame, layout):
         ax.plot(frame.times(geometry.centre.t_yr), np.degrees(geometry.centre.centre_rad), color=CENTRE, lw=0.9, zorder=4)
         _mark_turns(ax, frame, geometry.turning_points)
     _style_axis(ax, 'a', 'σ, °', layout)
+
+
+def forcing_panel_drawn(analysis, free_elements) -> bool:
+    """Whether a ZLK figure gets (a′): a kinematic libration attributed to a forced mode (`zlk_forcing_*`) or a centre
+    whose slow line is a beat of the forced vector (`zlk_centre_origin` forced_beat), with the per-mode amplitudes and
+    the node to draw them from."""
+    if str(analysis.verdict.resonance_type) != 'lidov_kozai' or analysis.series is None or analysis.series.Omega is None:
+        return False
+    if free_elements is None or not free_elements.amplitudes_e:
+        return False
+    zlk, line = getattr(analysis, 'zlk', None), getattr(analysis, 'centre_line', None)
+    attributed = zlk is not None and zlk.attribution.attributed
+    return bool(attributed or (line is not None and str(line.origin).startswith('forced_beat:')))
+
+
+def _on_branch(curve, reference):
+    """`curve` (unwrapped, rad) moved by whole turns to the branch of `reference` (median difference within half a turn)."""
+    offset = np.nanmedian(np.asarray(reference, dtype=float) - curve)
+    return curve + 2 * np.pi * np.round(offset / (2 * np.pi))
+
+
+def _dominant_mode(analysis, free_elements) -> str:
+    """The mode of (a′): the attributed one, else the fitted eccentricity mode of the largest amplitude (not const)."""
+    zlk = getattr(analysis, 'zlk', None)
+    if zlk is not None and zlk.attribution.attributed:
+        return zlk.attribution.mode.split(' ')[0]
+    modes = {
+        label: abs(value) for label, value in free_elements.amplitudes_e.items() if label != 'const' and label in free_elements.basis_e
+    }
+    return max(modes, key=modes.get) if modes else ''
+
+
+def _forcing_labels(analysis, free_elements, mode: str):
+    """(legend of arg z_forced − Ω, legend of ϖ_j − Ω, the note on the right): modes and periods from the fitted
+    amplitudes (`FreeElements.forced_beats`), the attribution and the node lock, as measured."""
+    from resonances.plotting.verdict_text import _mode_longitude, finite, fmt, years
+
+    amplitudes = sorted(
+        ((abs(value), label) for label, value in free_elements.amplitudes_e.items() if label != 'const' and abs(value) > 0), reverse=True
+    )
+    top = [label for _, label in amplitudes[:2]]
+    direction = 'arg z_forced − Ω: the forced direction'
+    if len(top) == 2:
+        beat = free_elements.forced_beats().get(f'{top[1]}-{top[0]}')
+        direction += f' (|c| {top[0]} {fmt(amplitudes[0][0])} + {top[1]} {fmt(amplitudes[1][0])}, beat {years(beat)})'
+    elif top:
+        direction += f' (|c| {top[0]} {fmt(amplitudes[0][0])})'
+    sym = _mode_longitude(mode)
+    line = f'{sym} − Ω: the mode {mode} against the node'
+    zlk = getattr(analysis, 'zlk', None)
+    lock = zlk.node_lock if zlk is not None else None
+    if lock is not None and lock.locked and lock.mode == mode:
+        line += f' (locked: {lock.min_deg:.0f}–{lock.max_deg:.0f}°, {fmt(lock.cycles)} cycles of {years(lock.period_yr)})'
+    elif lock is not None and lock.candidate == mode and finite(lock.rate_diff_arcsec_yr):
+        line += f' (Ω̇ − {mode} {lock.rate_diff_arcsec_yr:+.3g}″/yr)'
+    note = ''
+    if zlk is not None and zlk.attribution.attributed:
+        note = f'free vector about the forced one: beat {years(zlk.attribution.beat_period_yr)} = P_cyc'
+    return direction, line, note
+
+
+def _draw_forcing(ax, frame, layout, free_elements):
+    """(a′) of an induced ZLK libration (`forcing_panel_drawn`): ω_f thin, the forced direction against the node
+    arg z_forced(t) − Ω(t) (the centre the free circle turns about: the beat of the modes and the node's motion), and
+    the dominant mode's longitude against the node ϖ_j(t) − Ω(t) (bounded when the node is locked to it), both from
+    the fitted forced vector (`FreeElements.forced_vector`, amplitudes c_j at the rates g_j) and the osculating node.
+    The curves are moved by whole turns onto ω_f's branch and drawn unwrapped when together they stay within a turn
+    (591986: the node-lock wave at full scale); otherwise in the 360° window about the forced direction (624: ω
+    circulates between its episodes, ω_f is drawn inside them only, where it follows the curves)."""
+    from resonances.plotting.mmr_combined import _angle_formatter, _break_jumps, _line, _right_angles, _style_axis, _view, _wrap_window
+
+    analysis = frame.analysis
+    series = analysis.series
+    omega = np.asarray(analysis.angle.angle_f if analysis.angle is not None else series.angle, dtype=float)
+    node = np.asarray(series.Omega, dtype=float)
+    mode = _dominant_mode(analysis, free_elements)
+    curves = [_on_branch(np.unwrap(np.angle(free_elements.forced_vector(frame.t_yr)) - node), omega)]
+    if mode:
+        longitude = free_elements.basis_e[mode] * RAD_PER_ARCSEC * frame.t_yr + np.angle(free_elements.amplitudes_e[mode])
+        curves.append(_on_branch(np.unwrap(longitude - node), omega))
+    labels = _forcing_labels(analysis, free_elements, mode)
+    styles = (
+        {'color': FORCED_DIRECTION, 'lw': 1.0, 'zorder': 3, 'label': labels[0]},
+        {'color': MODE_LINE, 'lw': 1.3, 'ls': '--', 'zorder': 4, 'label': labels[1]},
+    )
+    every = np.degrees(np.concatenate([omega] + curves))
+    every = every[np.isfinite(every)]
+    if len(every) and every.max() - every.min() < 360.0:
+        ax.plot(frame.x, np.degrees(omega), color=RAW, lw=0.5, alpha=0.8, zorder=2, label='ω_f')
+        for curve, style in zip(curves, styles):
+            ax.plot(frame.x, np.degrees(curve), **style)
+        _view(ax, every, extra_top=0.45)
+    else:
+        # ω circulates between its episodes: ω_f is drawn inside the librating episodes only, where it follows the curves
+        low = float(np.nanmedian(curves[0])) - np.pi
+        inside = np.zeros(len(frame.t_yr), dtype=bool)
+        for run in _librating(analysis):
+            inside |= (frame.t_yr >= run.t_start_yr) & (frame.t_yr <= run.t_end_yr)
+        shown = np.where(inside, _wrap_window(omega, low), np.nan)
+        _line(
+            ax,
+            frame.x,
+            np.degrees(_break_jumps(shown, np.pi)),
+            unwrapped=omega,
+            color=INK,
+            lw=0.6,
+            zorder=2,
+            label='ω_f in the librating episodes',
+        )
+        for curve, style in zip(curves, styles):
+            ax.plot(frame.x, np.degrees(_break_jumps(_wrap_window(curve, low), np.pi)), **style)
+        base = np.degrees(low)
+        ax.set_ylim(base, base + 360 * 1.35)  # the top: the legend
+        ticks = _right_angles(base, inner=True)
+        ax.set_yticks(ticks)
+        ax.yaxis.set_major_formatter(_angle_formatter())
+    ax.legend(
+        loc='upper left',
+        fontsize=layout.font_note_pt,
+        frameon=False,
+        ncol=3,
+        handlelength=1.8,
+        borderaxespad=0.2,
+        bbox_to_anchor=(0.03, 1.0),
+    )
+    if labels[2]:
+        box = {'facecolor': 'white', 'edgecolor': 'none', 'alpha': 0.8, 'pad': 0.6}
+        ax.text(
+            0.99, 0.06, labels[2], transform=ax.transAxes, ha='right', va='bottom', fontsize=layout.font_note_pt, color=REFERENCE, bbox=box
+        )
+    _style_axis(ax, FORCING_PANEL[0], 'ω, °', layout)
 
 
 def _librating(analysis):
@@ -700,8 +840,9 @@ def _draw_header(fig, analysis, layout, stamp):
         )
 
 
-def _draw_legend(fig, layout):
-    """The legend over the third slot of the bottom row and the legend's own box (`mmr_combined.legend_rect`)."""
+def _draw_legend(fig, layout, forcing: bool = False):
+    """The legend over the third slot of the bottom row and the legend's own box (`mmr_combined.legend_rect`); with
+    `forcing` the line of (a′)."""
     import textwrap
 
     from resonances.plotting.mmr_combined import legend_rect
@@ -711,7 +852,8 @@ def _draw_legend(fig, layout):
     top = y + h
     fig.text(x / width, top / height, 'Legend', fontsize=layout.font_legend_pt + 1.5, fontweight='bold', va='top')
     chars = max(int(w * 72 / (0.56 * layout.font_legend_pt)), 20)
-    text = '\n'.join(textwrap.fill(line, chars, subsequent_indent='   ') for line in LONG_PERIOD_LEGEND)
+    legend = LONG_PERIOD_LEGEND[:1] + (FORCING_LEGEND,) + LONG_PERIOD_LEGEND[1:] if forcing else LONG_PERIOD_LEGEND
+    text = '\n'.join(textwrap.fill(line, chars, subsequent_indent='   ') for line in legend)
     fig.text(x / width, (top - 0.22) / height, text, fontsize=layout.font_legend_pt, va='top', color='#333333', linespacing=1.2)
 
 
@@ -719,7 +861,8 @@ def draw_long_period_combined(
     analysis, row=None, free_elements=None, stamp: Optional[str] = None, layout=None, options=None, settings=None
 ):
     """The V1 figure of a secular or Lidov-Kozai verdict (`LongPeriodAnalysis` with its arrays); `row` adds columns to
-    the analysis' summary row (the body's free elements, e-i coherence); `free_elements` (ZLK) draws (f) and (i).
+    the analysis' summary row (the body's free elements, e-i coherence); `free_elements` (ZLK) draws (f) and (i), and
+    (a′) under (a) for an induced libration (`forcing_panel_drawn`; eight time panels then, seven otherwise).
     The right column follows the plot option `combined.numbers` (explained | all); `settings`: the AnalysisSettings the
     explanation compares with (default: from the configuration). Returns the Figure (with `text_stats`)."""
     import dataclasses
@@ -736,15 +879,19 @@ def draw_long_period_combined(
     _draw_header(fig, analysis, layout, stamp)
     frame = _LongFrame(analysis, settings)
     width, height = fig.get_size_inches()
-    axes = stacked_axes(fig, layout, len(LONG_PERIOD_PANELS))
+    forcing = analysis.series is not None and len(analysis.series.t_yr) > 1 and forcing_panel_drawn(analysis, free_elements)
+    axes = stacked_axes(fig, layout, len(LONG_PERIOD_PANELS) + int(forcing))
     if analysis.series is not None and len(analysis.series.t_yr) > 1:
         _draw_angle(axes[0], frame, layout)
-        _draw_wrapped(axes[1], frame, layout)
-        _draw_rate(axes[2], frame, layout)
-        _draw_element(axes[3], frame, layout, analysis.series.e, 'd', 'e', '{:.4g}')
-        _draw_element(axes[4], frame, layout, np.degrees(analysis.series.inc), 'e', 'i, °', '{:.4g}°')
-        _draw_physics(axes[5], frame, layout, free_elements)
-        _draw_centre(axes[6], frame, layout)
+        if forcing:
+            _draw_forcing(axes[1], frame, layout, free_elements)
+        rest = axes[1 + int(forcing) :]
+        _draw_wrapped(rest[0], frame, layout)
+        _draw_rate(rest[1], frame, layout)
+        _draw_element(rest[2], frame, layout, analysis.series.e, 'd', 'e', '{:.4g}')
+        _draw_element(rest[3], frame, layout, np.degrees(analysis.series.inc), 'e', 'i, °', '{:.4g}°')
+        _draw_physics(rest[4], frame, layout, free_elements)
+        _draw_centre(rest[5], frame, layout)
         for ax in axes[:-1]:
             ax.tick_params(labelbottom=False)
         axes[-1].set_xlabel(f't, {frame.unit}', fontsize=layout.font_axis_pt, labelpad=1)
@@ -752,7 +899,7 @@ def draw_long_period_combined(
         norm = Normalize(frame.x[0], frame.x[-1])
         _draw_portraits(fig, frame, layout, norm, free_elements)
         _colour_bar(fig, norm, layout, frame.unit, label_on_top=True)  # (i)'s y label sits right of it (W23 F4)
-    _draw_legend(fig, layout)
+    _draw_legend(fig, layout, forcing)
     fig.add_artist(plt.Line2D([layout.separator_x / width] * 2, [0.3 / height, (height - 0.2) / height], color='#dddddd', lw=0.8))
     if resolve_plot_options(options)['combined']['numbers'] == NumbersMode.ALL:
         constants = _constant_lines(analysis) if analysis.series.terms else []

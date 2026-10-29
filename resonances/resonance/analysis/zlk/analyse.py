@@ -29,7 +29,8 @@ no unfitted co-orbital): a disabled gate keeps the geometric result.
 
 Columns that change no status (`diagnostics`, `secular.slow`): the e-i coupling at the decisive period for every row
 (`zlk_ei_*`, `check_zlk_ei`, `confirmed_ei`), the attribution of a kinematic libration to a forced mode
-(`zlk_forcing_*`), and the slow line of the centre (`zlk_centre_*`) even when the fine scale decided.
+(`zlk_forcing_*`), the slow line of the centre (`zlk_centre_*`) even when the fine scale decided, and the node lock
+(`zlk_node_lock*`: the node's rate one line with a forced mode's and Omega - varpi_j librating).
 """
 
 from __future__ import annotations
@@ -42,7 +43,7 @@ import numpy as np
 from resonances.resonance.analysis.confidence import ConfidenceCells
 from resonances.resonance.analysis.secular import slow
 from resonances.resonance.analysis.secular.analyse import analyse_long_period
-from resonances.resonance.analysis.secular.decide import GATED, AngleDecision
+from resonances.resonance.analysis.secular.decide import GATED, AngleDecision, librating_episodes
 from resonances.resonance.analysis.secular.models import CentreLine, GateResult, LongPeriodAnalysis, LongPeriodSeries
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import AngleStatus
@@ -93,6 +94,8 @@ def analyse_zlk(
             baseline_yr=float(free_elements.baseline) if free_elements is not None else NAN,
             min_distance_arcsec_yr=float(verdict.min_distance) if verdict.min_distance is not None else NAN,
             detail=verdict.detail,
+            free_turns_min=settings.zlk_episode_free_turns_per_cycle,
+            **_episode_pinning(free_elements, angle, geometry, settings),
         )
 
     def centre_guard(slow_geometry, fine_geometry, ledger) -> str:
@@ -114,8 +117,40 @@ def analyse_zlk(
     return analysis
 
 
+def _episode_pinning(free_elements, angle: AngleDecision, geometry, settings: AnalysisSettings) -> dict:
+    """{rho_episodes, free_turns_episodes} of an episodic omega (`GateResult`): over its librating episodes the
+    largest median of |z_free| / |z_forced| inside one and the fewest turns of the free omega per cycle inside one
+    (`FreeElements.episode_pinning`: nan where the free elements do not measure an episode, which then pins nothing);
+    {} otherwise.
+
+    A librating episode of the osculating omega while the free circle stays off the origin (median ratio < 1) and the
+    free vector turns about the forced one once per cycle (a kinematic cycle: P_cyc is their beat; a dynamic one
+    leaves the free omega librating, about 0 turns over whole cycles) is the forced vector's, whatever the free circle
+    does between the episodes (624 Hektor: eleven 1-3-cycle librations of omega where the free radius dips just below
+    the forced one).
+    """
+    if free_elements is None or angle.angle_status != AngleStatus.EPISODIC:
+        return {}
+    episodes = librating_episodes(geometry)
+    if not episodes:
+        return {}
+    medians, turns = [], []
+    for episode in episodes:
+        tp = np.asarray(episode.tp_times_yr, dtype=float)
+        cycles = (len(tp) - 1) // 2
+        if cycles < 1:
+            medians.append(NAN)
+            turns.append(NAN)
+            continue
+        rho, per_cycle = free_elements.episode_pinning(float(tp[0]), float(tp[-1]), float(tp[2 * cycles]), cycles)
+        medians.append(rho)
+        turns.append(per_cycle)
+    return {'rho_episodes': float(np.max(medians)), 'free_turns_episodes': float(np.min(turns))}
+
+
 def _add_columns(analysis: LongPeriodAnalysis, free_elements, settings: AnalysisSettings) -> None:
-    """The e-i coupling (also check_zlk_ei), the attribution and the slow line of the centre; no status changes."""
+    """The e-i coupling (also check_zlk_ei), the attribution, the slow line of the centre and the node lock; no status
+    changes."""
     series, verdict = analysis.series, analysis.verdict
     geometry = analysis.geometry
     result = diagnostics.ZlkDiagnostics()
@@ -124,7 +159,16 @@ def _add_columns(analysis: LongPeriodAnalysis, free_elements, settings: Analysis
         result.ei = diagnostics.measure_ei_coupling(series.t_yr, series.e, series.inc, series.Omega, period, source, settings)
         gate = analysis.gate
         if gate is not None:
-            result.attribution = diagnostics.attribute_forcing(free_elements, gate.outcome, gate.libration_period_yr, gate.rho_max)
+            result.attribution = diagnostics.attribute_forcing(
+                free_elements,
+                gate.outcome,
+                gate.libration_period_yr,
+                gate.rho_max,
+                gate.rho_episodes,
+                gate.free_turns_episodes,
+                gate.free_turns_min,
+                series.step_yr,
+            )
         # a libration's centre, or one that moves without turning (drift); a circulating or episodic one has no slow
         # line of its own
         if verdict.angle_status in (AngleStatus.LIBRATION, AngleStatus.DRIFT):
@@ -134,5 +178,6 @@ def _add_columns(analysis: LongPeriodAnalysis, free_elements, settings: Analysis
         result.ei.reason = 'no_geometry'
     if analysis.centre_line is None:
         analysis.centre_line = CentreLine('zlk_centre')
+    result.node_lock = diagnostics.node_lock(free_elements, settings)
     analysis.zlk = result
     verdict.checks['check_zlk_ei'] = result.ei.check

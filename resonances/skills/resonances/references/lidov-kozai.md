@@ -126,7 +126,10 @@ Four measurements sit next to the status and change none of it ([Free elements](
   `zlk_ei_coupling == zlk`.
 - **Attribution** of a kinematic libration (`zlk_forcing_*`): the forced mode that holds $\varpi$ (591986: g5 with the
   modes merged into it), when the free circle stays off the origin, the predicted beat is the libration period and
-  the node follows the mode; otherwise "forcing not attributed".
+  the node follows the mode (an episodic row demoted inside its episodes: scope `episodes`, the node free to turn);
+  otherwise "forcing not attributed". The figure states it as the cause and draws panel (a′).
+- **Node lock** (`zlk_node_lock`, a flag): the node's rate one line with a forced mode's and $\Omega - \varpi_j$
+  librating through at least one full cycle (591986 over 4 Myr: g5; over 500 kyr not resolved).
 - **The slow line of the centre** (`zlk_centre_*`): its period and half-amplitude, and its origin (591986: the g6−g5
   beat of the forced vector, 54 kyr, ±22°).
 - **Co-orbitals** of Mercury to Mars have no gate verdict (`zlk_gate_detail` = `coorbital_unfitted_forcing`): their

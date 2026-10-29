@@ -27,6 +27,10 @@ benchmark/
                                 пишется как ^ и строчная: Omega и omega на macOS иначе один файл), по реальному пути
                                 файла, сверяется по mtime и размеру (__source__.npy); столбцы планет отдаются как
                                 read-only memory map; можно удалить (старые <путь>.npz формата 1 больше не читаются)
+    fixtures/free-omega/<имя>.csv.gz
+                                ω и свободные элементы 591986, 3040, 162474, 4257 за 500 тыс. лет для тестов с меткой
+                                benchmark (tests/resonances/local_data.py); перенесены из tests/fixtures 2026-10-29: по
+                                ~147 КБ, больше бюджета закоммиченных фикстур (несколько десятков КБ, 1 МБ всего)
     review/<rtype>/<bucket>/<confidence>/<example_id>.png
                                 symlink на combined.png; генерируется из labels.csv (bench_io.build_review_tree),
                                 руками не трогать; index.html в каждой папке (миниатюры) и в review/

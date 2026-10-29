@@ -128,6 +128,14 @@ SABA-задачи объединяют до 8 тел в одну Simulation: т�
     (`bench2-R-ias15-19.9999kyr-5.00122yr-jd2461297.5`, та же модель и те же моменты), угол хранится как
     np.unwrap(σ mod 2π). Автор: resonant, libration, подтип moving_centre, high (author:2026-10-17, принято при
     условии литературы: Gallardo 2006 с. 30, Wisdom 1985 с. 274). Метка также в author_label_decisions_2026-10-15.csv.
+- 2026-10-28 (`tmp/classifier-v2-2026-10-15/w25-iteration/add_591986_4myr.py`):
+  - `zlk__591986__LK__4myr` (c0796): прогон `w25-iteration/zlk-double/claude/m04_run_591986_long.py` (Horizons на
+    2026-10-28, SABA(10,6,4) dt 1, 4 млн лет, шаг 100 лет), скопирован в `benchmark/raw/591986-4myr-2026-10-28/`
+    (вне git; `data_path` указывает туда). Ряд на шаге прогона (40001 строка), все девять планет прогона в
+    `runs/w25-zlk591986-saba-4000kyr-100yr-jd2461341.5/planets.csv.gz` (ϖ Юпитера для узла против g5), free-omega
+    источника как `free_omega.csv.gz`. Захват узла g5 (Ω − ϖ5 либрирует 52°–129°, 1.46 млн лет) под кинематической
+    либрацией ω (6 тыс. лет) и биением g6−g5 (54 тыс. лет). Автор: «2 - в бенч» (W25, Q2), вердикт ожидается;
+    proposed/claude = вердикт пакета при добавлении (non_resonant/episodic/kinematic_libration).
 
 ## Переклассификация и `make test-benchmark`
 

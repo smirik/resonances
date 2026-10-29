@@ -3665,14 +3665,102 @@ def _centre_line(line) -> str:
     return f'slow line of the centre: {years(line.period_yr)}, ±{math.degrees(line.half_amp_rad):.3g}°: {origin}{model}'
 
 
+def _mode_longitude(mode: str) -> str:
+    """'g5' -> 'ϖ5': the longitude of a forced eccentricity mode."""
+    return f'ϖ{mode[1:]}' if mode.startswith('g') and len(mode) > 1 else f'ϖ({mode})'
+
+
+CENTRE_CAUSE_ORIGINS = ('forced_beat:', 'forced_direction', 'node')
+
+
+def _centre_cause(line) -> str:
+    """The centre's slow line as a cause: what its origin (`slow.zlk_centre_line`) names; '' for unexplained or none."""
+    if line is None or not finite(line.period_yr) or not str(line.origin).startswith(CENTRE_CAUSE_ORIGINS):
+        return ''
+    wave = f'The centre\'s {years(line.period_yr)} wave (±{math.degrees(line.half_amp_rad):.3g}°)'
+    if line.origin.startswith('forced_beat:'):
+        small, big = line.origin.split(':', 1)[1].split('-')
+        return f'{wave} is the {small}−{big} beat of the forced vector (r {line.model_r:.2f}).'
+    if line.origin == 'forced_direction':
+        return f'{wave} follows the forced direction against the node, arg z_forced − Ω (r {line.model_r:.2f}).'
+    return f'{wave} is the node\'s own (r {line.model_r:.2f}).'
+
+
+def _node_lock_words(lock) -> str:
+    """'the node is locked to g5: Ω − ϖ5 within 50–130° (1.5 cycles of 1.46 Myr)', or, for a rate within the
+    resolution whose difference closes no cycle, that a lock is not resolved; '' otherwise."""
+    if lock is None or not lock.candidate:
+        return ''
+    mode, sym = lock.candidate, _mode_longitude(lock.candidate)
+    span = f'Ω − {sym} within {lock.min_deg:.0f}–{lock.max_deg:.0f}°'
+    if lock.locked:
+        return f'the node is locked to {mode}: {span} ({fmt(lock.cycles)} cycles of {years(lock.period_yr)})'
+    if lock.reason == 'unresolved':
+        return (
+            f'the node follows {mode} within the resolution (Ω̇ − {mode} {lock.rate_diff_arcsec_yr:+.2f}″/yr, '
+            f'{span}); a lock is not resolved: no full cycle of Ω − {sym} in the record'
+        )
+    return ''
+
+
+def zlk_cause(analysis) -> Tuple[str, Tuple[str, ...]]:
+    """(the sentence naming what induces a kinematic ZLK libration, the facts it used: 'attribution', 'centre',
+    'node_lock'). Only for a row whose status took the kinematic outcome (origin kinematic); from the measured columns
+    only: the attribution (`diagnostics.attribute_forcing`), the centre's slow line and the node lock. Unattributed: the
+    reason, briefly. ('', ()) otherwise."""
+    zlk, gate, verdict = getattr(analysis, 'zlk', None), getattr(analysis, 'gate', None), analysis.verdict
+    if zlk is None or gate is None or gate.outcome != 'kinematic' or str(verdict.libration_origin) != 'kinematic':
+        return '', ()
+    attribution = zlk.attribution
+    if not attribution.attributed:
+        return f'Cause not attributed: {attribution.reason.replace("_", " ")}.', ('attribution',)
+    mode, _, group = attribution.mode.partition(' ')
+    sym = _mode_longitude(mode)
+    amplitude = f'|c| {fmt(attribution.forcing_e)}' + (f', fitted for the cluster {group.strip("()")}' if group else '')
+    beat = f'the beat 2π/|b_ϖ − {mode}| {years(attribution.beat_period_yr)} = P_cyc'
+    if attribution.scope == 'episodes':
+        parts = [
+            f'Induced, inside the librating episodes, by the forced eccentricity of mode {mode} ({amplitude}), which holds ϖ '
+            f'there (median |e_free|/|e_forced| ≤ {fmt(gate.rho_episodes)} in every episode): the free vector circles it with {beat}.'
+        ]
+    else:
+        parts = [
+            f'Induced by the forced eccentricity of mode {mode} ({amplitude}), which holds ϖ: the free vector (e_free/|c| '
+            f'{fmt(attribution.free_over_forcing)}) circles it with {beat}.'
+        ]
+    used = ['attribution']
+    centre = _centre_cause(getattr(analysis, 'centre_line', None))
+    if centre:
+        parts.append(centre)
+        used.append('centre')
+    node = _node_lock_words(zlk.node_lock) if zlk.node_lock.candidate == mode else ''
+    if node:
+        parts.append(node[0].upper() + node[1:] + '.')
+        used.append('node_lock')
+    elif attribution.scope == 'episodes' and finite(attribution.node_minus_mode_arcsec_yr):
+        parts.append(
+            f'The centre {sym} − Ω turns with the node: Ω̇ − {mode} {attribution.node_minus_mode_arcsec_yr:+.3g}″/yr, '
+            f'{fmt(attribution.node_minus_mode_turns)} turns over the record.'
+        )
+    return ' '.join(parts), tuple(used)
+
+
 def zlk_column_lines(analysis) -> List[str]:
-    """The measured facts of a ZLK row that change no status (e-i coupling, attribution, the centre's slow line), and
-    the slow line of a modulated secular angle; one line each, '' lines left out."""
+    """The measured facts of a ZLK row that change no status (e-i coupling, attribution, the centre's slow line, the
+    node lock), and the slow line of a modulated secular angle; one line each, '' lines left out, and none the cause
+    sentence (`zlk_cause`) already states."""
     lines = []
+    used = zlk_cause(analysis)[1]
     zlk = getattr(analysis, 'zlk', None)
     if zlk is not None:
-        lines += [_ei_line(zlk.ei), _attribution_line(zlk.attribution, getattr(analysis, 'gate', None))]
-    lines.append(_centre_line(getattr(analysis, 'centre_line', None)))
+        lines.append(_ei_line(zlk.ei))
+        if 'attribution' not in used:
+            lines.append(_attribution_line(zlk.attribution, getattr(analysis, 'gate', None)))
+        if 'node_lock' not in used:
+            node = _node_lock_words(zlk.node_lock)
+            lines.append(f'{node} (a flag)' if node else '')
+    if 'centre' not in used:
+        lines.append(_centre_line(getattr(analysis, 'centre_line', None)))
     return [line for line in lines if line]
 
 
@@ -3711,6 +3799,10 @@ def explain_long_period(analysis, settings, episodes: Sequence[Mapping[str, Any]
     if value in ('pass', 'fail'):
         info.append(f'{_response_words(analysis)}: {value} (a column only)')
     info += zlk_column_lines(analysis)
-    head = [_long_period_angle_sentence(analysis, eps, settings), _long_period_status_sentence(analysis, settings, episodes)]
+    head = [
+        _long_period_angle_sentence(analysis, eps, settings),
+        _long_period_status_sentence(analysis, settings, episodes),
+        zlk_cause(analysis)[0],
+    ]
     subtitle = f'reason {v.reason}' + (f' · origin {v.libration_origin}' if str(v.libration_origin) else '')
     return _verdict_text(v, subtitle, head, steps, checks, info)

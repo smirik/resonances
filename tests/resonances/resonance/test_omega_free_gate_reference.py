@@ -1,7 +1,7 @@
 """Regression of the free-omega gate against four real objects.
 
 Fixtures are the first 500 kyr of mercurius integrations, thinned to a 100 yr cadence and
-gzipped (`tests/fixtures/free-omega/`). They are committed because the integrations they
+gzipped (`benchmark/data/fixtures/free-omega/`, local only). They are committed because the integrations they
 come from live outside the repository, and without them nothing here is reproducible.
 
 Three of the four are Lidov-Kozai librators whose free omega stays confined. The fourth,
@@ -18,7 +18,6 @@ fraction are what show the decomposition is on thin ice for it.
 """
 
 import gzip
-import pathlib
 
 import numpy as np
 import pandas as pd
@@ -31,15 +30,15 @@ from resonances.resonance.analysis.zlk import analyse_zlk
 from resonances.resonance.omega_free_gate import GateOutcome
 from resonances.secular import free_elements as fe
 from resonances.simulation.config import SimulationConfig
+from tests.resonances.local_data import free_omega_fixture
 
-FIXTURES = pathlib.Path(__file__).parents[2] / 'fixtures' / 'free-omega'
 BASELINE = 5e5
 
 
 def _load(name):
     """The fixture as the ZLK analysis reads it (omega unwrapped, elements, years) and the run's config."""
     config = SimulationConfig(save=None, plot=None, save_summary=False, integration_years=BASELINE)
-    with gzip.open(FIXTURES / f'{name}.csv.gz', 'rt') as handle:
+    with gzip.open(free_omega_fixture(name), 'rt') as handle:
         data = pd.read_csv(handle)
     series = LongPeriodSeries(
         resonance_type=ResonanceType.LIDOV_KOZAI,
@@ -76,6 +75,7 @@ def _gate(name):
     return analysis, elements
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('name', ['4257', '3040', '162474'])
 def test_a_real_librator_is_confirmed(name):
     analysis, elements = _gate(name)
@@ -89,6 +89,7 @@ def test_a_real_librator_is_confirmed(name):
     assert elements.rho > 1.0
 
 
+@pytest.mark.benchmark
 def test_the_trojan_is_demoted():
     analysis, elements = _gate('591986')
 
@@ -103,6 +104,7 @@ def test_the_trojan_is_demoted():
     assert elements.rho < 1.0
 
 
+@pytest.mark.benchmark
 def test_every_object_uses_the_hand_validated_basis():
     # 500 kyr merges the slow modes, and the priority convention resolves each cluster to
     # the basis that was checked independently against 10 Myr integrations.
@@ -113,6 +115,7 @@ def test_every_object_uses_the_hand_validated_basis():
         assert list(elements.basis_i) == ['s6', 'const']
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('name', ['4257', '3040', '162474', '591986'])
 def test_no_representative_choice_turns_a_non_librator_into_a_libration(name):
     # The cluster representative is a modelling assumption, not a free convention: fitting

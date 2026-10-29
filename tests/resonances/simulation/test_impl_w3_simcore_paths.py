@@ -152,6 +152,7 @@ def copy_of(path, tmp_path):
     return target
 
 
+@pytest.mark.benchmark
 def test_the_single_run_adds_the_derived_row(single):
     sim, path = single
     body = sim.bodies[0]
@@ -178,6 +179,7 @@ def test_the_single_run_adds_the_derived_row(single):
     assert [(e['key'], e.get('parent')) for e in entries] == [(PARENT, None), (DERIVED, PARENT)]
 
 
+@pytest.mark.benchmark
 def test_a_default_restore_gives_the_same_strings(single, tmp_path):
     sim, path = single
     restored = SimulationSerializer.restore(str(copy_of(path, tmp_path) / 'simulation.json'))
@@ -190,6 +192,7 @@ def test_a_default_restore_gives_the_same_strings(single, tmp_path):
         assert body.librations[key].libration_origin == original.librations[key].libration_origin
 
 
+@pytest.mark.benchmark
 def test_a_restore_with_recomputation_gives_the_same_rows(single, tmp_path):
     _, original = single
     expected = summary_rows(original)
@@ -203,6 +206,7 @@ def test_a_restore_with_recomputation_gives_the_same_rows(single, tmp_path):
     assert_same_rows(summary_rows(path), expected)
 
 
+@pytest.mark.benchmark
 def test_the_batch_path_gives_the_same_rows(single, tmp_path, monkeypatch):
     _, single_path = single
 
@@ -225,6 +229,7 @@ def test_the_batch_path_gives_the_same_rows(single, tmp_path, monkeypatch):
     assert_same_rows(summary_rows(tmp_path / 'batch'), summary_rows(single_path))
 
 
+@pytest.mark.benchmark
 def test_a_resumed_batch_brings_the_derived_row_back_from_the_summary(single, tmp_path):
     """A batch completed before an interruption returns nothing to the resumed parent: restore_statuses re-adds the
     derived row from the summary's `parent` column."""
@@ -237,6 +242,7 @@ def test_a_resumed_batch_brings_the_derived_row_back_from_the_summary(single, tm
     assert [r.to_s() for r in body.resonances()] == [PARENT, DERIVED]
 
 
+@pytest.mark.benchmark
 def test_the_analysis_runs_again_without_duplicating_the_derived_row(tmp_path):
     sim = run_example(simulation_from_example(tmp_path))
     sim.identify_librations()

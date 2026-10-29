@@ -233,6 +233,7 @@ def _analyse(example):
     return analyse_mmr(io.load_series(example), S)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', sorted(IMPACT_433))
 def test_433_follows_47m44_by_the_identity_route(example):
     coef_dev, resid, cover, phi_ratio = IMPACT_433[example]
@@ -251,6 +252,7 @@ def test_433_follows_47m44_by_the_identity_route(example):
     assert '2 owner route (identity)' in names and '2 identity: residual / half-amplitude' in names
 
 
+@pytest.mark.benchmark
 def test_433_text_names_the_owner_and_the_route():
     from resonances.plotting import verdict_text as vt
 
@@ -267,12 +269,14 @@ def test_433_text_names_the_owner_and_the_route():
     assert any(r.key == 'identity_fit' for r in rows) and any(r.key == 'identity_strength' for r in rows)
 
 
+@pytest.mark.benchmark
 def test_a_circulating_candidate_gives_no_owner():
     analysis = _analyse('mmr3__1580__4M-7J-5+0+0+8')
     assert analysis.numbers_row()['own_route'] != 'identity'
     assert analysis.verdict.owner != '4E-13+0+9'
 
 
+@pytest.mark.benchmark
 def test_without_the_body_longitude_the_route_does_not_run():
     """A series without the body's lambda (a data file without 'l': `MMRSeries.mean_longitude` is optional): the owner
     search reports owner_no_longitudes and the identity route does not run (it crashed in lstsq on a NaN phi before);

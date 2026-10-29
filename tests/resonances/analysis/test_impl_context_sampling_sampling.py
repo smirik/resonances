@@ -7,7 +7,6 @@ revolutions in 20 kyr. Other references are worked out by hand in the comments.
 """
 
 import math
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -17,6 +16,7 @@ from resonances.resonance.analysis.mmr import context as ctx
 from resonances.resonance.analysis.mmr import sampling as smp
 from resonances.resonance.analysis.mmr.models import MMRSeries, PlanetSeries, Regime, ResonanceSpec, StepVerdict
 from resonances.resonance.analysis.settings import settings_from_config
+from tests.resonances.local_data import benchmark_data
 
 DEG = math.pi / 180
 TABLE_N = {name: value * DEG for name, value in const.PLANET_N_DEG_PER_GAUSS_YR.items()}
@@ -265,11 +265,10 @@ def test_angle_reconstruction_error_sees_an_inconsistent_point():
     assert error == pytest.approx(0.1, rel=0.02)
 
 
-# --- real 1999 UQ records (benchmark data, git-ignored; skipped when absent) -----------------------------------
+# --- real 1999 UQ records (benchmark data, local only: marked benchmark) -------------------------------------
 
-EXAMPLES = Path(__file__).resolve().parents[3] / 'benchmark' / 'data' / 'examples'
-UQ_5YR = EXAMPLES / 'mmr3__1999_UQ__7E+2M-9+0+0+0'
-UQ_1YR = EXAMPLES / 'mmr3__1999_UQ__7E+2M-9+0+0+0__step1yr'
+UQ_5YR = 'mmr3__1999_UQ__7E+2M-9+0+0+0'
+UQ_1YR = 'mmr3__1999_UQ__7E+2M-9+0+0+0__step1yr'
 
 
 def _load_example(directory):
@@ -290,14 +289,14 @@ def _load_example(directory):
     )  # fmt: skip
 
 
-@pytest.mark.skipif(not (UQ_5YR.exists() and UQ_1YR.exists()), reason='benchmark data not available')
+@pytest.mark.benchmark
 def test_real_1999_uq_alias_at_5_yr_and_3999_turns_at_1_yr():
     settings = settings_from_config()
     results = {}
-    for directory in (UQ_5YR, UQ_1YR):
-        series = _load_example(directory)
+    for example_id in (UQ_5YR, UQ_1YR):
+        series = _load_example(benchmark_data() / 'examples' / example_id)
         context = ctx.build_context(series, settings)
-        results[directory] = (context, smp.analyse_sampling(series, context, settings))
+        results[example_id] = (context, smp.analyse_sampling(series, context, settings))
     context5, coarse = results[UQ_5YR]
     context1, fine = results[UQ_1YR]
     assert coarse.verdict == StepVerdict.ALIASED_UNAMBIGUOUS and coarse.branches == (1,) and coarse.unwrap_ok

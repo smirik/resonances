@@ -109,6 +109,7 @@ def test_install_routes_the_loader_and_can_be_switched_off(monkeypatch):
             cc.install()
 
 
+@pytest.mark.benchmark
 def test_a_saved_example_loads_identically(tmp_path):
     ids = io.list_examples('mmr')
     if not ids:

@@ -210,7 +210,10 @@ resumed by running the same script again with the same `save_path` (`resume_enab
 and `sim.clone_summary` (clones.csv), and `ensemble_run.plot_ensembles` draws the figure again. With `SAVE` off there
 is no manifest: only `sim.clone_summary` comes back (a warning). `recompute_librations=True` reclassifies the nominal
 from its saved series; the clones keep their stored verdicts (`clone_verdicts = 'stored'`), and the nominal columns of
-clones.csv (`nominal_status`, `nominal_confidence`, `nominal_agreement`) are rewritten in the run's folder.
+clones.csv (`nominal_status`, `nominal_confidence`, `nominal_agreement`) and the nominal's summary.csv rows are
+rewritten in the run's folder from the one new verdict. The clones are not reclassified even when their series were
+saved: a `SAVE` mode other than `all` keeps the series of the clones its status filter selected, so recomputing only
+those would bias the shares, and each clone costs as much analysis as the nominal.
 
 ## Limits
 

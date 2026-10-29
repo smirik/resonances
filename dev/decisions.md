@@ -177,6 +177,12 @@ The exact current behaviour is in the code and in `docs/physics/`; the rule IDs 
   libration (`zlk_forcing_*`), the centre's slow line (`zlk_centre_*`, 591986: g6−g5), and a scale guard: a
   centre-scale libration at a forced beat with ρ_max < 1 never decides. n_cycles is T/P_cyc of the osculating ω (the
   figure said "free ω"). No status changed on the benchmark. Pending (author): a node-lock flag (Ω − ϖ5, ≥ 3 Myr).
+- W26 (author, 2026-10-29: "state the presumed cause of an induced ZLK libration; overlay g5/g6 in one more panel only
+  for such rows"): the cause sentence (`verdict_text.zlk_cause`, measured columns only), panel (a′) (ω_f, arg z_forced
+  − Ω, ϖ_j − Ω; drawn only for an attributed row or a forced-beat centre, others keep seven panels), the flag
+  `zlk_node_lock` (approved 2026-10-28; resolved only with a full cycle of Ω − ϖ_j, `ZLK_NODE_LOCK_MIN_CYCLES`),
+  the centre origin `forced_direction`, and the attribution of an episodic row inside its episodes (scope
+  `episodes`, 624). Columns only: no status changes.
 
 ## Figures
 
@@ -216,3 +222,8 @@ The exact current behaviour is in the code and in `docs/physics/`; the rule IDs 
   restore reclassifies the nominal only and rewrites clones.csv's nominal columns; clones keep stored verdicts. No
   triage (docs/clones.md "Limits"). MPC: `MPC_LOOKUP=file_then_api` (default `file`) takes a missing identifier's
   nominal from get-orb without a covariance; names are documented by the MPC API, so no name mapping was added.
+- **Oct 29 (Claude, W26 known gaps; not yet seen by the author).** Restore with recompute also rewrites the nominal's
+  summary.csv rows (and mmr_numbers/episodes/candidates) in the run's folder, from the same verdict as clones.csv's
+  nominal columns (`clone_store._rewrite_nominal_rows`): one writer of the verdict (`Simulation._finalise_verdict`),
+  two projections that cannot disagree on disk. Clones are still not reclassified (Q3 kept): with `SAVE` other than
+  `all` the saved clone series are a status-selected subset, so a recompute of those alone would bias the shares.

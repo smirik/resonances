@@ -294,6 +294,7 @@ def test_libration_about_the_top_of_the_true_potential_fails_strength(plutino, s
     assert abs(s.centre_offset_max_deg - 180.0) < 5.0
 
 
+@pytest.mark.slow
 def test_horseshoe_of_an_exterior_one_to_two_counts(settings):
     """A pendulum in the true 1N-2 potential (e = 0.3) energetic enough to go round both asymmetric wells over the
     inner maximum (a horseshoe, swing ~20..340 deg) and a small libration in one well: both are consistent."""

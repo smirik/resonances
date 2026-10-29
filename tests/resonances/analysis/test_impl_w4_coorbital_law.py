@@ -21,6 +21,8 @@ from resonances.resonance.analysis.mmr import io, response as response_module
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import CheckValue
 
+pytestmark = pytest.mark.slow  # a shared setup of more than 1 s (tests/CLAUDE.md)
+
 SETTINGS = AnalysisSettings()
 MU = 1.0e-4
 CUTOFF_YR = 3.0  # far above the 1-yr fast terms, far below the 40-200 yr librations at mu = 1e-4
@@ -459,6 +461,7 @@ def _analysis(example_id):
     return series, analysis
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example_id, regime',
     [('coorbital__2002_AA29__1E-1+0+0', co.REGIME_COMPOUND), ('coorbital__3753__1E-1+0+0', co.REGIME_COMPOUND)],

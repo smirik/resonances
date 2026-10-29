@@ -2,13 +2,12 @@
 
 Expectations are computed independently of the package: analytic synthetic vectors (Lagrange's laws of the two
 conserved momenta, a forced vector of two modes plus a free circle), hand-computed Lidov integrals, and the numbers
-the two independent studies measured on the committed fixtures (`tests/fixtures/free-omega/`, 591986: the 6-kyr cycle
+the two independent studies measured on the committed fixtures (`benchmark/data/fixtures/free-omega/`, local only, 591986: the 6-kyr cycle
 is a forced beat, i in phase with e at 0.0041 deg against 0.0037 predicted; its centre swings +-22 deg at the g6-g5 beat
 54.0 kyr; 3040/162474/4257: ZLK coupling, phase 177-181 deg, r about -0.995).
 """
 
 import gzip
-import pathlib
 
 import numpy as np
 import pandas as pd
@@ -26,13 +25,13 @@ from resonances.resonance.analysis.verdict import AngleStatus, CheckValue, Reaso
 from resonances.resonance.analysis.zlk import analyse_zlk, diagnostics
 from resonances.secular import free_elements as fe
 from resonances.simulation.config import SimulationConfig
+from tests.resonances.local_data import free_omega_fixture
 
 SETTINGS = settings_from_config()
 AS = 1296000.0
 RAD = 2 * np.pi / AS  # rad/yr per arcsec/yr
 G5, G6 = PLANETARY_FREQUENCIES['g5'], PLANETARY_FREQUENCIES['g6']
 I_INV, NODE_INV = np.radians(INVARIABLE_PLANE['inc']), np.radians(INVARIABLE_PLANE['Omega'])
-FIXTURES = pathlib.Path(__file__).parents[2] / 'fixtures' / 'free-omega'
 
 
 # ------------------------------------------------------------------------------------------- synthetic helpers
@@ -48,12 +47,14 @@ def zlk_series(t, z_e, Omega, inc, a=5.2):
     return series, fe.free_elements(t, e, inc, Omega, omega)
 
 
-def double_scale(node_offset_widths=0.0, a=5.2):
+def double_scale(node_offset_widths=0.0, a=5.2, late_free=None):
     """591986's analogue (Claude study S1): forced 0.045 at g5 + 0.017 at g6, a free circle 0.011 at 222"/yr, the node
-    at g5 (+ an offset in Rayleigh widths of 500 kyr), i fixed at 39 deg."""
+    at g5 (+ an offset in Rayleigh widths of 500 kyr), i fixed at 39 deg. `late_free`: the free radius after 250 kyr
+    (0.001: omega's swings shrink to +-2 deg there, the fine scale is episodic and the centre scale is tried)."""
     t = np.arange(0.0, 500_001.0, 100.0)
     z_e = 0.045 * np.exp(1j * (G5 * RAD * t + np.radians(83.0))) + 0.017 * np.exp(1j * (G6 * RAD * t + np.radians(3.2)))
-    z_e = z_e + 0.011 * np.exp(1j * 222.0 * RAD * t)
+    radius = 0.011 if late_free is None else np.where(t < 250_000.0, 0.011, late_free)
+    z_e = z_e + radius * np.exp(1j * 222.0 * RAD * t)
     rate = G5 + node_offset_widths * AS / 500_000.0
     Omega = rate * RAD * t + np.radians(146.0) + np.radians(8.0) * np.sin(2 * np.pi * t / 1.5e6)
     return zlk_series(t, z_e, Omega, np.full_like(t, np.radians(39.0)), a=a)
@@ -132,13 +133,20 @@ def test_an_episodic_coorbital_keeps_its_status():
 def test_a_forced_beat_never_becomes_the_libration_period():
     # the centre of omega swings at the beat 1296000 / (g6 - g5) = 54 027 yr; the osculating omega librates with the
     # free-forced beat 1296000 / (222 - g5) = 5952 yr. The gate's period must be the second.
-    series, elements = double_scale()
-    analysis = analyse_zlk(series, SETTINGS, free_elements=elements)
-    row = analysis.summary_row()
-    assert analysis.scale == 'fine' and row['sec_centre_rejected'] == 'forced_beat:g6-g5'
+    # W26: the whole record is one libration at the fine scale (the threshold no longer counts the libration itself),
+    # so the centre scale is not tried; with the free circle shrunk in the second half the fine scale is episodic,
+    # the centre scale is tried and the guard refuses the beat
     rayleigh = AS / 500_000.0
-    assert abs(AS / row['zlk_gate_period_yr'] - AS / 5952.0) < rayleigh
-    assert (analysis.verdict.status, analysis.verdict.reason) == (Status.NON_RESONANT, Reason.KINEMATIC_LIBRATION)
+    for late_free, rejected in ((None, ''), (0.001, 'forced_beat:g6-g5')):
+        series, elements = double_scale(late_free=late_free)
+        analysis = analyse_zlk(series, SETTINGS, free_elements=elements)
+        row = analysis.summary_row()
+        assert analysis.scale == 'fine' and row['sec_centre_rejected'] == rejected
+        # over the whole record within a Rayleigh width; over the first half's episode (median of full periods on the
+        # 100-yr grid: 6100 yr) within 5 %, far from the beat 54 kyr
+        tolerance = rayleigh if late_free is None else 0.05 * AS / 5952.0
+        assert abs(AS / row['zlk_gate_period_yr'] - AS / 5952.0) < tolerance
+        assert (analysis.verdict.status, analysis.verdict.reason) == (Status.NON_RESONANT, Reason.KINEMATIC_LIBRATION)
 
 
 def test_the_slow_line_of_the_centre_is_the_forced_beat():
@@ -251,7 +259,7 @@ def test_a_circulating_omega_is_read_at_its_quadrupole_harmonic():
 
 def load_fixture(name):
     config = SimulationConfig(save=None, plot=None, save_summary=False, integration_years=5e5)
-    with gzip.open(FIXTURES / f'{name}.csv.gz', 'rt') as handle:
+    with gzip.open(free_omega_fixture(name), 'rt') as handle:
         data = pd.read_csv(handle)
     series = LongPeriodSeries(
         ResonanceType.LIDOV_KOZAI,
@@ -276,6 +284,7 @@ def load_fixture(name):
     return analyse_zlk(series, settings_from_config(config), free_elements=elements, gate_config=config)
 
 
+@pytest.mark.benchmark
 def test_591986_the_trojan_beat_and_its_forcing():
     analysis = load_fixture('591986')
     row = analysis.summary_row()
@@ -297,6 +306,7 @@ def test_591986_the_trojan_beat_and_its_forcing():
     assert row['zlk_centre_model_r'] > 0.98
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('name', ['3040', '162474', '4257'])
 def test_librators_show_zlk_coupling_at_their_period(name):
     analysis = load_fixture(name)
@@ -372,9 +382,12 @@ def test_the_zlk_figure_draws_the_free_omega_in_turns_and_names_the_measured_fac
         assert [text.get_text() for text in panel.get_legend().get_texts()] == ['osculating ω', 'free ω']
         # the free omega winds (222 - g5) x 500 kyr / 1296000 = 84 turns; the panel's top holds them
         assert panel.get_ylim()[1] > 80
+        # the cause of a kinematic libration is in the sentences (`verdict_text.zlk_cause`), the e-i coupling stays grey
         info = ' '.join(fig.text_stats['text'].info)
-        assert 'forced beat g6-g5' in info and 'held by the forced mode g5' in info and 'e-i at' in info
-        assert 'cycles of the free' not in ' '.join(fig.text_stats['text'].sentences)
+        sentences = ' '.join(fig.text_stats['text'].sentences)
+        assert 'Induced by the forced eccentricity of mode g5' in sentences and 'g6−g5 beat of the forced vector' in sentences
+        assert 'e-i at' in info and 'held by the forced mode' not in info and 'forced beat g6-g5' not in info
+        assert 'cycles of the free' not in sentences
     finally:
         plt.close(fig)
 
@@ -403,8 +416,9 @@ def test_the_slow_line_of_a_modulated_secular_centre_is_named_after_its_forced_w
 def test_a_disabled_gate_keeps_the_geometric_result_with_or_without_the_split():
     # finding 1: the centre-scale guard reads the forced/free split, so it acts only where the gate does. With the gate
     # disabled the double-scale synthetic decides at its centre scale, the g6-g5 beat 1296000 / (g6 - g5) = 54.0 kyr,
-    # whether the split is supplied or not; the slow line of the centre is still named (a column)
-    series, elements = double_scale()
+    # whether the split is supplied or not; the slow line of the centre is still named (a column). The free circle
+    # shrinks in the second half so that the fine scale is episodic (`double_scale`)
+    series, elements = double_scale(late_free=0.001)
     disabled = SimulationConfig(save=None, plot=None, save_summary=False, free_gate_enabled=False)
     with_split = analyse_zlk(series, SETTINGS, free_elements=elements, gate_config=disabled)
     without = analyse_zlk(series, SETTINGS, free_elements=None, gate_config=disabled)
@@ -419,7 +433,7 @@ def test_a_disabled_gate_keeps_the_geometric_result_with_or_without_the_split():
 def test_a_coorbital_with_unfitted_forcing_has_no_centre_guard():
     # the same orbit at a = 1 au, inside Earth's co-orbital region (g3 is not fitted): the gate has no verdict, and the
     # split's beats refuse nothing either
-    series, elements = double_scale(a=1.0)
+    series, elements = double_scale(a=1.0, late_free=0.001)
     analysis = analyse_zlk(series, SETTINGS, free_elements=elements)
     assert analysis.gate.detail == omega_free_gate.COORBITAL_UNFITTED and analysis.centre_rejected == ''
     assert analysis.scale == 'centre' and analysis.verdict.reason == Reason.GATE_UNAVAILABLE

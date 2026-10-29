@@ -207,13 +207,19 @@ a dotted line at its middle carries `#id` and the $R^2$ of its two halves.
 What to look for: when the resonance itself drives $a$, $\dot a$ follows the sine of $\sigma$ and the $R^2$ are
 high. A low $R^2$ with a clear libration in (a) suggests that something else bounds the angle.
 
-The black $\dot a$ and the blue curve are both at the response cutoff: each window's sine is evaluated on $\sigma$
-smoothed at that cutoff, the angle the fit read. When several harmonics decided (column `rsp_force_law = harmonic`)
-no blue curve is drawn, since the single sine is not the law that was tested; the panel prints
-`harmonic law N=k: R² … (single …)`, the deciding law's $R^2$ against the single sine's. The fit that decided may
-still differ from the blue curve in other ways: a raised cutoff (the line rule), the angle in the frame of a moving
-well, a multiplet, or one episode. Then the blue curve is only a guide; the deciding law and its numbers are in the
-right column.
+The blue curve is the law that decided (column `rsp_force_law`), on the series that law read:
+
+- `single`: each window's sine, evaluated on $\sigma$ smoothed at the response cutoff; on an episode accepted in the
+  frame of its moving well, on $\psi = \sigma - c(t)$, as the fit read it;
+- `multiplet`: one curve, the multiplet law (its one fit over its windows, drawn over them), with
+  `multiplet law j = …: R² … (single …)` at the top: the multiplet's $R^2$ against the single sine's;
+- `harmonic` (several harmonics) or a 1:1 law: no blue curve; the panel prints that law's numbers
+  (`harmonic law N=k: R² … (single …)`).
+
+When the line rule raised the cutoff (a line of $\dot a$ rivalled the force), the black $\dot a$ and the angle are
+taken at that raised cutoff, and the panel prints `cutoff … yr (line … yr)` (columns `rsp_response_cutoff_ep_yr`,
+`rsp_line_binding_yr`). The panel shows the whole record's fit; when one episode decided (rule R), its numbers are in
+the right column.
 
 ??? info "The maths: the force law"
     In each window of about 3.5 cycles,
@@ -375,6 +381,7 @@ on (`fine`, or `centre` when the slower centre scale decided).
 | panel | what it shows |
 |---|---|
 | (a) | $\sigma$ in degrees: grey the angle the classifier reads (the reduced proper angle by default), black the angle filtered at the scale the verdict rests on, a thin grey line the angle at $P_c$ when the centre scale decided, red the centre, ▼▲ turning points, fills the librating episodes, grey strips with letters the other runs (as in MMR (a)) |
+| (a′) | Lidov-Kozai, an induced libration only (attributed to a forced mode, or a centre whose slow line is a beat of the forced vector): $\omega_f$ with the forced direction against the node and the dominant mode against the node (below); other rows have no (a′) and keep the seven panels in place |
 | (b) | $\sigma$ modulo 360° around the centre: grey dots and black $\sigma_f$ |
 | (c) | ${\rm d}\sigma_f/{\rm d}t$, in ″/yr for a secular angle and °/kyr for Lidov-Kozai; red line at 0 |
 | (d), (e) | $e$ and $i$ (degrees): grey osculating, black filtered at $P_c$, with min – max |
@@ -407,12 +414,27 @@ record, and the minimum needed. Too short a record, an undefined phase, a planet
 elements or a co-orbital of Mercury to Mars give no verdict, and an angle that does not librate throughout is demoted
 only under the extra condition $\rho_{\max} < 1$ ([the free-ω gate](physics/secular-zlk.md#zlk-free-omega)).
 
-**The ZLK lines of the right column** ("Also measured, not read by this verdict"), each only when it was measured:
-the $e$–$i$ coupling at the decisive period (`zlk`: antiphase at the constant-$H$ amplitude; `forced beat`: in phase
-at the amplitude of a forced-eccentricity beat; with the phase of $i$ against $e$, the band correlation $r$ and the
-amplitude over each law; coupling is not libration), the forced mode that holds a kinematic libration (or "forcing not
-attributed" and why), and the slow line of the centre with its origin (591986: 53.8 kyr, ±21.6°, the g6−g5 beat of
-the forced vector). What they mean: [Free elements: beyond the gate](free-elements.md#beyond-the-gate).
+**(a′) for an induced Lidov-Kozai libration.** Grey $\omega_f$; orange $\arg z_{\rm forced}(t) - \Omega(t)$, the
+direction of the fitted forced eccentricity vector against the node: the point the free circle turns about, so
+$\omega_f$ oscillates around it with the free–forced beat ($P_{\rm cyc}$, written bottom right), and it carries the beat
+of the forced modes (the legend names the two largest $|c_j|$ and their beat: 591986, g5 + g6, 54 kyr); purple dashed
+$\varpi_j - \Omega$, the longitude of the dominant mode against the node, with the node lock when there is one
+(591986 over 4 Myr: locked to g5, 50–130°, a slow wave of 1.4 Myr) or the rate $\dot\Omega - g_j$. A libration of
+$\omega$ that follows the orange curve is the forcing's, not the Lidov-Kozai mechanism's. When the curves leave a
+turn (624 Hektor: $\omega$ circulates between its episodes, the centre $\varpi_5 - \Omega$ turns with the node) the
+panel is drawn modulo 360° about the forced direction, and $\omega_f$ only inside the librating episodes.
+
+**The cause** of a kinematic libration is the third sentence of the right column, from the measured columns only: the
+mode that holds $\varpi$, the beat the free vector circles it with, what the centre's slow line is, and the node
+(locked, or following the mode with no full cycle of $\Omega - \varpi_j$ in the record: a lock not resolved; for an
+episodic row, the centre's turns). Not attributed: "Cause not attributed" and why.
+
+**The ZLK lines of the right column** ("Also measured, not read by this verdict"), each only when it was measured and
+not already in the cause sentence: the $e$–$i$ coupling at the decisive period (`zlk`: antiphase at the constant-$H$
+amplitude; `forced beat`: in phase at the amplitude of a forced-eccentricity beat; with the phase of $i$ against $e$,
+the band correlation $r$ and the amplitude over each law; coupling is not libration), the forced mode that holds the
+libration, the node lock (a flag), and the slow line of the centre with its origin (591986: 53.8 kyr, ±21.6°, the
+g6−g5 beat of the forced vector). What they mean: [Free elements: beyond the gate](free-elements.md#beyond-the-gate).
 
 The margins of the right column are N, S, F, P and G ([secular and Lidov-Kozai margins](physics/confidence.md#secular-and-lidov-kozai-margins)).
 
@@ -476,7 +498,8 @@ is too coarse: above `fair.max_step_fraction` (¼) of the orbital period it warn
 
 $\sigma_f$ (shifted by whole turns only) against $\dot\sigma$ in degrees per display unit, coloured by time; grey
 dots are the osculating values; red line: $\dot\sigma = 0$. With `portrait.y='axis'` the y axis is $a - a_0$ in
-$10^{-3}$ au. A libration draws a closed loop. The first and last 1/`LIBRATION_FILTER_CUTOFF` years (2000 yr by
+$10^{-3}$ au: the analysis' own $a_f$, as in the cycles below, $a_0$ its median over the focus (the osculating $a$
+when the analysis' arrays are not held). A libration draws a closed loop. The first and last 1/`LIBRATION_FILTER_CUTOFF` years (2000 yr by
 default) are left out, where the filter is distorted.
 
 ### cycles (MMR)

@@ -145,6 +145,7 @@ def _alias_entry(verdict):
     return next((e for e in verdict.decision_path if e.name == decide.ALIAS_A), None)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, status, confidence',
     [
@@ -160,6 +161,7 @@ def test_folded_records_take_the_verdict_of_their_fine_twins(example, status, co
     assert not {'L3', 'L4'} & set(verdict.failed_support)
 
 
+@pytest.mark.benchmark
 def test_tk14_reads_its_a_checks_as_not_measured():
     """2004 TK14 31M-34 at 5 yr: the rule applies (scatter 0.79); its status is the union rule's (W22 item 8)."""
     verdict = _verdict('mmr2__2004_TK14__31M-34+0+3')
@@ -167,6 +169,7 @@ def test_tk14_reads_its_a_checks_as_not_measured():
     assert str(verdict.status) != 'uncertain' and not {'L3', 'L4'} & set(verdict.failed_support)
 
 
+@pytest.mark.benchmark
 def test_nd13_keeps_its_failed_force_law():
     """2001 ND13 1V-3: scatter 0.089 of the a swing; its fine rerun is uncertain as well. With one harmonic only (W23
     CS12 off): the two-harmonic law lifts its L4 (test_w23_harmonic_force_law), and this test is about R-ALIAS-A."""
@@ -176,6 +179,7 @@ def test_nd13_keeps_its_failed_force_law():
     assert str(verdict.status) == 'uncertain'
 
 
+@pytest.mark.benchmark
 def test_switched_off_433_stays_uncertain():
     verdict = _verdict('mmr2__433__47M-44+0-3', OFF)
     assert str(verdict.status) == 'uncertain' and _alias_entry(verdict) is None

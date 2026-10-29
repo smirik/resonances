@@ -565,7 +565,8 @@ def recompute_clone_rows(sim, base_dir: Path, summary_only: list) -> None:
     """After `restore(recompute_librations=True)` reclassified the nominals: the clones.csv rows of the restored
     ensembles with the nominals' new verdicts (nominal_status, nominal_confidence, nominal_agreement); the clones keep
     their stored verdicts. `sim.clone_summary` gets them and clones.csv in the run's folder (`base_dir`) is rewritten
-    for these parents (author 2026-10-28)."""
+    for these parents (author 2026-10-28), and so are the nominals' recomputed rows of summary.csv and the analysis
+    tables (`_rewrite_nominal_rows`): both files then show the one verdict `Simulation._finalise_verdict` wrote."""
     import pandas as pd
 
     from resonances.clones.stats import STATUSES, ensemble_row
@@ -589,6 +590,24 @@ def recompute_clone_rows(sim, base_dir: Path, summary_only: list) -> None:
     if not rows:
         return
     if sim.config.save_summary:
+        _rewrite_nominal_rows(sim, base_dir, {str(row['name']) for row in rows})
         write_clones_table(sim, rows, folder=base_dir)
     sim.clone_summary = pd.DataFrame(rows)
     logger.info('Clones: the nominals reclassified, the clones keep the verdicts of the run (clone_verdicts=stored)')
+
+
+def _rewrite_nominal_rows(sim, base_dir: Path, parents: set) -> None:
+    """The summary.csv (and mmr_numbers/episodes/candidates) rows of the nominals `parents` that the recompute
+    classified in memory, written into the run's folder in place of their old rows. A nominal row that was not
+    reclassified (its series not saved) is not in memory and keeps its row (`DataManager._classified`), as clones.csv
+    keeps the same restored verdict. Without this the two files disagree after a recompute that changed a verdict."""
+    import copy
+
+    from .data_manager import DataManager
+
+    bodies = [body for body in sim.bodies if str(body.name) in parents]
+    if not bodies:
+        return
+    config = copy.copy(sim.config)
+    config.save_path = str(base_dir)  # the folder simulation.json is in, as for clones.csv (a moved run too)
+    DataManager(config).save_simulation_summary(bodies)

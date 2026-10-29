@@ -71,6 +71,43 @@ def test_a_record_outside_the_model_is_invalid_with_its_reason(series, problem, 
     analysis.drop_arrays()  # no sampling to release: must not fail
 
 
+@pytest.mark.parametrize('seed', range(5))
+def test_the_package_unphysical_rule_is_inside_the_domain_check(seed):
+    """Why G0 has no unphysical branch for an MMR any more: whatever `classify.util.unphysical_arrays` flags (non-finite
+    a or e, e > 1.3, a < 0), and a non-finite angle or time, `domain_problems` already refuses (non-finite, e >= 1,
+    a <= 0). Values straddle both thresholds: e 1.0 and 1.2 are refused by the domain check only, 1.31 by both."""
+    from resonances.resonance.classify.util import unphysical_arrays
+
+    rng = np.random.default_rng(seed)
+    values_a = np.array([-1.0, 0.0, 1e-9, 2.5, 3.3, np.nan, np.inf])
+    values_e = np.array([-0.01, 0.0, 0.5, 0.999, 1.0, 1.2, 1.3, 1.31, 2.0, np.nan, -np.inf])
+    flagged = 0
+    for _ in range(200):
+        series = pendulum_series(n=50)
+        a = np.array(series.a, dtype=float)
+        e = np.array(series.e, dtype=float)
+        angle = np.array(series.angle_wrapped, dtype=float)
+        a[rng.integers(50)] = rng.choice(values_a)
+        e[rng.integers(50)] = rng.choice(values_e)
+        if rng.random() < 0.2:
+            angle[rng.integers(50)] = np.nan
+        series = dataclasses.replace(series, a=a, e=e, angle_wrapped=angle)
+        if unphysical_arrays(a, e)[0] or not np.all(np.isfinite(angle)):
+            flagged += 1
+            assert series.domain_problems(), (a[np.isfinite(a) & (a <= 3.3)], e)
+    assert flagged > 50  # the draw hits the flagged side often enough to mean something
+
+
+def test_a_hyperbolic_orbit_is_refused_before_g0():
+    """e = 1.5 (the package's 'hyperbolic', e > 1.3) is invalid/unphysical from the input check, with its decision path,
+    never undefined from G0."""
+    series = with_one('e', 1.5)
+    assert series.domain_problems() == ['e>=1']
+    verdict = analyse_mmr(series, S).verdict
+    assert (verdict.status, verdict.reason) == (Status.INVALID, Reason.UNPHYSICAL)
+    assert [entry.column for entry in verdict.decision_path] == ['rec_body_coefficient', 'rec_unphysical']
+
+
 def test_every_problem_is_listed():
     series = changed(a=np.full(N, -1.0), e=np.full(N, -0.1), resonance=ResonanceSpec.from_key('1J+0'))
     assert series.domain_problems() == ['k=0', 'a<=0', 'e<0']

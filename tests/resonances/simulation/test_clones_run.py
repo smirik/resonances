@@ -61,6 +61,7 @@ def ensemble():
     return orbit_solution(463, source='astdys').sample(n=3, seed=0, name='463')
 
 
+@pytest.mark.slow
 def test_run_with_an_ensemble(ensemble):
     sim = simulation('clones_run')
     run = sim.add_ensemble(ensemble, resonances=['4J-2S-1'])
@@ -117,6 +118,7 @@ def test_the_nominal_verdict_does_not_change(ensemble):
     np.testing.assert_array_equal(a[0], a[1])
 
 
+@pytest.mark.slow
 def test_covariance_at_another_epoch_is_carried_to_the_date(ensemble):
     sim = simulation('clones_carried', date='2026-06-10', plot=None)  # MJD 61201: one day after the covariance
     run = sim.add_ensemble(ensemble, resonances=['4J-2S-1'])

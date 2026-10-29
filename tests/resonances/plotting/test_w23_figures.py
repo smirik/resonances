@@ -157,6 +157,7 @@ def test_the_secular_info_line_names_the_measured_element():
     assert vt._response_words(analysis) == 'e and sin(i/2) respond to the angle'
 
 
+@pytest.mark.benchmark
 def test_591986_zlk_labels_of_the_bottom_row_do_not_collide():
     """591986 ZLK: the y label of (i) ('e_free sin ω_free') was printed over the colour bar's 't, kyr'."""
     import sys

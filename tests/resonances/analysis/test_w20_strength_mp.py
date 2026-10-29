@@ -97,6 +97,7 @@ def test_seven_to_two_matches_the_first_harmonic_of_the_double_profile():
 # --- 3. the e^q law --------------------------------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 def test_coplanar_order_eleven_term_scales_as_e_to_the_eleventh():
     # 23:12 with a circular planet: sigma = 12 lambda_J - 23 lambda + 11 varpi, amplitude ~ e^11 (+ O(e^13))
     a = A_JUPITER * (12 / 23) ** (2 / 3)
@@ -115,6 +116,7 @@ def _2897_like():
     return body, planet
 
 
+@pytest.mark.slow
 def test_doubling_the_nodes_changes_the_harmonic_by_less_than_the_tolerance():
     body, planet = _2897_like()
     rule = _rule()
@@ -146,6 +148,7 @@ def test_a_mixed_alias_is_seen_by_the_one_axis_twins():
     assert fine.measured and abs(fine.value / expected - 1) < 1e-4
 
 
+@pytest.mark.slow
 def test_digits_are_doubled_until_the_harmonic_is_resolved_or_reported():
     body, planet = _2897_like()
     # 20 digits with a 15-digit guard cannot hold a 1e-30 harmonic: doubled to 40, then 80 > max 60 -> 60
@@ -265,6 +268,7 @@ def _analysed(example, settings=S):
     return series, analyse_mmr(series, settings)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, lower',
     [
@@ -292,6 +296,7 @@ def test_high_order_rows_need_an_implausible_strength(example, lower):
     assert grown <= 200 * 1024 * 1024
 
 
+@pytest.mark.benchmark
 def test_sr158_three_body_is_decided_by_5s_before_its_failed_identity():
     _, analysis = _analysed('mmr3__2011_SR158__1V-4S-5+0+0+8')
     verdict = analysis.verdict
@@ -300,6 +305,7 @@ def test_sr158_three_body_is_decided_by_5s_before_its_failed_identity():
     assert entry.value >= 1e6  # residual 5.1e6 (W17 Q3)
 
 
+@pytest.mark.benchmark
 def test_the_figure_text_names_the_harmonic_strength():
     from resonances.plotting import verdict_text as vt
 
@@ -326,6 +332,7 @@ def test_strength_first_wording_only_when_a_check_was_measured():
 # --- 7. the R1 display columns -----------------------------------------------------------------------------------------
 
 
+@pytest.mark.benchmark
 def test_385266_strength_columns_give_the_theoretical_period_range():
     _, analysis = _analysed('mmr2__385266__16N-27+0+11')
     columns = analysis.strength.to_columns()

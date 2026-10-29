@@ -107,7 +107,7 @@ anything longer than a few minutes, tell the user the estimate, then run it in t
 - Restore a finished run: `resonances.SimulationSerializer.restore('<save_path>/simulation.json')` reads the verdicts
   from summary.csv, and with clones `sim.ensembles` and `sim.clone_summary`; `recompute_librations=True` analyses the
   saved series again without integrating (`current_settings=True`: with today's `.env`); clones keep their stored
-  verdicts, only the nominal is reclassified.
+  verdicts, only the nominal is reclassified (its clones.csv columns and summary.csv rows are rewritten together).
 - Settings: argument of `Simulation`/`check`/`find` (lower case) > `.env` in the working directory > environment >
   `resonances/.env.dist` (references/config.md).
 
@@ -161,7 +161,11 @@ Distinctions that matter when you report:
   Columns that change no status (references/free-elements.md, "Beyond the gate"): `zlk_ei_coupling` (e–i at the
   decisive period, every row: `zlk` antiphase at constant H, `forced_beat` in phase; coupling is not libration — a
   circulating ω can show it), `zlk_forcing_*` (which forced mode holds a kinematic libration, or `not_attributed` and
-  why), `zlk_centre_*` (the centre's slow line and its origin, e.g. `forced_beat:g6-g5`).
+  why; `zlk_attribution_scope` `episodes` for an episodic row demoted inside its episodes), `zlk_node_lock` (a flag:
+  the mode the node is locked to, or empty with `zlk_node_lock_reason`, `unresolved` when no full cycle of Ω − ϖ_j fits
+  the record), `zlk_centre_*` (the centre's slow line and its origin, e.g. `forced_beat:g6-g5`, `forced_direction`).
+  The combined figure names the cause of a kinematic libration in its third sentence and adds panel (a′) (ω_f with
+  the forced direction and the mode against the node) only for such rows.
 - **Clones.** `clones.csv` gives the share of each status with its Wilson interval: a probability under the
   provider's covariance, the model and the span, not of the classifier's errors. The nominal has no special weight.
 - `confirmed_ei` (= `zlk_ei_coupling == zlk`), `zlk_coherent` (the Welch line) and the diagnostic plots (recurrence,

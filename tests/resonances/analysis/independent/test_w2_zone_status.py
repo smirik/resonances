@@ -963,6 +963,7 @@ def _check_leaf(angle_status, sub, d):
         assert d.reason == Reason.SUBRESONANCE_LIBRATES
 
 
+@pytest.mark.slow
 def test_every_combination_reaches_a_leaf(libration_geometry, clean_energy):
     """SPEC §5.3 completeness: every combination of check values x angle_status reaches a leaf, and the leaves obey
     the tree's invariants (resonant only from a libration with dynamic origin; a foreign origin names its owner;

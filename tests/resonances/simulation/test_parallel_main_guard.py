@@ -39,6 +39,7 @@ def test_a_line_inside_the_guard_body_only_is_guarded(source, line, outside):
     assert line_outside_main_guard(source, line) is outside
 
 
+@pytest.mark.slow
 def test_an_unguarded_script_is_told_about_the_guard(tmp_path):
     script = tmp_path / 'unguarded.py'
     script.write_text(SCRIPT.format(call='main()'))

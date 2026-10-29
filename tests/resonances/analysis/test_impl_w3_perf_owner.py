@@ -140,6 +140,7 @@ def test_basis_angle_is_the_constructed_owner(record):
 POTENTIAL_BUDGET_BYTES = 200e6
 
 
+@pytest.mark.slow
 def test_run_owner_finds_the_owner_and_keeps_no_candidate_arrays(record):
     series, prep, context = record
     result = owner.run_owner(series, prep, context, P_LIB, S)

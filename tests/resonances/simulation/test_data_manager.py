@@ -63,6 +63,7 @@ class TestDataManager:
         assert self.data_manager._process_status('non_resonant', 'all') is True
         assert self.data_manager._process_status('invalid', 'all') is True
 
+    @pytest.mark.slow
     def test_append_csv_is_atomic_across_two_processes(self, tmp_path):
         """Two batch workers produce one header and every row exactly once."""
         filename = str(tmp_path / "summary.csv")
@@ -83,6 +84,7 @@ class TestDataManager:
         assert set(actual) == set(expected)
         assert not list(tmp_path.glob("*.lock")), "the holder removes the lock file"
 
+    @pytest.mark.slow
     def test_append_csv_with_lock_files_removed_stays_atomic(self, tmp_path):
         """Four workers race on a lock file each holder removes: still one header and every row once, no lock left."""
         filename = str(tmp_path / "episodes.csv")

@@ -137,6 +137,7 @@ def _wrapped_difference(x, y):
     return np.abs((np.asarray(x) - np.asarray(y) + np.pi) % (2 * np.pi) - np.pi)
 
 
+@pytest.mark.benchmark
 def test_31935_subresonance_gets_a_derived_row_of_its_own():
     analysis = _analysis('mmr2__31935__9M-16+0+7')
     verdict = analysis.verdict
@@ -162,6 +163,7 @@ def test_31935_subresonance_gets_a_derived_row_of_its_own():
         assert not entry.column or entry.column in row, entry.column
 
 
+@pytest.mark.benchmark
 def test_82831_circulates_and_its_subresonance_is_named():
     """Order 11 against MATRIX_2BODY_ORDER_MAX 10: the catalogue's cap must not remove the members of order q."""
     analysis = _analysis('mmr2__82831__13M-24+0+11')
@@ -170,6 +172,7 @@ def test_82831_circulates_and_its_subresonance_is_named():
     assert verdict.libration_origin == LibrationOrigin.SUBRESONANCE and verdict.owner == '13M-24+2+9'
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, owner',
     [
@@ -183,6 +186,7 @@ def test_owner_names_the_origin(example, owner):
     assert analysis.verdict.status == Status.NON_RESONANT and analysis.owner.check == CheckValue.FAIL
 
 
+@pytest.mark.benchmark
 def test_owner_outside_the_window_does_not_name_the_origin():
     """A circulation: 7E-23 librates only 0.7-6.4 kyr of the 20-kyr record (cover < MMR_OWNER_COVER_MIN, F7 of W20):
     its key stays in `owner`, the origin is not induced."""
@@ -193,6 +197,7 @@ def test_owner_outside_the_window_does_not_name_the_origin():
     assert analysis.owner.cover < 0.5
 
 
+@pytest.mark.benchmark
 def test_planets_of_an_example_completed_from_its_run():
     example = 'mmr3__1997_GK3__3M+5S-3+0+0-5__rerun'
     _need(example)
@@ -200,6 +205,7 @@ def test_planets_of_an_example_completed_from_its_run():
     assert {'Earth', 'Mars', 'Saturn'} <= set(series.planets)  # the example's own file holds Mars and Saturn only
 
 
+@pytest.mark.benchmark
 def test_filter_guard_columns_and_its_effect():
     analysis = _analysis('mmr2__65366__6M-11+0+5')
     numbers = analysis.numbers_row()
@@ -228,6 +234,7 @@ def test_no_commensurability_by_hand():
     assert not no_commensurability(SimpleNamespace(body_coefficient=0, rate_expected_rad_yr=1.0, mean_motion_rad_yr=0.6))
 
 
+@pytest.mark.benchmark
 def test_an_alias_without_any_commensurability_is_non_resonant():
     analysis = _analysis('mmr2__16397__29M+50+0-79')  # author: non_resonant / circulation
     assert analysis.verdict.status == Status.NON_RESONANT and analysis.verdict.reason == Reason.ALIAS

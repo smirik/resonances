@@ -68,6 +68,7 @@ def _extrema_in(period, window):
     return int(np.count_nonzero((times > window[0]) & (times < window[1])))
 
 
+@pytest.mark.slow
 def test_the_cutoffs_are_the_documented_ones():
     analysis = _sine(160.0)
     row = analysis.numbers_row()
@@ -75,6 +76,7 @@ def test_the_cutoffs_are_the_documented_ones():
     assert row['flt_period_floor_yr'] == pytest.approx(P_FLOOR)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('period', [150.0, 155.0, 160.0, 170.0, 180.0])
 def test_a_libration_of_150_to_180_yr_keeps_every_turning_point(period):
     analysis = _sine(period)

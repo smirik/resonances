@@ -162,6 +162,7 @@ def _scan(example_id, settings=S):
     return sr.run_subresonances(series, analysis.prep, analysis.geometry, analysis.response, analysis.context, triggered, settings)
 
 
+@pytest.mark.benchmark
 def test_63047_member_without_turning_points_is_no_longer_accepted():
     # at the physical cutoff (75 yr) the member is not kept at all (test A); test L is shown at the cutoff of the W15
     # study, 20 x 0.6 yr = 12 yr, where A still passes
@@ -177,6 +178,7 @@ def test_63047_member_without_turning_points_is_no_longer_accepted():
     assert result.to_columns()['sub_best_member_tp'] == 0
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example_id, member',
     [('mmr2__65366__6M-11+0+5', '6M-11+1+4'), ('mmr2__31935__9M-16+0+7', '9M-16+2+5'), ('mmr2__82831__13M-24+0+11', '13M-24+2+9')],

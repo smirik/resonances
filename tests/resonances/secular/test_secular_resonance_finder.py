@@ -4,6 +4,7 @@ from resonances.secular.secular_resonance import SecularResonance
 from resonances.secular.secular_resonance_finder import SecularResonanceFinder
 
 
+@pytest.mark.slow
 def test_find_secular_resonances_from_proper_freqs():
     freqs = PLANETARY_FREQUENCIES.copy()
     proper_freqs = {"g": freqs["g6"], "s": freqs["s6"]}

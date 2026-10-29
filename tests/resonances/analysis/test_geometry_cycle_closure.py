@@ -156,6 +156,7 @@ def analysis_1864():
     return analyse_mmr(io.load_series(EXAMPLE_1864), S)
 
 
+@pytest.mark.benchmark
 def test_1864_reads_circulation_again(analysis_1864):
     """Since W16 each run of provisional TPs has its own prominence: the stretch of the 5-deg reversal (15.4-16.5 kyr)
     has one above that swing, so its two TPs are not selected at all (before, the regime's 3.7 deg kept them and the

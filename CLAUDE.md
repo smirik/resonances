@@ -57,6 +57,9 @@ Also `body.py` (`Body`), `config.py` (loads `.env.dist` + `.env`, exposes `Simul
 - His labels are tentative: argue on the merits, disagree openly; agreement with him is not evidence. Specifications from outside are measured before they are implemented; report which claims survived.
 - Questions go on one cheap-to-answer page (`dev/process.md`). No new iteration while disagreements are undiscussed; start on his explicit go.
 - Heavy runs: `nice -n 10`, at most 4 workers, no heavy suites in parallel agents; durable scratch in `tmp/<programme>/`.
+- Watch memory and CPU: before a heavy step and every 10–15 min while one runs (and whenever a command takes longer
+  than expected), check `memory_pressure | tail -1` and `ps -A -o %cpu,rss,command | sort -rn | head`. Stop what is
+  yours and runaway (free memory below ~25 %, unexpected worker swarms); report what is not yours, do not kill it.
 
 ## Documenting
 
@@ -91,11 +94,21 @@ Any functionality except temporary should be tested. The package has the followi
   uv run black . --check    # formatting
   uv run flake8 --count     # linting
   ```
-- `make test-fast` to run all fast tests that do not require numerical integration, which takes time.
-- `make test-slow` to run all slow tests that require numerical integration (a few minutes; real bodies at fixed Horizons dates). Run them at the end of the task when all other fast tests and formatting are done and passed.
+  Never pass `--exclude` to black or flake8: it replaces their default excludes (and black's .gitignore), and they
+  then walk `.venv/` and `tmp/` (on 2026-10-29 black ran 16 workers, ~13 GB, for 10 min). Use `--extend-exclude`
+  (e.g. `.claude` for agent worktrees), and `black -W 4`.
+- `make test-fast`: every test of at most 1 s (about 3 min in all), synthetic data and small committed fixtures only.
+- `make test-slow` (marker `slow`): integrations (real bodies at fixed Horizons dates) and any test of more than 1 s,
+  such as a long synthetic series (about 15 min). Run them at the end of the task when all other fast tests and
+  formatting are done and passed.
+- test-fast and test-slow must pass on any computer: nothing outside git. A test that reads local-only data
+  (`benchmark/data`, the saved series, the cached solar system) is marked `benchmark`; `tests/conftest.py` hides that
+  data from every other test and fails one that skips for it. `make test-portable` runs test-fast on a fresh copy of
+  the files git knows. Committed fixtures: at most a few tens of KB each and 1 MB in all; anything larger goes to
+  `benchmark/data` and its tests to `benchmark` (decided by the author 2026-10-29).
 - `make test-long` (pytest marker `long`): the integrations of 10 min and more (z1 over 10 Myr); outside `test`, `test-fast` and `test-slow`.
 - `make test` to run all tests - fast and slow (not `long`, not `benchmark`).
-- `make test-benchmark`: the exact gate on the agreement with the author's labels (every type; no integration). It fails on any disagreement with the author that is not in `benchmark/KNOWN_DISAGREEMENTS.csv`, on a listed one that now agrees, and on a listed one whose values changed (`benchmark/tools/known_disagreements.py <run> [--secular-zlk <run>] [--write]`). A change that moves an author row updates the list with a reason.
+- `make test-benchmark`: every test that reads local-only data, and the exact gate on the agreement with the author's labels (every type; no integration); without `benchmark/data` it stops with one message. It fails on any disagreement with the author that is not in `benchmark/KNOWN_DISAGREEMENTS.csv`, on a listed one that now agrees, and on a listed one whose values changed (`benchmark/tools/known_disagreements.py <run> [--secular-zlk <run>] [--write]`). A change that moves an author row updates the list with a reason.
 - The episode gate (same session, `benchmark/EPISODE_EXPECTATIONS.csv`): a tier A/B case that fails and is not `known_fail` fails the gate, so does a `known_fail` case that passes (clear the flag); C/D never gate.
 - Never change real (slow) tests unless you are absolutely sure that you know what you do; ask me if you are not sure.
 - Tests of the decision code build real result objects (`tests/resonances/analysis/builders.py`), not `SimpleNamespace` stubs: the decision reads dataclass fields directly, without `getattr` defaults.

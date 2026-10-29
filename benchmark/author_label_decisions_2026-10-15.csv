@@ -119,3 +119,6 @@ coorbital__2024_TY11__1M-1+0+0__20kyr,transient,high,episodic,author:2026-10-28 
 coorbital__2025_PN7__1E-1+0+0,transient,high,episodic,author:2026-10-28 16:04 (W25: accepted the verdicts after the separatrix-zone fix; confidence changed in this iteration)
 coorbital__439908__1M-1+0+0__20kyr,transient,high,episodic,author:2026-10-28 16:04 (W25: accepted the verdicts after the separatrix-zone fix; confidence changed in this iteration)
 mmr2__82831__13M-24+0+11,transient,medium,episodic,author:2026-10-28 16:04 (W25: accepted the verdicts after the separatrix-zone fix; confidence changed in this iteration)
+zlk__591986__LK__4myr,non_resonant,,,author:2026-10-29 10:14 (W26 final page Q1: agreed with the package; one kinematic libration over 4 Myr)
+zlk__624__LK,non_resonant,,,author:2026-10-29 10:14 (W26 final page Q2: kinematic episodes where the free radius dips below the forced one)
+secular__2306__g-g6+s-s6,uncertain,,,author:2026-10-29 10:14 (W26 final page Q3: drift on 10 Myr; extend)

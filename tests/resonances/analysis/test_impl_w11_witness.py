@@ -64,6 +64,7 @@ def analysed_cut_line(series):
         patch.undo()
 
 
+@pytest.mark.benchmark
 def test_37087_1myr_forced_episodes_are_no_witnesses(psi_period_yr, analysed_cut_line):
     assert psi_period_yr == pytest.approx(167.0, rel=PERIOD_TOL)
     analysis = analysed_cut_line
@@ -81,6 +82,7 @@ def test_37087_1myr_forced_episodes_are_no_witnesses(psi_period_yr, analysed_cut
     assert analysis.response.witness_episode_id is None
 
 
+@pytest.mark.benchmark
 def test_37087_1myr_the_whole_forced_line_has_no_witness(analysed):
     """W18: the forced line is slower than P_floor, so its runs no longer raise their own threshold (70.8 -> 19.2 deg,
     2286 -> 10294 TPs); the runs fail the centre test and no episode is a witness. The angle alone does not tell a
@@ -91,6 +93,7 @@ def test_37087_1myr_the_whole_forced_line_has_no_witness(analysed):
     assert analysis.response.witness_episode_id is None
 
 
+@pytest.mark.benchmark
 def test_37087_1myr_without_its_forced_wave_is_non_resonant(analysed):
     """W20 CS7: the 168-yr episode is a forced wave (line 2J-1, identity -0.35 c); the status and the confidence
     are the author's (non_resonant, medium as this file's earlier test), the angle word is circulation."""
@@ -99,6 +102,7 @@ def test_37087_1myr_without_its_forced_wave_is_non_resonant(analysed):
     assert analysed[0].geometry.forced_waves and not analysed[0].geometry.episodes
 
 
+@pytest.mark.benchmark
 @pytest.mark.xfail(
     strict=True,
     reason=(

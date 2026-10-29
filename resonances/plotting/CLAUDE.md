@@ -18,8 +18,9 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
   capture); `CAP_ALTERNATIVES`: every cap down to medium/low names the other reading and what decides it. A withheld
   G2a step and the direction of an a-swing change ("shrank"/"grew") are worded here.
 - `plotting/mmr_plots.py`: `MMRDiagnostics` + `draw_*` panels + `MMRPlotter` (standalone panels: recurrence, FAIR, portrait,
-  cycles; the combined figure is `mmr_combined`). The a of `cycles` is the analysis' a_f (`axis_cycles`), else the
-  raw a, never `body.axis_filtered` (a 2000-yr low-pass erases a faster MMR libration: 1921 2J-1).
+  cycles; the combined figure is `mmr_combined`). The a of `cycles`, of `portrait` (y='axis') and of a0 is the
+  analysis' a_f (`axis_analysis`), else the raw a, never `body.axis_filtered` (a 2000-yr low-pass erases a faster MMR
+  libration: 1921 2J-1).
   `plotting/style.py` holds the `screen`/`paper` styles and `plot_options` defaults/validation.
 - `plotting/secular_plots.py`: `SecularDiagnostics` + `draw_*` + `SecularPlotter` (secular and ZLK rows): kinds `angle`,
   `rate`, `portrait`, `combined` (the one-page V1 figure, `draw_long_period_combined`). `SecularPlotter` and
@@ -27,7 +28,12 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
   panel (f) draws the rate of each element in `Response.variables` (d sin(i/2)/dt for an Ω-only angle, with `r2_i`),
   (h) is sin(i/2) cos/sin σ there. ZLK (f): the drift of the osculating and the free ω from their first values, in
   turns, with a legend (`_draw_free_omega_drift`); the right column's "also measured" lines (e-i coupling, attribution,
-  the centre's slow line) come from `verdict_text.zlk_column_lines`, measured facts only.
+  the centre's slow line, the node lock) come from `verdict_text.zlk_column_lines`, measured facts only; the cause of a
+  kinematic libration is the third sentence (`verdict_text.zlk_cause`, the same columns; a fact it states leaves the
+  grey line). Panel (a′) (`_draw_forcing`, `forcing_panel_drawn`): only for an attributed row or a forced-beat centre,
+  under (a), eight panels then; every other row keeps seven, untouched. ω_f grey, arg z_forced − Ω orange, ϖ_j − Ω
+  purple dashed, from `FreeElements.forced_vector` and the osculating node; unwrapped within a turn, else modulo 360°
+  about the forced direction with ω_f inside the librating episodes only (624).
 - `clone_plots.py`: the `clones` kind (angles of every clone coloured by status, status against initial a, shares
   with Wilson intervals).
 - Evolution plots (flexible panel configurator), ecc-vector, cross-spectrum and free-omega plots.
@@ -50,8 +56,10 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
 - Plaque `STATUS · angle_status · CONFIDENCE`, "ends: …" last.
 - σ̇ axis symlog σ̇/2ω₀ for every record, the σ̇ = 0 line highlighted; the osculating a envelope clipped at the axis
   (triangle at the edge).
-- Panel (e): the windows' sine on σ at the response cutoff (`prep.angle_response`); none when the harmonic law (CS12)
-  or the 1:1 law decided, the panel prints that law's numbers instead.
+- Panel (e): the law that decided on the series it read (`law_series`, `_law_shift`): the windows' sine on ψ = σ − c(t)
+  at the response cutoff, or the multiplet law (`MultipletFit.pooled`, `response.members_model`); at the raised cutoff
+  of the line rule with `cutoff … (line …)`; none when the harmonic law (CS12) or the 1:1 law decided, the panel
+  prints that law's numbers instead (W26).
 - Panel (d): three levels of a; a_res on top, style B (width 1.3, alpha 0.8, white halo); a* alpha 0.8
   (`AXIS_LEVEL_ALPHA`).
 - Angle labels in [0°, 360°) (270°, not −90°).
@@ -62,7 +70,6 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
 
 ## Known defects (open)
 
-- Panel (e) still draws the single-sine windows on σ at the response cutoff without the moving-well shift and for a
-  multiplet or a line-rule (raised-cutoff) law; only the harmonic (CS12) and 1:1 laws replace them by their numbers.
+- Panel (e) draws the record's pooled fit, not the witness episode's when rule R took L4 from one.
 - Three ▼-marker overlaps remain on the benchmark.
 - `benchmark/tools/reclassify.py --figures` writes into `benchmark/data/examples/`; saved figures can be stale.

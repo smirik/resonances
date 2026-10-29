@@ -330,6 +330,7 @@ def _example(example_id):
     return io.load_series(example_id)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'parent, member',
     [('mmr2__31935__9M-16+0+7', 'mmr2__31935__9M-16+2+5'), ('mmr2__65366__6M-11+0+5', 'mmr2__65366__6M-11+1+4')],
@@ -350,6 +351,7 @@ def _scan(example_id, triggered=(SubresonanceTrigger.T1,), **overrides):
     return series, analysis, result
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example_id, member, sigma0_max, member_min, ratio_range, leading',
     [
@@ -393,6 +395,7 @@ def _sin_half_inc_invariable(inc, Omega) -> float:
     return float(np.median(np.sin(np.arccos(np.clip(normal @ h, -1, 1)) / 2)))
 
 
+@pytest.mark.benchmark
 def test_nodal_twin_ties_and_loses_by_degree_and_e_prime_rejects_it():
     # SISTERS §1.4: the node member 6M-11+2+3[N-1,NM+1] drifts at nearly the rate of 6M-11+1+4 (g - g_P ~ s_P - s).
     # 65366 has i = 4.6 deg, below MMR_SUBRESONANCE_NODAL_INC_MIN_DEG: the nodal members are forced in here.
@@ -417,6 +420,7 @@ def test_nodal_twin_ties_and_loses_by_degree_and_e_prime_rejects_it():
     assert default.accepted.spec.key == '6M-11+1+4' and default.tie_by_order
 
 
+@pytest.mark.benchmark
 def test_without_the_planets_the_check_is_not_measured():
     series = _example('mmr2__65366__6M-11+0+5')
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr

@@ -34,7 +34,6 @@ def diagnostics(centre=np.pi, turns=3, n=4000, years=4000.0, planet=True, focus=
         sigma_raw=sigma,
         sigma_filtered=sigma,
         axis=3.2776 + 0.002 * np.cos(2 * np.pi * t / 400),
-        axis_filtered=3.2776 + 0.002 * np.cos(2 * np.pi * t / 400),
         body_name='synthetic',
         resonance='2J-1+0-1',
         label='2J-1',
@@ -163,7 +162,6 @@ class TestDiagnostics:
             sigma_raw=sigma,
             sigma_filtered=sigma,
             axis=np.ones_like(t),
-            axis_filtered=np.ones_like(t),
         )
         assert recurrence_points(dense) == 2500
         # 400-yr cycles over the same span: 8 * 50000 / 400 = 1000.
@@ -174,7 +172,6 @@ class TestDiagnostics:
             sigma_raw=sigma,
             sigma_filtered=sigma,
             axis=np.ones_like(t),
-            axis_filtered=np.ones_like(t),
         )
         assert recurrence_points(medium) == pytest.approx(1000, abs=3)
 
@@ -190,7 +187,6 @@ class TestDiagnostics:
             sigma_raw=sigma,
             sigma_filtered=sigma,
             axis=np.full_like(t, 2.0),
-            axis_filtered=np.full_like(t, 2.0),
         )
         assert backward.times[0] == -4000 and backward.times[-1] == 0
         assert len(backward.cycles) == 9 and all(c.period == pytest.approx(400, rel=1e-2) for c in backward.cycles)
@@ -199,10 +195,11 @@ class TestDiagnostics:
         assert MMRPlotter(backward).plot('cycles')
 
 
-class TestCyclesAxis:
+class TestAnalysisAxis:
     """1921 2J-1 kind of record: a librates with sigma at 400 yr, 2 milli-au; the body's a low-passed at the run's
-    2000-yr cutoff has lost it (here a constant, what that low-pass leaves of a 400-yr wave). The cycles panel folds
-    the analysis' own a_f: by hand a - median over a whole cycle of 0.002 cos spans 4 milli-au (+-2)."""
+    2000-yr cutoff has lost it (here a constant, what that low-pass leaves of a 400-yr wave; put at another level,
+    3.2790 au, so a test sees which a the reference a0 reads). The cycles panel folds the analysis' own a_f: by hand
+    a - median over a whole cycle of 0.002 cos spans 4 milli-au (+-2). The portrait (y='axis') and a0 read it too."""
 
     N, YEARS = 4000, 4000.0
 
@@ -221,7 +218,7 @@ class TestCyclesAxis:
             angles_unwrapped={'2J-1+0-1': sigma},
             angles_filtered_unwrapped={'2J-1+0-1': sigma},
             axis=raw,
-            axis_filtered=np.full(self.N, 3.2776),
+            axis_filtered=np.full(self.N, 3.2790),
             M=None,
             longitude=None,
             mmr_analyses={'2J-1+0-1': SimpleNamespace(prep=prep)} if analyses else {},
@@ -242,21 +239,40 @@ class TestCyclesAxis:
     def test_cycles_fold_the_analysis_a(self):
         body = self.body()
         d = MMRDiagnostics.from_body(body, self.RESONANCE)
-        assert np.array_equal(d.axis_cycles, body.mmr_analyses['2J-1+0-1'].prep.a_f)
+        assert np.array_equal(d.axis_analysis, body.mmr_analyses['2J-1+0-1'].prep.a_f)
         low, high = self.folded_range(d)  # each sampled cycle's median is within ~0.02 of 0
         assert high - low == pytest.approx(4.0, abs=0.05) and abs(high + low) < 0.05
 
     def test_without_the_analysis_arrays_the_raw_a(self):
         d = MMRDiagnostics.from_body(self.body(analyses=False), self.RESONANCE)
-        assert np.array_equal(d.axis_cycles, d.axis)
+        assert np.array_equal(d.axis_analysis, d.axis)
         low, high = self.folded_range(d)  # the 400-yr wave plus up to +-0.1 milli-au of short-period terms
         assert 4.1 < high - low < 4.3
 
     def test_the_body_low_pass_would_be_flat(self):
         """The defect: folded, `axis_filtered` (the 2000-yr low-pass) is a flat line."""
-        d = MMRDiagnostics.from_body(self.body(), self.RESONANCE)
-        d.axis_cycles = d.axis_filtered
+        body = self.body()
+        d = MMRDiagnostics.from_body(body, self.RESONANCE)
+        d.axis_analysis = body.axis_filtered
         assert self.folded_range(d) == (0.0, 0.0)
+
+    def test_portrait_and_a0_read_the_analysis_a(self):
+        # a0 = median of a_f over 10 whole 400-yr periods = 3.2776 au (the cos terms cancel), not the body's 3.2790;
+        # the portrait's a - a0 then spans +-2 milli-au, centred on zero (by hand: 0.002 cos, sampled 10 per 4 yr).
+        d = MMRDiagnostics.from_body(self.body(), self.RESONANCE)
+        assert d.axis_reference == pytest.approx(3.2776, abs=2e-6)
+        _, y, _, y_raw = portrait_coordinates(d, PortraitY.AXIS)
+        assert np.ptp(y) == pytest.approx(4.0, rel=1e-3)
+        assert np.max(y) == pytest.approx(2.0, abs=0.01) and np.min(y) == pytest.approx(-2.0, abs=0.01)
+        # the grey dots are the osculating a: the same wave plus +-0.1 milli-au of short-period terms
+        assert 4.1 < np.ptp(y_raw) < 4.21
+
+    def test_portrait_without_the_analysis_arrays_reads_the_osculating_a(self):
+        body = self.body(analyses=False)
+        d = MMRDiagnostics.from_body(body, self.RESONANCE)
+        assert d.axis_reference == pytest.approx(float(np.median(body.axis)))
+        _, y, _, y_raw = portrait_coordinates(d, PortraitY.AXIS)
+        assert np.array_equal(y, y_raw) and 4.1 < np.ptp(y) < 4.21
 
 
 class TestFigures:
@@ -307,9 +323,7 @@ class TestFigures:
 
     def test_no_cycles_message(self):
         t = np.linspace(0, 1000, 1000)
-        d = MMRDiagnostics(
-            times=t, sigma=np.mod(t, 2 * np.pi), sigma_raw=t, sigma_filtered=t, axis=np.full(1000, 2.0), axis_filtered=np.full(1000, 2.0)
-        )
+        d = MMRDiagnostics(times=t, sigma=np.mod(t, 2 * np.pi), sigma_raw=t, sigma_filtered=t, axis=np.full(1000, 2.0))
         plotter = MMRPlotter(d).plot_cycles()
         texts = [t.get_text() for ax in plotter.figure.axes for t in ax.texts]
         assert texts.count('No complete cycles') == 2

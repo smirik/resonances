@@ -322,6 +322,7 @@ def _listed(analysis):
     return {m.key: (rank, m) for rank, m in enumerate(analysis.subresonances.listed, start=1)}
 
 
+@pytest.mark.benchmark
 def test_101703_three_body_member_numbers():
     # G report: 1V+3S-7+0-1+4 W 164 deg, E 0.84 over 9.3-50 kyr (running means); the package's W_c low-pass +-10 %
     analysis = _analysis('mmr3__101703__1V+3S-7+0+0+3')
@@ -333,6 +334,7 @@ def test_101703_three_body_member_numbers():
     assert member.strength_rel == pytest.approx(0.0066, rel=0.10)
 
 
+@pytest.mark.benchmark
 def test_ug22_sigma_plus_two_omega_leads_the_list():
     # G report (40-kyr record, libration piece 0.16-20.5 kyr): sigma + 2 omega W 101 deg, E 0.96; the 20-kyr record's
     # scan window is that piece (0.17-19.9 kyr). Degree 11: listed only with MMR_SUBRESONANCE_OMEGA_HARMONICS
@@ -346,6 +348,7 @@ def test_ug22_sigma_plus_two_omega_leads_the_list():
     assert sub.to_columns()['sub_rank1_key'] == '10E-17+0+9[N-2,NE+0]'
 
 
+@pytest.mark.benchmark
 def test_as27_frame_changes_the_order_but_not_the_verdict(monkeypatch):
     # mixed frame (the package before W20, and the G report): sigma + 2 omega W 13.2 deg, E 0.975 (+-15 % on W: running
     # means against the W_c low-pass); one frame: sigma + 2 omega and 31E-36+1+2[N+2] tie (Codex: S 0.470 and 0.471)

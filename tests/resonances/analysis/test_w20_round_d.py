@@ -125,6 +125,7 @@ def test_the_scatter_warning_on_a_flagged_record():
     assert str(Flag.A_SHORT_PERIOD_SCATTER) in sampling.flags
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, warned, level',
     [('mmr2__2000_GB2__3J-1+0-2', False, 'medium'), ('mmr2__2013_AS27__31E-36+0+5', True, 'medium')],
@@ -197,6 +198,7 @@ def test_one_predicate_for_a_one_to_one_angle():
     assert direct_applicable(ResonanceSpec.from_key('1J+1+0-2'))
 
 
+@pytest.mark.benchmark
 def test_624_is_judged_by_its_strength():
     v = _analysis('mmr2__624__1J+1+0-2').verdict
     assert str(v.checks['check_mmr_strength']) != 'not_applicable'
@@ -205,6 +207,7 @@ def test_624_is_judged_by_its_strength():
 # --------------------------------------------------------------------------------------------- 2. the forced-wave word
 
 
+@pytest.mark.benchmark
 def test_129772_keeps_its_word_and_385266_its_calibration_cell():
     """Review C #5: the rewrite touches circulation and drift words only (129772 4N-7 stays insufficient_time/arc under
     G6); review C #9: the confidence reads the tree's word, so 385266's cell is the circulation's, not blank."""
@@ -219,6 +222,7 @@ def test_129772_keeps_its_word_and_385266_its_calibration_cell():
 # --------------------------------------------------------------------------------------------- 3. R0 of a 1:1 angle
 
 
+@pytest.mark.benchmark
 def test_wj_reads_r0_from_the_witness_law():
     """2024 WJ: the witness episode's law (energy R^2 0.043, the force law passes) gives R0 not_measured, the number
     printed; before, R0 passed on the pooled law (0.82) while the figure printed 0.043."""
@@ -237,6 +241,7 @@ def test_wj_reads_r0_from_the_witness_law():
     assert 'E is not conserved' in vt._skip_potential(facts)[1]  # not the harmonic V_E reason
 
 
+@pytest.mark.benchmark
 def test_a_one_to_one_circulation_prints_the_r0_that_decided():
     """2023 QS7: a circulation keeps the harmonic R0 (no episode for the energy integral), and the figure says so."""
     from resonances.plotting import verdict_text as vt
@@ -250,6 +255,7 @@ def test_a_one_to_one_circulation_prints_the_r0_that_decided():
 # --------------------------------------------------------------------------------------------- 4. the header
 
 
+@pytest.mark.benchmark
 def test_a_moving_centre_names_its_mean():
     v = _analysis('mmr2__2013_AS27__31E-36+0+5').verdict
     assert 'libration about a moving centre (mean ' in v.orbit_type and 'symmetric' not in v.orbit_type

@@ -162,6 +162,12 @@ class GateResult:
     # planetary_residual: the smallest distance of a residual rate to a planetary one [arcsec/yr]
     min_distance_arcsec_yr: float = float('nan')
     detail: str = ''  # unavailable: coorbital_unfitted_forcing (a co-orbital of a planet whose modes are not fitted)
+    # an episodic omega, over its librating episodes: the largest median of |z_free| / |z_forced| inside one and the
+    # fewest turns of the free omega per whole cycle inside one (`FreeElements.episode_pinning`); nan when not
+    # episodic, without free elements, or where they do not measure an episode
+    rho_episodes: float = float('nan')
+    free_turns_episodes: float = float('nan')
+    free_turns_min: float = float('nan')  # ZLK_EPISODE_FREE_TURNS_PER_CYCLE [turns per cycle]
 
     def to_columns(self) -> Dict[str, Any]:
         return {
@@ -175,6 +181,8 @@ class GateResult:
             'zlk_gate_period_yr': self.libration_period_yr,
             'zlk_gate_baseline_yr': self.baseline_yr,
             'zlk_gate_d_min_arcsec_yr': self.min_distance_arcsec_yr,
+            'zlk_gate_rho_episodes': self.rho_episodes,
+            'zlk_gate_free_turns_episodes': self.free_turns_episodes,
         }
 
 
@@ -184,7 +192,8 @@ class CentreLine:
     smoothing W_c and the track span / LIBRATION min cycles, measured even when the fine scale decided, and what it is.
 
     `origin` (ZLK): forced_beat:<gk>-<gj> (the phase wave of the fitted forced eccentricity vector at 2 pi/|g_k - g_j|
-    reproduces the centre, 591986: g6-g5 at 54.0 kyr, r 0.99), node (the node's own wave does), unexplained; secular:
+    reproduces the centre, 591986: g6-g5 at 54.0 kyr, r 0.99), node (the node's own wave does), forced_direction
+    (arg z_forced - Omega does: 591986 over 4 Myr, a node locked to g5), unexplained; secular:
     forced_wave:<mode> (within a Rayleigh width of a forced wave of the angle's modes) or unexplained; '' not measured.
     A column only: no status reads it."""
 

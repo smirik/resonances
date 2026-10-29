@@ -232,6 +232,7 @@ def _child_environment(_):
     return os.environ.get('MallocLargeCache')
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(sys.platform != 'darwin', reason='the policy exists on macOS only')
 def test_spawned_workers_inherit_the_allocator_and_the_parent_is_restored(monkeypatch):
     monkeypatch.delenv('MallocLargeCache', raising=False)

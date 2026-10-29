@@ -213,6 +213,7 @@ def _analysed(example):
     return analyse_mmr(io.load_series(example), S)
 
 
+@pytest.mark.benchmark
 def test_524522_ends_in_circulation_with_its_status_unchanged():
     verdict = _analysed('coorbital__524522__1V-1+0+0__20kyr').verdict
     assert (verdict.status, verdict.angle_status, verdict.angle_subtype) == (
@@ -224,6 +225,7 @@ def test_524522_ends_in_circulation_with_its_status_unchanged():
     assert verdict.margins['W'].margin == Margin.NOT_APPLICABLE  # a co-orbital has no owner
 
 
+@pytest.mark.benchmark
 def test_2003_sl215_covers_the_record_without_a_missing_turning_point():
     analysis = _analysed('mmr2__2003_SL215__8J-3+0-5')
     assert (analysis.verdict.status, analysis.verdict.angle_status) == (Status.RESONANT, AngleStatus.LIBRATION)
@@ -233,6 +235,7 @@ def test_2003_sl215_covers_the_record_without_a_missing_turning_point():
     assert episode.t_start_yr - analysis.geometry.window[0] < analysis.geometry.period_cycle_yr
 
 
+@pytest.mark.benchmark
 def test_154634_fine_turning_points_seen_only_at_centre_turns_do_not_cover_the_record():
     # at the fine cutoff (12 yr) the 308-yr TPs appear only near the turns of the 29-kyr centre libration (a 25.6-kyr
     # step, the first TP 71 P after the window's start): not a covering libration; G2c decides at the centre scale
@@ -242,6 +245,7 @@ def test_154634_fine_turning_points_seen_only_at_centre_turns_do_not_cover_the_r
     assert analysis.numbers_row()['geo_centre_scale_cutoff_yr'] > 10 * analysis.numbers_row()['geo_fine_cutoff_yr']
 
 
+@pytest.mark.benchmark
 def test_15875_is_analysed_again_at_the_period_of_its_libration():
     analysis = _analysed('mmr2__15875__2N-3+0+1')
     numbers = analysis.numbers_row()

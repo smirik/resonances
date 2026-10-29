@@ -199,6 +199,7 @@ def test_exit_and_capture_marks_the_slip_record():
     assert 'exit_and_capture' not in verdict.caps  # a mark: no ceiling of its own
 
 
+@pytest.mark.slow
 def test_exit_without_capture_is_not_marked():
     """The same record without the pulse: one exit, no capture."""
     times, levels = zip(*[(x, h) for x, h in SCHEDULE if not 6050.0 < x < 6350.0])

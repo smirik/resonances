@@ -86,6 +86,7 @@ def test_batch_and_restore_give_the_rows_of_the_single_run(single, tmp_path):
     assert restored.bodies[0].statuses == {key: status for key, status in zip(expected['resonance'], expected['status'])}
 
 
+@pytest.mark.slow
 def test_a_finished_run_leaves_no_lock_files(single, tmp_path):
     """The writers lock summary.csv, episodes.csv, ... through `<file>.lock`: none is left, also after two workers."""
     _, single_path = single

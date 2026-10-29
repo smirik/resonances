@@ -116,6 +116,7 @@ def analysed_37087():
     return analyse_mmr(series, S), 2 * np.pi / abs(psi_rate)
 
 
+@pytest.mark.benchmark
 def test_37087_the_168_yr_wave_is_a_forced_wave(analysed_37087):
     analysis, psi_period_yr = analysed_37087
     waves = analysis.geometry.forced_waves
@@ -129,6 +130,7 @@ def test_37087_the_168_yr_wave_is_a_forced_wave(analysed_37087):
     assert row['accepted'] and row['forced_wave'] == 'lattice_line'
 
 
+@pytest.mark.benchmark
 def test_37087_without_its_forced_wave_is_non_resonant(analysed_37087):
     """The status of the author's label (non_resonant, medium) from the tree without the forced wave (reason
     circulation: the 5.7-kyr kinematic loops are no episodes at the 75-yr cutoff, the 168-yr wave's turning points fill
@@ -166,6 +168,7 @@ def test_the_forced_wave_word_changes_no_status():
     assert decide.forced_wave_word(tree, decision, SAMPLING, geometry, None, S, ledger) is tree
 
 
+@pytest.mark.benchmark
 def test_101703_41j_14_is_unchanged():
     """A forced wave on the 3:1 line (P_e 166 yr) that the owner already explains: non_resonant/circulation."""
     example = 'mmr2__101703__41J-14+0-27'
@@ -247,6 +250,7 @@ def test_a_pendulum_response_at_the_ripple_is_not_kinematic(drift_records):
     assert analysis.verdict.reason not in (Reason.KINEMATIC_DRIFT, Reason.KINEMATIC_LIBRATION)
 
 
+@pytest.mark.benchmark
 def test_21028_is_a_kinematic_drift():
     example = 'mmr3__21028__7E-10M-6+0+0+9'
     if not io.example_path(example).exists():
@@ -260,6 +264,7 @@ def test_21028_is_a_kinematic_drift():
     assert math.degrees(analysis.kinematics.centre_intercept_rad_yr) == pytest.approx(-0.029, abs=0.002)
 
 
+@pytest.mark.benchmark
 def test_a_hilda_is_not_a_kinematic_drift():
     """153 3J-2: its centre follows the forced varpi (corr 0.98), but a answers sigma and its swing is the centre's
     whole range."""
@@ -271,6 +276,7 @@ def test_a_hilda_is_not_a_kinematic_drift():
     assert analysis.extra_columns['kin_centre_ripple_share'] > S.mmr_kin_ripple_share_max
 
 
+@pytest.mark.benchmark
 def test_2897_is_no_k2_drift_while_its_multiplet_law_holds():
     """2897 35S-4 (review B #1): the slow centre runs 10.8 rev with 31 varpi (corr 1.000), the harmonic law fails in
     both halves (R^2 0.20), but the multiplet law reaches R^2 0.50 >= MMR_FORCE_R2_FAIL (0.4): a answers sigma under
@@ -316,6 +322,7 @@ def test_k2_grades_the_centre_as_a_drift(drift_records):
     assert 'B5' in margins and not {'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7'} & set(margins)
 
 
+@pytest.mark.benchmark
 def test_the_edge_rule_reads_the_real_last_episode():
     """145480 1N-4 at 1 Myr (review B #9): the real episode 0 ends at 680.9 kyr, the forced waves 1 and 2 come after it
     (682.0-683.6 and 730.0-734.6 kyr). Before round C the exit was read after wave 2 (758.1 kyr); now it is read after

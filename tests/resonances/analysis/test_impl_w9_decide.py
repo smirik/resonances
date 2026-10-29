@@ -142,6 +142,7 @@ def _analysed(example):
     return analyse_mmr(io.load_series(example), S)
 
 
+@pytest.mark.benchmark
 def test_277617_quasi_satellite_after_the_jump_is_a_transient():
     # DECISIONS 2026-10-16: circulation up to the jump of a at 9.2 kyr, then a quasi-satellite from 13.1 kyr to the end
     # of the 20-kyr record. The run that crossed the jump keeps only its turning point before the last regime (8627 yr;
@@ -178,6 +179,7 @@ def test_a_force_law_with_unbounded_modulation_passes_on_r2():
     assert response_module.a_response_check(windows, multiplet, np.radians(90), S) == (CheckValue.PASS, False, 'single')
 
 
+@pytest.mark.benchmark
 def test_7343_three_body_libration_is_resonant_without_the_phase_rule():
     # W7 'phi0': the eight L4 failures were all phase spreads; 7343 1M+1J-2 goes uncertain (5a*) -> resonant
     verdict = _analysed('mmr3__7343__1M+1J-2+0+0+0').verdict
@@ -255,6 +257,7 @@ def test_a_member_without_its_own_row_keeps_the_old_leaf():
     assert (decision.status, decision.reason) == (Status.NON_RESONANT, Reason.SUBRESONANCE_LIBRATES)
 
 
+@pytest.mark.benchmark
 def test_31935_catalogue_row_is_the_transient_of_its_member():
     # W7 'ug22' spec: 9M-16+0+7 circulates while 9M-16+2+5 librates for a while; the commensurability is transient
     analysis = _analysed('mmr2__31935__9M-16+0+7')
@@ -324,6 +327,7 @@ def test_slow_libration_is_excluded_by_a_centre_turning_round_during_the_episode
     assert response_module.slow_libration_check(bound, np.nan, np.nan, np.nan, S)[:2] == (CheckValue.FAIL, 'none')
 
 
+@pytest.mark.benchmark
 @pytest.mark.xfail(
     strict=True,
     reason=(
@@ -345,6 +349,7 @@ def test_37087_is_a_kinematic_libration_at_the_secular_cycle():
     assert verdict.checks['check_mmr_kinematic'] == CheckValue.FAIL and verdict.checks['check_mmr_slow_libration'] == CheckValue.PASS
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, status, reason',
     [

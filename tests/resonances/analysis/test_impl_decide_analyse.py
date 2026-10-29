@@ -232,6 +232,7 @@ EXPECTED = {  # (status, angle_status or None, libration_origin)
 }
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', sorted(EXPECTED))
 def test_real_records(example):
     if not io.example_path(example).exists():

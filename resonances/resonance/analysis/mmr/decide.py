@@ -1,8 +1,10 @@
 """The MMR decision: angle_status from geometry, status from physics, origin, margins, checks (SPEC §5, §7.1).
 
 angle_status (first rule that fires, SPEC §5.2):
-  G0 unphysical orbit -> undefined/unphysical; unwrap failed -> undefined/alias (undefined_phase: jitter_low_e, the
-     full angle over the residual limits and varpi itself undefined; jitter_low_e alone is a flag and a cap)
+  G0 unphysical orbit -> undefined/unphysical (never from `analyse_mmr`: an orbit outside the elliptic domain is refused
+     before, invalid/unphysical by `MMRSeries.domain_problems`, so it passes False); unwrap failed -> undefined/alias
+     (undefined_phase: jitter_low_e, the full angle over the residual limits and varpi itself undefined; jitter_low_e
+     alone is a flag and a cap)
   G1 the window is the last regime after jumps of a (G2a, `geometry.ActionStep`: a step of the libration action inside
      one accepted run, not 1:1, whose regimes' periods follow one potential, is such a jump too, its zone the
      transitional half-cycle; a G2a cut that hides a check failed on the whole record, other than R0 pooled over both

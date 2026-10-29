@@ -238,6 +238,7 @@ def test_r0_text_says_not_measured_when_the_energy_integral_was_not_measured():
     assert 'E is not conserved' in text
 
 
+@pytest.mark.benchmark
 def test_wj_r0_is_drawn_as_not_measured():
     """2024 WJ (energy R^2 0.043, the force law passes): its R0 row is '?' and counted as not measured."""
     example = 'coorbital__2024_WJ__1E-1+0+0'

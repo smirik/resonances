@@ -180,6 +180,7 @@ def test_the_orbit_average_is_a_running_mean_over_one_orbit():
     assert g.orbit_averaged(t, wave, 0.05) is not None and np.array_equal(g.orbit_averaged(t, wave, 0.05), wave)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, kind, arc_rev',
     [
@@ -345,6 +346,7 @@ def test_a_return_beyond_the_regime_does_not_close_its_run():
     assert (wide.return_t_a_yr, wide.return_t_b_yr) == (pytest.approx(1000.0, abs=2.0), pytest.approx(1374.0, abs=2.0))
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, expected',
     [
@@ -382,6 +384,7 @@ def test_transient_unexplained_is_not_a_cap_of_a_one_to_one_angle():
     assert decide._episode_caps(angle, geometry, energy, kept, one_to_one=True) == [str(Cap.TRANSIENT_UNEXPLAINED)]
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, expected, unexplained',
     [

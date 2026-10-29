@@ -37,7 +37,11 @@ def _zlk(path):
     return None, {('591986', 'LK'): ('non_resonant', -2)}
 
 
-@pytest.mark.parametrize('build', [_mmr, _secular, _zlk], ids=['mmr', 'secular', 'lidov_kozai'])
+@pytest.mark.parametrize(
+    'build',
+    [_mmr, _secular, pytest.param(_zlk, marks=pytest.mark.benchmark)],  # _zlk reads the 591986 series (local only)
+    ids=['mmr', 'secular', 'lidov_kozai'],
+)
 def test_one_status_string_in_every_place(tmp_path, build):
     _, expected = build(tmp_path)
 

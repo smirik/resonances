@@ -131,6 +131,7 @@ def _first_pass_well(series):
     return qs_module.measure(series, context, prep, sampling.step_yr, S)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', sorted(MEASURED_QS_PERIOD_YR))
 def test_qs_period_matches_the_measured_libration(example):
     """P_QS,min from the averaged potential (the elements in blocks of 55.5 yr, the planet's mean J2000 orbit) is within
@@ -144,6 +145,7 @@ def test_qs_period_matches_the_measured_libration(example):
 # --------------------------------------------------------------------------------------------- verdicts
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example', ['coorbital__2010_CG236__1E-1+0+0', 'coorbital__2010_NT134__1E-1+0+0', 'coorbital__2023_FW13__1E-1+0+0']
 )
@@ -167,6 +169,7 @@ def test_quasi_satellites_librate(example):
     assert 'implausible_strength' not in verdict.flags and verdict.checks['check_mmr_strength'] == 'not_applicable'
 
 
+@pytest.mark.benchmark
 def test_469219_quasi_satellite_then_horseshoe():
     """The quasi-satellite (24-257 yr, period ~39 yr) and the horseshoe (426-950 yr) join without a circulation."""
     analysis = analyse_mmr(needs('coorbital__469219__1E-1+0+0'), S)
@@ -180,6 +183,7 @@ def test_469219_quasi_satellite_then_horseshoe():
     assert periods[0] == pytest.approx(39.0, rel=0.1)  # the quasi-satellite, below the 111-yr tadpole floor
 
 
+@pytest.mark.benchmark
 def test_164207_quasi_satellite_episode_is_seen():
     """The quasi-satellite episode (43-521 yr, period ~70 yr) is accepted at its floor. The horseshoe part (turning
     points at 752 and 932 yr) never crosses its mid-level before 752 yr; it closes by its return at 0.2 of its swing
@@ -192,6 +196,7 @@ def test_164207_quasi_satellite_episode_is_seen():
     assert analysis.verdict.status == 'resonant' and analysis.verdict.angle_subtype == 'regime_change'
 
 
+@pytest.mark.benchmark
 def test_2021_ed2_is_not_high():
     """The angle stays in the quasi-satellite well for 26 yr, less than 1.5 P_QS (46 yr): no second pass; the one
     horseshoe cycle closed by its return keeps it transient/episodic at medium."""
@@ -201,6 +206,7 @@ def test_2021_ed2_is_not_high():
     assert (analysis.verdict.status, analysis.verdict.angle_status, analysis.verdict.confidence) == ('transient', 'episodic', 'medium')
 
 
+@pytest.mark.benchmark
 def test_2019_gf1_pass_that_loses_the_horseshoe_is_rejected():
     """26 yr in the well (1.07 x 1.5 P_QS): the pass at the 2.6-yr cutoff finds a 14-yr blip of 4 TPs in the well but
     loses the horseshoe cycle the first pass closed by its return: rejected, the first pass stands (transient/high)."""
@@ -210,6 +216,7 @@ def test_2019_gf1_pass_that_loses_the_horseshoe_is_rejected():
     assert (analysis.verdict.status, analysis.verdict.angle_status) == ('transient', 'episodic')
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', ['coorbital__2002_AA29__1E-1+0+0', 'coorbital__3753__1E-1+0+0'])
 def test_no_second_pass_on_librating_co_orbitals(example):
     """2002 AA29 (horseshoe and quasi-satellite, a libration over the record) and 3753 (horseshoe, never in the
@@ -220,6 +227,7 @@ def test_no_second_pass_on_librating_co_orbitals(example):
     assert not any(entry.name.startswith('G1q') for entry in analysis.verdict.decision_path)
 
 
+@pytest.mark.benchmark
 def test_a_trojan_never_visits_the_quasi_satellite_well():
     """617 Patroclus (L5/L4 tadpole of Jupiter, i = 20 deg): in some blocks the planet's softened peak sits at -0.5 deg
     and the L4 basin reaches past 0; that minimum at 60 deg is not a quasi-satellite well, so the angle never visits
@@ -230,6 +238,7 @@ def test_a_trojan_never_visits_the_quasi_satellite_well():
     assert np.nanmax(np.abs(found.well.centre_rad)) < math.radians(3.0)
 
 
+@pytest.mark.benchmark
 def test_switched_off_the_stall_stays():
     """MMR_COORBITAL_QS_FLOOR=False: 2010 NT134 is the stall of W19 and asks for a longer record."""
     analysis = analyse_mmr(needs('coorbital__2010_NT134__1E-1+0+0'), settings_from_config(mmr_coorbital_qs_floor=False))

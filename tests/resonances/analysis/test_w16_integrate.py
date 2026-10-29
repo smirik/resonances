@@ -100,6 +100,7 @@ def _analysed(example, settings=S):
     return analyse_mmr(io.load_series(example), settings)
 
 
+@pytest.mark.benchmark
 def test_2897_a_failed_identity_without_force_law_and_potential_is_no_dynamic_libration():
     analysis = _analysed('mmr2__2897__35S-4+0-31', S_DOUBLE_ONLY)
     verdict = analysis.verdict
@@ -110,6 +111,7 @@ def test_2897_a_failed_identity_without_force_law_and_potential_is_no_dynamic_li
     assert any(entry.name.startswith('5g') for entry in verdict.decision_path)
 
 
+@pytest.mark.benchmark
 def test_48789_with_a_passing_identity_keeps_its_episode_dynamic():
     verdict = _analysed('mmr3__48789__3J-1S-1+0+0-1').verdict
     assert verdict.checks['check_mmr_identity'] == 'pass'
@@ -168,6 +170,7 @@ def test_member_turning_points_are_selected_at_the_stretch_thresholds_of_sigma0(
     assert found.n_tp == 72 and found.librates
 
 
+@pytest.mark.benchmark
 def test_2897_figure_text_names_the_failed_identity_with_the_record_numbers():
     from resonances.plotting import verdict_text as vt
 

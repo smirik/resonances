@@ -9,7 +9,8 @@ User docs: `docs/output.md`, `docs/dry-run.md`, `docs/serialization.md`, `docs/c
   `SimulationSerializer.restore(recompute_librations=True)`); `Simulation._finalise_verdict` is the only writer of
   `body.librations[key]` (a `Verdict`) and `body.statuses[key]` (its status string). No hook after the analysis.
 - `restore` reads the statuses from summary.csv by default; with `recompute_librations=True` it classifies only the
-  saved series and rebuilds their periodograms. It finds the series through the manifest (old flat runs too), reads them with `float_precision='round_trip'` (the
+  saved series and rebuilds their periodograms; it writes no table, except for ensembles' nominals (clones.csv and
+  their summary.csv rows, together). It finds the series through the manifest (old flat runs too), reads them with `float_precision='round_trip'` (the
   analysis must read the bits the run read) and takes the saved years (`times`) as they are.
 - Derived rows (subresonance members) keep `parent`/`added_by` through workers, simulation.json and restore; they are
   emitted once (never recursively through `.derived` after the body's own resonances).

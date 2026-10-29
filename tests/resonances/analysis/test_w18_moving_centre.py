@@ -366,6 +366,7 @@ def _analysed(example):
     return analysis, analysis.numbers_row()
 
 
+@pytest.mark.benchmark
 def test_ug22_20kyr_is_resonant_by_the_period_of_its_full_well():
     analysis, numbers = _analysed('mmr2__2003_UG22__10E-17+0+7')
     # the fitted pendulum misses the flat-bottomed well (Q4: 0.77), the full well holds it (Q4: 0.98-1.10 per cycle)
@@ -375,6 +376,7 @@ def test_ug22_20kyr_is_resonant_by_the_period_of_its_full_well():
     assert analysis.verdict.status == Status.RESONANT
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, psi_margin_deg',
     [('mmr2__27011__4M-7+0+3', 122.4), ('mmr2__65366__6M-11+0+5', 158.1)],
@@ -389,12 +391,14 @@ def test_mars_resonances_librate_about_the_moving_minimum(example, psi_margin_de
     assert numbers['sep_period_law_med'] == pytest.approx(1.0, abs=0.05)
 
 
+@pytest.mark.benchmark
 def test_277617_quasi_satellite_capture_stays_transient():
     analysis, _ = _analysed('coorbital__277617__1M-1+0+0__20kyr')
     assert analysis.verdict.status == Status.TRANSIENT
     assert analysis.verdict.angle_subtype != AngleSubtype.MOVING_CENTRE
 
 
+@pytest.mark.benchmark
 def test_2013_as27_31_36_librates_about_the_moving_minimum_of_earth():
     """2013 AS27 31E-36+0+5 is no benchmark example of its own: the 31:36 angle with Earth is built from the series of
     mmr3__2013_AS27__4E+9S-5 and its run's planets (W17 Q8). Q8 (own tools): the centre follows the minimum of Earth's

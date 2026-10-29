@@ -259,6 +259,7 @@ def _numbers(example):
     return analysis.response.to_columns(), analysis.verdict
 
 
+@pytest.mark.benchmark
 def test_nd13_libration_in_a_two_lobed_well_is_a_dynamic_episode():
     columns, verdict = _numbers(ND13)
     assert (str(verdict.status), str(verdict.angle_status), str(verdict.confidence)) == ('transient', 'episodic', 'medium')
@@ -270,6 +271,7 @@ def test_nd13_libration_in_a_two_lobed_well_is_a_dynamic_episode():
     assert columns['rsp_force_harm_c2_over_c1'] == pytest.approx(1.9, abs=0.1)
 
 
+@pytest.mark.benchmark
 def test_33128_is_refused_on_independent_halves():
     columns, verdict = _numbers('mmr2__33128__6N-7+0+1')
     assert columns['rsp_force_harm_reason'] == R.HARMONIC_HALVES
@@ -278,6 +280,7 @@ def test_33128_is_refused_on_independent_halves():
     assert (str(verdict.status), str(verdict.confidence)) == ('transient', 'high')
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', ['mmr2__187661__7N-5+0-2', 'mmr2__496028__9E-41+0+32'])
 def test_circulations_are_not_lifted(example):
     columns, verdict = _numbers(example)

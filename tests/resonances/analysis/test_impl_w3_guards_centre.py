@@ -59,6 +59,7 @@ def test_a_centre_that_goes_away_and_comes_back_once_is_not_stationary():
     assert (episode.accepted, episode.reject_reason) == (False, RejectReason.CENTRE_MOVES)
 
 
+@pytest.mark.benchmark
 def test_15874_has_no_episode_with_a_wandering_centre():
     example = 'mmr2__15874__5N-23+0+18'
     if not io.example_path(example).exists():

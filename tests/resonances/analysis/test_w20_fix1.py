@@ -159,6 +159,7 @@ def test_fast_slow_element_steps_are_suspect_only_where_varpi_is_undefined():
     assert noise.varpi_undefined_fraction == pytest.approx(1.0) and len(noise.suspect_times_yr) > 0
 
 
+@pytest.mark.benchmark
 def test_258640_loses_the_suspect_step_flag():
     example = 'mmr2__258640__46J-19+0-27'
     if not io.example_path(example).exists():

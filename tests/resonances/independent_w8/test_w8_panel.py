@@ -45,6 +45,8 @@ from resonances.resonance.analysis.verdict import (
 )
 from tests.resonances.analysis.builders import make_geometry
 
+pytestmark = pytest.mark.slow  # a shared setup of more than 1 s (tests/CLAUDE.md)
+
 TWO_PI = 2.0 * np.pi
 SETTINGS = AnalysisSettings()
 PHYSICS = ('L4', 'Z', 'R0')

@@ -179,6 +179,7 @@ def test_a_run_lands_where_the_layout_says(tmp_path):
     assert not [f for f in files if f.startswith(('figures/', 'combined/')) and not f.endswith('.png')]
 
 
+@pytest.mark.slow
 def test_every_name_can_be_overridden(tmp_path):
     """Other folder names, nested ones, figures outside the run folder, and '' for the top itself."""
     plots = tmp_path / 'elsewhere'

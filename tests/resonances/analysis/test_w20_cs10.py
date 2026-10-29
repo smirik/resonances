@@ -163,6 +163,7 @@ def _verdict(example_id):
     return analyse_mmr(io.load_series(example_id), S)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example_id', sorted(AUTHOR_CERTAIN))
 def test_author_rows_are_certain(example_id):
     analysis = _verdict(example_id)
@@ -173,6 +174,7 @@ def test_author_rows_are_certain(example_id):
     assert v.margins['L8'].margin in (Margin.NOT_APPLICABLE, Margin.FULL)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example_id', STAY_HIGH)
 def test_near_or_narrow_branch_rows_stay_high(example_id):
     v = _verdict(example_id).verdict

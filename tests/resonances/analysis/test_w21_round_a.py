@@ -157,6 +157,7 @@ BENCHMARK = [
 ]
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example, status, confidence, raw, step', BENCHMARK)
 def test_benchmark_rows_held_by_the_cap(example, status, confidence, raw, step):
     if not io.example_path(example).exists():
@@ -172,6 +173,7 @@ def test_benchmark_rows_held_by_the_cap(example, status, confidence, raw, step):
     assert f'Action: rerun with an output step of {vt.fmt(step)} yr (it folds no short period' in text.sentences[-1]
 
 
+@pytest.mark.benchmark
 def test_benchmark_alias_resample_keeps_its_own_step():
     """1864 51M-50: invalid/alias resample at 0.2 yr (the alias bounds); its fold-free step 0.5 yr is reported only."""
     example = 'mmr2__1864__51M-50+0-1'
@@ -183,6 +185,7 @@ def test_benchmark_alias_resample_keeps_its_own_step():
     assert result.sampling.fold_free_step_yr == 0.5
 
 
+@pytest.mark.benchmark
 def test_benchmark_row_with_a_second_cap_keeps_the_spot_check():
     """1221 3E-8: transient_unexplained holds the level at medium too, so the rerun would not raise it."""
     example = 'mmr2__1221__3E-8+0+5'
@@ -361,6 +364,7 @@ def test_b_energy_for_tree(with_slow, changed, tree, withdrawn):
 BENCH_117306 = 'mmr2__117306__11M-20+0+9'
 
 
+@pytest.mark.benchmark
 def test_b_117306_the_guard_compares_the_cycle_with_itself():
     """The guard no longer fires on the 0.8-deg ripple at 27.6 kyr: the 161.9-deg cycle at 37.5-40.9 kyr is reproduced at
     2 P_c, R0 stays the pass the tree read (5d/6), and the verdict stays transient/episodic/medium (author: capture near
@@ -379,6 +383,7 @@ def test_b_117306_the_guard_compares_the_cycle_with_itself():
     assert next(e for e in verdict.decision_path if e.name == '5 R0 V_E ~ V_F windows').result is True
 
 
+@pytest.mark.benchmark
 def test_b_471155_a_withdrawn_r0_is_not_measured_for_the_tree():
     """471155 6N-7: R0 passes at P_c, the episode's cycle energy crosses h = 1 at 2 P_c (1.035 against 0.960): the guard
     withdraws R0 before the tree, which reads it as not measured (ledger value none); L4 passes, so the row stays
@@ -460,6 +465,7 @@ def test_c_levels_by_hand():
     assert apply_caps(Confidence.HIGH, ['onset_failed']) == Confidence.LOW
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, expected, onset',
     [
@@ -600,6 +606,7 @@ def _gap_degrees(analysis, left_id, right_id):
     return float(np.degrees(np.ptp(x[mask])))
 
 
+@pytest.mark.benchmark
 def test_d_va14_60kyr_measures_the_onset_of_the_group():
     analysis, episode = _bench('mmr3__2013_VA14__2J+6S-1+0+0-7__60kyr_1yr')
     verdict = analysis.verdict
@@ -616,6 +623,7 @@ def test_d_va14_60kyr_measures_the_onset_of_the_group():
     assert 'a strong a-wave precedes the episode (before/inside 0.733 ≥ 0.5, the wave before episode 4, which no' in text
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, earlier, expected, onset, short, ratio',
     [
@@ -665,6 +673,7 @@ def _word(v):
     return (str(v.status), str(v.angle_status), str(v.reason), str(v.confidence_raw), str(v.confidence))
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example, expected, step', Q1D)
 def test_q1d_a_circulation_keeps_the_flag_not_the_cap(example, expected, step):
     result = _q1d(example)
@@ -675,6 +684,7 @@ def test_q1d_a_circulation_keeps_the_flag_not_the_cap(example, expected, step):
     assert result.sampling.fold_free_step_yr == step
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example, expected, step', Q1D)
 def test_q1d_the_switch_puts_the_cap_back(example, expected, step):
     result = _q1d(example, replace(S, mmr_short_period_cap_circulation=True))
@@ -683,6 +693,7 @@ def test_q1d_the_switch_puts_the_cap_back(example, expected, step):
     assert (v.action, v.resample_step_yr) == (Action.RESAMPLE, step)
 
 
+@pytest.mark.benchmark
 def test_q1d_a_forced_wave_circulation_keeps_the_cap():
     result = _q1d('mmr3__1036__9J-2S-3+0+0-4')
     v = result.verdict
@@ -691,6 +702,7 @@ def test_q1d_a_forced_wave_circulation_keeps_the_cap():
     assert (v.action, v.resample_step_yr) == (Action.RESAMPLE, 2.0)
 
 
+@pytest.mark.benchmark
 def test_q1d_a_kinematic_drift_keeps_the_cap():
     v = _q1d('mmr3__2002_BG__1E-10S-1+0+0+10').verdict
     assert (str(v.status), str(v.reason), str(v.confidence)) == ('non_resonant', 'kinematic_drift', 'medium')

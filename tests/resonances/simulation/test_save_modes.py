@@ -83,6 +83,7 @@ def test_save_mode_writes_the_series_of_the_selected_rows(tmp_path, mode):
     assert summary.loc['kinematic', 'libration_origin'] == 'kinematic' and summary.loc['unsure', 'status'] == 'uncertain'
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('mode', sorted(SELECTED))
 def test_plot_mode_draws_the_selected_rows(tmp_path, mode):
     sim = _run(tmp_path, save=None, plot=mode, plots=['evolution'])
@@ -93,6 +94,7 @@ def test_plot_mode_draws_the_selected_rows(tmp_path, mode):
     assert sorted(_summary(tmp_path)['name']) == sorted(BODIES)
 
 
+@pytest.mark.slow
 def test_the_combined_figures_go_to_their_own_folder(tmp_path):
     sim = _run(tmp_path, save='nonzero', plot='nonzero', plots=['combined'])
     expected = {f'combined/{_folder(body)}/{body.name}-{KEY}-combined.png' for body in sim.bodies if body.name in SELECTED['nonzero']}

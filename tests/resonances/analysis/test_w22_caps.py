@@ -195,6 +195,7 @@ def test_o1_still_applies_without_an_owner_libration():
 # --- the benchmark records the author labelled (skipped without the benchmark data) -----------------------------------
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, cap',
     [

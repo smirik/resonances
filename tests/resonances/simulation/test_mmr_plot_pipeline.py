@@ -145,6 +145,7 @@ class TestDispatch:
 
 
 class TestRegenerationAfterRestore:
+    @pytest.mark.slow
     def test_restored_simulation_redraws_in_paper_style(self, tmp_path):
         """Everything the figures need is saved: a restored run can be redrawn in another
         style, FAIR included, without integrating again."""

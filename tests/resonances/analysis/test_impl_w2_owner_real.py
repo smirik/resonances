@@ -68,6 +68,7 @@ def run_owner_on(example, settings=S):
     return owner.run_owner(series, prep, context, geometry.period_cycle_yr, settings)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', sorted(EXPECTED))
 def test_owner_of_real_records(example):
     if not (io.example_path(example) / 'series.csv.gz').exists():
@@ -82,6 +83,7 @@ def test_owner_of_real_records(example):
     assert result.accepted.r2_median >= S.mmr_owner_r2_min and result.accepted.phi0_coherence >= S.mmr_owner_phi0_coh_min
 
 
+@pytest.mark.benchmark
 def test_probable_owner_of_2003_ug22():
     """10E-17 fits a with a reachable force but its phase drifts (its centre moves with varpi): by phase alone it is only
     probable (methodichka); its directly averaged force explains a_dot, so the potential route accepts it (W20 F3)."""

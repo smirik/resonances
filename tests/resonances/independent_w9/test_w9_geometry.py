@@ -63,6 +63,8 @@ from resonances.resonance.analysis.verdict import (
     Verdict,
 )
 
+pytestmark = pytest.mark.slow  # a shared setup of more than 1 s (tests/CLAUDE.md)
+
 TWO_PI = 2.0 * np.pi
 S = AnalysisSettings()
 H = 500.0  # the regular half-period of the synthetic runs [yr]

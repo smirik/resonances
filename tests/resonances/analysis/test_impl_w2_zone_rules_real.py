@@ -26,6 +26,7 @@ def analysed(example):
     return analyse_mmr(io.load_series(example), S)
 
 
+@pytest.mark.benchmark
 def test_52356_is_a_transient_inside_the_chaotic_layer():
     analysis = analysed('mmr3__52356__5J-2S-2+0+0-1')
     verdict, energy = analysis.verdict, analysis.energy
@@ -40,6 +41,7 @@ def test_52356_is_a_transient_inside_the_chaotic_layer():
     assert energy.with_slow == CheckValue.PASS  # V_E ~ V_F cycle by cycle (29 of 37 windows in SEPARATRIX §5)
 
 
+@pytest.mark.benchmark
 def test_82831_is_a_circulation_in_its_last_regime():
     analysis = analysed('mmr2__82831__13M-24+0+11')
     verdict = analysis.verdict
@@ -50,6 +52,7 @@ def test_82831_is_a_circulation_in_its_last_regime():
     assert (verdict.status, verdict.reason, verdict.owner) == (Status.TRANSIENT, 'subresonance_librates', '13M-24+2+9')
 
 
+@pytest.mark.benchmark
 def test_153_hilda_is_a_measured_libration():
     analysis = analysed('mmr2__153__3J-2+0-1')
     verdict, energy = analysis.verdict, analysis.energy

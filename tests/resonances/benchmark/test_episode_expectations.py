@@ -40,7 +40,7 @@ def test_episodes_are_the_ones_the_author_asked_for(reclassified_run, secular_zl
 
 def test_the_cases_are_well_formed():
     names = [case.case for case in CASES]
-    assert len(names) == len(set(names)) == 79
+    assert len(names) == len(set(names)) == 80
     assert {case.tier for case in CASES} <= set(ee.TIERS)
     assert {case.scope for case in CASES} <= set(ee.SCOPES)
     for case in CASES:
@@ -70,6 +70,7 @@ def test_the_sources_are_the_quotes():
     assert [entry['case'] for entry in quoted] == [case.case for case in CASES]
 
 
+@pytest.mark.benchmark
 def test_every_example_exists():
     known = set(bio.list_examples())
     if not known:

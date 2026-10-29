@@ -1,7 +1,7 @@
 {
  "version": 1,
  "note": "Written by benchmark/tools/calibrate.py from the author verdicts. n_examples/n_errors/accuracy_95: labelled verdicts of the cell at confidence high or certain; uncertain/invalid verdicts and author-uncertain labels are abstentions. Reported in summary.csv (cell_* columns); the file changes no confidence level.",
- "run": "v2-w25-final",
+ "run": "v2-w26-final",
  "labelled_rows": 302,
  "cells": [
   {

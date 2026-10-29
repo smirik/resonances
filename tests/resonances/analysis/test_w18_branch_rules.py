@@ -342,6 +342,7 @@ def _analyse(example):
     return analyse_mmr(io.load_series(example), settings)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', sorted(CODEX_ENVELOPES))
 def test_envelope_agrees_with_codex_on_the_benchmark(example):
     kind, b_codex, residual_codex, candidate = CODEX_ENVELOPES[example]
@@ -367,6 +368,7 @@ def test_envelope_agrees_with_codex_on_the_benchmark(example):
         assert strength.divisor_residual == pytest.approx(residual_impact, rel=1e-2)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', sorted(EXPECTED_BRANCH))
 def test_branch_verdicts_on_the_benchmark(example):
     status, rule = EXPECTED_BRANCH[example]
@@ -403,6 +405,7 @@ def test_near_separatrix_of_the_geometry_is_capped_without_a_measured_zone(zone,
     )
 
 
+@pytest.mark.benchmark
 def test_564160_is_near_separatrix_at_medium():
     v = _analyse('mmr2__564160__3N-4+0+1').verdict
     assert (v.status, v.confidence) == (Status.NEAR_SEPARATRIX, Confidence.MEDIUM)
@@ -484,6 +487,7 @@ def test_exit_and_capture_mark_and_what_keeps_it_off():
     assert lift(caps, True, AnalysisSettings(mmr_exit_and_capture_lifts_unexplained=False)) == caps
 
 
+@pytest.mark.benchmark
 def test_33128_exits_and_captures_as_in_the_q12_report():
     # W17 Q12: the slip over the top at 69.3 kyr is an exit and a capture, 89.2 kyr an exit; the mark is set and lifts
     # the cap transient_unexplained (author:2026-10-18: "поднять до high? Да")
@@ -497,6 +501,7 @@ def test_33128_exits_and_captures_as_in_the_q12_report():
     assert analysis.extra_columns['sep_unexplained_lifted'] == 1.0
 
 
+@pytest.mark.benchmark
 def test_33128_keeps_the_cap_with_the_convention_off():
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 

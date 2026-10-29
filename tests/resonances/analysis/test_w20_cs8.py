@@ -245,6 +245,7 @@ def _slope_rad_yr(series, values, window):
     return float(np.polyfit(t[inside], np.unwrap(np.asarray(values, float))[inside], 1)[0])
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', [FA13, OM35])
 def test_stalls_extend_by_one_revolution(example):
     series, analysis, row = _analysis(example)
@@ -262,6 +263,7 @@ def test_stalls_extend_by_one_revolution(example):
     assert v.extend_to_years == 80000.0
 
 
+@pytest.mark.benchmark
 def test_kq18_extends_by_its_two_omega_cycle():
     series, analysis, row = _analysis(KQ18)
     v = analysis.verdict
@@ -310,6 +312,7 @@ def test_next_check_reads_its_settings():
         settings_from_config(mmr_next_check_span_factor=1.0)  # below MMR_EXTEND_MIN_SPAN_FACTOR = 2
 
 
+@pytest.mark.benchmark
 def test_613440_asks_for_the_next_check_and_keeps_its_estimate():
     """613440 1M-1, 1 kyr: a stall at the rate that needs ~200 kyr; the 20-kyr twin and its 4-kyr prefix decide
     (Codex N8: non_resonant/circulation/high at 4 kyr)."""

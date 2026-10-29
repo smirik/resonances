@@ -78,6 +78,7 @@ def test_numbers_of_a_refused_record_reach_the_csv_and_the_figure():
     assert refused.verdict.status == 'invalid' and missing_numbers(refused) == []
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', ['mmr3__1221__1V-2E+1+0+0+0', 'mmr3__52356__5J-2S-2+0+0-1', 'mmr3__117306__1E+5S-4+0+0-2'])
 def test_numbers_of_benchmark_decisions_reach_the_csv_and_the_figure(example):
     if not io.example_path(example).exists():

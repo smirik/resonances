@@ -1238,6 +1238,86 @@ def local_thresholds(
     return tuple(stretches)
 
 
+def libration_image(
+    t_yr: np.ndarray,
+    angle_f: np.ndarray,
+    window: Tuple[float, float],
+    cutoff_yr: float,
+    period_floor_yr: float,
+    floor_prominence_rad: float,
+    settings: AnalysisSettings,
+) -> np.ndarray:
+    """lowpass(x, P_c) - lowpass(x, P_floor) on the samples of every libration run, 0 elsewhere [rad, signed]: what
+    the run's own oscillation x leaves in `fast_part`.
+
+    The runs are those `geometry.local_thresholds` selects at its own prominence: the turning points of sigma_f at the
+    floor mmr_tp_prominence_floor_deg split by `geometry.split_runs`, of >= libration_min_turning_points TPs. A run is
+    a libration when the median of its full periods t_i+2 - t_i is not shorter than P_floor, the test
+    `mmr.decide.librating_episodes` applies to an episode; a run without a full period (two TPs) is none. A run it would
+    reject as a forced wave keeps its image (a 115-yr wave: the threshold stays above its swing). The mean full period
+    would not do: a slow swing among the turns of a 121-yr wave stretches it (52356 5J-2S-2, 60-67 kyr: median 122 yr,
+    mean 155 yr). The TP times here are the vertices of the parabola through the three samples about each extremum
+    (`_vertex_times`): on the grid a full period is a whole number of steps, and a 150-yr libration sampled at 5.1 yr
+    measured 147.9 yr. Only this test reads them; the episode's period test still reads the sample times.
+
+    x passes through the run's turning points, a half-cosine between neighbours, and holds its end values beyond
+    them; its image is formed on the run and filter_edge_trim_cutoffs x P_floor on each side (where a stretch's
+    residual is not read: `regime_prominence`). For a steady sine x = G(P; P_c) of it, so (G(P; P_c) - G(P; P_floor))
+    (1 - G(P; P_c)) of the swing stays (0.026 at P_floor); a changing amplitude, centre or shape leaves more. A wave
+    that rides on the run without turns of its own is partly taken out with it (x passes through the turns it shifts:
+    about 70 % of a 6-deg 115-yr wave on a 25-deg 160-yr libration)."""
+    t = np.asarray(t_yr, float)
+    image = np.zeros(len(t))
+    angle_f = np.asarray(angle_f, float)
+    turning = find_turning_points(t, angle_f, floor_prominence_rad, tuple(window))
+    if len(turning) < settings.libration_min_turning_points:
+        return image
+    step = float(np.median(np.diff(t)))
+    margin = int(math.ceil(settings.filter_edge_trim_cutoffs * period_floor_yr / step))
+    vertices = _vertex_times(t, angle_f, np.asarray(turning.indices, int))
+    for run in split_runs(turning, settings):
+        times = vertices[run]
+        periods = times[2:] - times[:-2]
+        if len(run) < settings.libration_min_turning_points or not len(periods) or float(np.median(periods)) < period_floor_yr:
+            continue
+        index = np.asarray(turning.indices, int)[run]
+        lo, hi = max(int(index[0]) - margin, 0), min(int(index[-1]) + margin, len(t) - 1)
+        span = t[lo : hi + 1]
+        x = _through_turning_points(span, times, np.asarray(turning.values_rad, float)[run])
+        fast = lowpass_or_none(span, x, cutoff_yr, settings)
+        slow = lowpass_or_none(span, x, period_floor_yr, settings)
+        if fast is None or slow is None:
+            continue
+        own = slice(int(index[0]), int(index[-1]) + 1)
+        image[own] = (fast - slow)[own.start - lo : own.stop - lo]
+    return image
+
+
+def _vertex_times(t: np.ndarray, y: np.ndarray, indices: np.ndarray) -> np.ndarray:
+    """The times of the extrema y[indices] refined to the vertex of the parabola through the samples i - 1, i, i + 1
+    (uniform grid); the sample's own time at the record's ends or where the three samples are collinear."""
+    times = np.asarray(t, float)[indices]
+    inner = (indices > 0) & (indices < len(y) - 1)
+    i = indices[inner]
+    curvature = y[i - 1] - 2 * y[i] + y[i + 1]
+    with np.errstate(divide='ignore', invalid='ignore'):
+        shift = np.where(curvature != 0, 0.5 * (y[i - 1] - y[i + 1]) / curvature, 0.0)
+    times[inner] += np.clip(shift, -0.5, 0.5) * (t[i + 1] - t[i - 1]) / 2
+    return times
+
+
+def _through_turning_points(t: np.ndarray, times: np.ndarray, values: np.ndarray) -> np.ndarray:
+    """The curve through the turning points (times, values): a half-cosine between neighbours (its slope is 0 at both),
+    the end values before the first and after the last."""
+    x = np.interp(t, times, values)
+    k = np.clip(np.searchsorted(times, t, side='right') - 1, 0, len(times) - 2)
+    t0, t1, v0, v1 = times[k], times[k + 1], values[k], values[k + 1]
+    inside = (t > times[0]) & (t < times[-1]) & (t1 > t0)
+    phase = np.pi * (t - t0) / np.where(t1 > t0, t1 - t0, 1.0)
+    x[inside] = ((v0 + v1) / 2 + (v0 - v1) / 2 * np.cos(phase))[inside]
+    return x
+
+
 def turning_points_with_local(
     t_yr: np.ndarray,
     angle_rad: np.ndarray,

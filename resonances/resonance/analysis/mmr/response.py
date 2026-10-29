@@ -137,6 +137,12 @@ def _sine_fit(angle: np.ndarray, target: np.ndarray) -> Tuple[float, float, floa
 def members_fit(angle: np.ndarray, offset: np.ndarray, target: np.ndarray, harmonics: Sequence[int]) -> Tuple[np.ndarray, float]:
     """target = sum_j [A_j sin sigma_j + B_j cos sigma_j] + C, sigma_j = angle + j offset, by least squares:
     (C_j = A_j + i B_j in the order of `harmonics`, R^2). No sample guard: each caller keeps its own."""
+    coefficients, _, r2 = _members_lstsq(angle, offset, target, harmonics)
+    return coefficients, r2
+
+
+def _members_lstsq(angle: np.ndarray, offset: np.ndarray, target: np.ndarray, harmonics: Sequence[int]) -> Tuple[np.ndarray, float, float]:
+    """`members_fit` with its constant: (C_j, C, R^2)."""
     n_terms = len(harmonics)
     design = np.empty((len(target), 2 * n_terms + 1))
     for i, j in enumerate(harmonics):
@@ -144,7 +150,20 @@ def members_fit(angle: np.ndarray, offset: np.ndarray, target: np.ndarray, harmo
         design[:, 2 * i], design[:, 2 * i + 1] = np.sin(member), np.cos(member)
     design[:, -1] = 1.0
     coef, r2 = _fit(design, target)
-    return coef[0 : 2 * n_terms : 2] + 1j * coef[1 : 2 * n_terms : 2], r2
+    return coef[0 : 2 * n_terms : 2] + 1j * coef[1 : 2 * n_terms : 2], float(coef[-1]), r2
+
+
+def members_model(
+    angle: np.ndarray, offset: np.ndarray, coefficients: Sequence[complex], harmonics: Sequence[int], constant: float
+) -> np.ndarray:
+    """sum_j [A_j sin sigma_j + B_j cos sigma_j] + C, sigma_j = angle + j offset, C_j = A_j + i B_j: the law of
+    `members_fit` evaluated on `angle` [rad] (the multiplet law drawn in panel (e))."""
+    angle, offset = np.asarray(angle, dtype=float), np.asarray(offset, dtype=float)
+    total = np.full(np.shape(angle), float(constant))
+    for c_j, j in zip(coefficients, harmonics):
+        member = angle + j * offset
+        total = total + c_j.real * np.sin(member) + c_j.imag * np.cos(member)
+    return total
 
 
 def intervals_mask(t_yr: np.ndarray, intervals: Sequence[Tuple[float, float]]) -> np.ndarray:
@@ -478,15 +497,15 @@ def multiplet_fit(
     n_terms = len(harmonics)
     finite = _finite(angle_f, adot_f, slow_offset)
 
-    def solve(rows) -> Tuple[np.ndarray, float]:
-        """`members_fit` on the finite samples of `rows` (a mask or a slice)."""
+    def solve(rows) -> Tuple[np.ndarray, float, float]:
+        """`members_fit` with its constant on the finite samples of `rows` (a mask or a slice)."""
         keep = finite[rows]
         angle, offset, target = angle_f[rows][keep], slow_offset[rows][keep], adot_f[rows][keep]
         if len(target) <= 2 * n_terms + 1:
-            return np.full(n_terms, np.nan + 0j), NAN
-        return members_fit(angle, offset, target, harmonics)
+            return np.full(n_terms, np.nan + 0j), NAN, NAN
+        return _members_lstsq(angle, offset, target, harmonics)
 
-    overall, r2 = solve(intervals_mask(t_yr, windows))
+    overall, constant, r2 = solve(intervals_mask(t_yr, windows))
     per_window = np.array([solve(samples_between(t_yr, a, b))[0] for a, b in windows]).reshape(len(windows), n_terms)
     magnitude = np.abs(overall)
     eps: Tuple[float, ...] = ()
@@ -494,7 +513,8 @@ def multiplet_fit(
         main = magnitude[harmonics.index(0)]
         eps = tuple(float(magnitude[i] / main) if main > 0 else NAN for i, j in enumerate(harmonics) if j != 0)
     coherence = leading_coherence(magnitude, per_window, power_share)
-    return MultipletFit(harmonics, per_window, r2, coherence, eps)
+    bounds = tuple((float(a), float(b)) for a, b in windows)
+    return MultipletFit(harmonics, per_window, r2, coherence, eps, pooled=overall, constant_au_yr=constant, windows=bounds)
 
 
 def leading_coherence(magnitude: np.ndarray, per_window: np.ndarray, power_share: float) -> float:
@@ -1655,6 +1675,11 @@ def _phase_sigma(windows: Sequence[ForceWindow], t_yr: np.ndarray, adot_f: np.nd
     return float(np.median(errors)) if errors else NAN
 
 
+def multiplet_offset(slow: Optional[SlowComponents], t_yr: np.ndarray, planet_rate_rad_yr: float) -> Optional[np.ndarray]:
+    """varpi - varpi_P of the multiplet law (`_varpi_offset`), for the figure: the law is evaluated on what it read."""
+    return _varpi_offset(slow, t_yr, planet_rate_rad_yr)
+
+
 def _varpi_offset(slow: Optional[SlowComponents], t_yr: np.ndarray, planet_rate_rad_yr: float) -> Optional[np.ndarray]:
     """varpi - varpi_P on `t_yr` up to a constant: the body's slow varpi minus g_P t (the planet's phase only rotates C_j)."""
     if slow is None or not np.isfinite(planet_rate_rad_yr):
@@ -1709,7 +1734,7 @@ def _best_multiplet(
                 continue
         fit = multiplet_fit(t_yr, angle_f, adot_f, offset, harmonics, windows, settings.mmr_force_power_share)
         if np.isfinite(fit.r2) and (best is None or fit.r2 > best.r2):
-            best = fit
+            best = replace(fit, planet=name, planet_varpi_rate_rad_yr=float(rate))
     return best
 
 

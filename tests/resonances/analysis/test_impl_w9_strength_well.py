@@ -131,6 +131,7 @@ def test_direct_theory_counts_only_swings_in_the_well():
     assert _strength(top, top_episode, theory_value).not_measured_reason == st.REASON_CENTRE_OUTSIDE_WELL
 
 
+@pytest.mark.benchmark
 def test_482824_fails_f_outside_the_well():
     example = 'mmr2__482824__19N-32+0+13'
     if not (io.example_path(example) / 'series.csv.gz').exists():

@@ -1217,6 +1217,20 @@
     ]
   },
   {
+    "case": "E64",
+    "example_id": "zlk__591986__LK__4myr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-29.md",
+        "line": 3,
+        "who": "author",
+        "text": "По картинке - эпизоды абсолютно неверно определены. Тут 1 эпизод.",
+        "transcript": "65dd5462…jsonl 2026-10-29T06:48Z"
+      }
+    ]
+  },
+  {
     "case": "C01",
     "example_id": "mmr2__117306__11M-20+0+9",
     "tier": "C",

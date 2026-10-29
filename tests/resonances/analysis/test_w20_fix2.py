@@ -76,6 +76,7 @@ def test_a_cycle_that_never_crosses_its_mid_level_returns_at_another_level():
     assert g.return_mismatch(cycle, S) <= 1.0
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, expected',
     [
@@ -201,6 +202,7 @@ def test_onset_is_a_test_of_a_capture(origin, detail, claimed):
     assert decide.capture_claimed(decision) is claimed
 
 
+@pytest.mark.benchmark
 def test_385266_forced_wave_is_no_episode_and_the_owner_names_it():
     """385266 16N-27 (author 2026-10-19: non_resonant/episodic/medium, "55-100 kyr cycles = forced wave"). Before W20
     CS7 the episodes at 56-68 and 68-99 kyr decided (episodic/low: L3 0.823, L5 4.48 of the decisive one). Since CS7
@@ -223,6 +225,7 @@ def test_385266_forced_wave_is_no_episode_and_the_owner_names_it():
     assert 'onset_failed' not in v.caps and str(v.confidence) == 'medium' and str(v.reason) == 'circulation'
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, expected, fraction',
     [

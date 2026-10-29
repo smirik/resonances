@@ -143,6 +143,7 @@ def test_g0_records_nothing_on_the_phase_without_jitter():
 EXAMPLE_258640 = 'mmr2__258640__46J-19+0-27'
 
 
+@pytest.mark.benchmark
 def test_258640_46J_19_is_a_circulation():
     """R4: varpi winds 1.96 rev at every band from 10 to 5000 yr, its own scatter never above pi/4 (max 0.555 rad);
     jitter 1.03, full-angle p99 101 deg. Author and Codex: non_resonant; the cap jitter_low_e keeps it at medium."""

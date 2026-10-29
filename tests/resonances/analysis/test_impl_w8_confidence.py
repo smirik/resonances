@@ -197,6 +197,7 @@ def test_the_24820_member_is_scanned_by_the_decision():
 # --- real records -----------------------------------------------------------------------------------------
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example_id, expected',
     [

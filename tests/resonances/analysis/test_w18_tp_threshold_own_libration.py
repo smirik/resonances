@@ -232,6 +232,7 @@ def as27():
     return analyse_mmr(series, S), analyse_mmr(catalogue, S)
 
 
+@pytest.mark.benchmark
 def test_as27_31_36_is_one_run_of_260_turning_points(as27):
     analysis, _ = as27
     tp = analysis.geometry.turning_points
@@ -243,6 +244,7 @@ def test_as27_31_36_is_one_run_of_260_turning_points(as27):
     assert np.degrees(stretch.prominence_rad) < 2 * 20.0 / 4
 
 
+@pytest.mark.benchmark
 def test_as27_4e_9s_5_is_induced_by_31_36(as27):
     """The three-body angle repeats 31:36 with factor 5/36 (identity to 1e-9 deg, w17 q8): its 150-yr turns are the
     owner's libration, no longer cut by the threshold that half of that libration raised."""

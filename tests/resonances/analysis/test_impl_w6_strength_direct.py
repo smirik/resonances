@@ -133,6 +133,7 @@ def _needs(example: str):
         pytest.skip('benchmark data not available')
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', sorted(SKEPTIC))
 def test_curvature_reproduces_the_skeptic_numbers(example):
     _needs(example)
@@ -158,6 +159,7 @@ def test_curvature_reproduces_the_skeptic_numbers(example):
     assert float(ap.circular_distance(result.centre_rad, np.radians(centre))) < np.radians(2.0)
 
 
+@pytest.mark.benchmark
 def test_record_strength_15875_and_2005_gq107():
     for example in ('mmr2__15875__2N-3+0+1', 'mmr2__2005_GQ107__40M-57+0+17'):
         _needs(example)
@@ -178,6 +180,7 @@ def test_record_strength_15875_and_2005_gq107():
     assert strength.centre_offset_max_deg < 15.0  # the theory's centre follows the measured one (11.9 deg) as varpi - varpi_P turns
 
 
+@pytest.mark.benchmark
 def test_record_without_saved_planet_scans_its_phase():
     example = 'mmr2__2004_TK14__31M-34+0+3'
     _needs(example)
@@ -214,6 +217,7 @@ def test_short_period_vector_keeps_the_e_cycle():
     assert g_free / ARCSEC == pytest.approx(231.28, rel=1e-3)
 
 
+@pytest.mark.benchmark
 def test_kinematics_37087_forced_term():
     example = 'mmr3__37087__3J+8S-3+0+0-8'
     _needs(example)

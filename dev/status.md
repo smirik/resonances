@@ -1,15 +1,17 @@
-# Status on 2026-10-28
+# Status on 2026-10-29
 
-Replace this page at each programme step. Latest benchmark run: `v2-w25-final` (+ `v2-w25-final-secular-zlk`), 0 disagreements with the author
-(`KNOWN_DISAGREEMENTS.csv` empty); episode gate: tier A 45 pass with 5 known failures, tier B 12/12.
+Replace this page at each programme step. Latest benchmark run: `v2-w26-final` (+ `v2-w26-final-secular-zlk`), 0 disagreements with the author
+(`KNOWN_DISAGREEMENTS.csv` empty); episode gate: tier A 46 pass with 5 known failures (E64 new), tier B 12/12.
+Tests (W26 split): test-fast 4403 in ~3.5 min, test-slow 404 in ~8.5 min, test-benchmark 587 in ~31 min; test-portable
+(test-fast on a fresh copy) passes the same 4403 without a skip.
 
 ## Next steps (agreed order)
 
 1. Code freeze; then the documentation (mkdocs-material, LaTeX formulas, a command that regenerates the documentation
    figures), the agent skill (done 2026-10-27: `resonances/skills/resonances/`, `resonances skill install`,
    references generated from docs/ by `make skill`, docs/agents.md), the benchmark figure tree rebuilt
-   (`benchmark/tools/sort_figures.py`). `resonances/data/confidence_cells.json` was recalibrated on `v2-w25-final`
-   (2026-10-28: 283 verdicts compared with the author's status, 0 errors, 19 abstentions; the cells count the 178 at
+   (`benchmark/tools/sort_figures.py`). `resonances/data/confidence_cells.json` was recalibrated on `v2-w26-final`
+   (2026-10-29, unchanged from W25: 283 verdicts compared with the author's status, 0 errors, 19 abstentions; the cells count the 178 at
    high or certain, pooled over resonance families: the intervals measure status agreement, not each check); rerun `benchmark/tools/calibrate.py` after any verdict change.
 2. The author's final check of the figures.
 3. A real co-orbital test.
@@ -34,29 +36,34 @@ Replace this page at each programme step. Latest benchmark run: `v2-w25-final` (
 
 ## Known gaps in the code
 
-- Secular bounded angles get a dynamic origin directly; an episodic ZLK keeps it when the whole-record gate withholds.
+- Secular bounded angles get a dynamic origin directly; an episodic ZLK keeps it when the whole-record gate withholds
+  and its episodes are not all pinned (W26: median |z_free|/|z_forced| < 1 and >= 0.5 free turns per whole cycle in
+  every episode makes it kinematic, 624 Hektor).
 - The secular `FilteredAngle` leaves the MMR regime-cut options (split regimes, return closure) at their defaults; the
   old 88899 ZLK two-island loss (tier D) has not been re-checked.
-- MMR panel (e): the single-sine windows ignore the moving-well shift, and multiplet and raised-cutoff (line-rule) laws
-  are still drawn as plain single sines (the harmonic law is printed, not drawn, since W25); three ▼-marker overlaps
-  remain.
-- `MMRDiagnostics`: the `portrait` with `portrait.y='axis'` and the a0 reference still read the 2000-yr body-level
-  filtered a (`cycles` reads the analysis' a since W25; `evolution` documents its filter).
-- `mmr/analyse.py` `is_unphysical` (e > 1.3) can no longer fire for an MMR after `domain_problems`: redundant.
+- MMR panel (e) draws the record's pooled fit (the law that decided there: single windows on ψ, the multiplet law, at
+  the raised cutoff of the line rule; W26), not the witness episode's when rule R took L4 from one; three ▼-marker
+  overlaps remain.
 - The averaged-route J/J_s (W25) ignores the moving-well kinetic term, as h did, and reads the profile's well count on
   its coarse grid (a very small dimple can be missed). A one-well potential above its top still reports J/J_s = 1
   (`separatrix`); a several-well one reports NaN (`not_measured`).
 - The low-memory allocator is macOS-only; Linux was not measured.
-- Clones: a restore keeps the clones' stored verdicts even when their series were saved; `restore(recompute_librations=True)`
-  rewrites the nominal columns of clones.csv but not the nominal's summary.csv row, so the two can disagree. The resume
+- Tests: test-benchmark is now ~31 min in one process (the 587 local-data tests); pytest-xdist with per-worker
+  `cache/tests` would cut it (not done).
+- Clones: a restore keeps the clones' stored verdicts even when their series were saved (with `SAVE` ≠ all those are a
+  status-selected subset; a recompute of all clones would need every series and a clone-sized analysis budget; waits
+  for the author). `restore(recompute_librations=True)` rewrites the nominal's clones.csv columns and summary.csv rows
+  together (W26). The resume
   hash includes the planets' initial state and the package versions (strict by design). No triage (decided 2026-10-28:
   a small spread in a does not certify the nominal's verdict, and integration is cheap compared with analysis).
 - MPC `propagate` is checked over 138 days only; `MPC_LOOKUP=file_then_api` (get-orb fallback) is off by default and
   names are passed to get-orb unmapped (not verified live).
 - ZLK (W25): the e–i coupling phase tolerance is 45° (591986's forced beat sits 32° from in-phase); the 591986 slow-line
   reconstruction reaches r = 0.991 only with a quadratic detrend; `sec_centre_*` of modulated secular rows is covered
-  by a synthetic test only (no benchmark row); a node lock to a forced mode (591986: Ω − ϖ5 librates with 1.46 Myr over
-  4 Myr) is not flagged (waits for the author).
+  by a synthetic test only (no benchmark row); the node lock is a flag since W26 (`zlk_node_lock`: 591986 4 Myr g5,
+  500 kyr unresolved); the 4-Myr record is the benchmark example `zlk__591986__LK__4myr` (author's verdict pending).
+  The attribution's beat test compares P_cyc with 2π/|b_ϖ − g_j| within the Rayleigh width plus P_cyc's own grid
+  precision, 1296000 Δt/P² (W26; 591986 4 Myr: 0.32 + 3.5″/yr).
 - The three-body catalogue axis applies the body's precession correction once (`mmr/three_body.py:107`) with the
   small-α g; measured harmless (≤ 4e-7 au iterated, ≤ 2.5e-4 au from the g formula, against a 0.02 au search window;
   the classifier uses its own `exact_axis`).

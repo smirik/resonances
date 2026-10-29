@@ -15,8 +15,8 @@ overridable by `RESONANCES_BENCHMARK_DATA`) and the runs' package output stay ou
   map in `dev/decisions.md`). Entries written by Claude say so.
 - `KNOWN_DISAGREEMENTS.csv`: every current disagreement with the author (MMR, co-orbital, secular, ZLK), as
   (example_id, field) with field in status, angle_status, confidence, author_verdict; its category and reason are
-  Claude's reading, not labels. Empty since `v2-w24-tx9b` (still empty on `v2-w25-final`).
-- `EPISODE_EXPECTATIONS.csv`: 79 episode cases from the author's history (tier A 50 his words, B 12 a review he
+  Claude's reading, not labels. Empty since `v2-w24-tx9b` (still empty on `v2-w26-final`).
+- `EPISODE_EXPECTATIONS.csv`: 80 episode cases from the author's history (tier A 51 his words, B 12 a review he
   accepted, C 16 old verdicts, D 1 analogies), checks as JSON ops of `benchmark/tools/episode_expectations.py`, verbatim
   quotes with file:line in `benchmark/EPISODE_QUOTES.json`; `known_fail`/`known_reason` are Claude's reading (today E15, E17, E21, E30,
   E43).
@@ -30,8 +30,8 @@ overridable by `RESONANCES_BENCHMARK_DATA`) and the runs' package output stay ou
 - Status gate: fails on any disagreement with the author not in `KNOWN_DISAGREEMENTS.csv`, on a listed one that now
   agrees, and on a listed one whose values changed (`tools/known_disagreements.py <run> [--secular-zlk <run>]
   [--write]`). Secular/ZLK: the same author labels plus the 14 verdicts of `reclassify_secular_zlk.AUTHOR_VERDICTS`.
-  On v2-w25-final (2026-10-28): status 111/111, angle_status 94/94, confidence 68/68, author_verdict 198/198,
-  secular/ZLK status 3/3, author_verdict 13/13.
+  On v2-w26-final (2026-10-29): status 111/111, angle_status 94/94, confidence 68/68, author_verdict 198/198,
+  secular/ZLK status 6/6, author_verdict 13/13.
 - Episode gate (W23): a tier A/B case that fails and is not `known_fail` fails the gate; so does a `known_fail` case
   that passes (clear the flag). C/D never gate. Synthetic companions: `tests/resonances/analysis/test_episode_detection.py`.
 - Workers: `BENCHMARK_WORKERS`, else min(CPUs − 2, available RAM / 3 GB, 8), or RAM / 1.6 GB with the low-memory

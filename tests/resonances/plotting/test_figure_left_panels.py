@@ -446,6 +446,7 @@ def _dense_tadpole(span_yr: float = 150000.0):
     )
 
 
+@pytest.mark.slow
 def test_dense_libration_hides_the_wrapped_line_and_draws_the_strip():
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr
     from resonances.resonance.analysis.settings import settings_from_config

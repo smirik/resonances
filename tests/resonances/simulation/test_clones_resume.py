@@ -292,6 +292,44 @@ def test_nominal_columns_from_the_counts_of_a_summary_only_row(tmp_path):
     assert (row['n_resonant'], row['n_transient'], row['n_missing']) == (1, 1, 1)
 
 
+def test_a_recomputed_nominal_rewrites_both_tables(tmp_path):
+    """restore(recompute_librations=True) changes the nominal's verdict: summary.csv and clones.csv must both carry it.
+    The recompute is played as `Simulation._analyse_mmr` does it (the analysis held, `_finalise_verdict`), with a record
+    whose e >= 1 (invalid/unphysical, from the input check: no integration). By hand: the clones are 1 resonant, 1
+    transient, 1 missing, so an invalid nominal agrees with 0 of the 2 classified; another body's row stays as it was."""
+    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
+    from resonances.resonance.analysis.mmr.models import MMRSeries, Regime, ResonanceSpec
+    from resonances.resonance.analysis.settings import settings_from_config
+
+    hand_written_run(tmp_path)
+    other = {'name': 'other', 'resonance': KEY, 'resonance_type': 'mmr', 'status': 'transient', 'angle_status': 'episodic'}
+    other.update(confidence='low')
+    summary = pd.read_csv(tmp_path / 'summary.csv', dtype=str, keep_default_na=False)
+    pd.concat([summary, pd.DataFrame([other])], ignore_index=True).to_csv(tmp_path / 'summary.csv', index=False)
+    restored = SimulationSerializer.restore(str(tmp_path / 'simulation.json'))
+
+    n, zero = 200, np.zeros(200)
+    t = np.arange(n, dtype=float)
+    record = MMRSeries(
+        t, np.full(n, 3.2), np.full(n, 1.1), zero, zero, zero, zero, zero, ResonanceSpec.from_key(KEY), Regime(1.0, t[-1], n)
+    )
+    analysis = analyse_mmr(record, settings_from_config())
+    body = restored.bodies[0]
+    body.mmr_analyses[KEY] = analysis
+    resonances.Simulation._finalise_verdict(body, KEY, analysis.verdict)
+    clone_store.recompute_clone_rows(restored, tmp_path, [])
+
+    summary = pd.read_csv(tmp_path / 'summary.csv', dtype=str, keep_default_na=False)
+    nominal = summary[summary['name'] == '463']
+    assert len(nominal) == 1 and (nominal.iloc[0]['status'], nominal.iloc[0]['reason']) == ('invalid', 'unphysical')
+    clones_csv = pd.read_csv(tmp_path / 'clones.csv', dtype={'name': str, 'nominal_confidence': str}, keep_default_na=False)
+    assert clones_csv.loc[0, 'nominal_status'] == nominal.iloc[0]['status'] == 'invalid'
+    assert clones_csv.loc[0, 'nominal_confidence'] == nominal.iloc[0]['confidence'] == ''
+    assert clones_csv.loc[0, 'nominal_agreement'] == 0.0
+    kept = summary[summary['name'] == 'other'].iloc[0]
+    assert (kept['status'], kept['angle_status'], kept['confidence']) == ('transient', 'episodic', 'low')
+
+
 # ----------------------------------------------------------------------------------------------- real runs (slow)
 def real(path, ensemble=None, **kwargs) -> resonances.Simulation:
     options = dict(

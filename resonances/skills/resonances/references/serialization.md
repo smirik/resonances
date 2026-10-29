@@ -109,8 +109,10 @@ Lidov-Kozai angle is analysed again by `analyse_secular`/`analyse_zlk` on its sa
 centre scale and the free-omega gate are steps of it). Only the resonances whose series were saved are analysed again
 (their periodograms are rebuilt); the others keep their `summary.csv` verdict. A saved derived row whose parent was not
 saved (`SAVE=resonant` keeps a resonant subresonance of a non-resonant angle) is analysed alone, at depth one.
-With clones only the nominal is reclassified: the clones keep their stored verdicts, and the nominal columns of
-clones.csv are rewritten in the run's folder (the one simulation.json is in) from the nominal's new verdict.
+With clones only the nominal is reclassified: the clones keep their stored verdicts, and in the run's folder (the
+one simulation.json is in) the nominal columns of clones.csv and the nominal's rows of summary.csv (and of
+mmr_numbers, episodes, candidates) are rewritten from the nominal's new verdict, so the two files agree. Other bodies'
+rows are not written: call `sim.data_manager.save_simulation_summary(sim.bodies)` for them.
 
 ## Batch runs
 

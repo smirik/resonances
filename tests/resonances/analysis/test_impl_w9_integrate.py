@@ -26,6 +26,7 @@ def _analysed(example):
     return analyse_mmr(io.load_series(example), S)
 
 
+@pytest.mark.benchmark
 def test_a_turning_point_inside_the_jump_zone_stays_before_the_jump():
     # 2021 BA 1E-1, 1 kyr: a horseshoe with TPs at 134, 274 and 407 yr, the jump of a at 377 yr (tau 111 yr), then
     # circulation; 407 yr < 377 + tau/2 = 432 yr (the last regime's start), so the 3-TP episode stays (G1e transient)
@@ -39,6 +40,7 @@ def test_a_turning_point_inside_the_jump_zone_stays_before_the_jump():
     assert (verdict.status, verdict.angle_status, verdict.final_regime) == (Status.TRANSIENT, AngleStatus.EPISODIC, 'circulation')
 
 
+@pytest.mark.benchmark
 def test_runs_before_the_jump_end_before_the_last_regime():
     analysis = _analysed('coorbital__277617__1M-1+0+0__20kyr')
     geometry = analysis.geometry
@@ -50,6 +52,7 @@ def test_runs_before_the_jump_end_before_the_last_regime():
     assert len(np.unique(times)) == len(times)  # no turning point in two runs
 
 
+@pytest.mark.benchmark
 def test_the_last_regime_centre_is_its_own_low_pass():
     """277617 1M-1 20 kyr (circulation, the jump at 9.2 kyr, then a quasi-satellite): the last regime's centre on the
     record's grid is the low-pass of the regime's own samples only (the synthetic captures: independent_w9)."""

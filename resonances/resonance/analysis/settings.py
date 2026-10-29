@@ -1682,6 +1682,16 @@ class AnalysisSettings:
         'libration cycle, so a free circle that grows in a part of the record is seen',
         convention=True,
     )
+    zlk_episode_free_turns_per_cycle: float = _setting(
+        0.5,
+        'ZLK_EPISODE_FREE_TURNS_PER_CYCLE',
+        'float',
+        'an episodic omega is kinematic when inside every librating episode the median local rho is below 1 and the '
+        'free omega advances at least this many turns per cycle of the episode: a kinematic cycle is one turn of the '
+        'free vector about the forced one (P_cyc is their beat), a dynamic one leaves the free omega librating (0); '
+        'the midpoint (624 Hektor: 0.94-1.0, real ZLK episodes of the benchmark below 0.34 turns in all)',
+        convention=True,
+    )
     zlk_coorbital_hill_factor: float = _setting(
         3.0,
         'ZLK_COORBITAL_HILL_FACTOR',
@@ -1760,6 +1770,17 @@ class AnalysisSettings:
         'the slow line of the centre (zlk_centre_*, secular modulated: sec_centre_*) is searched between the centre '
         'smoothing W_c and the centre track span / this: a period is measured only when the track holds this many of it; '
         'a column only',
+        convention=True,
+    )
+    zlk_node_lock_min_cycles: float = _setting(
+        1.0,
+        'ZLK_NODE_LOCK_MIN_CYCLES',
+        'float',
+        'zlk_node_lock (a flag, no status reads it): the node is locked to a fitted forced eccentricity mode g_j when '
+        'its rate matches g_j within one Rayleigh width, Omega - varpi_j stays within a turn and, smoothed past the '
+        'forced waves of the node, completes at least this many full cycles between its first and last turning points: '
+        'one closed cycle tells a libration from a slow circulation (591986: 1.5 cycles of 1.46 Myr over 4 Myr, none '
+        'over 500 kyr)',
         convention=True,
     )
 
@@ -1910,9 +1931,11 @@ UNIT_INTERVAL = (
 # Factors and ratios that must be strictly positive
 POSITIVE = (
     'zlk_rho_window_cycles',
+    'zlk_episode_free_turns_per_cycle',
     'zlk_coorbital_hill_factor',
     'zlk_ei_min_cycles',
     'zlk_centre_min_cycles',
+    'zlk_node_lock_min_cycles',
     'libration_action_step_tp_tol',
     'libration_action_step_energy_drift',
     'libration_regular_period_ratio',

@@ -53,7 +53,8 @@ class SimulationSerializer:
 
         A run with clones also gets its ensembles back (`clone_store.restore_ensembles`: `sim.ensembles` with the
         clones' names, starts and stored verdicts, `sim.clone_summary` from clones.csv). Recomputing reclassifies the
-        nominals only: the clones keep their stored verdicts, and the nominal columns of clones.csv are rewritten.
+        nominals only: the clones keep their stored verdicts, and the nominal columns of clones.csv and the nominals'
+        summary.csv rows are rewritten together, from the one recomputed verdict (`clone_store.recompute_clone_rows`).
         """
         json_path = Path(json_file_path)
         logger.info(f"Restoring simulation from {json_path}")

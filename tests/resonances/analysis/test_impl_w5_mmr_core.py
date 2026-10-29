@@ -31,6 +31,7 @@ def _alias(example):
     return analysis
 
 
+@pytest.mark.benchmark
 def test_1864_resamples_at_the_step_its_rate_allows():
     # 51M-50 at 5 yr, nu ~ -428 deg/yr over an ambiguous a range: |nu| dt <= 90 deg needs dt <= 0.21 yr -> 0.2 yr
     analysis = _alias('mmr2__1864__51M-50+0-1')

@@ -204,6 +204,7 @@ def ug22():
     return whole, cut
 
 
+@pytest.mark.benchmark
 def test_ug22_the_libration_before_the_jumps_is_the_one_of_the_cut_record(ug22):
     whole, cut = ug22
     geometry = whole.geometry

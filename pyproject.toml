@@ -75,8 +75,8 @@ omit = [".*", "tests/*", "*/site-packages/*"]
 testpaths = ["tests/resonances"]
 addopts = ["--import-mode=importlib"]
 markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "benchmark: marks tests as benchmark/stress tests (excluded by default)",
+    "slow: more than 1 s (integrations, long synthetic series); needs nothing outside git (make test-slow)",
+    "benchmark: reads local-only data (benchmark/data, not in git), or a gate against the author's labels (make test-benchmark)",
     "long: integrations of several minutes and more (make test-long; excluded from test, test-fast and test-slow)",
 ]
 filterwarnings = [

@@ -221,6 +221,7 @@ def test_a_monotone_drift_stays_a_drift():
 # --- benchmark ----------------------------------------------------------------------------------------------------
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, expected',
     [
@@ -238,6 +239,7 @@ def test_benchmark_regime_rows(example, expected):
     assert (str(v.status), str(v.angle_status), str(v.angle_subtype), str(v.confidence)) == expected
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example',
     [

@@ -72,6 +72,7 @@ def test_cycle_kinds_follow_the_measured_cycles():
     assert zone.cycle_kinds(geometry, cycles) == ['episode', 'diagnostic', 'turn']
 
 
+@pytest.mark.slow
 def test_numeric_zone_of_a_long_record_is_bounded_in_memory_and_time():
     """1e5 samples, 1200 small periods, 16 phases x 77 starts: trajectories kept only as their state and the samples
     of one piece. A pendulum without modulation: nothing reaches the separatrix (J_lo = h_hi = 1)."""

@@ -51,6 +51,7 @@ def _ratios(fit):
 # --------------------------------------------------------------------------------------------- the potential route
 
 
+@pytest.mark.benchmark
 def test_385266_owner_force_matches_the_averaged_potential():
     series, analysis = _analysis('mmr2__385266__16N-27+0+11')
     result = analysis.owner
@@ -74,6 +75,7 @@ def test_385266_owner_force_matches_the_averaged_potential():
     assert owner.potential_accepts(negative, S)[0] is False
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', ['mmr2__82157__20N-29+0+9', 'mmr2__120348__15N-22+0+7', 'mmr2__101703__41J-14+0-27'])
 def test_two_body_owner_force_matches_the_averaged_potential(example):
     _, analysis = _analysis(example)
@@ -83,6 +85,7 @@ def test_two_body_owner_force_matches_the_averaged_potential(example):
     assert np.all((ratios >= 0.9) & (ratios <= 1.1)), ratios  # every window (101703: the 3:1 multiplet, R1)
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, key, centres, low, high',
     [
@@ -102,6 +105,7 @@ def test_potential_scale_at_the_codex_snapshots(example, key, centres, low, high
 # --------------------------------------------------------------------------------------------- the decisions
 
 
+@pytest.mark.benchmark
 def test_2003_tg2_owner_acts_outside_the_episode():
     # 27V-40 librates near 77 kyr; sigma's decisive episode is 29.9-30.6 kyr: not induced (F7), the author leans uncertain
     _, analysis = _analysis('mmr3__2003_TG2__4E-1M-3+0+0+0__100kyr')
@@ -112,6 +116,7 @@ def test_2003_tg2_owner_acts_outside_the_episode():
     assert 'owner_outside_episode' in v.flags and v.checks['check_mmr_owner'] == 'pass'
 
 
+@pytest.mark.benchmark
 def test_2001_pg14_step_quarter_year_reads_its_own_libration():
     # 27E-47 circulates at 1.47 yr in the episode (343-2813 yr) and librates only after 11.6 kyr (CS3 note 3a)
     _, analysis = _analysis('mmr2__2001_PG14__14E-25+0+11__step0.25yr')
@@ -120,6 +125,7 @@ def test_2001_pg14_step_quarter_year_reads_its_own_libration():
     assert 'owner_outside_episode' in v.flags
 
 
+@pytest.mark.benchmark
 def test_2001_hw7_second_capture_is_unresolved():
     _, analysis = _analysis('mmr3__2001_HW7__5J+6S-2+0+0-9')
     v, result = analysis.verdict, analysis.owner
@@ -130,6 +136,7 @@ def test_2001_hw7_second_capture_is_unresolved():
     assert str(v.confidence) in ('medium', 'low')
 
 
+@pytest.mark.benchmark
 def test_1997_gk3_owner_covers_the_episode():
     _, analysis = _analysis('mmr3__1997_GK3__3M+5S-3+0+0-5')
     v, result = analysis.verdict, analysis.owner
@@ -142,6 +149,7 @@ def test_1997_gk3_owner_covers_the_episode():
     assert starts[0] < 1e3 and any(12.0e3 < a < 13.5e3 for a in starts)
 
 
+@pytest.mark.benchmark
 def test_2003_ug22_drift_is_induced_by_10e17():
     # the owner's centre moves with varpi, so its single phase drifts; its averaged potential explains a_dot (F3)
     _, analysis = _analysis('mmr3__2003_UG22__8M-4S-7+0+0+3')
@@ -162,6 +170,7 @@ def test_lowpass_of_psi_in_the_capture_test_uses_the_band_period():
     assert np.max(np.abs(filtered - slow)[inner]) < 0.03
 
 
+@pytest.mark.benchmark
 def test_78085_stays_induced_by_2e7():
     # R5 measured x = Psi / 7 sweeping 199 deg over the whole record; the package tests only the owner's block that meets
     # sigma's episode (3.4-81.6 kyr, trimmed by 3 P), where x sweeps less than 180 deg: unresolved, status unchanged
@@ -171,6 +180,7 @@ def test_78085_stays_induced_by_2e7():
     assert result.cover >= S.mmr_owner_cover_min and result.capture.energy_r2 < S.mmr_owner_r2_min
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', ['mmr2__101703__41J-14+0-27', 'mmr2__142694__41J-14+0-27'])
 def test_3j1_multiplet_owner_unchanged(example):
     _, analysis = _analysis(example)
@@ -183,6 +193,7 @@ def test_3j1_multiplet_owner_unchanged(example):
     )
 
 
+@pytest.mark.benchmark
 def test_1627_two_episodes_are_not_each_others_owners():
     # Ivar: sigma 11E-28 and 13E-33 each named the other as owner (both induced). Each owner acts outside the other's
     # decisive episode, so neither takes it (F7) and each row reads its own episode.

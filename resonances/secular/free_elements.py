@@ -356,6 +356,12 @@ class FreeElements:
         the free radius of every part of the record is compared with the forced one of the same part (555527: 0.66 at
         100 kyr, where the global ratio says 0.59). A window holding fewer samples than the record is the whole record.
         """
+        ratio = self.local_rho(period_yr, window_cycles)[1]
+        return float(np.max(ratio)) if len(ratio) else float('nan')
+
+    def local_rho(self, period_yr: Optional[float] = None, window_cycles: float = 1.0) -> Tuple[np.ndarray, np.ndarray]:
+        """(times [yr], rollmed(|z_e_free|, W) / rollmed(|z_e_forced|, W)): the ratio of `rho_local_max` along the
+        record, each value at the middle of its window (the mean of its first and last sample times)."""
         step = self.step
         window = _beat_window(self.basis_e, step)
         if period_yr is not None and np.isfinite(period_yr) and period_yr > 0 and step > 0:
@@ -364,7 +370,43 @@ class FreeElements:
         forced = _rolling_median(np.abs(self.z_e_forced), window)
         with np.errstate(divide='ignore', invalid='ignore'):
             ratio = np.where(forced > 0, free / forced, np.inf)
-        return float(np.max(ratio)) if len(ratio) else float('nan')
+        times = np.asarray(self.times, dtype=float)
+        if len(ratio) < len(times):  # a sliding window of W samples: value i covers samples i .. i + W - 1
+            span = len(times) - len(ratio)
+            times = 0.5 * (times[: len(ratio)] + times[span : span + len(ratio)])
+        return times, ratio
+
+    def episode_pinning(self, start_yr: float, end_yr: float, cycles_end_yr: float, cycles: int) -> Tuple[float, float]:
+        """(median |z_e_free| / |z_e_forced|, turns of the free omega per cycle) inside one librating episode of the
+        osculating omega [start, end]; (nan, nan) when the free elements do not measure it there.
+
+        Measured only where they hold: the episode inside the baseline, every sample in it with a defined free
+        perihelion and node (the masks), and at least two samples per cycle (a free omega turning once per cycle is
+        unwrapped unambiguously below the Nyquist step). The ratio is the instantaneous one: a rolling window as long
+        as a forced beat would mix in the free circle around the episode. The turns are counted over whole cycles of
+        the osculating omega, from the first turning point to the last of the same kind (`cycles_end_yr`, `cycles`
+        full cycles): a free omega that librates with the osculating one returns there (about 0 turns), one that the
+        forced vector carries advances one turn per cycle; an endpoint difference of a part cycle is no winding."""
+        times = np.asarray(self.times, dtype=float)
+        nan = (float('nan'), float('nan'))
+        if not len(times) or cycles < 1 or start_yr < times[0] or end_yr > times[-1] or cycles_end_yr > end_yr:
+            return nan
+        inside = (times >= start_yr) & (times <= end_yr)
+        if np.count_nonzero(inside) < 2 or not np.all((self.keep_e & self.keep_i)[inside]):
+            return nan
+        period = (cycles_end_yr - start_yr) / cycles
+        if not (self.step > 0 and 2.0 * self.step < period):
+            return nan
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ratio = np.abs(self.z_e_free[inside]) / np.abs(self.z_e_forced[inside])
+        if not np.all(np.isfinite(ratio)):
+            return nan
+        whole = (times >= start_yr) & (times <= cycles_end_yr)
+        free_omega = np.unwrap(np.angle(self.z_e_free[whole]) - np.angle(self.z_i_free[whole]))
+        if len(free_omega) < 2:
+            return nan
+        turns = abs(free_omega[-1] - free_omega[0]) / (2.0 * np.pi)
+        return float(np.median(ratio)), float(turns / cycles)
 
     def forced_beats(self) -> Dict[str, float]:
         """{'gk-gj': period [yr]} of every pair of fitted eccentricity modes with nonzero measured amplitudes (j the

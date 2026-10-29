@@ -130,6 +130,7 @@ def test_cutoff_formula_ignores_the_step():
         assert preprocess.choose_cutoff({'Saturn': 60.0}, step, SETTINGS, 150.0).cutoff_yr == pytest.approx(90.0)
 
 
+@pytest.mark.slow
 def test_pendulum_at_1_and_8_yr_gives_the_same_turning_points_and_period():
     fine, _ = _three_one(1.0)
     coarse, _ = _three_one(8.0)

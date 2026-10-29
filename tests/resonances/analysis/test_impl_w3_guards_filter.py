@@ -219,6 +219,7 @@ def _real(example):
     return analyse_mmr(io.load_series(example), S, scan_owner=False, scan_subresonances=False)
 
 
+@pytest.mark.benchmark
 def test_1221_is_sensitive_and_loses_its_shape_margins():
     # with the owner search: its owner 3E-8 makes the row non_resonant/induced, a verdict with margins (without it, L4
     # and R0 are not measured and O1 fails at P_c: uncertain by rule 5o, W18, and an uncertain verdict has no margins)
@@ -241,6 +242,7 @@ def test_1221_is_sensitive_and_loses_its_shape_margins():
     assert verdict.margins['C4'].margin == Margin.NOT_MEASURED and verdict.confidence == Confidence.HIGH
 
 
+@pytest.mark.benchmark
 def test_31935_compares_the_same_turning_points():
     analysis = _real('mmr2__31935__9M-16+0+7')
     numbers = analysis.numbers_row()

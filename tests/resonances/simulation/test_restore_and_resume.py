@@ -24,13 +24,13 @@ from resonances.resonance.filtering import filter_angle, wrap
 from resonances.simulation import Simulation, SimulationSerializer, DataManager
 from resonances.simulation.parallel_executor import ParallelExecutor
 from resonances.simulation.state_manager import StateManager, SimulationState
+from tests.resonances.local_data import free_omega_fixture
 
 LIB, CIRC = '4J-2S-1+0+0-1', '6J-7S-1+0+0+2'
 YEARS, N = 1e5, 10001
 A_LIB = resonances.create_mmr(LIB).resonant_axis  # 2.3985 au
 AMPLITUDE, LIBRATION_PERIOD = 0.6, 8000.0
 ELEMENTS = {'a': 2.6, 'e': 0.1, 'inc': 0.1, 'Omega': 0.0, 'omega': 0.0, 'M': 0.0}
-FIXTURES = pathlib.Path(__file__).parents[2] / 'fixtures' / 'free-omega'
 
 
 def _simulation(path, **config):
@@ -212,7 +212,7 @@ def _secular_drift_run(path):
 def _trojan_run(path):
     """591986 from the free-omega fixture: its osculating omega librates, the gate finds it kinematic (-2: non_resonant,
     kinematic libration)."""
-    with gzip.open(FIXTURES / '591986.csv.gz', 'rt') as handle:
+    with gzip.open(free_omega_fixture('591986'), 'rt') as handle:
         data = pd.read_csv(handle)
     sim = _simulation(path, save='all', integration_years=5e5, Nout=len(data), coherence_enabled=False)
     sim.body_manager.add_body(ELEMENTS, 'LK', name='591986')
@@ -234,7 +234,10 @@ def _trojan_run(path):
 
 @pytest.mark.parametrize(
     'run, key, expected, code',
-    [(_secular_drift_run, 'g-g6-2g7+2g8', 'uncertain', -4), (_trojan_run, 'LK', 'non_resonant', -2)],
+    [
+        (_secular_drift_run, 'g-g6-2g7+2g8', 'uncertain', -4),
+        pytest.param(_trojan_run, 'LK', 'non_resonant', -2, marks=pytest.mark.benchmark),  # the 591986 series, local only
+    ],
     ids=['secular-arc', 'free-omega-gate'],
 )
 def test_recompute_keeps_the_post_classification_statuses(tmp_path, run, key, expected, code):
@@ -313,6 +316,7 @@ def _dying_worker(batch_index, bodies_data, simulation_kwargs):
     return {"batch_index": batch_index, "status": "success", "body_names": [], "num_bodies": 0, "error": None}
 
 
+@pytest.mark.slow
 def test_a_batch_still_running_when_another_fails_is_recorded(monkeypatch):
     # Leaving the pool waits for the running batch 0, which writes its files: it must be marked
     # complete, or a resume runs it (and appends its rows) a second time.
@@ -325,6 +329,7 @@ def test_a_batch_still_running_when_another_fails_is_recorded(monkeypatch):
     assert recorded == [0]
 
 
+@pytest.mark.slow
 def test_the_batches_retried_after_a_broken_pool_are_announced(monkeypatch, tmp_path):
     monkeypatch.setattr('resonances.simulation.parallel_executor._run_batch_worker', _dying_worker)
     marker = str(tmp_path / 'died')

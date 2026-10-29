@@ -254,6 +254,7 @@ def _word(verdict):
     return str(verdict.status), str(verdict.angle_status), str(verdict.angle_subtype), str(verdict.confidence)
 
 
+@pytest.mark.benchmark
 def test_tk14_half_year_is_resonant():
     analysis = _analysis('mmr2__2004_TK14__31M-34+0+3__step0.5yr')
     assert _word(analysis.verdict) == ('resonant', 'libration', 'regime_change', 'high')
@@ -262,6 +263,7 @@ def test_tk14_half_year_is_resonant():
     assert next(e for e in analysis.verdict.decision_path if e.name == decide.UNION_PROMOTED).result is True
 
 
+@pytest.mark.benchmark
 def test_tk14_five_years_is_resonant_at_medium():
     """The author's resonant/medium/libration: the union rule and R-ALIAS-A together (the cap holds medium)."""
     verdict = _analysis('mmr2__2004_TK14__31M-34+0+3').verdict
@@ -276,6 +278,7 @@ TX9_REJECTED = {
 }
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize('example', sorted(TX9_REJECTED))
 def test_tx9_keeps_its_status_with_the_word_libration(example):
     """The W22 path, now only without the W23 centre-scale TP rule (with it G2c keeps TX9: test_w23_centre_scale.py):
@@ -297,6 +300,7 @@ def test_tx9_keeps_its_status_with_the_word_libration(example):
     assert (columns['geo_cs_rej_episodes'], columns['geo_cs_rej_decisive']) == (episodes, decisive)
 
 
+@pytest.mark.benchmark
 def test_136108_g2c_comes_before_the_union():
     fine = _analysis('mmr2__136108__7N-12+0+5', centre_scale=False)
     assert (str(fine.verdict.angle_status), str(fine.verdict.angle_subtype)) == ('libration', 'regime_change')
@@ -305,6 +309,7 @@ def test_136108_g2c_comes_before_the_union():
     assert analysis.prep.cutoff.binding == 'centre_scale'
 
 
+@pytest.mark.benchmark
 def test_2002_xa_gap_is_longer_than_the_two_periods():
     analysis = _analysis('mmr2__2002_XA__5J-2+0-3')
     left, right = sorted(decide.librating_episodes(analysis.geometry, S), key=lambda e: e.t_start_yr)
@@ -313,6 +318,7 @@ def test_2002_xa_gap_is_longer_than_the_two_periods():
     assert _word(analysis.verdict) == ('transient', 'episodic', 'recurrent', 'medium')
 
 
+@pytest.mark.benchmark
 @pytest.mark.parametrize(
     'example, word',
     [

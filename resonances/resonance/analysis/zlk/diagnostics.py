@@ -27,7 +27,22 @@ with the largest |c_j| (named with the cluster the baseline merged into it) is w
     the predicted beat 2 pi/|b_varpi - g_j| is P_cyc within a Rayleigh width (what the osculating omega librates with);
     the free node follows the mode: |b_Omega - g_j| T < 1 turn (else the centre varpi_j - Omega would turn);
     the per-mode amplitudes exist (a run restored from a file written before they were persisted has none).
-Otherwise 'not_attributed' with the first condition that failed.
+Otherwise 'not_attributed' with the first condition that failed. An episodic omega that the decision made kinematic
+inside its episodes (`decide_status`: median |z_free|/|z_forced| < 1 inside every librating episode and the free omega turning
+with each cycle, 624 Hektor) is attributed with scope 'episodes': the episodes stand for the free-circle condition, and
+the node is not required to follow the mode (a centre varpi_j - Omega that turns is what keeps such librations apart);
+its node - mode numbers are written all the same.
+
+Node lock (`node_lock`, columns zlk_node_lock*; a flag, no status reads it): the osculating node Omega (the one omega is
+built from) against the longitude of a fitted forced eccentricity mode, varpi_j(t) = g_j t + arg c_j (the nearest rate to
+the free node's b_Omega among the modes with a nonzero amplitude). Locked to g_j when
+    |b_Omega - g_j| < 1296000 / T (one Rayleigh width: the rates are one line over the record);
+    Omega - varpi_j stays within a turn over the record;
+    Omega - varpi_j, low-passed at the longest forced wave of the node (2 pi/|b_Omega - s_k| over the fitted inclination
+    terms) and read inside the filter's edge trim, completes >= ZLK_NODE_LOCK_MIN_CYCLES full cycles between its first
+    and last turning points (n_tp - 1)/2: a slow circulation or a drift within the resolution has no closed cycle.
+591986 over 4 Myr: g5, Omega - varpi5 within 50-130 deg, 1.46 Myr, about 1.5 cycles; over 500 kyr the rate matches and
+the difference stays within 52-91 deg, but no cycle closes: unresolved (one 1.46-Myr period does not fit).
 
 Centre-scale guard (`forced_beat_centre`): a libration at the centre scale whose period is within a Rayleigh width of a
 beat 2 pi/|g_k - g_j| of two fitted forced modes with nonzero amplitudes, whose reconstructed forced phase wave explains
@@ -46,11 +61,13 @@ import numpy as np
 from scipy.signal import butter, sosfiltfilt
 
 from resonances.data.invariable_plane import inclination_to_invariable_plane
+from resonances.resonance.analysis.filtering import lowpass_or_none
 from resonances.resonance.analysis.ledger import Op
 from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN
 from resonances.resonance.analysis.verdict import AngleStatus, CheckValue
 
 NAN = float('nan')
+RAD_PER_ARCSEC = 2.0 * np.pi / ARCSEC_PER_TURN
 BAND_ORDER = 3  # Butterworth order of the e-i band (forward-backward)
 
 
@@ -113,6 +130,7 @@ class Attribution:
 
     attributed: bool = False
     reason: str = ''  # not attributed: why
+    scope: str = ''  # attributed: 'record' (the whole record) | 'episodes' (inside the librating episodes of an episodic omega)
     mode: str = ''  # 'g5 (g5+g7+g8+const)'
     forcing_e: float = NAN  # |c_j|
     free_over_forcing: float = NAN  # e_free / |c_j|
@@ -125,6 +143,7 @@ class Attribution:
         return {
             'zlk_attribution': 'attributed' if self.attributed else 'not_attributed',
             'zlk_attribution_reason': self.reason,
+            'zlk_attribution_scope': self.scope,
             'zlk_forcing_mode': self.mode,
             'zlk_forcing_e': self.forcing_e,
             'zlk_free_over_forcing': self.free_over_forcing,
@@ -136,14 +155,48 @@ class Attribution:
 
 
 @dataclass
+class NodeLock:
+    """Whether the node is locked to a fitted forced eccentricity mode (`node_lock`; a flag, never a status)."""
+
+    mode: str = ''  # the locked mode ('g5'), '' when none
+    reason: str = ''  # none: no_mode_amplitudes, no_node, rate_mismatch, unbounded, unresolved
+    candidate: str = ''  # the mode tested: the nearest rate to b_Omega
+    rate_diff_arcsec_yr: float = NAN  # b_Omega - g_j
+    resolution_arcsec_yr: float = NAN  # 1296000 / T
+    min_deg: float = NAN  # Omega - varpi_j over the record, min in [0, 360)
+    max_deg: float = NAN
+    period_yr: float = NAN  # 2 (t_last - t_first) / (n_tp - 1) of the smoothed difference
+    cycles: float = NAN  # (n_tp - 1) / 2
+    cutoff_yr: float = NAN  # the smoothing: the longest forced wave of the node
+
+    @property
+    def locked(self) -> bool:
+        return bool(self.mode)
+
+    def to_columns(self) -> Dict[str, Any]:
+        return {
+            'zlk_node_lock': self.mode,
+            'zlk_node_lock_reason': self.reason,
+            'zlk_node_lock_candidate': self.candidate,
+            'zlk_node_lock_rate_diff_arcsec_yr': self.rate_diff_arcsec_yr,
+            'zlk_node_lock_resolution_arcsec_yr': self.resolution_arcsec_yr,
+            'zlk_node_lock_min_deg': self.min_deg,
+            'zlk_node_lock_max_deg': self.max_deg,
+            'zlk_node_lock_period_yr': self.period_yr,
+            'zlk_node_lock_cycles': self.cycles,
+        }
+
+
+@dataclass
 class ZlkDiagnostics:
-    """The columns of `measure_ei_coupling` and `attribute_forcing` (`LongPeriodAnalysis.zlk`)."""
+    """The columns of `measure_ei_coupling`, `attribute_forcing` and `node_lock` (`LongPeriodAnalysis.zlk`)."""
 
     ei: EICoupling = field(default_factory=EICoupling)
     attribution: Attribution = field(default_factory=Attribution)
+    node_lock: NodeLock = field(default_factory=NodeLock)
 
     def to_columns(self) -> Dict[str, Any]:
-        return {**self.ei.to_columns(), **self.attribution.to_columns()}
+        return {**self.ei.to_columns(), **self.attribution.to_columns(), **self.node_lock.to_columns()}
 
 
 # ------------------------------------------------------------------------------------------------ e-i coupling
@@ -270,8 +323,29 @@ def _within_rayleigh(period_a: float, period_b: float, resolution: float) -> boo
     return abs(ARCSEC_PER_TURN / period_a - ARCSEC_PER_TURN / period_b) < resolution
 
 
-def attribute_forcing(elements, gate_outcome: str, period_cycle_yr: float, rho_max: float) -> Attribution:
-    """The forced mode that holds a kinematic libration, or why none is named (module docstring)."""
+def _beat_tolerance(resolution: float, period_cycle_yr: float, step_yr: float) -> float:
+    """The frequency tolerance of P_cyc = the beat [arcsec/yr]: the free elements' Rayleigh width plus P_cyc's own
+    precision, one grid step on a period of turning points, 1296000 dt / P^2 (591986 over 4 Myr: 0.32 + 3.5 at
+    dt = 100 yr, P = 6.1 kyr; the Rayleigh width alone passed it by 9 yr of the 6109-yr beat)."""
+    if np.isfinite(step_yr) and step_yr > 0 and np.isfinite(period_cycle_yr) and period_cycle_yr > 0:
+        return resolution + ARCSEC_PER_TURN * step_yr / period_cycle_yr**2
+    return resolution
+
+
+def attribute_forcing(
+    elements,
+    gate_outcome: str,
+    period_cycle_yr: float,
+    rho_max: float,
+    rho_episodes: float = NAN,
+    free_turns_episodes: float = NAN,
+    free_turns_min: float = NAN,
+    step_yr: float = NAN,
+) -> Attribution:
+    """The forced mode that holds a kinematic libration, or why none is named (module docstring). `rho_episodes`,
+    `free_turns_episodes`, `free_turns_min`: the gate's numbers of an episodic omega (`GateResult`), the predicate of
+    `decide_status` that pins it inside its episodes (nan otherwise). `step_yr`: the step of the series P_cyc was
+    measured on (its turning points sit on that grid), which widens the beat test (`_beat_tolerance`)."""
     if gate_outcome != 'kinematic':
         return Attribution(reason='gate_not_kinematic')
     if elements is None or not elements.amplitudes_e:
@@ -290,20 +364,24 @@ def attribute_forcing(elements, gate_outcome: str, period_cycle_yr: float, rho_m
     free_max = float(np.max(free_radius)) if len(free_radius) else NAN
     others = sum(value for label, value in amplitudes.items() if label != star)
     strict = bool(np.isfinite(free_max) and free_max + others < forcing)
-    if not (rho_max < 1.0 or strict):
+    # the decision's own predicate for an episodic omega (decide_status): pinned inside every librating episode
+    episodes = bool(rho_episodes < 1.0 and free_turns_episodes >= free_turns_min)
+    if not (rho_max < 1.0 or strict or episodes):
         return Attribution(reason='free_circle_reaches_origin')
+    scope = 'record' if (rho_max < 1.0 or strict) else 'episodes'
     rate = elements.basis_e[star]
     gap = abs(elements.b_varpi - rate)
     beat = ARCSEC_PER_TURN / gap if np.isfinite(gap) and gap > 0 else NAN
-    if not _within_rayleigh(beat, period_cycle_yr, elements.resolution):
+    if not _within_rayleigh(beat, period_cycle_yr, _beat_tolerance(elements.resolution, period_cycle_yr, step_yr)):
         return Attribution(reason='beat_period_mismatch')
     node = float(elements.b_Omega - rate)
     turns = abs(node) * elements.baseline / ARCSEC_PER_TURN
-    if not turns < 1.0:
+    if scope == 'record' and not turns < 1.0:
         return Attribution(reason='node_does_not_follow_mode')
     group = next((members for members in elements.clusters_e if star in members), [star])
     return Attribution(
         attributed=True,
+        scope=scope,
         mode=star if len(group) < 2 else f'{star} ({"+".join(group)})',
         forcing_e=forcing,
         free_over_forcing=e_free / forcing,
@@ -312,6 +390,59 @@ def attribute_forcing(elements, gate_outcome: str, period_cycle_yr: float, rho_m
         node_minus_mode_arcsec_yr=node,
         node_minus_mode_turns=turns,
     )
+
+
+# --------------------------------------------------------------------------------------------------- node lock
+
+
+def _node_cutoff(elements) -> float:
+    """The longest forced wave of the osculating node [yr]: 2 pi/|b_Omega - s_k| over the fitted inclination terms with
+    a nonzero amplitude (the constant term, s = 0, included: the invariable plane's tilt); nan when there is none."""
+    waves = [
+        ARCSEC_PER_TURN / abs(elements.b_Omega - rate)
+        for label, rate in elements.basis_i.items()
+        if abs(elements.amplitudes_i.get(label, 0.0)) > 0 and abs(elements.b_Omega - rate) > 0
+    ]
+    return float(max(waves)) if waves else NAN
+
+
+def node_lock(elements, settings) -> NodeLock:
+    """Whether the osculating node is locked to a fitted forced eccentricity mode (module docstring)."""
+    if elements is None or not elements.amplitudes_e:
+        return NodeLock(reason='no_mode_amplitudes')
+    modes = {label: rate for label, rate in elements.basis_e.items() if label != 'const' and abs(elements.amplitudes_e.get(label, 0.0)) > 0}
+    if not modes:
+        return NodeLock(reason='no_mode_amplitudes')
+    if not np.isfinite(elements.b_Omega) or elements.z_i is None or len(elements.z_i) < 2:
+        return NodeLock(reason='no_node')
+    candidate = min(modes, key=lambda label: abs(elements.b_Omega - modes[label]))
+    rate = modes[candidate]
+    result = NodeLock(candidate=candidate, rate_diff_arcsec_yr=float(elements.b_Omega - rate), resolution_arcsec_yr=elements.resolution)
+    t = np.asarray(elements.times, dtype=float)
+    difference = np.unwrap(np.angle(elements.z_i) - (rate * RAD_PER_ARCSEC * t + np.angle(elements.amplitudes_e[candidate])))
+    low, high = float(np.degrees(np.min(difference))), float(np.degrees(np.max(difference)))
+    shift = 360.0 * np.floor(low / 360.0)
+    result.min_deg, result.max_deg = low - shift, high - shift
+    result.cutoff_yr = _node_cutoff(elements)
+    smoothed = lowpass_or_none(t, difference, result.cutoff_yr, settings) if np.isfinite(result.cutoff_yr) else None
+    if smoothed is not None:
+        trim = settings.filter_edge_trim_cutoffs * result.cutoff_yr
+        inside = (t >= t[0] + trim) & (t <= t[-1] - trim)
+        slope = np.sign(np.diff(smoothed[inside]))
+        turns = np.flatnonzero(slope[1:] * slope[:-1] < 0) + 1
+        times = t[inside][turns]
+        result.cycles = max(0.0, (len(times) - 1) / 2.0)
+        if len(times) >= 2:
+            result.period_yr = float(2.0 * (times[-1] - times[0]) / (len(times) - 1))
+    if not abs(result.rate_diff_arcsec_yr) < result.resolution_arcsec_yr:
+        result.reason = 'rate_mismatch'
+    elif not high - low < 360.0:
+        result.reason = 'unbounded'
+    elif not result.cycles >= settings.zlk_node_lock_min_cycles:  # nan (no smoothing possible) is unresolved too
+        result.reason = 'unresolved'
+    else:
+        result.mode = candidate
+    return result
 
 
 # ----------------------------------------------------------------------------------------- centre-scale guard

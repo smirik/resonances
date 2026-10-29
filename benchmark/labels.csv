@@ -735,7 +735,7 @@ secular__2093__2_g-g6_+_s-s6_,c0678,secular,resonant,low,,,
 secular__21028__g-g3,c0679,secular,resonant,low,,,
 secular__21211__g-g6+s-s6,c0680,secular,resonant,low,,,
 secular__2198__g-2g6+g5,c0681,secular,resonant,low,,,
-secular__2306__g-g6+s-s6,c0664,secular,non-resonant,low,,,
+secular__2306__g-g6+s-s6,c0664,secular,non-resonant,low,uncertain,,"author:2026-10-29 10:14 (W26 final page Q3: uncertain, drift; extend to 20 Myr)"
 secular__254__2_g-g6_+_s-s6_,c0706,secular,transient,low,,,
 secular__26420__g-g6,c0656,secular,kinematic-libration,medium,,,
 secular__278067__g-g6,c0657,secular,kinematic-libration,low,,,
@@ -790,9 +790,10 @@ zlk__477492__LK,c0715,zlk,chaotic,high,resonant,,"author:2026-10-27 17:06 (W24 f
 zlk__555527__LK,c0724,zlk,non-resonant,low,,,
 zlk__555527__LK__500kyr,c0724,zlk,non-resonant,low,,,
 zlk__591986__LK,c0718,zlk,kinematic-libration,high,,,
+zlk__591986__LK__4myr,c0796,zlk,non-resonant,high,non_resonant,non-resonant,"author:2026-10-29 10:14 (W26 final page Q1: non_resonant, one kinematic libration)"
 zlk__592056__LK,c0725,zlk,non-resonant,high,,,
 zlk__622577__LK,c0736,zlk,uncertain,low,,,
-zlk__624__LK,c0726,zlk,non-resonant,high,,,
+zlk__624__LK,c0726,zlk,non-resonant,high,non_resonant,,"author:2026-10-29 10:14 (W26 final page Q2: non_resonant, kinematic episodes)"
 zlk__651871__LK,c0727,zlk,non-resonant,high,,,
 zlk__78201__LK,c0735,zlk,resonant,medium,,,
 zlk__797204__LK,c0728,zlk,non-resonant,low,,,

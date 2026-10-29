@@ -149,6 +149,7 @@ def pg14():
     return analyse_mmr(io.load_series(PG14), S)
 
 
+@pytest.mark.benchmark
 def test_pg14_the_episode_runs_to_the_escape(pg14):
     """The author: several cycles after 700 yr; Codex's what-if: 345-2816 yr, 26 TPs, period 187.5 yr. Without the
     libration's own image in the threshold (W18) the quiet half-cycles of 4.5-6 deg at 1.9-2.2 kyr count too: 28 TPs,

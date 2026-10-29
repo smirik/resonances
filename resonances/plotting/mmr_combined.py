@@ -108,6 +108,8 @@ from resonances.resonance import oscillations as osc
 from resonances.data.const import GAUSSIAN_YEAR_DAYS
 from resonances.resonance.analysis.filtering import circular_mean, is_finite, lowpass
 from resonances.resonance.analysis.geometry import RejectReason, wrap_pi
+from resonances.resonance.analysis.geometry import well_shift
+from resonances.resonance.analysis.mmr import response as response_module
 from resonances.resonance.analysis.mmr.decide import taken_harmonic_law
 from resonances.resonance.analysis.mmr.models import MMRAnalysis, MMRSeries, ResonanceKind, ResonanceSpec
 from resonances.resonance.analysis.mmr.owner import FLAG_CATALOGUE, wrapped_angle as owner_wrapped_angle
@@ -152,6 +154,7 @@ REJECT_LETTERS = {
 JUMP_MERGE_FRACTION = 0.01  # jumps of a closer than this share of the record are one band
 JUMP_LABEL_PAD_PT = 0.5  # white box around an 'N jumps of a' label [pt]
 PANEL_LETTER_X = 0.004  # the panel letter's left edge, axes fraction
+VALUE_TEXT_X = 0.04  # axes fraction where `_value_text` starts
 WINDOW_LABELS_MAX = 12  # (e): the R² of each force window is written when there are at most this many
 WINDOW_LABEL_GAP_PT = 2.0  # (e): least free space between two window labels; closer ones merge [pt]
 TP_SIZE = 18  # marker area (pt^2) of the turning points of the angle
@@ -197,8 +200,9 @@ PANELS = (
     ('d', 'a (au): raw, a_f, a* and a_res moved by <a> - a(lambda_dot), band +- half-width, cycle means'),
     (
         'e',
-        'a_dot at the response cutoff with R sin(sigma - phi0) + C per window on sigma at that cutoff (R^2) and per '
-        'episode half; under the harmonic or 1:1 law its numbers, no sine',
+        'a_dot as the force law read it (the raised cutoff of the line rule too) with the law that decided on sigma - '
+        'c(t) at that cutoff: R sin(psi - phi0) + C per window (R^2) or the multiplet law; per episode half R^2; under '
+        'the harmonic or 1:1 law its numbers, no curve',
     ),
     ('f', 'e: raw band, filtered line, min - max'),
     ('g', 'i: raw band, filtered line, min - max'),
@@ -219,7 +223,7 @@ LEGEND = (
     '(c) dσ/dt / 2ω₀, symlog; red σ̇ = 0; blue dashed: ±2ω₀ per episode (thin: theory); dotted: ν(λ̇); ○ slips.',
     '(d) a: light grey osculating, mid grey a_f, black slow a; dotted a*, cyan dashed a_res (osculating frame); '
     'blue band ±Δa; red dots: mean a per cycle.',
-    '(e) da/dt; blue: force law per window; #id: R² of the halves.  (f, g) e, i.',
+    '(e) da/dt; blue: the deciding force law; #id: R² of the halves.  (f, g) e, i.',
     '(h) h per cycle: ● libration, ○ revolution; dashed h = 1; blue band: separatrix zone.',
     '(i) red: centre of σ_f, ▼▲ its turns; shaded: largest monotone pass ≥ 1 rev.  (j) centres minus means: red σ, pale '
     'members, orange subresonance, purple owner (kinematic: red slow σ, orange pϖ).',
@@ -442,7 +446,7 @@ def margin_legend(ax, layout: VerdictFigureLayout, items) -> list:
 
 def _value_text(ax, text: str, layout: VerdictFigureLayout):
     """A small number of the data (no words) at the top left, after the panel letter."""
-    ax.text(0.04, 0.94, text, transform=ax.transAxes, ha='left', va='top', fontsize=layout.font_note_pt, color=NOTE, zorder=9)
+    ax.text(VALUE_TEXT_X, 0.94, text, transform=ax.transAxes, ha='left', va='top', fontsize=layout.font_note_pt, color=NOTE, zorder=9)
 
 
 def _right_labels(ax, items, fontsize: float):
@@ -1547,24 +1551,28 @@ def _cycle_means(ax, frame: _Frame, values):
 
 
 def draw_adot_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
-    """(e) a_dot at the response cutoff with the force law R sin(sigma - phi0) + C fitted per window (sigma at the same
-    cutoff, as the fit read it), and the R² of the episode halves. When the law that decided is not that single sine,
-    no sine is drawn and the panel prints the numbers of the law that decided: the N-harmonic law (CS12,
-    `decide.taken_harmonic_law`: 'harmonic law N=k: R² … (single …)') or, for a 1:1 angle, its own law
-    (`coorbital.CoorbitalLaw`)."""
+    """(e) a_dot as the force law read it with the law that decided, on the angle it read (`law_series`): the single
+    law R sin(psi - phi0) + C per window, or the multiplet law (`MultipletFit`, one fit over its windows), and the R² of
+    the episode halves; psi = sigma - c(t) on an episode accepted in the frame of its moving well (`well_shift`), else
+    sigma. When the line rule raised the cutoff the law read (`Response.force_line_binding_yr`), a_dot and the angle
+    are taken at that cutoff and the cutoff and the line are printed. When the law that decided is not a law on sigma
+    alone, no curve is drawn and the panel prints its numbers: the N-harmonic law (CS12, `decide.taken_harmonic_law`:
+    'harmonic law N=k: R² … (single …)') or, for a 1:1 angle, its own law (`coorbital.CoorbitalLaw`)."""
     analysis, prep = frame.analysis, frame.prep
     if prep is None:
         _style_axis(ax, 'e', r'$\dot a$', layout)
         _note(ax, 'da/dt not computed', layout.font_note_pt)
         return
-    adot = np.where(frame.inside, _adot(prep), np.nan)
+    response = analysis.response
+    angle_law, adot_law, raised = law_series(frame)
+    adot = np.where(frame.inside, adot_law, np.nan)
     power = _power_of_ten(adot)
     scale = 10.0**-power
     label = r'$\dot a$' + '\n' + _multiplier(power, 'au/yr')
-    _edge_line(ax, frame, _adot(prep) * scale, color=INK, lw=0.8, zorder=2)  # the edge spread dashed
+    _edge_line(ax, frame, adot_law * scale, color=INK, lw=0.8, zorder=2)  # the edge spread dashed
     _view(ax, adot * scale, extra_top=0.35)
-    edge_overflow_markers(ax, frame, _adot(prep) * scale)
-    response = analysis.response
+    edge_overflow_markers(ax, frame, adot_law * scale)
+    texts = [cutoff_text(response)] if raised else []
     law = getattr(response, 'coorbital', None) if response is not None else None
     if law is not None and response.force_law == 'coorbital':
         # a 1:1 angle is judged by its own law, not by the harmonic windows (which stay as columns): no sine is drawn
@@ -1576,26 +1584,91 @@ def draw_adot_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
     if harmonic is not None:
         # the N-harmonic law decided L4: the single-sine windows are not the law that was tested, none is drawn
         _style_axis(ax, 'e', label, layout)
-        _value_text(ax, harmonic_law_text(harmonic), layout)
+        _value_text(ax, '   '.join([harmonic_law_text(harmonic)] + texts), layout)
         return
-    windows = response.windows if response is not None else []
-    labels = [_draw_window(ax, frame, window, i, len(windows), scale) for i, window in enumerate(windows)]
-    if len(windows) <= WINDOW_LABELS_MAX:
-        _window_labels(ax, frame, [label for label in labels if label is not None], layout)
-    _episode_halves(ax, frame, layout)
+    psi = angle_law - _law_shift(frame)
+    multiplet = response.multiplet if response is not None and response.force_law == 'multiplet' else None
+    if multiplet is not None:
+        model = multiplet_model(frame, multiplet, psi)
+        if model is not None:
+            _line(ax, frame.x, model * scale, color=MODEL, lw=1.0, alpha=0.9, zorder=3)
+        texts.insert(0, multiplet_law_text(multiplet, response))
+    else:
+        windows = response.windows if response is not None else []
+        labels = [_draw_window(ax, frame, window, i, len(windows), scale, psi) for i, window in enumerate(windows)]
+        if len(windows) <= WINDOW_LABELS_MAX:
+            _window_labels(ax, frame, [label for label in labels if label is not None], layout)
+    reserved_px = 0.0
+    if texts:
+        text = '   '.join(texts)
+        _value_text(ax, text, layout)
+        reserved_px = VALUE_TEXT_X * layout.panels[2] * layout.dpi + _text_width_pt(text, layout.font_note_pt) / 72 * layout.dpi
+    _episode_halves(ax, frame, layout, reserved_px)
     _style_axis(ax, 'e', label, layout)
     if response is None:
         _note(ax, 'force law not computed', layout.font_note_pt, y=0.9)
 
 
-def _draw_window(ax, frame: _Frame, window, i: int, n: int, scale: float) -> Optional[Tuple[float, float, float]]:
-    """The force law of one window on its central half (windows overlap by half; the first and last to the edges);
-    returns (start, end [display unit], R²) of its label, None without a finite R²."""
+def law_series(frame: _Frame) -> Tuple[np.ndarray, np.ndarray, bool]:
+    """(sigma, a_dot, raised) as the force law of the record read them: at the response cutoff (`prep.angle_response`,
+    `prep.adot_response`), or, when the line rule raised it (`Response.force_line_binding_yr` finite), at the cutoff
+    the law was measured at (`Response.force_cutoff_yr`, `response.smoothed_series` with the figure's settings)."""
+    prep, response = frame.prep, frame.analysis.response
+    base = _angle_response(prep), _adot(prep)
+    if response is None or not (is_finite(response.force_line_binding_yr) and is_finite(response.force_cutoff_yr)):
+        return base[0], base[1], False
+    if frame.settings is None:
+        return base[0], base[1], False
+    angle, _, _, adot, _ = response_module.smoothed_series(prep, float(response.force_cutoff_yr), frame.settings)
+    return np.asarray(angle, dtype=float), np.asarray(adot, dtype=float), True
+
+
+def _law_shift(frame: _Frame):
+    """c(t) - its mean on the episodes accepted in the frame of their moving well (`geometry.well_shift`), else 0: the
+    force law reads psi = sigma - shift (`response.measure_pieces`)."""
+    geometry = frame.analysis.geometry
+    shift = well_shift(frame.t, geometry.runs) if geometry is not None else None
+    return shift if shift is not None else 0.0
+
+
+def multiplet_model(frame: _Frame, multiplet, psi: np.ndarray) -> Optional[np.ndarray]:
+    """The multiplet law (`response.members_model`, its one fit over the windows) on the samples of its windows inside
+    the analysis window, NaN elsewhere; None when the fit does not say what it read (no pooled coefficients, planet
+    rate or slow varpi)."""
+    slow = frame.analysis.slow
+    if multiplet.pooled is None or not multiplet.windows or not is_finite(multiplet.planet_varpi_rate_rad_yr) or slow is None:
+        return None
+    offset = response_module.multiplet_offset(slow, frame.t, multiplet.planet_varpi_rate_rad_yr)
+    if offset is None:
+        return None
+    covered = response_module.intervals_mask(frame.t, multiplet.windows) & frame.inside
+    values = response_module.members_model(psi, offset, multiplet.pooled, multiplet.harmonics, multiplet.constant_au_yr)
+    return np.where(covered, values, np.nan)
+
+
+def multiplet_law_text(multiplet, response) -> str:
+    """'multiplet law j = 0, 1: R² 0.85 (single 0.62)': the multiplet law that decided L4 (columns rsp_force_R2_multi,
+    rsp_force_multi_harmonics) against the single law (the smaller of rsp_force_R2_h1 / h2)."""
+    halves = [value for value in (response.force_r2_h1, response.force_r2_h2) if is_finite(value)]
+    r2 = f'{multiplet.r2:.2f}' if is_finite(multiplet.r2) else '–'
+    single = f'{min(halves):.2f}' if halves else '–'
+    return f'multiplet law j = {", ".join(str(j) for j in multiplet.harmonics)}: R² {r2} (single {single})'
+
+
+def cutoff_text(response) -> str:
+    """'cutoff 480 yr (line 160 yr)': the cutoff the line rule raised the force law to (rsp_response_cutoff_ep_yr) and
+    the line of a_dot that raised it (rsp_line_binding_yr)."""
+    return f'cutoff {response.force_cutoff_yr:.4g} yr (line {response.force_line_binding_yr:.4g} yr)'
+
+
+def _draw_window(ax, frame: _Frame, window, i: int, n: int, scale: float, psi: np.ndarray) -> Optional[Tuple[float, float, float]]:
+    """The force law of one window on its central half (windows overlap by half; the first and last to the edges), on
+    the angle `psi` the law read; returns (start, end [display unit], R²) of its label, None without a finite R²."""
     quarter = (window.t_end_yr - window.t_start_yr) / 4
     start = window.t_start_yr if i == 0 else window.t_start_yr + quarter
     end = window.t_end_yr if i == n - 1 else window.t_end_yr - quarter
     mask = (frame.t >= start) & (frame.t < end) & frame.inside
-    model = window_model(window, _angle_response(frame.prep)[mask])
+    model = window_model(window, np.asarray(psi, dtype=float)[mask])
     _line(ax, frame.x[mask], model * scale, color=MODEL, lw=1.0, alpha=0.9, zorder=3)
     if not is_finite(window.r2):
         return None
@@ -1647,9 +1720,10 @@ def _window_labels(ax, frame: _Frame, labels: Sequence[Tuple[float, float, float
         )
 
 
-def _episode_halves(ax, frame: _Frame, layout: VerdictFigureLayout):
+def _episode_halves(ax, frame: _Frame, layout: VerdictFigureLayout, reserved_px: float = 0.0):
     """'#id ½R² h1 / h2' over the middle of each accepted episode, in its colour; labels that would overlap the panel
-    letter or each other are moved right, then to a second row, then left out."""
+    letter, the law's numbers (`reserved_px`: their right edge, px from the panel's left) or each other are moved right,
+    then to a second row, then left out."""
     geometry = frame.analysis.geometry
     if geometry is None:
         return
@@ -1658,7 +1732,8 @@ def _episode_halves(ax, frame: _Frame, layout: VerdictFigureLayout):
     char_px = 0.6 * layout.font_note_pt / 72 * layout.dpi
     x0, span = frame.x[0], frame.x[-1] - frame.x[0]
     letter_px = PANEL_LETTER_X * width_px + _text_width_pt('(e)', layout.font_letter_pt) / 72 * layout.dpi
-    rows_end = [letter_px, letter_px]  # right edge (px) of the last label on each row: the first starts after '(e)'
+    first = max(letter_px, reserved_px)
+    rows_end = [first, first]  # right edge (px) of the last label on each row: the first starts after '(e)' and the text
     for episode in sorted(accepted_runs(geometry), key=lambda run: run.t_start_yr):
         ep = physics.get(episode.episode_id)
         if ep is None:

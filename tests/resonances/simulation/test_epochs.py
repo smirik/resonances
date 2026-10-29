@@ -102,6 +102,7 @@ def test_element_dict_without_epoch_is_not_checked():
     assert len(sim.bodies) == 1
 
 
+@pytest.mark.slow
 def test_find_and_check_take_elements_at_simulation_date(monkeypatch):
     """find() asks Horizons for the elements at config.date, as check() does, and both get the same elements."""
     calls = []

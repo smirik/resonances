@@ -10,8 +10,10 @@ the combined MMR figure is the verdict figure of `plotting/mmr_combined.py`):
     portrait    sigma against sigma_dot (or a), coloured by time
     cycles      the sigma cycles, and a over the same cycles, stacked on one period
 
-Times are in years, angles in radians internally; the portrait shows degrees. Nothing
-here changes a status.
+Times are in years, angles in radians internally; the portrait shows degrees. Every a
+drawn here (portrait, cycles, the reference a0) is the analysis' own a_f, else the
+osculating a, never the body-level `axis_filtered` (its 2000-yr low-pass erases a faster
+MMR libration). Nothing here changes a status.
 """
 
 import warnings
@@ -67,8 +69,7 @@ class MMRDiagnostics:
     sigma: np.ndarray  # raw angle wrapped to [0, 2pi)
     sigma_raw: np.ndarray  # raw angle, unwrapped
     sigma_filtered: np.ndarray  # low-pass filtered angle, unwrapped
-    axis: np.ndarray
-    axis_filtered: np.ndarray  # the body's a low-passed at the run's cutoff (`body.axis_filtered`): portrait, a0
+    axis: np.ndarray  # osculating a, au
     body_name: str = ''
     resonance: str = ''  # full key, e.g. 2J-1+0-1
     label: str = ''  # short notation for titles, e.g. 2J-1
@@ -80,24 +81,25 @@ class MMRDiagnostics:
     focus: Optional[Tuple[float, float]] = None
     prominence: Optional[float] = None
     edge: float = 0.0  # years dropped at both ends of the portrait: the low-pass filter's edge transient
-    # a over the cycles: the analysis' own a_f (at the angle's cutoff, as the combined figure's (d)), else the raw a;
-    # never `axis_filtered`, whose low-pass at the run's cutoff (2000 yr by default) erases a faster libration
-    axis_cycles: Optional[np.ndarray] = None
+    # a of the cycles, the portrait (y='axis') and a0: the analysis' own a_f (at the angle's cutoff, as the combined
+    # figure's (d)), else the osculating a; never `body.axis_filtered`, whose low-pass at the run's cutoff (2000 yr by
+    # default) erases a faster libration
+    axis_analysis: Optional[np.ndarray] = None
 
     mask: np.ndarray = field(init=False)
     rate: np.ndarray = field(init=False)  # d sigma_filtered / dt, rad/yr
     raw_rate: np.ndarray = field(init=False)
     cycles: List[osc.Cycle] = field(init=False)
-    axis_reference: float = field(init=False)  # a0: median filtered a over the focus
+    axis_reference: float = field(init=False)  # a0: median of `axis_analysis` over the focus
     divisor: float = field(init=False)  # years per display time unit
     unit: str = field(init=False)  # 'yr', 'kyr' or 'Myr'
     _recurrences: Dict[Tuple[int, int], osc.Recurrence] = field(init=False, default_factory=dict, repr=False)
 
-    _SERIES = ('times', 'sigma', 'sigma_raw', 'sigma_filtered', 'axis', 'axis_filtered', 'mean_anomaly', 'longitude', 'axis_cycles')
+    _SERIES = ('times', 'sigma', 'sigma_raw', 'sigma_filtered', 'axis', 'mean_anomaly', 'longitude', 'axis_analysis')
 
     def __post_init__(self):
-        if self.axis_cycles is None:
-            self.axis_cycles = self.axis
+        if self.axis_analysis is None:
+            self.axis_analysis = self.axis
         for name in self._SERIES:
             value = getattr(self, name)
             if value is not None:
@@ -109,7 +111,7 @@ class MMRDiagnostics:
         self.rate = calc_sigma_derivative(t, self.sigma_filtered)
         self.raw_rate = calc_sigma_derivative(t, self.sigma_raw)
         self.cycles = osc.find_cycles(t[self.mask], self.sigma_filtered[self.mask], self.prominence)
-        self.axis_reference = float(np.median(self.axis_filtered[self.mask]))
+        self.axis_reference = float(np.median(self.axis_analysis[self.mask]))
         self.divisor, self.unit = time_unit(abs(t[-1] - t[0]))
 
     def _reverse(self):
@@ -177,7 +179,8 @@ class MMRDiagnostics:
 
         sigma_f is the analysis' filtered angle (`body.angles_filtered_unwrapped`); after a restore it is not in the
         data file and is reproduced by re-running the analysis on the saved series (`refiltered_angle`). The a of the
-        cycles is the analysis' a_f when its arrays are held (`body.mmr_analyses`, or that re-run), else the raw a."""
+        cycles, the portrait and a0 is the analysis' a_f when its arrays are held (`body.mmr_analyses`, or that
+        re-run), else the osculating a."""
         key = resonance.to_s()
         times = sim.times if sim is not None else body.times
         names = list(resonance.planets_names)
@@ -187,14 +190,13 @@ class MMRDiagnostics:
         if sigma_filtered is None:
             analysis = _rerun_analysis(body, resonance, sim)
             sigma_filtered = _in_body_order(body, analysis.prep.angle_f)
-        axis_cycles = _in_body_order(body, analysis.prep.a_f) if analysis is not None and analysis.prep is not None else None
+        axis_analysis = _in_body_order(body, analysis.prep.a_f) if analysis is not None and analysis.prep is not None else None
         return cls(
             times=np.asarray(times) / (2 * np.pi),
             sigma=body.angles[key],
             sigma_raw=body.angles_unwrapped[key],
             sigma_filtered=sigma_filtered,
             axis=body.axis,
-            axis_filtered=body.axis_filtered if body.axis_filtered is not None else body.axis,
             body_name=str(body.name),
             resonance=key,
             label=resonance.to_short(),
@@ -206,7 +208,7 @@ class MMRDiagnostics:
             focus=focus,
             prominence=prominence,
             edge=1.0 / sim.config.oscillations_cutoff if sim is not None else 0.0,
-            axis_cycles=axis_cycles,
+            axis_analysis=axis_analysis,
         )
 
 
@@ -251,7 +253,8 @@ def _planet_series(sim, name: str) -> Optional[PlanetSeries]:
 
 def portrait_coordinates(d: MMRDiagnostics, y: PortraitY = PortraitY.RATE):
     """(x, y, x_raw, y_raw) of the portrait over the focus: sigma in degrees against
-    sigma_dot in deg per display time unit, or against a - a0 in 10^-3 au.
+    sigma_dot in deg per display time unit, or against a - a0 in 10^-3 au (the analysis' a_f,
+    `MMRDiagnostics.axis_analysis`; the grey dots are the osculating a).
 
     The unwrapped angle is shifted by a whole number of turns only, so a libration about
     180 deg is drawn about 180 deg while a circulation still runs off to the side. The raw
@@ -264,7 +267,7 @@ def portrait_coordinates(d: MMRDiagnostics, y: PortraitY = PortraitY.RATE):
     x_raw = np.degrees(d.sigma_raw[m] - raw_branch - shift)
     if y == PortraitY.RATE:
         return x, np.degrees(d.rate[m]) * d.divisor, x_raw, np.degrees(d.raw_rate[m]) * d.divisor
-    return x, d.milli_au(d.axis_filtered[m]), x_raw, d.milli_au(d.axis[m])
+    return x, d.milli_au(d.axis_analysis[m]), x_raw, d.milli_au(d.axis[m])
 
 
 def recurrence_points(d: MMRDiagnostics, requested: Optional[int] = None) -> int:
@@ -371,10 +374,10 @@ def draw_portrait(ax, d: MMRDiagnostics, style: FigureStyle, options: Dict[str, 
 
 def draw_cycles(ax_sigma, ax_axis, d: MMRDiagnostics, style: FigureStyle, norm: Normalize):
     """sigma_f over each cycle, and a - median(a) over the same cycle, on one period; a is the analysis' a_f
-    (`MMRDiagnostics.axis_cycles`), else the raw a."""
+    (`MMRDiagnostics.axis_analysis`), else the osculating a."""
     if d.cycles:
         mids = np.array([(c.start + c.end) / 2 for c in d.cycles]) / d.divisor
-        for ax, series, scale, centred in ((ax_sigma, d.sigma_filtered, 1.0, False), (ax_axis, d.axis_cycles, MILLI, True)):
+        for ax, series, scale, centred in ((ax_sigma, d.sigma_filtered, 1.0, False), (ax_axis, d.axis_analysis, MILLI, True)):
             folded = [np.column_stack(osc.fold_cycle(c, d.times, series, subtract_median=centred)) * (1.0, scale) for c in d.cycles]
             # One collection for all cycles: thousands of separate lines would dominate drawing.
             lines = LineCollection(folded, cmap=time_cmap(), norm=norm, linewidth=style.line, alpha=0.85)

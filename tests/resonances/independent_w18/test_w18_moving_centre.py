@@ -192,6 +192,7 @@ def _accepted(analysis):
 # acceptance on an adiabatic drift
 
 
+@pytest.mark.slow
 def test_reference_track_moves_far_more_than_two_half_swings():
     """Our minimum moves by -110 to -170 deg while omega turns by 90 deg (the e^2 and e e_J terms pull against the s^2
     term); per kyr (about one libration) it moves < 10 deg against a 55-deg swing: adiabatic."""
@@ -203,6 +204,7 @@ def test_reference_track_moves_far_more_than_two_half_swings():
     assert abs(drift) > 2 * 55.0
 
 
+@pytest.mark.slow
 def test_libration_in_the_moving_well_is_accepted_in_psi():
     analysis = _record('forward', 'forward')
     verdict = analysis.verdict
@@ -232,6 +234,7 @@ def test_fixed_centre_passes_in_sigma_whatever_the_track():
     assert abs(row['centre_shift_deg']) < 1.0
 
 
+@pytest.mark.slow
 def test_a_track_run_backwards_does_not_rescue_a_drift():
     """The body follows the well of omega running 190 -> 100 deg, the saved omega runs 100 -> 190 deg: the observed
     centre moves +138 deg, the track -138 deg. It is the track reversed in time, so the track is no explanation and the
@@ -282,6 +285,7 @@ def _far_turning_point(omega, start, centre):
     return brentq(excess, grid[first - 1], grid[first], xtol=1e-12)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('swing_deg', [130.0, 160.0])
 def test_r0_period_law_is_one_in_an_anharmonic_fixed_well(swing_deg):
     """omega fixed at 100 deg, swings of 130 and 160 deg: our quadrature period agrees with the integrated cycle, and the

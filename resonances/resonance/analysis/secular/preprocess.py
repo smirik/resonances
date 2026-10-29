@@ -182,20 +182,29 @@ def centre_scale_angle(
 
 
 def _set_prominence(series: LongPeriodSeries, cutoff: Cutoff, x: np.ndarray, angle_f: np.ndarray, window, period_min, settings) -> None:
-    """p_TP = max(floor, K r): r is the 95th percentile of |sigma_f - lowpass(sigma, P_min)| inside the window, what
-    sigma_f still holds faster than the shortest libration P_min (`period_floor`), K the type's ripple factor (a wave of
-    half-amplitude r turns by up to 2 r; the MMR rule, `mmr.analyse.fast_residual`).
+    """p_TP = max(floor, K r): r is the 95th percentile of |sigma_f - lowpass(sigma, P_min) - image| inside the window,
+    what sigma_f still holds faster than the shortest libration P_min (`period_floor`), K the type's ripple factor (a
+    wave of half-amplitude r turns by up to 2 r; the MMR rule, `mmr.analyse.fast_residual`).
 
     Terms the cutoff rule does not know make such waves: Tina (1222 nu6, P_c = 10 kyr) keeps 2-4 deg of an 8 kyr
     term (about 2(g - s)), 363 Padua 4 deg of a 170 kyr one; their turns near an extremum of the slow libration,
-    where the centre stands still for a few cycles, would otherwise pass for 3-TP 'episodes'."""
+    where the centre stands still for a few cycles, would otherwise pass for 3-TP 'episodes'.
+
+    The two filters split softly at P_min, so a libration of period P >= P_min leaves part of its own swing in
+    sigma_f - lowpass(sigma, P_min); its image (`geometry.libration_image`, the MMR rule) is taken out first. Without it
+    591986 (ZLK, 4 Myr, P_c 1874 yr, P_min 3748 yr, a 6.1-kyr libration of half-amplitude 16 deg) had r = 4.35 deg and
+    p_TP = 17.4 deg: the turns of the libration where its centre moves fastest fell below it and one libration over
+    the record came out as three episodes."""
     _, floor_deg, _, factor, _ = _type_settings(series, settings)
     t = np.asarray(series.t_yr, dtype=float)
     inside = window_mask(t, window)
+    floor = np.radians(floor_deg)
     cutoff.fast_amplitude_rad = float(np.percentile(np.abs(x - angle_f)[inside], FAST_PERCENTILE)) if inside.any() else NAN
     slow = lowpass_or_none(t, x, period_min, settings) if period_min > cutoff.cutoff_yr else None
-    ripple = float(np.percentile(np.abs(angle_f - slow)[inside], FAST_PERCENTILE)) if slow is not None and inside.any() else 0.0
-    floor = np.radians(floor_deg)
+    ripple = 0.0
+    if slow is not None and inside.any():
+        image = geometry.libration_image(t, angle_f, window, cutoff.cutoff_yr, period_min, floor, settings)
+        ripple = float(np.percentile(np.abs(angle_f - slow - image)[inside], FAST_PERCENTILE))
     cutoff.ripple_rad = ripple
     cutoff.prominence_rad = float(max(floor, factor * ripple))
     cutoff.prominence_binding = 'floor' if floor >= factor * ripple else 'ripple'

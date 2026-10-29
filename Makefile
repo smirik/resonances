@@ -20,16 +20,26 @@ test: install
 test-only: install
 	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not benchmark and not long" tests
 
+# test-fast and test-slow need nothing outside git (tests/conftest.py hides benchmark/data from them); a test of more
+# than 1 s is `slow`, one that reads local-only data (benchmark/data) is `benchmark` (tests/CLAUDE.md)
 test-fast: install
 	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not slow and not benchmark and not long" tests
 
 test-slow: install
-	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "slow and not long" tests
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "slow and not benchmark and not long" tests
+
+# test-fast as on a fresh clone: the files git knows (tracked and new, not ignored; not experiments/ or tmp/) copied into
+# a temporary folder, without benchmark/data and cache/
+test-portable: install
+	@tmp=$$(mktemp -d) && git ls-files -co --exclude-standard | grep -v '^experiments/\|^tmp/' | rsync -a --ignore-missing-args --files-from=- . $$tmp/ \
+	  && cd $$tmp && env -u RESONANCES_BENCHMARK_DATA $(ALLOCATOR_ENV) $(CURDIR)/.venv/bin/python -m pytest -q -p no:cacheprovider \
+	  -m "not slow and not benchmark and not long" tests; status=$$?; rm -rf $$tmp; exit $$status
 
 # Integrations of several minutes and more (pytest marker `long`): the 10-Myr z1 run (~13 min)
 test-long: install
 	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "long" tests
 
+# the gates against the author's labels and every test that reads the local-only benchmark data
 test-benchmark: install
 	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -s -m "benchmark" tests
 

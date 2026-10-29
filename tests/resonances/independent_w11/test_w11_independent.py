@@ -273,6 +273,7 @@ def record_prominence(analysis):
     return max(math.radians(SETTINGS.mmr_tp_prominence_floor_deg), SETTINGS.mmr_tp_ripple_factor * ripple)
 
 
+@pytest.mark.slow
 @pytest.mark.xfail(
     strict=True,
     reason=(
@@ -330,6 +331,7 @@ def test_no_run_crosses_a_confirmed_jump():
             assert not (run.t_start_yr < jump.time_yr - half_tau and run.t_end_yr > jump.time_yr + half_tau)
 
 
+@pytest.mark.slow
 def test_early_episode_does_not_depend_on_what_follows_the_jumps():
     fast, slower = early_episodes(analysed(FAST_PERIODS, 1.0)), early_episodes(analysed(SLOWER_PERIODS, 1.0))
     assert len(fast) == len(slower) == 1
@@ -342,6 +344,7 @@ def _verdict_key(analysis):
     return str(v.status), str(v.angle_status), str(v.reason), str(v.confidence)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('steps', [(0.5, 2.0), (1.0, 5.0), (2.0, 10.0)])
 def test_pure_libration_verdict_does_not_depend_on_a_resolving_step(steps):
     """A 708-yr libration over 20 kyr is resolved at 0.5-10 yr (P_c = 75 yr at every step, 70+ samples per period).

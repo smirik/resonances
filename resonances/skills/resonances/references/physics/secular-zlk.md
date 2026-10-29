@@ -93,7 +93,11 @@ The output step does not enter. The filter acts on the unwrapped angle with its 
 cannot turn a circulation into a libration. A turning point must stand out by at least $\max(5°,\ 4r)$, where $r$ is
 the 95th percentile of what the filtered angle still holds faster than $P_{\rm floor} = \max(P_{\min},\ 2P_c)$, the
 same shortest period as for an episode (`SECULAR_TP_PROMINENCE_DEG`, `SECULAR_TP_RIPPLE_FACTOR`; $r = 0$ when
-$P_{\rm floor} \le P_c$).
+$P_{\rm floor} \le P_c$). The two filters split softly, so a libration slower than $P_{\rm floor}$ leaves
+$G(P; P_c) - G(P; P_{\rm floor})$ of its own swing in that difference; its image through the same filters is taken out
+first (as for an MMR, [Geometry: turning points](geometry.md); `geometry.libration_image`), or a libration close to the floor raises its own threshold
+(591986 over 4 Myr: $r$ = 4.35° and 17.4° against a 16° libration, cut into three episodes where its centre moves
+fastest; 1.17° and 5° without the image, one episode).
 
 ### Geometry and status
 
@@ -179,7 +183,7 @@ It judges every $\omega$ that stays within a turn (`libration`, `episodic`, `dri
 | angle_status | confirmed | kinematic | no verdict |
 |---|---|---|---|
 | libration | resonant / dynamic_libration (check `pass`) | non_resonant / kinematic_libration, origin `kinematic`, detail `free_omega_winds` (check `fail`) | uncertain / gate_unavailable, origin `unknown` |
-| episodic, drift, insufficient_time | unchanged | non_resonant / kinematic_libration **only if** $\rho_{\max} < 1$, else unchanged | unchanged |
+| episodic, drift, insufficient_time | unchanged | non_resonant / kinematic_libration **only if** $\rho_{\max} < 1$ (episodic: or every episode pinned, below), else unchanged | unchanged |
 
 With `FREE_GATE_ENABLED` off the outcome is `disabled` and the geometry's status stands. On a record that does not
 librate throughout, free elements fitted over the whole record cannot judge a change of regime, so only the
@@ -197,6 +201,19 @@ missed. Below one, $\varpi$ stays tied to the forced phase throughout; the condi
 `kinematic` gate outcome (the free $\omega$ winds). 555527: 0.66 at 100 kyr, 0.63 at 500 kyr (`non_resonant`, as the
 author labelled it). The former median ratio is the column `zlk_gate_rho_global`.
 
+An **episodic** $\omega$ is also kinematic when every librating episode is the forced vector's: inside each, the median
+of $\lvert z_{e,\rm free}\rvert / \lvert z_{e,\rm forced}\rvert$ (instantaneous: a window as long as a forced beat would
+mix in the surroundings) is below 1, so the free circle stays off the origin there, and over the episode's whole
+cycles (first turning point to the last of the same kind) the free $\omega$ advances at least
+`ZLK_EPISODE_FREE_TURNS_PER_CYCLE` = 0.5 turns per cycle (a convention: a kinematic cycle is one turn of the free
+vector about the forced one, since $P_{\rm cyc}$ is their beat; a free $\omega$ that librates with the osculating one
+returns after whole cycles, about 0). An episode the free elements do not measure (outside their baseline, a masked
+sample in it, fewer than two samples per cycle) pins nothing. Columns `zlk_gate_rho_episodes` (the largest median)
+and `zlk_gate_free_turns_episodes` (the fewest turns per cycle). 624 Hektor: its $\omega$ circulates but swings back
+for one to three cycles wherever the free radius dips just below the forced one (0.99 at most inside, 2.0 over the
+record; 0.94 turns per cycle at least): non_resonant, episodic, kinematic. The real ZLK transients of the benchmark
+have 3.0–13.7 and at most 0.04.
+
 `kinematic_libration` is a measurement and `gate_unavailable` the absence of one: keep them apart
 ([legacy codes](status-tree.md#legacy-integer-codes)). A co-orbital of a planet whose own modes the split does not
 fit (Mercury to Mars) gets no verdict (`unavailable`, detail `coorbital_unfitted_forcing`); a Jupiter Trojan is
@@ -213,8 +230,8 @@ without a split or for a co-orbital whose forcing the split does not fit, the ge
 
 **Columns that change no status** ([Free elements: beyond the gate](../free-elements.md#beyond-the-gate)): the $e$–$i$
 coupling at the decisive period (`zlk_ei_coupling`, every row; `check_zlk_ei` and `confirmed_ei` are `zlk` coupling),
-the attribution of a kinematic libration to a forced mode (`zlk_forcing_*`) and the slow line of the centre
-(`zlk_centre_*`, 591986: the g6−g5 beat). The strongest coherent line of the $e$–$i$ cross-spectrum
+the attribution of a kinematic libration to a forced mode (`zlk_forcing_*`), the node lock (`zlk_node_lock*`) and the
+slow line of the centre (`zlk_centre_*`, 591986: the g6−g5 beat). The strongest coherent line of the $e$–$i$ cross-spectrum
 ([Cross-spectral coherence](../coherence.md)) is the columns `zlk_coherent`, `zlk_check`.
 
 Examples: [3040 librates](gallery.md#zlk-resonant), [591986 kinematic](gallery.md#zlk-kinematic),

@@ -268,6 +268,7 @@ def _verdict(example):
     return analyse_mmr(io.load_series(example), S)
 
 
+@pytest.mark.benchmark
 def test_37908_circulation_without_a_force_law_reaches_high():
     analysis = _verdict('mmr2__37908__23J-8+0-15')
     verdict = analysis.verdict
@@ -276,6 +277,7 @@ def test_37908_circulation_without_a_force_law_reaches_high():
     assert analysis.response.force_r2_whole == pytest.approx(0.005, abs=0.005)
 
 
+@pytest.mark.benchmark
 def test_16017_kinematic_episode_reaches_high():
     verdict = _verdict('mmr2__16017__7S-1+0-6').verdict
     assert (str(verdict.status), str(verdict.reason), str(verdict.confidence)) == ('non_resonant', 'kinematic_libration', 'high')
@@ -287,6 +289,7 @@ def _explained(analysis):
     return verdict_text.explain_mmr(analysis, S, row, analysis.episode_rows())
 
 
+@pytest.mark.benchmark
 def test_62243_kinematic_libration_with_a_moving_centre_is_a_drift():
     analysis = _verdict('mmr3__62243__1M-4J-1+0+0+4')
     verdict = analysis.verdict
@@ -296,6 +299,7 @@ def test_62243_kinematic_libration_with_a_moving_centre_is_a_drift():
     assert 'moves 1.82 > 1 × its amplitude' in shape.outcome
 
 
+@pytest.mark.benchmark
 def test_142694_staircase_over_200_kyr_circulates():
     analysis = _verdict('mmr3__142694__1V+3S-7+0+0+3__200kyr')
     verdict = analysis.verdict

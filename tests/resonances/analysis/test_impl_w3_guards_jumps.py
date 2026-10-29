@@ -76,6 +76,7 @@ def test_a_step_at_the_edge_is_kept_but_cuts_nothing(step_time):
     assert columns['jump_at_edge'] == '1' and columns['jump_edge_margin_yr'] == PERIOD
 
 
+@pytest.mark.benchmark
 def test_31935_at_the_doubled_cutoff_keeps_its_window():
     example = 'mmr2__31935__9M-16+0+7'
     if not io.example_path(example).exists():

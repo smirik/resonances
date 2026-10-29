@@ -18,7 +18,13 @@ The verdict rests on one scale; this measures the other one as a column, even wh
                                                    at that period (a node's, say). Without the per-mode amplitudes (an
                                                    old file) no forced beat is named.
                             node                   the node's own wave (Omega less its linear trend) does instead
-                            unexplained            neither
+                            forced_direction       the direction of the whole fitted forced vector less the node,
+                                                   arg z_forced(t) - Omega(t), does (the same r and gain test): with the
+                                                   forced vector holding varpi this is the centre of omega itself, at
+                                                   every scale (591986 over 4 Myr: the 1.43-Myr wave of a node locked to
+                                                   g5 plus the 54-kyr g6-g5 beat, r 0.998, gain 1.07; the node alone
+                                                   gives r 0.82, the beat alone is not the strongest line)
+                            unexplained            none of these
     secular origin          forced_wave:<mode>     within a Rayleigh width of a forced wave of the angle's own modes
                             unexplained
 
@@ -167,6 +173,12 @@ def zlk_centre_line(track, series, elements, settings) -> CentreLine:
         if _explains(r, gain, settings):
             line.origin, line.model_r, line.model_gain = 'node', r, gain
             return line
+        forced = elements.forced_vector(t_series) if elements is not None else None
+        if forced is not None:
+            r, gain = _model_fit(track, t_series, np.unwrap(np.angle(forced) - np.asarray(series.Omega, dtype=float)), settings)
+            if _explains(r, gain, settings):
+                line.origin, line.model_r, line.model_gain = 'forced_direction', r, gain
+                return line
     line.origin = 'unexplained'
     return line
 

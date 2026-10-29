@@ -56,6 +56,7 @@ def simulation(date=DATE, **kwargs):
     return resonances.Simulation(name='dryrun-pilot', date=date, save=None, plot=None, save_summary=False, **kwargs)
 
 
+@pytest.mark.benchmark
 def test_pilot_1999_uq_rate_forced_wave_and_ghost():
     sim = simulation(integration_years=20000, Nout=4000, integrator='ias15')
     sim.add_body(UQ, ['7E+2M-9+0+0+0'], name='1999 UQ')
@@ -76,6 +77,7 @@ def test_pilot_1999_uq_rate_forced_wave_and_ghost():
     assert body['pilot_wall_s'] < 10
 
 
+@pytest.mark.benchmark
 def test_pilot_hilda_libration_line_and_cost():
     sim = simulation(integration_years=100000)
     sim.add_body(HILDA, ['3J-2+0-1'], name='153')
@@ -96,6 +98,7 @@ def test_pilot_hilda_libration_line_and_cost():
     assert not any('short_period limit' in w for w in report.warnings)
 
 
+@pytest.mark.benchmark
 def test_the_pilot_step_divides_the_planned_step():
     # 15.918509 yr = 319 x 0.049901 yr: the decimated pilot has the planned cadence, not 318 x 0.05 = 15.9 yr
     fine = dr.pilot_step(15.918509, 0.05)
@@ -103,6 +106,7 @@ def test_the_pilot_step_divides_the_planned_step():
     assert dr.pilot_step(0.02, 0.05) == 0.05 and dr.pilot_step(float('nan'), 0.05) == 0.05
 
 
+@pytest.mark.benchmark
 @pytest.mark.skipif(not os.path.exists(_solar(datetime.datetime(2026, 6, 9))), reason='needs the cached solar system of 2026-06-09')
 def test_pilot_rejects_the_default_step_for_62243():
     # 62243 1M-4J-1 at 15.92 yr: the folded short-period terms reach sigma_f by degrees (inv-09: 12.5 deg over 20 kyr)

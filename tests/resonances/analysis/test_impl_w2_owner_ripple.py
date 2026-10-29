@@ -114,6 +114,7 @@ def test_without_the_ripple_test_the_ripple_would_be_accepted(ripple):
     assert result.accepted is not None and result.accepted.spec.key == '3N-5+0+2'
 
 
+@pytest.mark.slow
 def test_the_same_term_alone_is_not_a_ripple():
     """No slow libration: sigma's whole motion is the term's. The ripple test passes; at 0.5 rad the identity fits
     a_dot to sigma as well (R^2 ~ 1, fixed phase), so the term is the probable owner, not a proven one. Since W20 the

@@ -27,9 +27,10 @@ Lidov's integrals (`lidov-kozai.md`), −2 vs −9 (`physics/status-tree.md`), t
 - `resonance/coherence_analysis.py`: per-resonance-type pair presets, `analyse_resonance`, the strongest-line columns
   (`zlk_coherent`, `zlk_check`), CSV row builders. Changes no status.
 - `resonance/analysis/zlk/diagnostics.py`: columns of a ZLK row that change no status: the e-i coupling at the decisive
-  period (`zlk_ei_*`, `confirmed_ei`, `check_zlk_ei`), the attribution of a kinematic libration (`zlk_forcing_*`), and
-  the centre-scale guard (`forced_beat_centre`). `resonance/analysis/secular/slow.py`: the slow line of the centre
-  (`zlk_centre_*`, `sec_centre_*`). `data/invariable_plane.py`: the exact rotation (shared with the MMR analysis).
+  period (`zlk_ei_*`, `confirmed_ei`, `check_zlk_ei`), the attribution of a kinematic libration (`zlk_forcing_*`;
+  scope `episodes` for an episodic row demoted inside its episodes, 624: the node then may turn), the node lock
+  (`zlk_node_lock*`, a flag), and the centre-scale guard (`forced_beat_centre`). `resonance/analysis/secular/slow.py`:
+  the slow line of the centre (`zlk_centre_*`, `sec_centre_*`; origin `forced_direction` = arg z_forced − Ω explains it). `data/invariable_plane.py`: the exact rotation (shared with the MMR analysis).
 
 ## Invariants (the root CLAUDE.md states them as rules; the reasons are here)
 
@@ -54,7 +55,10 @@ Lidov's integrals (`lidov-kozai.md`), −2 vs −9 (`physics/status-tree.md`), t
   non_resonant/kinematic_libration (−2); no verdict → uncertain/gate_unavailable (−9). A transient, drift or short
   record changes only on a kinematic outcome with rho_max < 1: max over the record of rollmed(|z_free|, W) /
   rollmed(|z_forced|, W), W = max(beat window, `ZLK_RHO_WINDOW_CYCLES` P_cyc) (`rho_local_max`; 555527: 0.66 at
-  100 kyr, 0.63 at 500 kyr). The former median ratio (one e_free over the smallest forced radius) is the column
+  100 kyr, 0.63 at 500 kyr); an episodic one also when every librating episode is pinned: median instantaneous
+  |z_free|/|z_forced| < 1 inside it and the free omega advancing >= `ZLK_EPISODE_FREE_TURNS_PER_CYCLE` turns per whole
+  cycle (W26, 624 Hektor; `zlk.analyse._episode_pinning`, `FreeElements.episode_pinning`: nan, so no pin, where the free
+  elements do not measure the episode: outside the baseline, a masked sample, < 2 samples per cycle; Codex W26). The former median ratio (one e_free over the smallest forced radius) is the column
   `zlk_gate_rho_global` and `free_rho_max`, descriptive only. Gate **disabled** keeps
   the geometric status with `check_zlk_free_omega` not_measured — not the same as unavailable. −2 and −9 are never
   merged in a statistic.
@@ -105,6 +109,9 @@ Lidov's integrals (`lidov-kozai.md`), −2 vs −9 (`physics/status-tree.md`), t
 
 ## Open
 
-591986: free-element g 220″/yr vs 6.65″/yr in the proper catalogue (the tadpole sidebands are not modelled); its node
-librates against g5 only over ≥ 3 Myr (Ω − ϖ5 within 52°–129° over 4 Myr): a node-lock flag waits for the author's
-decision; 88899 two-island episodes (tier D); secular bounded angles take a dynamic origin directly. See `dev/status.md`.
+591986: free-element g 220″/yr vs 6.65″/yr in the proper catalogue (the tadpole sidebands are not modelled). Its node
+librates against g5 only over ≥ 3 Myr: `zlk_node_lock` g5 over 4 Myr (50–130°, 2 cycles of 1.4 Myr), `unresolved`
+over 500 kyr (rate within the resolution, 52–91°, no full cycle: the honest answer, one period does not fit). The node
+lock reads the osculating node (what ω is built from), smoothed at its longest forced wave, so a record shorter than a
+few of those waves never resolves a lock. The attribution's beat test (P_cyc within one Rayleigh width) is tighter than
+P_cyc's own precision on long records (`dev/status.md`); 88899 two-island episodes (tier D); secular bounded angles take a dynamic origin directly. See `dev/status.md`.

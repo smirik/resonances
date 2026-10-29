@@ -260,6 +260,7 @@ class TestCandidates:
 
 
 class TestSimulation:
+    @pytest.mark.slow
     def test_the_integrated_angle_is_built_from_omega_omega_and_m(self):
         """Through the whole pipeline: the stored angle equals q M + (2k-p) omega + p Omega - p lam_J
         from the saved series of the body and of Jupiter."""
