@@ -21,6 +21,7 @@ from resonances.simulation import SimulationConfig, DataManager
 from resonances.resonance.analysis.verdict import Status
 from resonances.body import Body
 import resonances
+from tests.tools import TEST_CACHE
 
 
 def _append_csv_chunks(filename, worker, chunks=10, rows=25):
@@ -287,7 +288,7 @@ class TestDataManager:
 
     def test_save_body_consolidated_format(self):
         sim_name = f"random-{time.time()}"
-        tmpdir = f"cache/tests/{sim_name}"
+        tmpdir = f"{TEST_CACHE}/{sim_name}"
         """Test that save_body creates consolidated files with proper structure."""
         # Setup config with temp directory
         config = SimulationConfig(save_path=tmpdir, save='all', plot=None)  # Disable plotting for this test
@@ -453,24 +454,26 @@ def test_plot_always_overrides_status_for_listed_types():
     body = Body()
     body.statuses = {lk.to_s(): 'uncertain', mmr.to_s(): 'uncertain'}
 
-    plain = DataManager(SimulationConfig(plot='resonant', save=None, save_path='cache/tests/pa1', plot_path='cache/tests/pa1'))
+    plain = DataManager(SimulationConfig(plot='resonant', save=None, save_path=f'{TEST_CACHE}/pa1', plot_path=f'{TEST_CACHE}/pa1'))
     assert plain.config.plot_always == []
     assert plain.should_plot_body(body, lk) is False
     assert plain.should_plot_body(body, mmr) is False
 
     always = DataManager(
-        SimulationConfig(plot='resonant', plot_always=['lidov_kozai'], save=None, save_path='cache/tests/pa2', plot_path='cache/tests/pa2')
+        SimulationConfig(
+            plot='resonant', plot_always=['lidov_kozai'], save=None, save_path=f'{TEST_CACHE}/pa2', plot_path=f'{TEST_CACHE}/pa2'
+        )
     )
     assert always.config.plot_always == ['lidov_kozai']
     assert always.should_plot_body(body, lk) is True
     assert always.should_plot_body(body, mmr) is False
 
     as_string = SimulationConfig(
-        plot='resonant', plot_always='lidov_kozai, mmr', save=None, save_path='cache/tests/pa3', plot_path='cache/tests/pa3'
+        plot='resonant', plot_always='lidov_kozai, mmr', save=None, save_path=f'{TEST_CACHE}/pa3', plot_path=f'{TEST_CACHE}/pa3'
     )
     assert as_string.plot_always == ['lidov_kozai', 'mmr']
 
     off = DataManager(
-        SimulationConfig(plot=None, plot_always=['lidov_kozai'], save=None, save_path='cache/tests/pa4', plot_path='cache/tests/pa4')
+        SimulationConfig(plot=None, plot_always=['lidov_kozai'], save=None, save_path=f'{TEST_CACHE}/pa4', plot_path=f'{TEST_CACHE}/pa4')
     )
     assert off.should_plot_body(body, lk) is False

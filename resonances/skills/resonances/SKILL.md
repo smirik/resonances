@@ -204,7 +204,9 @@ filtered with turning points and numbered episodes, (b) σ wrapped, (c) σ̇/2ω
 a* and the resonance's half-width, (e) ȧ with the fitted force law and its R², (f), (g) e and i, (h) the energy of
 each cycle against the separatrix h = 1, (i) the slow centre, (j) the centres of other multiplet members and of an
 owner (a flat line librates). For secular/ZLK rows, (f) is the rate fit (secular) or the drift of the free and the
-osculating ω in turns (ZLK: a free ω that winds makes the libration kinematic). If you can view images, open the figure of every
+osculating ω in turns (ZLK: a free ω that winds makes the libration kinematic); their FREQUENCIES table lists the
+body's rates, the planetary modes (g5, g6, s6 always) and the beats in ″/yr with their periods, to name a period seen
+on σ(t) (e.g. 591986: g − g5 6.11 kyr, the kinematic ω cycle; g6 − g5 54 kyr). If you can view images, open the figure of every
 `medium`/`low` verdict before reporting it.
 
 ## 7. Before you report a status

@@ -19,6 +19,7 @@ import rebound
 from resonances.data.const import SOLAR_SYSTEM_WITH_SUN
 from resonances.simulation import Simulation, SimulationSerializer
 from resonances.simulation.integration import horizons_tls
+from tests.tools import TEST_CACHE
 
 pytestmark = pytest.mark.slow  # a shared setup of more than 1 s (tests/CLAUDE.md)
 
@@ -190,7 +191,7 @@ def test_moon_system_has_its_own_cache_file(systems):
     assert plain.integration_engine._solar_system_filename().endswith(f'/cache/solar-{stamp}.bin')
     assert moon.integration_engine._solar_system_filename(moon=True).endswith(f'/cache/solar-moon-{stamp}.bin')
     # loading the cached Moon file gives the same 11 bodies
-    again = _sim('cache/tests/moon-reload', solar_system_moon=True, integrator='ias15')
+    again = _sim(f'{TEST_CACHE}/moon-reload', solar_system_moon=True, integrator='ias15')
     again.create_solar_system()
     first, second = moon.integration_engine.sim.particles, again.integration_engine.sim.particles
     assert again.integration_engine.sim.N == 11

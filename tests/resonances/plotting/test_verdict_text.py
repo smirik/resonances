@@ -328,7 +328,8 @@ def test_secular_record_over_the_whole_record():
     assert fig.text_stats['overflow'] == 0
     texts = [artist.get_text() for artist in fig.texts]
     assert sum(1 for t in texts if 'RESONANT ·' in t or 'resonant ·' in t) == 1  # the status once, in the plaque
-    assert any(t.startswith('g6') for t in texts) and any('forced wave g6' in t for t in texts)
+    # the FREQUENCIES table (W27): the mode g6 and the forced wave g - g6 of the angle's own modes
+    assert any(t.startswith('g6') for t in texts) and any(t.startswith('g − g6') and 'forced' in t for t in texts)
     plt.close(fig)
 
 

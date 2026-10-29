@@ -73,12 +73,12 @@ cell ([Examples](examples.md#clones)).
 git clone https://github.com/smirik/resonances.git
 cd resonances
 uv sync          # the package, the test tools and the documentation tools
-make test-fast   # every test of at most 1 s, about 3 minutes
-make test-slow   # integrations and longer tests, about 10 minutes (Horizons over the network)
+make test-fast   # every test of at most 1 s, about a minute on 4 processes
+make test-slow   # integrations and longer tests, about 5 minutes (Horizons over the network)
 make docs        # build this site (mkdocs build --strict)
 ```
 
-Both need nothing beyond the clone. `make test-benchmark` needs the benchmark's saved series, which are not in git.
+Both need nothing beyond the clone; `XDIST=` runs them in one process. `make test-benchmark` needs the benchmark's saved series, which are not in git.
 
 ## Agent skill
 

@@ -4,10 +4,11 @@ import pytest
 
 from resonances.config import config
 from resonances.simulation.config import PLOT_KINDS, SimulationConfig
+from tests.tools import TEST_CACHE
 
 
 def make(**kwargs):
-    return SimulationConfig(save=None, save_path='cache/tests/plot-config', plot_path='cache/tests/plot-config', **kwargs)
+    return SimulationConfig(save=None, save_path=f'{TEST_CACHE}/plot-config', plot_path=f'{TEST_CACHE}/plot-config', **kwargs)
 
 
 def test_plots_default_and_forms():

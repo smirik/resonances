@@ -101,6 +101,7 @@ class NumberLine:
     group: str = ''
     also: Tuple[str, ...] = ()
     style: str = ''  # the explained column: STYLE_BOLD (the decision compared it) | STYLE_GREY (its test was skipped)
+    keep: bool = False  # the explained column: a table row kept in one column with the row before it in its group
 
 
 @dataclass
@@ -1074,6 +1075,7 @@ def _number_rows(lines: Sequence[NumberLine], width: float, size: float) -> List
     group_chars = max(int(width * 72 / (MONO_CHAR_WIDTH * (size + GROUP_EXTRA_PT))), 12)  # the header is drawn larger
     rows, group = [], None
     for line in lines:
+        kept = line.keep and line.group == group  # a table row: one unbreakable item with the rows before it
         if line.group != group:
             if rows:
                 rows.append(('gap', '', ''))
@@ -1086,7 +1088,7 @@ def _number_rows(lines: Sequence[NumberLine], width: float, size: float) -> List
         else:
             text = line.value
         pieces = textwrap.wrap(text, chars, subsequent_indent='  ', break_long_words=True) or ['']
-        rows += [('line' if index == 0 else 'cont', piece, line.style) for index, piece in enumerate(pieces)]
+        rows += [('line' if index == 0 and not kept else 'cont', piece, line.style) for index, piece in enumerate(pieces)]
     return rows
 
 

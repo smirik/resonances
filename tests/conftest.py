@@ -17,23 +17,25 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 BENCHMARK_TOOLS = os.path.join(ROOT_DIR, 'benchmark', 'tools')
 
+from tests.tools import TEST_CACHE  # noqa: E402  (cache/tests/<worker or session>: parallel runs never meet)
+
 
 @pytest.fixture(autouse=True, scope="session")
 def setup_test_config():
-    resonances.config.set('SAVE_PATH', 'cache/tests')
-    resonances.config.set('PLOT_PATH', 'cache/tests')
+    resonances.config.set('SAVE_PATH', TEST_CACHE)
+    resonances.config.set('PLOT_PATH', TEST_CACHE)
 
 
 @pytest.fixture(autouse=True, scope="function")
 def cleanup_test_files():
-    Path('cache/tests').mkdir(parents=True, exist_ok=True)
-    """Clean up test cache after each test."""
+    Path(TEST_CACHE).mkdir(parents=True, exist_ok=True)
+    """Clean up this process' test cache after each test (`TEST_CACHE`: other workers and sessions keep theirs)."""
     yield  # Test runs
 
     if os.environ.get('KEEP_TEST_CACHE') not in (None, '', '0'):
         return  # skip clean when run with KEEP_TEST_CACHE=1 (or `make ... KEEP=1`)
 
-    cache_path = Path('cache/tests')
+    cache_path = Path(TEST_CACHE)
     if cache_path.exists():
         shutil.rmtree(cache_path)
 

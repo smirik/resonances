@@ -5,9 +5,10 @@ the detail. Benchmark gates: `benchmark/CLAUDE.md`.
 
 ## Layout and markers
 
-- `make test-fast`: tests of at most 1 s, about 3 min. `make test-slow` (marker `slow`): integrations and any test of
+- `make test-fast`: tests of at most 1 s, about 1 min. `make test-slow` (marker `slow`): integrations and any test of
   more than 1 s (a shared module setup of more than 1 s: `pytestmark = pytest.mark.slow` on the module), about
-  15 min. `make test-long` (marker `long`): integrations of 10 min and more (z1 over 10 Myr); outside `test`,
+  5 min. `make test-benchmark` about 15 min. All on pytest-xdist (`XDIST`, default `-n 4 --dist loadfile`: a module
+  stays on one worker; the benchmark reclassification runs once per session under a file lock). `make test-long` (marker `long`): integrations of 10 min and more (z1 over 10 Myr); outside `test`,
   `test-fast` and `test-slow`. `make test-benchmark` (marker `benchmark`): local-only data and the author gates.
   `make test` = fast + slow. Measure with `--durations=0` before marking; on 2026-10-29 the split moved 234 functions
   to benchmark and 46 functions + 6 modules to slow (test-fast 30 min → 3 min).
@@ -41,11 +42,13 @@ the detail. Benchmark gates: `benchmark/CLAUDE.md`.
 - 3040 ZLK changes verdict with a few weeks of start epoch (chaotic); 42355 3N-4 was removed (its "transient"
   expectation was stale; the benchmark gates its author label).
 - Before blaming the code for a slow failure, run the same test on the previous commit with the same `cache/`.
-- Never run two pytest sessions from one working directory: the autouse cleanup deletes `cache/tests` under the other.
+- Test output goes to `tests.tools.TEST_CACHE` = `cache/tests/<xdist worker | session-pid>`, cleaned after each test: workers
+  and parallel sessions never touch each other's files (before W27 one shared `cache/tests` was deleted under the
+  other session). Write test output under `TEST_CACHE`, never a literal `cache/tests`.
 
 ## Caches and memory
 
-- `tests/conftest.py`: `SAVE_PATH`/`PLOT_PATH` = `cache/tests`, removed after each test unless `KEEP_TEST_CACHE=1`
+- `tests/conftest.py`: `SAVE_PATH`/`PLOT_PATH` = `TEST_CACHE`, removed after each test unless `KEEP_TEST_CACHE=1`
   (`make <target> KEEP=1`); benchmark series load through `benchmark/tools/column_cache.py`; each test module's own
   caches (`lru_cache` helpers, `*_CACHE` dicts) are cleared at the module's end (`release_module_caches`).
 - `make test*` run with the low-memory allocator on macOS (`MallocLargeCache=0`); the fast suite peaks at ~1.9 GB.

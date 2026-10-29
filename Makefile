@@ -1,5 +1,8 @@
 # Pass KEEP=1 to keep cache/tests/ results after a test run, e.g. `make test-benchmark KEEP=1`
 KEEP ?=
+# pytest-xdist: 4 workers, a test module stays on one worker (its module fixtures are built once); XDIST= runs in one
+# process, XDIST="-n 2 --dist loadfile" on a machine with less memory (test-benchmark peaks at ~3 GB a worker)
+XDIST ?= -n 4 --dist loadfile
 # The tests run with the low-memory allocator on macOS (LOW_MEMORY_ALLOCATOR, docs/config.md: MallocLargeCache=0 returns
 # freed large blocks; fast suite peak 2.98 -> 1.71 GB with the module caches released). LOW_MEMORY_ALLOCATOR=off: as before.
 LOW_MEMORY_ALLOCATOR ?= on
@@ -15,24 +18,24 @@ install:
 test: install
 	uv run flake8 --count
 	uv run black . --check
-	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not benchmark and not long" tests
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest $(XDIST) -v -m "not benchmark and not long" tests
 
 test-only: install
-	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not benchmark and not long" tests
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest $(XDIST) -v -m "not benchmark and not long" tests
 
 # test-fast and test-slow need nothing outside git (tests/conftest.py hides benchmark/data from them); a test of more
 # than 1 s is `slow`, one that reads local-only data (benchmark/data) is `benchmark` (tests/CLAUDE.md)
 test-fast: install
-	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "not slow and not benchmark and not long" tests
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest $(XDIST) -v -m "not slow and not benchmark and not long" tests
 
 test-slow: install
-	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -m "slow and not benchmark and not long" tests
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest $(XDIST) -v -m "slow and not benchmark and not long" tests
 
 # test-fast as on a fresh clone: the files git knows (tracked and new, not ignored; not experiments/ or tmp/) copied into
 # a temporary folder, without benchmark/data and cache/
 test-portable: install
 	@tmp=$$(mktemp -d) && git ls-files -co --exclude-standard | grep -v '^experiments/\|^tmp/' | rsync -a --ignore-missing-args --files-from=- . $$tmp/ \
-	  && cd $$tmp && env -u RESONANCES_BENCHMARK_DATA $(ALLOCATOR_ENV) $(CURDIR)/.venv/bin/python -m pytest -q -p no:cacheprovider \
+	  && cd $$tmp && env -u RESONANCES_BENCHMARK_DATA $(ALLOCATOR_ENV) $(CURDIR)/.venv/bin/python -m pytest $(XDIST) -q -p no:cacheprovider \
 	  -m "not slow and not benchmark and not long" tests; status=$$?; rm -rf $$tmp; exit $$status
 
 # Integrations of several minutes and more (pytest marker `long`): the 10-Myr z1 run (~13 min)
@@ -41,7 +44,7 @@ test-long: install
 
 # the gates against the author's labels and every test that reads the local-only benchmark data
 test-benchmark: install
-	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest -v -s -m "benchmark" tests
+	$(ALLOCATOR_ENV) KEEP_TEST_CACHE=$(KEEP) uv run pytest $(XDIST) -v -rP -m "benchmark" tests
 
 .PHONY: docs run-docs docs-figures docs-examples publish-docs skill
 

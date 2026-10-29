@@ -97,9 +97,11 @@ Any functionality except temporary should be tested. The package has the followi
   Never pass `--exclude` to black or flake8: it replaces their default excludes (and black's .gitignore), and they
   then walk `.venv/` and `tmp/` (on 2026-10-29 black ran 16 workers, ~13 GB, for 10 min). Use `--extend-exclude`
   (e.g. `.claude` for agent worktrees), and `black -W 4`.
-- `make test-fast`: every test of at most 1 s (about 3 min in all), synthetic data and small committed fixtures only.
+- `make test-fast`: every test of at most 1 s (about 1 min on 4 pytest-xdist workers), synthetic data and small committed fixtures only.
+  Every test target runs on `XDIST` (default `-n 4 --dist loadfile`; `XDIST=` for one process, fewer workers on a
+  machine with less memory); each process writes into its own `tests.tools.TEST_CACHE` (`cache/tests/<worker>`).
 - `make test-slow` (marker `slow`): integrations (real bodies at fixed Horizons dates) and any test of more than 1 s,
-  such as a long synthetic series (about 15 min). Run them at the end of the task when all other fast tests and
+  such as a long synthetic series (about 5 min). Run them at the end of the task when all other fast tests and
   formatting are done and passed.
 - test-fast and test-slow must pass on any computer: nothing outside git. A test that reads local-only data
   (`benchmark/data`, the saved series, the cached solar system) is marked `benchmark`; `tests/conftest.py` hides that

@@ -5,13 +5,14 @@ import pytest
 import resonances
 from resonances.mmr.retrograde_two_body import RetrogradeTwoBody
 from resonances.mmr.retrograde_two_body_matrix import RetrogradeTwoBodyMatrix
+from tests.tools import TEST_CACHE
 
 STAMP = '# RetrogradeTwoBodyMatrix v1 MATRIX_2BODY_RETRO_COEF_MAX=15 MATRIX_2BODY_RETRO_ORDER_MAX=30'
 
 
 @pytest.fixture(autouse=True)
 def jupiter_only():
-    resonances.config.set(RetrogradeTwoBodyMatrix.catalog_file, 'cache/tests/mmr-2body-retro-test.csv')
+    resonances.config.set(RetrogradeTwoBodyMatrix.catalog_file, f'{TEST_CACHE}/mmr-2body-retro-test.csv')
     RetrogradeTwoBodyMatrix.planets = ['Jupiter']
     RetrogradeTwoBodyMatrix.matrix = None
     yield

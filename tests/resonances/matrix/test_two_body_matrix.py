@@ -4,11 +4,12 @@ from pathlib import Path
 
 import resonances
 from resonances.mmr.two_body_matrix import TwoBodyMatrix
+from tests.tools import TEST_CACHE
 
 
 @pytest.fixture(autouse=True)
 def run_around_tests():
-    resonances.config.set(TwoBodyMatrix.catalog_file, 'cache/tests/mmr-2body-test.csv')
+    resonances.config.set(TwoBodyMatrix.catalog_file, f'{TEST_CACHE}/mmr-2body-test.csv')
     yield
 
 

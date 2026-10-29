@@ -121,7 +121,9 @@ $\sigma_f$ at the decisive cutoff, the centre's when the centre scale decided), 
 ([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)). For a Lidov-Kozai angle panel (f) draws
 the drift of the free and the osculating $\omega$ in turns with a legend, as the `free_omega` drift figure; the right
 column adds the measured e–i coupling, the node lock and the slow line of the centre, and names the cause of a
-kinematic libration in a sentence ([Free elements: beyond the gate](free-elements.md#beyond-the-gate)). An induced ZLK
+kinematic libration in a sentence ([Free elements: beyond the gate](free-elements.md#beyond-the-gate)). The numbers of
+both types include $a$ in ORBIT and a FREQUENCIES table: the body's rates, the planetary modes (g5, g6, s6 always) and
+the beats, each in ″/yr with its period ([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)). An induced ZLK
 libration (attributed to a forced mode, or a centre at a beat of the forced vector) gets one more time panel, (a′)
 under (a): $\omega_f$ with the forced direction and the dominant mode against the node
 ([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)); every other row keeps seven.

@@ -34,6 +34,11 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
   under (a), eight panels then; every other row keeps seven, untouched. ω_f grey, arg z_forced − Ω orange, ϖ_j − Ω
   purple dashed, from `FreeElements.forced_vector` and the osculating node; unwrapped within a turn, else modulo 360°
   about the forced direction with ω_f inside the librating episodes only (624).
+  Right column (W27, author's request): ORBIT has a (`ctx_a_med_au`/`_min`/`_max`, columns of the long-period row);
+  FREQUENCIES (`long_period_frequency_lines`, both numbers modes) is a table `name  ″/yr  period  note`, kept in one
+  column (`NumberLine.keep`): secular: g, s, σ from mean rates, g5/g6/s6 + the angle's modes (`in σ ±k`), the forced
+  waves g − g_j; ZLK: free g, s, g − s, every fitted mode with |c_j| (◀ the attributed mode), g − g_j of the two
+  largest forced modes (`kinematic` for the attributed one), their mutual beat, the node lock. Phases not shown.
 - `clone_plots.py`: the `clones` kind (angles of every clone coloured by status, status against initial a, shares
   with Wilson intervals).
 - Evolution plots (flexible panel configurator), ecc-vector, cross-spectrum and free-omega plots.

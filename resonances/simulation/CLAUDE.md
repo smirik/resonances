@@ -74,8 +74,8 @@ User docs: `docs/output.md`, `docs/dry-run.md`, `docs/serialization.md`, `docs/c
 
 ## Traps
 
-- `find()` without a `name` writes to `cache/tests/resonance_find` in tests; parallel pytest sessions delete each
-  other's `cache/tests`.
+- `find()` without a `name` writes to `<SAVE_PATH>/resonance_find`; in tests SAVE_PATH is the process' own
+  `tests.tools.TEST_CACHE`, so parallel sessions and xdist workers do not collide.
 - Old `*.lock` files from runs before W24 are reused and removed; `benchmark/tools/integrate.py` still deletes them in
   task folders.
 - Selective saving: restore after `SAVE≠all` classifies only the saved angles and reads the other verdicts from summary.

@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 from click.testing import CliRunner
 
 from resonances.cli.main import cli
+from tests.tools import TEST_CACHE
 
 
 class TestFindCommand:
@@ -19,7 +20,7 @@ class TestFindCommand:
     def mock_simulation(self):
         """Create mock simulation object."""
         sim = Mock()
-        sim.config.save_path = 'cache/tests/test_simulation'
+        sim.config.save_path = f'{TEST_CACHE}/test_simulation'
         sim.run = Mock()
         return sim
 
@@ -174,7 +175,7 @@ class TestCheckCommand:
     def mock_simulation(self):
         """Create mock simulation object."""
         sim = Mock()
-        sim.config.save_path = 'cache/tests/test_simulation'
+        sim.config.save_path = f'{TEST_CACHE}/test_simulation'
         sim.run = Mock()
         return sim
 

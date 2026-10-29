@@ -438,6 +438,22 @@ the band correlation $r$ and the amplitude over each law; coupling is not librat
 libration, the node lock (a flag), and the slow line of the centre with its origin (591986: 53.8 kyr, ±21.6°, the
 g6−g5 beat of the forced vector). What they mean: [Free elements: beyond the gate](free-elements.md#beyond-the-gate).
 
+**The numbers of the right column** add two groups to those of the MMR figure. ORBIT gives $a$ (median, min, max,
+au) with $e$ and $i$. FREQUENCIES is a table of rates in ″/yr with their periods $1\,296\,000''/|f|$ (the time a
+rate needs for a full turn), to read the periods seen on $\sigma(t)$:
+
+- secular: the body's $g$ and $s$ (the mean rates of its free vectors), $\sigma$'s rate from them and the modes,
+  the modes g5, g6, s6 and those of the angle (`in σ −1`: the mode and its coefficient), and for an angle of two or
+  more modes the forced waves $g - g_j$, $s - s_k$ (2306 $g-g_6+s-s_6$: 43.9 and 43.6 kyr);
+- Lidov-Kozai: the free rates $g$, $s$ and $g - s$ (the free $\omega$), every fitted forced mode with its amplitude
+  $|c_j|$ (◀ the mode that holds $\varpi$), the beats $g - g_j$ of the two largest forced modes (`kinematic`: the
+  cycle of a kinematic $\omega$), their mutual beat (`beat`: the slow wave of the forced vector) and, when flagged, the
+  node lock $\Omega - \varpi_j$ with its period and range. 591986 over 4 Myr: g5 304 kyr |c| 0.045 ◀, $g - g_5$
+  6.11 kyr kinematic, g6 − g5 54 kyr beat, $\Omega - \varpi_5$ lock 1.4 Myr 50–130°.
+
+The planetary rates are the package's constants (`PLANETARY_FREQUENCIES`), the body's are measured on the record:
+their precision is about one turn over the record, $1\,296\,000''/T$.
+
 The margins of the right column are N, S, F, P and G ([secular and Lidov-Kozai margins](physics/confidence.md#secular-and-lidov-kozai-margins)).
 
 ??? info "The maths: the secular angle and the free ω"

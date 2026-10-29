@@ -1,6 +1,12 @@
 import datetime
+import os
+
 import astdys.util
 import resonances
+
+# The output folder of this test process: one per pytest-xdist worker (gw0, gw1, ...) or per session (its pid), so
+# that parallel workers and two sessions in one working directory never clean up each other's files (tests/CLAUDE.md)
+TEST_CACHE = f"cache/tests/{os.environ.get('PYTEST_XDIST_WORKER') or f'session-{os.getpid()}'}"
 
 
 # 463 Lola
@@ -33,8 +39,8 @@ def create_test_simulation_for_solar_system(save=None, plot=None, save_summary=F
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     sim = resonances.Simulation(
         date=astdys.util.convert_mjd_to_datetime(60000),
-        save_path=f'cache/tests/test_simulation_{timestamp}',
-        plot_path=f'cache/tests/test_simulation_{timestamp}',
+        save_path=f'{TEST_CACHE}/test_simulation_{timestamp}',
+        plot_path=f'{TEST_CACHE}/test_simulation_{timestamp}',
     )
     sim.create_solar_system()
 

@@ -2,8 +2,8 @@
 
 Replace this page at each programme step. Latest benchmark run: `v2-w26-final` (+ `v2-w26-final-secular-zlk`), 0 disagreements with the author
 (`KNOWN_DISAGREEMENTS.csv` empty); episode gate: tier A 46 pass with 5 known failures (E64 new), tier B 12/12.
-Tests (W26 split): test-fast 4403 in ~3.5 min, test-slow 404 in ~8.5 min, test-benchmark 587 in ~31 min; test-portable
-(test-fast on a fresh copy) passes the same 4403 without a skip.
+Tests (W26 split, W27 pytest-xdist on 4 workers): test-fast 4403 in ~1 min, test-slow 404 in ~5 min, test-benchmark 588
+in ~15 min; test-portable (test-fast on a fresh copy) passes the same 4403 without a skip.
 
 ## Next steps (agreed order)
 
@@ -48,8 +48,6 @@ Tests (W26 split): test-fast 4403 in ~3.5 min, test-slow 404 in ~8.5 min, test-b
   its coarse grid (a very small dimple can be missed). A one-well potential above its top still reports J/J_s = 1
   (`separatrix`); a several-well one reports NaN (`not_measured`).
 - The low-memory allocator is macOS-only; Linux was not measured.
-- Tests: test-benchmark is now ~31 min in one process (the 587 local-data tests); pytest-xdist with per-worker
-  `cache/tests` would cut it (not done).
 - Clones: a restore keeps the clones' stored verdicts even when their series were saved (with `SAVE` ≠ all those are a
   status-selected subset; a recompute of all clones would need every series and a clone-sized analysis budget; waits
   for the author). `restore(recompute_librations=True)` rewrites the nominal's clones.csv columns and summary.csv rows

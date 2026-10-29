@@ -57,6 +57,7 @@ dev = [
     "flake8-bugbear>=24.12.12",
     # Jupyter support
     "ipykernel>=6.29.5",
+    "pytest-xdist>=3.8.0",
 ]
 # The documentation site (mkdocs-material, LaTeX through arithmatex + MathJax): `make docs`, `make run-docs`
 docs = [

@@ -18,6 +18,7 @@ from resonances.clones.elements import KEPLERIAN_KEYS
 from resonances.data.const import K
 from resonances.data.util import mjd_from_datetime
 from resonances.simulation import ensemble_run
+from tests.tools import TEST_CACHE
 
 FIXTURES = Path(__file__).resolve().parents[2] / 'fixtures' / 'clones'
 KEY = '4J-2S-1+0+0-1'
@@ -34,7 +35,7 @@ def fixture_cache():
 
 def simulation(tmp_name: str, date: str = '2026-06-09', **kwargs) -> resonances.Simulation:
     stamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-    path = f'cache/tests/{tmp_name}_{stamp}'
+    path = f'{TEST_CACHE}/{tmp_name}_{stamp}'
     options = dict(
         date=date,
         save_path=path,
@@ -185,7 +186,7 @@ def test_epoch_aligned_to_the_second_horizons_is_asked_for(epoch):
 def bare(date='2026-06-09', **kwargs) -> resonances.Simulation:
     """A run without the planets (nothing integrated): adding, transporting and bookkeeping only."""
     stamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-    path = f'cache/tests/clones_bare_{stamp}'
+    path = f'{TEST_CACHE}/clones_bare_{stamp}'
     options = dict(date=date, save_path=path, plot_path=path, save=None, plot=None, n_cores=1)
     return resonances.Simulation(**{**options, **kwargs})
 
@@ -355,8 +356,8 @@ def test_find_with_clones_runs_the_nominal_as_without_them(monkeypatch):
             clones=clones,
             save=None,
             plot=None,
-            save_path=f'cache/tests/clones_find_{stamp}',
-            plot_path=f'cache/tests/clones_find_{stamp}',
+            save_path=f'{TEST_CACHE}/clones_find_{stamp}',
+            plot_path=f'{TEST_CACHE}/clones_find_{stamp}',
         )
         prepare_run(sim)
         found[clones] = sim

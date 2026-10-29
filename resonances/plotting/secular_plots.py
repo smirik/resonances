@@ -312,7 +312,20 @@ def long_period_specs(resonance_type: str):
         ),
         'episodes': BlockSpec('EPISODES', (), ('ep_',)),
         'physics': physics,
-        'orbit': BlockSpec('ORBIT: e, i', ('ctx_e_min', 'ctx_e_max', 'ctx_inc_min_deg', 'ctx_inc_max_deg', 'ctx_unphysical'), ('ctx_',)),
+        'orbit': BlockSpec(
+            'ORBIT: a, e, i',
+            (
+                'ctx_a_med_au',
+                'ctx_a_min_au',
+                'ctx_a_max_au',
+                'ctx_e_min',
+                'ctx_e_max',
+                'ctx_inc_min_deg',
+                'ctx_inc_max_deg',
+                'ctx_unphysical',
+            ),
+            ('ctx_',),
+        ),
     }
 
 
@@ -340,25 +353,6 @@ def long_period_blocks(row, decision_path, episodes=(), constants=()):
     if not blocks['episodes'].lines:
         blocks['episodes'].lines.append(numbers.NumberLine('episodes', '', 'no turning-point runs', mark=numbers.MARK_NONE))
     return blocks
-
-
-def _constant_lines(analysis):
-    """'g6  28.2455"/yr  wave 37.1 kyr' for each planetary mode of a secular angle."""
-    from resonances.plotting.combined_numbers import NumberLine
-
-    lines = []
-    waves = analysis.cutoff.forced_waves_yr if analysis.cutoff is not None else {}
-    for term in analysis.series.terms:
-        if term.index is None:
-            continue
-        label = f'{term.mode}{term.index}'
-        frequency = analysis.series.planet_frequencies.get(label)
-        wave = waves.get(label)
-        text = f'{term.coefficient:+d} {label}: {frequency:.4f}″/yr' if frequency is not None else f'{term.coefficient:+d} {label}'
-        if wave is not None:
-            text += f', forced wave {wave / KYR:.4g} kyr'
-        lines.append(NumberLine('constants', '', text, group='modes of the angle'))
-    return lines
 
 
 class _LongFrame:
@@ -902,11 +896,11 @@ def draw_long_period_combined(
     _draw_legend(fig, layout, forcing)
     fig.add_artist(plt.Line2D([layout.separator_x / width] * 2, [0.3 / height, (height - 0.2) / height], color='#dddddd', lw=0.8))
     if resolve_plot_options(options)['combined']['numbers'] == NumbersMode.ALL:
-        constants = _constant_lines(analysis) if analysis.series.terms else []
+        constants = [replace(line, block='constants') for line in long_period_frequency_lines(analysis, summary, free_elements)]
         blocks = long_period_blocks(summary, analysis.verdict.decision_path, analysis.episode_rows(), constants)
         fig.text_stats = numbers.draw_text(fig, blocks, layout, LONG_PERIOD_BLOCK_ORDER)
         return fig
-    fig.text_stats = draw_long_period_explained(fig, analysis, summary, layout, settings)
+    fig.text_stats = draw_long_period_explained(fig, analysis, summary, layout, settings, free_elements)
     return fig
 
 
@@ -935,43 +929,159 @@ LONG_PERIOD_EXPLAINED_GROUPS = (
     ),
     ('FREE-ω GATE', ('zlk_gate', 'zlk_gate_n_cycles', 'zlk_gate_min_cycles', 'zlk_gate_period_yr', 'zlk_gate_rho_max', 'zlk_ei_coupling')),
     ('RESPONSE OF e AND i (a column)', ('rsp_variables', 'rsp_e_R2', 'rsp_i_R2')),
-    ('ORBIT', ('ctx_e_min', 'ctx_e_max', 'ctx_inc_min_deg', 'ctx_inc_max_deg')),
+    ('ORBIT', ('ctx_a_med_au', 'ctx_a_min_au', 'ctx_a_max_au', 'ctx_e_min', 'ctx_e_max', 'ctx_inc_min_deg', 'ctx_inc_max_deg')),
     ('RECORD', ('smp_span_yr', 'smp_step_yr', 'flags', 'status_code', 'settings_hash', 'confidence_cells_sha')),
 )
 LONG_PERIOD_EXPLAINED_PREFIXES = ('ep_', 'geo_', 'sec_', 'flt_', 'zlk_', 'rsp_', 'ctx_', 'smp_')
-SECULAR_MODES_SHOWN = ('g5', 'g6', 's6')
-TURN_ARCSEC = 1296000.0
+TURN_ARCSEC = 1296000.0  # a rate of f arcsec/yr turns once in 1296000 / |f| yr
+FREQUENCY_GROUP = 'FREQUENCIES (″/yr; period = 360°/|f|)'
+FREQUENCY_MODES_SHOWN = ('g5', 'g6', 's6')  # Jupiter's and Saturn's modes: always listed (as in the MMR figure)
+FREQUENCY_BEAT_MODES = 2  # ZLK: g - g_j of the fitted forced modes with the largest |c_j|, and their mutual beat
+PLANET_SHORT = ('Mer', 'Ven', 'Ear', 'Mar', 'Jup', 'Sat', 'Ura', 'Nep')
 
 
-def long_period_period_lines(analysis):
-    """CHARACTERISTIC PERIODS of a secular/ZLK figure: the body's g and s, the angle's own rate from them and the
-    modes, the forced waves of the modes, and the modes g5, g6, s6 (and those of the angle)."""
+def _rate_text(value: float, constant: bool = False) -> str:
+    """A rate in arcsec/yr: a planetary constant with 4 decimals (as in const.py), a measured rate to 4 significant
+    digits; a minus sign."""
+    if not np.isfinite(value):
+        return '—'
+    if constant:
+        text = f'{value:+.4f}'
+    else:
+        decimals = max(0, 3 - int(np.floor(np.log10(abs(value))))) if value else 0
+        text = f'{value:+.{decimals}f}'
+    return text.replace('-', '−')
+
+
+def _frequency_line(name: str, rate: float, note: str = '', period: Optional[float] = None, constant=False, rate_text=None):
+    """One row 'name  rate  period  note' (monospaced, aligned); the period is 360°/|rate| unless given."""
     from resonances.plotting.combined_numbers import NumberLine
     from resonances.plotting.verdict_text import years
 
+    if period is None:
+        period = TURN_ARCSEC / abs(rate) if np.isfinite(rate) and rate else float('nan')
+    rate_text = rate_text if rate_text is not None else _rate_text(rate, constant)
+    text = f'{name:<8}{rate_text:>9} {years(period):>9}' + (f'  {note}' if note else '')
+    return NumberLine('numbers', '', text, group=FREQUENCY_GROUP, keep=True)
+
+
+def _mode_name(label: str) -> str:
+    """'g5' -> 'g5 Jup'."""
+    index = int(label[1:]) if label[1:].isdigit() else 0
+    return f'{label} {PLANET_SHORT[index - 1]}' if 1 <= index <= len(PLANET_SHORT) else label
+
+
+def _mode_order(label: str):
+    return (label[0] != 'g', int(label[1:]) if label[1:].isdigit() else 0)
+
+
+def _row_number(row, column: str, fallback: float = float('nan')) -> float:
+    """A finite number of the row's column, else `fallback`."""
+    try:
+        value = float(row.get(column))
+    except (TypeError, ValueError):
+        return fallback
+    return value if np.isfinite(value) else fallback
+
+
+def _secular_frequency_lines(analysis, row) -> list:
+    """The body's g and s (mean rates of its free vectors), sigma's rate from them, the modes g5, g6, s6 and those of
+    the angle, and the forced waves g - g_j, s - s_k of an angle with two or more modes (`Cutoff.forced_waves_yr`)."""
+    from resonances.data.const import PLANETARY_FREQUENCIES
+
     cutoff, series = analysis.cutoff, analysis.series
-    frequencies = dict(series.planet_frequencies)
-    periods = []
-    if cutoff is not None:
-        body = {'g': cutoff.body_g_arcsec_yr, 's': cutoff.body_s_arcsec_yr}
-        periods += [(f'{mode} of the body', TURN_ARCSEC / abs(rate)) for mode, rate in body.items() if np.isfinite(rate) and rate]
-        own = sum(
-            term.coefficient * (frequencies.get(f'{term.mode}{term.index}', np.nan) if term.index else body[term.mode])
-            for term in series.terms
+    frequencies = {**PLANETARY_FREQUENCIES, **dict(series.planet_frequencies)}
+    body = {
+        'g': _row_number(row, 'sec_g_arcsec_yr', cutoff.body_g_arcsec_yr if cutoff is not None else float('nan')),
+        's': _row_number(row, 'sec_s_arcsec_yr', cutoff.body_s_arcsec_yr if cutoff is not None else float('nan')),
+    }
+    lines = [_frequency_line(mode, body[mode], f'free {name}') for mode, name in (('g', 'ϖ'), ('s', 'Ω')) if np.isfinite(body[mode])]
+    planetary = [term for term in series.terms if term.index is not None]
+    own = sum(
+        term.coefficient * (frequencies.get(f'{term.mode}{term.index}', np.nan) if term.index else body[term.mode]) for term in series.terms
+    )
+    if series.terms and np.isfinite(own):
+        lines.append(_frequency_line('σ', own, 'mean rates'))
+    in_angle = {f'{term.mode}{term.index}': term.coefficient for term in planetary}
+    for label in sorted(dict.fromkeys([*FREQUENCY_MODES_SHOWN, *in_angle]), key=_mode_order):
+        if label in frequencies:
+            note = f'in σ {in_angle[label]:+d}'.replace('-', '−') if label in in_angle else ''
+            lines.append(_frequency_line(_mode_name(label), frequencies[label], note, constant=True))
+    waves = cutoff.forced_waves_yr if cutoff is not None else {}
+    for label, wave in waves.items():
+        rate = body[label[0]] - frequencies.get(label, np.nan)
+        lines.append(_frequency_line(f'{label[0]} − {label}', rate, 'forced', period=wave))
+    return lines
+
+
+def _zlk_frequency_lines(analysis, row, free_elements) -> list:
+    """The body's free rates g, s and g - s (the free omega), the fitted forced modes (and g5, g6, s6) with |c_j|, the
+    mode that holds varpi marked, the beats g - g_j of the FREQUENCY_BEAT_MODES largest forced modes (that of the
+    holding mode is the kinematic omega cycle), their mutual beat (the slow wave of the forced vector) and the node
+    lock's period when it is flagged."""
+    from resonances.data.const import PLANETARY_FREQUENCIES
+
+    elements = free_elements
+    frequencies = {**PLANETARY_FREQUENCIES, **(dict(elements.frequencies) if elements is not None else {})}
+    rates = {
+        name: _row_number(row, f'free_b_{name}', float(getattr(elements, f'b_{name}')) if elements is not None else float('nan'))
+        for name in ('varpi', 'Omega', 'omega')
+    }
+    lines = [
+        _frequency_line(mode, rates[name], f'free {symbol}')
+        for mode, name, symbol in (('g', 'varpi', 'ϖ'), ('s', 'Omega', 'Ω'), ('g − s', 'omega', 'ω'))
+        if np.isfinite(rates[name])
+    ]
+    basis = {**(elements.basis_e if elements is not None else {}), **(elements.basis_i if elements is not None else {})}
+    amplitudes = {**(elements.amplitudes_e if elements is not None else {}), **(elements.amplitudes_i if elements is not None else {})}
+    holding = str(row.get('zlk_forcing_mode') or '').split(' ')[0] if row.get('zlk_attribution') == 'attributed' else ''
+    labels = [label for label in basis if label != 'const']
+    for label in sorted(dict.fromkeys([*FREQUENCY_MODES_SHOWN, *labels]), key=_mode_order):
+        rate = basis.get(label, frequencies.get(label, np.nan))
+        amplitude = abs(amplitudes[label]) if label in amplitudes else float('nan')
+        note = (f'{amplitude:.2g}' if np.isfinite(amplitude) else ('' if label in basis else 'not fitted')) + (
+            ' ◀' if label == holding else ''
         )
-        if series.terms and np.isfinite(own) and own:
-            periods.append(('σ from mean rates', TURN_ARCSEC / abs(own)))
-        periods += [(f'forced wave {label}', wave) for label, wave in cutoff.forced_waves_yr.items()]
-    modes = list(SECULAR_MODES_SHOWN) + [f'{term.mode}{term.index}' for term in series.terms if term.index]
-    for label in dict.fromkeys(modes):
-        frequency = frequencies.get(label)
-        if frequency:
-            periods.append((label, TURN_ARCSEC / abs(frequency)))
-    group = 'CHARACTERISTIC PERIODS'
-    return [NumberLine('numbers', label, years(period), group=group) for label, period in periods if np.isfinite(period)]
+        lines.append(_frequency_line(_mode_name(label), rate, note.strip(), constant=True))
+    forced = {label: abs(amplitudes.get(label, 0.0)) for label in labels if label.startswith('g')}
+    largest = sorted((label for label in forced if forced[label] > 0), key=lambda label: -forced[label])[:FREQUENCY_BEAT_MODES]
+    if not largest:  # no per-mode amplitudes (an old file): the beats of Jupiter's and Saturn's modes when fitted
+        largest = [label for label in ('g5', 'g6') if label in basis]
+    for label in sorted(largest, key=_mode_order):
+        lines.append(_frequency_line(f'g − {label}', rates['varpi'] - basis[label], 'kinematic' if label == holding else ''))
+    beats = elements.forced_beats() if elements is not None else {}
+    if len(largest) == 2:
+        key = next((key for key in (f'{largest[1]}-{largest[0]}', f'{largest[0]}-{largest[1]}') if key in beats), None)
+        if key is not None:
+            first, second = sorted(largest, key=_mode_order)
+            lines.append(_frequency_line(f'{second} − {first}', basis[second] - basis[first], 'beat', period=beats[key], constant=True))
+    lock = str(row.get('zlk_node_lock') or '')
+    if lock:
+        low, high = _row_number(row, 'zlk_node_lock_min_deg'), _row_number(row, 'zlk_node_lock_max_deg')
+        span = f'{low:.0f}–{high:.0f}°' if np.isfinite(low) and np.isfinite(high) else ''
+        period = _row_number(row, 'zlk_node_lock_period_yr')
+        lines.append(_frequency_line(f'Ω − ϖ{lock[1:]}', float('nan'), span, period=period, rate_text='lock'))
+    return lines
 
 
-def draw_long_period_explained(fig, analysis, summary, layout, settings=None):
+def long_period_frequency_lines(analysis, row, free_elements=None) -> list:
+    """FREQUENCIES of a secular/ZLK figure: one row 'name  rate ″/yr  period  note' per frequency a period seen on
+    sigma(t) may come from (period = 1296000/|rate| yr); `row` is the figure's summary row, `free_elements` (ZLK) the
+    body's FreeElements (the fitted modes and their |c_j|)."""
+    if str(analysis.series.resonance_type) == 'lidov_kozai':
+        lines = _zlk_frequency_lines(analysis, row, free_elements)
+    else:
+        lines = _secular_frequency_lines(analysis, row)
+    if not lines:
+        return []
+    from resonances.plotting.combined_numbers import NumberLine
+
+    amplitude = '  |c|' if str(analysis.series.resonance_type) == 'lidov_kozai' else ''
+    header = NumberLine('numbers', '', f'{"":<8}{"arcsec/yr":>9} {"period":>9}{amplitude}', group=FREQUENCY_GROUP, keep=True)
+    return [header, *lines]
+
+
+def draw_long_period_explained(fig, analysis, summary, layout, settings=None, free_elements=None):
     """The explained right column of a secular/ZLK figure (`verdict_text.explain_long_period`, layout A′)."""
     from resonances.plotting import combined_numbers as numbers
     from resonances.plotting.mmr_verdict_panel import config_settings, explained_episode_lines, short_hashes
@@ -984,7 +1094,7 @@ def draw_long_period_explained(fig, analysis, summary, layout, settings=None):
     for title, columns in LONG_PERIOD_EXPLAINED_GROUPS:
         lines += numbers.group_lines(row, ((title, columns),), LONG_PERIOD_EXPLAINED_PREFIXES, text.bold_columns, text.grey_columns)
         if title == 'SCALE, FILTER':
-            lines += long_period_period_lines(analysis)
+            lines += long_period_frequency_lines(analysis, summary, free_elements)
     stats = numbers.draw_explained(fig, text, lines, layout)
     stats['text'] = text
     return stats
