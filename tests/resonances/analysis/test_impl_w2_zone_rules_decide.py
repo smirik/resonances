@@ -6,8 +6,6 @@
 - the alias rule (DECISIONS 2026-10-15) and the physics margins of the cap all_physics_not_measured.
 """
 
-from types import SimpleNamespace
-
 import numpy as np
 import pytest
 
@@ -16,7 +14,7 @@ from resonances.resonance.analysis import geometry as g
 from resonances.resonance.analysis.ledger import Ledger, Margin
 from resonances.resonance.analysis.mmr import decide
 from resonances.resonance.analysis.mmr.decide import AngleDecision, StatusDecision
-from resonances.resonance.analysis.mmr.models import StepVerdict
+from resonances.resonance.analysis.mmr.models import EpisodePhysics, StepVerdict
 from resonances.resonance.analysis.mmr.preprocess import DecisiveQuantities, compare_quantities
 from resonances.resonance.analysis.pendulum import (
     EPISODES_IN_SEPARATRIX_ZONE,
@@ -62,8 +60,8 @@ def _geometry_with_centre(passes, t, centre, episodes):
     return make_geometry(centre=make_centre(t_yr=t, centre_rad=centre, passes=passes), runs=episodes)
 
 
-def _episode(period, start, end):
-    return make_episode(tp_times_yr=np.array([start, end]), period_med_yr=period)
+def _episode(period, start, end, episode_id=0):
+    return make_episode(tp_times_yr=np.array([start, end]), period_med_yr=period, episode_id=episode_id)
 
 
 def test_centre_travel_inside_an_interval_by_its_monotone_passes():
@@ -81,8 +79,9 @@ def test_an_episode_whose_centre_turns_inside_is_not_a_libration():
     t = np.linspace(0, 100000, 1001)
     centre = np.where(t < 30000, 0.0, 7.3 * (t - 30000) / 41000)  # 82831: +7.3 rad from 30 to 71 kyr
     passes = [g.MonotonePass(0.0, 30000.0, 0.0), g.MonotonePass(30000.0, 100000.0, 7.3 * 70000 / 41000)]
-    turning = _episode(1054.0, 12000.0, 71000.0)
-    early = _episode(6773.0, 1900.0, 8700.0)
+    # distinct ids: the eligibility is keyed by episode_id since W28 C11 (episodes.csv `eligible`)
+    turning = _episode(1054.0, 12000.0, 71000.0, episode_id=1)
+    early = _episode(6773.0, 1900.0, 8700.0, episode_id=0)
     geometry = _geometry_with_centre(passes, t, centre, [early, turning])
     assert decide.librating_episodes(geometry, S) == [early]
     fast = _episode(S.mmr_libration_period_min_yr / 2, 0.0, 1000.0)
@@ -167,7 +166,17 @@ def test_episodes_in_separatrix_zone_caps_a_transient_at_medium_and_replaces_the
         decide.tree_view(libration, None, chaos), resonant, geometry, {}, S
     )
     # the onset test assumes a capture from a regime without the a-wave: not inside one chaotic layer
-    physics = SimpleNamespace(a_band_std_before_au=1.0, a_band_std_in_au=1.0)
+    # B4: a coherent, in-phase background that the episode's own law does not explain (a foreign wave) still fails
+    physics = make(
+        EpisodePhysics,
+        episode_id=0,
+        a_band_std_before_au=1.0,
+        a_band_std_in_au=1.0,
+        onset_coherence_r2=0.9,
+        onset_phase_gap_deg=10.0,
+        onset_own_law_r2=0.0,
+        onset_own_law_r2_episode=0.8,
+    )
     assert decide._o1(physics, chaos, _ledger(), S).margin == Margin.NOT_APPLICABLE
     assert decide._o1(physics, _energy(), _ledger(), S).margin == Margin.FAIL
 

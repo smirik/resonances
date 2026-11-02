@@ -13,12 +13,18 @@ MMR_EXTEND_MIN_SPAN_FACTOR, f_next = MMR_NEXT_CHECK_SPAN_FACTOR; the record is a
     gate planetary_residual                     the residual is d_min arcsec/yr from a planetary rate, inside one
                                                 Rayleigh width 1296000/T_free: N = ZLK_EXTEND_RESOLUTION_MARGIN x
                                                 1296000/d_min + (T - T_free); beyond ZLK_EXTEND_MAX_YR (or d_min = 0):
-                                                review, no run of any practical length resolves it
+                                                review, no run of any practical length resolves it (1981, the free
+                                                node alone 1.85 from s6, zlk_gate_node_near: N = 875 kyr -> 1 Myr)
     gate undefined_phase, unavailable           review: a longer record does not define the free phase, and missing
                                                 free elements are not a matter of length
     unusable_series                             review (non-finite angle, too few samples, a grid the filter refuses)
+    phase_unresolved (insufficient_time)        review: the swing is within how far the linear mode phases stray, and
+                                                that grows with the record; rerun with SECULAR_PLANET_PHASES=measured
+                                                (SAVE_PLANETS=all) instead (`decide.phase_check`)
 
 The geometric N of an angle that needs more cycles is always included (max), so a gate cause never asks for less.
+P_cyc here is the period the physics reads (`decide.decisive_period_yr`: the deciding librating episode's, else the
+pooled one of the runs not faster than the floor), as the gate's.
 """
 
 from __future__ import annotations
@@ -31,7 +37,7 @@ import numpy as np
 from resonances.resonance.analysis.mmr.decide import min_extension_yr, next_check, round_up
 from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN, GateResult
 from resonances.resonance.analysis.settings import AnalysisSettings
-from resonances.resonance.analysis.verdict import Action, Reason, Status
+from resonances.resonance.analysis.verdict import Action, AngleSubtype, Reason, Status
 
 NAN = float('nan')
 KYR = 1e3
@@ -44,6 +50,7 @@ CAUSE_GATE_UNRESOLVABLE = 'gate_unresolvable'  # ... closer than a record of ZLK
 CAUSE_GATE_PHASE = 'gate_undefined_phase'  # review
 CAUSE_GATE_UNAVAILABLE = 'gate_unavailable'  # review
 CAUSE_UNUSABLE = 'unusable_series'  # review
+CAUSE_PHASE_UNRESOLVED = 'phase_unresolved'  # review: rerun with SECULAR_PLANET_PHASES=measured, SAVE_PLANETS=all
 
 PERIOD_CYCLE = 'cycle'  # base_period_source: the measured P_cyc
 PERIOD_FLOOR = 'period_floor'  # the type's shortest libration (or 2 P_c)
@@ -121,14 +128,18 @@ def recommend(
     cutoff_yr: float,
     span_yr: float,
     settings: AnalysisSettings,
+    subtype: AngleSubtype | str = AngleSubtype.NONE,
 ) -> Extension:
-    """The extension of a verdict (module docstring); an empty Extension (default action) unless it is uncertain."""
+    """The extension of a verdict (module docstring); an empty Extension (default action) unless it is uncertain.
+    `subtype` is the angle subtype (phase_unresolved asks for a review)."""
     if status != Status.UNCERTAIN:
         return Extension()
     span = abs(float(span_yr))
     if reason == Reason.UNUSABLE_SERIES:
         return Extension(Action.REVIEW, cause=CAUSE_UNUSABLE)
     geometric, period, source = geometric_need(period_floor_yr, period_cycle_yr, cutoff_yr, settings)
+    if reason == Reason.BASELINE_NEEDED and subtype == AngleSubtype.PHASE_UNRESOLVED:
+        return Extension(Action.REVIEW, period_yr=period, period_source=source, cause=CAUSE_PHASE_UNRESOLVED)
     outcome = gate.outcome if gate is not None else ''
     if reason == Reason.BASELINE_NEEDED:
         # ZLK: the gate's own need joins when its window is short too (the max below)

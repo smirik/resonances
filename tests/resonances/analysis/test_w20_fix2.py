@@ -80,7 +80,8 @@ def test_a_cycle_that_never_crosses_its_mid_level_returns_at_another_level():
 @pytest.mark.parametrize(
     'example, expected',
     [
-        ('coorbital__2020_CB__1E-1+0+0', ('transient', 'episodic', 'low')),
+        # W28 B4 (g08-3 A): the foreign O1 wave lifts onset_failed, the q-2 b ceiling holds it at medium
+        ('coorbital__2020_CB__1E-1+0+0', ('transient', 'episodic', 'medium')),
         ('mmr3__60608__1U-1N-2+0+0+2', ('non_resonant', 'circulation', 'medium')),
     ],
 )
@@ -221,7 +222,8 @@ def test_385266_forced_wave_is_no_episode_and_the_owner_names_it():
         'owner_forced_wave',
         '3N-5+0+2',
     )
-    assert sorted(w.force_line for w in analysis.geometry.forced_waves) == ['3N-5', '6N-10']
+    # W28 B1 stall_join (g11-3, E30): the two waves are one run 56.6-98.7 kyr, P 2222 yr on 6N-10 (twice 3N-5)
+    assert sorted(w.force_line for w in analysis.geometry.forced_waves) == ['6N-10']
     assert 'onset_failed' not in v.caps and str(v.confidence) == 'medium' and str(v.reason) == 'circulation'
 
 
@@ -230,7 +232,8 @@ def test_385266_forced_wave_is_no_episode_and_the_owner_names_it():
     'example, expected, fraction',
     [
         ('coorbital__2025_RB7__1E-1+0+0', ('resonant', 'libration', 'medium'), 0.2),
-        ('coorbital__164207__1E-1+0+0', ('resonant', 'libration', 'high'), 0.2),
+        # W28 C7 (g03-9 A): the horseshoe cycle is a sub-regime of the quasi-satellite's episode, no run of its own
+        ('coorbital__164207__1E-1+0+0', ('resonant', 'libration', 'high'), None),
         ('coorbital__2016_CA138__1E-1+0+0', ('transient', 'episodic', 'medium'), 0.5),
         ('coorbital__3753__1E-1+0+0', ('resonant', 'libration', 'medium'), 0.5),
     ],
@@ -247,4 +250,4 @@ def test_benchmark_returns_at_their_levels(example, expected, fraction):
     v = result.verdict
     assert (str(v.status), str(v.angle_status), str(v.confidence)) == expected
     returned = [run for run in result.geometry.runs if run.closed_by_return and run.accepted]
-    assert [run.return_level_fraction for run in returned] == [pytest.approx(fraction)]
+    assert [run.return_level_fraction for run in returned] == ([] if fraction is None else [pytest.approx(fraction)])

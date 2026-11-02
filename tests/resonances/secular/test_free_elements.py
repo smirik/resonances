@@ -9,6 +9,7 @@ intermediate results.
 
 import numpy as np
 import pytest
+from scipy.signal import decimate
 
 from resonances.data.const import PLANETARY_FREQUENCIES
 from resonances.secular.free_elements import (
@@ -18,8 +19,10 @@ from resonances.secular.free_elements import (
     candidate_frequencies,
     choose_basis,
     cluster,
+    _resample,
     decimation_steps,
     free_elements,
+    has_remainder,
     mask_origin,
     rate,
     remove_forced,
@@ -186,6 +189,125 @@ class TestDecimationSteps:
     def test_no_decimation_below_two(self):
         assert decimation_steps(1) == []
 
+    @pytest.mark.parametrize(
+        'factor, expected',
+        [
+            # worked by hand: 31 and 37 are primes above 10, 62 = 2 x 31, 148 = 4 x 37, 100 = 10 x 10
+            (31, [31]),
+            (62, [2, 31]),
+            (100, [10, 10]),
+            (148, [4, 37]),
+        ],
+    )
+    def test_every_factor_is_filtered_and_the_product_is_exact(self, factor, expected):
+        # 31 is the factor of a 15.918-yr record resampled to 500 yr (555527): before W28 it gave [] (no filter).
+        steps = decimation_steps(factor)
+
+        assert steps == expected
+        assert int(np.prod(steps)) == factor
+        assert has_remainder(steps) == (factor in (31, 62, 148))
+
+    @pytest.mark.parametrize('factor', [31, 62, 100, 148])
+    def test_the_thinned_grid_is_times_every_factor(self, factor):
+        # A slow vector (period 50 kyr) passes the filter unchanged, so the resampled value at sample k is the
+        # vector at times[::factor][k]: a shifted or stretched grid would show as a phase error of
+        # 2 pi * shift / 50 kyr (one input step of 15.9 yr is already 2e-3 rad). The middle half of the record is
+        # read: near the ends the filters see padding (next test).
+        dt = 15.918
+        times = np.arange(0.0, 200_000.0, dt)
+        z = 0.05 * np.exp(2j * np.pi * times / 50_000.0)
+
+        steps = decimation_steps(factor)
+        resampled = _resample(z, steps)
+        grid = times[::factor][: len(resampled)]
+
+        assert len(resampled) == len(grid) == int(np.ceil(len(times) / factor))
+        quarter = len(grid) // 4
+        inner = slice(quarter, -quarter)  # the FIR cascades' edge transients reach ~20 coarse samples in
+        truth = 0.05 * np.exp(2j * np.pi * grid / 50_000.0)
+        assert np.max(np.abs(np.angle(resampled[inner] / truth[inner]))) < 2e-4
+        # gain: the FIR passband of two 10-passes costs 0.2 % at this period (factor 100, as before W28)
+        assert np.max(np.abs(np.abs(resampled[inner]) / 0.05 - 1.0)) < 5e-3
+
+    @pytest.mark.parametrize('factor', [5, 64, 100, 500])
+    def test_factors_of_passes_up_to_ten_are_bit_identical_to_the_fir_cascade(self, factor):
+        # The polyphase pass is only for a leftover above 10: a factor made of passes <= 10 is resampled exactly as
+        # before (scipy's zero-phase FIR decimate, pass by pass), so no record whose factor was handled moves.
+        rng = np.random.default_rng(7)
+        z = rng.normal(size=4000) + 1j * rng.normal(size=4000)
+        steps = decimation_steps(factor)
+        expected = z
+        for step in steps:
+            expected = decimate(expected.real, step, ftype='fir', zero_phase=True) + 1j * decimate(
+                expected.imag, step, ftype='fir', zero_phase=True
+            )
+
+        assert not has_remainder(steps)
+        assert np.array_equal(_resample(z, steps), expected)
+
+
+class TestRemainderAntiAlias:
+    """555527 (g09-1): at a 15.918-yr step the factor to 500 yr is 31; before W28 it skipped the filter, Jupiter's
+    11.86-yr term folded into a ~46-yr alias (|1/11.862 - 1/15.918| = 1/46.6 yr) and, where it is larger than the free
+    circle, it wound the free varpi by whole turns: steps."""
+
+    DT = 15.918
+    RATE = 50.0  # arcsec/yr of the free vector, chosen by hand (not a planetary mode)
+
+    def _elements(self):
+        times = np.arange(0.0, 100_000.0, self.DT)
+        z_e = _series(times, [(0.01, self.RATE), (0.03, PLANETARY_FREQUENCIES['g5'])])
+        z_e = z_e + 0.3 * np.abs(z_e) * np.exp(2j * np.pi * times / 11.862)  # ripple 0.3 |z| > |z_free| = 0.01
+        z_i = _series(times, [(0.1, -20.0)])
+        return times, _elements_from_vectors(z_e, z_i)
+
+    def test_the_ripple_leaves_no_step_in_the_free_varpi(self):
+        times, elements = self._elements()
+
+        result = free_elements(times, *elements)
+
+        assert result.resample_steps == (31,)
+        assert result.resample_remainder
+        assert np.median(np.diff(result.times)) == pytest.approx(31 * self.DT)
+        t = result.times[result.keep_e]
+        excess = (np.diff(result.varpi_free) - self.RATE * RAD_PER_ARCSEC * np.diff(t)) / (2.0 * np.pi)
+        assert np.max(np.abs(excess)) < 0.25  # turns per sample; unfiltered, 0.50 (a half-turn ambiguity per sample)
+
+    def test_the_free_rate_is_recovered_within_the_resolution(self):
+        times, elements = self._elements()
+
+        result = free_elements(times, *elements)
+
+        # unfiltered this came out at 79 arcsec/yr, two resolutions (13 arcsec/yr at 100 kyr) away
+        assert abs(result.b_varpi - self.RATE) < result.resolution / 10.0
+
+    def test_the_record_ends_carry_no_larger_transient_than_the_fir_cascade(self):
+        # padtype='line' pads along the line from the first to the last sample, not with zeros. Measured against the
+        # clean vector: from the third sample on, the error is < 0.1 |z_free|; the first two samples carry an edge
+        # transient, smaller than the FIR cascade's at the neighbouring factor 30 = 10 x 3 (the path every composite
+        # factor has always taken: 1.8 |z_free| at the first sample against 0.6).
+        dt = self.DT
+        times = np.arange(0.0, 100_000.0, dt)
+        clean = _series(times, [(0.01, self.RATE), (0.03, PLANETARY_FREQUENCIES['g5'])])
+        rippled = clean + 0.3 * np.abs(clean) * np.exp(2j * np.pi * times / 11.862)
+
+        def error(factor):
+            resampled = _resample(rippled, decimation_steps(factor))
+            grid = times[::factor][: len(resampled)]
+            return np.abs(resampled - _series(grid, [(0.01, self.RATE), (0.03, PLANETARY_FREQUENCIES['g5'])])) / 0.01
+
+        polyphase, fir = error(31), error(30)
+        assert np.max(polyphase[2:-2]) < 0.1
+        assert polyphase[0] < fir[0] and polyphase[-1] < fir[-1]
+
+    def test_no_resampling_records_no_steps(self):
+        times, elements = self._elements()
+
+        result = free_elements(times, *elements, sampling_years=None)
+
+        assert result.resample_steps == ()
+        assert not result.resample_remainder
+
 
 class TestFreeElements:
     def test_equal_free_rates_make_omega_librate(self, times):
@@ -337,3 +459,130 @@ class TestOutputs:
         # Masked samples carry NaN in the angle columns rather than being dropped, so the
         # file stays aligned with the times column.
         assert np.isnan(columns['omega_free_unwrapped']).sum() == int((~(elements.keep_e & elements.keep_i)).sum())
+
+
+class TestRemainderRuleFlag:
+    """The rule free_resample_remainder (`analysis.rules`) names a ZLK row whose free elements were resampled with a
+    polyphase leftover pass; it changes no status."""
+
+    @staticmethod
+    def _zlk(dt):
+        from resonances.resonance.analysis.secular import LongPeriodSeries
+        from resonances.resonance.analysis.settings import settings_from_config
+        from resonances.resonance.analysis.verdict import ResonanceType
+        from resonances.resonance.analysis.zlk import analyse_zlk
+
+        t = np.arange(0.0, 60_000.0, dt)
+        z_e = _series(t, [(0.03, PLANETARY_FREQUENCIES['g5']), (0.1, 40.0)])
+        Omega = -30.0 * RAD_PER_ARCSEC * t
+        e, varpi = np.abs(z_e), np.angle(z_e)
+        inc = np.full_like(t, np.radians(30.0))
+        omega = np.unwrap(varpi - Omega)
+        series = LongPeriodSeries(
+            ResonanceType.LIDOV_KOZAI, 'LK', 'synthetic', t, omega, np.full_like(t, 2.5), e, inc, varpi=np.unwrap(varpi), Omega=Omega
+        )
+        elements = free_elements(t, e, inc, Omega, omega)
+        return analyse_zlk(series, settings_from_config(), free_elements=elements), elements
+
+    def test_a_factor_of_31_fires_the_rule(self):
+        analysis, elements = self._zlk(15.918)
+
+        assert elements.resample_steps == (31,)
+        assert 'free_resample_remainder' in analysis.verdict.rules_fired
+
+    def test_a_factor_of_passes_up_to_ten_does_not(self):
+        analysis, elements = self._zlk(10.0)  # 500 / 10 = 50 = 10 x 5
+
+        assert elements.resample_steps == (10, 5)
+        assert 'free_resample_remainder' not in analysis.verdict.rules_fired
+
+
+class TestRhoI:
+    """FreeElements.rho_i_local_max (W28 D8, g09-7): the free inclination over the turning forced one, the constant
+    (s5 = 0, the reference plane's tilt) left out. Expected ratios are the amplitudes put into the signal."""
+
+    @staticmethod
+    def _split(times, inclination_terms):
+        z_e = _series(times, [(0.03, PLANETARY_FREQUENCIES['g5']), (0.10, 40.0)])
+        z_i = _series(times, inclination_terms)
+        return free_elements(*(times,) + _elements_from_vectors(z_e, z_i), sampling_years=None)
+
+    @pytest.mark.parametrize('free, forced, expected', [(0.05, 0.01, 5.0), (0.01, 0.02, 0.5)])
+    def test_the_ratio_is_the_free_over_the_turning_forced_amplitude(self, times, free, forced, expected):
+        # a constant of 0.02 sits in the signal as well: counted with the forced part it would give 0.05 / 0.03 or less
+        result = self._split(times, [(0.02, 0.0), (forced, PLANETARY_FREQUENCIES['s6']), (free, -50.0)])
+
+        assert 's6' in result.basis_i and 'const' in result.basis_i
+        assert result.rho_i_local_max() == pytest.approx(expected, rel=0.02)  # 5 +- 0.1
+        assert result.rho_i_local_max(period_yr=30_000.0) == pytest.approx(expected, rel=0.02)
+
+    def test_a_constant_only_forced_part_has_no_ratio(self):
+        # over 80 kyr 2/T = 32.4 arcsec/yr chains s6 (-26.35) through s7 and s8 to the constant: one cluster, the
+        # constant fitted alone, nothing turning to compare with (373136 over 100 kyr)
+        times = np.arange(0.0, 80_000.0, 50.0)
+        result = self._split(times, [(0.02, 0.0), (0.05, -50.0)])
+
+        assert list(result.basis_i) == ['const']
+        assert result.forced_i_turning() is None
+        assert np.isnan(result.rho_i_local_max(period_yr=20_000.0))
+
+
+class TestNodeNear:
+    """A planetary residual whose only match is the free node within a Rayleigh width of s_j (1981 Midas: s6, d 1.85 <
+    2.59 arcsec/yr over 500 kyr): `omega_free_gate.node_near` and the columns of `diagnostics.node_near`."""
+
+    @staticmethod
+    def _split(node_rate):
+        # 500 kyr: resolution 1296000 / 500000 = 2.592 arcsec/yr; varpi and Omega turn together, so omega librates
+        times = np.arange(0.0, 500_000.0, 100.0)
+        z_e = _series(times, [(0.03, PLANETARY_FREQUENCIES['g5']), (0.20, node_rate)])
+        z_i = _series(times, [(0.01, 0.0), (0.30, node_rate)])
+        return free_elements(*(times,) + _elements_from_vectors(z_e, z_i), sampling_years=None)
+
+    @staticmethod
+    def _columns(elements, period=20_000.0):
+        from types import SimpleNamespace
+
+        from resonances.resonance import omega_free_gate
+        from resonances.resonance.analysis.secular.models import GateResult
+        from resonances.resonance.analysis.settings import settings_from_config
+        from resonances.resonance.analysis.zlk import diagnostics
+
+        config = SimpleNamespace(free_gate_enabled=True, free_gate_min_cycles=3.0)
+        verdict = omega_free_gate.evaluate_gate(elements, period, config)
+        gate = GateResult(outcome=str(verdict.outcome), matches=tuple(verdict.matches), libration_period_yr=period)
+        return verdict, diagnostics.node_near(elements, gate, settings_from_config()).to_columns()
+
+    def test_a_node_within_a_width_of_s6_is_named(self):
+        elements = self._split(PLANETARY_FREQUENCIES['s6'] - 1.85)
+        verdict, columns = self._columns(elements)
+
+        assert elements.librates
+        assert str(verdict.outcome) == 'planetary_residual'
+        assert all(match.startswith('b_Omega~s6') for match in verdict.matches)
+        assert columns['zlk_gate_node_near'] == 's6'
+        distance = abs(elements.b_Omega - PLANETARY_FREQUENCIES['s6'])
+        assert columns['zlk_gate_node_near_d_arcsec_yr'] == pytest.approx(distance)
+        assert columns['zlk_gate_node_near_resolution_arcsec_yr'] == pytest.approx(2.592, rel=1e-3)
+        assert distance < 2.592
+        assert columns['zlk_gate_node_separation_yr'] == pytest.approx(1_296_000.0 / distance)
+
+    def test_a_node_far_from_every_s_mode_is_not(self):
+        elements = self._split(-40.0)  # 13.65 arcsec/yr from s6, five widths
+        verdict, columns = self._columns(elements)
+
+        assert str(verdict.outcome) == 'confirmed'
+        assert columns['zlk_gate_node_near'] == ''
+        assert np.isnan(columns['zlk_gate_node_near_d_arcsec_yr'])
+        assert np.isfinite(columns['free_rho_i_max'])
+
+    def test_an_eccentricity_match_is_not_a_node_near(self):
+        # b_varpi on g5 as well: the residual is not the node alone
+        times = np.arange(0.0, 500_000.0, 100.0)
+        z_e = _series(times, [(0.20, PLANETARY_FREQUENCIES['g5'] + 1.0)])
+        z_i = _series(times, [(0.01, 0.0), (0.30, PLANETARY_FREQUENCIES['s6'] - 1.0)])
+        elements = free_elements(*(times,) + _elements_from_vectors(z_e, z_i), sampling_years=None)
+        from resonances.resonance import omega_free_gate
+
+        mode, distance = omega_free_gate.node_near(elements)
+        assert mode == '' and np.isnan(distance)

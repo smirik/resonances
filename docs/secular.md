@@ -80,6 +80,20 @@ apart), a tenth of a window apart, and builds the longitude as `g_j t + φ_j(t)`
 of either end the phase goes on along its slope. A baseline shorter than the window keeps the linear
 law: a shorter fit cannot separate g3 from g4 (over 200 kyr it puts g3 51° off).
 
+### Mode phases
+
+**How far the linear phases stray** (`resonances/data/mode_phase_uncertainty.json`). For every mode, `range_j(T)` is
+the largest max − min of `φ_j(t)` over a window of length `T`, from the same 5 Myr fits, in three runs of the model
+(SABA dt 0.5 and 0.25 over 50 Myr, WHFast 3 d over 20 Myr), the maximum over the runs. Up to 20 Myr the windows lie
+anywhere inside the first 20 Myr from the epoch, the span the three runs agree on; a longer `T` starts at the epoch
+(both SABA runs show a jump of the inner modes 22–25 Myr ahead, where g3 moves by 125° in 2.5 Myr).
+At `T` = 10 Myr: g1 18°, g2 2.7°, g3 24°, g4 30°, s1 17°, s2 87°, s3 23°, s4 81°; every outer mode below 10°
+(s6 9.5°, g5 1.4°, g6 0.9°). The fit smooths `φ_j` over 5 Myr, so below that length `range_j` is the phase's drift,
+not its faster wobble. Under the linear law a secular libration must swing more than `Σ|k_j| range_j(T)` over the
+angle's modes, or it is `insufficient_time` / `phase_unresolved` ([the rule](physics/secular-zlk.md#geometry-and-status)).
+Rebuild: `uv run python experiments/2026-10-planetary-frequencies/phase_uncertainty.py --write` (the runs' `.npz`
+files are local).
+
 ## Which resonances to check
 
 `SECULAR_FORMULAS` is the catalogue: the linear `ν_j`, `ν_1j` of all planets, the classical degree-4

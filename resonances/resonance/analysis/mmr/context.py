@@ -315,12 +315,60 @@ def mu_scale_no_eccentricity(spec: ResonanceSpec, masses: Mapping[str, float]) -
     return float(np.prod([masses[name] for name in spec.planets]))
 
 
+# Sources of a planet's band q_j..Q_j (column ctx_orbit_overlap_source).
+BAND_SAVED = 'saved'  # min q_j and max Q_j of the saved elements over the record
+BAND_J2000 = 'J2000'  # const.PLANETS_AXIS and the J2000 const.PLANETS_ECCENTRICITY: one osculating value, no range
+
+
 def _planet_orbit_band(planet: Optional[PlanetSeries], name: str) -> Tuple[float, float]:
     """(q_j, Q_j) [au]: from the saved elements (min q, max Q), else const.PLANETS_AXIS and the J2000 e."""
     if planet is not None:
         return float(np.min(planet.a * (1 - planet.e))), float(np.max(planet.a * (1 + planet.e)))
     a, e = const.PLANETS_AXIS[name], const.PLANETS_ECCENTRICITY[name]
     return a * (1 - e), a * (1 + e)
+
+
+def planet_band(planet: Optional[PlanetSeries], name: str) -> Tuple[float, float, str]:
+    """(q_j, Q_j [au], source) of `_planet_orbit_band`: 'saved' from the saved elements, 'J2000' from
+    const.PLANETS_AXIS and the J2000 e (also when the saved band is not finite: a one-value e, no range)."""
+    if planet is not None:
+        q_j, big_q_j = _planet_orbit_band(planet, name)
+        if math.isfinite(q_j) and math.isfinite(big_q_j):
+            return q_j, big_q_j, BAND_SAVED
+    q_j, big_q_j = _planet_orbit_band(None, name)
+    return q_j, big_q_j, BAND_J2000
+
+
+def orbit_overlap(
+    q_min_au: float, big_q_max_au: float, planets: Optional[Mapping[str, PlanetSeries]] = None
+) -> Tuple[Optional[Tuple[str, ...]], str]:
+    """Radial overlap of the body's band q_min..Q_max with the band q_j..Q_j of each of the eight planets
+    (`PLANET_NAMES_ORDER`): q_min < Q_j and Q_max > q_j (`crossed_planets`). A band overlap is necessary for a close
+    encounter, not sufficient: it ignores the inclination and the phases (card g10-6, the author's option B).
+
+    The planet bands come from `planets` (saved elements) where present, else J2000 (`planet_band`). Returns
+    (overlapped planets in solar-system order, source): source 'saved' (all eight saved), 'J2000' (none saved) or
+    'saved:Earth+Mars' (those saved, the others J2000). Without a finite q_min or Q_max: (None, '') = no data,
+    which is not the same as () = no overlap."""
+    if not (math.isfinite(q_min_au) and math.isfinite(big_q_max_au)):
+        return None, ''
+    planets = planets or {}
+    bands, saved = {}, []
+    for name in PLANET_NAMES_ORDER:
+        q_j, big_q_j, source = planet_band(planets.get(name), name)
+        bands[name] = (q_j, big_q_j)
+        if source == BAND_SAVED:
+            saved.append(name)
+    return crossed_planets(q_min_au, big_q_max_au, bands), orbit_overlap_source(saved)
+
+
+def orbit_overlap_source(saved: Tuple[str, ...]) -> str:
+    """'saved' when all eight planet bands are saved, 'J2000' when none is, else 'saved:<names joined by +>'."""
+    if not saved:
+        return BAND_J2000
+    if len(saved) == len(PLANET_NAMES_ORDER):
+        return BAND_SAVED
+    return f"{BAND_SAVED}:{'+'.join(saved)}"
 
 
 def body_angles(series: MMRSeries) -> Tuple[np.ndarray, Optional[np.ndarray]]:
@@ -361,12 +409,15 @@ def _planet_columns(series: MMRSeries, names: Tuple[str, ...], window_yr: float,
 
 
 def _orbit_columns(series: MMRSeries, range_percentile: float = DEFAULT_AXIS_RANGE_PERCENTILE) -> dict:
-    """Mean elements, ranges and the crossing test (SPEC §4.1, rec). The a range is the [x, 100 - x] percentiles of a,
-    x = `range_percentile` (MMR_AXIS_RANGE_PERCENTILE): nu_lo, nu_hi, the alias branches and the far ratio use it."""
+    """Mean elements, ranges, the crossing test of the angle's planets (`crosses`) and the radial overlap with all
+    eight planets (`orbit_overlap`, card g10-6; no decision reads it) (SPEC §4.1, rec). The a range is the
+    [x, 100 - x] percentiles of a, x = `range_percentile` (MMR_AXIS_RANGE_PERCENTILE): nu_lo, nu_hi, the alias
+    branches and the far ratio use it."""
     a, e = series.a, series.e
     a_lo, a_hi = np.percentile(a, (range_percentile, 100.0 - range_percentile))
     q_min, big_q_max = float(np.min(a * (1 - e))), float(np.max(a * (1 + e)))
     bands = {name: _planet_orbit_band(series.planets.get(name), name) for name in series.resonance.planets}
+    overlap, overlap_source = orbit_overlap(q_min, big_q_max, series.planets)
     return {
         'a_mean_au': float(np.mean(a)),
         'a_p01_au': float(a_lo),
@@ -380,6 +431,8 @@ def _orbit_columns(series: MMRSeries, range_percentile: float = DEFAULT_AXIS_RAN
         'q_min_au': q_min,
         'big_q_max_au': big_q_max,
         'crosses': crossed_planets(q_min, big_q_max, bands),
+        'orbit_overlap': overlap,
+        'orbit_overlap_source': overlap_source,
     }
 
 

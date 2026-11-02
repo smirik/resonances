@@ -68,6 +68,18 @@ What makes it safe rather than merely plausible: **no choice of representative e
 a non-librator into a libration**. Errors move the answer towards withholding a verdict,
 never towards inventing one. That is asserted directly in the tests.
 
+## Resampling
+
+Before the fit both vectors are thinned to about `free_elements_sampling_years` (500 yr) by the integer factor
+$q = {\rm round}(500\ {\rm yr}/\Delta t)$, with an anti-alias filter on the real and imaginary parts: secular work
+needs nothing finer, and a short-period term folded into the secular band would show up as free motion. Every factor is
+filtered. Passes of at most 10 use scipy's zero-phase FIR `decimate`; what no such pass divides (a prime above 10:
+$q = 31$ at the 15.918-yr step of the 100-kyr ZLK records) is a last polyphase pass (`resample_poly`, padded along the
+end-to-end line). The grid is `times[::q]`. Earlier versions skipped that leftover and the record kept its 15.9-yr grid:
+Jupiter's 11.86-yr term aliased to ~47 yr and, where it was larger than the free circle, wound ϖ_free by whole turns
+(555527: 26 turns of excess in one 2-kyr window; 0.37 after the filter, and the gate goes from kinematic to
+planetary_residual). A row resampled with a polyphase pass carries the rule `free_resample_remainder` in `rules_fired`.
+
 ## The mask
 
 Where |z_free| passes near the origin the argument is undefined, and unwrapping through it
@@ -132,6 +144,21 @@ exactly what makes an angle look confined.
 The honest cost: an object whose own g or s sits within one Rayleigh width of a planetary
 fundamental is withheld rather than confirmed. That is a real ambiguity, not a gap.
 
+**The free node near s_j.** When the only match is the free node (`b_Omega` within one width of s_j, `b_varpi` and,
+on a winding ω, `b_omega` away from every planetary rate), the column `zlk_gate_node_near` names s_j, with
+`zlk_gate_node_near_d_arcsec_yr` ($d$), `zlk_gate_node_near_resolution_arcsec_yr` and `zlk_gate_node_separation_yr` =
+$1\,296\,000/d$, the free-element baseline whose width is $d$. 1981 Midas over 500 kyr: ω librates 19 cycles (the gate
+needs 3), but the free node is $d = 1.85$″/yr from s6 against a width of 2.59″/yr; it separates at 0.70 Myr, and the
+extension asks for 1 Myr (`ZLK_EXTEND_RESOLUTION_MARGIN`). The status stays `uncertain` / `gate_unavailable`.
+
+`free_rho_i_max` is the inclination's counterpart of $\rho_{\max}$: the largest rolling ratio of $|z_{i,\rm free}|$ to
+the *turning* forced inclination (the fitted s modes without the constant, which is the tilt of the reference plane;
+empty when the baseline merged s6…s8 into the constant, 373136 over 100 kyr). Far above one, a free node near s_j could
+not be a leak of the forced s_j term, which is at most as large as that term. But while $d$ is below the width, least
+squares splits the free node between the residual and the s_j term, so the ratio is not yet the physical one (1981: the
+fitted s6 term 0.30 against a free radius 0.25, ratio 0.5–1.4). No status reads it; a rule on it waits for the 1-Myr
+run, and a true ν16 lock (s held at s6) is not separated by any length.
+
 ### No amplitude criterion in the gate
 
 An earlier design compared the free eccentricity against an estimated floor of unsubtracted
@@ -159,8 +186,15 @@ A co-orbital of **Mercury to Mars** is different: those planets' own modes (g1�
 are not candidates of the split, so its forced term is simply not subtracted. Such a body
 (inside `ZLK_COORBITAL_HILL_FACTOR` Hill radii of the planet's axis) gets the outcome
 `unavailable`, detail `coorbital_unfitted_forcing`: a libration becomes `uncertain` /
-`gate_unavailable`, an episodic row keeps its status (2020 PP1, an Earth co-orbital, stays
-`transient`). Never `not_applicable`, which would keep the geometric status of a libration.
+`gate_unavailable`, and so does an episodic row, a drift or too few cycles (2020 PP1, an Earth
+co-orbital, and 10563 over 500 kyr; rule `zlk_coorbital_episodic`): no record length makes the
+split fit, so the action is `review`. Never `not_applicable`, which would keep the geometric
+status of a libration.
+
+Any other episodic row without a verdict (a planetary residual, a short window, an undefined
+phase) is `transient` only when $e$ and $i$ trade at constant $\sqrt{1-e^2}\cos i$ inside its
+deciding episode (`zlk_ei_episode_coupling` = `zlk`, `ZLK_EPISODIC_NO_VERDICT`), else `uncertain` /
+`gate_unavailable`: [From the outcome to the status](physics/secular-zlk.md).
 
 ## Beyond the gate
 
@@ -182,7 +216,11 @@ Columns of a ZLK row that change no status (`analysis.zlk.diagnostics`, `analysi
   finite (`law_undefined`) is `not_measured` (`zlk_ei_reason`), never `none`.
   The librators 3040, 162474, 4257, 1373, 1981: `zlk`, phase 177–182°, $r \approx -0.995$, 1.0–1.6 × the
   law. 591986's 6-kyr cycle: `forced_beat`, phase 328°, $\delta i$ 1.2 × the beat law. **Coupling is
-  not libration**: 15527 circulates and shows `zlk` coupling at its 2.05-kyr harmonic.
+  not libration**: 15527 circulates and shows `zlk` coupling at its 2.05-kyr harmonic. The deciding
+  episode's own coupling (`zlk_ei_episode_*`: demodulated on the episode's samples, with the residual
+  $\eta_H$ of the integral) is the one the status of an episodic row without a gate verdict reads;
+  on 88899 over 500 kyr the record says `none` and so does the episode, on 2020 PP1 the record says
+  `zlk` and the deciding episode `none`.
 - **Attribution** of a kinematic libration: the fitted mode with the largest $|c_j|$ (named with the
   modes the baseline merged into it) holds ϖ, provided the free circle stays off the origin
   ($\rho_{\max} < 1$, or the strict pin $\max_t|z_{\rm free}| + \sum_{k \ne j}|c_k| < |c_j|$: the
@@ -275,7 +313,8 @@ The gate: `free_gate` (the outcome), `free_n_cycles` ($T/P_{\rm lib}$), `free_ga
 planetary rates a residual could not be told apart from), and the same as the analysis read them: `zlk_gate`,
 `zlk_gate_n_cycles` ($T/P_{\rm cyc}$: cycles of the osculating ω, not turns of the free one), `zlk_gate_min_cycles`,
 `zlk_gate_period_yr`, `zlk_gate_matches`, `zlk_gate_detail` (`coorbital_unfitted_forcing`), `zlk_gate_rho_max` (the
-local ratio the status reads), `zlk_gate_rho_global` (the former median ratio, descriptive). The check
+local ratio the status reads), `zlk_gate_rho_global` (the former median ratio, descriptive), `free_rho_i_max` and
+`zlk_gate_node_near*` ([the free node near s_j](#why-the-same-check-stands-on-both-branches), numbers only). The check
 `check_zlk_free_omega` is `pass` (confirmed), `fail` (kinematic) or `not_measured`. The columns of
 [Beyond the gate](#beyond-the-gate) are listed in [Output](output.md).
 

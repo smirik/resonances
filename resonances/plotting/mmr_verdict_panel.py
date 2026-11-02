@@ -2,7 +2,8 @@
 `combined.numbers`).
 
 Explained (default, layout A′): `draw_explained` = the explanation of `verdict_text.explain_mmr` and the numbers of
-`explained_lines` (episodes, `EXPLAINED_GROUPS` most important first, the characteristic periods of `period_lines`).
+`explained_lines` ('Numbers behind this verdict' from `VerdictText.emphasis`, then the episodes, `EXPLAINED_GROUPS`
+most important first, the characteristic periods of `period_lines`; a number of the block is a pointer in the table).
 
 All: every number of the decision as text, below. The engine (cells, units, block assembly, column placement,
 drawing) is shared with the secular/ZLK figure in `combined_numbers`; this module holds the MMR blocks and tables.
@@ -65,7 +66,7 @@ from .combined_numbers import (  # noqa: F401  (re-exported: the API of this mod
     unit_of,
 )
 from .style import VerdictFigureLayout
-from .verdict_text import episode_accepted, explain_mmr, fmt, physics_columns, years
+from .verdict_text import episode_accepted, episode_marks, explain_mmr, fmt, interval, physics_columns, residence_sides, years
 
 NOT_RUN_NO_TRIGGER = 'not run: no trigger'
 NOT_RUN_NO_DATA = 'not run: data missing'
@@ -335,8 +336,12 @@ BLOCKS: Dict[str, BlockSpec] = {
             'kin_two_omega_period_yr',
             'kin_e_cos2omega_corr',
             'kin_detail',
+            'kin_pred_swing_deg',
+            'kin_meas_swing_deg',
         ),
-        ('kin_',),
+        ('kin_', 'slow_'),
+        # W28 B10b: the slow scale (B10a, columns slow_*) is a kinematic reading of the centre, printed here
+        groups=(('kinematics', ('kin_*',)), ('slow scale', ('slow_*',))),
     ),
     'strength': BlockSpec(
         'STRENGTH',
@@ -366,7 +371,9 @@ _PREFIXES = numbers.block_prefixes(BLOCKS, ('ctx_',))
 
 
 def label_of(column: str) -> str:
-    """The column without its MMR block prefix and unit (`smp_unwrap_resid_p99_deg` -> `unwrap_resid_p99`)."""
+    """The words of a pendulum column (`combined_numbers.COLUMN_LABELS`: `ep_T0_min_kyr` -> 'small-swing period T0 min
+    (from observed cycles)'), else the column without its MMR block prefix and unit (`smp_unwrap_resid_p99_deg` ->
+    `unwrap_resid_p99`)."""
     return numbers.label_of(column, _PREFIXES)
 
 
@@ -445,6 +452,35 @@ def _forced_wave(episode: Mapping[str, Any]) -> bool:
     return not missing(value) and str(value).strip().lower() not in ('', 'false', '0', 'none')
 
 
+# episodes.csv `forced_wave` routes that are no forced wave found (W28 B2, B6b): their words in the episode line
+FORCED_ROUTE_WORDS = {'strength': ' forced (strength)', 'unconfirmed_ripple': ' unconfirmed ripple'}
+
+
+def _forced_words(episode: Mapping[str, Any]) -> str:
+    """' forced wave' (F6), ' forced (strength)' (a 5s row, B2) or ' unconfirmed ripple' (B6b), by the route."""
+    return FORCED_ROUTE_WORDS.get(str(episode.get('forced_wave')).strip(), ' forced wave')
+
+
+# episodes.csv ineligible_reason of an accepted run the status does not count and no other mark names (W28 C11, card
+# g02-9 A) -> the words of its line
+UNCOUNTED_WORDS = {'below_period_floor': 'not counted: below the period floor', 'centre_turns': 'not counted: the centre turns'}
+
+
+def _uncounted(episode: Mapping[str, Any]) -> str:
+    """'not counted: below the period floor' for an accepted run the status does not count (C11), else ''."""
+    return UNCOUNTED_WORDS.get(str(episode.get('ineligible_reason') or ''), '') if episode_accepted(episode) else ''
+
+
+def _counted_text(episodes: Sequence[Mapping[str, Any]]) -> str:
+    """', 0 counted' (W28 C11): the accepted runs the status counts (episodes.csv eligible not False); '' when the
+    rows have no eligibility."""
+    accepted = [episode for episode in episodes if episode_accepted(episode)]
+    if not any('eligible' in episode for episode in accepted):
+        return ''
+    counted = [episode for episode in accepted if str(episode.get('eligible')).strip().lower() not in ('false', '0')]
+    return f', {len(counted)} counted'
+
+
 def _episode_text(episode: Mapping[str, Any]) -> str:
     span = f"{format_cell('t_start_yr', episode.get('t_start_yr'))}–{format_cell('t_end_yr', episode.get('t_end_yr'))} yr"
     parts = [
@@ -452,7 +488,9 @@ def _episode_text(episode: Mapping[str, Any]) -> str:
     ]
     text = f"#{format_cell('episode_id', episode.get('episode_id'))} {span} " + ' '.join(parts)
     if episode_accepted(episode):
-        return text + (' forced wave' if _forced_wave(episode) else f" {format_cell('subtype', episode.get('subtype'))}")
+        if _uncounted(episode):
+            return f'{text} {_uncounted(episode)}'
+        return text + (_forced_words(episode) if _forced_wave(episode) else f" {format_cell('subtype', episode.get('subtype'))}")
     return text + f" rejected: {format_cell('reject_reason', episode.get('reject_reason'))}"
 
 
@@ -605,6 +643,8 @@ EXPLAINED_GROUPS = (
     ),
     (
         'PENDULUM, ENERGY, ZONE',
+        # labelled in words with their source (`combined_numbers.COLUMN_LABELS`, W28 E11): T0 is inferred from the
+        # observed cycles, never a theory; the min/max and lo/hi pairs print as one range (`RANGE_LABELS`)
         (
             'ep_T0_min_kyr',
             'ep_T0_max_kyr',
@@ -672,12 +712,40 @@ EXPLAINED_GROUPS = (
         # CS11: the numbers are in the physics block ('Is σ the own pendulum'), not repeated here
         ('str_method', 'str_n_consistent', 'str_n_evaluations', 'str_planet_elements', 'str_not_measured_reason'),
     ),
-    ('KINEMATICS', ('kin_corr_rate', 'kin_e_free', 'kin_e_forced', 'kin_modulation_period_kyr', 'kin_two_omega_period_yr')),
+    (
+        'KINEMATICS',
+        (
+            'kin_corr_rate',
+            'kin_e_free',
+            'kin_e_forced',
+            'kin_modulation_period_kyr',
+            'kin_two_omega_period_yr',
+            'kin_pred_swing_deg',  # W28 B10b: the half-swing p varpi predicts against the measured one
+            'kin_meas_swing_deg',
+        ),
+    ),
+    (
+        # W28 B10b (cards g08-7, g05-2): the slow scale of the centre and its cause with a level (B10a); a row without
+        # a slow scale prints none of them (a group with no value is left out)
+        'SLOW SCALE',
+        (
+            'slow_period_yr',  # slow_n_cycles is 0 on every row without a slow scale: in the text only
+            'slow_halfamp_deg',
+            'slow_cutoff_yr',
+            'slow_identity',
+            'slow_secular_period_yr',
+            'slow_secular_term',
+            'slow_origin',
+            'slow_cause_level',
+        ),
+    ),
     ('ORBIT', ORBIT_COLUMNS[:-1]),
     ('RECORD', ('flags', 'status_code', 'rec_rule', 'settings_hash', 'confidence_cells_sha')),  # caps, thin: in CONFIDENCE
 )
 EXPLAINED_PREFIXES = ('ep_', 'geo_', 'rsp_', 'sep_', 'sub_', 'own_', 'ctx_', 'smp_', 'flt_', 'str_', 'kin_', 'rec_')
 REJECTED_ROWS_MAX = 4  # rejected runs listed one by one in the explained column (the longest)
+MARKS_SHOWN = 3  # the changes of a 1:1 run that are no boundary listed under it (W28 C13), the first ones, then '…'
+MARK_WORDS = {'well_change': 'well', 'amplitude_change': 'amplitude', 'kick': 'kick'}
 HASH_CHARS = 10
 # constants.csv rows of planetary terms -> their name on the figure
 TERM_NAMES = {
@@ -761,22 +829,32 @@ def _float(value: Any) -> float:
 
 
 def explained_episode_lines(episodes: Sequence[Mapping[str, Any]], decisive_id: Any = None) -> List[NumberLine]:
-    """EPISODES: every accepted run (* = the deciding one) and the longest rejected runs with their reason."""
+    """EPISODES: every accepted run (* = the deciding one; 'N accepted, M counted': the runs the status counts, W28 C11;
+    a run it does not count grey, 'not counted: below the period floor') and the longest rejected runs with their
+    reason."""
     accepted = [episode for episode in episodes if episode_accepted(episode)]
     rejected = [episode for episode in episodes if not episode_accepted(episode)]
-    waves = sum(1 for episode in accepted if _forced_wave(episode))
-    counted = f'{len(accepted)} accepted' + (f' ({waves} forced {"wave" if waves == 1 else "waves"})' if waves else '')
+    kinds: Dict[str, int] = {}
+    for episode in accepted:
+        if _forced_wave(episode):
+            words = _forced_words(episode).strip()
+            kinds[words] = kinds.get(words, 0) + 1
+    marks = ', '.join(f'{n} {words}{"s" if n > 1 and words.endswith(("wave", "ripple")) else ""}' for words, n in kinds.items())
+    counted = f'{len(accepted)} accepted' + (f' ({marks})' if marks else '') + _counted_text(episodes)
     group = f'EPISODES ({counted}, {len(rejected)} rejected runs)'
     lines = []
     for episode in accepted:
         mark = '*' if _same(episode.get('episode_id'), decisive_id) else ' '
-        wave = _forced_wave(episode)
+        wave, uncounted = _forced_wave(episode), _uncounted(episode)
         text = (
             f"{mark}#{format_cell('episode_id', episode.get('episode_id'))} {years(episode.get('t_start_yr'))}–"
             f"{years(episode.get('t_end_yr'))} {fmt(episode.get('n_tp'))} TP P {years(episode.get('period_med_yr'))} "
-            f"A {fmt(episode.get('half_amp_med_deg'))}/{fmt(episode.get('half_amp_max_deg'))}°" + (': forced wave' if wave else '')
+            f"A {fmt(episode.get('half_amp_med_deg'))}/{fmt(episode.get('half_amp_max_deg'))}°"
+            + (f':{_forced_words(episode)}' if wave else '')
+            + (f': {uncounted}' if uncounted else '')
         )
-        lines.append(NumberLine('numbers', '', text, group=group, style='grey' if wave else 'bold'))
+        lines.append(NumberLine('numbers', '', text, group=group, style='grey' if wave or uncounted else 'bold'))
+        lines += [NumberLine('numbers', '', part, group=group, style='grey') for part in coorbital_episode_parts(episode)]
     rejected.sort(key=lambda episode: -_float(episode.get('n_tp')))
     for episode in rejected[:REJECTED_ROWS_MAX]:
         reason = str(episode.get('reject_reason') or '').replace('_', ' ')
@@ -789,6 +867,22 @@ def explained_episode_lines(episodes: Sequence[Mapping[str, Any]], decisive_id: 
     if not episodes:
         lines.append(NumberLine('numbers', '', 'no runs of turning points', group=group, style='grey'))
     return lines
+
+
+def coorbital_episode_parts(episode: Mapping[str, Any]) -> List[str]:
+    """The lines under an accepted 1:1 run (W28 C13; C7 `marks`, C8 `residence_*`): its inferred residence when it
+    reaches beyond the core ('  stay 443 yr–end (inferred)') and its changes that are no boundary ('  well 339 yr ·
+    kick 4.69 kyr', at most MARKS_SHOWN, then '…')."""
+    out = []
+    before, after = residence_sides(episode)
+    if before or after:
+        start = 'start' if before and str(episode.get('residence_bounded_by_start')) == 'edge' else years(episode.get('residence_t0_yr'))
+        end = 'end' if after and str(episode.get('residence_bounded_by_end')) == 'edge' else years(episode.get('residence_t1_yr'))
+        out.append(f'  stay {start}–{end} (inferred)')
+    marks = [f'{MARK_WORDS.get(name, name)} {years(t0) if t0 == t1 else interval(t0, t1)}' for name, t0, t1 in episode_marks(episode)]
+    if marks:
+        out.append('  ' + ' · '.join(marks[:MARKS_SHOWN]) + (' · …' if len(marks) > MARKS_SHOWN else ''))
+    return out
 
 
 SUB_TABLE_ROWS = 3  # members of the ranked list with columns of their own (`subresonances.TABLE_ROWS`)
@@ -881,9 +975,13 @@ def explained_lines(
     constants: Sequence[Mapping[str, Any]],
     text,
 ) -> List[NumberLine]:
-    """The numbers of the explained column: episodes first, then EXPLAINED_GROUPS with the characteristic periods
-    after the resonance, bold = compared by the decision, grey = of a test skipped by design (`text`: VerdictText)."""
+    """The numbers of the explained column: 'Numbers behind this verdict' first (card g10-5, W28 E10: the lines of
+    `text.emphasis`, drawn framed above the table), then the episodes, then EXPLAINED_GROUPS with the characteristic
+    periods after the resonance, bold = compared by the decision, grey = of a test skipped by design (`text`:
+    VerdictText). A number the block prints becomes a pointer in the table when drawn ('↑ decisive [B1]', W20 CS11: no
+    number twice; `combined_numbers.point_to_block`)."""
     row = short_hashes({**numbers_row, **summary})
+    block = numbers.behind_lines(getattr(text, 'emphasis', ()), EXPLAINED_PREFIXES)
     lines = explained_episode_lines(episodes, row.get('ep_episode_id'))
     shown = set(physics_columns(getattr(text, 'physics', ())))
     for title, columns in _without(EXPLAINED_GROUPS, shown):
@@ -892,7 +990,7 @@ def explained_lines(
             lines += ranked_members_lines(row, title)
         if title == 'RESONANCE, RATES':
             lines += period_lines(row, constants)
-    return lines
+    return block + lines  # `numbers.draw_explained` turns the table rows of the block's numbers into pointers
 
 
 def draw_explained(fig, analysis, rows, layout: VerdictFigureLayout, settings=None) -> Dict[str, Any]:

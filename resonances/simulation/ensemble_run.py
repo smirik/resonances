@@ -661,18 +661,17 @@ def write_outputs(simulation):
 
 def _figure_wanted(simulation, run: EnsembleRun, key: str) -> bool:
     """The ensemble figure of a row is drawn with the plot kinds 'clones' or 'combined', when the PLOT mode selects the
-    nominal's row or any clone's."""
+    nominal's row (the inputs of `DataManager.should_plot_body`) or any clone's. A clone's row carries no action
+    (`clone_store.ROW_FIELDS`): `review` reads its confidence, which decides for a non_resonant row on its own."""
     config = simulation.config
     if config.plot is None or not ({'clones', 'combined'} & set(config.plots)):
         return False
     body = _nominal_body(simulation, run)
-    if body is not None:
-        verdict = body.librations.get(key)
-        if status_selected(config.plot, body.statuses.get(key), str(verdict.libration_origin) if verdict is not None else ''):
-            return True
+    if body is not None and status_selected(config.plot, *simulation.data_manager._selection_inputs(body, key)):
+        return True
     for result in run.results.values():
         row = result.get('rows', {}).get(key)
-        if row and status_selected(config.plot, row['status'], row['libration_origin']):
+        if row and status_selected(config.plot, row['status'], row['libration_origin'], row.get('action', ''), row.get('confidence', '')):
             return True
     return False
 

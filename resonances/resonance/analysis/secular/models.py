@@ -14,8 +14,11 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 import numpy as np
 
+from resonances.data.invariable_plane import FRAME_ECLIPTIC
 from resonances.resonance.analysis.geometry import FilteredAngle, Geometry
 from resonances.resonance.analysis.ledger import Ledger
+from resonances.resonance.analysis.mmr.context import orbit_overlap
+from resonances.resonance.analysis.mmr.models import orbit_overlap_columns
 from resonances.resonance.analysis.verdict import ResonanceType, Verdict, finite_or_none, join_list
 
 RAD_TO_DEG = 180.0 / np.pi
@@ -44,6 +47,16 @@ class LongPeriodSeries:
     omega for ZLK) [rad]; `varpi` and `Omega` are the body's osculating longitudes [rad] (the free rates g, s of a
     secular angle come from them); `terms` the angle's terms (secular only) and `planet_frequencies` the modes'
     frequencies [arcsec/yr] the angle was built with.
+
+    `measured_modes` are the planetary modes ('g4', 's3', ...) whose longitudes in the angle were measured in the
+    integration (`SECULAR_PLANET_PHASES=measured`, `planet_modes.measured_longitudes`); the others follow the linear law
+    and carry its phase uncertainty (`secular.phase_uncertainty`, `decide.phase_check`).
+
+    `frame` is the plane `inc`, `Omega`, `varpi` (and the ZLK angle) are measured from: 'ecliptic' (J2000) or
+    'invariable' (`data.invariable_plane`, ZLK_ANGLE_FRAME; a reader that needs the invariable plane must not rotate
+    such a series again). `frame_shift_turns` (ZLK in the invariable frame): the range of omega(invariable) -
+    omega(ecliptic) over the record in turns; one turn or more means the two frames wind omega differently (rule
+    zlk_invariable_frame), nan when not measured.
     """
 
     resonance_type: ResonanceType
@@ -58,6 +71,9 @@ class LongPeriodSeries:
     Omega: Optional[np.ndarray] = None
     terms: Tuple[AngleTerm, ...] = ()
     planet_frequencies: Mapping[str, float] = field(default_factory=dict)
+    frame: str = FRAME_ECLIPTIC
+    frame_shift_turns: float = float('nan')
+    measured_modes: Tuple[str, ...] = ()
 
     @property
     def step_yr(self) -> float:
@@ -147,6 +163,52 @@ class Response:
 
 
 @dataclass
+class EpisodeCoupling:
+    """The e-i coupling of a ZLK omega inside its deciding librating episode, at the episode's own period P
+    (`analysis.zlk.episode_ei.measure_episode_coupling`, W28 D10). The status of an episodic omega without a gate
+    verdict reads `coupling` under ZLK_EPISODIC_NO_VERDICT=ei (`decide.decide_status`); the record's coupling
+    (`zlk_ei_coupling`) stays a column.
+
+    coupling: zlk | forced_beat | none | not_measured; reason (not_measured): no_episode, short_episode, undersampled,
+    orbit_flip, flat_series, law_undefined."""
+
+    coupling: str = 'not_measured'
+    reason: str = 'no_episode'
+    episode_id: Optional[int] = None
+    period_yr: float = float('nan')
+    n_periods: float = float('nan')  # (last TP - first TP) / P
+    phase_deg: float = float('nan')  # phase of i against e at P, [0, 360)
+    coherence: float = float('nan')  # signed by cos(phase): -1 antiphase throughout, +1 in phase
+    eta_h: float = float('nan')  # |delta H| / |cos i delta G|, H = G cos i, G = sqrt(1 - e^2)
+    eta_k: float = float('nan')  # |delta K| / |(1 - cos i) delta G|, K = G (1 - cos i)
+    ratio_h: float = float('nan')  # |delta i| / |delta e| over the constant-H slope (a column)
+    amp_e: float = float('nan')
+    amp_i_deg: float = float('nan')
+    # the thresholds the class was taken with, for the ledger of `decide_status` (ZLK_EI_MIN_CYCLES,
+    # ZLK_EI_PHASE_TOL_DEG, ZLK_EI_EPISODE_MIN_COHERENCE, ZLK_EI_H_RESIDUAL_MAX)
+    min_cycles: float = float('nan')
+    phase_tol_deg: float = float('nan')
+    min_coherence: float = float('nan')
+    h_residual_max: float = float('nan')
+
+    def to_columns(self) -> Dict[str, Any]:
+        return {
+            'zlk_ei_episode_coupling': self.coupling,
+            'zlk_ei_episode_reason': self.reason,
+            'zlk_ei_episode_id': self.episode_id,
+            'zlk_ei_episode_period_yr': self.period_yr,
+            'zlk_ei_episode_n_periods': self.n_periods,
+            'zlk_ei_episode_phase_deg': self.phase_deg,
+            'zlk_ei_episode_coherence': self.coherence,
+            'zlk_ei_episode_eta_h': self.eta_h,
+            'zlk_ei_episode_eta_k': self.eta_k,
+            'zlk_ei_episode_ratio_h': self.ratio_h,
+            'zlk_ei_episode_amp_e': self.amp_e,
+            'zlk_ei_episode_amp_i_deg': self.amp_i_deg,
+        }
+
+
+@dataclass
 class GateResult:
     """The free-omega gate of a Lidov-Kozai angle as the analysis read it (`omega_free_gate`)."""
 
@@ -168,6 +230,10 @@ class GateResult:
     rho_episodes: float = float('nan')
     free_turns_episodes: float = float('nan')
     free_turns_min: float = float('nan')  # ZLK_EPISODE_FREE_TURNS_PER_CYCLE [turns per cycle]
+    # W28 D10: the e-i coupling inside the deciding librating episode, and ZLK_EPISODIC_NO_VERDICT (ei | uncertain |
+    # keep), which `decide_status` applies to an episodic omega without a gate verdict
+    episode_ei: EpisodeCoupling = field(default_factory=EpisodeCoupling)
+    episodic_policy: str = 'ei'
 
     def to_columns(self) -> Dict[str, Any]:
         return {
@@ -183,6 +249,7 @@ class GateResult:
             'zlk_gate_d_min_arcsec_yr': self.min_distance_arcsec_yr,
             'zlk_gate_rho_episodes': self.rho_episodes,
             'zlk_gate_free_turns_episodes': self.free_turns_episodes,
+            **self.episode_ei.to_columns(),
         }
 
 
@@ -231,6 +298,13 @@ class LongPeriodAnalysis:
     extension: Optional[Any] = None  # `extend.Extension`: the action of an uncertain verdict (columns base_*)
     decisive_episode_id: Optional[int] = None
     n_librating_episodes: Optional[int] = None  # accepted episodes not faster than the shortest libration
+    # the period the physics reads (gate, F, e-i, rho window, extension): the deciding librating episode's
+    # (`decide.decisive_period_yr`), not the pooled P_cyc; column sec_decisive_period_yr
+    decisive_period_yr: float = float('nan')
+    # secular: dphi(T), how far the linear phases of the angle's modes stray over the record, and the swing (2 x the
+    # largest half-amplitude of the deciding episode) compared with it (`decide.phase_check`); nan when not measured
+    phase_uncertainty_rad: float = float('nan')
+    phase_swing_rad: float = float('nan')
     scale: str = ''  # fine | centre: the geometry the verdict rests on (`analyse.SCALE_*`)
     fine_geometry: Optional[Geometry] = None  # the geometry at P_c when the verdict rests on the centre scale
     # why a libration at the centre scale was not taken (ZLK: forced_beat:<gk>-<gj>, its period a beat of the forced
@@ -268,13 +342,25 @@ class LongPeriodAnalysis:
             'ctx_inc_min_deg': _stat(s.inc, np.min, RAD_TO_DEG),
             'ctx_inc_max_deg': _stat(s.inc, np.max, RAD_TO_DEG),
             'ctx_unphysical': self.unphysical_reason,
+            **_orbit_overlap_columns(s),
             'sec_n_librating_episodes': self.n_librating_episodes,
+            'sec_decisive_period_yr': self.decisive_period_yr,
             'sec_scale': self.scale,
             'sec_scale_cutoff_yr': self.angle.cutoff_yr if self.angle is not None else None,
             'sec_fine_n_tp': len(self.fine_geometry.turning_points) if self.fine_geometry is not None else None,
             'sec_fine_period_cycle_yr': self.fine_geometry.period_cycle_yr if self.fine_geometry is not None else None,
             'sec_centre_rejected': self.centre_rejected,
         }
+        if s.resonance_type == ResonanceType.LIDOV_KOZAI:
+            row['zlk_angle_frame'] = s.frame
+            row['zlk_frame_shift_turns'] = s.frame_shift_turns
+        else:
+            row['sec_phase_uncertainty_deg'] = self.phase_uncertainty_rad * RAD_TO_DEG
+            row['sec_phase_swing_deg'] = self.phase_swing_rad * RAD_TO_DEG
+            row['sec_phase_swing_ratio'] = (
+                self.phase_swing_rad / self.phase_uncertainty_rad if self.phase_uncertainty_rad > 0 else float('nan')
+            )
+            row['sec_measured_modes'] = join_list(s.measured_modes)
         for result in (self.cutoff, self.geometry, self.response, self.gate, self.extension, self.centre_line, self.zlk):
             if result is not None:
                 row.update(result.to_columns())
@@ -322,6 +408,14 @@ def _stat(values, function, scale: float = 1.0) -> float:
     values = np.asarray(values, dtype=float)
     finite = values[np.isfinite(values)]
     return float(function(finite) * scale) if len(finite) else float('nan')
+
+
+def _orbit_overlap_columns(series: LongPeriodSeries) -> Dict[str, Any]:
+    """ctx_orbit_overlap(_source): the body's band min q..max Q over the record against the bands of the eight
+    planets (`mmr.context.orbit_overlap`, card g10-6; no decision reads it). A long-period series carries no planet
+    elements, so the planet bands are J2000 (source 'J2000')."""
+    a, e = np.asarray(series.a, dtype=float), np.asarray(series.e, dtype=float)
+    return orbit_overlap_columns(*orbit_overlap(_stat(a * (1 - e), np.min), _stat(a * (1 + e), np.max)))
 
 
 def _episode_row(analysis: LongPeriodAnalysis, run) -> Dict[str, Any]:

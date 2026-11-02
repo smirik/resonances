@@ -15,8 +15,9 @@ Expected values are derived here, not read from the implementation:
   of a is turned by 90 degrees, so a_dot is in quadrature with sin(sigma - phi0) for any phi0 (only odd harmonics of
   the libration frequency there, while cos(sigma - pi) carries only even ones) and R^2 ~ cos^2(90 deg) = 0;
 - two episodes are separated by a rest of sigma at the centre (half-amplitude 0.3 deg: no turning point at the
-  libration's prominence, a gap > 3 half-periods), a jump of a by a circulation of energy 8 w0^2 (sigma_dot ~ 4.2 w0
-  shifts n by ~4 % of 2 n_J - the jump of a ~ 2.5 %).
+  libration's prominence, a gap > 3 half-periods; since W28 A7 the angle stays inside the band there, so the
+  episodes join into one union and the status is resonant, while rule R still reads them one by one), a jump of a
+  by a circulation of energy 8 w0^2 (sigma_dot ~ 4.2 w0 shifts n by ~4 % of 2 n_J - the jump of a ~ 2.5 %).
 """
 
 import dataclasses
@@ -408,7 +409,8 @@ def test_two_genuine_episodes_the_one_with_more_turning_points_is_read():
     assert cols['rsp_n_witnesses'] == 2 and cols['rsp_n_episode_force_fail'] == 0
     assert cols['rsp_force_source'] == cols['rsp_identity_source'] == cols['rsp_b1_source'] == 'witness'
     v = analysis.verdict
-    assert v.status == Status.TRANSIENT
+    # W28 A7: the rest at the centre between the episodes is a bounded gap, so the two join (union) -> resonant
+    assert v.status == Status.RESONANT
     assert MIXED not in _strs(v.flags) and MIXED not in _strs(v.caps)
 
 
@@ -422,7 +424,8 @@ def test_witness_and_conflict_cap_medium_on_a_genuine_and_a_shuffled_episode():
     assert cols['rsp_witness_episode_id'] == genuine.episode_id
     assert cols['rsp_n_witnesses'] == 1 and cols['rsp_n_episode_force_fail'] == 1
     v = analysis.verdict
-    assert v.status == Status.TRANSIENT and v.reason == Reason.DYNAMIC_EPISODE
+    # W28 A7: the rest at the centre between the episodes is a bounded gap, so the two join (union) -> resonant
+    assert v.status == Status.RESONANT and v.reason == Reason.DYNAMIC_LIBRATION
     assert v.checks['check_mmr_a_response'] == PASS
     assert MIXED in _strs(v.flags) and MIXED in _strs(v.caps)
     assert _rank(v.confidence) >= _rank(Confidence.MEDIUM)
@@ -440,7 +443,7 @@ def test_witness_and_conflict_cap_medium_on_a_genuine_and_a_shuffled_episode():
 def test_control_without_the_shuffle_has_no_conflict_cap():
     _, control = analysed('genuine_genuine_control')
     v = control.verdict
-    assert v.status == Status.TRANSIENT
+    assert v.status == Status.RESONANT  # W28 A7: bounded gap at the centre -> one union, as in the mixed record
     assert MIXED not in _strs(v.flags) and MIXED not in _strs(v.caps)
     assert _rank(v.confidence) < _rank(Confidence.MEDIUM)  # the medium of the mixed record comes from the cap
 

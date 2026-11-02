@@ -12,6 +12,8 @@ import numpy as np
 
 from resonances.data import const
 
+FRAME_ECLIPTIC, FRAME_INVARIABLE = 'ecliptic', 'invariable'  # the planes elements are measured from (ZLK_ANGLE_FRAME)
+
 
 def rotation_to_invariable() -> np.ndarray:
     """R = Rz(Omega_I) Rx(-I) Rz(-Omega_I): ecliptic vectors into the frame of the invariable plane
@@ -27,14 +29,16 @@ def rotation_to_invariable() -> np.ndarray:
     return rz(node) @ rx(-inc) @ rz(-node)
 
 
-def to_invariable_plane(inc, Omega, omega) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """(inc', Omega', varpi') [rad] of orbits given by ecliptic (inc, Omega, omega), measured from the invariable plane:
-    the angular momentum and the perihelion direction are rotated; varpi' = Omega' + omega'."""
+def rotate_elements(inc, Omega, omega, rotation: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """(inc', Omega', omega') [rad] of orbits given by (inc, Omega, omega) in one frame, in the frame `rotation` takes
+    vectors to: the unit angular momentum h and the unit perihelion vector P are rotated and the angles read back from
+    them. The stored omega enters, never varpi or the mean longitude (REBOUND's pomega and l are -varpi*, -lambda* for
+    i > 90 deg), so an orbit at any inclination, retrograde included, has no jump; Omega' is in (-pi, pi], omega' in
+    (-pi, pi]. At i' = 0 the node is undefined and Omega', omega' are arbitrary, their sum is not."""
     inc, Omega, omega = (np.asarray(x, dtype=float) for x in (inc, Omega, omega))
     ci, si, cn, sn, cw, sw = np.cos(inc), np.sin(inc), np.cos(Omega), np.sin(Omega), np.cos(omega), np.sin(omega)
     h = np.stack([si * sn, -si * cn, ci])
     p = np.stack([cn * cw - sn * sw * ci, sn * cw + cn * sw * ci, sw * si])
-    rotation = rotation_to_invariable()
     h, p = np.tensordot(rotation, h, axes=1), np.tensordot(rotation, p, axes=1)
     inc_new = np.arccos(np.clip(h[2], -1.0, 1.0))
     node_new = np.arctan2(h[0], -h[1])
@@ -42,6 +46,32 @@ def to_invariable_plane(inc, Omega, omega) -> Tuple[np.ndarray, np.ndarray, np.n
     # h x N with N = (cos, sin, 0)
     cross = np.stack([-h[2] * node_y, h[2] * node_x, h[0] * node_y - h[1] * node_x])
     omega_new = np.arctan2(np.sum(p * cross, axis=0), p[0] * node_x + p[1] * node_y)
+    return inc_new, node_new, omega_new
+
+
+def elements_in_invariable_plane(inc, Omega, omega) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """(inc', Omega', omega') [rad] of orbits given by ecliptic (inc, Omega, omega), measured from the invariable plane
+    (`rotate_elements`)."""
+    return rotate_elements(inc, Omega, omega, rotation_to_invariable())
+
+
+def elements_from_invariable_plane(inc, Omega, omega) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """The inverse of `elements_in_invariable_plane`: ecliptic (inc, Omega, omega) [rad] of orbits given in the frame
+    of the invariable plane (the transposed rotation)."""
+    return rotate_elements(inc, Omega, omega, rotation_to_invariable().T)
+
+
+def argument_of_pericentre(inc, Omega, omega) -> np.ndarray:
+    """omega' [rad, (-pi, pi]] from the invariable plane of orbits given by ecliptic (inc, Omega, omega): the angle of
+    the Lidov-Kozai row (ZLK_ANGLE_FRAME = invariable). From the ecliptic a node of an orbit tilted by about the plane's
+    own 1.58 deg or less librates about the plane's node instead of turning, and omega with it (555527)."""
+    return elements_in_invariable_plane(inc, Omega, omega)[2]
+
+
+def to_invariable_plane(inc, Omega, omega) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """(inc', Omega', varpi') [rad] of orbits given by ecliptic (inc, Omega, omega), measured from the invariable plane:
+    the angular momentum and the perihelion direction are rotated; varpi' = Omega' + omega'."""
+    inc_new, node_new, omega_new = elements_in_invariable_plane(inc, Omega, omega)
     return inc_new, node_new, node_new + omega_new
 
 

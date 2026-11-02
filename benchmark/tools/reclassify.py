@@ -74,7 +74,7 @@ def analyse_one(example_id: str, figure: bool = False, settings_overrides: Optio
             'status': 'ok',
             'summary': [_keyed(example_id, a.summary_row()) for a in analyses],
             'numbers': [_keyed(example_id, a.numbers_row()) for a in analyses],
-            'episodes': [_keyed(example_id, row) for a in analyses for row in a.episode_rows()],
+            'episodes': [_keyed(example_id, row) for a in analyses for row in a.episode_rows(include_slow=True)],
             'candidates': [_keyed(example_id, row) for row in analysis.candidate_rows()],
             'constants': [_keyed(example_id, row) for row in analysis.context.constants_rows()] if analysis.context is not None else [],
             'seconds_load': loaded - start,

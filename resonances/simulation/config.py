@@ -13,6 +13,7 @@ from resonances.config import config as c
 from resonances.logger import logger
 from resonances.plotting.style import MMR_PLOT_KINDS, SECULAR_PLOT_KINDS, resolve_plot_options
 from resonances.simulation import layout
+from resonances.resonance.analysis.verdict import needs_review
 from resonances.resonance.analysis.settings import (
     AnalysisSettings,
     DryRunSettings,
@@ -41,6 +42,8 @@ class SavePlotMode(StrEnum):
     candidates — resonant, transient, near_separatrix, uncertain
     extended   — candidates and non_resonant with a libration origin (kinematic, induced, subresonance, ...)
     nonzero    — everything except non_resonant without a libration origin
+    review     — nonzero and every row of the review queue (`verdict.needs_review`): a non_resonant row at medium or
+                 low confidence, or with a spot_check/review action (W28 g10-1b; the default of PLOT and SAVE)
     negative   — near_separatrix, uncertain, invalid
     """
 
@@ -50,6 +53,7 @@ class SavePlotMode(StrEnum):
     CANDIDATES = 'candidates'
     EXTENDED = 'extended'
     NONZERO = 'nonzero'
+    REVIEW = 'review'
     NEGATIVE = 'negative'
 
 
@@ -59,11 +63,13 @@ NEGATIVE_STATUSES = frozenset({'near_separatrix', 'uncertain', 'invalid'})
 NON_RESONANT = 'non_resonant'
 
 
-def status_selected(mode, status, libration_origin: str = '') -> bool:
+def status_selected(mode, status, libration_origin: str = '', action: str = '', confidence: str = '') -> bool:
     """Whether a row with this status string (and libration origin) is saved/plotted under `mode`.
 
     `status` None (no verdict) is selected by `all` only. `libration_origin` is the verdict's
-    (kinematic, induced, subresonance, dynamic, unknown, or '' when nothing is bounded).
+    (kinematic, induced, subresonance, dynamic, unknown, or '' when nothing is bounded). `action` and `confidence`
+    are read by `review` only (`verdict.needs_review`); without them `review` selects what `nonzero` does.
+    Every caller (save, the release of unplotted arrays, plot, the ensemble figure) passes the same verdict fields.
     """
     mode = _normalize_mode(mode)
     if mode is None or mode == SavePlotMode.NONE:
@@ -81,6 +87,8 @@ def status_selected(mode, status, libration_origin: str = '') -> bool:
         return status in CANDIDATE_STATUSES or (status == NON_RESONANT and origin != '')
     if mode == SavePlotMode.NONZERO:
         return status != NON_RESONANT or origin != ''
+    if mode == SavePlotMode.REVIEW:
+        return status != NON_RESONANT or origin != '' or needs_review(confidence, action, origin)
     if mode == SavePlotMode.NEGATIVE:
         return status in NEGATIVE_STATUSES
     return False

@@ -1,8 +1,12 @@
 """Planet ripple, the filter cutoff, the filter and the derivatives (SPEC §3 with DELTA item 1).
 
 The cutoff comes from the physics of the angle only: P_c = max(mmr_filter_synodic_factor x the longest synodic
-period of the body with the planets of the angle, P_floor / filter_min_libration_cutoffs), or the explicit
-mmr_filter_cutoff_yr; P_floor is the shortest libration the angle can have (`libration_period_floor`). The output
+period of the body with the planets of the angle, mmr_filter_orbit_factor x the body's own orbital period,
+P_floor / filter_min_libration_cutoffs), or the explicit mmr_filter_cutoff_yr; P_floor is the shortest libration the
+angle can have (`libration_period_floor`). The orbit bound (B6a, cards g07-5/g07-6) is there because heliocentric
+elements osculate about GM_sun alone while the body moves about the Sun and the planets inside its orbit: a and lambda
+carry a wave at the body's own P_orb, which binds only beyond a planet's 1:2 (P_orb > P_syn; 523683 2U-9: 379 yr read
+as libration cycles). The output
 step does not enter: the step only decides whether the record can be filtered at all (P_c > 2 dt, else invalid /
 undersampled in `analyse`) and whether short-period terms fold into slow ones (`sampling.short_period_step`). A
 cutoff that grew with the step (the old 20 dt) removed a 148-yr Trojan libration at 15.9 yr (G = 0.05) and set the
@@ -39,6 +43,7 @@ import numpy as np
 
 from resonances.resonance.analysis.filtering import butterworth_gain, edge_window, lowpass, time_derivative
 from resonances.resonance.analysis import geometry as geometry_module
+from resonances.resonance.analysis import rules as rules_module
 from resonances.resonance.analysis.geometry import FilteredAngle, Geometry
 from resonances.resonance.analysis.mmr import sampling as sampling_module
 from resonances.resonance.analysis.mmr.context import trend_line
@@ -79,15 +84,99 @@ def libration_period_floor(spec: ResonanceSpec, context: Context, settings: Anal
     return float(settings.mmr_libration_period_min_yr), 'mmr_libration_period_min_yr'
 
 
+SUBFLOOR_SOURCE = 'subfloor_theory'  # the floor of the G1f pass (`profile_period_floor`, `analyse._subfloor_pass`)
+
+
+@dataclass(frozen=True)
+class ProfileFloor:
+    """`profile_period_floor`: the floor [yr] and its source, with the theoretical period it comes from."""
+
+    floor_yr: float
+    source: str
+    period_yr: float  # T0_th: the shortest small-amplitude period of the resonance's own averaged potential there
+
+    @property
+    def period_floor(self) -> Tuple[float, str]:
+        return self.floor_yr, self.source
+
+
+def profile_period_floor(
+    series: MMRSeries, context: Context, prep: Preprocessed, settings: AnalysisSettings, episode=None
+) -> Optional[ProfileFloor]:
+    """The shortest libration period the resonance's own averaged potential allows (the shared hook of W28 B5/C3,
+    cards g08-2 B, g02-1, q-3 A), from the snapshots of `episode` (its turning points test the swing against the
+    well) or, without one, of the record's edge-trimmed window (`strength.record_swings` of sigma low-passed at P_c / 2,
+    the raw angle where that filter does not exist).
+
+    - two-body, not 1:1: T0_th / sqrt(mmr_strength_check_ratio), T0_th the smallest small-amplitude period of the
+      consistent evaluations of the direct theory (`strength.theory_period`; a pendulum is slowest at large amplitude,
+      so T0_th bounds the well's librations from below, and the strength check accepts T0 down to T0_th / sqrt(ratio));
+    - prograde 1:1, with `episode` (a run of >= 2 TPs): mmr_coorbital_period_floor_factor x the loop of the averaged
+      potential through its own turns when they all reflect on a top and its local law has K / K_theory > 0
+      (`coorbital_geometry.CoorbitalRunFloor`, W28 C3, source 'profile_loop', period the loop's); None otherwise and
+      without an episode (the geometry reads the same model per run, `geometry.FilteredAngle.run_floor`);
+    - three-body: None (no computed theory: Gallardo's coefficient is unknown to 1-100).
+
+    None also when no evaluation is consistent (sigma circulates, or no well holds its swings)."""
+    from resonances.resonance.analysis.mmr import strength as strength_module  # strength imports this module
+
+    spec = series.resonance
+    if coorbital_planet(spec) is not None:
+        return _coorbital_profile_floor(series, context, prep, settings, episode)
+    if not strength_module.direct_applicable(spec):
+        return None
+    if episode is None:
+        t = np.asarray(prep.t_yr, dtype=float)
+        start, end = prep.window
+        if not (np.isfinite(start) and np.isfinite(end) and end > start):
+            return None
+        angle = prep.angle_f_half if np.any(np.isfinite(prep.angle_f_half)) else prep.angle_clean
+        episode = strength_module.record_swings(t, angle, float(start), float(end), settings.mmr_strength_snapshots)
+        if episode is None:
+            return None
+    theory = strength_module.theory_period(series, context, episode, prep.cutoff.cutoff_yr, settings)
+    if not (np.isfinite(theory.period_min_yr) and theory.period_min_yr > 0):
+        return None
+    floor = theory.period_min_yr / math.sqrt(settings.mmr_strength_check_ratio)
+    return ProfileFloor(float(floor), SUBFLOOR_SOURCE, float(theory.period_min_yr))
+
+
+def _coorbital_profile_floor(
+    series: MMRSeries, context: Context, prep: Preprocessed, settings: AnalysisSettings, episode
+) -> Optional[ProfileFloor]:
+    """The 1:1 branch of `profile_period_floor`."""
+    from resonances.resonance.analysis.mmr import coorbital_geometry  # it imports this module inside its functions
+
+    if episode is None or len(episode.tp_times_yr) < 2:
+        return None
+    model = coorbital_geometry.coorbital_run_floor(
+        series, context, prep.t_yr, prep.angle_clean, context.orbital_period_yr, prep.cutoff.cutoff_yr, settings
+    )
+    if model is None:
+        return None
+    floor, _, source, columns = model.read(episode.tp_times_yr, episode.tp_values_rad)
+    if not (np.isfinite(floor) and floor > 0):
+        return None
+    return ProfileFloor(float(floor), source, float(columns['cpl_loop_period_yr']))
+
+
 def choose_cutoff(
     synodic_periods_yr: Mapping[str, float],
     step_yr: float,
     settings: AnalysisSettings,
     period_floor_yr: Optional[float] = None,
+    orbital_period_yr: Optional[float] = None,
 ) -> Cutoff:
-    """P_c = max(mmr_filter_synodic_factor x max P_syn, P_floor / filter_min_libration_cutoffs) [yr]; binding
-    'synodic' or 'floor'; the explicit mmr_filter_cutoff_yr wins ('user'). Without planets of the angle the synodic
-    bound is 0; `step_yr` only gives samples_per_cutoff.
+    """P_c = max(mmr_filter_synodic_factor x max P_syn, mmr_filter_orbit_factor x P_orb,
+    P_floor / filter_min_libration_cutoffs) [yr]; binding 'synodic', 'orbit' or 'floor'; the explicit
+    mmr_filter_cutoff_yr wins ('user'). Without planets of the angle the synodic bound is 0, without a finite positive
+    `orbital_period_yr` (the body's 2 pi / n(<a>)) the orbit bound is 0; `step_yr` only gives samples_per_cutoff.
+
+    The orbit bound damps the wave at the body's own P_orb that heliocentric elements carry (the GM of the planets
+    inside the orbit is missing from GM_sun). An inner body has P_syn > P_orb with every outer planet, and so has an
+    outer body inside the planet's 1:2, so the bound binds only beyond a 1:2 (TNOs and outer Centaurs against
+    Uranus or Neptune, a body beyond Venus' 1:2 against Venus when the floor is lower); a co-orbital keeps its floor
+    (its tadpole period is far longer than P_orb).
 
     The floor bound P_floor / filter_min_libration_cutoffs (`period_floor_yr` from `libration_period_floor`, default
     mmr_libration_period_min_yr) keeps the shortest libration of the angle at G = 0.94 where it sets P_c (a longer
@@ -100,16 +189,29 @@ def choose_cutoff(
     2000, also set their bands by the physics; the step is a validity condition, `analyse`)."""
     floor = settings.mmr_libration_period_min_yr if period_floor_yr is None else period_floor_yr
     periods = [float(p) for p in synodic_periods_yr.values() if p is not None and np.isfinite(p) and p > 0]
+    orbit = orbital_period_yr is not None and np.isfinite(orbital_period_yr) and orbital_period_yr > 0
     bounds = {
         'synodic': settings.mmr_filter_synodic_factor * max(periods) if periods else 0.0,
+        'orbit': settings.mmr_filter_orbit_factor * float(orbital_period_yr) if orbit else 0.0,
         'floor': floor / settings.filter_min_libration_cutoffs if floor > 0 else 0.0,
     }
     if settings.mmr_filter_cutoff_yr is not None:
         cutoff, binding = float(settings.mmr_filter_cutoff_yr), 'user'
     else:
-        binding = max(bounds, key=lambda name: bounds[name])  # ties: synodic
+        binding = max(bounds, key=lambda name: bounds[name])  # ties: synodic, then orbit
         cutoff = bounds[binding]
-    return Cutoff(cutoff, binding, float(bounds['synodic']), float(bounds['floor']), float(cutoff / step_yr))
+    return Cutoff(cutoff, binding, float(bounds['synodic']), float(bounds['floor']), float(cutoff / step_yr), float(bounds['orbit']))
+
+
+def body_orbital_period_yr(context: Context) -> float:
+    """The body's orbital period 2 pi / n(<a>) [yr] that bounds the cutoff (`choose_cutoff`); nan without n."""
+    n = float(getattr(context, 'mean_motion_rad_yr', NAN))
+    return 2 * math.pi / n if np.isfinite(n) and n > 0 else NAN
+
+
+def cutoff_rules(cutoff: Cutoff) -> frozenset:
+    """The rules the cutoff choice fired (`rules.Rule.ORBIT_CUTOFF` when the orbit bound sets P_c)."""
+    return rules_module.fire(frozenset(), rules_module.Rule.ORBIT_CUTOFF) if cutoff.binding == 'orbit' else frozenset()
 
 
 def filter_realizable(cutoff_yr: float, step_yr: float) -> bool:
@@ -274,10 +376,13 @@ def angle_cutoff(
     spec: ResonanceSpec, context: Context, step_yr: float, settings: AnalysisSettings, period_floor: Optional[Tuple[float, str]] = None
 ) -> Tuple[Cutoff, float, str]:
     """(the cutoff of this angle at this step, its period floor [yr], the floor's setting): `choose_cutoff` with the
-    synodic periods that bound it (`_synodic_bounds`) and `libration_period_floor`, or the given `period_floor`
-    (floor [yr], setting): the quasi-satellite floor of a 1:1 angle (rule G1q, `analyse`)."""
+    synodic periods that bound it (`_synodic_bounds`), the body's orbital period (`body_orbital_period_yr`) and
+    `libration_period_floor`, or the given `period_floor` (floor [yr], setting): the quasi-satellite floor of a 1:1
+    angle (rule G1q, `analyse`)."""
     floor, floor_setting = period_floor if period_floor is not None else libration_period_floor(spec, context, settings)
-    return choose_cutoff(_synodic_bounds(spec, context.synodic_periods_yr), step_yr, settings, floor), floor, floor_setting
+    synodic = _synodic_bounds(spec, context.synodic_periods_yr)
+    cutoff = choose_cutoff(synodic, step_yr, settings, floor, body_orbital_period_yr(context))
+    return cutoff, floor, floor_setting
 
 
 def preprocess(
@@ -355,9 +460,28 @@ def preprocess(
         unremoved_ripple_rad=float(unremoved),
         period_floor_yr=floor,
         period_floor_basis=floor_setting,
+        fast_reference_yr=_fast_reference(series, context, settings, floor, floor_setting),
         elements_block_yr=float(elements_block_yr) if elements_block_yr is not None else cutoff.cutoff_yr,
         flags=flags,
     )
+
+
+def _fast_reference(series: MMRSeries, context: Context, settings: AnalysisSettings, floor: float, floor_setting: str) -> float:
+    """`Preprocessed.fast_reference_yr`: for a 1:1 angle at its tadpole floor the shortest floor any of its runs can get
+    (`coorbital_geometry.fast_reference_yr`, W28 C3), else nan (the floor itself; the G1q pass keeps its QS floor)."""
+    if floor_setting != 'mmr_coorbital_period_floor_factor' or coorbital_planet(series.resonance) is None:
+        return NAN
+    from resonances.resonance.analysis.mmr import coorbital_geometry  # it imports this module inside its functions
+
+    return coorbital_geometry.fast_reference_yr(series, context, settings, floor)
+
+
+def fast_reference(prep: Preprocessed, settings: AnalysisSettings) -> float:
+    """The period below which the angle holds no libration [yr], the reference of the fast residual
+    (`analyse.fast_part`): `Preprocessed.fast_reference_yr`, else the floor, else mmr_libration_period_min_yr."""
+    if np.isfinite(prep.fast_reference_yr):
+        return float(prep.fast_reference_yr)
+    return float(prep.period_floor_yr) if np.isfinite(prep.period_floor_yr) else float(settings.mmr_libration_period_min_yr)
 
 
 def filtered_angle(
@@ -433,6 +557,7 @@ def preprocessed_columns(prep: Preprocessed) -> dict:
         'flt_cutoff_binding': cutoff.binding,
         'flt_cutoff_synodic_bound_yr': column_number(cutoff.synodic_bound_yr),
         'flt_cutoff_floor_bound_yr': column_number(cutoff.floor_bound_yr),
+        'flt_cutoff_orbit_bound_yr': column_number(cutoff.orbit_bound_yr),
         'flt_samples_per_cutoff': column_number(cutoff.samples_per_cutoff),
         'flt_window_t0_yr': column_number(prep.window[0]),
         'flt_window_t1_yr': column_number(prep.window[1]),
@@ -444,6 +569,7 @@ def preprocessed_columns(prep: Preprocessed) -> dict:
         'flt_filter_too_slow': prep.filter_too_slow,
         'flt_period_floor_yr': column_number(prep.period_floor_yr),
         'flt_period_floor_basis': prep.period_floor_basis,
+        'flt_fast_reference_yr': column_number(prep.fast_reference_yr),
     }
 
 

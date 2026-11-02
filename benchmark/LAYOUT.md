@@ -34,7 +34,28 @@ benchmark/
     review/<rtype>/<bucket>/<confidence>/<example_id>.png
                                 symlink на combined.png; генерируется из labels.csv (bench_io.build_review_tree),
                                 руками не трогать; index.html в каждой папке (миниатюры) и в review/
+    figures/<preset>/<уровни>/<example_id>.png
+                                жёсткие ссылки на combined_v2.png по вердиктам прогона (tools/sort_figures.py,
+                                preset confidence/status по умолчанию); каждый запуск пересобирает свою папку
+    figures/review-<NAME>/{discussed,changed,same_rule}/<status>/<confidence>/<example_id>.png
+    figures/review-<NAME>/review-<NAME>.csv
+                                папка сверки итерации (sort_figures.py --review, карточка s-4 W28) и её CSV
+  review/W28_DISCUSSED.csv      (в git) записи, которые назвали карточки W28: example_id, cards (';'); собран один
+                                раз из карточек 2026-10-31, вход --discussed
 ```
+
+Папка сверки: `uv run python benchmark/tools/sort_figures.py --review NAME --run <прогон> --baseline <прежний>
+[--discussed CSV] [--rules-since W28] [--shift-periods 1] [--shift-fraction 0.02] [--dry-run]`. Строка прогона (и
+его `-secular-zlk`; ключ example_id + resonance) попадает в первую подходящую папку: `discussed` — запись есть в
+`--discussed`; `changed` — против `--baseline` отличается status, angle_status, confidence, reason или
+libration_origin, строка новая, другое число принятых эпизодов какого-либо масштаба, эпизод без пары или граница пары
+сдвинута больше чем на max(k·P, f·длина записи) (P — больший из периодов либрации пары; k = 1 и f = 0.02 —
+конвенции инструмента, флаги); `same_rule` — ни то ни другое, но в `rules_fired` есть правило итерации
+`--rules-since`. Эпизоды сопоставляются по наибольшему перекрытию (при равенстве — меньший сдвиг границ, затем
+порядок во времени), поэтому пары не зависят от случая и при разном числе эпизодов. Остальные строки в папку не
+попадают. CSV: старый и новый вердикт и эпизоды, почему изменилось (`change_why`), сработавшие правила (`имя [id]`),
+карточки, прежняя метка автора и пустые `author_verdict`, `author_comment`. Как и пресеты: жёсткие ссылки, папка
+пересобирается целиком, в `data/examples` ничего не пишется.
 
 Рисунки: `uv run python benchmark/tools/render.py [--only ID,..] [--rtype ..] [--sample N] [--force]
 [--show-labels] [--workers N] [--tree-only]`. Пропускает готовые (если не `--force`), затем перестраивает `review/`.

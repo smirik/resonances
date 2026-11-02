@@ -24,6 +24,12 @@ The verdict answers two separate questions:
     finer step or another epoch can give a different answer. The thresholds are conventions, chosen and tested
     on a benchmark of examples labelled by eye ([Benchmark](https://smirik.github.io/resonances/benchmark/)); all of them are settings.
 
+!!! tip "Distant bodies: records of 300 kyr or more"
+    Beyond a planet's 1:2 (trans-Neptunian objects, outer Centaurs) the cutoff is at least 1.5 times the body's own
+    orbital period, several hundred years ([The cutoff](signal.md#the-cutoff-what-is-libration-and-what-is-noise)),
+    and the librations are slow. Integrate such bodies for at least 300 kyr so that several cycles fit in the
+    record; the classification of the outer Solar System uses 10 Myr (Gladman, Marsden & VanLaerhoven 2008).
+
 ## The verdict
 
 | field | values | meaning |
@@ -39,9 +45,9 @@ The verdict answers two separate questions:
 | `final_regime`, `final_regime_start_yr` | `libration`, `circulation`, `drift`, `near_separatrix`, `insufficient_time`, empty | how the record ends (a capture, an exit) and from when |
 | `orbit_type` | `tadpole L4`, `horseshoe`, `interior, symmetric libration about 0°`, … | the header of the figure; descriptive, decides nothing |
 | `reason` | e.g. `dynamic_libration`, `kinematic_libration`, `alias` | the one main explanation of the status ([every reason](status-tree.md#every-reason)) |
-| `libration_origin` | `dynamic`, `induced`, `subresonance`, `kinematic`, `unknown` | who makes the bounded oscillation |
-| `origin_detail` | `varpi_term`, `secular_cycle`, `planet_ripple`, `owner_libration`, `owner_forced_wave`, `fixed_subresonance`, `composite_multiplet`, `free_omega_winds` | the concrete cause ([Is it this resonance?](response.md)) |
-| `owner` | e.g. `11M-20+0+9` | the resonance that carries the oscillation (induced, subresonance) |
+| `libration_origin` | `dynamic`, `induced`, `subresonance`, `kinematic`, `joint`, `unknown` | who makes the bounded oscillation (`joint`: both resonances at once, measured) |
+| `origin_detail` | `varpi_term`, `secular_cycle`, `planet_ripple`, `owner_libration`, `owner_forced_wave`, `fixed_subresonance`, `composite_multiplet`, `free_omega_winds`, `joint_capture` | the concrete cause ([Is it this resonance?](response.md)) |
+| `owner` | e.g. `11M-20+0+9` | the resonance that carries the oscillation (induced, subresonance), or the partner of a joint capture |
 | `confidence`, `confidence_raw` | `certain`, `high`, `medium`, `low` | how well the evidence supports the status, after and before the caps ([Confidence](confidence.md)); empty for `uncertain` and `invalid` |
 | `action` | `none`, `spot_check`, `review`, `extend`, `resample` | what to do next with this body ([Actions](confidence.md#actions)) |
 | `check_mmr_*` | `pass`, `fail`, `not_measured`, `not_applicable` | each physical test: `pass` supports the resonant reading, `fail` refutes it |

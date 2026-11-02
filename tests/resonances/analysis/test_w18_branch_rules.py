@@ -162,9 +162,10 @@ def test_o1_is_not_an_objection_for_a_libration_over_the_whole_record():
 
 
 @pytest.mark.parametrize('ratio, check', [(50.0, CheckValue.FAIL), (0.05, CheckValue.FAIL)])
-def test_a_failed_strength_check_is_a_measured_objection(ratio, check):
+def test_a_failed_strength_scale_is_uncertain_without_being_an_objection(ratio, check):
+    # W28 B9 (card g08-6 A): the e^q scale out of range is leaf 5x (origin not established), no longer 5o
     decision, _ = _branch(strength=_strength(ratio, check=check, legal=True, three_body=True))
-    assert (decision.status, decision.reason, decision.rule) == (Status.UNCERTAIN, Reason.ORIGIN_UNKNOWN, '5o')
+    assert (decision.status, decision.reason, decision.rule) == (Status.UNCERTAIN, Reason.ORIGIN_UNKNOWN, '5x')
 
 
 def test_centre_outside_the_well_is_a_measured_objection():
@@ -497,8 +498,15 @@ def test_33128_exits_and_captures_as_in_the_q12_report():
     assert [round(m / 1e3, 1) for m, _ in transitions] == [69.3, 69.3, 89.2]
     assert str(Flag.EXIT_AND_CAPTURE) in analysis.verdict.flags
     assert str(conf.Cap.TRANSIENT_UNEXPLAINED) not in analysis.verdict.caps
-    assert (str(analysis.verdict.status), str(analysis.verdict.confidence)) == ('transient', 'high')
+    # W28 B4 (q-2 b): the lift still acts, but high needs a physical support with its full margin (L4 thin 0.64, R0
+    # not measured): the cap no_full_physics_support holds medium (KNOWN open_question); without the ceiling, high
+    assert analysis.verdict.caps == ['no_full_physics_support']
+    assert (str(analysis.verdict.status), str(analysis.verdict.confidence)) == ('transient', 'medium')
     assert analysis.extra_columns['sep_unexplained_lifted'] == 1.0
+    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
+
+    no_ceiling = analyse_mmr(io.load_series('mmr2__33128__6N-7+0+1'), replace(S, mmr_high_needs_full_support=False))
+    assert (str(no_ceiling.verdict.status), str(no_ceiling.verdict.confidence)) == ('transient', 'high')
 
 
 @pytest.mark.benchmark
@@ -507,7 +515,8 @@ def test_33128_keeps_the_cap_with_the_convention_off():
 
     if not io.example_path('mmr2__33128__6N-7+0+1').exists():
         pytest.skip('benchmark data not available')
-    off = settings_from_config(None, mmr_exit_and_capture_lifts_unexplained=False)
+    # the q-2 b ceiling (W28 B4) off, so that transient_unexplained is the only cap the convention leaves
+    off = settings_from_config(None, mmr_exit_and_capture_lifts_unexplained=False, mmr_high_needs_full_support=False)
     analysis = analyse_mmr(io.load_series('mmr2__33128__6N-7+0+1'), off)
     assert str(Flag.EXIT_AND_CAPTURE) in analysis.verdict.flags  # the mark itself does not depend on the convention
     assert analysis.verdict.caps == [str(conf.Cap.TRANSIENT_UNEXPLAINED)]

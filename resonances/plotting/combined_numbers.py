@@ -3,9 +3,12 @@
 
 - explained (default, layout A′ chosen by the author on 2026-10-16; `draw_explained`): the verdict plaque (the only
   place the status is printed), the explanation in words (`verdict_text`), two columns 'How it was decided' (the steps
-  of the status tree) and 'Confidence' (every margin and cap with ✓ ⚠ ✗ – ? · ▼), the level arithmetic, then the
-  numbers the reader needs in balanced monospaced columns (`group_lines`: episodes, the libration, the response, ...,
-  characteristic periods, orbit, record). Bold numbers were compared by the decision, grey ones belong to a test
+  of the status tree as questions with their ids, under 'Decided at …', W28 E3) and 'Confidence' (W28 E4: the LIMIT
+  rows ▼ first, then every margin as 'name [id]' with ✗ ? ⚠ –, the full ones in one line, the n/a ones in one grey
+  line), the level arithmetic in two lines (support, limits), the legend, one line naming the docs pages, the framed
+  block 'Numbers behind this verdict' (W28 E10: `behind_lines`, the table rows of its numbers point up to it,
+  `point_to_block`), then the numbers the reader needs in balanced monospaced columns (`group_lines`: episodes, the
+  libration, the response, ..., characteristic periods, orbit, record). Bold numbers were compared by the decision, grey ones belong to a test
   skipped by design;
 - all (`draw_text`): every number of the decision, as described below.
 
@@ -76,11 +79,17 @@ VERDICT_COLUMNS = (
     'libration_origin',
     'origin_detail',
     'owner',
+    'neighbours',
+    'resonant_argument',
+    'cause_role',
+    'cause_term',
+    'commensurability',
     'multiplet_status',
     'status_code',
 )
-# Columns printed elsewhere (path, margins) or not at all
-SPECIAL_COLUMNS = ('decision_path', 'thin_margins', 'failed_support', 'caps')
+# Columns printed elsewhere (path, margins) or not at all (rules_fired: the review folder's column, `analysis.rules`;
+# review_required/review_reasons: the review queue, which repeats the confidence, caps and failed support shown)
+SPECIAL_COLUMNS = ('decision_path', 'thin_margins', 'failed_support', 'caps', 'rules_fired', 'review_required', 'review_reasons')
 # Blocks whose lines are never dropped as duplicates (they are the verdict and its comparisons)
 NO_DEDUPE = ('verdict', 'path', 'checks', 'margins')
 
@@ -102,6 +111,10 @@ class NumberLine:
     also: Tuple[str, ...] = ()
     style: str = ''  # the explained column: STYLE_BOLD (the decision compared it) | STYLE_GREY (its test was skipped)
     keep: bool = False  # the explained column: a table row kept in one column with the row before it in its group
+    # the explained column (card g10-5, W28 E10): a line of 'Numbers behind this verdict' (`behind_lines`): decisive |
+    # limit | conflict | unmeasured (`verdict_text.EMPHASES`); its columns (`column`, `also`) leave the table for a pointer
+    emphasis: str = ''
+    pointer: str = ''  # a block line: what the table prints instead of its numbers ('↑ decisive [B1]')
 
 
 @dataclass
@@ -178,9 +191,48 @@ def unit_of(column: str) -> str:
     return _inner_unit(column)[0]
 
 
+# W28 E11 (card g10-7, author C): the pendulum numbers in words, with the source of the number in the label (observed:
+# measured on the angle; 'from observed cycles' / 'from T0': inferred from the observed cycles through the cosine
+# pendulum, T0 = P/F(A); 'theory' / 'strength': predicted from the planet's mass by `strength`). T0 is never 'theory'.
+# The unit is still read from the column suffix and printed after the value.
+COLUMN_LABELS = {
+    'ep_period_med_yr': 'observed cycle period P',
+    'ep_T0_min_kyr': 'small-swing period T0 min (from observed cycles)',
+    'ep_T0_max_kyr': 'small-swing period T0 max (from observed cycles)',
+    'ep_omega0_rad_yr': 'small-swing frequency ω0 (from observed cycles)',
+    'ep_half_width_au': 'well half-width in a (from T0)',
+    'ep_mu_eff': 'strength needed μ_eff (effective, not a mass)',
+    'str_mu_eff_req': 'strength needed μ_eff (effective, not a mass)',
+    'str_P_lib_theory_kyr': 'theory period (strength)',
+    'str_P_lib_theory_min_kyr': 'theory period min (strength)',
+    'str_P_lib_theory_max_kyr': 'theory period max (strength)',
+    'str_omega0_theory_rad_yr': 'theory frequency ω0 (strength)',
+    'str_mu_eff_theory_min': 'theory strength μ_th min',
+    'str_mu_eff_theory_max': 'theory strength μ_th max',
+    'str_ratio': 'needed / theory strength',
+    # h = (E − V_min)/(V_max − V_min) of the fitted V_E (`analysis.pendulum`): 1 is its top, the cosine separatrix only
+    # when V_E has one harmonic
+    'sep_h_med': 'cycle energy h (1 = top of the fitted V)',
+    'sep_zone_h_lo': 'separatrix layer in h, lo',
+    'sep_zone_h_hi': 'separatrix layer in h, hi',
+    'sep_VE_R2': 'energy fit R²',
+    'rsp_coorb_K_over_K_theory': 'force scale / planet’s own mass K/K_th',
+}
+# Two columns of one quantity printed as one line 'lo–hi unit' in the explained column (`group_lines`)
+RANGE_LABELS = {
+    ('ep_T0_min_kyr', 'ep_T0_max_kyr'): 'small-swing period T0 (from observed cycles)',
+    ('str_P_lib_theory_min_kyr', 'str_P_lib_theory_max_kyr'): 'theory period (strength)',
+    ('str_mu_eff_theory_min', 'str_mu_eff_theory_max'): 'theory strength μ_th',
+    ('sep_zone_h_lo', 'sep_zone_h_hi'): 'separatrix layer in h',
+}
+
+
 def label_of(column: str, prefixes: Sequence[str] = ()) -> str:
-    """The column without its block prefix (one of `prefixes`) and unit (`smp_unwrap_resid_p99_deg` ->
-    `unwrap_resid_p99`, `smp_step_rotation_deg_min` -> `step_rotation_min`)."""
+    """The label of a column: its words from COLUMN_LABELS when it has them, else the column without its block prefix
+    (one of `prefixes`) and unit (`smp_unwrap_resid_p99_deg` -> `unwrap_resid_p99`, `smp_step_rotation_deg_min` ->
+    `step_rotation_min`)."""
+    if column in COLUMN_LABELS:
+        return COLUMN_LABELS[column]
     label = column
     for prefix in prefixes:
         if label.startswith(prefix) and len(label) > len(prefix):
@@ -758,6 +810,8 @@ ENDS_PT = 12.0  # the tag 'ends: <final regime>' beside the plaque
 ENDS_GAP = 0.12  # inches between the plaque's box and the tag's box
 SUBTITLE_PT = 9.0
 SENTENCE_PT = 10.5
+BULLET_COMPACT_PT = 9.5  # the slotted explanation when the numbers would not fit otherwise (still above ITEM_PT)
+BULLET_TIGHT_PT = 9.0  # the last FIT level only (W28 FIX-plot): below ITEM_PT, still above DETAIL_PT and the numbers
 SECTION_PT = 10.0
 ITEM_PT = 9.2
 DETAIL_PT = 8.0
@@ -773,6 +827,7 @@ GROUP_HEAD_LINES = 2  # lines kept in one column with their group header
 GROUP_EXTRA_PT = 0.3  # a group header is drawn this much larger than the numbers (wrapped to its own width)
 STEPS_SHARE = 0.38  # of the width: 'How it was decided'; the rest is 'Confidence' (the longer list)
 ICON_INDENT = 0.24  # inches from an icon to its text
+BULLET, BULLET_INDENT, BULLET_GAP = '•', 0.16, 0.03  # the slotted explanation: bullet, hanging indent, gap [in]
 INK, KEY_INK, GREY_INK, LIGHT_INK = '#111111', '#3a3a3a', '#8c8c8c', '#c4c4c4'
 STATE_COLOURS = {
     'pass': '#1b7837',
@@ -782,11 +837,12 @@ STATE_COLOURS = {
     'missing': '#7b3294',  # should have been measured, was not: the purple of 'uncertain' (a missing measurement)
     'not_applicable': '#bbbbbb',
 }
-# One line, one glyph per meaning (the step icons differ from the check icons)
+# One line, one glyph per meaning (the step icons differ from the check icons; · n/a is the same for both)
 LEGEND_TEXT = (
-    '✓ full   ⚠ thin   ✗ failed   – skipped by design   ? not measured   · n/a   ▼ cap        '
-    '● decided here   ↓ passed on   ◌ not run   pale: not reached'
+    '✓ full   ⚠ thin   ✗ failed   – skipped by design   ? not measured   · n/a   ▼ limit        '
+    '● decided here   ↓ passed on   ◌ not run   ○ not needed   pale: not reached'
 )
+STEP_QUIET = ('not_run', 'not_needed', 'not_applicable', 'not_reached')  # steps whose answer is grey
 
 
 class _Pen:
@@ -845,36 +901,34 @@ def _box(layout: VerdictFigureLayout) -> Tuple[float, float, float, float]:
     return first[0], last[0] + last[2], first[1] + first[3], first[1]
 
 
-def _steps_column(pen: _Pen, text, x: float, y: float, width: float, status_colour: str, draw: bool) -> float:
+def _steps_column(pen: _Pen, text, x: float, y: float, width: float, status_colour: str, draw: bool, compact: bool = False) -> float:
+    """'How it was decided' (cards g10-4/g10-4b): per step its icon, '<number> · <question> [ids]' (bold), 'Why: …' for a
+    step that ran (left out when `compact`) and the answer; the header 'Decided at …' is drawn above both columns
+    (`_explanation`: one line over the full width, where in this column it wraps and pushes the physics block down).
+    Returns the y below."""
+    from .verdict_text import STEP_ICONS
+
     if draw:
         pen.text(x, y, 'How it was decided', SECTION_PT + 0.5, weight='bold', color=KEY_INK)
     y -= SECTION_PT * 1.6 / 72
     for step in text.steps:
         state = str(step.state)
-        colour = {'leaf': status_colour, 'not_reached': LIGHT_INK, 'not_run': GREY_INK}.get(state, INK)
-        if draw:
-            from .verdict_text import STEP_ICONS
-
-            if STEP_ICONS[step.state]:
-                pen.text(x, y + 0.01, STEP_ICONS[step.state], ITEM_PT + 2, color=colour, weight='bold')
-            pen.text(x + ICON_INDENT, y, step.title, ITEM_PT, weight='bold', color=colour)
-        y -= ITEM_PT * LINE_SPACING / 72
+        quiet = state in STEP_QUIET
+        colour = {'leaf': status_colour, 'not_reached': LIGHT_INK}.get(state, GREY_INK if quiet else INK)
+        if draw and STEP_ICONS[step.state]:
+            pen.text(x, y + 0.01, STEP_ICONS[step.state], ITEM_PT + 2, color=colour, weight='bold')
+        y = pen.paragraph(x + ICON_INDENT, y, step.heading, ITEM_PT, width - ICON_INDENT, draw, weight='bold', color=colour)
+        if step.why and not compact:
+            y = pen.paragraph(x + ICON_INDENT, y, f'Why: {step.why}', DETAIL_PT, width - ICON_INDENT, draw, color=GREY_INK)
         if step.outcome:
-            ink = GREY_INK if state in ('not_run', 'not_reached') else KEY_INK
+            ink = GREY_INK if quiet else KEY_INK
             y = pen.paragraph(x + ICON_INDENT, y, step.outcome, DETAIL_PT, width - ICON_INDENT, draw, color=ink)
         y -= 0.05
     return y
 
 
 def _check_detail(row, compact: bool = False) -> str:
-    """'detail · need … — note' (compact: without the need); a cap: 'cap ≤ medium · its numbers', and below it the
-    other verdict and what on the figure decides it (`verdict_text.alternative_text`)."""
-    from .verdict_text import alternative_text
-
-    if row.is_cap:
-        head = f'{row.counts}  ·  {row.detail}' if row.detail and not compact else row.counts
-        alternative = alternative_text(row)
-        return f'{head}  —  {alternative}' if alternative else head
+    """'detail · need … — note' of a support row (compact: without the need)."""
     detail = row.detail
     if row.need and str(row.state) != 'skipped' and not compact:
         detail = f'{detail}  ·  need {row.need}' if detail else f'need {row.need}'
@@ -883,41 +937,76 @@ def _check_detail(row, compact: bool = False) -> str:
     return detail
 
 
+def _limit_lines(row, compact: bool = False) -> List[str]:
+    """Under a LIMIT heading: what was measured ('a-wave before/inside 0.865 ≥ 0.5 · need < 0.25 …'), what the cap
+    means, and the other verdict with what on the figure decides it (`verdict_text.alternative_text`, the author's q1:
+    always, compact or not). Compact: the short reason instead of the first two."""
+    from .verdict_text import alternative_text
+
+    if compact:
+        lines = [row.short] if row.short else []
+    else:
+        measured = row.detail
+        if row.need:
+            measured = f'{measured}  ·  need {row.need}' if measured else f'need {row.need}'
+        lines = [measured, row.name if row.short_name else '']
+    return [line for line in lines + [alternative_text(row)] if line]
+
+
+def _limit_row(pen: _Pen, row, level: str, x: float, y: float, width: float, draw: bool, compact: bool) -> float:
+    """One LIMIT row: ▼, 'LIMIT: name [id] → LOW' (bold, `verdict_text.limit_heading`) and its lines."""
+    from .verdict_text import limit_heading
+
+    if draw:
+        pen.text(x, y + 0.01, row.icon, ITEM_PT + 1.5, color=STATE_COLOURS['fail'], weight='bold')
+    y = pen.paragraph(x + ICON_INDENT, y, limit_heading(row, level), ITEM_PT, width - ICON_INDENT, draw, weight='bold')
+    for line in _limit_lines(row, compact):
+        y = pen.paragraph(x + ICON_INDENT, y, line, DETAIL_PT, width - ICON_INDENT, draw, color=KEY_INK)
+    return y - 0.04
+
+
 def _passed_line(pen: _Pen, passed, x: float, y: float, width: float, draw: bool) -> float:
-    """The full margins of a compact column as one line of names."""
+    """The full margins as one line 'full: name [id]; …' (`verdict_text.full_line`)."""
+    from .verdict_text import full_line
+
     if not passed:
         return y
     if draw:
         pen.text(x, y + 0.01, '✓', ITEM_PT + 1.5, color=STATE_COLOURS['pass'], weight='bold')
-    names = '; '.join(row.name for row in passed)
-    return pen.paragraph(x + ICON_INDENT, y, f'full: {names}', DETAIL_PT, width - ICON_INDENT, draw, color=KEY_INK) - 0.04
+    return pen.paragraph(x + ICON_INDENT, y, full_line(passed), DETAIL_PT, width - ICON_INDENT, draw, color=KEY_INK) - 0.04
+
+
+def _na_line(pen: _Pen, rows, x: float, y: float, width: float, draw: bool) -> float:
+    """The n/a margins as one grey line without numbers (`verdict_text.na_line`)."""
+    from .verdict_text import ICONS, CheckState, na_line
+
+    if not rows:
+        return y
+    if draw:
+        pen.text(x, y + 0.01, ICONS[CheckState.NOT_APPLICABLE], ITEM_PT + 1.5, color=STATE_COLOURS['not_applicable'], weight='bold')
+    return pen.paragraph(x + ICON_INDENT, y, na_line(rows), DETAIL_PT, width - ICON_INDENT, draw, color=GREY_INK) - 0.04
 
 
 def _checks_column(pen: _Pen, text, x: float, y: float, width: float, draw: bool, compact: bool = False) -> float:
-    """One row per margin (icon, name, detail) and cap. `compact` (when the numbers would not fit otherwise): the full
-    margins in one line of names, the caps without their detail line but with their short reason (`CheckRow.short`)."""
+    """The confidence block (cards g10-4/g10-4b, g03-5): the LIMIT rows first (▼, `_limit_row`), then the support
+    margins that failed, are missing, thin or skipped by design (icon, 'name [id]', the measurement), the full ones in
+    one line 'full: …' and the n/a ones in one grey line without numbers. `compact` (when the numbers would not fit
+    otherwise): no need on the rows, the limits with their short reason."""
+    from .verdict_text import KIND_NA
+
     if draw:
-        pen.text(x, y, 'Confidence: every margin and cap the level read', SECTION_PT + 0.5, weight='bold', color=KEY_INK)
+        pen.text(x, y, 'Confidence: how firm the verdict is', SECTION_PT + 0.5, weight='bold', color=KEY_INK)
     y -= SECTION_PT * 1.6 / 72
     if not text.checks:
         return pen.paragraph(x, y, 'uncertain and invalid verdicts carry no level', ITEM_PT, width, draw, color=GREY_INK)
-    rows = text.checks
-    if compact:
-        passed = [row for row in rows if str(row.state) == 'pass' and not row.is_cap]
-        rows = [row for row in rows if row not in passed]
-        y = _passed_line(pen, passed, x, y, width, draw)
-    for row in rows:
-        if compact and row.is_cap:
-            if draw:
-                pen.text(x, y + 0.01, row.icon, ITEM_PT + 1.5, color=STATE_COLOURS['fail'], weight='bold')
-            reason = f': {row.short}' if row.short else ''  # what holds the cap (W20 round E)
-            name = f'{row.name}{reason} ({row.counts})'
-            y = pen.paragraph(x + ICON_INDENT, y, name, ITEM_PT, width - ICON_INDENT, draw, weight='bold')
-            from .verdict_text import alternative_text
-
-            if alternative_text(row):  # the author's q1: a cap always names the other verdict, compact or not
-                y = pen.paragraph(x + ICON_INDENT, y, alternative_text(row), DETAIL_PT, width - ICON_INDENT, draw, color=KEY_INK)
-            y -= 0.03
+    limits = [row for row in text.checks if row.is_limit]
+    na = [row for row in text.checks if not row.is_limit and row.kind == KIND_NA]
+    passed = [row for row in text.checks if not row.is_limit and row.kind != KIND_NA and str(row.state) == 'pass']
+    for row in limits:
+        y = _limit_row(pen, row, text.confidence, x, y, width, draw, compact)
+    grouped = {id(row) for row in limits + na + passed}
+    for row in text.checks:
+        if id(row) in grouped:
             continue
         state = str(row.state)
         colour = STATE_COLOURS[state]
@@ -925,12 +1014,15 @@ def _checks_column(pen: _Pen, text, x: float, y: float, width: float, draw: bool
         weight = 'bold' if state in ('fail', 'thin', 'missing') else 'normal'
         if draw:
             pen.text(x, y + 0.01, row.icon, ITEM_PT + 1.5, color=colour, weight='bold')
-        y = pen.paragraph(x + ICON_INDENT, y, row.name, ITEM_PT, width - ICON_INDENT, draw, color=GREY_INK if quiet else INK, weight=weight)
+        y = pen.paragraph(
+            x + ICON_INDENT, y, row.label, ITEM_PT, width - ICON_INDENT, draw, color=GREY_INK if quiet else INK, weight=weight
+        )
         detail = _check_detail(row, compact)
         if detail:
             y = pen.paragraph(x + ICON_INDENT, y, detail, DETAIL_PT, width - ICON_INDENT, draw, color=GREY_INK if quiet else KEY_INK)
         y -= 0.04
-    return y
+    y = _passed_line(pen, passed, x, y, width, draw)
+    return _na_line(pen, na, x, y, width, draw)
 
 
 def _plaque(pen: _Pen, text, x: float, y: float, colour: str) -> None:
@@ -1000,10 +1092,39 @@ def _legend_under_steps(pen: _Pen, x: float, left: float, right: float, width: f
     return pen.paragraph(x, left - LEGEND_GAP, LEGEND_TEXT, NOTE_PT, width, draw, color=GREY_INK)
 
 
-def _explanation(pen: _Pen, text, layout: VerdictFigureLayout, draw: bool, compact: bool = False, legend_beside: bool = False) -> float:
+def _bullets(
+    pen: _Pen, bullets, x: float, y: float, width: float, draw: bool, compact: bool = False, size: Optional[float] = None
+) -> float:
+    """The slotted explanation (MMR, cards g10-2/g10-8, W28 E8): the verdict line bold, every other slot a bullet '•'
+    with a hanging indent; when `compact`, at BULLET_COMPACT_PT (or `size`), without gaps and in each bullet's short
+    form (`Bullet.short`: a fact the steps print word for word is pointed to); returns the y below."""
+    from .verdict_text import SLOT_VERDICT
+
+    size, gap = (size or BULLET_COMPACT_PT, 0.0) if compact else (SENTENCE_PT, BULLET_GAP)
+    for bullet in bullets:
+        words = (getattr(bullet, 'short', '') or bullet.text) if compact else bullet.text
+        if bullet.slot == SLOT_VERDICT:
+            y = pen.paragraph(x, y, words, size, width, draw, weight='bold') - gap
+            continue
+        if draw:
+            pen.text(x, y, BULLET, size, color=KEY_INK)
+        y = pen.paragraph(x + BULLET_INDENT, y, words, size, width - BULLET_INDENT, draw) - gap
+    return y - 0.02
+
+
+def _explanation(
+    pen: _Pen,
+    text,
+    layout: VerdictFigureLayout,
+    draw: bool,
+    compact: bool = False,
+    legend_beside: bool = False,
+    bullet_pt: Optional[float] = None,
+) -> float:
     """Plaque, sentences, the two check columns, arithmetic, info and legend; returns the y below them. `legend_beside`
     (when the numbers would not fit otherwise): the legend goes under the steps, as wide as they are, where it ends above
-    the checks (the room is there anyway), instead of a line over the whole width."""
+    the checks (the room is there anyway), instead of a line over the whole width. `bullet_pt`: the compact bullets'
+    size when not BULLET_COMPACT_PT (the last FIT level)."""
     from .style import STATUS_COLOURS
 
     x0, x1, top, _ = _box(layout)
@@ -1014,13 +1135,19 @@ def _explanation(pen: _Pen, text, layout: VerdictFigureLayout, draw: bool, compa
         _plaque(pen, text, x0 + 0.05, y - 0.02, colour)
     y -= BADGE_PT * 2.0 / 72
     y = pen.paragraph(x0, y, text.subtitle, SUBTITLE_PT, width, draw, color=KEY_INK) - 0.04
-    for sentence in text.sentences:
-        y = pen.paragraph(x0, y, sentence, SENTENCE_PT, width, draw) - 0.05
+    bullets = getattr(text, 'bullets', None)
+    if bullets:
+        y = _bullets(pen, bullets, x0, y, width, draw, compact, bullet_pt)
+    else:
+        for sentence in text.sentences:
+            y = pen.paragraph(x0, y, sentence, SENTENCE_PT, width, draw) - 0.05
     if draw:
         pen.rule(y + 0.02, x0, x1)
     y -= 0.08
+    if text.decided_at:  # the steps' conclusion, one line over both columns
+        y = pen.paragraph(x0, y, text.decided_at, ITEM_PT, width, draw, weight='bold', color=colour) - 0.06
     left_width = width * STEPS_SHARE - COLUMN_GAP / 2
-    left = _steps_column(pen, text, x0, y, left_width, colour, draw)
+    left = _steps_column(pen, text, x0, y, left_width, colour, draw, compact)
     right = _checks_column(pen, text, x0 + left_width + COLUMN_GAP, y, width - left_width - COLUMN_GAP, draw, compact)
     # a physics section goes under the steps while it fits beside the checks (the room is there anyway), the rest under all
     below = []
@@ -1031,13 +1158,24 @@ def _explanation(pen: _Pen, text, layout: VerdictFigureLayout, draw: bool, compa
             below.append(section)
     beside = _legend_under_steps(pen, x0, left, right, left_width, draw) if legend_beside else None
     y = min(left if beside is None else beside, right) - 0.04
-    y = pen.paragraph(x0, y, text.arithmetic, ARITHMETIC_PT, width, draw, weight='bold') - 0.02
+    return _below_columns(pen, text, below, x0, x1, y, draw, compact, legend=beside is None)
+
+
+def _below_columns(pen: _Pen, text, below, x0: float, x1: float, y: float, draw: bool, compact: bool, legend: bool) -> float:
+    """Under the two columns: the arithmetic, the info line, the physics sections that did not fit beside the checks,
+    the legend (unless it went under the steps) and the line naming the docs pages; returns the y below them."""
+    width = x1 - x0
+    for line in text.arithmetic.split('\n'):  # 'Support: … → HIGH' and 'Limits: … → LOW' (`verdict_text.arithmetic_line`)
+        y = pen.paragraph(x0, y, line, ARITHMETIC_PT, width, draw, weight='bold')
+    y -= 0.02
     if text.info:
         y = pen.paragraph(x0, y, 'Also measured, not read by this verdict: ' + '; '.join(text.info), NOTE_PT, width, draw, color=GREY_INK)
     for section in below:
         y = _physics_section(pen, section, x0, y - PHYSICS_GAP, width, draw, compact)
-    if beside is None:
+    if legend:
         y = pen.paragraph(x0, y, LEGEND_TEXT, NOTE_PT, width, draw, color=GREY_INK)
+    if text.docs:  # the docs pages behind the steps, rules and margins (a PNG has no links)
+        y = pen.paragraph(x0, y, text.docs, NOTE_PT, width, draw, color=GREY_INK)
     if draw:
         pen.rule(y - 0.02, x0, x1)
     return y - 0.1
@@ -1052,19 +1190,152 @@ def group_lines(
 ) -> List[NumberLine]:
     """The numbers of the explained column: per group (title, columns) the columns present in `row` with a value,
     labelled without their prefix and unit; a column the decision compared is bold, one of a test skipped by design
-    grey ('not used'). A group with no value is left out."""
+    grey ('not used'). A group with no value is left out. The two columns of a RANGE_LABELS pair present in one group
+    are one line 'lo–hi unit' under the pair's label (the line keeps the low column, the high one in `also`)."""
     grey = grey or {}
     lines = []
     for title, columns in groups:
         present = [column for column in columns if not missing(row.get(column))]
-        labels = [label_of(column, prefixes) for column in present]
+        ranges = {lo: (hi, label) for (lo, hi), label in RANGE_LABELS.items() if lo in present and hi in present}
+        paired = {hi for hi, _ in ranges.values()}
+        present = [column for column in present if column not in paired]
+        labels = [ranges[column][1] if column in ranges else label_of(column, prefixes) for column in present]
         for column, label in zip(present, labels):
             if labels.count(label) > 1:  # the same quantity of two prefixes (sub_best, own_best): keep the prefix
                 label = label_of(column)
-            style = STYLE_GREY if column in grey else (STYLE_BOLD if column in bold else '')
-            value = format_cell(column, row.get(column)) + unit_space(column) + (' (not used)' if column in grey else '')
-            lines.append(NumberLine('numbers', label, value, '', column, group=title, style=style))
+            pair = (column, ranges[column][0]) if column in ranges else (column,)
+            style = STYLE_GREY if grey.keys() & pair else (STYLE_BOLD if set(bold) & set(pair) else '')
+            printed = list(dict.fromkeys(format_cell(c, row.get(c)) for c in pair))  # 'a–b', or 'a' when both print a
+            value = '–'.join(printed) + unit_space(column) + (' (not used)' if grey.keys() & pair else '')
+            lines.append(NumberLine('numbers', label, value, '', column, group=title, style=style, also=pair[1:]))
     return lines
+
+
+# 'Numbers behind this verdict' (card g10-5 B, W28 E10): a short block between the explanation and the numbers table,
+# one framed and tagged line per emphasis (`verdict_text.number_emphasis`); the words and the frame's line style carry
+# the kind, the colour only helps (greyscale print)
+BEHIND_TITLE = 'Numbers behind this verdict'
+BEHIND_LINES_MAX = 5  # lines under the title (the column grows by 4–6 lines, the author's answer B); the rest stay in the table
+BEHIND_PT = NUMBERS_MAX_PT  # monospaced, as the table
+BEHIND_TAG_CHARS = 10  # 'UNMEASURED'
+BEHIND_ALL, BEHIND_NUMBERS, BEHIND_NONE = 'all', 'numbers', 'none'  # what a layout keeps of the block (`behind_shown`)
+BEHIND_TITLE_EXTRA_PT = 1.0  # the title is drawn this much larger than the block's numbers
+BEHIND_PAD = 0.02  # inches between a frame and its text
+BEHIND_GAP = 0.03  # inches between two framed lines
+# kind -> (frame and tag colour, frame line style)
+BEHIND_FRAMES = {
+    'decisive': ('#1a1a1a', '-'),
+    'limit': ('#b35806', '--'),
+    'conflict': ('#b2182b', '-.'),
+    'unmeasured': ('#7f7f7f', ':'),
+}
+
+
+def behind_lines(emphasis: Sequence[Any], prefixes: Sequence[str] = (), limit: int = BEHIND_LINES_MAX) -> List[NumberLine]:
+    """The lines of 'Numbers behind this verdict' from `verdict_text.Emphasis` items (the first `limit` of them, in
+    their order): label the tag ('DECISIVE'), value 'name [id]: label comparison · … note' with each number's table
+    label (`label_of`), `column` the first number's column and `also` the others, `emphasis` the kind."""
+    lines = []
+    for item in list(emphasis)[:limit]:
+        numbers = ' · '.join(f'{label_of(part.column, prefixes)} {part.text}' if part.labelled else part.text for part in item.parts)
+        head = f'{item.name} [{item.rule_id}]'
+        value = ': '.join(part for part in (head, numbers) if part)
+        value = f'{value} {item.note}' if item.note else value
+        columns = item.columns
+        lines.append(
+            NumberLine(
+                'numbers',
+                item.tag,
+                value,
+                column=columns[0] if columns else '',
+                also=columns[1:],
+                group=BEHIND_TITLE,
+                emphasis=item.kind,
+                pointer=item.pointer,
+            )
+        )
+    return lines
+
+
+def point_to_block(lines: Sequence[NumberLine], block: Sequence[NumberLine]) -> List[NumberLine]:
+    """W20 CS11 kept (card g10-5): a table line whose column, or a column it stands for (`also`: a range's high column,
+    a dropped duplicate), is printed by a line of the block keeps its label and prints that line's `pointer` ('↑
+    decisive [B1]') instead of its number. `draw_explained` calls it with the block lines it draws, so a line left out
+    of the block leaves its numbers in the table."""
+    pointers: Dict[str, str] = {}
+    for item in block:
+        for column in (item.column,) + item.also:
+            if column:
+                pointers.setdefault(column, item.pointer)
+    out = []
+    for line in lines:
+        hit = next((column for column in (line.column,) + line.also if column in pointers), '')
+        out.append(replace_line(line, value=pointers[hit], unit='') if hit and line.label and not line.emphasis else line)
+    return out
+
+
+def replace_line(line: NumberLine, **changes) -> NumberLine:
+    return NumberLine(**{**line.__dict__, **changes})
+
+
+def behind_rows(line: NumberLine, chars: int) -> List[str]:
+    """One block line wrapped at `chars`: the tag padded to BEHIND_TAG_CHARS, continuations indented under the text
+    (an emphasis is never split from its tag: the frame holds all its rows)."""
+    text = f'{line.label:<{BEHIND_TAG_CHARS}} {line.value}'
+    indent = ' ' * (BEHIND_TAG_CHARS + 1)
+    return textwrap.wrap(text, max(chars, BEHIND_TAG_CHARS + 12), subsequent_indent=indent, break_long_words=True) or [text]
+
+
+def _behind_block(
+    pen: _Pen, block: Sequence[NumberLine], x0: float, x1: float, y: float, draw: bool, size: float = BEHIND_PT
+) -> Tuple[float, int]:
+    """'Numbers behind this verdict' from y down at `size` (the numbers' font, so the block and the table shrink
+    together): the title, then per line its rows in a frame (`BEHIND_FRAMES`: the kind's line style and colour), the
+    tag bold. Returns the y below the block and the number of rows drawn."""
+    if not block:
+        return y, 0
+    from matplotlib.patches import Rectangle
+
+    if draw:
+        pen.text(x0, y, BEHIND_TITLE, size + BEHIND_TITLE_EXTRA_PT, weight='bold', color=KEY_INK)
+    y -= (size + BEHIND_TITLE_EXTRA_PT) * LINE_SPACING / 72
+    step = size * LINE_SPACING / 72
+    char = MONO_CHAR_WIDTH * size / 72
+    chars = int((x1 - x0 - 2 * BEHIND_PAD) / char)
+    n_rows = 0
+    for line in block:
+        rows = behind_rows(line, chars)
+        n_rows += len(rows)
+        height = len(rows) * step + 2 * BEHIND_PAD
+        if draw:
+            colour, style = BEHIND_FRAMES.get(line.emphasis, BEHIND_FRAMES['decisive'])
+            frame = Rectangle(
+                (x0 / pen.width, (y - height) / pen.height),
+                (x1 - x0) / pen.width,
+                height / pen.height,
+                transform=pen.fig.transFigure,
+                fill=False,
+                edgecolor=colour,
+                linestyle=style,
+                lw=0.9,
+            )
+            pen.fig.add_artist(frame)
+            yy, x = y - BEHIND_PAD, x0 + BEHIND_PAD
+            pen.text(x, yy, line.label, size, family=MONO_FONT, weight='bold', color=colour)
+            pen.text(x + (BEHIND_TAG_CHARS + 1) * char, yy, rows[0][BEHIND_TAG_CHARS + 1 :], size, family=MONO_FONT)
+            for index, row in enumerate(rows[1:], start=1):
+                pen.text(x, yy - index * step, row, size, family=MONO_FONT)
+        y -= height + BEHIND_GAP
+    return y - BEHIND_GAP, n_rows
+
+
+def behind_shown(block: Sequence[NumberLine], mode: str) -> List[NumberLine]:
+    """The block lines a layout keeps (`_Fit.behind`): 'all'; 'numbers' (when the numbers would not fit otherwise) only
+    those that print a number, since a LIMIT or UNMEASURED line without one repeats a row of the confidence block; 'none'
+    (the last resort) no block, its numbers back in the table."""
+    if mode == BEHIND_ALL:
+        return list(block)
+    return [line for line in block if line.column] if mode == BEHIND_NUMBERS else []
 
 
 def _number_rows(lines: Sequence[NumberLine], width: float, size: float) -> List[Tuple[str, str, str]]:
@@ -1126,14 +1397,24 @@ def _place_numbers(rows, n_columns: int, capacity: int) -> Tuple[List[List[Tuple
     return columns, sum(1 for item in queue for row in item if row[0] in ('line', 'cont'))
 
 
-def _fit_numbers(pen: _Pen, lines, y: float, bottom: float, width: float, n_columns: int, layout: VerdictFigureLayout):
+def _fit_numbers(
+    pen: _Pen,
+    lines,
+    y: float,
+    bottom: float,
+    width: float,
+    n_columns: int,
+    layout: VerdictFigureLayout,
+    reserve: Callable[[float], float] = lambda size: 0.0,
+):
     """(size, line step, rows, columns, lines left over) at the largest font from NUMBERS_MAX_PT down to NUMBERS_MIN_PT
-    that holds the numbers between y and bottom, the columns balanced (the shortest column height that holds them).
-    At the smallest font one row is kept free for the count of the lines left over."""
+    that holds the numbers between y - reserve(size) (the block 'Numbers behind this verdict' at that font) and bottom,
+    the columns balanced (the shortest column height that holds them). At the smallest font one row is kept free for
+    the count of the lines left over."""
     size = NUMBERS_MAX_PT
     while True:
         step = size * layout.text_line_height / 72
-        available = max(int((y - bottom) / step), 1)
+        available = max(int((y - reserve(size) - bottom) / step), 1)
         rows = _number_rows(lines, width, size)
         for capacity in range(max(-(-len(rows) // n_columns), 1), available + 1):
             columns, left = _place_numbers(rows, n_columns, capacity)
@@ -1148,23 +1429,32 @@ def _fit_numbers(pen: _Pen, lines, y: float, bottom: float, width: float, n_colu
 @dataclass(frozen=True)
 class _Fit:
     """One way to lay out the explained column (`FIT_LEVELS`): the grey numbers kept, the legend under the steps, the
-    number of number columns, the compact explanation."""
+    number of number columns, the compact explanation, what is kept of the block 'Numbers behind this verdict'
+    (`behind_shown`), the compact bullets' size (`bullet_pt`, None: BULLET_COMPACT_PT)."""
 
     grey: bool
     legend_beside: bool
     extra_column: bool
     compact: bool
+    behind: str = BEHIND_ALL
+    bullet_pt: Optional[float] = None
 
 
 # The layouts tried in order until the numbers fit (W23 F1: by layout, not by dropping verdict lines): everything; the
-# grey numbers (of tests skipped by design) go; the legend under the steps; a narrow fifth number column; and only then
-# the compact explanation (the full margins in one line, the caps without their detail, no grey physics rows).
+# grey numbers (of tests skipped by design) go; the legend under the steps; a narrow fifth number column; the block
+# 'Numbers behind this verdict' keeps only its lines with a number (W28 E10); and only then the compact explanation
+# (the full margins in one line, the caps without their detail, no grey physics rows); last, without the block (its
+# numbers back in the table); the very last, the compact bullets at BULLET_TIGHT_PT (W28 FIX-plot: 1627 13E-33 still
+# overflowed with every fact said once).
 FIT_LEVELS = (
     _Fit(grey=True, legend_beside=False, extra_column=False, compact=False),
     _Fit(grey=False, legend_beside=False, extra_column=False, compact=False),
     _Fit(grey=False, legend_beside=True, extra_column=False, compact=False),
     _Fit(grey=False, legend_beside=True, extra_column=True, compact=False),
-    _Fit(grey=False, legend_beside=True, extra_column=True, compact=True),
+    _Fit(grey=False, legend_beside=True, extra_column=True, compact=False, behind=BEHIND_NUMBERS),
+    _Fit(grey=False, legend_beside=True, extra_column=True, compact=True, behind=BEHIND_NUMBERS),
+    _Fit(grey=False, legend_beside=True, extra_column=True, compact=True, behind=BEHIND_NONE),
+    _Fit(grey=False, legend_beside=True, extra_column=True, compact=True, behind=BEHIND_NONE, bullet_pt=BULLET_TIGHT_PT),
 )
 
 
@@ -1174,20 +1464,35 @@ def draw_explained(fig, text, lines: Sequence[NumberLine], layout: VerdictFigure
     largest font from NUMBERS_MAX_PT down to NUMBERS_MIN_PT that holds them in balanced columns; when even the smallest
     does not, the layouts of `FIT_LEVELS` are tried in order: the grey numbers (of tests skipped by design) are left out,
     the legend goes under the steps, a narrow extra number column is added, and last the explanation turns compact (the
-    full margins in one line). What still does not fit is counted in a last line (every number is in the CSV files).
+    full margins in one line, the bullets in their short form), and at the very end its bullets at BULLET_TIGHT_PT. What
+    still does not fit is counted in a last line (every number is in the CSV files).
+    The lines with an `emphasis` (`behind_lines`) are not in the table: they are the block 'Numbers behind this verdict'
+    between the explanation and the table, over the whole width (`_behind_block`); the table rows of their numbers print
+    pointers (`point_to_block`, for the block lines the layout keeps).
     Returns the statistics (`compact`, `font_pt`, `lines`, `overflow`, `wide`: the rows wider than their column, which
-    would run into the next one, `numbers_top_in`, `n_columns`, `grey_dropped`, `legend_beside`)."""
+    would run into the next one, `numbers_top_in`, `n_columns`, `grey_dropped`, `legend_beside`, `behind`: the block's
+    lines, `behind_rows`: its rows after wrapping, `behind_mode`: what the layout kept of it, `BEHIND_*`, `bullet_pt`:
+    the bullets' size)."""
     pen = _Pen(fig)
     x0, x1, _, bottom = _box(layout)
+    block = [line for line in lines if line.emphasis]  # 'Numbers behind this verdict' (`behind_lines`), above the table
+    lines = [line for line in lines if not line.emphasis]
     for level in FIT_LEVELS:
         columns_n = n_columns + (1 if level.extra_column else 0)
         width = (x1 - x0 - COLUMN_GAP * (columns_n - 1)) / columns_n
-        shown = list(lines) if level.grey else [line for line in lines if line.style != STYLE_GREY]
-        y = _explanation(pen, text, layout, draw=False, compact=level.compact, legend_beside=level.legend_beside)
-        if not _fit_numbers(pen, shown, y, bottom, width, columns_n, layout)[-1]:
+        kept = behind_shown(block, level.behind)
+        shown = point_to_block(lines if level.grey else [line for line in lines if line.style != STYLE_GREY], kept)
+        y = _explanation(pen, text, layout, draw=False, compact=level.compact, legend_beside=level.legend_beside, bullet_pt=level.bullet_pt)
+
+        def reserve(size: float, kept=kept, y=y) -> float:
+            return y - _behind_block(pen, kept, x0, x1, y, False, size)[0]
+
+        if not _fit_numbers(pen, shown, y, bottom, width, columns_n, layout, reserve)[-1]:
             break
-    y = _explanation(pen, text, layout, draw=True, compact=level.compact, legend_beside=level.legend_beside)
-    size, step, rows, columns, left = _fit_numbers(pen, shown, y, bottom, width, columns_n, layout)
+    y = _explanation(pen, text, layout, draw=True, compact=level.compact, legend_beside=level.legend_beside, bullet_pt=level.bullet_pt)
+    size = _fit_numbers(pen, shown, y, bottom, width, columns_n, layout, reserve)[0]
+    y, behind = _behind_block(pen, kept, x0, x1, y, True, size)
+    size, step, rows, columns, left = _fit_numbers(pen, shown, y, bottom, width, columns_n, layout, lambda _: 0.0)
     wide = []  # rows wider than their column: they would run into the next one
     for index, column in enumerate(columns):
         x = x0 + index * (width + COLUMN_GAP)
@@ -1222,4 +1527,8 @@ def draw_explained(fig, text, lines: Sequence[NumberLine], layout: VerdictFigure
         'n_columns': columns_n,
         'grey_dropped': not level.grey,
         'legend_beside': level.legend_beside,
+        'behind': len(kept),
+        'behind_rows': behind,
+        'behind_mode': level.behind,
+        'bullet_pt': level.bullet_pt or (BULLET_COMPACT_PT if level.compact else SENTENCE_PT),
     }

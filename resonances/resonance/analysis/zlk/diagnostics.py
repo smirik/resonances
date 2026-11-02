@@ -44,6 +44,13 @@ the free node's b_Omega among the modes with a nonzero amplitude). Locked to g_j
 591986 over 4 Myr: g5, Omega - varpi5 within 50-130 deg, 1.46 Myr, about 1.5 cycles; over 500 kyr the rate matches and
 the difference stays within 52-91 deg, but no cycle closes: unresolved (one 1.46-Myr period does not fit).
 
+Node near s_j (`node_near`, columns free_rho_i_max, zlk_gate_node_near*, zlk_gate_node_separation_yr; numbers for the
+reason text and the extension, no status reads them): rho_i_max = max over the record of rollmed(|z_i_free|, W) /
+rollmed(|z_i_forced without the constant|, W) (`FreeElements.rho_i_local_max`; nan when the baseline merged s6-s8 into
+the constant), and, on a planetary_residual gate whose only match is b_Omega ~ s_j, that s_j, d = |b_Omega - s_j|, the
+resolution 1296000/T and the baseline 1296000/d that separates them. 1981 over 500 kyr: s6, d 1.85 < 2.59 arcsec/yr,
+separation 0.70 Myr; rho_i 0.5-1.4 there is not physical (the fitted s6 term takes part of the unseparated free node).
+
 Centre-scale guard (`forced_beat_centre`): a libration at the centre scale whose period is within a Rayleigh width of a
 beat 2 pi/|g_k - g_j| of two fitted forced modes with nonzero amplitudes, whose reconstructed forced phase wave explains
 the centre (shape and size, `slow.forced_beat_model`), while rho_max < 1 at the fine period, is the forced vector
@@ -60,7 +67,7 @@ from typing import Any, Dict, Optional
 import numpy as np
 from scipy.signal import butter, sosfiltfilt
 
-from resonances.data.invariable_plane import inclination_to_invariable_plane
+from resonances.data.invariable_plane import FRAME_ECLIPTIC, FRAME_INVARIABLE, inclination_to_invariable_plane
 from resonances.resonance.analysis.filtering import lowpass_or_none
 from resonances.resonance.analysis.ledger import Op
 from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN
@@ -188,15 +195,42 @@ class NodeLock:
 
 
 @dataclass
+class NodeNear:
+    """The free inclination against the turning forced one, and a planetary residual that is only the node near s_j
+    (`node_near`; numbers for the reason text and the extension, never a status)."""
+
+    rho_i_max: float = NAN  # FreeElements.rho_i_local_max at the gate's period; nan: no turning forced term fitted
+    mode: str = ''  # planetary_residual whose only match is b_Omega ~ s_j: 's6'; '' otherwise
+    distance_arcsec_yr: float = NAN  # |b_Omega - s_j|
+    resolution_arcsec_yr: float = NAN  # 1296000 / T_free, the gate's tolerance
+    separation_yr: float = NAN  # 1296000 / d: the free-element baseline whose Rayleigh width is d (no margin)
+
+    def to_columns(self) -> Dict[str, Any]:
+        return {
+            'free_rho_i_max': self.rho_i_max,
+            'zlk_gate_node_near': self.mode,
+            'zlk_gate_node_near_d_arcsec_yr': self.distance_arcsec_yr,
+            'zlk_gate_node_near_resolution_arcsec_yr': self.resolution_arcsec_yr,
+            'zlk_gate_node_separation_yr': self.separation_yr,
+        }
+
+
+@dataclass
 class ZlkDiagnostics:
-    """The columns of `measure_ei_coupling`, `attribute_forcing` and `node_lock` (`LongPeriodAnalysis.zlk`)."""
+    """The columns of `measure_ei_coupling`, `attribute_forcing`, `node_lock` and `node_near` (`LongPeriodAnalysis.zlk`)."""
 
     ei: EICoupling = field(default_factory=EICoupling)
     attribution: Attribution = field(default_factory=Attribution)
     node_lock: NodeLock = field(default_factory=NodeLock)
+    node_near: NodeNear = field(default_factory=NodeNear)
 
     def to_columns(self) -> Dict[str, Any]:
-        return {**self.ei.to_columns(), **self.attribution.to_columns(), **self.node_lock.to_columns()}
+        return {
+            **self.ei.to_columns(),
+            **self.attribution.to_columns(),
+            **self.node_lock.to_columns(),
+            **self.node_near.to_columns(),
+        }
 
 
 # ------------------------------------------------------------------------------------------------ e-i coupling
@@ -263,20 +297,22 @@ def _matches(law: float, ratio: float, phase_deg: float, r: float, settings) -> 
     return off <= settings.zlk_ei_phase_tol_deg and np.sign(law) * r >= settings.zlk_ei_min_band_r and 1 / factor <= ratio <= factor
 
 
-def measure_ei_coupling(t_yr, e, inc, Omega, period_yr: float, period_source: str, settings) -> EICoupling:
-    """The e-i coupling at `period_yr` (module docstring); `inc`, `Omega` ecliptic [rad]."""
+def measure_ei_coupling(t_yr, e, inc, Omega, period_yr: float, period_source: str, settings, frame: str = FRAME_ECLIPTIC) -> EICoupling:
+    """The e-i coupling at `period_yr` (module docstring); `inc`, `Omega` [rad] measured from the plane `frame` names
+    (`LongPeriodSeries.frame`): an ecliptic inclination is read from the invariable plane here, an invariable one is
+    used as it is (never rotated twice)."""
     result = EICoupling(period_yr=float(period_yr), period_source=period_source)
     if not (np.isfinite(period_yr) and period_yr > 0):
         result.reason = 'no_period'
         return result
-    if Omega is None:
+    if Omega is None and frame != FRAME_INVARIABLE:
         result.reason = 'no_node'
         return result
     t, e = np.asarray(t_yr, dtype=float), np.asarray(e, dtype=float)
     if not _band_resolved(t, period_yr, settings.zlk_ei_band_halfwidth):
         result.reason = 'undersampled'  # the band reaches the Nyquist frequency: aliased, no measurement
         return result
-    inclination = inclination_to_invariable_plane(inc, Omega)
+    inclination = np.asarray(inc, dtype=float) if frame == FRAME_INVARIABLE else inclination_to_invariable_plane(inc, Omega)
     if np.nanmin(inclination) < np.pi / 2 < np.nanmax(inclination):
         result.reason = 'orbit_flip'
         return result
@@ -341,11 +377,16 @@ def attribute_forcing(
     free_turns_episodes: float = NAN,
     free_turns_min: float = NAN,
     step_yr: float = NAN,
+    episodes_period_yr: float = NAN,
 ) -> Attribution:
-    """The forced mode that holds a kinematic libration, or why none is named (module docstring). `rho_episodes`,
-    `free_turns_episodes`, `free_turns_min`: the gate's numbers of an episodic omega (`GateResult`), the predicate of
-    `decide_status` that pins it inside its episodes (nan otherwise). `step_yr`: the step of the series P_cyc was
-    measured on (its turning points sit on that grid), which widens the beat test (`_beat_tolerance`)."""
+    """The forced mode that holds a kinematic libration, or why none is named (module docstring). `period_cycle_yr`:
+    the gate's period (the deciding episode's, `decide.decisive_period_yr`). `rho_episodes`, `free_turns_episodes`,
+    `free_turns_min`: the gate's numbers of an episodic omega (`GateResult`), the predicate of `decide_status` that
+    pins it inside its episodes (nan otherwise). `episodes_period_yr`: the median full period pooled over the librating
+    episodes, which the beat test reads for the scope episodes (the claim is about every pinned episode, each a cycle
+    of the same beat: 624 Hektor, eleven episodes of 3.76-4.01 kyr, the beat 3.91 kyr); nan: `period_cycle_yr`.
+    `step_yr`: the step of the series the period was measured on (its turning points sit on that grid), which widens
+    the beat test (`_beat_tolerance`)."""
     if gate_outcome != 'kinematic':
         return Attribution(reason='gate_not_kinematic')
     if elements is None or not elements.amplitudes_e:
@@ -372,7 +413,8 @@ def attribute_forcing(
     rate = elements.basis_e[star]
     gap = abs(elements.b_varpi - rate)
     beat = ARCSEC_PER_TURN / gap if np.isfinite(gap) and gap > 0 else NAN
-    if not _within_rayleigh(beat, period_cycle_yr, _beat_tolerance(elements.resolution, period_cycle_yr, step_yr)):
+    period = episodes_period_yr if scope == 'episodes' and np.isfinite(episodes_period_yr) else period_cycle_yr
+    if not _within_rayleigh(beat, period, _beat_tolerance(elements.resolution, period, step_yr)):
         return Attribution(reason='beat_period_mismatch')
     node = float(elements.b_Omega - rate)
     turns = abs(node) * elements.baseline / ARCSEC_PER_TURN
@@ -492,3 +534,28 @@ def forced_beat_centre(elements, slow_period_yr: float, rho_max_fine: float, tra
     if not (near and explained and pinned):
         return ''
     return f'forced_beat:{model.label}'
+
+
+# --------------------------------------------------------------------------------------------------- node near s_j
+
+
+def node_near(elements, gate, settings) -> NodeNear:
+    """The free inclination ratio of every row with free elements, and of a planetary_residual gate the s_j the free
+    node alone sits near (`omega_free_gate.node_near`; module docstring of `NodeNear`). `gate` is the analysis'
+    `GateResult` (None: not run); the ratio's window is the gate's period x ZLK_RHO_WINDOW_CYCLES, as rho_max's."""
+    from resonances.resonance import omega_free_gate
+
+    if elements is None:
+        return NodeNear()
+    period = gate.libration_period_yr if gate is not None else NAN
+    result = NodeNear(
+        rho_i_max=elements.rho_i_local_max(period if np.isfinite(period) else None, settings.zlk_rho_window_cycles),
+        resolution_arcsec_yr=elements.resolution,
+    )
+    if gate is None or gate.outcome != str(omega_free_gate.GateOutcome.PLANETARY_RESIDUAL):
+        return result
+    mode, distance = omega_free_gate.node_near(elements)
+    if mode:
+        result.mode, result.distance_arcsec_yr = mode, distance
+        result.separation_yr = ARCSEC_PER_TURN / distance if distance > 0 else float('inf')
+    return result

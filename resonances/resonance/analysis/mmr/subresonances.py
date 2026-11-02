@@ -23,8 +23,10 @@ E, the share of the catalogue centre's motion its slow angle explains, from the 
 without a track each.
 
 The check (SPEC §6.4; SISTERS §§3-4; codex B-review §4):
-  window   the longest run of >= libration_min_turning_points TPs of sigma0, trimmed to its regular cycles (the slow
-           near-separatrix cycles at its edges have no stationary centre), else the analysis window
+  window   one per accepted episode, trimmed to its regular cycles (the slow near-separatrix cycles at its edges have no
+           stationary centre), with its regime's centre (W28 A6b, `episode_windows`); the decisive episode's window
+           gives the row's member and numbers, the others their episode's resonant argument; without an accepted
+           episode the longest run of >= libration_min_turning_points TPs (`decisive_window`), else the analysis window
   step 1   per member the centre track c_s = c0 + smooth_{W_c}(Delta_s): range <= ratio x range(c0), |rate| <=
            max(2 sigma_rate, floor), largest monotone pass < pass_max (`screen`)
   step 2   E' the member's d'Alembert factor is >= mmr_subresonance_strength_rel_min x that of the strongest term
@@ -37,13 +39,24 @@ The check (SPEC §6.4; SISTERS §§3-4; codex B-review §4):
            measured when sigma0's largest swing in the window is below mmr_a_response_min_amp_deg (there a sine and a
            line differ by < 10 %: every member's phase is coherent with the identity alone; 2013 AS27 4E+9S-5, 3-4 deg);
            more than one member left with A not measured and nothing else to tell them apart -> undetermined
-           B centre near 0 or pi; C unique (tie: lower degree, then larger coefficient); E the strongest predicted T0
-           is not far slower than the observed period; D composite multiplet theory (`multiplet.py`: c0 = pi - arg
-           P(beta), periods against T0(t) F(A)) never rejects, it only raises the confidence (`decide`, `evaluate`)
+           B centre near 0 or pi; E the strongest predicted T0 is not far slower than the observed period. All of
+           these are vetoes applied before the choice (A6b): a member B rejects hands the choice to the next. The
+           choice (`_choose`): two-body with the theory following the measured centre, the flattest theoretical
+           centre c_j = pi - arg P(beta) + j beta over the window (`TheoryCentres`), ties within the tie fraction by
+           the measured range W; else C, W alone (tie: lower degree, then larger coefficient). D composite multiplet
+           theory (`multiplet.py`: c0 = pi - arg P(beta), periods against T0(t) F(A)) never rejects, it only raises the
+           confidence (`decide`, `evaluate`). Nothing admissible and no single member carrying P: 'composite'
+           (`TheoryCentres.composite`)
   outcome  accepted -> check fail (the tree gives non_resonant/subresonance_librates); none -> pass; without the
            planets of the angle -> not_measured (planets_missing); beta = varpi_P - varpi librating ->
            not_measured (subresonance_undetermined), as are several members that only A could tell apart and A is not
            measured; a nodal winner -> not_measured (nodal_subresonance_candidate)
+
+Triggers (`triggers`): T1, T2, T5, T6, and since W28 A6a T7 (the theory's centre of the catalogue member moves over an
+episode by more than mmr_subresonance_centre_move_ratio x its half-amplitude) and T8 (a moving centre with standing
+bands, or origin_unknown), which alone runs the scan as a diagnostic (`run_subresonances(diagnostic=True)`, columns
+sub_diag_*, never read by the tree). Every first-pass prograde non-1:1 row also gets the cheap numbers, scan or not
+(`cheap_subresonances`: the multiplet theory `theory_numbers` and the planar `cheap_list`; sub_th_*, sub_cheap_*).
 
 Every number goes to `SubresonanceScan.to_columns()` (columns `sub_*`) and the candidates. `member_series` builds the
 accepted member's own series (sigma0 + Delta_s from the saved elements, no integration) for its derived row.
@@ -81,6 +94,9 @@ from resonances.resonance.analysis.mmr.models import (
     KYR,
     PLANET_NAMES_ORDER,
     RAD_TO_DEG,
+    SUBRESONANCE_CHOICE_COMPOSITE,
+    SUBRESONANCE_CHOICE_MEASURED,
+    SUBRESONANCE_CHOICE_THEORY,
     Context,
     MMRSeries,
     Preprocessed,
@@ -88,6 +104,7 @@ from resonances.resonance.analysis.mmr.models import (
     ResonanceSpec,
     Response,
     SubresonanceCandidate,
+    SubresonanceCheap,
     SubresonanceResult,
     SubresonanceTrigger,
     column_number,
@@ -95,6 +112,7 @@ from resonances.resonance.analysis.mmr.models import (
     planet_terms,
 )
 from resonances.resonance.analysis.pendulum import amplitude_factor
+from resonances.resonance.analysis.rules import Rule, fire
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import CheckValue, Flag, Reason, join_list
 
@@ -122,6 +140,8 @@ SCREEN_REASONS = (REASON_RANGE, REASON_RATE, REASON_PASS)
 REASON_A_NOT_MEASURED, REASON_A_COHERENCE, REASON_A_GAIN = 'A_not_measured', 'A_coherence', 'A_gain'
 REASON_A_SMALL_SWING = 'A_small_swing'  # test A not measured: sigma0 swings below mmr_a_response_min_amp_deg
 REASON_B, REASON_C, REASON_D, REASON_E = 'B_centre', 'C_tie', 'D_theory', 'E_t0'
+# W28 A6b (card g06-8c A): an admissible member another one beat by the flatness of its theoretical centre c_j(t)
+REASON_THEORY = 'theory_flatter'
 REASON_E_STRENGTH = 'E_strength'  # test E': too weak against the strongest term of the commensurability
 # test L: the member's own angle has no accepted episode in the scan window, or that angle could not be built
 REASON_L, REASON_L_NOT_MEASURED = 'L_not_librating', 'L_not_measured'
@@ -168,6 +188,9 @@ class SubresonanceMember(SubresonanceCandidate):
     member_reject: str = ''
     member_t0_yr: float = NAN
     member_t1_yr: float = NAN
+    # A6b: the range of the member's theoretical centre c_j(t) = pi - arg P + j beta over the scan window (nan: no
+    # theory there, or a nodal member)
+    theory_range_rad: float = NAN
 
     def extra_columns(self) -> dict:
         """candidates.csv columns besides those of `SubresonanceCandidate`."""
@@ -188,6 +211,7 @@ class SubresonanceMember(SubresonanceCandidate):
             'member_reject': self.member_reject,
             'member_t0_yr': column_number(self.member_t0_yr),
             'member_t1_yr': column_number(self.member_t1_yr),
+            'th_centre_range_deg': column_number(self.theory_range_rad, RAD_TO_DEG),
         }
 
 
@@ -229,6 +253,9 @@ class ListedMember:
     explained: float = NAN
     slow_cycles: float = NAN
     swing_ratio: float = NAN
+    # the largest monotone pass of its centre track in the scan window, the episode the scan reads (card g06-8b A: per
+    # episode, not per record); about 2 pi for a centre that makes a turn there, which step 1 rejects
+    centre_pass_rad: float = NAN
 
     def text(self) -> str:
         return f'{self.key}:{self.width_ratio:.2g}:{self.explained:.2g}:{self.slow_cycles:.2g}:{self.swing_ratio:.2g}'
@@ -267,9 +294,22 @@ class SubresonanceScan(SubresonanceResult):
     strength_caveat: str = ''  # why the list's d'Alembert factors are unreliable: e, i, crossing (`strength_caveat`)
     n_weak: int = 0  # members test E' rejected before step 1 (planar ones stay in `candidates`)
     entries: List[LedgerEntry] = field(default_factory=list)  # comparisons of the scan, for the figure card
+    # a T8 diagnostic scan (`run_subresonances(diagnostic=True)`): nothing accepted, check not_applicable; the member
+    # the scan would have accepted and the check it would have given, for the sub_diag_* columns only
+    diagnostic: bool = False
+    would_accept: str = ''
+    would_check: str = ''
+    # A6b: the decisive window's episode (None: the fallback window of a record without an accepted episode), its
+    # theoretical member centres and median half-amplitude, and the rules the scan fired (subresonance_theory_select)
+    episode_id: Optional[int] = None
+    theory_centres: Optional[TheoryCentres] = None
+    half_amplitude_rad: float = NAN
+    rules_fired: frozenset = frozenset()
 
     def to_columns(self) -> dict:
         columns = super().to_columns()
+        centres = self.theory_centres
+        flattest_j, flattest = centres.flattest() if centres is not None else (None, NAN)
         ranked = sorted(self.candidates, key=lambda c: c.rank)
         best = self.accepted or (ranked[0] if ranked else None)
         theory = self.theory
@@ -321,6 +361,13 @@ class SubresonanceScan(SubresonanceResult):
                 'sub_spacing_au': column_number(self.spacing_au),
                 'sub_adiabaticity': column_number(self.adiabaticity),
                 'sub_beta_librates': self.beta_librates,
+                'sub_window_episode_id': self.episode_id,
+                'sub_half_amp_deg': column_number(self.half_amplitude_rad, RAD_TO_DEG),
+                'sub_th_flattest_j': flattest_j,
+                'sub_th_flattest_range_deg': column_number(flattest, RAD_TO_DEG),
+                'sub_accepted_th_range_deg': (
+                    column_number(getattr(self.accepted, 'theory_range_rad', NAN), RAD_TO_DEG) if self.accepted is not None else None
+                ),
             }
         )
         return columns
@@ -344,6 +391,7 @@ class SubresonanceScan(SubresonanceResult):
                     f'sub_rank{i + 1}_N': number('slow_cycles'),
                     f'sub_rank{i + 1}_AW': number('swing_ratio'),
                     f'sub_rank{i + 1}_strength_rel': number('strength_rel'),
+                    f'sub_rank{i + 1}_pass_deg': number('centre_pass_rad', RAD_TO_DEG),
                 }
             )
         catalogue = self.catalogue_row
@@ -704,9 +752,12 @@ def triggers(
     binomial_mode_j: int,
     stationary_full: bool,
     settings: AnalysisSettings,
+    theory_travel_ratio: float = NAN,
 ) -> Tuple[Tuple[SubresonanceTrigger, ...], Tuple[str, ...]]:
-    """(scan triggers T1, T2, T5, T6; support T3, T4) of SPEC §6.2. `pending_reason` is the reason the tree would give
-    without the scan (T5 for kinematic_* and drift_mechanism_unknown).
+    """(scan triggers T1, T2, T5, T6, T7, T8; support T3, T4) of SPEC §6.2. `pending_reason` is the reason the tree would
+    give without the scan (T5 for kinematic_* and drift_mechanism_unknown, T8 for origin_unknown);
+    `theory_travel_ratio` the cheap theory's largest centre travel over an episode / its half-amplitude (T7,
+    `SubresonanceCheap.travel_ratio`; nan without the theory).
 
     T1: the drift fraction reaches libration_drift_min_window_fraction, a run of >= libration_min_turning_points TPs
         is rejected (centre_moves, or no_closed_cycle: a saw that never returns) or an accepted episode is not
@@ -715,6 +766,11 @@ def triggers(
     T2: median force-law R^2 over the windows >= mmr_subresonance_t2_r2_min and phi0 coherence < _t2_coh_max.
     T5: `pending_reason` in kinematic_drift, kinematic_libration, drift_mechanism_unknown.
     T6: `binomial_mode_j` != 0 and the angle is not a clean stationary libration with full margins.
+    T7 (W28 A6a, card g06-8a A): the theoretical centre of the catalogue member moves over an accepted episode by more
+        than mmr_subresonance_centre_move_ratio x the episode's median half-amplitude (`theory_numbers`).
+    T8 (cards g06-6, g06-7, g06-8a): an accepted episode whose centre moves (|shift| above that ratio x its median
+        half-amplitude) while its bands overlap, or `pending_reason` origin_unknown (ND, EH16). Diagnostic only
+        (`models.DIAGNOSTIC_TRIGGERS`): alone it runs the scan with diagnostic=True, never read by the tree.
     T3 and T4 need the slow angles; they are measured by `run_subresonances` (`support` is empty here)."""
     scratch = Ledger.from_settings(settings)
     found = []
@@ -742,7 +798,25 @@ def triggers(
         found.append(SubresonanceTrigger.T5)
     if binomial_mode_j and not stationary_full:
         found.append(SubresonanceTrigger.T6)
+    if scratch.compare_setting(
+        'T7 theory centre travel / half-amplitude', theory_travel_ratio, Op.GT, settings, 'mmr_subresonance_centre_move_ratio', '', ''
+    ):
+        found.append(SubresonanceTrigger.T7)
+    if str(pending_reason) == Reason.ORIGIN_UNKNOWN or _moving_with_standing_bands(geometry, settings):
+        found.append(SubresonanceTrigger.T8)
     return tuple(found), ()
+
+
+def _moving_with_standing_bands(geometry: Geometry, settings: AnalysisSettings) -> bool:
+    """T8's geometric part: an accepted run whose bands m_i +- A_i share a point (`Episode.bands_overlap`) while its
+    centre moves by more than mmr_subresonance_centre_move_ratio x its median half-amplitude (2003 ND 6J-6S-1: shift
+    61 deg, half-amplitude 55 deg; 2003 EH16: 21 against 19 deg)."""
+    ratio = settings.mmr_subresonance_centre_move_ratio
+    for run in geometry.runs:
+        shift, half = abs(float(run.centre_shift_rad)), float(run.half_amp_med_rad)
+        if run.accepted and run.bands_overlap and np.isfinite(shift) and np.isfinite(half) and half > 0 and shift > ratio * half:
+            return True
+    return False
 
 
 def leading_member(series: MMRSeries, context: Context, settings: AnalysisSettings) -> Tuple[Optional[int], Optional[int]]:
@@ -817,10 +891,7 @@ def screen(
     span0 = float(np.ptp(np.asarray(centre0, dtype=float)[np.isfinite(centre0)])) if np.any(np.isfinite(centre0)) else NAN
     rate, error = _line(t, track)
     tolerance = max(2 * error if np.isfinite(error) else 0.0, settings.mmr_subresonance_rate_floor_rad_kyr / KYR)
-    window = (float(t[good][0]), float(t[good][-1]))
-    turns = find_turning_points(t, track, np.radians(settings.libration_centre_tp_prominence_deg), window)
-    best = largest_monotone_pass(monotone_passes(t, track, turns, window))
-    largest = abs(best.delta_rad) if best is not None else span
+    largest = centre_pass(t, track, settings)
     in_range = ledger.compare_setting(
         'S1 centre range / range(c0)',
         span / span0 if span0 > 0 else NAN,
@@ -1050,10 +1121,66 @@ def theory_confirms(
     return bool(rms and better and strongest and periods)
 
 
+@dataclass(frozen=True)
+class TheoryCentres:
+    """The theoretical centres of the planar members over one scan window (W28 A6b, card g06-8c A; `composite_theory`):
+    c_j(t) = pi - arg P(beta(t)) + j beta(t), P with C_j(e(t), e_P(t)) by the averaging (SISTERS §1.3, M&D 1999 §6).
+
+    `ranges`: j -> the range of c_j over the window [rad] (the members of the theory's P, `THEORY_J_MARGIN` beyond 0..q);
+    `rms_rad`: the measured centre about the theory with one constant offset (test D's composite RMS). It is the same for
+    every planar member: a member's measured centre c0 + (j - j_cat) beta and its theoretical one differ from the
+    catalogue's by the same (j - j_cat) beta, so 'the measured track agrees' is one comparison;
+    `half_amplitude_rad`: the episode's median half-amplitude; `beta_range_rad`: the range of beta = varpi_P - varpi over
+    the window, by which the centres of neighbouring members separate."""
+
+    ranges: Dict[int, float] = field(default_factory=dict)
+    rms_rad: float = NAN
+    half_amplitude_rad: float = NAN
+    beta_range_rad: float = NAN
+
+    def follows(self, settings: AnalysisSettings, ledger: Optional[Ledger] = None) -> bool:
+        """The measured centre follows the theory: RMS <= mmr_subresonance_theory_rms_deg (else the theory does not
+        choose and W is the fallback)."""
+        ledger = ledger if ledger is not None else Ledger.from_settings(settings)
+        rms = np.degrees(self.rms_rad) if np.isfinite(self.rms_rad) else NAN
+        name = 'theory choice: measured centre about pi - arg P + j beta (RMS)'
+        return bool(ledger.compare_setting(name, rms, Op.LE, settings, 'mmr_subresonance_theory_rms_deg', 'deg', 'sub_composite_rms_deg'))
+
+    def flattest(self, keys: Optional[Sequence[int]] = None) -> Tuple[Optional[int], float]:
+        """(j, range [rad]) of the flattest theoretical centre among `keys` (every j of the theory by default)."""
+        values = {j: r for j, r in self.ranges.items() if np.isfinite(r) and (keys is None or j in keys)}
+        if not values:
+            return None, NAN
+        j = min(values, key=lambda k: (values[k], abs(k)))
+        return j, float(values[j])
+
+    def composite(self, planar: Sequence[int], settings: AnalysisSettings, ledger: Optional[Ledger] = None) -> bool:
+        """No single member carries the oscillation: the theory follows the measured centre, the members are told apart
+        over the window (beta moves by more than mmr_subresonance_centre_move_ratio x the half-amplitude: neighbouring
+        members' centres separate by more than the oscillation), and the two flattest of the `planar` members tie
+        (within mmr_subresonance_tie_fraction, test C's band). Two members of equal weight do: with C_a = C_b,
+        P = 2 C cos((a - b) beta / 2) e^{i (a + b) beta / 2}, so c_a and c_b both move by |a - b| / 2 x range(beta),
+        while a member that dominates stands out (31935 +2+5 40 deg against 153 deg for +3+4). The oscillation is then
+        about the moving centre of the composite term P(beta). A dominant member that drifts with e(t) is no tie (a
+        drift beyond the half-amplitude is not composite: 2003 SL215 8J-3, 61 deg against 162)."""
+        values = sorted(r for j, r in self.ranges.items() if j in planar and np.isfinite(r))
+        half, spread = self.half_amplitude_rad, self.beta_range_rad
+        if len(values) < 2 or not (np.isfinite(half) and half > 0 and np.isfinite(spread) and spread > 0):
+            return False
+        ledger = ledger if ledger is not None else Ledger.from_settings(settings)
+        name = 'composite: range of beta over the window / half-amplitude (the members are told apart)'
+        apart = ledger.compare_setting(name, spread / half, Op.GT, settings, 'mmr_subresonance_centre_move_ratio', '', '')
+        name = 'composite: the two flattest theoretical member centres tie (second / flattest - 1)'
+        gap = values[1] / values[0] - 1 if values[0] > 0 else NAN
+        tie = ledger.compare_setting(name, gap, Op.LE, settings, 'mmr_subresonance_tie_fraction', '', '')
+        return bool(apart and tie) and self.follows(settings, ledger)
+
+
 @dataclass
 class Outcome:
     """What step 2 found: the winner (None when rejected; may be nodal), how the tie went, the theory verdict, the reason
-    of every candidate and the flags."""
+    of every candidate and the flags; `by_theory`: the theory chose the winner (A6b), `composite`: nothing was admissible
+    and no planar member's theoretical centre stands (`TheoryCentres.composite`)."""
 
     winner: Optional[SubresonanceCandidate]
     tie_weak: bool
@@ -1061,6 +1188,8 @@ class Outcome:
     reasons: Dict[str, str]
     flags: List[str]
     undetermined: bool = False  # more than one member passed E' and L with A not measured: nothing tells them apart
+    by_theory: bool = False
+    composite: bool = False
 
 
 def _indistinguishable(candidates, reasons, e_mean, inc_max_rad, symmetric_centre, theory, settings, ledger) -> bool:
@@ -1070,6 +1199,57 @@ def _indistinguishable(candidates, reasons, e_mean, inc_max_rad, symmetric_centr
     if len(left) < 2 or not _strong_enough(theory, settings, ledger):
         return False
     return sum(1 for c in left if _symmetric(c, e_mean, inc_max_rad, symmetric_centre, settings, ledger)) > 1
+
+
+def _veto(c: SubresonanceCandidate, sigma0_coherence, e_mean, inc_max_rad, symmetric_centre, settings, ledger, small_swing) -> str:
+    """The first veto that rejects a member ('' = admissible): step 1, E', L, A, B, in that order."""
+    if c.reason in SCREEN_REASONS or not np.isfinite(c.centre_range_rad):
+        return c.reason or REASON_RANGE
+    if not _strong_relative(c, settings, ledger):
+        return REASON_E_STRENGTH
+    reason = _librates_itself(c, settings, ledger) or _passes_a(c, sigma0_coherence, settings, ledger, small_swing)
+    if not reason and not _symmetric(c, e_mean, inc_max_rad, symmetric_centre, settings, ledger):
+        return REASON_B
+    return reason
+
+
+def _choose(
+    admissible: List[SubresonanceCandidate],
+    settings: AnalysisSettings,
+    reasons: Dict[str, str],
+    centres: Optional[TheoryCentres],
+    ledger: Ledger,
+) -> Tuple[SubresonanceCandidate, bool, bool]:
+    """The member among the admissible ones (every veto already applied): (winner, tie decided by order only or not at
+    all, chosen by the theory).
+
+    Theory (card g06-8c A; two-body, non-crossing, the theory computed and following the measured centre): the planar
+    member with the flattest theoretical centre c_j(t) over the window; members within mmr_subresonance_tie_fraction of
+    that range tie and the measured range W breaks the tie (test C, `_unique`); the others get REASON_THEORY. A member
+    the theory does not hold (nodal, or beyond its j) is compared with the winner by W as before (a nodal one that
+    wins is not accepted: `_outcome`). Without the theory, or when it does not follow the measured centre: W alone, the
+    fallback (`_unique`)."""
+    ranked = [c for c in admissible if not c.nodal and centres is not None and np.isfinite(centres.ranges.get(c.j, NAN))]
+    if not ranked or not centres.follows(settings, ledger):
+        best, weak = _unique(admissible, settings, reasons)
+        return best, weak, False
+    _, flattest = centres.flattest([c.j for c in ranked])
+    fraction = settings.mmr_subresonance_tie_fraction
+    tied = [c for c in ranked if centres.ranges[c.j] - flattest <= fraction * flattest]
+    for c in ranked:
+        if c not in tied:
+            reasons[c.spec.key] = REASON_THEORY
+    behind = [centres.ranges[c.j] for c in ranked if c not in tied]
+    if behind:  # the margin of the choice: the next member's theoretical range against the tie band of the flattest
+        name = 'theory choice: next theoretical centre range (the flattest x (1 + tie fraction))'
+        limit = np.degrees(flattest * (1 + fraction))
+        ledger.compare(name, np.degrees(min(behind)), Op.GT, limit, 'deg', '', setting='mmr_subresonance_tie_fraction')
+    best, weak = _unique(tied, settings, reasons)
+    others = [c for c in admissible if c not in ranked]
+    if others:
+        best, weak_other = _unique([best] + others, settings, reasons)
+        weak = weak or weak_other
+    return best, weak, True
 
 
 def evaluate(
@@ -1082,42 +1262,40 @@ def evaluate(
     theory: Optional[TheoryCheck] = None,
     ledger: Optional[Ledger] = None,
     small_swing: bool = False,
+    centres: Optional[TheoryCentres] = None,
+    planar: Sequence[int] = (),
 ) -> Outcome:
-    """Step 2 with every reason (`decide` is its short form): E', L and A on every member kept by step 1, C among
-    those passing all three, B and E on the winner, D (`theory_confirms`) on the accepted one. With `small_swing` (sigma0
-    swings below mmr_a_response_min_amp_deg in the window) A is not measured; when more than one member that passed
-    E' and L then also passes B (and E holds), only A could have told them apart: the outcome is undetermined (no
-    winner, flag subresonance_undetermined)."""
+    """Step 2 with every reason (`decide` is its short form). Every veto applies before the choice (W28 A6b, card
+    g06-8c A): step 1, E', L, A and B on every member, E on the window (a failed E leaves nothing); the choice
+    (`_choose`: the theory's flattest centre, W for ties and as the fallback) is made among the members left, so a
+    member B rejects hands the choice to the next one. D (`theory_confirms`) is read on the accepted one only (it never
+    rejects). With `small_swing` (sigma0 swings below mmr_a_response_min_amp_deg in the window) A is not measured;
+    when more than one member that passed E' and L then also passes B (and E holds), only A could have told them apart:
+    the outcome is undetermined (no winner, flag subresonance_undetermined). With nothing admissible, `centres` and
+    the `planar` members say whether the regime is composite (`TheoryCentres.composite`)."""
     ledger = ledger if ledger is not None else Ledger.from_settings(settings)
     reasons: Dict[str, str] = {}
-    passing = []
+    admissible = []
     for c in candidates:
-        if c.reason in SCREEN_REASONS or not np.isfinite(c.centre_range_rad):
-            reasons[c.spec.key] = c.reason or REASON_RANGE
-            continue
-        if not _strong_relative(c, settings, ledger):
-            reasons[c.spec.key] = REASON_E_STRENGTH
-            continue
-        reasons[c.spec.key] = _librates_itself(c, settings, ledger) or _passes_a(c, sigma0_phi0_coherence, settings, ledger, small_swing)
+        reasons[c.spec.key] = _veto(c, sigma0_phi0_coherence, e_mean, inc_max_rad, symmetric_centre, settings, ledger, small_swing)
         if not reasons[c.spec.key]:
-            passing.append(c)
-    if not passing:
+            admissible.append(c)
+    if admissible and not _strong_enough(theory, settings, ledger):
+        for c in admissible:
+            reasons[c.spec.key] = REASON_E
+        admissible = []
+    if not admissible:
         if _indistinguishable(candidates, reasons, e_mean, inc_max_rad, symmetric_centre, theory, settings, ledger):
             return Outcome(None, False, None, reasons, [str(Flag.SUBRESONANCE_UNDETERMINED)], undetermined=True)
-        return Outcome(None, False, None, reasons, [])
-    best, tie_weak = _unique(passing, settings, reasons)
+        composite = bool(centres is not None and planar and centres.composite(planar, settings, ledger))
+        return Outcome(None, False, None, reasons, [], composite=composite)
+    best, tie_weak, by_theory = _choose(admissible, settings, reasons, centres, ledger)
     flags = [FLAG_TIE] if any(reason == REASON_C for reason in reasons.values()) else []
-    if not _symmetric(best, e_mean, inc_max_rad, symmetric_centre, settings, ledger):
-        reasons[best.spec.key] = REASON_B
-        return Outcome(None, tie_weak, None, reasons, flags)
-    if not _strong_enough(theory, settings, ledger):
-        reasons[best.spec.key] = REASON_E
-        return Outcome(None, tie_weak, None, reasons, flags)
     confirms = theory_confirms(best, candidates, theory, settings, ledger) if theory is not None else None
     if confirms is False:
         flags.append(FLAG_THEORY_DISAGREES)
     reasons[best.spec.key] = REASON_NODAL if best.nodal else ''
-    return Outcome(best, tie_weak, confirms, reasons, flags)
+    return Outcome(best, tie_weak, confirms, reasons, flags, by_theory=by_theory)
 
 
 def decide(
@@ -1132,11 +1310,13 @@ def decide(
     beta_librates: bool = False,
     ledger: Optional[Ledger] = None,
     small_swing: bool = False,
+    centres: Optional[TheoryCentres] = None,
 ) -> Tuple[Optional[SubresonanceCandidate], bool, bool]:
     """Step 2: tests E' (the member's d'Alembert factor against the strongest term, always), L (the member's own
     angle librates in the window), A (force law coherence and gain), B (centre near 0 or pi, skipped for 1:n,
-    co-orbitals, high e or i), C (uniqueness; a tie is broken by lower degree, then larger coefficient), D (composite
-    theory, optional), E (T0 test).
+    co-orbitals, high e or i), E (T0 test) on every member, then the choice among those left: the flattest theoretical
+    centre (`centres`, A6b) with W (test C) for its ties, else C alone (uniqueness; a tie is broken by lower degree,
+    then larger coefficient); D (composite theory, optional) on the accepted one.
     Returns (accepted or None, tie decided by degree only, undetermined).
 
     A candidate whose `reason` is a step-1 failure ('range', 'rate', 'pass') is not considered; one without a
@@ -1149,7 +1329,9 @@ def decide(
     members are left that only the unmeasured test A could tell apart (`evaluate`)."""
     if beta_librates:
         return None, False, True
-    outcome = evaluate(candidates, sigma0_phi0_coherence, e_mean, inc_max_rad, settings, symmetric_centre, theory, ledger, small_swing)
+    outcome = evaluate(
+        candidates, sigma0_phi0_coherence, e_mean, inc_max_rad, settings, symmetric_centre, theory, ledger, small_swing, centres
+    )
     if outcome.winner is None or outcome.winner.nodal:
         return None, outcome.tie_weak, outcome.undetermined
     return outcome.winner, outcome.tie_weak, False
@@ -1257,13 +1439,15 @@ def _interpolate(table: np.ndarray, x_nodes: np.ndarray, y_nodes: np.ndarray, x:
 
 @dataclass
 class _Theory:
-    """The composite theory over the window (two-body): its coefficients and the check of the predicted centre and
-    periods."""
+    """The composite theory over the window (two-body): its coefficients, the check of the predicted centre and
+    periods, and the theoretical centre of every member j of P (A6b; the half-amplitude is the window's, set by the
+    caller)."""
 
     j_values: np.ndarray
     mean_coefficients: np.ndarray  # C_j averaged over the window
     check: TheoryCheck
     cache: str
+    centres: TheoryCentres = field(default_factory=TheoryCentres)
 
 
 def _coefficient_track(
@@ -1347,7 +1531,21 @@ def composite_theory(scan: '_Scan') -> Tuple[Optional[_Theory], str]:
         n_period_cycles=n_cycles,
         t0_ratio=float(np.min(t0_track)) / observed if np.isfinite(observed) and observed > 0 else NAN,
     )
-    return _Theory(js, np.mean(coefficients, axis=0), check, key), ''
+    return _Theory(js, np.mean(coefficients, axis=0), check, key, theory_centres(coefficients, js, beta, rms)), ''
+
+
+def theory_centres(
+    coefficients: np.ndarray, j_values: Sequence[int], beta_rad: np.ndarray, rms_rad: float = NAN, half_amplitude_rad: float = NAN
+) -> TheoryCentres:
+    """The theoretical member centres over a window (A6b): C_j on its samples ((n_t, n_j), or (n_j,) constant),
+    beta(t) unwrapped; the range of c_j(t) = pi - arg P(beta(t)) + j beta(t) (arg P unwrapped) for every j of P."""
+    js = np.asarray(j_values, dtype=int)
+    beta = np.asarray(beta_rad, dtype=float)
+    table = np.asarray(coefficients)
+    table = np.broadcast_to(table, (len(beta), len(js))) if table.ndim == 1 else table
+    base = np.unwrap(np.pi - np.angle(multiplet.composite(table, js, beta)))
+    ranges = {int(j): float(np.ptp(base + int(j) * beta)) for j in js}
+    return TheoryCentres(ranges, float(rms_rad), float(half_amplitude_rad), float(np.ptp(beta)) if len(beta) else NAN)
 
 
 def _single_rms(track: np.ndarray) -> float:
@@ -1429,22 +1627,27 @@ class _Scan:
     frame_mixed: bool = False  # nodal members scanned without sigma0's change of frame (a planet not saved)
 
     @classmethod
-    def build(cls, series, prep, geometry, context, settings, any_nodal: bool) -> '_Scan':
+    def build(cls, series, prep, geometry, context, settings, any_nodal: bool, window=None, centre=None, raw=None) -> '_Scan':
+        """The scan's arrays on the window `decisive_window` and the geometry's centre, or on `window` with the centre
+        track `centre` (an episode window, `episode_windows`, or the cheap list's, `cheap_window`). `raw`: the slow
+        angles of an earlier scan of the same record (the windows of one record share them)."""
         t = np.asarray(prep.t_yr, dtype=float)
-        window = decisive_window(geometry, settings)
-        centre0 = np.interp(t, np.asarray(geometry.centre.t_yr, float), np.asarray(geometry.centre.centre_rad, float))
-        raw = {False: slow_angles(series, False)}
+        window = decisive_window(geometry, settings) if window is None else window
+        track = geometry.centre if centre is None else centre
+        centre0 = np.interp(t, np.asarray(track.t_yr, float), np.asarray(track.centre_rad, float))
         frame_mixed = False
-        if any_nodal:
-            raw[True] = slow_angles(series, True)
-            shift = plane_shift(series, raw)
-            if shift is None:
-                frame_mixed = True
-            else:
-                raw[True][FRAME_SHIFT] = shift
-        scan = cls(
-            series, context, geometry, settings, t, window, filtering.window_mask(t, window), centre0, geometry.centre.window_yr, raw
-        )
+        if raw is not None:
+            frame_mixed = any_nodal and FRAME_SHIFT not in raw.get(True, {})
+        else:
+            raw = {False: slow_angles(series, False)}
+            if any_nodal:
+                raw[True] = slow_angles(series, True)
+                shift = plane_shift(series, raw)
+                if shift is None:
+                    frame_mixed = True
+                else:
+                    raw[True][FRAME_SHIFT] = shift
+        scan = cls(series, context, geometry, settings, t, window, filtering.window_mask(t, window), centre0, track.window_yr, raw)
         scan.frame_mixed = frame_mixed
         scan.centre0_rate, scan.centre0_err = _line(t[scan.inside], centre0[scan.inside])
         inside = np.flatnonzero(scan.inside)
@@ -1825,22 +2028,34 @@ def rank_members(
         track = centre0 + scan.offset(spec, member_spec(spec, vectors[i]), bool(member_nodal[i]))[index]
         width = float(np.ptp(track))
         cycles = span * abs(slow_rate[i]) / TWO_PI if np.isfinite(slow_rate[i]) else NAN
-        listed.append(
-            _listed(
-                member_key(spec, vectors[i]),
-                int(np.abs(vectors[i]).sum()),
-                bool(member_nodal[i]),
-                float(explained[i]),
-                float(strength[i]),
-                cycles,
-                swing,
-                width,
-                width0,
-                float(rate[i]),
-            )
+        member = _listed(
+            member_key(spec, vectors[i]),
+            int(np.abs(vectors[i]).sum()),
+            bool(member_nodal[i]),
+            float(explained[i]),
+            float(strength[i]),
+            cycles,
+            swing,
+            width,
+            width0,
+            float(rate[i]),
         )
+        listed.append(replace(member, centre_pass_rad=centre_pass(t, track, settings)))
     order = table_order([m.explained for m in listed], [m.width_rad for m in listed], weak[chosen])
     return [listed[i] for i in order][:top_n], len(vectors), catalogue
+
+
+def centre_pass(t_yr: np.ndarray, track: np.ndarray, settings: AnalysisSettings) -> float:
+    """The largest monotone pass [rad] of a centre track over its samples (the episode window), between its turns of
+    prominence libration_centre_tp_prominence_deg, as step 1 measures it (`screen`); its range without a pass."""
+    t, track = np.asarray(t_yr, dtype=float), np.asarray(track, dtype=float)
+    good = np.isfinite(track)
+    if np.count_nonzero(good) < 3:
+        return NAN
+    window = (float(t[good][0]), float(t[good][-1]))
+    turns = find_turning_points(t, track, np.radians(settings.libration_centre_tp_prominence_deg), window)
+    best = largest_monotone_pass(monotone_passes(t, track, turns, window))
+    return abs(best.delta_rad) if best is not None else float(np.ptp(track[good]))
 
 
 def _listed(key, degree, nodal, explained, strength, cycles, swing, width, width0, rate) -> ListedMember:
@@ -1909,10 +2124,19 @@ def _planar_coefficients(spec: ResonanceSpec, theory: Optional[_Theory]) -> Tupl
 
 
 def _outcome(
-    scan: _Scan, candidates, sigma0: float, planets_saved: bool, theory: TheoryCheck, ledger: Ledger, small_swing: bool = False
+    scan: _Scan,
+    candidates,
+    sigma0: float,
+    planets_saved: bool,
+    theory: TheoryCheck,
+    ledger: Ledger,
+    small_swing: bool = False,
+    centres: Optional[TheoryCentres] = None,
 ) -> Tuple[Outcome, CheckValue, bool]:
     """(outcome, check, beta librates) of step 2 with the guards: planets missing, beta librating, members only an
-    unmeasured test A could tell apart, a nodal winner."""
+    unmeasured test A could tell apart, a nodal winner. `centres`: the theoretical member centres of the window (A6b:
+    the choice and the composite reading; None without the theory). A composite outcome (nothing admissible, no planar
+    member stands) is a pass: no other member carries the oscillation, the catalogue angle's own verdict stands."""
     spec = scan.series.resonance
     reasons = {c.spec.key: c.reason for c in candidates}
     if not planets_saved:
@@ -1927,7 +2151,10 @@ def _outcome(
         return Outcome(None, False, None, reasons, [str(Flag.SUBRESONANCE_UNDETERMINED)]), CheckValue.NOT_MEASURED, True
     context = scan.context
     symmetric = _symmetric_centre_applies(spec)
-    outcome = evaluate(candidates, sigma0, context.e_med, context.inc_max_rad, scan.settings, symmetric, theory, ledger, small_swing)
+    planar = [int(j) for j in multiplet.planar_members(spec.planet_coefficients[0], spec.body_coefficient)] if centres is not None else []
+    outcome = evaluate(
+        candidates, sigma0, context.e_med, context.inc_max_rad, scan.settings, symmetric, theory, ledger, small_swing, centres, planar
+    )
     if outcome.undetermined:
         return outcome, CheckValue.NOT_MEASURED, False
     if outcome.winner is not None and outcome.winner.nodal:
@@ -1993,6 +2220,144 @@ def _rates(scan: _Scan) -> Tuple[float, float]:
     return spacing, adiabatic
 
 
+@dataclass(frozen=True)
+class ScanWindow:
+    """One window of the scan (W28 A6b, card g06-8c A): an accepted episode (`episode_id`) trimmed to its regular
+    cycles, with the centre track of its regime and its median half-amplitude; episode_id None for the fallback window
+    of a record without an accepted episode (the longest run of >= libration_min_turning_points TPs, `decisive_window`)."""
+
+    episode_id: Optional[int]
+    window: Tuple[float, float]
+    centre: object  # geometry.CentreTrack
+    half_amplitude_rad: float = NAN
+
+
+def episode_windows(geometry: Geometry, settings: AnalysisSettings) -> List[ScanWindow]:
+    """One window per accepted episode of the record (the regimes before the last jump included), each trimmed to its
+    regular cycles (`regular_stretch` with mmr_subresonance_cycle_period_ratio; an episode without a regular stretch has
+    none), with the centre track of its regime (`Geometry.centre_covering`), in time order."""
+    windows = []
+    for run in sorted(list(geometry.episodes_before_jump) + list(geometry.episodes), key=lambda r: r.t_start_yr):
+        stretch = regular_stretch(np.asarray(run.tp_times_yr, dtype=float), float(settings.mmr_subresonance_cycle_period_ratio))
+        if stretch is not None and stretch[1] > stretch[0]:
+            centre = geometry.centre_covering(run.t_start_yr)
+            windows.append(ScanWindow(run.episode_id, stretch, centre, float(run.half_amp_med_rad)))
+    return windows
+
+
+def _fallback_window(geometry: Geometry, settings: AnalysisSettings) -> ScanWindow:
+    """The window of a record without an accepted episode: the longest regular stretch of a run of >=
+    libration_min_turning_points TPs (`decisive_window`; T1: a run whose centre moves, the case a member explains),
+    with the geometry's centre and that run's median half-amplitude."""
+    window = decisive_window(geometry, settings)
+    half = NAN
+    for run in geometry.runs:
+        if run.n_tp >= settings.libration_min_turning_points and run.t_start_yr <= window[0] and window[1] <= run.t_end_yr:
+            half = float(run.half_amp_med_rad)
+            break
+    return ScanWindow(None, window, geometry.centre, half)
+
+
+def scan_windows(geometry: Geometry, settings: AnalysisSettings, decisive_id: Optional[int]) -> Tuple[ScanWindow, List[ScanWindow]]:
+    """(the decisive window, the other episode windows): the window of the decisive episode `decisive_id` (the episode
+    the status rests on, `decide.status_basis`), else the longest episode window, else `_fallback_window`."""
+    windows = episode_windows(geometry, settings)
+    if not windows:
+        return _fallback_window(geometry, settings), []
+    decisive = next((w for w in windows if w.episode_id == decisive_id), None)
+    if decisive is None:
+        decisive = max(windows, key=lambda w: w.window[1] - w.window[0])
+    return decisive, [w for w in windows if w is not decisive]
+
+
+@dataclass
+class _WindowPick:
+    """Step 1 and step 2 of one scan window (`_pick`)."""
+
+    scan: _Scan
+    measured: List[dict]
+    candidates: List[SubresonanceMember]
+    outcome: Outcome
+    check: CheckValue
+    librating: bool
+    sigma0_coherence: float
+    swing: float
+    theory: Optional[_Theory]
+    theory_flag: str
+    planar: List[int]
+    check_theory: TheoryCheck
+
+    @property
+    def choice(self) -> str:
+        """How the window's member was chosen (`SUBRESONANCE_CHOICE_*`; '' when nothing was chosen)."""
+        if self.outcome.composite:
+            return SUBRESONANCE_CHOICE_COMPOSITE
+        if self.outcome.winner is None or self.check != CheckValue.FAIL:
+            return ''
+        return SUBRESONANCE_CHOICE_THEORY if self.outcome.by_theory else SUBRESONANCE_CHOICE_MEASURED
+
+    @property
+    def argument(self) -> str:
+        """The window's resonant argument: the accepted member's key, 'composite', or ''."""
+        if self.outcome.composite:
+            return SUBRESONANCE_CHOICE_COMPOSITE
+        return self.outcome.winner.spec.key if self.outcome.winner is not None and self.check == CheckValue.FAIL else ''
+
+
+def _pick(
+    series: MMRSeries,
+    prep: Preprocessed,
+    geometry: Geometry,
+    context: Context,
+    settings: AnalysisSettings,
+    members: Tuple[list, list],
+    factors: Sequence[float],
+    strongest: float,
+    nodal: bool,
+    planets_saved: bool,
+    window: ScanWindow,
+    ledger: Ledger,
+    raw=None,
+) -> _WindowPick:
+    """Steps 1 and 2 in one scan window: the members' tracks (step 1), test L, the force laws (A), the composite theory
+    and its member centres, then `_outcome` (every veto, then the choice). `members`: (strong, weak) of
+    `_split_by_strength`."""
+    spec = series.resonance
+    scan = _Scan.build(series, prep, geometry, context, settings, nodal, window=window.window, centre=window.centre, raw=raw)
+    strong, weak = members
+    measured = sorted((_measure_member(scan, *m) for m in strong), key=lambda m: m['range'] if np.isfinite(m['range']) else np.inf)
+    measured += [_unmeasured(*m) for m in weak if not m[2]]  # the weak nodal ones are only counted (`n_weak`)
+    own = {m['member'].key: member_libration(scan, prep, m['member'], m['nodal']) for m in measured if not m['reason']}
+    sigma0_coherence, laws, swing, small_swing = _force_law(scan, prep, measured, ledger)
+    theory, theory_flag = None, ''
+    if spec.kind == ResonanceKind.TWO_BODY and planets_saved and settings.mmr_subresonance_theory:
+        theory, theory_flag = composite_theory(scan)  # A6b: also without a kept member (the composite reading needs it)
+    centres = replace(theory.centres, half_amplitude_rad=window.half_amplitude_rad) if theory is not None else None
+    planar, coefficient_abs = _planar_coefficients(spec, theory)
+    candidates = _candidates(measured, laws, coefficient_abs, factors, strongest, own)
+    if centres is not None:
+        candidates = [c if c.nodal else replace(c, theory_range_rad=centres.ranges.get(c.j, NAN)) for c in candidates]
+    check_theory = theory.check if theory is not None else TheoryCheck()
+    outcome, check, librating = _outcome(scan, candidates, sigma0_coherence, planets_saved, check_theory, ledger, small_swing, centres)
+    return _WindowPick(
+        scan, measured, candidates, outcome, check, librating, sigma0_coherence, swing, theory, theory_flag, planar, check_theory
+    )
+
+
+def _other_windows(args, main: _WindowPick, decisive: ScanWindow, others: Sequence[ScanWindow], settings) -> Tuple[dict, dict]:
+    """({episode id: its resonant argument}, {episode id: flags of a window that could not decide}) over the
+    decisive window and every other episode window (each its own `_pick` on a scratch ledger)."""
+    arguments, undecided = {}, {}
+    if decisive.episode_id is not None:
+        arguments[decisive.episode_id] = main.argument
+    for window in others:
+        pick = _pick(*args, window, Ledger.from_settings(settings), raw=main.scan.raw)
+        arguments[window.episode_id] = pick.argument
+        if pick.check == CheckValue.NOT_MEASURED:
+            undecided[window.episode_id] = list(dict.fromkeys(pick.outcome.flags))
+    return arguments, undecided
+
+
 def run_subresonances(
     series: MMRSeries,
     prep: Preprocessed,
@@ -2001,9 +2366,24 @@ def run_subresonances(
     context: Context,
     triggered: Tuple[SubresonanceTrigger, ...],
     settings: AnalysisSettings,
+    diagnostic: bool = False,
+    decisive_id: Optional[int] = None,
 ) -> SubresonanceResult:
     """The whole check for a triggered record; check pass when scanned and none accepted, fail when one is accepted,
     not_measured without the planets (flag planets_missing).
+
+    Windows (W28 A6b, card g06-8c A): every accepted episode is scanned in its own window (`episode_windows`); the
+    row's member, check and numbers are those of the decisive episode `decisive_id` (`scan_windows`; without an
+    accepted episode the fallback window), the others give only their episode's resonant argument
+    (`episode_arguments`) and, where their window cannot decide, its flags (`episode_undecided`, read by the caps).
+    In each window every veto applies before the choice and the theory chooses where it is
+    computed and follows the measured centre (`evaluate`, `_choose`); 'composite' when nothing is admissible and no
+    planar member's theoretical centre stands. Rule subresonance_theory_select fires on the result's `rules_fired` when
+    the theory chose the decisive member or read the regime as composite.
+
+    `diagnostic` (trigger T8 alone, W28 A6a): the same scan of the decisive window, but nothing is accepted and the
+    check is not_applicable; the member it would have accepted and its check are kept in `would_accept`/`would_check`
+    (`diagnostic_columns`). The caller never hands such a result to the status tree.
 
     Returns a `SubresonanceScan` (a SubresonanceResult). Not applicable to retrograde and 1:1 angles (`law_planet`). Never
     integrates: the members' angles are sigma0 + Delta_s from the saved elements. `response` is not read (the force
@@ -2022,27 +2402,22 @@ def run_subresonances(
     strongest = strongest_factor(slow_sum(spec), factors[: n + 1], factors[n + 1 :])
     ledger = Ledger.from_settings(settings)
     planets_saved = all(p in series.planets for p in spec.planets)
-    scan = _Scan.build(series, prep, geometry, context, settings, nodal)
-    strong, weak = _split_by_strength(members, factors, strongest, settings, ledger)
-    measured = sorted((_measure_member(scan, *m) for m in strong), key=lambda m: m['range'] if np.isfinite(m['range']) else np.inf)
-    measured += [_unmeasured(*m) for m in weak if not m[2]]  # the weak nodal ones are only counted (`n_weak`)
-    own = {m['member'].key: member_libration(scan, prep, m['member'], m['nodal']) for m in measured if not m['reason']}
-    sigma0_coherence, laws, swing, small_swing = _force_law(scan, prep, measured, ledger)
-    theory, theory_flag = None, ''
-    needed = any(not m['reason'] for m in measured)  # D and E judge a kept member only (the cost of a scan)
-    if spec.kind == ResonanceKind.TWO_BODY and planets_saved and settings.mmr_subresonance_theory and needed:
-        theory, theory_flag = composite_theory(scan)
-    planar, coefficient_abs = _planar_coefficients(spec, theory)
-    candidates = _candidates(measured, laws, coefficient_abs, factors, strongest, own)
-    check_theory = theory.check if theory is not None else TheoryCheck()
-    outcome, check, librating = _outcome(scan, candidates, sigma0_coherence, planets_saved, check_theory, ledger, small_swing)
+    split = _split_by_strength(members, factors, strongest, settings, ledger)
+    decisive_window_, others = scan_windows(geometry, settings, decisive_id)
+    args = (series, prep, geometry, context, settings, split, factors, strongest, nodal, planets_saved)
+    main = _pick(*args, decisive_window_, ledger)
+    scan, outcome, check, librating = main.scan, main.outcome, main.check, main.librating
+    arguments, undecided = ({}, {}) if diagnostic else _other_windows(args, main, decisive_window_, others, settings)
+    check_theory = main.check_theory
+    candidates = main.candidates
     if outcome.winner is not None:
         check_theory = replace(check_theory, single_rms_rad=_rival_single_rms(outcome.winner, candidates, check_theory))
     check_theory = replace(check_theory, confirms=outcome.theory_confirms)
     final = _finalise(candidates, outcome, check_theory)
     accepted = next((c for c in final if c.accepted), None)
     shown = accepted or (final[0] if final else None)
-    numbers = _multiplet_numbers(scan, theory, planar, accepted.j if accepted is not None else None)
+    numbers = _multiplet_numbers(scan, main.theory, main.planar, accepted.j if accepted is not None else None)
+    theory_flag = main.theory_flag
     flags = list(outcome.flags) + ([theory_flag] if theory_flag else []) + ([FLAG_FRAME_MIXED] if scan.frame_mixed else [])
     composite = bool(accepted is not None and numbers.rouche is False)
     if composite:
@@ -2054,7 +2429,12 @@ def run_subresonances(
     caveat = strength_caveat(series, context, factors, settings)
     listed, n_listed, catalogue_row = rank_members(scan, factors, strongest, nodal, caveat)
     potential_width, potential_explained = potential_row(scan)
-    return SubresonanceScan(
+    would_accept, would_check = (accepted.spec.key if accepted is not None else ''), str(check)
+    choice = main.choice
+    if diagnostic:
+        final = [replace(c, accepted=False) for c in final]
+        accepted, check, composite, choice = None, CheckValue.NOT_APPLICABLE, False, ''
+    result = SubresonanceScan(
         triggers=tuple(triggered),
         support=support,
         candidates=final,
@@ -2063,19 +2443,23 @@ def run_subresonances(
         composite=composite,
         undetermined=librating or outcome.undetermined,
         tie_by_order=bool(accepted is not None and outcome.tie_weak),
-        theory_measured=bool(outcome.theory_confirms),
-        sigma0_phi0_coherence=sigma0_coherence,
+        theory_measured=bool(outcome.theory_confirms) and not diagnostic,
+        sigma0_phi0_coherence=main.sigma0_coherence,
         composite_rms_rad=check_theory.composite_rms_rad,
         single_rms_rad=check_theory.single_rms_rad,
         binomial_mode=numbers.binomial_mode,
         drift_pred_rad_yr=-shown.offset_rate_rad_yr if shown is not None else NAN,
         drift_meas_rad_yr=scan.centre0_rate,
         plane_offset_rad=plane_offset(series, scan.raw) if True in scan.raw else NAN,
-        theory_cache=theory.cache if theory is not None else '',
+        theory_cache=main.theory.cache if main.theory is not None else '',
         flags=list(dict.fromkeys(flags)),
+        choice=choice,
+        episode_arguments={i: key for i, key in arguments.items() if key},
+        episode_undecided=undecided,
         window=scan.window,
+        episode_id=decisive_window_.episode_id,
         n_kept=sum(1 for c in final if c.kept),
-        swing_rad=swing,
+        swing_rad=main.swing,
         centre0_range_rad=float(np.ptp(scan.centre0[scan.inside])) if np.any(scan.inside) else NAN,
         centre0_rate_rad_yr=scan.centre0_rate,
         centre0_rate_err_rad_yr=scan.centre0_err,
@@ -2084,6 +2468,8 @@ def run_subresonances(
         rouche=numbers.rouche,
         winding=numbers.winding,
         theory=check_theory,
+        theory_centres=main.theory.centres if main.theory is not None else None,
+        half_amplitude_rad=decisive_window_.half_amplitude_rad,
         spacing_au=spacing,
         adiabaticity=adiabatic,
         beta_librates=librating,
@@ -2096,9 +2482,283 @@ def run_subresonances(
         potential_width_rad=potential_width,
         potential_explained=potential_explained,
         strength_caveat=caveat,
-        n_weak=len(weak),
+        n_weak=len(split[1]),
         entries=list(ledger),
+        diagnostic=diagnostic,
+        would_accept=would_accept if diagnostic else '',
+        would_check=would_check if diagnostic else '',
     )
+    if choice in (SUBRESONANCE_CHOICE_THEORY, SUBRESONANCE_CHOICE_COMPOSITE):
+        result.rules_fired = fire(result.rules_fired, Rule.SUBRESONANCE_THEORY_SELECT)
+    return result
+
+
+# --------------------------------------------------------------------------------------------- cheap numbers (A6a)
+
+# why the cheap theory is not computed (sub_th_flag), besides the FLAG_THEORY_* of the composite theory
+THEORY_THREE_BODY, THEORY_PLANETS_MISSING, THEORY_OFF = 'three_body', 'planets_missing', 'off'
+CHEAP_LIST_ROWS = 5  # members of the cheap list with their numbers in sub_cheap_list (display only)
+
+
+@dataclass(frozen=True)
+class TheoryNumbers:
+    """The cheap theory of one record (`theory_numbers`); see `models.SubresonanceCheap` for the meaning."""
+
+    shares: Tuple[Tuple[int, float], ...] = ()
+    leading_j: Optional[int] = None
+    rouche: Optional[bool] = None
+    p_min_gap: float = NAN
+    p_edges: Tuple[Tuple[float, float], ...] = ()
+    centre_travel_rad: float = NAN
+    travel_ratio: float = NAN
+
+
+def _accepted_spans(geometry: Geometry) -> List[Tuple[float, float, float]]:
+    """(t_start, t_end, median half-amplitude) of every accepted episode of the record, the regimes before the last
+    jump included, in time order (the forced waves and induced runs are no episodes)."""
+    runs = list(geometry.episodes_before_jump) + list(geometry.episodes)
+    return sorted((float(r.t_start_yr), float(r.t_end_yr), float(r.half_amp_med_rad)) for r in runs)
+
+
+def _values_on(t: np.ndarray, values: np.ndarray, t0: float, t1: float) -> np.ndarray:
+    """`values` at the grid points inside [t0, t1] and interpolated at both ends."""
+    inside = (t > t0) & (t < t1)
+    return np.concatenate([np.interp([t0], t, values), values[inside], np.interp([t1], t, values)])
+
+
+def theory_numbers(
+    t_yr: np.ndarray,
+    coefficients: np.ndarray,
+    j_values: Sequence[int],
+    beta_rad: np.ndarray,
+    catalogue_j: int,
+    planar: Sequence[int],
+    episodes: Sequence[Tuple[float, float, float]],
+) -> TheoryNumbers:
+    """The cheap theory of a two-body multiplet on a time grid (card g06-8a A; SISTERS §1.3): C_j(t) (`coefficients`,
+    (n_t, n_j), or (n_j,) constant), beta(t) = varpi_P - varpi (unwrapped), the catalogue member j_cat, the planar
+    members and the accepted episodes (t_start, t_end, median half-amplitude).
+
+    P(t) = sum_j C_j e^{i j beta} (`multiplet.composite`). Shares |<C_j>| / sum over the planar members; Rouche for j_cat
+    on <C_j>; |P| / max |P| at its minimum inside the gaps between consecutive episodes (12218: the compound term
+    cancels when beta passes its cancellation phase) and at each episode edge; the catalogue member's centre
+    c(t) = pi - arg P + j_cat beta (unwrapped) and its range over each episode against that episode's half-amplitude:
+    the largest range and ratio (trigger T7)."""
+    t = np.asarray(t_yr, dtype=float)
+    js = np.asarray(j_values, dtype=int)
+    table = np.asarray(coefficients)
+    table = np.broadcast_to(table, (len(t), len(js))) if table.ndim == 1 else table
+    beta = np.asarray(beta_rad, dtype=float)
+    strength = multiplet.composite(table, js, beta)
+    magnitude = np.abs(strength)
+    peak = float(np.max(magnitude)) if len(magnitude) else NAN
+    relative = magnitude / peak if np.isfinite(peak) and peak > 0 else np.full(len(t), NAN)
+    mean = np.mean(table, axis=0)
+    lookup = dict(zip(js.tolist(), mean))
+    planar = [int(j) for j in planar if int(j) in lookup]
+    sizes = np.array([abs(lookup[j]) for j in planar])
+    total = float(np.sum(sizes))
+    shares = tuple((j, float(size / total)) for j, size in zip(planar, sizes)) if total > 0 else ()
+    leading = int(planar[int(np.argmax(sizes))]) if total > 0 else None
+    rouche = multiplet.rouche_holds(mean, js, int(catalogue_j)) if int(catalogue_j) in lookup else None
+    spans = sorted(episodes)
+    gaps = [(a[1], b[0]) for a, b in zip(spans, spans[1:]) if b[0] > a[1]]
+    in_gaps = [float(np.min(_values_on(t, relative, t0, t1))) for t0, t1 in gaps]
+    edges = tuple((float(x), float(np.interp(x, t, relative))) for span in spans for x in span[:2])
+    centre = np.unwrap(np.pi - np.angle(strength)) + int(catalogue_j) * beta
+    travel, ratio = NAN, NAN
+    for t0, t1, half in spans:
+        if t1 <= t0:
+            continue
+        span_travel = float(np.ptp(_values_on(t, centre, t0, t1)))
+        travel = span_travel if not np.isfinite(travel) else max(travel, span_travel)
+        if np.isfinite(half) and half > 0:
+            ratio = span_travel / half if not np.isfinite(ratio) else max(ratio, span_travel / half)
+    return TheoryNumbers(
+        shares=shares,
+        leading_j=leading,
+        rouche=rouche,
+        p_min_gap=min(in_gaps) if in_gaps else NAN,
+        p_edges=edges,
+        centre_travel_rad=travel,
+        travel_ratio=ratio,
+    )
+
+
+def cheap_window(geometry: Geometry, settings: AnalysisSettings):
+    """(window [yr], centre track) of the cheap list: the longest accepted episode of the record (the regimes before the
+    last jump included: 2003 UG22 40 kyr, 0.16-20.5 kyr), trimmed to its regular cycles (`regular_stretch`), with the
+    centre track of its regime (`Geometry.centre_covering`); without one the scan window and the geometry's centre."""
+    runs = list(geometry.episodes_before_jump) + list(geometry.episodes)
+    best = None
+    for run in runs:
+        stretch = regular_stretch(np.asarray(run.tp_times_yr, dtype=float), float(settings.mmr_subresonance_cycle_period_ratio))
+        if stretch is not None and stretch[1] > stretch[0] and (best is None or stretch[1] - stretch[0] > best[0][1] - best[0][0]):
+            best = (stretch, run)
+    if best is None:
+        return decisive_window(geometry, settings), geometry.centre
+    return best[0], geometry.centre_covering(best[1].t_start_yr)
+
+
+def _theory_grid(scan: _Scan) -> np.ndarray:
+    """Indices of the record's samples the cheap theory reads: W_c / THEORY_GRID_PER_WINDOW apart, at most
+    THEORY_MAX_POINTS (C_j and beta are smooth on W_c)."""
+    n = len(scan.t)
+    dt = float(np.median(np.diff(scan.t))) if n > 1 else 1.0
+    step = max(1, int(round(scan.centre_window_yr / THEORY_GRID_PER_WINDOW / dt)) if dt > 0 else 1, -(-n // THEORY_MAX_POINTS))
+    return np.arange(0, n, step)
+
+
+def cheap_theory(scan: _Scan, settings: AnalysisSettings) -> Tuple[Optional[TheoryNumbers], str]:
+    """(`theory_numbers` over the whole record, '' | why not): two-body with the planet saved, e and e_P in (0, 1), the
+    orbits not crossing, the coefficients above round-off; C_j(e(t), e_P(t)) from the cached averaging tables
+    (`_coefficient_track`), e, e_P and beta low-passed at W_c."""
+    spec = scan.series.resonance
+    if not settings.mmr_subresonance_theory:
+        return None, THEORY_OFF
+    if spec.kind != ResonanceKind.TWO_BODY:
+        return None, THEORY_THREE_BODY
+    planet = spec.planets[0]
+    if planet not in scan.series.planets:
+        return None, THEORY_PLANETS_MISSING
+    index = _theory_grid(scan)
+    if len(index) < 3:
+        return None, FLAG_THEORY_RANGE
+    e_g = scan.smooth_series(np.asarray(scan.series.e, float))[index]
+    ep_g = scan.smooth_series(np.asarray(scan.series.planets[planet].e, float))[index]
+    if not (np.all((e_g > 0) & (e_g < 1)) and np.all((ep_g > 0) & (ep_g < 1))):
+        return None, FLAG_THEORY_RANGE
+    a_p = float(np.mean(scan.series.planets[planet].a))
+    if planet in scan.context.crosses or multiplet.crossing(scan.context.a_mean_au, float(np.max(e_g)), a_p, float(np.max(ep_g))):
+        return None, FLAG_THEORY_CROSSING
+    mass = scan.context.planet_mass.get(planet, const.PLANETS_MASS.get(planet, NAN))
+    js, coefficients, _ = _coefficient_track(scan, e_g, ep_g, a_p, mass)
+    if coefficients is None:
+        return None, FLAG_THEORY_ROUND_OFF
+    beta = scan.smooth(False, f'varpi:{planet}')[index] - scan.smooth(False, 'varpi')[index]
+    planar = multiplet.planar_members(spec.planet_coefficients[0], spec.body_coefficient)
+    numbers = theory_numbers(
+        scan.t[index], coefficients, js, beta, spec.planet_varpi_coefficients[0], planar, _accepted_spans(scan.geometry)
+    )
+    return numbers, ''
+
+
+@dataclass(frozen=True)
+class CheapMember:
+    """A planar member of the cheap list: its centre range in the episode window against the catalogue angle's, its
+    d'Alembert factor against the strongest term (test E'), and why it fails E' or step 1 ('' = passes both;
+    nan / '' for S1 when it was not screened: a weak member that is not the flattest)."""
+
+    key: str
+    range_ratio: float
+    strength_rel: float
+    reason: str = ''
+    max_pass_rad: float = NAN
+
+    def text(self) -> str:
+        return f'{self.key}:{self.range_ratio:.2g}:{self.strength_rel:.2g}:{self.reason or "ok"}'
+
+
+def cheap_list(scan: _Scan, factors: Sequence[float], strongest: float, settings: AnalysisSettings) -> List[CheapMember]:
+    """The planar members up to `degree_max` on the existing centre in the episode window, flattest first (card g06-8a
+    A; nodal members are never accepted, so they are no candidates): the centre range of each track c0 + smooth(Delta)
+    (a cheap vector sum), test E' for each, step 1 (`screen`, the cost: a turning-point search) only for the members
+    E' passes and for the flattest one. Members passing both come first, each group by its range."""
+    spec = scan.series.resonance
+    members = enumerate_subresonances(spec, degree_max(spec, settings), nodal=False)
+    index = scan.screen_index
+    if not members or len(index) < 3:
+        return []
+    centre0 = scan.centre0[index]
+    span0 = float(np.ptp(centre0))
+    floor = settings.mmr_subresonance_strength_rel_min
+    rows = []
+    for member, _, _ in members:
+        track = centre0 + scan.offset(spec, member, False)[index]
+        strength = term_factor(slow_coefficients(member), factors) / strongest if np.isfinite(strongest) and strongest > 0 else NAN
+        ratio = float(np.ptp(track)) / span0 if span0 > 0 else NAN
+        rows.append((member, track, ratio, strength, bool(np.isfinite(strength) and strength < floor)))
+    flattest = min(range(len(rows)), key=lambda i: rows[i][2] if np.isfinite(rows[i][2]) else np.inf)
+    result = []
+    for i, (member, track, ratio, strength, weak) in enumerate(rows):
+        reason, largest = '', NAN
+        if not weak or i == flattest:
+            reason, _, _, largest, _ = _screen_reason(track, centre0, scan.t[index], settings)
+        if weak:
+            reason = REASON_E_STRENGTH
+        result.append(CheapMember(member.key, ratio, float(strength), reason, largest))
+    return sorted(result, key=lambda m: (bool(m.reason), m.range_ratio if np.isfinite(m.range_ratio) else np.inf))
+
+
+def cheap_subresonances(series: MMRSeries, prep: Preprocessed, geometry: Geometry, context: Context, settings: AnalysisSettings):
+    """(`SubresonanceCheap`, the cheap list) of a prograde non-co-orbital row, or (None, []) for a retrograde or 1:1
+    angle (`law_planet`): the theory numbers (two-body) and the cheap list (every such row), on the existing geometry;
+    no scan, no integration, no status."""
+    spec = series.resonance
+    if spec.retrograde or law_planet(spec) is not None:
+        return None, []
+    window, centre = cheap_window(geometry, settings)
+    scan = _Scan.build(series, prep, geometry, context, settings, False, window=window, centre=centre)
+    theory, flag = cheap_theory(scan, settings)
+    factors = strength_factors(series, context)
+    n = len(spec.planets)
+    strongest = strongest_factor(slow_sum(spec), factors[: n + 1], factors[n + 1 :])
+    listed = cheap_list(scan, factors, strongest, settings)
+    best = listed[0] if listed else None
+    theory = theory or TheoryNumbers()
+    cheap = SubresonanceCheap(
+        theory_flag=flag,
+        shares=theory.shares,
+        leading_j=theory.leading_j,
+        catalogue_j=int(spec.planet_varpi_coefficients[0]) if spec.kind == ResonanceKind.TWO_BODY else None,
+        rouche=theory.rouche,
+        p_min_gap=theory.p_min_gap,
+        p_edges=theory.p_edges,
+        centre_travel_rad=theory.centre_travel_rad,
+        travel_ratio=theory.travel_ratio,
+        window=tuple(float(x) for x in window),
+        n_members=len(listed),
+        n=sum(1 for m in listed if not m.reason),
+        best=best.key if best is not None else '',
+        best_strength_rel=best.strength_rel if best is not None else NAN,
+        best_range_ratio=best.range_ratio if best is not None else NAN,
+        best_reason=best.reason if best is not None else '',
+        best_pass_rad=best.max_pass_rad if best is not None else NAN,
+        members=join_list(m.text() for m in listed[:CHEAP_LIST_ROWS]),
+        diagnostic=diagnostic_columns(None),
+    )
+    return cheap, listed
+
+
+DIAGNOSTIC_COLUMNS = (
+    'sub_n_scanned',
+    'sub_n_kept',
+    'sub_best',
+    'sub_top',
+    'sub_rank1_key',
+    'sub_rank1_E',
+    'sub_rank1_pass_deg',
+    'sub_flags',
+)
+
+
+def diagnostic_columns(result: Optional[SubresonanceResult]) -> Dict[str, object]:
+    """The sub_diag_* columns of a T8 diagnostic scan (empty without one): its triggers, the member it would have
+    accepted, the check it would have given, and the scan's own numbers of DIAGNOSTIC_COLUMNS under the prefix
+    sub_diag_ (for the figure's text intake, E19b: 'a diagnostic scan finds ... ; without a measured force it changes
+    nothing')."""
+    if result is None or not getattr(result, 'diagnostic', False):
+        return {'sub_diag_triggers': '', 'sub_diag_would_accept': '', 'sub_diag_would_check': ''} | {
+            'sub_diag_' + key[len('sub_') :]: None for key in DIAGNOSTIC_COLUMNS
+        }
+    columns = result.to_columns()
+    out = {
+        'sub_diag_triggers': join_list(str(t) for t in result.triggers),
+        'sub_diag_would_accept': result.would_accept,
+        'sub_diag_would_check': result.would_check,
+    }
+    out.update({'sub_diag_' + key[len('sub_') :]: columns.get(key) for key in DIAGNOSTIC_COLUMNS})
+    return out
 
 
 def _empty(triggered, check: CheckValue, flags: List[str]) -> SubresonanceScan:

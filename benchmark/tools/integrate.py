@@ -798,7 +798,7 @@ def run_task(task: dict, opts: dict) -> dict:  # noqa: C901 - one linear driver
                 'source_extra': {
                     'libration': flat_libration(libration),
                     'free_gate': (
-                        {'outcome': str(gate.outcome), 'comment': gate.comment}
+                        {'outcome': str(gate.outcome), 'matches': list(gate.matches), 'detail': gate.detail}
                         if gate is not None and isinstance(res, LidovKozaiResonance)
                         else None
                     ),

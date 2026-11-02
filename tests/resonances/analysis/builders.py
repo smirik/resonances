@@ -3,8 +3,8 @@ neutral defaults, and the decision reads every field directly (no `getattr` with
 
 `make(cls, **fields)` fills every field of a dataclass the test does not give from its annotation: nan for a float,
 0 for an int, False for a bool, '' for a str, not_measured for a check, None for an Optional, an empty sequence for a
-list, a tuple or an array. The named builders add the nested parts a decision reads (a geometry's centre and turning
-points) and the episode's turning points from `n_tp`."""
+list, a tuple, a frozenset (fired rules, `analysis.rules`) or an array. The named builders add the nested parts a
+decision reads (a geometry's centre and turning points) and the episode's turning points from `n_tp`."""
 
 from __future__ import annotations
 
@@ -24,8 +24,17 @@ NAN = float('nan')
 
 
 # a neutral value per annotation: the plain types, then the generic containers by their origin
-PLAIN = {float: NAN, int: 0, bool: False, str: '', list: [], tuple: (), dict: {}}
-CONTAINERS = {list: list, typing.List: list, tuple: tuple, typing.Tuple: tuple, dict: dict, typing.Dict: dict}
+PLAIN = {float: NAN, int: 0, bool: False, str: '', list: [], tuple: (), dict: {}, frozenset: frozenset()}
+CONTAINERS = {
+    list: list,
+    typing.List: list,
+    tuple: tuple,
+    typing.Tuple: tuple,
+    dict: dict,
+    typing.Dict: dict,
+    frozenset: frozenset,
+    typing.FrozenSet: frozenset,
+}
 
 
 def _neutral(hint: Any) -> Any:

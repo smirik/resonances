@@ -69,6 +69,15 @@ The angle is a series like any other:
 
 ## How the status is decided
 
+$\omega$, $i$ and $\Omega$ are measured from the **invariable plane** (`ZLK_ANGLE_FRAME = invariable`, the default):
+the orbit's angular momentum and perihelion are rotated exactly, as for Lidov's integrals. The free elements, the
+diagnostics below and the figure read the same frame. From the ecliptic, the node of an orbit tilted from the
+invariable plane by about the plane's own 1.58° or less librates about the plane's node instead of turning, and
+$\omega = \varpi - \Omega$ with it: 555527 ($i_\text{inv} \approx 1.6°$) looked bounded from the ecliptic and
+circulates from the invariable plane. Where the two frames' $\omega$ part by a whole turn or more, the row carries the
+rule `zlk_invariable_frame` (column `zlk_frame_shift_turns`). The integration stores the ecliptic $\omega$; the
+analysis writes the classified angle back, so the data files hold it too.
+
 The angle $\omega$ goes through the same geometry as every other angle (turning points, cycles, episodes;
 [What the angle does](physics/geometry.md)). A libration of the *osculating* $\omega$ is not enough: the forced
 eccentricity, driven by the planets, can hold the osculating perihelion while the body's own (free) perihelion

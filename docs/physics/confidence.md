@@ -42,7 +42,7 @@ separatrix) never make a margin U. Which settings are conventions is marked "(co
 | L6 | D | Is the centre fixed? | the centre shifts by ≤ `MMR_L6_SHIFT_FULL` = 0.5 of the mean amplitude |
 | L7 | D | Does the libration reach both ends of the record? | the gaps at the edges are ≤ `MMR_L7_GAP_FULL` = 0.7 periods |
 | L8 | S | Do the step and the filter resolve the cycle? | $\sigma$ turns by < `MMR_L8_STEP_FULL_DEG` = 10° per step, the filter keeps ≥ `MMR_L8_GAIN_FULL` = 0.94 of the cycle (failed below 0.5), no aliased line in the band; not graded for a circulation ≥ `MMR_FAR_FROM_RES_FACTOR` = 10 $a$-scales from $a_*$ |
-| O1 | cap | Is this a capture, not a wave that was already there? | the $a$-wave before the episode is < `MMR_O1_RATIO_THIN` = 0.25 of the one inside (≥ `MMR_O1_RATIO_FAIL` = 0.5: cap low) |
+| O1 | cap | Is this a capture, not a wave that was already there? | the $a$-wave before the episode is < `MMR_O1_RATIO_THIN` = 0.25 of the one inside (≥ `MMR_O1_RATIO_FAIL` = 0.5 fails, cap low, only when that wave is coherent at $P$, in phase and not the episode's own law; else thin) |
 | Z | D | Is the separatrix zone measured? | measured without caveats |
 | R0 | D | Is the energy from $a$ conserved in a potential of $\sigma$? | passes |
 | S | D | Does a member of the multiplet own the libration? | see below |
@@ -107,7 +107,8 @@ The raw level, `confidence_raw`:
 | **low** | two or more failed support margins |
 
 The shown level, `confidence`, is the raw level lowered by every **cap** the verdict carries:
-$\text{confidence} = \min(\text{raw},\ \text{ceilings of the caps})$.
+$\text{confidence} = \min(\text{raw},\ \text{ceilings of the caps})$. A failed cap margin (O1, N) is not counted
+as a failure: its cap does the limiting, so the figure lists the limits apart from the support margins.
 
 A catalogue row that takes the status of its accepted member (`subresonance_librates`) takes the member's
 confidence too, with its raw level, thin and failed margins and caps; its `mrg_*` columns and calibration cell stay
@@ -117,6 +118,17 @@ One cap is general: when **none of the physics** of the angle's own force could 
 law L4, the potential R0, the zone Z, the owner search W, and the strength F by direct averaging), the level is at
 most medium (`all_physics_not_measured`). The identity and the response of $a$ (L3, B1, L5) are not in this list:
 they show that $a$ carries the oscillation, which is just as true of a libration induced by another resonance.
+A kinematic verdict has one more physics margin, K1e: the episode's $\sigma$ follows $p\varpi$, $a$ is flat (B1 <
+`MMR_KIN_B1_CLEAR`) and the period is a secular one, all three together ([kinematic origins](response.md#kinematic-origins));
+when it is full the cap does not apply and the kinematic libration can reach high (rule `kinematic_high`).
+
+A verdict that claims the angle's own libration (resonant, transient or near_separatrix of its own dynamics) is
+`high` only when at least one physical support of the own force passes with its full margin: the force law L4 (for a
+1:1 angle the co-orbital law, which takes L4), the potential R0 or the strength F by direct averaging. Otherwise the
+level is at most medium (`no_full_physics_support`; the author's choice of 2026-10-31,
+`MMR_HIGH_NEEDS_FULL_SUPPORT`). The zone Z and the owner search W exclude rivals and do not count as a support; when
+every physics margin is not_measured, `all_physics_not_measured` applies instead. Kinematic, induced and subresonance
+verdicts rest on other evidence and are not limited by it.
 
 ## Caps and the other reading
 
@@ -137,7 +149,7 @@ and the panel that decides between the two.
 | `episode_before_jump` | medium | the episodes belong to a regime that ended with the jump of $a$ |
 | `action_step_provisional` | medium | one libration over the whole window: the step in amplitude is a large modulation, not two energy levels |
 | `slow_libration_not_excluded` | medium | a slower libration of $\sigma$ about a moving centre |
-| `near_episode` | medium | transient: one more turning point would make a librating episode |
+| `near_episode` | medium | transient: one more turning point would make a librating episode (a 1:1 leg between passages, or one whose two turns are kicks, counts: leaf G4c) |
 | `near_separatrix_without_zone`, `l2_without_zone` | medium | a circulation, or a libration close to the separatrix |
 | `second_capture_unresolved` | medium | $\sigma$ is held by its own term as well: both resonances at once |
 | `owner_search_skipped`, `catalogue_longitudes` | medium | another resonance drives $a$ (rerun with the search on, the planets saved) |
@@ -145,11 +157,16 @@ and the panel that decides between the two.
 | `jitter_low_e` | medium | invalid: $\varpi$ is undefined at small $e$ |
 | `short_period_aliased` | medium | the turning points are partly the output step's: short-period terms folded into $\sigma_f$ and $a_f$ |
 | `one_cycle_energy_not_conserved` | medium | (1:1) the one cycle may be a passage, not motion in the averaged well |
+| `record_ends_unresolved` | medium | a capture at the end of the record: after circulating, $\sigma_f$ slowed to an arc or a stall that lasts longer than twice its longest revolution ([the record's edges](status-tree.md#how-the-records-edges-end)); a longer integration forward decides |
+| `one_coorbital_leg` | medium | (1:1) uncertain: the transient rests on one clean leg between passages (law, energy, two reflecting turns), no closed cycle |
 | `strength_scale_only` | medium | uncertain: only the order-of-magnitude strength agrees, the force is not computed |
 | `all_physics_not_measured` | medium | uncertain: nothing measured shows this angle's own force |
+| `no_full_physics_support` | medium | the oscillation is not this angle's own: each physical support is only thin |
+| `force_law_theory_only` | medium | uncertain: the slow $\dot a$ fits the averaged force of the term, but the harmonic force law fails; a rival force hidden by the smoothing is not excluded |
+| `slow_scale_provisional` | medium | L4 untested: read at a shorter cutoff of the scale ladder ([signal](signal.md#a-shorter-cutoff-for-a-slow-libration-the-scale-ladder-g2c)) with neither the force law nor R0 with $a$ measured; a record of $\ge 5.25\,P$ decides |
 | `geometry_only` | low | uncertain: only the shape of $\sigma$ says libration |
 | `implausible_strength` | low | a libration whose force the first-order average misses |
-| `onset_failed` | low | non_resonant: the cycles continue an $a$-wave that began before the libration |
+| `onset_failed` | low | non_resonant: $\sigma$ rides a coherent $a$-wave at its period that began before the episode, continues into it in phase and is not this resonance's own force |
 
 ## Calibration
 
@@ -176,7 +193,7 @@ Each verdict ends with an `action`, the cheapest step that would make it stronge
 | `none` | `certain` or `high` |
 | `spot_check` | `medium`: look at the figure |
 | `review` | `low`; `uncertain / origin_unknown`; `invalid` other than an alias or an undersampled step; a record whose period already fits it while it is still too short to decide (more time cures nothing) |
-| `extend` | other `uncertain` verdicts: integrate longer, to `extend_to_years` |
+| `extend` | other `uncertain` verdicts, and an `uncertain / origin_unknown` one whose deciding measurement is missing only for lack of length (below): integrate longer, to `extend_to_years` |
 | `resample` or `review` | an `uncertain` 1:1 stall that stays long enough in the quasi-satellite well ([G1q](pendulum.md#co-orbitals-11)) with $P_{QS} < P_c$: the filter erased a possible quasi-satellite libration, so more time at the same step cures nothing. `resample` when the record's step cannot hold the quasi-satellite cutoff, else `review` |
 | `resample` | `invalid / alias` or `undersampled`, or a level held down only by `short_period_aliased`: integrate again with the output step `resample_step_yr` |
 
@@ -199,6 +216,30 @@ $$
 with $f_{\rm next}$ = `MMR_NEXT_CHECK_SPAN_FACTOR` = 4: a budget after which the record is analysed again, not a promise that it is enough.
 A drift or another `uncertain` verdict asks for $N$ itself. When $T_{\rm req} \le T$, time is not what is missing:
 `base_cause` names what is, and the action is `review`.
+
+**Length-limited `origin_unknown`** (rule `extend_length_limited`). Leaves 5e, 5g and 5x are decided while the force
+law L4 is not measured; leaf 5n by one independent cycle. When L4 has fewer than `MMR_FORCE_MIN_WINDOWS` = 2 windows
+of `MMR_FORCE_WINDOW_CYCLES` = 3.5 periods (not when the swing is below 45° with enough windows, nor for a forced line),
+or 5n's decisive episode is the last one, and the last librating episode reaches the record's end, the action is
+`extend` to
+
+$$
+T_{\rm FW} = \mathrm{round\ up}\big(t_{\rm start} + n_{\rm FW}\, W\, P\big)
+$$
+
+for the windows ($t_{\rm start}$, $P$ of that last episode, $n_{\rm FW}$ = `MMR_EXTEND_FORCE_WINDOWS` = 2, $W$ =
+`MMR_FORCE_WINDOW_CYCLES`; 2003 TX9 3E+2J-10: $2210 + 2 \cdot 3.5 \cdot 3136$ → 30 kyr), and to $T_{\rm next}$ with
+$N$ = the last turning point + the missing turning points × $P/2$ + $f_{\rm trim} P_c$ for 5n (2003 ND 6J-6S-1:
+40 kyr; its L4 windows ask for 60 kyr), whichever is longer. An episode that ended before the record's end gains
+nothing from a longer record: `review`. A failed check (5a, 5b, 5o, R0 of 5e) stays: the extension serves the
+regime at the end (TX9's early R0 failure remains). No status changes.
+
+**The flag `extend_time`** (rule `end_arc_extend`) is not an action: it says that a longer integration in
+`extend_direction` (`forward`, `backward`, `both`) would show how a record edge ends, whatever the action
+([the record's edges](status-tree.md#how-the-records-edges-end)). Without an estimate its length is the next check
+$T_{\rm next}$ with $N$ unknown, round up($f_{\min} T$) (2022 BB2: 1 kyr → 2 kyr); with action `extend` the action's
+length stays in `extend_to_years`. A backward extension means integrating from the record's start into the past (2008
+EZ84's one reflection at 144 yr). No status or level changes; a review row stays at `review`.
 
 ??? info "Which time scale decides (`base_period_source`)"
     For `few_cycles`: twice the median spacing of the turning points, and the slow scales. For `arc`: twice the

@@ -1,7 +1,26 @@
+from typing import Tuple
+
 import numpy as np
 
-from resonances.data.invariable_plane import to_invariable_plane
+from resonances.data.invariable_plane import FRAME_ECLIPTIC, FRAME_INVARIABLE, elements_in_invariable_plane, to_invariable_plane
 from resonances.resonance.resonance import Resonance
+
+
+def elements_in_frame(inc, Omega, omega, frame: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """(inc, Omega, omega) [rad] of orbits given by ecliptic (inc, Omega, omega), measured from the plane `frame`
+    names (ZLK_ANGLE_FRAME): 'ecliptic' returns them as they are (floats), 'invariable' rotates the orbit's angular
+    momentum and perihelion vectors exactly (`data.invariable_plane.elements_in_invariable_plane`; the stored omega
+    enters, never REBOUND's pomega or l, so an orbit with i > 90 deg has no jump). The Lidov-Kozai angle, its
+    diagnostics, the free elements of a ZLK body and its figure read the same frame.
+
+    From the ecliptic, the node of an orbit tilted from the invariable plane by about the plane's own 1.58 deg or less
+    librates about the plane's node instead of turning, and omega = varpi - Omega with it (555527: i_inv 1.6 deg, omega
+    bounded from the ecliptic, circulating from the invariable plane)."""
+    if frame == FRAME_INVARIABLE:
+        return elements_in_invariable_plane(inc, Omega, omega)
+    if frame != FRAME_ECLIPTIC:
+        raise ValueError(f"the ZLK angle frame is {FRAME_ECLIPTIC!r} or {FRAME_INVARIABLE!r}, got {frame!r}")
+    return tuple(np.asarray(x, dtype=float) for x in (inc, Omega, omega))
 
 
 class LidovKozaiParameters:
@@ -90,7 +109,9 @@ class LidovKozaiResonance(Resonance):
 
     def calc_angle(self, body_orbit, planets=None):
         """
-        The resonant argument is the argument of pericenter ω.
+        The resonant argument is the argument of pericenter ω, ecliptic as the integration stores it. The analysis
+        reads ω in the plane ZLK_ANGLE_FRAME names (`elements_in_frame`; default the invariable plane) and writes that
+        angle back to `body.angles` (`Simulation._analyse_long_period`).
         """
         return body_orbit.omega
 

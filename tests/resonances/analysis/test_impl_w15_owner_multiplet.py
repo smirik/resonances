@@ -250,6 +250,11 @@ EXAMPLE = 'mmr2__101703__41J-14+0-27'
 # law the owner and the contamination rule must read. At the physical cutoff (75 yr) the angle shows no episode at all
 # (`test_101703_at_the_physical_cutoff`), so the mechanism is tested at the study's cutoff
 STUDY = replace(S, mmr_filter_cutoff_yr=12.0)
+# W28 C16 (regime_cut_mark): at the study's cutoff the two 5-TP pieces at 44.25-44.99 kyr (P 166.2 yr, one band) are
+# one episode of 10 TP; it is now measured, sits on the line 3J-1 with a failed identity and is a second forced wave,
+# so no episode of the angle is left: circulation (rule C), the owner still names the wave (origin induced), as at the
+# physical cutoff. The rule-2 and 5s leaves of W15-W20 are read with the mark off
+NO_MARK = dict(libration_regime_cut_marks=False)
 
 
 def _row(settings):
@@ -281,15 +286,20 @@ def test_101703_at_the_physical_cutoff(record):
 @pytest.mark.benchmark
 def test_101703_is_induced_by_the_3_1_multiplet(record):
     row, owners = _row(STUDY)
-    assert (row['status'], row['reason'], row['libration_origin']) == ('non_resonant', 'induced_libration', 'induced')
-    assert row['owner'] == '3J-1+0-2' and row['rec_rule'] == '2'
+    assert (row['status'], row['reason'], row['libration_origin']) == ('non_resonant', 'circulation', 'induced')
+    assert row['owner'] == '3J-1+0-2' and row['rec_rule'] == 'C'  # W28 C16: both 166-yr runs are forced waves
+    assert row['geo_n_forced_wave_episodes'] == 2 and row['geo_n_librating_episodes'] == 0
+    marked, _ = _row(replace(STUDY, **NO_MARK))
+    assert (marked['status'], marked['reason'], marked['libration_origin']) == ('non_resonant', 'induced_libration', 'induced')
+    assert marked['owner'] == '3J-1+0-2' and marked['rec_rule'] == '2'
+    assert marked['geo_n_forced_wave_episodes'] == 1
     top = owners[0]
     assert top['candidate'] == '3J-1+0-2' and top['accepted'] and top['reason'] == 'accepted:r2'
     assert top['law'] == 'multiplet' and top['phi0_coherence'] < STUDY.mmr_owner_phi0_coh_min
     assert top['multiplet_R2'] >= STUDY.mmr_owner_r2_min and top['multiplet_coherence'] >= STUDY.mmr_owner_phi0_coh_min
     # the 166.2-yr episode sits on the same line (W12: 164.4 yr against P_e 166.2 yr) with a failed identity: since
     # W20 CS7 (F6) it is a forced wave, no episode of the angle (before, its force law was contaminated: leaf 5f)
-    assert row['geo_n_forced_wave_episodes'] == 1 and row['geo_forced_wave_line'] == '3J-1'
+    assert row['geo_forced_wave_line'] == '3J-1'
     assert row['geo_forced_wave_period_yr'] == pytest.approx(166.2, abs=0.5)
 
 
@@ -300,8 +310,11 @@ def test_101703_without_the_multiplet_is_not_dynamic(record):
     # an implausible strength (5s, non_resonant, the author's status). Never dynamic either way.
     single = replace(STUDY, mmr_owner_law='single', mmr_owner_potential='off')
     row, _ = _row(single)
-    assert (row['status'], row['reason'], row['rec_rule']) == ('non_resonant', 'implausible_strength', '5s')
+    # W28 C16: the joined 44-kyr run is a forced wave as well, so nothing is left to need a strength: circulation
+    assert (row['status'], row['reason'], row['rec_rule']) == ('non_resonant', 'circulation', 'C')
     assert row['geo_forced_wave_line'] == '3J-1'
+    row, _ = _row(replace(single, **NO_MARK))
+    assert (row['status'], row['reason'], row['rec_rule']) == ('non_resonant', 'implausible_strength', '5s')
     # neither safeguard (no lattice line: no contamination and no forced wave): the thin force-law pass makes the
     # forced wave a dynamic episode (the W13 verdict)
     row, _ = _row(replace(single, mmr_force_contamination='off'))
@@ -313,7 +326,21 @@ def test_101703_single_phase_owner_is_accepted_by_its_averaged_potential(record)
     # W20 F3: the averaged disturbing function at fixed phi_o holds every member of the 3:1 multiplet, so the potential
     # route accepts the owner the single phase cannot fix
     row, owners = _row(replace(STUDY, mmr_owner_law='single'))
-    assert (row['status'], row['reason'], row['owner'], row['rec_rule']) == ('non_resonant', 'induced_libration', '3J-1+0-2', '2')
+    # W28 C16: no episode of the angle is left (both 166-yr runs are forced waves), the accepted owner names the origin
+    assert (row['status'], row['reason'], row['libration_origin'], row['owner'], row['rec_rule']) == (
+        'non_resonant',
+        'circulation',
+        'induced',
+        '3J-1+0-2',
+        'C',
+    )
+    marked, _ = _row(replace(STUDY, mmr_owner_law='single', **NO_MARK))
+    assert (marked['status'], marked['reason'], marked['owner'], marked['rec_rule']) == (
+        'non_resonant',
+        'induced_libration',
+        '3J-1+0-2',
+        '2',
+    )
     top = owners[0]
     assert top['candidate'] == '3J-1+0-2' and top['reason'] == 'accepted:potential' and top['route'] == 'potential'
     assert top['pot_R2'] >= STUDY.mmr_owner_r2_min

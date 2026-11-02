@@ -1,20 +1,25 @@
 """W22 union rule (author 2026-10-24, item 8; round 1024 safe variant): librating episodes of any MMR without a turn
-in a gap or over the whole chain, no gap longer than LIBRATION_UNION_GAP_PERIODS x (P_left + P_right), both edges
-reached, cover the record together -> libration/regime_change. For an angle that is not 1:1 (rule G2u) G2c is tried
+in a gap or over the whole chain, sigma_f inside its neighbours' band through every gap (A7, W28 g06-5: the bounded
+gap, LIBRATION_UNION_BAND_MARGIN_DEG, replaced the gap length LIBRATION_UNION_GAP_PERIODS), both edges reached, cover
+the record together -> libration/regime_change. For an angle that is not 1:1 (rule G2u) G2c is tried
 first, the status tree reads the union as episodic and only a dynamic transient becomes resonant.
 
 Independent numbers (the records are built from their turning points, cosine half-cycles between them):
 - two regimes, +-30 deg about 0 (half-period 90 yr, P 180) then 55/115 deg (half-period 85, P 170), joined by one
-  half-cycle of `gap` yr: gap / (P_left + P_right) = 80 / 350 = 0.229; 340 / 350 = 0.971 joins, 360 / 350 = 1.029 does
-  not; the turning points in the gap range from -30 to 115 deg = 145 deg;
+  half-cycle of `gap` yr: gap / (P_left + P_right) = 80 / 350 = 0.229, 340 / 350 = 0.971, 360 / 350 = 1.029 and
+  1000 / 350 = 2.86 all join: the half-cycle runs from -30 to 115 deg along the centre interpolated from 0 (the last
+  cycle's midpoints) to 85 deg, never farther from it than the 30-deg amplitude; the turning points in the gap range
+  from -30 to 115 deg = 145 deg;
 - regimes of +-30 deg about 0, 100, 200 (, 300, 400) deg, 300-yr gaps (above 3 x the 90-yr half-period, so every
   regime is its own run; 300 / 360 = 0.83 joins): three regimes span -30..230 deg = 260 deg < 360 (one libration),
   five span -30..430 deg = 460 deg >= 360 (the centre goes round: no union);
 - the edge: window 0-1000 yr, the outer episode ends at 800 yr, P = 100 yr: a turning point at 920 yr leaves 0.8 P,
   one at 850 yr 1.5 P, none 2.0 P;
 - the benchmark records (round 1024, n1_changes_final_719rows.csv and its REPORT): 2004 TK14 31M-34 at 0.5 yr becomes
-  resonant/libration/high, 2002 XA 5J-2 keeps two episodes (gap 1.05), 136108 7N-12 stays resonant/stationary at the
-  scale of its centre although the fine scale holds a union, 2003 TX9 stays uncertain with the word libration.
+  resonant/libration/high, 136108 7N-12 stays resonant/stationary at the scale of its centre although the fine scale
+  holds a union, 2003 TX9 stays uncertain with the word libration; 2002 XA 5J-2 (gap 1.05) and 2001 WK15 32E-39 (gaps
+  1.5 and 1.7) kept two episodes under the gap length (D1b, 24.10) and join under the bounded gap (author 2026-10-31,
+  W28 g06-5 A: resonant/libration/medium).
 """
 
 import math
@@ -30,6 +35,7 @@ from resonances.resonance.analysis.ledger import Ledger
 from resonances.resonance.analysis.mmr import decide, io
 from resonances.resonance.analysis.mmr.analyse import _centre_scale_union_word
 from resonances.resonance.analysis.mmr.decide import AngleDecision, StatusDecision
+from resonances.resonance.analysis.rules import Rule
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, CheckValue, Flag, LibrationOrigin, Margin, Reason, Status
 from tests.resonances.analysis.builders import make_response, make_sampling
@@ -107,22 +113,26 @@ def test_two_regimes_of_another_resonance_join_as_g2u():
     assert columns['geo_union_gap_max_P'] == pytest.approx(80.0 / 350.0, abs=0.01)
     assert columns['geo_union_tp_range_rad'] == pytest.approx(math.radians(145.0), abs=math.radians(1.0))
     assert columns['geo_union_span_tp_range_rad'] == pytest.approx(math.radians(145.0), abs=math.radians(1.0))
-    assert 'geo_union_gap_max_P' in ledger.columns() and 'geo_union_span_raw_range_rad' in ledger.columns()
+    # the half-cosine -30 + 145 (1 - cos pi s) / 2 against the line 85 s (s = 0..1 over the gap) is farthest from it at
+    # sin pi s = 2 x 85 / (145 pi), s = 0.122: |-24.8 - 10.4| = 35.1 deg, 5.1 beyond the 30-deg amplitude of the carried
+    # band, but -24.8 deg is inside the left band 0 +- 30 deg; between the bands (30..55 deg, s = 0.44..0.56) sigma is
+    # within 30 deg of the carried centre (42.5 deg at s = 0.5). The farthest point is the gap's own ends, the turning
+    # points -30 and 115 deg on the edges of their bands: 0
+    assert columns['geo_union_band_overshoot_deg'] == pytest.approx(0.0, abs=0.1)
+    assert 'geo_union_band_overshoot_deg' in ledger.columns() and 'geo_union_span_raw_range_rad' in ledger.columns()
+    assert 'geo_union_gap_max_P' not in ledger.columns()  # a column, no test (A7)
     # the same record of a 1:1 angle: the plain rule G2, read as libration by the status
     one_to_one, _, _ = decided(*two_regimes(80.0), coorbital=True)
     assert (one_to_one.angle_status, one_to_one.rule) == (AngleStatus.LIBRATION, 'G2')
     assert decide.status_basis(one_to_one) is one_to_one
 
 
-@pytest.mark.parametrize('gap, joins', [(340.0, True), (360.0, False)])
-def test_the_gap_may_miss_at_most_one_period_on_each_side(gap, joins):
+@pytest.mark.parametrize('gap', [340.0, 360.0, 1000.0])
+def test_the_gap_length_does_not_decide(gap):
     angle, geometry, _ = decided(*two_regimes(gap))
     assert len(decide.librating_episodes(geometry, S)) == 2
-    assert (angle.angle_status == AngleStatus.LIBRATION) is joins
-    if joins:
-        assert decide.union_columns(geometry, S)['geo_union_gap_max_P'] == pytest.approx(gap / 350.0, abs=0.01)
-    else:
-        assert (angle.angle_status, angle.subtype) == (AngleStatus.EPISODIC, AngleSubtype.RECURRENT)
+    assert (angle.angle_status, angle.subtype) == (AngleStatus.LIBRATION, AngleSubtype.REGIME_CHANGE)
+    assert decide.union_columns(geometry, S)['geo_union_gap_max_P'] == pytest.approx(gap / 350.0, abs=0.01)
 
 
 def test_a_centre_that_goes_round_over_the_chain_is_no_union():
@@ -272,9 +282,20 @@ def test_tk14_five_years_is_resonant_at_medium():
 
 # the G2c analysis the union guard rejected, as the W23 design's control run persisted it (episodes/full-d, a monkeypatch
 # of the W22 code): W_c, TP prominence at the 1-deg floor, status, reason, caps, accepted episodes, the decisive one
+# W28 B4 (q-2 b): the rejected transient has no full physical support, so its caps gained no_full_physics_support
 TX9_REJECTED = {
-    'mmr3__2003_TX9__3E+2J-10+0+0+5': (1107.77, 'geometry_only;short_period_aliased', '2211-7167;7992-14564;15249-17489', '7992-14564'),
-    'mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr': (1108.27, 'geometry_only', '2211-7168;7994-14563;15250-17492', '7994-14563'),
+    'mmr3__2003_TX9__3E+2J-10+0+0+5': (
+        1107.77,
+        'geometry_only;short_period_aliased;no_full_physics_support',
+        '2211-7167;7992-14564;15249-17489',
+        '7992-14564',
+    ),
+    'mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr': (
+        1108.27,
+        'geometry_only;no_full_physics_support',
+        '2211-7168;7994-14563;15250-17492',
+        '7994-14563',
+    ),
 }
 
 
@@ -285,7 +306,17 @@ def test_tx9_keeps_its_status_with_the_word_libration(example):
     the union found at W_c is rejected, the fine verdict stays with the word libration; the rejected analysis is in the
     geo_cs_rej_* columns (W23 d)."""
     # G2a off: these mechanisms are read on the single episode (W24, test_w23_centre_scale.test_tx9_g2a_*)
-    analysis = _analysis(example, replace(S, libration_centre_scale_tp_at_centre=False, libration_action_step=False))
+    w22 = replace(S, libration_centre_scale_tp_at_centre=False, libration_action_step=False)
+    # W28 C16 regime_cut_mark (q-5 i): the three W_c pieces share a band and a period, so they are one episode and G2c
+    # keeps it (no union to reject); the W22 union guard is read below with C16 and B1's stall join off
+    joined = _analysis(example, w22)
+    assert (str(joined.verdict.status), str(joined.verdict.angle_status)) == ('uncertain', 'libration')
+    assert joined.prep.cutoff.binding == 'centre_scale' and joined.extra_columns['geo_union_word_centre_scale'] == 0
+    assert [(run.t_start_yr, run.t_end_yr) for run in joined.geometry.runs if run.accepted] == [
+        (pytest.approx(2211, abs=1), pytest.approx(float(TX9_REJECTED[example][2].split('-')[-1]), abs=1))
+    ]
+    assert str(Rule.REGIME_CUT_MARK) in joined.verdict.rules_fired and not joined.extra_columns['geo_cs_rej_episodes']
+    analysis = _analysis(example, replace(w22, libration_regime_cut_marks=False, libration_stall_join=False))
     assert (str(analysis.verdict.status), str(analysis.verdict.angle_status)) == ('uncertain', 'libration')
     assert analysis.extra_columns['geo_union_word_centre_scale'] == 1
     assert analysis.prep.cutoff.binding != 'centre_scale'  # the fine verdict stays
@@ -310,12 +341,18 @@ def test_136108_g2c_comes_before_the_union():
 
 
 @pytest.mark.benchmark
-def test_2002_xa_gap_is_longer_than_the_two_periods():
-    analysis = _analysis('mmr2__2002_XA__5J-2+0-3')
-    left, right = sorted(decide.librating_episodes(analysis.geometry, S), key=lambda e: e.t_start_yr)
-    ratio = (right.t_start_yr - left.t_end_yr) / (left.period_med_yr + right.period_med_yr)
-    assert ratio == pytest.approx(1.05, abs=0.02) and ratio > S.libration_union_gap_periods
-    assert _word(analysis.verdict) == ('transient', 'episodic', 'recurrent', 'medium')
+@pytest.mark.parametrize('example', ['mmr2__2002_XA__5J-2+0-3', 'mmr2__2001_WK15__32E-39+0+7'])
+def test_xa_and_wk15_gaps_longer_than_the_two_periods_are_bounded(example):
+    """Author 2026-10-31 (W28 g06-5 A, cancelling D1b): sigma_f stays inside the band through gaps of 1.05 (XA) and
+    1.5, 1.7 (WK15) x (P_left + P_right), so the episodes join and the dynamic transient becomes resonant (6u)."""
+    analysis = _analysis(example)
+    episodes = sorted(decide.librating_episodes(analysis.geometry, S), key=lambda e: e.t_start_yr)
+    pairs = list(zip(episodes, episodes[1:]))
+    assert max((b.t_start_yr - a.t_end_yr) / (a.period_med_yr + b.period_med_yr) for a, b in pairs) > 1.0
+    margin = math.radians(S.libration_union_band_margin_deg)
+    assert all(g.gap_band_overshoot(analysis.geometry, a, b) <= margin for a, b in pairs)
+    assert analysis.extra_columns['geo_union_n_episodes'] >= 2
+    assert _word(analysis.verdict) == ('resonant', 'libration', 'regime_change', 'medium')
 
 
 @pytest.mark.benchmark
@@ -323,7 +360,6 @@ def test_2002_xa_gap_is_longer_than_the_two_periods():
     'example, word',
     [
         ('mmr2__138537__13N-25+0+12', ('non_resonant', 'episodic', 'recurrent', 'low')),  # 48 episodes, centre goes round
-        ('mmr2__2001_WK15__32E-39+0+7', ('transient', 'episodic', 'recurrent', 'medium')),
         ('mmr3__2003_TG2__4E-1M-3+0+0+0__step0.5yr', ('transient', 'episodic', 'recurrent', 'low')),  # a stall of 12.6 P
         ('mmr2__15875__2N-3+0+1', ('resonant', 'libration', 'stationary', 'high')),
     ],

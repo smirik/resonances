@@ -10,7 +10,7 @@ The expected numbers are those of the W23 design runs (design/episodes: full-d i
 monkeypatched rule, changed-ad.csv the four rows that change), not the package's output:
 - 2003 TX9 3E+2J-10 at 5 yr and 0.5 yr: one episode 2.21-17.49 kyr (11 TP, edge gaps 0.70/0.80 P) at W_c 1107.77 /
   1108.27 yr, uncertain (rule 5e: R0 measured and failed at that scale); without the rule 0.58-13.59 kyr (17 TP) /
-  0.58-11.25 kyr (12 TP) at the fine scale;
+  0.58-11.25 kyr (12 TP) at the fine scale (since W28 only with the C16 regime-cut mark off as well);
 - 523653 12N-19: 4.83-94.82 kyr with 9 TP instead of 11 (two 1-deg loops), resonant, high instead of medium;
 - 385458 9N-17 300 kyr: 29.35-292.17 kyr (9 TP) at W_c 4608 yr instead of 68.12-264.79 kyr (7 TP) at 32216 yr.
 The benchmark records are skipped without the benchmark data. The TX9 tests read the record with G2a off
@@ -80,7 +80,15 @@ def test_tx9_one_slow_libration_at_the_scale_of_the_centre(example):
 @pytest.mark.benchmark
 @pytest.mark.parametrize('example, fine', [(TX9, (0.58, 13.59, 17)), (TX9_HALF, (0.58, 11.25, 12))])
 def test_tx9_without_the_rule_keeps_the_fine_episode(example, fine):
+    # W28 C16 (regime_cut_mark, G2m): at W_c the 1-deg pieces 2.21-14.56 and 15.25-17.49 kyr are one libration region
+    # with a stall mark, so even without rule (a) the centre scale is accepted, its 1-deg loops counted (15 TP, not 11);
+    # the fine episode of W23 comes back with the mark off as well
     analysis = _analysis(example, replace(OFF, libration_action_step=False))
+    ((start, end, n_tp),) = _accepted(analysis)
+    assert (round(start, 2), round(end, 2), n_tp) == (2.21, 17.49, 15)
+    assert analysis.prep.cutoff.binding == 'centre_scale'
+    assert str(analysis.verdict.status) == 'uncertain'
+    analysis = _analysis(example, replace(OFF, libration_action_step=False, libration_regime_cut_marks=False))
     ((start, end, n_tp),) = _accepted(analysis)
     assert (round(start, 2), round(end, 2), n_tp) == fine
     assert analysis.prep.cutoff.binding != 'centre_scale'

@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Union
+from typing import List, Optional, Union
 
 from resonances.body import Body
 from resonances.resonance import coherence_analysis, omega_free_gate
@@ -9,7 +9,9 @@ from resonances.resonance.analysis.secular import analyse_secular
 from resonances.resonance.analysis.verdict import ResonanceType, Status, Verdict
 from resonances.resonance.analysis.zlk import analyse_zlk
 from resonances.resonance.periodogram import Periodogram
-from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
+from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, elements_in_frame
+from resonances.data.invariable_plane import FRAME_ECLIPTIC, FRAME_INVARIABLE
+from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.data.const import SOLAR_SYSTEM_WITH_SUN
 
 from . import mmr_adapter
@@ -136,6 +138,8 @@ class Simulation:
             self._run_batched(progress)
         else:
             self._run_single(progress)
+        if not self.data_manager.skip_simulation_json:  # the parent process only (batch workers skip it): whole run
+            self.data_manager.log_selection(self.bodies)
         self.running_time["stop"] = logger.get_current_time()
 
     def _run_single(self, progress=False):
@@ -232,6 +236,14 @@ class Simulation:
             self.times / (2 * np.pi), self.integration_engine.planets_data, labels, window=self.config.secular_phase_window
         )
 
+    def secular_phases_measured(self) -> bool:
+        """Whether the secular angles carry the measured mode longitudes (`measured_mode_longitudes`): measured phases
+        and a baseline not shorter than the fit window (a shorter one keeps the linear law). The analysis then adds no
+        phase uncertainty for those modes (`analysis.secular.decide.phase_check`)."""
+        if self.config.secular_planet_phases != 'measured' or self.times is None or len(self.times) < 2:
+            return False
+        return abs(float(self.times[-1] - self.times[0])) / (2 * np.pi) >= self.config.secular_phase_window
+
     def build_periodograms(self, only: dict | None = None, bodies: List[Body] | None = None):
         """Periodograms of a, e and every filtered angle of `bodies` (default: all). `only` ({body name: resonance
         keys}, as in `identify_librations`) limits them to the angles of those bodies (a restore that recomputed them;
@@ -327,7 +339,7 @@ class Simulation:
             # The forced/free split depends on the orbit alone, so it is done once per
             # body, and only where it is read — the Lidov-Kozai angle omega = varpi - Omega.
             if self.config.free_elements_enabled and any(isinstance(r, LidovKozaiResonance) for r in resonances):
-                body.build_free_elements(self.config.free_elements_sampling_years, self.config.free_gate_mask_quantile)
+                _build_free_elements(body, self.config, settings.zlk_angle_frame)
             for resonance in resonances:
                 if resonance.type == 'mmr':
                     for row in self._analyse_mmr(body, resonance, settings, cells):
@@ -413,7 +425,7 @@ class Simulation:
         if analysis is not None and analysis.angle is not None:
             return analysis
         settings = self.config.analysis_settings
-        series = long_period_series(body, resonance)
+        series = long_period_series(body, resonance, settings.zlk_angle_frame, self.secular_phases_measured())
         if isinstance(resonance, SecularResonance):
             return analyse_secular(series, settings)
         elements = body.free_elements if self.config.free_elements_enabled else None
@@ -427,10 +439,11 @@ class Simulation:
         `body.free_gates[key]`.
         """
         res_key = resonance.to_s()
-        series = long_period_series(body, resonance)
+        series = long_period_series(body, resonance, settings.zlk_angle_frame, self.secular_phases_measured())
         if isinstance(resonance, SecularResonance):
             analysis = analyse_secular(series, settings, cells)
         else:
+            _store_zlk_angle(body, res_key, series)
             elements = body.free_elements if self.config.free_elements_enabled else None
             analysis = analyse_zlk(series, settings, cells, free_elements=elements, gate_config=_gate_config(self.config))
             if analysis.gate is not None and self.config.free_elements_enabled:  # no free elements: the gate never ran
@@ -531,10 +544,18 @@ class Simulation:
         return dry_run(self, level)
 
 
-def long_period_series(body: Body, resonance: Resonance):
+def long_period_series(body: Body, resonance: Resonance, zlk_frame: Optional[str] = None, phases_measured: bool = False):
     """The `LongPeriodSeries` of a secular or Lidov-Kozai angle of a body, in increasing time: the angle the package
-    classifies (`body.angles_unwrapped[key]`: the reduced proper angle of a secular resonance, omega for ZLK), the
-    elements, and the secular angle's terms with the planetary frequencies."""
+    classifies (`body.angles_unwrapped[key]`: the reduced proper angle of a secular resonance), the elements, and the
+    secular angle's terms with the planetary frequencies.
+
+    A Lidov-Kozai angle is built here, on the analysis path every run, batch worker, restore and benchmark goes
+    through: omega, i, Omega and varpi measured from the plane `zlk_frame` names (ZLK_ANGLE_FRAME; None: the setting's
+    default, the invariable plane), by `lidov_kozai_resonance.elements_in_frame` from the body's ecliptic elements.
+    The series records its frame (a reader must not rotate it again) and, in the invariable frame, how far the two
+    frames' omega part (`frame_shift_turns`). A body without its omega keeps the stored angle in the ecliptic frame.
+    `phases_measured` (`Simulation.secular_phases_measured`): the secular angle's planetary modes were measured in the
+    integration (`LongPeriodSeries.measured_modes`)."""
     from resonances.data.const import PLANETARY_FREQUENCIES
     from resonances.resonance.analysis.secular import LongPeriodSeries
     from resonances.resonance.analysis.secular.preprocess import terms_from_formula
@@ -546,20 +567,81 @@ def long_period_series(body: Body, resonance: Resonance):
         return None if values is None else mmr_adapter.in_time_order(values, order)
 
     secular = isinstance(resonance, SecularResonance)
+    angle, inc, varpi, node = column(body.angles_unwrapped[key]), column(body.inc), column(body.varpi), column(body.Omega)
+    frame, shift = FRAME_ECLIPTIC, float('nan')
+    if not secular:
+        frame = zlk_frame if zlk_frame is not None else AnalysisSettings().zlk_angle_frame
+        if frame == FRAME_INVARIABLE and body.omega is not None and inc is not None and node is not None:
+            omega_ecliptic = column(body.omega)
+            inc, node, omega = elements_in_frame(inc, node, omega_ecliptic, frame)
+            varpi = np.mod(node + omega, 2 * np.pi)
+            angle = omega
+            difference = np.unwrap(np.angle(np.exp(1j * (omega - omega_ecliptic))))
+            shift = float(np.ptp(difference) / (2 * np.pi)) if len(difference) else float('nan')
+        else:
+            frame = FRAME_ECLIPTIC
     return LongPeriodSeries(
         resonance_type=ResonanceType.SECULAR if secular else ResonanceType.LIDOV_KOZAI,
         key=key,
         name=str(body.name),
         t_yr=np.asarray(body.times, dtype=float)[order] / (2 * np.pi),
-        angle=np.unwrap(column(body.angles_unwrapped[key])),
+        angle=np.unwrap(angle),
         a=column(body.axis),
         e=column(body.ecc),
-        inc=column(body.inc),
-        varpi=column(body.varpi),
-        Omega=column(body.Omega),
+        inc=inc,
+        varpi=varpi,
+        Omega=node,
         terms=terms_from_formula(resonance.formula.terms) if secular else (),
         planet_frequencies=PLANETARY_FREQUENCIES if secular else {},
+        frame=frame,
+        frame_shift_turns=shift,
+        measured_modes=_mode_labels(resonance) if secular and phases_measured else (),
     )
+
+
+def _mode_labels(resonance: Resonance) -> tuple:
+    """The planetary modes of a secular angle ('g4', 's6', ...), in order of appearance."""
+    labels = [f'{term.mode}{term.index}' for term in resonance.formula.terms if term.index is not None]
+    return tuple(dict.fromkeys(labels))
+
+
+def _build_free_elements(body: Body, config, frame: str) -> None:
+    """`body.free_elements` from the elements measured in the plane of the Lidov-Kozai angle (ZLK_ANGLE_FRAME), so the
+    gate, the forcing panel, the attribution, the node lock and the free circle of the portrait share omega's frame.
+    The ecliptic frame (or a body without its omega) keeps `Body.build_free_elements`."""
+    if frame == FRAME_ECLIPTIC or body.omega is None or body.inc is None or body.Omega is None:
+        body.build_free_elements(config.free_elements_sampling_years, config.free_gate_mask_quantile)
+        return
+    from resonances.secular.free_elements import free_elements
+
+    body.free_elements = None
+    if body.times is None or not body.has_eccentricity_vector():
+        return
+    inc, node, omega = elements_in_frame(body.inc, body.Omega, body.omega, frame)
+    try:
+        body.free_elements = free_elements(
+            times=np.asarray(body.times) / (2 * np.pi),
+            ecc=body.ecc,
+            inc=inc,
+            Omega=node,
+            omega=omega,
+            sampling_years=config.free_elements_sampling_years,
+            mask_quantile=config.free_gate_mask_quantile,
+        )
+    except Exception as exc:
+        logger.warning(f"Failed to build free elements for the body {body.name}: {exc}")
+
+
+def _store_zlk_angle(body: Body, key: str, series) -> None:
+    """Write the classified Lidov-Kozai angle back to `body.angles[key]` and `body.angles_unwrapped[key]` (body row
+    order), so the data files and every figure read the omega the verdict was made on (ZLK_ANGLE_FRAME)."""
+    if series.frame == FRAME_ECLIPTIC:
+        return  # the stored angle is the one classified
+    unwrapped = mmr_adapter.in_body_order(np.asarray(series.angle, dtype=float), mmr_adapter.time_order(body), len(body.times))
+    if unwrapped is None:
+        return
+    body.angles_unwrapped[key] = np.array(unwrapped, dtype=float)
+    body.angles[key] = wrap(body.angles_unwrapped[key])
 
 
 def _filtered_at(series, cutoff_yr: float, settings):

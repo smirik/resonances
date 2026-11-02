@@ -135,10 +135,13 @@ def test_37087_without_its_forced_wave_is_non_resonant(analysed_37087):
     """The status of the author's label (non_resonant, medium) from the tree without the forced wave (reason
     circulation: the 5.7-kyr kinematic loops are no episodes at the 75-yr cutoff, the 168-yr wave's turning points fill
     the record). The angle word is his episodic (W20 round C): the forced-wave loops are librations of sigma
-    geometrically, so the word is the tree's with them in, one ledger line."""
+    geometrically, so the word is the tree's with them in, one ledger line. W28 B10a (rule K3s): the slow centre's
+    cycle sits on a secular period and its own identity fails, so the reason is kinematic_libration, not circulation."""
     verdict = analysed_37087[0].verdict
     assert (verdict.status, verdict.angle_status, verdict.confidence) == (Status.NON_RESONANT, AngleStatus.EPISODIC, 'medium')
-    assert verdict.reason == Reason.CIRCULATION
+    # W28 B10a K3s (secular_cycle_kinematic): was Reason.CIRCULATION; status and confidence are unchanged
+    assert (verdict.reason, verdict.libration_origin) == (Reason.KINEMATIC_LIBRATION, LibrationOrigin.KINEMATIC)
+    assert any(e.name.startswith('K3s ') for e in verdict.decision_path)
     names = [e.name for e in verdict.decision_path]
     assert 'G2 accepted runs that are forced waves, no episodes of the angle' in names
     assert any(name.startswith('angle word episodic: sigma librates in the forced-wave runs') for name in names)
@@ -326,11 +329,20 @@ def test_k2_grades_the_centre_as_a_drift(drift_records):
 def test_the_edge_rule_reads_the_real_last_episode():
     """145480 1N-4 at 1 Myr (review B #9): the real episode 0 ends at 680.9 kyr, the forced waves 1 and 2 come after it
     (682.0-683.6 and 730.0-734.6 kyr). Before round C the exit was read after wave 2 (758.1 kyr); now it is read after
-    episode 0, before the second wave starts, and no forced wave keeps an edge mark."""
+    episode 0, before the second wave starts, and no forced wave keeps an edge mark.
+
+    W28: at the default settings the record has no runs at all (B6a: the cutoff is bound by 1.5 P_orb, 329 -> 990 yr,
+    and all three runs were the P_orb wave of a), and B2 marks the episodes of a 5s row as forced (strength). The edge
+    rule is read on the geometry it was written for, with both switches off."""
     example = 'mmr2__145480__1N-4+0+3__1Myr'
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    geometry = analyse_mmr(io.load_series(example), S).geometry
+    series = io.load_series(example)
+    default = analyse_mmr(series, S)
+    assert default.prep.cutoff.binding == 'orbit' and not default.geometry.episodes and not default.geometry.forced_wave_ids
+    assert (str(default.verdict.status), str(default.verdict.angle_status)) == ('non_resonant', 'circulation')
+    before_w28 = replace(S, mmr_filter_orbit_factor=0.0, mmr_forced_wave_strength=False)
+    geometry = analyse_mmr(series, before_w28).geometry
     (real,) = geometry.episodes
     waves = [run for run in geometry.runs if run.episode_id in geometry.forced_wave_ids]
     assert len(waves) == 2 and all(real.t_end_yr < wave.t_start_yr for wave in waves)

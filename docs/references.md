@@ -17,8 +17,12 @@ The physics pages cite these works. Page and equation numbers refer to the print
   function at fixed $\sigma$ (eqs. 1–6, p. 30) and the stable centres (§3).
 - Nesvorný, D., & Morbidelli, A. (1998). Three-body mean motion resonances and the chaotic structure of the
   asteroid belt. *Astronomical Journal*, 116, 3029–3037. doi:[10.1086/300632](https://doi.org/10.1086/300632).
-  Used: three-body angles (eqs. 1–2, p. 3029), filtering before decimation (§2, p. 3030), the strength scale
-  of three-body resonances (§3, pp. 3031–3032).
+  Used: three-body angles (eqs. 1–2, p. 3029), filtering before decimation (§2, p. 3030), membership judged by
+  the correlation of the filtered $a$ with the angle (§2, pp. 3030–3031), the strength scale of three-body
+  resonances (§3, pp. 3031–3032).
+- Gallardo, T., Coito, L., & Badano, L. (2016). Planetary and satellite three body mean motion resonances.
+  *Icarus*, 274, 83–98. doi:[10.1016/j.icarus.2016.03.018](https://doi.org/10.1016/j.icarus.2016.03.018).
+  Used: two critical angles that both librate while only one moves $a$ (p. 89).
 - Nesvorný, D., & Morbidelli, A. (1998). An analytic model of three-body mean motion resonances.
   *Celestial Mechanics and Dynamical Astronomy*, 71, 243–271.
   doi:[10.1023/A:1008347020890](https://doi.org/10.1023/A:1008347020890).

@@ -25,12 +25,12 @@ import bisect
 import math
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
-from typing import Callable, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Protocol, Sequence, Tuple
 
 import numpy as np
 from scipy import signal
 
-from resonances.resonance.analysis import pendulum
+from resonances.resonance.analysis import pendulum, rules
 from resonances.resonance.analysis.filtering import edge_window, linear_fit, lowpass_or_none, time_derivative, window_mask
 from resonances.resonance.analysis.ledger import Ledger, Op
 from resonances.resonance.analysis.settings import AnalysisSettings
@@ -38,6 +38,7 @@ from resonances.resonance.analysis.verdict import CheckValue, Flag, join_list
 
 NAN = float('nan')
 TWO_PI = 2 * np.pi
+WELLS_SEPARATOR = '>'  # `Episode.wells`: the wells of a 1:1 run in time order
 
 
 def wrap_pi(x):
@@ -49,6 +50,9 @@ class EpisodeShape(StrEnum):
     STATIONARY = 'stationary'  # bands of the first and last full cycle overlap
     MODULATED = 'modulated'  # bounded centre turning back >= libration_centre_returns_modulated times
     MOVING_CENTRE = 'moving_centre'  # the bands overlap only in psi = sigma - c(t), c the caller's well track (`MovingWell`)
+    # MMR 1:1 (W28 C7, rule coorbital_well_cut): the bands do not overlap, but every cycle librates in a well of the
+    # averaged co-orbital potential (the caller's `WellsModel`): its wells or its amplitude change inside one libration
+    REGIME_CHANGE = 'regime_change'
     NONE = ''
 
 
@@ -80,6 +84,121 @@ class MovingWell:
 WellModel = Callable[[np.ndarray, np.ndarray], MovingWell]
 
 
+@dataclass(frozen=True)
+class RunFloor:
+    """The shortest libration period one run may have in the caller's model, read from its own turning points (MMR:
+    the 1:1 profile floor of W28 C3, `mmr.coorbital_geometry.CoorbitalRunFloor`): `floor_yr` and the setting it scales
+    (ledger) when the model gives one (nan: the angle's floor holds for this run), its source, and the CSV columns of
+    the reading (episodes.csv, whether or not it gives a floor)."""
+
+    floor_yr: float
+    setting: str
+    source: str
+    columns: Tuple[Tuple[str, object], ...] = ()
+
+    @property
+    def holds(self) -> bool:
+        return bool(np.isfinite(self.floor_yr) and self.floor_yr > 0)
+
+
+# the caller's model: a run (>= 2 TPs) -> its own floor reading (`RunFloor`), or None when the model has none for it
+RunFloorModel = Callable[['Episode'], Optional[RunFloor]]
+
+
+class WellsModel(Protocol):
+    """The caller's wells of an angle whose episodes end only at a separatrix (`FilteredAngle.coorbital_wells`; MMR: the
+    1:1 rule coorbital_well_cut, W28 C7, `mmr.coorbital_geometry.CoorbitalWells`). `wells`: the name of the well each
+    swing [lo, hi] of sigma holds in the potential of the window [t0, t1] ('' for a swing that holds no minimum; () when
+    the model has no potential there); `levels`: the level of the potential at each value of sigma (the energy of the
+    loop through a turning point; nan where there is none)."""
+
+    def wells(self, t0_yr: float, t1_yr: float, lo_rad, hi_rad) -> Tuple[str, ...]:
+        """The well of each swing [lo, hi] [rad]."""
+
+    def levels(self, t0_yr: float, t1_yr: float, values_rad) -> np.ndarray:
+        """The potential's level at each value [rad]."""
+
+    def legs(self, t_yr: np.ndarray, raw_rad: np.ndarray, orbit_period_yr: float) -> Optional[AveragedLegs]:
+        """The legs of the raw angle averaged over a few orbits (W28 C8, the residence); None when not readable."""
+
+    def zone_max(self, legs: AveragedLegs, turns_yr: Sequence[float], raw_rad: np.ndarray) -> float:
+        """The largest |a - a_P| / da_max at the reversals `turns_yr` of `legs` (report only; nan: not measured)."""
+
+    def law(self, t0_yr: float, t1_yr: float, raw_rad: np.ndarray, cutoff_yr: float) -> Tuple[str, str]:
+        """(force check, energy check) of the local 1:1 law on [t0, t1] ('not_measured' each when it cannot be read)."""
+
+    def single_legs(
+        self,
+        t_yr: np.ndarray,
+        raw_rad: np.ndarray,
+        orbit_period_yr: float,
+        floor_yr: float,
+        min_floor_ratio: float,
+        outside: Sequence[Tuple[float, float]],
+    ) -> Tuple['SingleLeg', ...]:
+        """The single legs (W28 C6) of the averaged angle outside the spans `outside` (the accepted runs) whose
+        period, twice the leg, is at least min_floor_ratio x floor_yr, with their turns and local law."""
+
+
+# outcomes of an edge reversal (`EdgeTurn.outcome`, `_edge_raw_turns`): added, or the first test it failed
+EDGE_TURN_CLOSES = 'closes'  # every test held and the turning point closed a cycle: added (TP source edge_raw)
+EDGE_TURN_PROMINENCE = 'prominence'  # the swing on one side is below the model's prominence
+EDGE_TURN_NO_CYCLE = 'no_cycle'  # the reversal holds, but its run is no new episode with it (only closing turns are added)
+
+
+@dataclass(frozen=True)
+class EdgeTurnReading:
+    """The caller's physics of a candidate edge reversal (`EdgeTurnModel.read`; MMR: the 1:1 reading of
+    `mmr.coorbital_geometry.CoorbitalEdgeTurn`): where it turns, out/in = |a - a*| after / before it, whether a crosses
+    a* there, and `outcome`: '' when every test of the model holds, else the name of the first that failed."""
+
+    site: str
+    out_in: float
+    a_crosses: bool
+    outcome: str
+
+
+class EdgeTurnModel(Protocol):
+    """The caller's model of a turning point the filter's edge trim hides (`FilteredAngle.edge_turn`; MMR: the 1:1
+    rule coorbital_edge_turn, W28 C4). `averaged`: the raw angle averaged over a few orbits on the record's grid (the
+    curve the reversal is read on); `min_prominence_rad`: the swing it needs on both sides; `read`: its physics."""
+
+    averaged: np.ndarray
+    min_prominence_rad: float
+
+    def read(self, t_turn_yr: float, value_rad: float, half_period_yr: float, record: Tuple[float, float]) -> EdgeTurnReading:
+        """The physics of the reversal at t_turn (value_rad: the averaged angle there) of a run with the median
+        half-cycle `half_period_yr`, inside `record` [yr]."""
+
+
+@dataclass(frozen=True)
+class EdgeTurn:
+    """A reversal of the averaged raw angle inside the edge trim after the last turning point ('exit') or before the
+    first ('entry'), as `_edge_raw_turns` read it (columns geo_edge_raw_*): its sample, time, value [rad] and kind
+    (+1 a maximum), its prominence (the smaller swing of its two sides) [rad], the model's reading and the outcome
+    (EDGE_TURN_CLOSES when it was added as a turning point)."""
+
+    side: str
+    index: int
+    t_yr: float
+    value_rad: float
+    kind: int
+    prominence_rad: float
+    site: str = ''
+    out_in: float = NAN
+    a_crosses: bool = False
+    outcome: str = ''
+
+    @property
+    def added(self) -> bool:
+        return self.outcome == EDGE_TURN_CLOSES
+
+
+def run_key(run: 'Episode') -> Tuple[float, ...]:
+    """A run's identity across geometries of one angle: its TP times [yr] (runs are rebuilt with new ids)."""
+    return tuple(round(float(x), 6) for x in np.asarray(run.tp_times_yr, dtype=float))
+
+
 class RejectReason(StrEnum):
     TOO_FEW_TP = 'too_few_tp'
     CENTRE_MOVES = 'centre_moves'
@@ -87,6 +206,13 @@ class RejectReason(StrEnum):
     EDGE = 'edge'  # the slow edge half-cycle trimmed off a run whose centre moves (`_trim_slow_edges`)
     NO_CLOSED_CYCLE = 'no_closed_cycle'  # no full cycle of the run returns about its centre (`closure_ratios`)
     NONE = ''
+    # why an ACCEPTED run is no librating episode of the angle (episodes.csv `ineligible_reason`, W28 C11,
+    # `episode_eligibility`); never a `reject_reason`: the run stays accepted, the status does not count it
+    FORCED_WAVE = 'forced_wave'  # a forced wave of another argument (`Geometry.forced_waves`)
+    INDUCED = 'induced'  # an episode an owner induces while others are the row's own (`Geometry.induced_ids`)
+    BELOW_PERIOD_FLOOR = 'below_period_floor'  # faster than the angle's shortest libration (the period floor)
+    CENTRE_TURNS = 'centre_turns'  # the centre completes a revolution inside the run (`episode_centre_travel`)
+    BEFORE_LAST_JUMP = 'before_last_jump'  # a librating run before the last jump of a (only G1e/G1l read those)
 
 
 @dataclass(frozen=True)
@@ -123,6 +249,9 @@ class TurningPoints:
     kinds: np.ndarray
     prominence_rad: float
     local: Tuple[LocalThreshold, ...] = ()
+    # the half-amplitude at which a half-cycle leaves the run (`split_runs`, `_over_the_top_next_to`) [rad]: pi (over the
+    # top) for MMR and secular angles; the angle's own `FilteredAngle.run_break_half_amplitude_rad` (ZLK: half a turn)
+    break_half_amplitude_rad: float = np.pi
 
     def __len__(self) -> int:
         return len(self.indices)
@@ -168,6 +297,220 @@ class CentreTrack:
     @property
     def max_pass_rev(self) -> float:
         return self.max_pass_rad / (2 * np.pi)
+
+
+# what ends a 1:1 residence (`Residence.bounded_by_start/end`, W28 C8): the record's edge (the stay may go on: inferred
+# up to there, the continuation undetermined) or a leg of the averaged angle that sweeps a whole turn (circulation)
+RESIDENCE_EDGE, RESIDENCE_CIRCULATION = 'edge', 'circulation'
+
+
+@dataclass(frozen=True)
+class Residence:
+    """The continuous stay of a 1:1 angle in the co-orbital region around an accepted run (its core, the measured
+    turning points), inferred, not measured (rule coorbital_residence, W28 C8, cards g03-3 C, g03-8 A, g03-9 A): from the
+    core outwards over the legs of the averaged angle (`AveragedLegs`) until a leg sweeps
+    `libration_edge_arc_rev` turns (an arc above 2 pi is no piece of libration: the separatrix is crossed) or the
+    record ends; a core whose exit (entry) the edge rule observed ends its residence there. [t0, t1] [yr], what bounds
+    each side (RESIDENCE_EDGE, RESIDENCE_CIRCULATION) and, reported only, the largest |a - a_P| / da_max at the
+    reversals of the averaged angle outside the core (`WellsModel.zone_max`; nan: none or not measured). It sets no
+    coverage, no exit or entry, no margin and no status: every decision reads the core."""
+
+    t0_yr: float
+    t1_yr: float
+    bounded_by_start: str
+    bounded_by_end: str
+    zone_max: float = NAN
+
+    def beyond(self, core_t0_yr: float, core_t1_yr: float) -> bool:
+        """Whether it reaches beyond the core [core_t0, core_t1] on either side."""
+        return bool(self.t0_yr < core_t0_yr or self.t1_yr > core_t1_yr)
+
+
+# the boundary a sub-regime of a 1:1 run starts at (`SubRegime.starts_at`; the marks of `coorbital_marks`)
+SUBREGIME_START = 'start'
+
+
+@dataclass(frozen=True)
+class SubRegime:
+    """One stretch of an accepted 1:1 run between the changes that are no boundary (`coorbital_marks`, W28 C7/C8): its
+    well (the wells' names of `Episode.wells`), [t0, t1] [yr], the change it starts at (SUBREGIME_START for the first,
+    else MARK_WELL_CHANGE or MARK_AMPLITUDE_CHANGE; an amplitude change's transitional half-cycle belongs to neither
+    side), and its own 1:1 law (`WellsModel.law`: the force check and the energy check of the local law on [t0, t1] at
+    the angle's cutoff; '' when not read: a run of one sub-regime, no model, MMR_COORBITAL_RESIDENCE off). Columns only:
+    the run's own response decides (2009 BE81 20 kyr: tadpole L5 pass/pass, horseshoe pass/fail, tadpole L4 pass/pass,
+    compound pass/pass)."""
+
+    well: str
+    t0_yr: float
+    t1_yr: float
+    starts_at: str = SUBREGIME_START
+    force: str = ''
+    energy: str = ''
+
+
+@dataclass(frozen=True)
+class AveragedLegs:
+    """A 1:1 angle averaged over a few of the body's orbits, cut at its reversals (`WellsModel.legs`; MMR: the W28 C1
+    leg, `coorbital_geometry.CoorbitalWells.legs`): the reversal times [yr] in time order and the sweep of the averaged
+    angle on every leg, max - min [rev]: len(t_yr) + 1 legs, from the record's start to the first reversal, ..., from
+    the last one to the record's end (`record`, [yr])."""
+
+    t_yr: np.ndarray
+    sweep_rev: np.ndarray
+    record: Tuple[float, float]
+
+    @property
+    def bounds_yr(self) -> np.ndarray:
+        """The legs' edges: the record's start, the reversals, the record's end."""
+        return np.concatenate([[self.record[0]], np.asarray(self.t_yr, dtype=float), [self.record[1]]])
+
+
+# the topology of one leg of a 1:1 angle between two reversals of its averaged angle (`SingleLeg.topology`): which of
+# the planet (theta = 0) and L3 (theta = pi) it crosses; a leg that crosses both is a backward lap past the planet
+LEG_TADPOLE, LEG_HORSESHOE, LEG_QS, LEG_PASSING = 'tadpole', 'horseshoe', 'qs', 'passing'
+CLEAN_LEGS = (LEG_TADPOLE, LEG_HORSESHOE, LEG_QS)  # one bounded swing of one of the co-orbital wells
+LEG_EDGE_START, LEG_EDGE_END = 'start', 'end'  # `SingleLeg.edge`: the leg runs from the record's start / to its end
+
+
+@dataclass(frozen=True)
+class LegTurn:
+    """One reversal of the averaged 1:1 angle that bounds a single leg (`SingleLeg`), read against the averaged
+    potential (`mmr.coorbital_geometry.turn_physics`): its time [yr], site (planet, l3, qs, tadpole_L4/L5),
+    out/in = |a - a_P| after / before it (1: a reflection, the potential mirrors |da|) and the zone |a - a_P| / da_max
+    on the leg's side (<= 1: a level the potential can reverse there). nan where not measured."""
+
+    t_yr: float
+    site: str = ''
+    out_in: float = NAN
+    zone: float = NAN
+
+
+@dataclass(frozen=True)
+class SingleLeg:
+    """One leg of a 1:1 angle outside every accepted run (W28 C6, rule coorbital_leg, card g02-6 B, q-4 A): the
+    stretch of the averaged angle (`WellsModel.legs`) between two reversals that does not sweep a whole turn. Its
+    [t0, t1] [yr], `edge` (LEG_EDGE_START / LEG_EDGE_END when it runs from the record's start or to its end, '' for an
+    interior leg), topology (LEG_* by the crossings of the planet and L3), twice its length over the angle's floor
+    (a leg is a half-cycle), its bounding turns (`LegTurn`; an edge leg has one) and the local 1:1 law on the leg
+    widened by mmr_coorbital_leg_window_factor x its length on each side at the leg's own cutoff: the force check, K /
+    K_theory and the energy check ('not_measured' when it cannot be read). Measurements only: the decision is
+    `mmr.decide` leaf G4c."""
+
+    t0_yr: float
+    t1_yr: float
+    edge: str
+    topology: str
+    period_over_floor: float
+    entry: Optional[LegTurn]
+    exit: Optional[LegTurn]
+    force: str = str(CheckValue.NOT_MEASURED)
+    force_scale: float = NAN
+    energy: str = str(CheckValue.NOT_MEASURED)
+    cutoff_yr: float = NAN
+
+    @property
+    def clean(self) -> bool:
+        """One bounded swing in a co-orbital well (tadpole, horseshoe or quasi-satellite), not a lap past the planet."""
+        return self.topology in CLEAN_LEGS
+
+    @property
+    def turns(self) -> Tuple[LegTurn, ...]:
+        """Its observed turns in time order (one for an edge leg)."""
+        return tuple(turn for turn in (self.entry, self.exit) if turn is not None)
+
+    def text(self) -> str:
+        """`t0-t1:topology[:edge]:out/in entry/exit:zone entry/exit:force/energy`, the column geo_leg_read."""
+
+        def number(value: float) -> str:
+            return f'{value:.3g}' if np.isfinite(value) else '-'
+
+        turns = [self.entry, self.exit]
+        out_in = '/'.join(number(t.out_in) if t is not None else '-' for t in turns)
+        zone = '/'.join(number(t.zone) if t is not None else '-' for t in turns)
+        edge = f':{self.edge}' if self.edge else ''
+        return f'{self.t0_yr:.6g}-{self.t1_yr:.6g}:{self.topology}{edge}:{out_in}:{zone}:{self.force}/{self.energy}'
+
+
+@dataclass(frozen=True)
+class HalfLibration:
+    """One bounded half-swing of an angle that is not 1:1 between passages over the top (W28 C6, card q-5 i, rule
+    single_half_libration): a run of two turning points, rejected, half-amplitude below pi, whose neighbours on both
+    sides are a passage (the angle turns >= one revolution between the facing turning points) or the record's edge
+    (`edge`: LEG_EDGE_START / LEG_EDGE_END, '' between two passages), [t0, t1] [yr], its period 2 (t1 - t0) over the
+    angle's floor, and the one-harmonic law a_dot = A sin sigma + B cos sigma + C fitted on it widened by
+    mmr_half_libration_window_factor x its length on each side: R^2 of each half of the window and whether the fitted
+    force turns sigma back at both turning points (sigma_ddot = c a_dot: > 0 at the lower, < 0 at the upper one). The
+    measurement of the W28 C15 audit; the decision is `mmr.decide` leaf G4h."""
+
+    t0_yr: float
+    t1_yr: float
+    edge: str
+    half_amp_rad: float
+    period_over_floor: float
+    r2_h1: float = NAN
+    r2_h2: float = NAN
+    restoring: bool = False
+
+    def text(self) -> str:
+        """`t0-t1[:edge]:R2 h1/h2:restoring`, the column geo_half_libration_read."""
+        edge = f':{self.edge}' if self.edge else ''
+        return f'{self.t0_yr:.6g}-{self.t1_yr:.6g}{edge}:{self.r2_h1:.3g}/{self.r2_h2:.3g}:{int(self.restoring)}'
+
+
+# `EdgeStretch.kind` (W28 C14): the record edge ends (starts) a pass of sigma_f that slowed down after >= one
+# revolution, or a pass of < one revolution after a turn of the slow centre that a pass of >= one revolution precedes
+EDGE_SLOWDOWN, EDGE_REFLECTION = 'slowdown', 'reflection'
+
+
+@dataclass(frozen=True)
+class EdgeStretch:
+    """How sigma_f meets one edge of the analysis window (W28 C14, card g01-7 A, rule end_arc_extend; MMR only).
+
+    The edge pass is the stretch of sigma_f between the turn of the slow centre nearest the edge (the other window
+    edge without one) and the edge; `pass_rev` the revolutions sigma_f advances there in the pass's direction. Mirrored
+    for the start (time reversed):
+
+    - EDGE_SLOWDOWN: the pass holds >= 1 revolution, and after its last completed one (`t_mark_yr`) sigma_f stays
+      `duration_yr` to the edge without completing another, against `last_rev_yr` the longest time a completed
+      revolution of the pass took (a circulation whose rate depends on sigma alone completes the next revolution
+      sooner than a full one takes: a duration longer than every revolution of the pass is a slowdown, the record
+      ends in an arc or a stall; the longest, not the last, so that revolutions of unequal length are no slowdown:
+      2017 XF62 20 kyr, 1.005 x its last one); `reversal_yr` is the record's own slow scale when the centre reverses
+      (near a*: 37908 23J-8, turns 40.5 kyr apart, an end stall of 17.7 kyr);
+    - EDGE_REFLECTION: the pass holds < 1 revolution after a centre turn (`t_mark_yr`), and the pass on the other side
+      of that turn >= 1 (`other_rev`, the centre's revolutions there): one reflection the edge cuts (2008 EZ84, its
+      start);
+    - '': neither.
+
+    `range_rad` / `travel_rad`: ptp and signed travel (in the pass's direction) of sigma_f from `t_mark_yr` to the edge.
+    Measured by `edge_stretches`; judged by `mmr.decide.record_edges`."""
+
+    side: str  # LEG_EDGE_START | LEG_EDGE_END
+    kind: str
+    pass_rev: float
+    t_mark_yr: float
+    duration_yr: float
+    last_rev_yr: float = NAN
+    other_rev: float = NAN
+    range_rad: float = NAN
+    travel_rad: float = NAN
+    # the longest stretch between two turns of the slow centre inside the window [yr] (nan with fewer than two): a
+    # circulation that reverses on its own slow scale (near a*) slows down before every reversal for up to this long
+    reversal_yr: float = NAN
+
+    def columns(self) -> dict:
+        """geo_<side>_edge_* columns (degrees for angles)."""
+        prefix = f'geo_{self.side}_edge'
+        return {
+            f'{prefix}_kind': self.kind,
+            f'{prefix}_pass_rev': self.pass_rev,
+            f'{prefix}_t_yr': self.t_mark_yr,
+            f'{prefix}_duration_yr': self.duration_yr,
+            f'{prefix}_last_rev_yr': self.last_rev_yr,
+            f'{prefix}_other_rev': self.other_rev,
+            f'{prefix}_range_deg': float(np.degrees(self.range_rad)),
+            f'{prefix}_reversal_yr': self.reversal_yr,
+        }
 
 
 @dataclass
@@ -247,6 +590,36 @@ class Episode:
     return_t_a_yr: float = NAN
     return_t_b_yr: float = NAN
     return_level_fraction: float = NAN  # where between v2 (0) and v1 (1) the return was measured; 0.5 = the mid-level
+    # MMR 1:1 (rule coorbital_edge_turn, W28 C4): the side ('exit', 'entry', 'entry;exit') of a turning point taken
+    # from the orbit-averaged raw angle in the filter's edge trim, which closed this run's cycle (`_edge_raw_turns`)
+    edge_raw_tp: str = ''
+    # MMR 1:1 (rule coorbital_well_cut, W28 C7, `coorbital_marks`): the changes inside an accepted run that are no
+    # boundary, ';'-separated `well_change@t` (the turning point where the half-cycles' well changes),
+    # `amplitude_change@t0:t1` (the transitional half-cycle) and `kick@t` (a jump of the slow variable at such a
+    # change) [yr]; episodes.csv `marks`. `wells`: the wells its half-cycles swing through in time order, repeats
+    # collapsed ('qs>compound>horseshoe'; `swing_wells`); episodes.csv `wells`
+    marks: str = ''
+    wells: str = ''
+    # MMR 1:1 (rule coorbital_residence, W28 C8): the stretches between those changes (`SubRegime`, `coorbital_marks`)
+    # and the inferred stay around the run (`Residence`, `coorbital_residences`); None / () otherwise. The run's turning
+    # points stay its core (`core_t0_yr`, `core_t1_yr`): coverage, edges, margins and the status read only it
+    subregimes: Tuple[SubRegime, ...] = ()
+    residence: Optional[Residence] = None
+
+    @property
+    def core_t0_yr(self) -> float:
+        """The start of the core, the first measured turning point (an accepted run; nan for a rejected one)."""
+        return self.t_start_yr if self.accepted and self.n_tp else NAN
+
+    @property
+    def core_t1_yr(self) -> float:
+        """The end of the core, the last measured turning point (an accepted run; nan for a rejected one)."""
+        return self.t_end_yr if self.accepted and self.n_tp else NAN
+
+    @property
+    def several_wells(self) -> bool:
+        """A 1:1 libration whose full cycles hold more than one well of the averaged potential (`wells`)."""
+        return WELLS_SEPARATOR in self.wells
 
     @property
     def well_drift_rad(self) -> float:
@@ -277,11 +650,32 @@ class Episode:
 
     @property
     def centre_mean_rad(self) -> float:
-        """Mean midpoint of the run on the unwrapped branch [rad] (c_ep of the exit test)."""
+        """Mean midpoint of the run on the unwrapped branch [rad] (c of the secular/ZLK exit test; the MMR edge rule reads
+        `edge_centre_rad`)."""
         values = np.asarray(self.tp_values_rad, dtype=float)
         if len(values) < 2:
             return float(values[0]) if len(values) else NAN
         return float(np.mean(midpoint_values(values)))
+
+    def edge_centre_rad(self, kind: str) -> float:
+        """The local centre at the run's 'entry' (first turning point) or 'exit' (last one) [rad, sigma_f's branch],
+        which the edge rule reads (`_visible_edge`; C9, W28 g03-2): in the frame of its moving well (FRAME_PSI) the
+        well's centre c(t) at that turning point; otherwise the midpoint of the edge swing, the half-cycle between that
+        turning point and its neighbour, (v_0 + v_1) / 2 at the entry and (v_n-1 + v_n) / 2 at the exit (a 2-TP run:
+        its only half-cycle). The mean midpoint of the run (`centre_mean_rad`) mixes every regime of the run: 2016 JA
+        1E-1 swings as a horseshoe about 182 deg, then as a tadpole about 282 deg (mean 251 deg), so its first turning
+        point (45 deg) lies 206 deg from the mean and the edge rule saw an entry at that turning point. The midpoint of
+        the first full cycle, (v_0 + 2 v_1 + v_2) / 4 = 235 deg, still places it 190 deg away; the edge swing's own
+        midpoint holds its turning point at the half-amplitude, < pi, by construction. nan with < 2 TPs."""
+        values = np.asarray(self.tp_values_rad, dtype=float)
+        if len(values) < 2:
+            return NAN
+        at = self.t_start_yr if kind == 'entry' else self.t_end_yr
+        well = self.well
+        if self.frame == FRAME_PSI and well is not None and well.available:
+            return float(well.at([at])[0])
+        pair = values[:2] if kind == 'entry' else values[-2:]
+        return float(np.mean(pair))
 
 
 @dataclass(frozen=True)
@@ -348,7 +742,7 @@ class EdgeEvent:
 
     kind: str  # 'exit' | 'entry'
     time_yr: float
-    beyond_rad: float  # max |sigma_f - c_ep| - pi
+    beyond_rad: float  # max |sigma_f - c| - pi; c: the local centre at the edge with the MMR edge rule, else the mean
     remaining_periods: float  # record left after the exit (before the entry), in episode periods
     suspected: bool  # remaining < libration_coverage_periods, and the exit (entry) not observed
     # the raw series after the crossing is monotonic (confirms the exit); with the MMR edge rule the orbit-averaged
@@ -358,6 +752,9 @@ class EdgeEvent:
     # end (entry: from the record's start to its first one) [rad]; nan when the rule is off
     raw_arc_rad: float = NAN
     observed: bool = False  # raw_arc >= 2 pi x libration_edge_arc_rev and raw_monotonic (the edge rule)
+    # the reading against the run's mean centre (`Episode.centre_mean_rad`, before C9) gives another event, or a
+    # different suspected/observed mark: the caller fires Rule.LOCAL_CENTRE_ENTRY
+    differs_from_mean_centre: bool = False
 
 
 @dataclass(frozen=True)
@@ -495,14 +892,20 @@ class FloorWell:
 
     def holds(self, episode: 'Episode') -> bool:
         """The episode's mean centre lies within the well's (median) half-width of its (median) centre over the
-        episode; False where the well exists on less than `min_share` of the episode's samples (or on none)."""
+        episode; False where the well exists on less than `min_share` of the episode's samples (or on none). An
+        episode of several wells (`Episode.several_wells`, a 1:1 libration whose well changes, W28 C7) holds the well when
+        one of its full-cycle centres lies in it: its shortest libration is the one in that well (164207 1E-1: a
+        quasi-satellite of 70-yr cycles, then a horseshoe, in one episode)."""
         inside = (self.t_yr >= episode.t_start_yr) & (self.t_yr <= episode.t_end_yr)
         centre, halfwidth = self.centre_rad[inside], self.halfwidth_rad[inside]
         finite = np.isfinite(centre) & np.isfinite(halfwidth)
         if not np.any(finite) or np.count_nonzero(finite) < self.min_share * len(finite):
             return False
-        offset = np.mod(episode.centre_mod_2pi_rad - float(np.median(centre[finite])) + np.pi, TWO_PI) - np.pi
-        return bool(abs(offset) < float(np.median(halfwidth[finite])))
+        centres = np.array([episode.centre_mod_2pi_rad])
+        if episode.several_wells:
+            centres = np.append(centres, cycle_centres(episode.tp_times_yr, episode.tp_values_rad)[1])
+        offset = np.mod(centres - float(np.median(centre[finite])) + np.pi, TWO_PI) - np.pi
+        return bool(np.any(np.abs(offset) < float(np.median(halfwidth[finite]))))
 
 
 @dataclass
@@ -555,6 +958,9 @@ class Geometry:
     period_floor_yr: float = NAN
     period_floor_setting: str = ''
     floor_well: Optional[FloorWell] = None  # FilteredAngle.floor_well: episodes outside it keep its outside floor
+    # the floors of single runs read from their own turning points (`FilteredAngle.run_floor`, `RunFloor`; MMR: the 1:1
+    # profile floor), by `run_key`; read with `run_floor`. Small data: kept when the arrays are dropped
+    run_floors: Dict[Tuple[float, ...], RunFloor] = field(default_factory=dict)
     # the centres of the regimes before the last jump of the slow variable, each low-passed on the samples between its
     # own jumps only (`finish_geometry`, `_centres_before`): the centre turns of the runs before the last jump are
     # measured on them. Empty without such a cut. The last regime's own centre (`centre`) is low-passed on its samples
@@ -569,14 +975,44 @@ class Geometry:
     # `gap_raw_range` and `covering_union` (None otherwise; dropped with the other arrays once the verdict is frozen)
     averaged_raw: Optional[np.ndarray] = None
     averaged_raw_t_yr: Optional[np.ndarray] = None
+    # the same angles: sigma_f on the record's times (references to the FilteredAngle's arrays), for the bounded gap
+    # of `covering_union` (`gap_band_overshoot`); None otherwise, dropped with the averaged angle
+    angle_f: Optional[np.ndarray] = None
+    angle_f_t_yr: Optional[np.ndarray] = None
     # MMR: accepted runs judged forced waves of another argument (`mmr.models.ForcedWave`, set by the MMR analysis
     # after their response is measured, `mmr.decide.forced_wave_episodes`); they stay in `runs` (episodes.csv) but are
     # no episodes of the angle. Empty for secular/ZLK
     forced_waves: tuple = ()
+    # MMR: accepted runs an owner induces while other episodes are the row's own (A1, W28: `mmr.owner.induced_split`,
+    # set by the analysis' second pass); like the forced waves they stay in `runs` but are no episodes of the angle.
+    # Empty for secular/ZLK
+    induced_ids: frozenset = frozenset()
+    # the geometry-level rules (`analysis.rules.Rule`) that acted on this geometry (a cut, a join, an edge read), added
+    # by `rules.fire` where they act; the decide steps merge them into `Verdict.rules_fired`. No decision reads them
+    rules_fired: frozenset = frozenset()
+    # MMR 1:1 (rule coorbital_edge_turn): every reversal of the averaged raw angle read in the edge trims, with its
+    # outcome; those added are turning points of `turning_points` (`EdgeTurn.added`)
+    edge_turns: List[EdgeTurn] = field(default_factory=list)
+    # MMR 1:1 (rule coorbital_leg, W28 C6): the legs of the averaged angle outside every accepted run, with their turns
+    # and local law (`coorbital_single_legs`); the decision's leaf G4c reads them (`mmr.decide`). Small data: kept when
+    # the arrays are dropped
+    single_legs: Tuple[SingleLeg, ...] = ()
+    # MMR not 1:1 (rule single_half_libration, W28 C6, q-5 i): the bounded half-swings between passages, with their
+    # one-harmonic law (`half_librations`); leaf G4h reads them. Small data
+    half_librations: Tuple[HalfLibration, ...] = ()
+    # MMR (rule end_arc_extend, W28 C14): how sigma_f meets the window's start and end edges (`edge_stretches`): a
+    # slowdown after circulation or one reflection the edge cuts; the decision reads them for final_regime, the cap
+    # record_ends_unresolved and the flag extend_time (`mmr.decide.record_edges`). Small data, empty for secular/ZLK
+    edge_stretches: Tuple[EdgeStretch, ...] = ()
     # what a decision derives from this geometry for one settings object (`derived`: the MMR librating episodes, their
     # covering union, the near-episode count), computed once; emptied where the runs or their edges change
     # (`forget_derived`). Not a constructor argument: a `replace` starts with none
     derived_views: dict = field(default_factory=dict, init=False, repr=False, compare=False)
+    # MMR (W28 C11): `episode_eligibility` of the accepted runs, by episode_id, as the decision last read it (set by
+    # `mmr.decide.episode_eligibility`; episodes.csv `eligible`, `ineligible_reason`, `eligibility_reason`); None until
+    # then. Kept by `forget_derived`: the forced waves marked after the verdict (rule 5s) only add FORCED_WAVE, which
+    # `eligibility_reason` reads from `forced_waves` itself; a `replace` starts with none
+    eligibility: Optional[Dict[int, RejectReason]] = field(default=None, init=False, repr=False, compare=False)
 
     def derived(self, key: tuple, settings, compute: Callable[[], object]):
         """`compute()` once per `key`, `settings` and list of runs (the same objects, the list of the same length): a
@@ -592,14 +1028,35 @@ class Geometry:
         """Drop the derived views (`derived`): the runs, their edges or the centre changed."""
         self.derived_views.clear()
 
+    def eligibility_reason(self, run: 'Episode') -> Optional[RejectReason]:
+        """Why an accepted run does not count for the status (`episode_eligibility`), NONE when it counts; None for a
+        rejected run or before the decision read the eligibility (`eligibility`). A forced wave or an induced episode
+        is read from `forced_waves`/`induced_ids` as they are now (rule 5s marks its waves after the verdict)."""
+        if not run.accepted or self.eligibility is None:
+            return None
+        if run.episode_id in self.forced_wave_ids:
+            return RejectReason.FORCED_WAVE
+        if run.episode_id in self.induced_ids:
+            return RejectReason.INDUCED
+        return self.eligibility.get(run.episode_id)
+
+    def run_floor(self, run: 'Episode') -> Optional[RunFloor]:
+        """The run's own floor reading (`run_floors`), None without one."""
+        return self.run_floors.get(run_key(run)) if self.run_floors else None
+
     @property
     def forced_wave_ids(self) -> frozenset:
         return frozenset(wave.episode_id for wave in self.forced_waves)
 
     @property
+    def excluded_ids(self) -> frozenset:
+        """Accepted runs that are no episodes of the angle: the forced waves and the induced episodes."""
+        return self.forced_wave_ids | self.induced_ids
+
+    @property
     def episodes(self) -> List[Episode]:
-        """Accepted runs of the last regime, but for the forced waves (`forced_waves`)."""
-        forced = self.forced_wave_ids
+        """Accepted runs of the last regime, but for the forced waves (`forced_waves`) and induced ones (`induced_ids`)."""
+        forced = self.excluded_ids
         return [run for run in self.runs if run.accepted and not run.before_last_jump and run.episode_id not in forced]
 
     def gap_raw_range(self, left: Episode, right: Episode) -> float:
@@ -619,8 +1076,9 @@ class Geometry:
 
     @property
     def episodes_before_jump(self) -> List[Episode]:
-        """Accepted runs before the last jump of the slow variable (outside the last regime), but for the forced waves."""
-        forced = self.forced_wave_ids
+        """Accepted runs before the last jump of the slow variable (outside the last regime), but for the forced waves
+        and the induced episodes."""
+        forced = self.excluded_ids
         return [run for run in self.runs if run.accepted and run.before_last_jump and run.episode_id not in forced]
 
     def centre_covering(self, start_yr: float) -> CentreTrack:
@@ -680,7 +1138,14 @@ class Geometry:
             'geo_slip_suspect': join_list(int(slip.suspect) for slip in self.slips),
             'geo_n_slips_rejected_short': self.n_slips_rejected_short,
             'geo_n_revolutions': len(self.revolutions),
+            'geo_edge_raw_tp_t': join_list(f'{turn.t_yr:.6g}' for turn in self.edge_turns if turn.added),
+            'geo_edge_raw_read': join_list(f'{turn.side}@{turn.t_yr:.6g}:{turn.outcome}' for turn in self.edge_turns),
+            'geo_leg_n': len(self.single_legs),
+            'geo_leg_read': join_list(leg.text() for leg in self.single_legs),
+            'geo_half_libration_read': join_list(half.text() for half in self.half_librations),
         }
+        for stretch in self.edge_stretches:
+            columns.update(stretch.columns())
         columns.update(_pattern_b_columns(self.pattern_b))
         columns.update(_arc_stall_columns(self.arc_stall))
         for kind, event in (('exit', self.exit), ('entry', self.entry), ('record_entry', self.record_entry)):
@@ -1173,8 +1638,15 @@ def _sorted_median(values: List[float]) -> float:
 
 def split_runs(tp: TurningPoints, settings: AnalysisSettings) -> List[np.ndarray]:
     """Index arrays (into `tp`) of runs: a run breaks where a gap exceeds libration_episode_gap_factor x
-    the run's median half-period, where a half-amplitude reaches pi (over the top), or where
-    consecutive midpoints differ by more than pi (a slip).
+    the run's median half-period, where a half-amplitude reaches B (over the top), or where
+    consecutive midpoints differ by more than B (a slip).
+
+    B = `tp.break_half_amplitude_rad`: pi for an MMR or secular angle (a libration cannot swing wider than a turn);
+    for a Lidov-Kozai omega the angle's own value, ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG = 90: the averaged ZLK
+    Hamiltonian depends on 2 omega, so its islands (omega about 90 and 270 deg) are at most half a turn wide, and a
+    half-cycle that swings half a turn, or a centre that jumps by more, has left the island (88899, 500 kyr: two
+    islands that one run at pi joined into a circulation). This only splits runs; which island an episode is in
+    decides nothing.
 
     The half-cycle that breaks the run belongs to neither side: the old run ends at TP_i, the new
     one starts at TP_i+1.
@@ -1188,15 +1660,16 @@ def split_runs(tp: TurningPoints, settings: AnalysisSettings) -> List[np.ndarray
     current = [0]
     half_periods: List[float] = []  # of the current run, kept sorted: the median at each step without re-sorting
     previous_mid: Optional[float] = None
+    limit = float(tp.break_half_amplitude_rad)
     for i in range(n - 1):
         half_period = times[i + 1] - times[i]
         amplitude = abs(values[i + 1] - values[i]) / 2
         mid = (values[i + 1] + values[i]) / 2
-        broken = amplitude >= np.pi
+        broken = amplitude >= limit
         if not broken and half_periods:
             broken = half_period > settings.libration_episode_gap_factor * _sorted_median(half_periods)
         if not broken and previous_mid is not None:
-            broken = abs(mid - previous_mid) > np.pi
+            broken = abs(mid - previous_mid) > limit
         if broken:
             runs.append(current)
             current, half_periods, previous_mid = [i + 1], [], None
@@ -1339,11 +1812,28 @@ def turning_points_with_local(
 
 
 def _over_the_top_next_to(tp: TurningPoints, run: np.ndarray) -> bool:
+    """A half-cycle next to the run swings over the top: its half-amplitude reaches `tp.break_half_amplitude_rad` (pi;
+    half a turn for a ZLK omega, `split_runs`)."""
     values = np.asarray(tp.values_rad, dtype=float)
+    limit = float(tp.break_half_amplitude_rad)
     first, last = int(run[0]), int(run[-1])
-    before = first > 0 and abs(values[first] - values[first - 1]) / 2 >= np.pi
-    after = last < len(values) - 1 and abs(values[last + 1] - values[last]) / 2 >= np.pi
+    before = first > 0 and abs(values[first] - values[first - 1]) / 2 >= limit
+    after = last < len(values) - 1 and abs(values[last + 1] - values[last]) / 2 >= limit
     return bool(before or after)
+
+
+def with_run_break(tp: TurningPoints, angle: Optional['FilteredAngle']) -> TurningPoints:
+    """`tp` carrying the run break of `angle` (`FilteredAngle.run_break_half_amplitude_rad`; pi without an angle)."""
+    limit = float(angle.run_break_half_amplitude_rad) if angle is not None else np.pi
+    return tp if tp.break_half_amplitude_rad == limit else replace(tp, break_half_amplitude_rad=limit)
+
+
+def half_turn_cut(tp: TurningPoints, settings: AnalysisSettings) -> bool:
+    """The run break below pi (`split_runs`, a ZLK omega) splits these turning points into more runs than pi would
+    (rule zlk_half_turn_cut)."""
+    if tp.break_half_amplitude_rad >= np.pi or len(tp) < 2:
+        return False
+    return len(split_runs(tp, settings)) > len(split_runs(replace(tp, break_half_amplitude_rad=np.pi), settings))
 
 
 def _turn_count(series: np.ndarray, prominence: float) -> int:
@@ -1642,20 +2132,67 @@ def episode_centre_travel(geometry: 'Geometry', episode: Episode) -> float:
     return float(np.ptp(c[inside] - episode.well.at(t[inside])))
 
 
+def run_floors_of(angle: 'FilteredAngle', runs: Sequence[Episode]) -> Dict[Tuple[float, ...], RunFloor]:
+    """`FilteredAngle.run_floor` of every run of >= 2 TPs (a single TP has no half-cycle), by `run_key`; empty without
+    the model."""
+    model = getattr(angle, 'run_floor', None)
+    if model is None:
+        return {}
+    floors = {}
+    for run in runs:
+        if len(run.tp_times_yr) >= 2:
+            reading = model(run)
+            if reading is not None:
+                floors[run_key(run)] = reading
+    return floors
+
+
 def librating_episodes_with(geometry: 'Geometry', floor_of: Callable[[Episode], float], before_jump: bool = False) -> List[Episode]:
     """The accepted episodes (`before_jump`: of the runs before the last jump of a) that are librations of the angle:
     the period not below `floor_of(episode)` [yr] (a faster 'episode' is a forced wave the cutoff let through) and
     the centre's travel inside (`episode_centre_travel`) below 2 pi. A missing period, floor or travel (nan) rejects
     nothing. The MMR and secular decisions call it with their own period floors."""
     scratch = Ledger(thin_band=0.0)
-    kept = []
-    for episode in geometry.episodes_before_jump if before_jump else geometry.episodes:
-        if scratch.compare('period', episode.period_med_yr, Op.LT, floor_of(episode), 'yr', ''):
+    return [
+        episode
+        for episode in (geometry.episodes_before_jump if before_jump else geometry.episodes)
+        if librates_as_episode(geometry, episode, floor_of, scratch) == RejectReason.NONE
+    ]
+
+
+def librates_as_episode(geometry: 'Geometry', episode: Episode, floor_of: Callable[[Episode], float], scratch: Ledger) -> RejectReason:
+    """The predicates of `librating_episodes_with` on one accepted run: BELOW_PERIOD_FLOOR when its period is below
+    `floor_of(episode)` [yr], else CENTRE_TURNS when its centre travels >= 2 pi inside it, else NONE (a nan rejects
+    nothing). `scratch` is a ledger whose entries nobody reads."""
+    if scratch.compare('period', episode.period_med_yr, Op.LT, floor_of(episode), 'yr', ''):
+        return RejectReason.BELOW_PERIOD_FLOOR
+    if scratch.compare('centre turn', episode_centre_travel(geometry, episode), Op.GE, TWO_PI, 'rad', ''):
+        return RejectReason.CENTRE_TURNS
+    return RejectReason.NONE
+
+
+def episode_eligibility(geometry: 'Geometry', floor_of: Callable[[Episode], float]) -> Dict[int, RejectReason]:
+    """Whether each accepted run counts for the status (W28 C11, card g02-9 A: the figure must not show as an episode a
+    run the verdict does not count), by episode_id: NONE for a librating episode of the last regime (the runs
+    `librating_episodes_with` keeps), else the first reason that holds, in this order: FORCED_WAVE, INDUCED (no episode
+    of this angle at all), BELOW_PERIOD_FLOOR, CENTRE_TURNS (`librates_as_episode`), BEFORE_LAST_JUMP (a librating run
+    of a regime before the last jump of a, read only by G1e/G1l). The rejected runs are not in it."""
+    scratch = Ledger(thin_band=0.0)
+    waves, induced = geometry.forced_wave_ids, geometry.induced_ids
+    reasons = {}
+    for run in geometry.runs:
+        if not run.accepted:
             continue
-        if scratch.compare('centre turn', episode_centre_travel(geometry, episode), Op.GE, TWO_PI, 'rad', ''):
-            continue
-        kept.append(episode)
-    return kept
+        if run.episode_id in waves:
+            reasons[run.episode_id] = RejectReason.FORCED_WAVE
+        elif run.episode_id in induced:
+            reasons[run.episode_id] = RejectReason.INDUCED
+        else:
+            reason = librates_as_episode(geometry, run, floor_of, scratch)
+            if reason == RejectReason.NONE and run.before_last_jump:
+                reason = RejectReason.BEFORE_LAST_JUMP
+            reasons[run.episode_id] = reason
+    return reasons
 
 
 def classify_run(
@@ -2104,6 +2641,11 @@ class RegimeCut:
     pieces: List[np.ndarray]
     regimes: Tuple[int, ...]
 
+    @property
+    def stall(self) -> bool:
+        """The cut is a stall of the slow centre (case 2: one regime, the stall), not a centre step (two regimes)."""
+        return len(self.regimes) == 1
+
 
 def split_at_regime_changes(tp: TurningPoints, run: np.ndarray, settings: AnalysisSettings) -> Optional[RegimeCut]:
     """A run whose centre moves, cut where its regime changes (F2, K3); None when there is no such place.
@@ -2213,6 +2755,784 @@ def _centre_stall(
     return best
 
 
+def _below_top_in_psi(times: np.ndarray, values: np.ndarray, well_model: WellModel, limit: float) -> bool:
+    """Every half-swing of a run stays below the top (`limit`, pi) in psi = sigma - c(t), c the caller's track of the
+    well, and the run's full-cycle centres follow that track (`well_track_valid`: psi of a track the centres do not
+    follow says nothing). False without a track."""
+    well = well_model(times, values)
+    if not well.available:
+        return False
+    cycle_times, cycle_mids, _ = cycle_centres(times, values)
+    if not well_track_valid(*well_track_rms(cycle_times, cycle_mids, well)):
+        return False
+    psi = values - well.at(times)
+    return bool(np.all(np.abs(np.diff(psi)) / 2 < limit))
+
+
+def _frame_join(
+    tp: TurningPoints,
+    runs: List[np.ndarray],
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+    well_model: Optional[WellModel],
+    fired: Optional[set] = None,
+) -> Tuple[List[np.ndarray], frozenset]:
+    """Rule q (LIBRATION_FRAME_JOIN, W28 card g11-2): two neighbouring runs that `split_runs` broke at one half-cycle
+    over the top in sigma are one run when (1) the caller has a model of the moving well, (2) no half-swing of the
+    joined run reaches the top in psi = sigma - c(t) (`_below_top_in_psi`) and (3) `_classify_run` with that well
+    accepts the joined run. Over the top means over the potential's maximum, and the maximum moves with the well: a
+    half-cycle that passes pi in sigma only because the well moved during it crossed no separatrix (82831 13M-24: the
+    break at 8.76 kyr). A true crossing reaches the top in psi too and stays a break. Returns the runs and the TP
+    indices i of the joined breaks (the half-cycle (i, i + 1)); a join adds FRAME_JOIN to `fired`."""
+    if well_model is None or len(runs) < 2 or not settings.libration_frame_join:
+        return runs, frozenset()
+    times = np.asarray(tp.times_yr, dtype=float)
+    values = np.asarray(tp.values_rad, dtype=float)
+    limit = float(tp.break_half_amplitude_rad)
+    out, joined = [runs[0]], set()
+    for run in runs[1:]:
+        left = out[-1]
+        i = int(left[-1])
+        if int(run[0]) == i + 1 and abs(values[i + 1] - values[i]) / 2 >= limit:
+            candidate = np.concatenate([left, run])
+            if (
+                _below_top_in_psi(times[candidate], values[candidate], well_model, limit)
+                and _classify_run(0, tp, candidate, record, settings, window, well_model).accepted
+            ):
+                out[-1] = candidate
+                joined.add(i)
+                continue
+        out.append(run)
+    if joined and fired is not None:
+        fired.add(rules.Rule.FRAME_JOIN)
+    return out, frozenset(joined)
+
+
+def _holds(piece: np.ndarray, joined: frozenset) -> bool:
+    """The piece holds a half-cycle joined by rule q (`_frame_join`: both of its turning points)."""
+    return bool(joined) and any(int(k) in joined for k in piece[:-1])
+
+
+def _same_period(times: np.ndarray, core_len: int, left: bool, settings: AnalysisSettings) -> bool:
+    """The leftover of a joined piece (TP times `times`: the stall of `core_len` TPs with a leftover before it, `left`,
+    or after it) carries the stall's oscillation: at least one full cycle holding two leftover turning points (a
+    half-cycle of the leftover's own; a cycle with one is mostly the stall's) has the stall's median period within
+    libration_regular_period_ratio (the test the stall itself passes against its run, `_centre_stall`). A ripple of
+    another period beside the stall, none of whose cycles has it, is no part of its regime (`_stall_join`). Not the
+    median: ripple on the same wave adds turning points, so the median of a leftover that continues the wave can be
+    the ripple's (385266 16N-27, 68.4-98.7 kyr: cycles of 0.8-3.6 kyr, median 1.7 kyr, on the 4.4-kyr wave of the
+    stall). A leftover of one turning point has no such cycle: its period is read as twice the half-cycle that joins
+    it to the stall."""
+    periods = times[2:] - times[:-2]
+    n_left = len(times) - core_len
+    stall = periods[n_left : n_left + core_len - 2] if left else periods[: core_len - 2]
+    own = periods[: n_left - 1] if left else periods[core_len - 1 :]
+    if n_left == 1:
+        own = np.array([2 * (times[1] - times[0]) if left else 2 * (times[-1] - times[-2])])
+    if not (len(stall) and len(own)):
+        return False
+    ratio = settings.libration_regular_period_ratio
+    stall_period = float(np.median(stall))
+    return bool(np.any((own >= stall_period / ratio) & (own <= ratio * stall_period)))
+
+
+def _stall_join(
+    tp: TurningPoints,
+    cut: RegimeCut,
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+    well_model: Optional[WellModel],
+) -> Optional[List[np.ndarray]]:
+    """Rule s (LIBRATION_STALL_JOIN, W28 card g11-3): after a stall cut (`split_at_regime_changes` 2) each leftover
+    piece next to the stall joins it when the joined piece is the same regime: its leftover cycles have the stall's
+    period (`_same_period`) and `_classify_run` accepts the joined piece. A cut must separate two regimes; a leftover
+    whose cycles share the stall's band is the same one (the dual of "a fragment left over is no reason to cut";
+    385266 16N-27: one forced wave at 56.6-98.7 kyr, not two pieces). The left side is tried first, the right one on
+    the stall as it then stands. The new pieces, or None when nothing joins."""
+    if not settings.libration_stall_join:
+        return None
+    times = np.asarray(tp.times_yr, dtype=float)
+    pieces = list(cut.pieces)
+    (s,) = cut.regimes
+    core, joined_left, joined_right = pieces[s], False, False
+    for left in (True, False):
+        k = s - 1 if left else s + 1
+        if not 0 <= k < len(pieces):
+            continue
+        candidate = np.concatenate([pieces[k], core] if left else [core, pieces[k]])
+        if not _same_period(times[candidate], len(core), left, settings):
+            continue
+        if _classify_run(0, tp, candidate, record, settings, window, well_model).accepted:
+            core = candidate
+            joined_left, joined_right = joined_left or left, joined_right or not left
+    if not (joined_left or joined_right):
+        return None
+    before = [pieces[s - 1]] if s > 0 and not joined_left else []
+    after = [pieces[s + 1]] if s < len(pieces) - 1 and not joined_right else []
+    return before + [core] + after
+
+
+def _regime_pieces(
+    tp: TurningPoints,
+    cut: RegimeCut,
+    first: int,
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+    well_model: Optional[WellModel],
+    fired: Optional[set],
+) -> Optional[List[Episode]]:
+    """The pieces of a regime cut classified (ids from `first`), a stall's leftover joined to it by rule s
+    (`_stall_join`, added to `fired`), then neighbouring accepted pieces of one libration region joined with the cut
+    kept as a mark (rule regime_cut_mark, `_mark_regime_cuts`); None when a regime the cut claims is not accepted (the
+    cut does not stand)."""
+    split = [_classify_run(first + i, tp, piece, record, settings, window, well_model) for i, piece in enumerate(cut.pieces)]
+    if not all(split[i].accepted for i in cut.regimes):
+        return None
+    joined = _stall_join(tp, cut, record, window, settings, well_model) if cut.stall else None
+    pieces = list(cut.pieces)
+    if joined is not None:
+        if fired is not None:
+            fired.add(rules.Rule.STALL_JOIN)
+        pieces = joined
+        split = [_classify_run(first + i, tp, piece, record, settings, window, well_model) for i, piece in enumerate(joined)]
+    return _mark_regime_cuts(tp, cut, pieces, split, first, record, window, settings, well_model, fired)
+
+
+# the annotations of rule regime_cut_mark (W28 C16, q-5 i): `Episode.marks`, ';'-separated `centre_step@t0:t1` (the
+# step half-cycle) and `stall@t0:t1` (the stall's first and last turning point) [yr]
+MARK_CENTRE_STEP, MARK_STALL = 'centre_step', 'stall'
+
+
+def edge_cycle(times: np.ndarray, values: np.ndarray, last: bool) -> Tuple[float, float, float]:
+    """(centre, half-amplitude [rad], period [yr]) of the last (`last`) or first full cycle of a run's turning points,
+    in the convention of `cycle_centres` (TPs k, k+1, k+2: centre (v_k + 2 v_k+1 + v_k+2) / 4, half-amplitude the mean
+    of its two half-swings over two, period t_k+2 - t_k); a run of two is its own half-cycle (period twice it). nan
+    below two turning points."""
+    t, v = np.asarray(times, dtype=float), np.asarray(values, dtype=float)
+    if len(v) < 2:
+        return NAN, NAN, NAN
+    if len(v) == 2:
+        return float(0.5 * (v[0] + v[1])), float(0.5 * abs(v[1] - v[0])), float(2 * (t[1] - t[0]))
+    k = len(v) - 3 if last else 0
+    _, mids, amps = cycle_centres(t[k : k + 3], v[k : k + 3])
+    return float(mids[0]), float(amps[0]), float(t[k + 2] - t[k])
+
+
+def cycles_continue(left: 'Episode', right: 'Episode', settings: AnalysisSettings) -> bool:
+    """Rule regime_cut_mark, the test (W28 C16, q-5 i, the W28 C15 audit): the last full cycle of `left` and the first
+    of `right` (`edge_cycle`) share a band, (m +- A) overlap > 0, and a period, the larger over the smaller <=
+    libration_regular_period_ratio: sigma swings in one libration region on both sides of the cut (C7's 'same well'
+    for an angle that is not 1:1; no threshold of its own). False when either side has no cycle."""
+    m_l, a_l, p_l = edge_cycle(left.tp_times_yr, left.tp_values_rad, last=True)
+    m_r, a_r, p_r = edge_cycle(right.tp_times_yr, right.tp_values_rad, last=False)
+    if not (np.isfinite([m_l, a_l, p_l, m_r, a_r, p_r]).all() and p_l > 0 and p_r > 0):
+        return False
+    overlap = min(m_l + a_l, m_r + a_r) - max(m_l - a_l, m_r - a_r)
+    return bool(overlap > 0 and max(p_l, p_r) / min(p_l, p_r) <= settings.libration_regular_period_ratio)
+
+
+def within_one_turn(values: np.ndarray) -> bool:
+    """Rule regime_cut_mark, the bound on a join (W28 FIX-c16): the turning points of the joined stretch, the step
+    half-cycle or the stall included, span less than a turn. A libration is an angle that does not take every value;
+    a stretch whose swing, carried by its travelling centre, covers 2 pi has no libration region left to be one of,
+    however well the cycles facing the cut agree (55390 1J+3S-1 at its 8.3-kyr centre scale: centre -299 deg in
+    75 kyr at half-amplitudes 40-90 deg, a span of 455 deg). No threshold: 2 pi is the circle."""
+    v = np.asarray(values, dtype=float)
+    return bool(len(v) and np.ptp(v) < TWO_PI)
+
+
+def _regime_cut_mark(tp: TurningPoints, cut: RegimeCut, left: np.ndarray, right: np.ndarray) -> str:
+    """The mark of the cut between the pieces `left` and `right` (TP indices): a centre step, its half-cycle; a stall,
+    the stall (the regime the cut claims, as `split_at_regime_changes` found it)."""
+    times = np.asarray(tp.times_yr, dtype=float)
+    if cut.stall:
+        stall = cut.pieces[cut.regimes[0]]
+        return f'{MARK_STALL}@{times[stall[0]]:.1f}:{times[stall[-1]]:.1f}'
+    return f'{MARK_CENTRE_STEP}@{times[left[-1]]:.1f}:{times[right[0]]:.1f}'
+
+
+def _mark_regime_cuts(
+    tp: TurningPoints,
+    cut: RegimeCut,
+    pieces: List[np.ndarray],
+    split: List[Episode],
+    first: int,
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+    well_model: Optional[WellModel],
+    fired: Optional[set],
+) -> List[Episode]:
+    """Rule regime_cut_mark (LIBRATION_REGIME_CUT_MARKS, W28 C16, the author's q-5 i): two neighbouring accepted
+    pieces of a regime cut (`pieces` with their classification `split`) are one episode when sigma stays in one
+    libration region across the cut (`cycles_continue`: the last full cycle before it and the first after it share a
+    band and a period) and the joined stretch, through the step or the stall, spans less than a turn
+    (`within_one_turn`). The cut becomes a mark of the joined episode (`Episode.marks`, `_regime_cut_mark`). The joined
+    run keeps its own classification when the band test accepts it; when it fails only for its moving centre (the
+    step or stall itself) and closes a cycle, it is accepted with shape REGIME_CHANGE, frame sigma, centre
+    stationarity not measured (as a 1:1 run in its wells, `_accept_in_wells`); otherwise the cut stays. A boundary
+    between an accepted and a rejected piece always stays (the rejected side is a drift: 385266 16N-27). The bands of
+    two different regimes do not overlap and stay cut (2013 VA14 60 kyr at 41.3-41.7 kyr: -4.5 deg at half-amplitudes
+    9.1/11.3 deg, card g11-4 A), and so does a centre that travels the circle (55390 1J+3S-1: facing bands share 17
+    deg, the joined stretch spans 455 deg). Fires REGIME_CUT_MARK on a join."""
+    if not settings.libration_regime_cut_marks or len(split) < 2:
+        return split
+    values = np.asarray(tp.values_rad, dtype=float)
+    groups: List[List[int]] = [[0]]
+    for k in range(1, len(split)):
+        prev = groups[-1][-1]
+        stretch = np.concatenate([pieces[j] for j in groups[-1]] + [pieces[k]])
+        if (
+            split[prev].accepted
+            and split[k].accepted
+            and cycles_continue(split[prev], split[k], settings)
+            and within_one_turn(values[stretch])
+        ):
+            groups[-1].append(k)
+        else:
+            groups.append([k])
+    if all(len(group) == 1 for group in groups):
+        return split
+    out: List[Episode] = []
+    marked = False
+    for group in groups:
+        if len(group) == 1:
+            out.append(split[group[0]])
+            continue
+        run = np.concatenate([pieces[k] for k in group])
+        episode = _classify_run(first, tp, run, record, settings, window, well_model)
+        if not episode.accepted:
+            if episode.reject_reason != RejectReason.CENTRE_MOVES or not episode.closed_cycles:
+                out.extend(split[k] for k in group)  # the joined run is no libration: the cut stays
+                continue
+            episode = replace(
+                episode,
+                accepted=True,
+                shape=EpisodeShape.REGIME_CHANGE,
+                reject_reason=RejectReason.NONE,
+                frame=FRAME_SIGMA,
+                centre_stationarity=str(CheckValue.NOT_MEASURED),
+            )
+        items = [_regime_cut_mark(tp, cut, pieces[a], pieces[b]) for a, b in zip(group[:-1], group[1:])]
+        out.append(replace(episode, marks=';'.join(dict.fromkeys(items))))
+        marked = True
+    if marked and fired is not None:
+        fired.add(rules.Rule.REGIME_CUT_MARK)
+    return [replace(episode, episode_id=first + k) for k, episode in enumerate(out)]
+
+
+# --- MMR 1:1: an episode ends only at a separatrix (rule coorbital_well_cut, W28 C7) -------------------------------
+
+
+def cycle_swings(values: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """(lowest, highest) value of every full cycle (TPs k, k+1, k+2) of a run's turning points [rad]; a run of two is
+    one half-cycle, its own cycle; empty below two."""
+    v = np.asarray(values, dtype=float)
+    if len(v) < 2:
+        return np.zeros(0), np.zeros(0)
+    if len(v) == 2:
+        return np.array([v.min()]), np.array([v.max()])
+    triples = np.vstack([v[:-2], v[1:-1], v[2:]])
+    return triples.min(axis=0), triples.max(axis=0)
+
+
+def cycle_wells(model: WellsModel, times: np.ndarray, values: np.ndarray, tolerance_rad: float) -> Tuple[str, ...]:
+    """The well of every full cycle of a run (`cycle_swings`) in the caller's potential of the run's window: the well
+    its swing holds, else the one its swing widened by `tolerance_rad` on both sides holds; '' when neither holds a
+    minimum; () when the model has no potential there. The tolerance is the run's turning-point prominence: a swing
+    that misses the minimum by less than the smallest turn the run resolves is not told from one that reaches it. A
+    cycle whose amplitude collapses within it misses its minimum (2021 XO3 1V-1 at 326-492 yr: 4 deg off the QS
+    minimum at a prominence of 11 deg); a ripple drifting past L5 misses by more than the prominence (2022 BB2 1V-1:
+    7-25 deg at 4 deg)."""
+    return swing_wells(model, times, *cycle_swings(values), tolerance_rad)
+
+
+def half_cycle_swings(values: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """(lower, upper) turning point of every half-cycle (TPs k, k+1) of a run [rad]."""
+    v = np.asarray(values, dtype=float)
+    return np.minimum(v[:-1], v[1:]), np.maximum(v[:-1], v[1:])
+
+
+def swing_wells(model: WellsModel, times: np.ndarray, lo: np.ndarray, hi: np.ndarray, tolerance_rad: float) -> Tuple[str, ...]:
+    """The well each swing [lo, hi] of a run holds in the caller's potential of the run's window (`times`: its TP
+    times), else the one it holds widened by `tolerance_rad` on both sides ('' for neither; `cycle_wells`)."""
+    times = np.asarray(times, dtype=float)
+    if not len(lo) or not len(times):
+        return ()
+    t0, t1 = float(times[0]), float(times[-1])
+    names = tuple(model.wells(t0, t1, lo, hi))
+    if not names or all(names) or not (np.isfinite(tolerance_rad) and tolerance_rad > 0):
+        return names
+    widened = tuple(model.wells(t0, t1, np.asarray(lo) - tolerance_rad, np.asarray(hi) + tolerance_rad))
+    return tuple(name or wide for name, wide in zip(names, widened)) if widened else names
+
+
+def _accept_in_wells(episode: Episode, model: Optional[WellsModel], settings: AnalysisSettings) -> Optional[Episode]:
+    """Rule coorbital_well_cut (W28 C7, cards g03-1 A, g03-9 A): a run the band test rejects (`centre_moves`) is one
+    libration of a 1:1 angle when every full cycle holds a well of the averaged potential (`cycle_wells`), its
+    full-cycle centres stay within one turn (a centre that runs a turn has crossed the separatrix; the bound of
+    `librating_episodes_with`) and it closes a cycle: accepted, shape REGIME_CHANGE, frame sigma. Its centre
+    stationarity is not measured: the centre moves between wells or with the amplitude, which the wells test reads
+    instead (L6 not measured). None otherwise, and without a model."""
+    if model is None or episode.reject_reason != RejectReason.CENTRE_MOVES or not episode.closed_cycles:
+        return None
+    if episode.n_tp < settings.libration_min_turning_points:
+        return None
+    names = cycle_wells(model, episode.tp_times_yr, episode.tp_values_rad, episode.tp_prominence_rad)
+    if not names or not all(names):
+        return None
+    _, mids, _ = cycle_centres(episode.tp_times_yr, episode.tp_values_rad)
+    if not (len(mids) and np.ptp(mids) < TWO_PI):
+        return None
+    return replace(
+        episode,
+        accepted=True,
+        shape=EpisodeShape.REGIME_CHANGE,
+        reject_reason=RejectReason.NONE,
+        frame=FRAME_SIGMA,
+        centre_stationarity=str(CheckValue.NOT_MEASURED),
+    )
+
+
+def _in_wells_or_same(episode: Episode, model: Optional[WellsModel], settings: AnalysisSettings, fired: Optional[set]) -> Episode:
+    """`_accept_in_wells` of the run when it accepts it (COORBITAL_WELL_CUT added to `fired`), else the run itself."""
+    accepted = _accept_in_wells(episode, model, settings)
+    if accepted is None:
+        return episode
+    if fired is not None:
+        fired.add(rules.Rule.COORBITAL_WELL_CUT)
+    return accepted
+
+
+def _half_cycle_circulates(angle: 'FilteredAngle', t0_yr: float, t1_yr: float, averaged: np.ndarray) -> bool:
+    """sigma_f, or the raw angle averaged over the body's orbit (`averaged`, on the angle's grid), covers a whole turn
+    between t0 and t1: a crossing of the separatrix (`gap_circulates` on one half-cycle). A stretch without a finite
+    sigma_f counts as one (nothing shows the angle stayed)."""
+    t = np.asarray(angle.t_yr, dtype=float)
+    part = slice(int(np.searchsorted(t, t0_yr, 'left')), int(np.searchsorted(t, t1_yr, 'right')))
+    sigma = np.asarray(angle.angle_f, dtype=float)[part]
+    sigma = sigma[np.isfinite(sigma)]
+    if not len(sigma):
+        return True
+    raw = np.asarray(averaged, dtype=float)[part]
+    raw = raw[np.isfinite(raw)]
+    return bool(np.ptp(sigma) >= TWO_PI or (len(raw) and np.ptp(raw) >= TWO_PI))
+
+
+def _join_in_wells(
+    tp: TurningPoints,
+    episodes: List[Episode],
+    angle: Optional['FilteredAngle'],
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+    first_id: int,
+    fired: Optional[set],
+) -> List[Episode]:
+    """Rule coorbital_well_cut, joins (W28 C7): two accepted neighbouring runs of a 1:1 angle, the second starting at
+    the turning point after the first's last, are one episode when the half-cycle between them crosses no separatrix
+    (its half-amplitude stays below `tp.break_half_amplitude_rad` and neither sigma_f nor the orbit-averaged raw angle
+    covers a turn on it, `_half_cycle_circulates`) and the joined run is accepted, by the band test or in the wells
+    (`_accept_in_wells`). `split_runs` breaks a 1:1 run where the next regime is slower (a half-period above
+    libration_episode_gap_factor x the run's: 469219 1E-1, a quasi-satellite of 19-yr half-cycles 24-257 yr, then a
+    horseshoe of 130-yr ones from 426 yr) or where its centre jumps by more than pi; neither is a separatrix. A
+    rejected neighbour is never joined (its stretch is no measured libration: C8's residence). Ids are renumbered from
+    `first_id` in time order; a join adds COORBITAL_WELL_CUT to `fired`. Unchanged without `coorbital_wells`."""
+    accepted = [episode for episode in episodes if episode.accepted]
+    if angle is None or angle.coorbital_wells is None or len(accepted) < 2:
+        return episodes
+    times = np.asarray(tp.times_yr, dtype=float)
+    values = np.asarray(tp.values_rad, dtype=float)
+    index = {float(x): i for i, x in enumerate(times)}
+    limit = float(tp.break_half_amplitude_rad)
+    averaged = orbit_averaged(angle.t_yr, angle.angle_raw, angle.orbit_period_yr)
+    out: List[Episode] = []
+    joined = False
+    for episode in episodes:
+        left = out[-1] if out else None
+        if left is not None and left.accepted and episode.accepted and len(left.tp_times_yr) and len(episode.tp_times_yr):
+            i = index.get(float(left.tp_times_yr[-1]))
+            j = index.get(float(episode.tp_times_yr[0]))
+            if (
+                i is not None
+                and j == i + 1
+                and abs(values[j] - values[i]) / 2 < limit
+                and not _half_cycle_circulates(angle, times[i], times[j], averaged)
+            ):
+                run = np.arange(index[float(left.tp_times_yr[0])], index[float(episode.tp_times_yr[-1])] + 1)
+                candidate = _classify_run(left.episode_id, tp, run, record, settings, window)
+                candidate = _accept_in_wells(candidate, angle.coorbital_wells, settings) or candidate
+                if candidate.accepted:
+                    edges = set(filter(None, left.edge_raw_tp.split(';') + episode.edge_raw_tp.split(';')))
+                    out[-1] = replace(candidate, edge_raw_tp=';'.join(sorted(edges)))
+                    joined = True
+                    continue
+        out.append(episode)
+    if not joined:
+        return episodes
+    if fired is not None:
+        fired.add(rules.Rule.COORBITAL_WELL_CUT)
+    return [replace(episode, episode_id=first_id + k) for k, episode in enumerate(out)]
+
+
+def amplitude_changes(
+    times: np.ndarray, values: np.ndarray, names: Sequence[str], levels: np.ndarray, settings: AnalysisSettings
+) -> List[Tuple[float, float]]:
+    """The transitional half-cycles [TP_k, TP_k+1] [yr] across which the half-amplitudes of a 1:1 run step between
+    separated bands inside one well (W28 C7: an annotation, never a cut). G2a's amplitude tests (`action_step_of` 1-3)
+    on the libration_action_step_min_half_cycles half-cycles on each side of half-cycle k: the smallest on the larger
+    side over the largest on the smaller >= libration_action_step_separation, the ratio of their medians >=
+    libration_action_step_ratio; the full cycles just before and after it are in the same well (`names`, of
+    `cycle_wells`; else it is a change of well); the turning points on the larger side lie higher in the averaged
+    potential than those on the smaller (`levels`: at a turn the level is the energy of its loop, which grows with the
+    swing in a well; not tested where nan). Of neighbouring candidates the one of the largest separation (2021 XO3
+    1V-1: 326-446 and 708-809 yr)."""
+    times, values = np.asarray(times, dtype=float), np.asarray(values, dtype=float)
+    levels = np.asarray(levels, dtype=float)
+    amps = half_amplitude_values(values)
+    m = int(settings.libration_action_step_min_half_cycles)
+    found: List[Tuple[int, float]] = []
+    for k in range(max(m, 2), len(amps) - m):
+        left, right = amps[k - m : k], amps[k + 1 : k + 1 + m]
+        down = bool(np.median(left) >= np.median(right))
+        big, small = (left, right) if down else (right, left)
+        separation = float(np.min(big) / np.max(small)) if np.max(small) > 0 else np.inf
+        ratio = float(np.median(big) / np.median(small)) if np.median(small) > 0 else np.inf
+        if separation < settings.libration_action_step_separation or ratio < settings.libration_action_step_ratio:
+            continue
+        if len(names) <= k + 1 or names[k - 2] != names[k + 1]:
+            continue
+        before, after = levels[k - m : k + 1], levels[k + 1 : k + m + 2]
+        if np.all(np.isfinite(before)) and np.all(np.isfinite(after)):
+            high, low = (before, after) if down else (after, before)
+            if not np.median(high) > np.median(low):
+                continue
+        found.append((k, separation))
+    clusters: List[List[Tuple[int, float]]] = []
+    for k, separation in found:
+        if clusters and k - clusters[-1][-1][0] == 1:
+            clusters[-1].append((k, separation))
+        else:
+            clusters.append([(k, separation)])
+    picked = [max(cluster, key=lambda item: item[1])[0] for cluster in clusters]
+    return [(float(times[k]), float(times[k + 1])) for k in picked]
+
+
+MARK_WELL_CHANGE, MARK_AMPLITUDE_CHANGE, MARK_KICK = 'well_change', 'amplitude_change', 'kick'
+
+
+def coorbital_marks(geometry: 'Geometry', angle: 'FilteredAngle', settings: AnalysisSettings) -> None:
+    """Rule coorbital_well_cut, annotations (W28 C7, cards g03-1 A, g03-9 A): on every accepted run of an angle with
+    `coorbital_wells` the changes that are no boundary go to `Episode.marks`: `well_change@t` at the turning point
+    where the well that consecutive half-cycles swing through changes (`half_cycle_swings`, `swing_wells`: 469219 1E-1
+    at 257 yr, quasi-satellite to the transitional swing, and at 426 yr, to the horseshoe; 2016 JA at 339 yr, horseshoe
+    to tadpole), `amplitude_change@t0:t1` (`amplitude_changes`, the transitional half-cycle) and, near either,
+    `kick@t` for a jump of the slow variable whose zone meets it (`Geometry.jumps`, G2a steps aside).
+    `Episode.wells` gets the sequence of the half-cycles' wells; a run of several wells takes
+    the shape REGIME_CHANGE whatever test accepted it (a horseshoe band holds a quasi-satellite's: 164207 1E-1), so
+    its floor is that of the fastest well it holds (`FloorWell.holds`) and L5's one pendulum does not apply to it.
+    Fires COORBITAL_WELL_CUT when a change is marked. Nothing without the model."""
+    model = angle.coorbital_wells
+    if model is None:
+        return
+    tau = geometry.jump_tau_yr
+    marked = False
+    for run in geometry.runs:
+        if not run.accepted or run.n_tp < 3:
+            continue
+        times = np.asarray(run.tp_times_yr, dtype=float)
+        values = np.asarray(run.tp_values_rad, dtype=float)
+        names = cycle_wells(model, times, values, run.tp_prominence_rad)
+        if not names:
+            continue
+        halves = swing_wells(model, times, *half_cycle_swings(values), run.tp_prominence_rad) or names
+        run.wells = WELLS_SEPARATOR.join(name or '-' for k, name in enumerate(halves) if k == 0 or name != halves[k - 1])
+        if run.several_wells:
+            run.shape = EpisodeShape.REGIME_CHANGE
+        spans = [(MARK_WELL_CHANGE, times[k + 1], times[k + 1]) for k in range(len(halves) - 1) if halves[k] != halves[k + 1]]
+        levels = model.levels(float(times[0]), float(times[-1]), values)
+        spans += [(MARK_AMPLITUDE_CHANGE, a, b) for a, b in amplitude_changes(times, values, names, levels, settings)]
+        items: List[str] = []
+        for name, start, end in sorted(spans, key=lambda span: span[1]):
+            items.append(f'{name}@{start:.1f}' if start == end else f'{name}@{start:.1f}:{end:.1f}')
+            for jump in geometry.jumps:
+                lo, hi = jump.zone(tau)
+                if not jump.action_step and hi >= start and lo <= end:
+                    items.append(f'{MARK_KICK}@{jump.time_yr:.1f}')
+        run.marks = ';'.join(dict.fromkeys(items))
+        run.subregimes = subregimes_of(times, halves, spans)
+        marked = marked or bool(items)
+    if marked:
+        geometry.rules_fired = rules.fire(geometry.rules_fired, rules.Rule.COORBITAL_WELL_CUT)
+
+
+def subregimes_of(times: np.ndarray, halves: Sequence[str], spans: Sequence[Tuple[str, float, float]]) -> Tuple[SubRegime, ...]:
+    """The sub-regimes of an accepted 1:1 run (W28 C8): its TP span cut at its changes `spans` ((name, t0, t1):
+    a well change at the turning point t0 = t1, an amplitude change over its transitional half-cycle [t0, t1], which
+    then belongs to neither side), each named by the well of the half-cycles it holds (`halves`, one per half-cycle
+    k = [TP_k, TP_k+1]; the first of them, '-' when none holds a well). () for a run of fewer than two TPs."""
+    times = np.asarray(times, dtype=float)
+    if len(times) < 2:
+        return ()
+    cuts = sorted((float(start), float(end), name) for name, start, end in spans)
+    pieces: List[Tuple[float, float, str]] = []
+    start, starts_at = float(times[0]), SUBREGIME_START
+    for t0, t1, name in cuts:
+        if t0 > start:
+            pieces.append((start, t0, starts_at))
+        start, starts_at = max(start, t1), name
+    if float(times[-1]) > start:
+        pieces.append((start, float(times[-1]), starts_at))
+    mids = (times[:-1] + times[1:]) / 2
+    out = []
+    for t0, t1, starts_at in pieces:
+        inside = [name for mid, name in zip(mids, halves) if t0 <= mid <= t1 and name]
+        out.append(SubRegime(well=inside[0] if inside else '-', t0_yr=t0, t1_yr=t1, starts_at=starts_at))
+    return tuple(out)
+
+
+def subregimes_text(subregimes: Sequence[SubRegime]) -> str:
+    """episodes.csv `subregimes`: ';'-separated `well@t0:t1` [yr]."""
+    return ';'.join(f'{s.well}@{s.t0_yr:.1f}:{s.t1_yr:.1f}' for s in subregimes)
+
+
+def subregime_checks_text(subregimes: Sequence[SubRegime]) -> str:
+    """episodes.csv `subregime_checks`: ';'-separated `force/energy` of each sub-regime's own 1:1 law ('' unread)."""
+    if not any(s.force or s.energy for s in subregimes):
+        return ''
+    return ';'.join(f'{s.force}/{s.energy}' for s in subregimes)
+
+
+def well_sequence(runs: Sequence[Episode]) -> str:
+    """The wells of the runs' sub-regimes in time order, repeats and unnamed ones ('-', '') collapsed, joined by
+    WELLS_SEPARATOR ('horseshoe>tadpole_L4': 2016 JA 1E-1); '' when no run has sub-regimes. The orbit type of a 1:1
+    angle and the summary's geo_orbit_type_sequence read it (W28 C8)."""
+    names: List[str] = []
+    for run in sorted(runs, key=lambda r: r.t_start_yr):
+        for sub in run.subregimes:
+            if sub.well not in ('', '-') and (not names or names[-1] != sub.well):
+                names.append(sub.well)
+    return WELLS_SEPARATOR.join(names)
+
+
+def residence_of(run: Episode, legs: AveragedLegs, settings: AnalysisSettings) -> Residence:
+    """The inferred residence of an accepted 1:1 run (`Residence`; rule coorbital_residence, W28 C8): from the core
+    [first TP, last TP] outwards leg by leg of `legs` while a leg sweeps less than `libration_edge_arc_rev` turns (the
+    edge rule's arc: an arc above 2 pi is no piece of libration); a leg that sweeps it bounds the residence where it
+    meets the core or at its own edge (RESIDENCE_CIRCULATION), else the record's edge does (RESIDENCE_EDGE). A core
+    whose exit (entry) the edge rule observed keeps it as the bound (RESIDENCE_CIRCULATION). The zone is not read here
+    (`coorbital_residences`)."""
+    bounds = legs.bounds_yr
+    sweeps = np.asarray(legs.sweep_rev, dtype=float)
+    limit = float(settings.libration_edge_arc_rev)
+    core0, core1 = run.t_start_yr, run.t_end_yr
+    n = len(sweeps)
+    t1, end = float(legs.record[1]), RESIDENCE_EDGE
+    if run.exit_observed:
+        t1, end = core1, RESIDENCE_CIRCULATION
+    else:
+        for j in range(min(max(int(np.searchsorted(bounds, core1, 'right')) - 1, 0), n - 1), n):
+            if sweeps[j] >= limit:
+                t1, end = max(core1, float(bounds[j])), RESIDENCE_CIRCULATION
+                break
+    t0, start = float(legs.record[0]), RESIDENCE_EDGE
+    if run.entry_observed:
+        t0, start = core0, RESIDENCE_CIRCULATION
+    else:
+        for j in range(min(max(int(np.searchsorted(bounds, core0, 'left')) - 1, 0), n - 1), -1, -1):
+            if sweeps[j] >= limit:
+                t0, start = min(core0, float(bounds[j + 1])), RESIDENCE_CIRCULATION
+                break
+    return Residence(t0_yr=min(t0, core0), t1_yr=max(t1, core1), bounded_by_start=start, bounded_by_end=end)
+
+
+def coorbital_residences(geometry: 'Geometry', angle: 'FilteredAngle', settings: AnalysisSettings, laws: bool = True) -> None:
+    """Rule coorbital_residence (W28 C8, cards g03-3 C, g03-8 A, g03-9 A, g02-3 A): on every accepted run of an angle
+    with `coorbital_wells` and MMR_COORBITAL_RESIDENCE on, its inferred stay (`residence_of` on the model's `legs` of
+    the raw angle, with the largest zone at the reversals outside the core, `WellsModel.zone_max`, reported only) and,
+    for a run of two or more sub-regimes, each sub-regime's own 1:1 law (`WellsModel.law` at the angle's cutoff).
+    `laws` False reads the residences again only (`refresh_edges`: the edges moved, the sub-regimes did not).
+    Fires COORBITAL_RESIDENCE when a residence reaches beyond its core. Nothing decides on it: coverage, the edges, the
+    margins and the status read the core (a test holds the decision unchanged with the switch off). 2020 CB 1E-1: core
+    443-601 yr, residence 443 yr to the record's end (the quasi-satellite's later swings are below the turning-point
+    prominence): 601 yr is no exit."""
+    model = angle.coorbital_wells
+    if model is None or not settings.mmr_coorbital_residence:
+        return
+    accepted = [run for run in geometry.runs if run.accepted and run.n_tp >= 2]
+    if not accepted:
+        return
+    legs = model.legs(angle.t_yr, angle.angle_raw, angle.orbit_period_yr)
+    beyond = False
+    for run in accepted:
+        if legs is not None and len(legs.sweep_rev):
+            residence = residence_of(run, legs, settings)
+            outside = [t for t in legs.t_yr if residence.t0_yr <= t < run.t_start_yr or run.t_end_yr < t <= residence.t1_yr]
+            run.residence = replace(residence, zone_max=float(model.zone_max(legs, outside, angle.angle_raw)) if outside else NAN)
+            beyond = beyond or run.residence.beyond(run.t_start_yr, run.t_end_yr)
+        if laws and len(run.subregimes) >= 2:
+            read = [model.law(sub.t0_yr, sub.t1_yr, angle.angle_raw, angle.cutoff_yr) for sub in run.subregimes]
+            run.subregimes = tuple(replace(sub, force=force, energy=energy) for sub, (force, energy) in zip(run.subregimes, read))
+    if beyond:
+        geometry.rules_fired = rules.fire(geometry.rules_fired, rules.Rule.COORBITAL_RESIDENCE)
+
+
+def coorbital_single_legs(geometry: 'Geometry', angle: 'FilteredAngle', settings: AnalysisSettings) -> None:
+    """Rule coorbital_leg, the measurement (W28 C6, cards g02-4/g02-5/g02-6/g02-7, q-4 A): on a 1:1 angle with
+    `coorbital_wells` and MMR_COORBITAL_SINGLE_LEG on, the legs of the averaged angle (`WellsModel.single_legs`) that
+    lie outside every accepted run (a leg of an accepted episode is a half-cycle of a closed cycle and is never read
+    again: re-reading 3-TP episodes demoted 16 transients in the W28 C1 study, 2018 XW2 among them) and are not faster
+    than the angle's floor less the thin band (`period_floor_yr` x (1 - confidence_thin_band), the near-episode's
+    band, card g01-8 A). Stored in `Geometry.single_legs`; the status reads them in leaf G4c only when no librating
+    episode exists (`mmr.decide`)."""
+    model = angle.coorbital_wells
+    if model is None or not settings.mmr_coorbital_single_leg or not geometry.coorbital:
+        geometry.single_legs = ()
+        return
+    outside = tuple((run.t_start_yr, run.t_end_yr) for run in geometry.runs if run.accepted and run.n_tp >= 2)
+    ratio = 1.0 - settings.confidence_thin_band
+    legs = model.single_legs(angle.t_yr, angle.angle_raw, angle.orbit_period_yr, geometry.period_floor_yr, ratio, outside)
+    geometry.single_legs = tuple(legs)
+
+
+def harmonic_half_test(
+    t_yr: np.ndarray, sigma: np.ndarray, slow: np.ndarray, c: float, t0_yr: float, t1_yr: float, lo_rad: float, hi_rad: float, factor: float
+) -> Tuple[float, float, bool]:
+    """(R^2 of the first half, of the second half, restoring) of the one-harmonic law slow_dot = A sin sigma +
+    B cos sigma + C on [t0 - f L, t1 + f L] (L = t1 - t0, f = `factor`): each half of the window fitted on its own;
+    restoring when the law fitted on the whole window gives sigma_ddot = c slow_dot > 0 at the lower turning point
+    (lo_rad) and < 0 at the upper one (hi_rad). nan, nan, False with fewer than a dozen samples or no identity
+    coefficient c."""
+    t = np.asarray(t_yr, dtype=float)
+    length = t1_yr - t0_yr
+    inside = np.flatnonzero((t >= t0_yr - factor * length) & (t <= t1_yr + factor * length))
+    if len(inside) < 12 or not np.isfinite(c):
+        return NAN, NAN, False
+    x = np.asarray(sigma, dtype=float)[inside]
+    rate = time_derivative(t[inside], np.asarray(slow, dtype=float)[inside])
+    design = np.column_stack([np.sin(x), np.cos(x), np.ones(len(x))])
+    if not (np.all(np.isfinite(design)) and np.all(np.isfinite(rate))):
+        return NAN, NAN, False
+
+    def r2(part: np.ndarray) -> float:
+        coef = np.linalg.lstsq(design[part], rate[part], rcond=None)[0]
+        total = float(np.sum((rate[part] - rate[part].mean()) ** 2))
+        return float(1.0 - np.sum((rate[part] - design[part] @ coef) ** 2) / total) if total > 0 else NAN
+
+    first, second = np.array_split(np.arange(len(x)), 2)
+    coef = np.linalg.lstsq(design, rate, rcond=None)[0]
+
+    def acceleration(value: float) -> float:
+        return float(c * (coef[0] * np.sin(value) + coef[1] * np.cos(value) + coef[2]))
+
+    return r2(first), r2(second), bool(acceleration(lo_rad) > 0 and acceleration(hi_rad) < 0)
+
+
+def half_librations(geometry: 'Geometry', angle: 'FilteredAngle', settings: AnalysisSettings) -> None:
+    """Rule single_half_libration, the measurement (W28 C6, q-5 i, the W28 C15 audit): on an MMR angle that is not 1:1
+    (`FilteredAngle.identity_coefficient` finite, not `coorbital`) with MMR_SINGLE_HALF_LIBRATION on, every rejected
+    run of two turning points below a half-turn whose neighbours are passages or the record's edge (`HalfLibration`),
+    when its period is at least the angle's floor less the thin band (as the near-episode). Stored in
+    `Geometry.half_librations` (none on an angle with an accepted run: its episodes decide)."""
+    geometry.half_librations = ()
+    if angle.coorbital or not settings.mmr_single_half_libration or not np.isfinite(angle.identity_coefficient):
+        return
+    runs = sorted(geometry.runs, key=lambda run: run.t_start_yr)
+    if any(run.accepted for run in runs) or not np.isfinite(geometry.period_floor_yr):
+        return
+    floor = geometry.period_floor_yr
+    found = []
+    for k, run in enumerate(runs):
+        if run.n_tp != 2:
+            continue
+        values = np.asarray(run.tp_values_rad, dtype=float)
+        half = abs(float(values[1] - values[0])) / 2
+        length = run.t_end_yr - run.t_start_yr
+        if not half < np.pi or 2 * length < (1.0 - settings.confidence_thin_band) * floor:
+            continue
+        sides = []
+        for j in (k - 1, k + 1):
+            if not 0 <= j < len(runs):
+                sides.append('edge')
+                continue
+            left, right = (runs[j], run) if j < k else (run, runs[j])
+            turns = abs(float(right.tp_values_rad[0]) - float(left.tp_values_rad[-1])) / TWO_PI
+            sides.append('passage' if turns >= 1 else 'bounded')
+        if 'bounded' in sides or 'passage' not in sides:
+            continue
+        edge = LEG_EDGE_START if sides[0] == 'edge' else (LEG_EDGE_END if sides[1] == 'edge' else '')
+        r2_h1, r2_h2, restoring = harmonic_half_test(
+            angle.t_yr,
+            angle.angle_f,
+            angle.slow_f,
+            angle.identity_coefficient,
+            run.t_start_yr,
+            run.t_end_yr,
+            float(values.min()),
+            float(values.max()),
+            settings.mmr_half_libration_window_factor,
+        )
+        found.append(HalfLibration(run.t_start_yr, run.t_end_yr, edge, half, 2 * length / floor, r2_h1, r2_h2, restoring))
+    geometry.half_librations = tuple(found)
+
+
+def edge_stretch(
+    t_yr: np.ndarray, angle_f: np.ndarray, window: Tuple[float, float], centre: CentreTrack, side: str
+) -> Optional[EdgeStretch]:
+    """`EdgeStretch` of one side of the window (`side` LEG_EDGE_START or LEG_EDGE_END); None with fewer than five
+    finite samples. The start is the end of the time-reversed record."""
+    t = np.asarray(t_yr, dtype=float)
+    x = np.asarray(angle_f, dtype=float)
+    inside = (t >= window[0]) & (t <= window[1]) & np.isfinite(x)
+    t, x = t[inside], x[inside]
+    if len(t) < 5:
+        return None
+    turns = np.asarray(centre.turns.times_yr, dtype=float)
+    turns = turns[(turns > window[0]) & (turns < window[1])]
+    passes = [p for p in centre.passes if p.t_end_yr > window[0] and p.t_start_yr < window[1]]
+    reversal = float(np.max(np.diff(turns))) if len(turns) >= 2 else NAN
+    sign = 1.0
+    if side == LEG_EDGE_START:  # mirrored: the start is the end of the reversed record
+        t, x, turns, passes, sign = -t[::-1], x[::-1], -turns[::-1], passes[::-1], -1.0
+    t_turn = float(turns[-1]) if len(turns) else float(t[0])
+    pt, px = t[int(np.searchsorted(t, t_turn)) :], x[int(np.searchsorted(t, t_turn)) :]
+    direction = 1.0 if px[-1] >= px[0] else -1.0
+    advance = direction * (px - px[0])
+    pass_rev = float(advance[-1] / TWO_PI)
+    completed = int(np.floor(pass_rev))
+    if completed >= 1:
+        # reached is non-decreasing, so the first sample at >= 2 pi j is a binary search (an argmax per revolution
+        # was O(N x revolutions): 100 s on a circulating high-order angle); none (rounding) reads index 0 as argmax did
+        reached = np.maximum.accumulate(advance)
+        first = np.searchsorted(reached, TWO_PI * np.arange(1, completed + 1), side='left')
+        first[first >= len(reached)] = 0
+        marks = [float(pt[0])] + [float(v) for v in pt[first]]
+        mark = marks[-1]
+        kind, last_rev, other = EDGE_SLOWDOWN, float(np.max(np.diff(marks))), NAN
+    else:
+        mark, last_rev = t_turn, NAN
+        other = abs(passes[-2].delta_rad) / TWO_PI if len(turns) and len(passes) >= 2 else NAN
+        kind = EDGE_REFLECTION if np.isfinite(other) and other >= 1 else ''
+    tail = px[int(np.searchsorted(pt, mark)) :]
+    span = float(np.ptp(tail)) if len(tail) else NAN
+    travel = float(direction * (tail[-1] - tail[0])) if len(tail) else NAN
+    return EdgeStretch(side, kind, pass_rev, sign * mark, float(pt[-1] - mark), last_rev, other, span, travel, reversal)
+
+
+def edge_stretches(geometry: 'Geometry', angle: 'FilteredAngle', settings: AnalysisSettings) -> None:
+    """Rule end_arc_extend, the measurement (W28 C14): `EdgeStretch` of the window's start and end on an MMR angle
+    (finite `identity_coefficient`, MMR_RECORD_EDGE_STRETCH on), into `Geometry.edge_stretches`; none for
+    secular/ZLK."""
+    geometry.edge_stretches = ()
+    if not settings.mmr_record_edge_stretch or not np.isfinite(angle.identity_coefficient):
+        return
+    found = (edge_stretch(angle.t_yr, angle.angle_f, geometry.window, geometry.centre, side) for side in (LEG_EDGE_START, LEG_EDGE_END))
+    geometry.edge_stretches = tuple(stretch for stretch in found if stretch is not None)
+
+
 def _find_episodes(
     tp: TurningPoints,
     record: Tuple[float, float],
@@ -2222,6 +3542,7 @@ def _find_episodes(
     well_model: Optional[WellModel] = None,
     angle: Optional['FilteredAngle'] = None,
     return_bounds: Optional[Tuple[float, float]] = None,
+    fired: Optional[set] = None,
 ) -> List[Episode]:
     """Every run classified. A run rejected with `centre_moves` is classified again in pieces: first at its regular
     stretch (`_split_regular`, slow full cycles), kept split only when a piece is accepted; failing that, without one
@@ -2233,30 +3554,47 @@ def _find_episodes(
     sigma accepts no piece, on the whole run, on the run without the half-cycles at its ends that do not swing through
     the bottom of the well (`_trim_outside_well`) and without one slow edge half-cycle.
 
+    Rule q (`_frame_join`, LIBRATION_FRAME_JOIN): before any of this, two runs that `split_runs` broke at one
+    half-cycle over the top in sigma are one run when that half-cycle stays below the top in psi = sigma - c(t). A slow
+    edge piece of `_split_regular` that holds such a joined half-cycle is classified in psi too: the slow cycles next to
+    the separatrix are the same libration about the moving centre (82831 13M-24, 1.9-28.6 kyr).
+
     The MMR rules of `angle` (`FilteredAngle`; None: neither): `return_closure`, a run of two turning points closed by
     its phase return (`phase_return`) is one cycle; `split_regimes`, a run still rejected for its moving centre after
     all of the above is cut at a centre step or a stall (`split_at_regime_changes`), kept split only when the regimes
-    the cut claims are accepted. A phase return is sought inside `return_bounds` (the run's regime between jumps of the
-    slow variable; `record` without it): a crossing beyond a confirmed jump belongs to another regime."""
+    the cut claims are accepted; after a stall cut a leftover piece next to the stall joins it when it is the same
+    regime (rule s, `_stall_join`, LIBRATION_STALL_JOIN). A phase return is sought inside `return_bounds` (the run's
+    regime between jumps of the slow variable; `record` without it): a crossing beyond a confirmed jump belongs to
+    another regime. `fired`, when given, collects the rules that acted (`rules.Rule`: FRAME_JOIN, STALL_JOIN,
+    COORBITAL_WELL_CUT).
+
+    An angle with `coorbital_wells` (MMR 1:1, rule coorbital_well_cut, W28 C7) ends an episode only at a separatrix:
+    a run the band test rejects is accepted whole when every cycle holds a well (`_accept_in_wells`), before any of
+    the pieces above; no regime cut applies; accepted neighbours join across a half-cycle that does not circulate
+    (`_join_in_wells`)."""
     episodes: List[Episode] = []
+    tp = with_run_break(tp, angle)
     return_bounds = record if return_bounds is None else return_bounds
     returns = angle is not None and angle.return_closure
-    cuts = angle is not None and angle.split_regimes
-    for run in split_runs(tp, settings):
+    wells = angle.coorbital_wells if angle is not None else None
+    cuts = angle is not None and angle.split_regimes and wells is None  # 1:1: changes inside are annotations
+    runs, joined = _frame_join(tp, split_runs(tp, settings), record, window, settings, well_model, fired)
+    for run in runs:
         first = first_id + len(episodes)
         episode = _classify_run(first, tp, run, record, settings, window)
         if returns and len(run) == 2 and episode.reject_reason in (RejectReason.TOO_FEW_TP, RejectReason.OVER_THE_TOP):
             cycle = phase_return(angle, tp, run, settings, return_bounds)
             episode = _returned(episode, cycle, record, window) if cycle is not None else episode
+        episode = _in_wells_or_same(episode, wells, settings, fired)
         if episode.reject_reason != RejectReason.CENTRE_MOVES:
             episodes.append(episode)
             continue
         pieces = _split_regular(tp, run, settings)
         if len(pieces) > 1:
             regular = int(_regular_stretch(tp, run, settings)[0] > 0)  # the index of the regular piece
+            frames = [well_model if i == regular or _holds(piece, joined) else None for i, piece in enumerate(pieces)]
             split = [
-                _classify_run(first + i, tp, piece, record, settings, window, well_model if i == regular else None)
-                for i, piece in enumerate(pieces)
+                _classify_run(first + i, tp, piece, record, settings, window, frame) for i, (piece, frame) in enumerate(zip(pieces, frames))
             ]
             if any(piece.accepted for piece in split):
                 episodes.extend(split)
@@ -2272,15 +3610,117 @@ def _find_episodes(
                 trimmed = _trim_slow_edges(tp, run, record, window, settings, well_model)
         if trimmed is None:
             cut = split_at_regime_changes(tp, run, settings) if cuts else None
-            split = [
-                _classify_run(first + i, tp, piece, record, settings, window, well_model)
-                for i, piece in enumerate(cut.pieces if cut else ())
-            ]
-            episodes.extend(split if cut is not None and all(split[i].accepted for i in cut.regimes) else [episode])
+            split = _regime_pieces(tp, cut, first, record, window, settings, well_model, fired) if cut else None
+            episodes.extend(split if split is not None else [episode])
             continue
         split = [_classify_run(first + i, tp, piece, record, settings, window, well_model) for i, piece in enumerate(trimmed)]
         episodes.extend(piece if piece.accepted else replace(piece, reject_reason=RejectReason.EDGE) for piece in split)
-    return episodes
+    return _join_in_wells(tp, episodes, angle, record, window, settings, first_id, fired)
+
+
+def _edge_candidate(
+    t: np.ndarray, averaged: np.ndarray, tp: TurningPoints, side: str, record: Tuple[float, float], window: Tuple[float, float]
+) -> Optional[EdgeTurn]:
+    """The reversal of the averaged raw angle `averaged` after the last turning point ('exit') or before the first
+    ('entry'): the extreme of the kind the next turning point must have (opposite to that TP's) on the stretch from the
+    TP to the record's edge, when it lies in the filter's edge trim (outside `window`, inside `record`) and the angle
+    turns back from it before that edge. Its prominence is the smaller of its two swings: from the TP's sample to it,
+    and back from it towards the record's edge. None otherwise (no trim, no reversal, or the extreme inside the window,
+    where sigma_f has its own turning points)."""
+    if len(tp) == 0:
+        return None
+    exit_side = side == 'exit'
+    if not (window[1] < record[1] if exit_side else window[0] > record[0]):
+        return None
+    edge = -1 if exit_side else 0
+    tp_index, tp_time = int(tp.indices[edge]), float(tp.times_yr[edge])
+    kind = -int(tp.kinds[edge])
+    inside = (t >= record[0]) & (t <= record[1])
+    stretch = np.flatnonzero(inside & ((t > tp_time) if exit_side else (t < tp_time)))
+    if len(stretch) < 3:
+        return None
+    x = kind * averaged[stretch]
+    if not np.all(np.isfinite(x)):
+        return None
+    k = int(np.argmax(x)) if exit_side else int(len(x) - 1 - np.argmax(x[::-1]))
+    if k == (len(x) - 1 if exit_side else 0):
+        return None  # the extreme is the record's edge itself: no reversal before it
+    i = int(stretch[k])
+    if not (t[i] > window[1] if exit_side else t[i] < window[0]):
+        return None
+    swing = float(x[k] - kind * averaged[tp_index])
+    back = float(x[k] - np.min(x[k:] if exit_side else x[: k + 1]))
+    return EdgeTurn(side, i, float(t[i]), float(averaged[i]), kind, min(swing, back))
+
+
+def _with_turn(tp: TurningPoints, turn: EdgeTurn) -> TurningPoints:
+    """`tp` with the edge reversal `turn` appended (exit) or prepended (entry) as a turning point."""
+    at = len(tp) if turn.side == 'exit' else 0
+    return replace(
+        tp,
+        indices=np.insert(np.asarray(tp.indices, dtype=int), at, turn.index),
+        times_yr=np.insert(np.asarray(tp.times_yr, dtype=float), at, turn.t_yr),
+        values_rad=np.insert(np.asarray(tp.values_rad, dtype=float), at, turn.value_rad),
+        kinds=np.insert(np.asarray(tp.kinds, dtype=int), at, turn.kind),
+    )
+
+
+def _holding(runs: Sequence[Episode], time_yr: float) -> Optional[Episode]:
+    return next((run for run in runs if np.any(np.asarray(run.tp_times_yr, dtype=float) == time_yr)), None)
+
+
+def _edge_raw_turns(
+    angle: 'FilteredAngle',
+    tp: TurningPoints,
+    runs: List[Episode],
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+    first_id: int,
+    fired: set,
+) -> Tuple[TurningPoints, List[Episode], List[EdgeTurn]]:
+    """Rule coorbital_edge_turn (W28 C4, cards g02-2 A, g01-3 A; MMR 1:1 only, `FilteredAngle.edge_turn`): the
+    turning point the filter's edge trim hides, read on the orbit-averaged raw angle (`_edge_candidate`), is added
+    to `tp` only when it closes a cycle: the run of the record's last (first) turning point is no episode without it
+    and an accepted one with it. Before that the reversal must swing at least the model's prominence on both sides,
+    and its physics must hold (`EdgeTurnModel.read`: a reflection on a top of the averaged potential, a crossing a*,
+    |da| mirrored). It never extends an accepted episode, never replaces a turning point of sigma_f and never
+    continues the curve beyond the record. Returns (turning points, runs, every reversal read with its outcome);
+    `fired` collects the rules of the accepted trial (`_find_episodes`)."""
+    model = angle.edge_turn
+    turns: List[EdgeTurn] = []
+    if model is None or len(tp) == 0:
+        return tp, runs, turns
+    t = np.asarray(angle.t_yr, dtype=float)
+    averaged = np.asarray(model.averaged, dtype=float)
+    for side in ('exit', 'entry'):
+        turn = _edge_candidate(t, averaged, tp, side, record, window)
+        neighbour = float(tp.times_yr[-1 if side == 'exit' else 0])
+        before = _holding(runs, neighbour)
+        if turn is None or (before is not None and before.accepted):
+            continue  # an accepted episode is never extended
+        if not turn.prominence_rad >= model.min_prominence_rad:
+            turns.append(replace(turn, outcome=EDGE_TURN_PROMINENCE))
+            continue
+        times = np.sort(np.append(np.asarray(before.tp_times_yr, dtype=float) if before is not None else [neighbour], turn.t_yr))
+        reading = model.read(turn.t_yr, turn.value_rad, float(np.median(np.diff(times))), record)
+        turn = replace(turn, site=reading.site, out_in=reading.out_in, a_crosses=reading.a_crosses, outcome=reading.outcome)
+        if reading.outcome:
+            turns.append(turn)
+            continue
+        trial_tp = _with_turn(tp, turn)
+        trial_fired: set = set()
+        trial = _find_episodes(trial_tp, record, window, settings, first_id, angle.well_model, angle, fired=trial_fired)
+        holder = _holding(trial, turn.t_yr)
+        if holder is None or not holder.accepted:
+            turns.append(replace(turn, outcome=EDGE_TURN_NO_CYCLE))
+            continue
+        marked = ';'.join(sorted(filter(None, set(holder.edge_raw_tp.split(';')) | {side})))
+        tp, runs = trial_tp, [replace(run, edge_raw_tp=marked) if run is holder else run for run in trial]
+        fired.clear()
+        fired.update(trial_fired)
+        turns.append(replace(turn, outcome=EDGE_TURN_CLOSES))
+    return tp, runs, turns
 
 
 def find_episodes(t_yr: np.ndarray, tp: TurningPoints, window: Tuple[float, float], settings: AnalysisSettings) -> List[Episode]:
@@ -2289,15 +3729,37 @@ def find_episodes(t_yr: np.ndarray, tp: TurningPoints, window: Tuple[float, floa
     return _find_episodes(tp, (float(t[0]), float(t[-1])), tuple(window), settings)
 
 
-def short_runs(runs: Sequence[Episode]) -> List[Episode]:
+def short_runs(runs: Sequence[Episode], coorbital: bool = False) -> List[Episode]:
     """The runs that missed being an episode by their length alone: rejected too_few_tp (no over-the-top half-cycle
     next to them) with at least one half-cycle, every one below pi. The candidates of a near-episode (2016 CA138
-    1E-1: 2 TPs at 169-356 yr, half-amplitude 175 deg: a capture that turned back once)."""
-    return [
-        run
-        for run in runs
-        if run.reject_reason == RejectReason.TOO_FEW_TP and np.isfinite(run.half_amp_max_rad) and run.half_amp_max_rad < np.pi
-    ]
+    1E-1: 2 TPs at 169-356 yr, half-amplitude 175 deg: a capture that turned back once).
+
+    A 1:1 angle (`coorbital`, the structural near-episode, W28 C6, cards g01-5 A, g01-8 A) also takes a run rejected
+    over_the_top whose every half-swing is a leg of one co-orbital well: below pi and crossing at most one of the
+    planet (sigma = 0) and L3 (pi) (`crosses_planet_and_l3`): one horseshoe or quasi-satellite leg between two
+    passages is a near miss of a capture whatever lies beyond its turns (1991 VG 1E-1: 552-613 yr between two kicks)."""
+    found = []
+    for run in runs:
+        bounded = np.isfinite(run.half_amp_max_rad) and run.half_amp_max_rad < np.pi
+        if not bounded:
+            continue
+        if run.reject_reason == RejectReason.TOO_FEW_TP:
+            found.append(run)
+        elif coorbital and run.reject_reason == RejectReason.OVER_THE_TOP and run.n_tp >= 2:
+            values = np.asarray(run.tp_values_rad, dtype=float)
+            if not any(crosses_planet_and_l3(a, b) for a, b in zip(values[:-1], values[1:])):
+                found.append(run)
+    return found
+
+
+def crosses_planet_and_l3(first_rad: float, second_rad: float) -> bool:
+    """Whether a swing of a 1:1 angle from `first_rad` to `second_rad` (unwrapped) passes both the planet (a multiple
+    of 2 pi) and L3 (pi + a multiple of 2 pi): a backward lap past the planet, no leg of one co-orbital well. The
+    angle's sign (lambda - lambda_P or its negative) does not change it."""
+    lo, hi = sorted((float(first_rad), float(second_rad)))
+    planet = np.floor(hi / TWO_PI) - np.floor(lo / TWO_PI) > 0
+    l3 = np.floor((hi - np.pi) / TWO_PI) - np.floor((lo - np.pi) / TWO_PI) > 0
+    return bool(planet and l3)
 
 
 def window_step_limit_yr(episode: Episode, settings: AnalysisSettings) -> float:
@@ -2348,8 +3810,10 @@ def covering_episode(episodes: Sequence[Episode], settings: AnalysisSettings) ->
 class UnionCover:
     """The chain of librating episodes that covers the record together (`covering_union`) and the numbers it passed:
     the largest ranges of sigma_f's turning points and of the orbit-averaged raw angle inside one gap and over the
-    whole chain [rad], the longest gap over (P_left + P_right), and how far the turning points beyond the outer
-    episodes fall short of each record edge [P of that episode] (nan where `covers_edges` covered it). Empty: no chain."""
+    whole chain [rad], the farthest sigma_f gets beyond its neighbours' bands in a gap (`gap_band_overshoot`) [rad],
+    the longest gap over (P_left + P_right) (a column, no test), and how far the turning points beyond the outer
+    episodes fall short of each record edge [P of that episode] (nan where `covers_edges` covered it). Empty: no
+    chain."""
 
     episodes: Tuple[Episode, ...] = ()
     tp_range_rad: float = NAN
@@ -2359,6 +3823,52 @@ class UnionCover:
     gap_max_p: float = NAN
     start_shortfall_p: float = NAN
     end_shortfall_p: float = NAN
+    band_overshoot_rad: float = NAN
+
+
+def edge_centre(episode: Episode, edge: str) -> float:
+    """The centre of `episode` at its 'start' or 'end' [rad, sigma_f's branch]: the mean of the midpoints of its first
+    (last) full cycle, (v_0 + 2 v_1 + v_2) / 4 of its turning points v (the midpoint of its only half-cycle with two
+    of them); nan with fewer."""
+    values = np.asarray(episode.tp_values_rad, dtype=float)
+    if len(values) < 2:
+        return NAN
+    part = values[:3] if edge == 'start' else values[-3:]
+    return float((part[0] + part[-1]) / 2 if len(part) == 2 else (part[0] + 2 * part[1] + part[2]) / 4)
+
+
+def gap_band_overshoot(geometry: 'Geometry', left: Episode, right: Episode) -> float:
+    """How far sigma_f leaves the libration band of its neighbours in the gap between `left` and `right` (later)
+    [rad]: over the samples from the last turning point of `left` to the first of `right`, the largest excess of
+    sigma_f over the nearest of three bands (<= 0 while it stays inside one of them):
+    - the band of `left` about its centre at its end, c_l +- A_l, and that of `right` at its start, c_r +- A_r (c:
+      `edge_centre`, A: half_amp_max): the regions the record shows each neighbour librating in;
+    - the band carried across the gap, |sigma_f - c(t)| <= max(A_l, A_r) with c(t) linear from c_l to c_r: a step of
+      the centre between the two (a regime change without circulation, W22/19.10: 469219, 164207, 524522).
+    The gap holds no libration to measure a centre on: a low-pass of sigma_f there (the slow centre track) follows any
+    excursion slower than its window (W_c = 3 P: an excursion to pi + 200 deg over 2 P overshoots it by only 31 deg),
+    and the linear band alone misses a swing back into the band of the other neighbour (524522 1V-1: centre 4 -> 67
+    deg, amplitude 32 -> 74 deg, sigma back at -28 deg as the second episode starts: 21 deg beyond the linear band,
+    inside the first). Up to libration_union_band_margin_deg the gap is bounded, however long it is (A7, W28 g06-5:
+    2001 WK15 32E-39 and 2002 XA 5J-2, whose gaps of 1.1-1.7 (P_left + P_right) stay inside the band). nan without
+    sigma_f or the centres (nothing shows the angle stayed); -inf when the episodes overlap (no sample between them)."""
+    centres = np.array([edge_centre(left, 'end'), edge_centre(right, 'start')])
+    amplitudes = np.array([left.half_amp_max_rad, right.half_amp_max_rad])
+    if geometry.angle_f is None or geometry.angle_f_t_yr is None or not np.all(np.isfinite([*amplitudes, *centres])):
+        return NAN
+    t = np.asarray(geometry.angle_f_t_yr, dtype=float)
+    lo, hi = int(np.searchsorted(t, left.t_end_yr, 'left')), int(np.searchsorted(t, right.t_start_yr, 'right'))
+    if hi <= lo:
+        return -math.inf
+    angle = np.asarray(geometry.angle_f[lo:hi], dtype=float)
+    if not np.all(np.isfinite(angle)):
+        return NAN
+    if right.t_start_yr > left.t_end_yr:
+        carried = np.interp(t[lo:hi], [left.t_end_yr, right.t_start_yr], centres)
+    else:
+        carried = np.full(len(angle), centres.mean())
+    excess = np.column_stack([np.abs(angle - carried) - amplitudes.max(), np.abs(angle[:, None] - centres[None, :]) - amplitudes[None, :]])
+    return float(excess.min(axis=1).max())
 
 
 def covering_union(geometry: 'Geometry', episodes: Sequence[Episode], settings: AnalysisSettings) -> UnionCover:
@@ -2366,28 +3876,35 @@ def covering_union(geometry: 'Geometry', episodes: Sequence[Episode], settings: 
     2026-10-19 for the 1:1, "a regime change without circulation is not an exit": 469219, 164207, 524522; W22 for every
     MMR, the safe variant of round 1024). Neighbours join when the gap between them holds no turn, the range of
     sigma_f's turning points from the end of one to the start of the next (`break_range`) and the range of the
-    orbit-averaged raw angle there (`Geometry.gap_raw_range`) both below 2pi, and lasts at most
-    libration_union_gap_periods x (P_left + P_right). A chain of >= 2 counts when nothing goes round over its whole
-    span either (a slowly circulating centre under a ripple of small episodes is no libration: 138537 13N-25 at 100 kyr,
-    48 episodes of ~1 deg whose centre goes round several times), and both outer episodes reach their record edge
-    (`covers_edges`, or `_union_edge` within libration_coverage_periods). Without the orbit-averaged raw angle
-    (nan) nothing shows the angle stayed: no join. The first such chain is returned (`UnionCover`; empty when none)."""
+    orbit-averaged raw angle there (`Geometry.gap_raw_range`) both below 2pi, and is bounded: sigma_f never leaves
+    the libration band of its neighbours there (`gap_band_overshoot` <= libration_union_band_margin_deg; A7, W28
+    g06-5, which replaced the gap length
+    of LIBRATION_UNION_GAP_PERIODS, D1b of 24.10: the length of a gap says nothing about an exit). A chain of >= 2
+    counts when nothing goes round over its whole span either (a slowly circulating centre under a ripple of small
+    episodes is no libration: 138537 13N-25 at 100 kyr, 48 episodes of ~1 deg whose centre goes round several times),
+    and both outer episodes reach their record edge (`covers_edges`, or `_union_edge` within
+    libration_coverage_periods). Without the orbit-averaged raw angle or sigma_f (nan) nothing shows the angle stayed:
+    no join. The first such chain is returned (`UnionCover`; empty when none); a chain whose gaps are joined fires
+    `Rule.BOUNDED_GAP_MERGE` on the geometry."""
     ordered = sorted(episodes, key=lambda episode: episode.t_start_yr)
     if len(ordered) < 2:
         return UnionCover()
+    margin = math.radians(settings.libration_union_band_margin_deg)
     chains: List[List[Episode]] = [[ordered[0]]]
-    worst: List[Tuple[float, float, float]] = [(0.0, 0.0, 0.0)]
+    worst: List[Tuple[float, float, float, float]] = [(0.0, 0.0, 0.0, -math.inf)]
     for left, right in zip(ordered, ordered[1:]):
         tp_range = break_range(geometry, left, right)
         raw_range = geometry.gap_raw_range(left, right)
+        overshoot = gap_band_overshoot(geometry, left, right)
         gap_p = (right.t_start_yr - left.t_end_yr) / (left.period_med_yr + right.period_med_yr)
-        if tp_range < TWO_PI and raw_range < TWO_PI and gap_p <= settings.libration_union_gap_periods:
+        if tp_range < TWO_PI and raw_range < TWO_PI and overshoot <= margin:
             chains[-1].append(right)
-            worst[-1] = (max(worst[-1][0], tp_range), max(worst[-1][1], raw_range), max(worst[-1][2], gap_p))
+            w = worst[-1]
+            worst[-1] = (max(w[0], tp_range), max(w[1], raw_range), max(w[2], gap_p), max(w[3], overshoot))
         else:
             chains.append([right])
-            worst.append((0.0, 0.0, 0.0))
-    for chain, (tp_range, raw_range, gap_p) in zip(chains, worst):
+            worst.append((0.0, 0.0, 0.0, -math.inf))
+    for chain, (tp_range, raw_range, gap_p, overshoot) in zip(chains, worst):
         if len(chain) < 2:
             continue
         span = (chain[0].t_start_yr, chain[-1].t_end_yr)
@@ -2398,7 +3915,8 @@ def covering_union(geometry: 'Geometry', episodes: Sequence[Episode], settings: 
         end = None if covers_edges(chain[-1], settings)[1] else _union_edge(geometry, chain[-1], 'end')
         if all(short is None or short <= settings.libration_coverage_periods for short in (start, end)):
             shortfalls = [NAN if short is None else short for short in (start, end)]
-            return UnionCover(tuple(chain), tp_range, raw_range, span_tp, span_raw, gap_p, *shortfalls)
+            geometry.rules_fired = rules.fire(geometry.rules_fired, rules.Rule.BOUNDED_GAP_MERGE)
+            return UnionCover(tuple(chain), tp_range, raw_range, span_tp, span_raw, gap_p, *shortfalls, overshoot)
     return UnionCover()
 
 
@@ -2776,9 +4294,55 @@ def _visible_edge(
     start to its first one) that angle travels >= libration_edge_arc_rev turns away from the turning point and moves
     monotonically there (means over half-period blocks, `_raw_monotonic`): the exit (entry) is observed, not suspected,
     however little record is left. Arc, direction and monotonicity are read on that one stretch of the averaged angle,
-    whether or not sigma_f crosses |sigma_f - c_ep| = pi there (the low-pass may hide the crossing at the record's
-    edge; Codex W20 A #10); the event's time is then the averaged angle's own crossing."""
-    centre = episode.centre_mean_rad
+    whether or not sigma_f crosses |sigma_f - c| = pi there (the low-pass may hide the crossing at the record's
+    edge; Codex W20 A #10); the event's time is then the averaged angle's own crossing.
+
+    With the MMR edge rule (`averaged` given) the centre c of |sigma_f - c| > pi and of the averaged angle's crossing is
+    the local one at that edge (`Episode.edge_centre_rad`; C9, W28 g03-2, every MMR); the reading against the run's
+    mean centre is made too (`_edge_reading`), and an event that differs from it is marked `differs_from_mean_centre`.
+    Without it (secular, ZLK) c stays the run's mean centre: the local reading is not measured on those angles yet."""
+    return _edge_reading(t, angle_f, raw, episode, kind, record, settings, averaged)[0]
+
+
+def _edge_reading(
+    t: np.ndarray,
+    angle_f: np.ndarray,
+    raw: np.ndarray,
+    episode: Episode,
+    kind: str,
+    record: Tuple[float, float],
+    settings,
+    averaged: Optional[np.ndarray] = None,
+) -> Tuple[Optional[EdgeEvent], bool]:
+    """(the edge event of `_visible_edge`, whether the reading against the run's mean centre differs from the one
+    against the local centre: an event on one side only, or other suspected/observed marks). The caller fires
+    Rule.LOCAL_CENTRE_ENTRY on True. Without `averaged` (no MMR edge rule) only the mean centre is read: (event,
+    False)."""
+    mean = _edge_event(t, angle_f, raw, episode, kind, record, settings, averaged, episode.centre_mean_rad)
+    if averaged is None:
+        return mean, False
+    local = _edge_event(t, angle_f, raw, episode, kind, record, settings, averaged, episode.edge_centre_rad(kind))
+    if local is None or mean is None:
+        differs = (local is None) != (mean is None)
+    else:
+        differs = (mean.suspected, mean.observed) != (local.suspected, local.observed)
+    if local is not None and differs:
+        local = replace(local, differs_from_mean_centre=True)
+    return local, bool(differs)
+
+
+def _edge_event(
+    t: np.ndarray,
+    angle_f: np.ndarray,
+    raw: np.ndarray,
+    episode: Episode,
+    kind: str,
+    record: Tuple[float, float],
+    settings,
+    averaged: Optional[np.ndarray],
+    centre: float,
+) -> Optional[EdgeEvent]:
+    """The edge event of `_visible_edge` read against the centre `centre` [rad]; None without a crossing."""
     period = episode.period_med_yr
     if not np.isfinite(centre):
         return None
@@ -2837,10 +4401,11 @@ def visible_edge(
     kind: str,
     settings: AnalysisSettings,
 ) -> Optional[EdgeEvent]:
-    """Exit ('exit', after the last TP) or entry ('entry', before the first): first time |sigma_f - c_ep| > pi;
+    """Exit ('exit', after the last TP) or entry ('entry', before the first): first time |sigma_f - c| > pi;
     suspected when the remaining record is < libration_coverage_periods episode periods. None if none.
 
-    c_ep is the mean midpoint of the episode. The search runs to the true record edge. `raw_monotonic`:
+    c is the mean midpoint of the episode (no MMR edge rule here: `_visible_edge` with the orbit-averaged angle reads
+    the local centre). The search runs to the true record edge. `raw_monotonic`:
     the raw angle averaged over half-period blocks moves monotonically away from the centre after an
     exit (towards it before an entry).
     """
@@ -3481,6 +5046,17 @@ class FilteredAngle:
     # a well inside which period_floor_yr holds, outside it another floor (`FloorWell`; MMR: the 1:1 quasi-satellite
     # pass, rule G1q). None: period_floor_yr for every episode
     floor_well: Optional[FloorWell] = None
+    # the caller's floor of a single run from its own turning points (`RunFloorModel`; MMR: the 1:1 profile floor, W28
+    # C3), evaluated on every run of >= 2 TPs into `Geometry.run_floors`. None: no run has a floor of its own
+    run_floor: Optional[RunFloorModel] = None
+    # the caller's model of a turning point the filter's edge trim hides (`EdgeTurnModel`; MMR: the 1:1 rule
+    # coorbital_edge_turn, W28 C4), read by `_edge_raw_turns`. None: the trim hides it
+    edge_turn: Optional[EdgeTurnModel] = None
+    # the caller's wells of an angle whose episodes end only at a separatrix (`WellsModel`; MMR: the 1:1 rule
+    # coorbital_well_cut, W28 C7): a run whose bands do not overlap is accepted when every cycle holds one of its wells
+    # (`_accept_in_wells`), accepted neighbours join across a half-cycle that does not circulate (`_join_in_wells`), no
+    # regime cut applies and the changes inside are annotations (`coorbital_marks`). None: the band test and the cuts
+    coorbital_wells: Optional[WellsModel] = None
     # the caller's track of the well a run librates in (`WellModel`; MMR: `mmr.centre_track`): a run whose centre moves
     # is tested again in psi = sigma - c(t) (`_classify_run`). None: sigma only (the scale of the centre, secular, ZLK)
     well_model: Optional[WellModel] = None
@@ -3493,6 +5069,9 @@ class FilteredAngle:
     split_regimes: bool = False  # a run whose centre moves is cut at a centre step or a stall (`split_at_regime_changes`)
     coorbital: bool = False  # a 1:1 angle: the status reads its union of regimes as a libration (`mmr.decide._g2`)
     cycle_travel: bool = False  # an episode's centre travel is read on its own cycles (`episode_centre_travel`)
+    # the half-amplitude (and the midpoint jump) at which a run breaks (`split_runs`) [rad]: pi; a Lidov-Kozai omega
+    # sets half a turn (ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG, `secular.preprocess.filtered_angle`)
+    run_break_half_amplitude_rad: float = np.pi
 
 
 def _count_at_cutoff(
@@ -3570,7 +5149,10 @@ def _measure(
         tp = find_turning_points(t, angle_f, prominence_rad, window, local=thresholds)
     else:
         tp = turning_points_with_local(t, angle_f, prominence_rad, window, settings, local_prominence)
-    runs = _find_episodes(tp, record, window, settings, first_id, angle.well_model, angle)
+    tp = with_run_break(tp, angle)
+    fired: set = set()  # the rules `_find_episodes` applied (FRAME_JOIN, STALL_JOIN)
+    runs = _find_episodes(tp, record, window, settings, first_id, angle.well_model, angle, fired=fired)
+    tp, runs, edge_turns = _edge_raw_turns(angle, tp, runs, record, window, settings, first_id, fired)
     accepted = [run for run in runs if run.accepted]
     periods = _pooled_periods(accepted)
     if len(periods) == 0:
@@ -3619,14 +5201,22 @@ def _measure(
         period_floor_yr=float(angle.period_floor_yr),
         period_floor_setting=angle.period_floor_setting,
         floor_well=angle.floor_well,
+        run_floors=run_floors_of(angle, runs),
         coorbital=bool(angle.coorbital),
         cycle_travel=bool(angle.cycle_travel),
     )
+    geometry.edge_turns = edge_turns
+    if any(turn.added for turn in edge_turns):
+        geometry.rules_fired = rules.fire(geometry.rules_fired, rules.Rule.COORBITAL_EDGE_TURN)
+    if half_turn_cut(tp, settings):
+        geometry.rules_fired = rules.fire(geometry.rules_fired, rules.Rule.ZLK_HALF_TURN_CUT)
+    geometry.rules_fired = rules.fire(geometry.rules_fired, *fired)
     if len(tp) == 0 and len(inside) >= 3:
         geometry.arc_stall = arc_or_stall(t, angle_f, angle.slow_f, angle.identity_coefficient, window)
     averaged = _mark_edges(geometry, angle, accepted, record, settings)
     if averaged is not None:  # the union of episodes (`covering_union`) and the onset groups read it (`gap_raw_range`)
         geometry.averaged_raw, geometry.averaged_raw_t_yr = averaged, t
+        geometry.angle_f, geometry.angle_f_t_yr = angle_f, t  # the bounded gap of the union (`gap_band_overshoot`)
     return geometry
 
 
@@ -3641,8 +5231,10 @@ def _mark_edges(
         raw = np.asarray(angle.angle_raw, dtype=float)
         averaged = orbit_averaged(t, raw, angle.orbit_period_yr) if (angle.edge_arc_rule or angle.coorbital) else None
         edge_averaged = averaged if angle.edge_arc_rule else None
-        geometry.exit = _visible_edge(t, angle_f, raw, accepted[-1], 'exit', record, settings, edge_averaged)
-        geometry.entry = _visible_edge(t, angle_f, raw, accepted[0], 'entry', record, settings, edge_averaged)
+        geometry.exit, exit_differs = _edge_reading(t, angle_f, raw, accepted[-1], 'exit', record, settings, edge_averaged)
+        geometry.entry, entry_differs = _edge_reading(t, angle_f, raw, accepted[0], 'entry', record, settings, edge_averaged)
+        if exit_differs or entry_differs:
+            geometry.rules_fired = rules.fire(geometry.rules_fired, rules.Rule.LOCAL_CENTRE_ENTRY)
         accepted[-1].exit_observed = bool(geometry.exit is not None and geometry.exit.observed)
         accepted[0].entry_observed = bool(geometry.entry is not None and geometry.entry.observed)
     if geometry.exit is not None and geometry.exit.suspected:
@@ -3668,7 +5260,9 @@ def _mark_record_entry(geometry: Geometry, angle: FilteredAngle, settings) -> No
     if angle.edge_arc_rule:
         averaged = geometry.averaged_raw if geometry.averaged_raw is not None else orbit_averaged(t, raw, angle.orbit_period_yr)
     record = (float(t[0]), float(t[-1]))
-    event = _visible_edge(t, np.asarray(angle.angle_f, dtype=float), raw, first, 'entry', record, settings, averaged)
+    event, differs = _edge_reading(t, np.asarray(angle.angle_f, dtype=float), raw, first, 'entry', record, settings, averaged)
+    if differs:
+        geometry.rules_fired = rules.fire(geometry.rules_fired, rules.Rule.LOCAL_CENTRE_ENTRY)
     geometry.record_entry = event
     first.entry_observed = bool(event is not None and event.observed)
     if event is not None and event.suspected:
@@ -3678,9 +5272,10 @@ def _mark_record_entry(geometry: Geometry, angle: FilteredAngle, settings) -> No
 def refresh_edges(geometry: Geometry, angle: FilteredAngle, settings) -> None:
     """The edge rule again on the episodes of the last regime once the forced waves are known (`Geometry.forced_waves`,
     set after the response is measured): the exit belongs to the last real episode, the entry to the first (W20 round
-    C, review B #9: 145480 1N-4 at 1 Myr, whose real episode 0 is followed by the forced waves 1 and 2). The marks and
-    flags the first pass left on the forced waves go; nothing changes without forced waves."""
-    if not geometry.forced_waves:
+    C, review B #9: 145480 1N-4 at 1 Myr, whose real episode 0 is followed by the forced waves 1 and 2); the same once
+    induced episodes are taken out (`Geometry.induced_ids`). The marks and flags the first pass left on the excluded
+    runs go; nothing changes without forced waves or induced episodes."""
+    if not geometry.excluded_ids:
         return
     geometry.forget_derived()
     for run in geometry.runs:
@@ -3693,6 +5288,7 @@ def refresh_edges(geometry: Geometry, angle: FilteredAngle, settings) -> None:
     _mark_edges(geometry, angle, geometry.episodes, record, settings)
     if geometry.record_entry is not None and geometry.record_entry.suspected and str(Flag.ENTRY_SUSPECTED) not in geometry.flags:
         geometry.flags.append(str(Flag.ENTRY_SUSPECTED))
+    coorbital_residences(geometry, angle, settings, laws=False)  # an observed exit or entry bounds a 1:1 residence
 
 
 def measure_geometry(
@@ -3771,7 +5367,107 @@ def angle_at_centre_window(angle: FilteredAngle, window_yr: float, settings: Ana
         cutoff_yr=window_yr,
         window=window,
         well_model=None,
+        edge_turn=None,  # the edge turning point is the 1:1 angle's at its own scale (its trim), not the centre's
     )
+
+
+def fast_period_yr(turns: TurningPoints) -> float:
+    """P_fast [yr]: the shortest full period t_{i+2} - t_i of the turning points, the fastest wave the scale resolves
+    (385533 7N-12 at the fine 591 yr: 1950 yr, the residual's spectral peak 1951 yr); nan with fewer than three."""
+    times = np.asarray(turns.times_yr, dtype=float)
+    return float((times[2:] - times[:-2]).min()) if len(times) >= 3 else NAN
+
+
+def slow_extrema_shift(
+    a: TurningPoints, window_a: Tuple[float, float], b: TurningPoints, window_b: Tuple[float, float], period_yr: float
+) -> float:
+    """The worst |t_a - t_b| / `period_yr` of the turning points of `a` and `b` inside their common window, paired in
+    order; inf when they differ there in number or in kind (a turning point one scale adds or loses), 0 for none."""
+    lo, hi = max(window_a[0], window_b[0]), min(window_a[1], window_b[1])
+
+    def inside(tp: TurningPoints) -> Tuple[np.ndarray, np.ndarray]:
+        times = np.asarray(tp.times_yr, dtype=float)
+        mask = (times >= lo) & (times <= hi)
+        return times[mask], np.asarray(tp.kinds)[mask]
+
+    (ta, ka), (tb, kb) = inside(a), inside(b)
+    if len(ta) != len(tb) or not np.array_equal(ka, kb):
+        return math.inf
+    return float(np.max(np.abs(ta - tb)) / period_yr) if len(ta) else 0.0
+
+
+@dataclass(frozen=True)
+class LadderRung:
+    """The rung of the G2c scale ladder a slow libration is read at (`slow_scale_rung`): the angle at that cutoff, the
+    slow extrema (turning points at the centre prominence) there and at W_c, the worst shift of the extrema against
+    W_c and the neighbouring rung [P_slow], and the two periods the ladder was built from."""
+
+    angle: FilteredAngle
+    cutoff_yr: float
+    n_tp: int
+    n_tp_centre_scale: int
+    shift: float
+    slow_period_yr: float
+    fast_period_yr: float
+    floor_yr: float  # the shortest rung allowed: max(P_c, libration_centre_cycles x P_fast)
+
+
+def ladder_cutoffs(top_yr: float, floor_yr: float, below_yr: float, factors: Sequence[float]) -> List[float]:
+    """The rungs [yr], longest first: top x f for each factor, kept when shorter than `below_yr` (the scale they
+    improve on) and not shorter than `floor_yr`."""
+    rungs = {float(top_yr * f) for f in factors}
+    return sorted((w for w in rungs if floor_yr <= w < below_yr), reverse=True)
+
+
+def slow_scale_rung(
+    angle: FilteredAngle,
+    coarse: FilteredAngle,
+    centre_prominence_rad: float,
+    slow_period_yr: float,
+    fast_period: float,
+    settings: AnalysisSettings,
+) -> Optional[LadderRung]:
+    """W28 B7 (card g07-4 A), the G2c scale ladder: the shortest cutoff below the centre scale W_c (`coarse`, at which a
+    slow libration of period P_slow was found) that keeps its slow well and suppresses the fast wave; None when there
+    is none or it shows nothing W_c does not.
+
+    It applies only when W_c's own edge trim leaves fewer than libration_centre_min_estimates slow periods in its window
+    (the scale itself withholds the independent cycles the tree asks for: 385533 7N-12, 54.5 kyr = 1.2 P of 100 kyr;
+    136108, 15875 and TX9 hold 2.6-5.7 P and keep W_c). The rungs are W_top x mmr_scale_ladder, W_top = min(W_c,
+    P_slow / filter_min_libration_cutoffs), longest first, down to max(P_c, libration_centre_cycles x P_fast): at three
+    periods the filter passes 1 % of the fast wave P_fast (`fast_period_yr` of the fine turning points). Walking down,
+    a rung holds when its turning points at the centre prominence p_c match those at W_c and at the rung above in
+    their common window (`slow_extrema_shift` <= mmr_scale_tp_time_tol); the walk stops at the first that does not
+    (a fast wave reaching p_c adds turning points). The last rung that holds is taken only when it shows more slow
+    extrema than W_c: the extrema the coarse window trimmed away (385533: 19.5 and 89.5 kyr at 7.95 kyr; at W_c 22.7
+    kyr only 44.8 and 67.6 kyr)."""
+    factors = settings.mmr_scale_ladder
+    if not factors or not (np.isfinite(slow_period_yr) and slow_period_yr > 0 and np.isfinite(fast_period)):
+        return None
+    span = coarse.window[1] - coarse.window[0]
+    if not span < settings.libration_centre_min_estimates * slow_period_yr:
+        return None
+    top = min(coarse.cutoff_yr, slow_period_yr / settings.filter_min_libration_cutoffs)
+    floor = max(angle.cutoff_yr, settings.libration_centre_cycles * fast_period)
+    reference = find_turning_points(coarse.t_yr, coarse.angle_f, centre_prominence_rad, tuple(coarse.window))
+    above, chosen, worst = (reference, tuple(coarse.window)), None, 0.0
+    for cutoff in ladder_cutoffs(top, floor, coarse.cutoff_yr, factors):
+        rung = angle_at_centre_window(angle, cutoff, settings)
+        if rung is None:
+            break
+        turns = find_turning_points(rung.t_yr, rung.angle_f, centre_prominence_rad, tuple(rung.window))
+        shift = max(
+            slow_extrema_shift(turns, rung.window, reference, coarse.window, slow_period_yr),
+            slow_extrema_shift(turns, rung.window, above[0], above[1], slow_period_yr),
+        )
+        if not shift <= settings.mmr_scale_tp_time_tol:
+            break
+        worst = max(worst, shift)
+        chosen, above = (rung, len(turns)), (turns, tuple(rung.window))
+    if chosen is None or not chosen[1] > len(reference):
+        return None
+    rung, n_tp = chosen
+    return LadderRung(rung, rung.cutoff_yr, n_tp, len(reference), worst, slow_period_yr, fast_period, floor)
 
 
 def _with_energies(revs: Sequence[Revolution], cycle_times: np.ndarray, cycle_h: np.ndarray) -> List[Revolution]:
@@ -3883,10 +5579,12 @@ def _runs_before(
     window: Tuple[float, float],
     settings: AnalysisSettings,
     local_prominence: Optional[LocalProminence] = None,
+    fired: Optional[set] = None,
 ) -> List[Episode]:
     """The runs of the regimes before the last one, marked `before_last_jump`: each regime's turning points at its own
     prominence, from its start to the next regime's start (excluded; the jump zone stays with the regime before it, as
-    the jump is located only within +-tau/2), classified in time order with consecutive ids (`_find_episodes`).
+    the jump is located only within +-tau/2), classified in time order with consecutive ids (`_find_episodes`; `fired`
+    collects the rules it applied).
 
     A regime's turning points are its own: the prominence covers what sigma_f holds faster than any libration
     (MMR: `analyse.regime_prominence`), and a stretch after the jumps where sigma circulates in a few decades would
@@ -3910,7 +5608,7 @@ def _runs_before(
             continue
         tp = turning_points_with_local(t, angle_f, regime.prominence_rad, selection, settings, local_prominence, found)
         own = (max(float(t[0]), regime.start_yr), upto)
-        for run in _find_episodes(tp, record, window, settings, len(runs), angle.well_model, angle, own):
+        for run in _find_episodes(tp, record, window, settings, len(runs), angle.well_model, angle, own, fired):
             run.before_last_jump = True
             runs.append(run)
     return runs
@@ -3965,6 +5663,10 @@ def finish_geometry(
     action steps within one half-cycle is cut there by a confirmed jump (`ActionStep.jump`) whose zone is that
     half-cycle; the regimes, rule 10, G1e and G1l then read it as a jump of a. Flags action_step and, with fewer than
     libration_jump_cycles energy cycles on a side, action_step_provisional.
+
+    MMR 1:1 (`FilteredAngle.coorbital_wells`): the changes of well and amplitude inside each accepted run are written
+    as its marks, with the jumps found here (`coorbital_marks`), its sub-regimes, and its inferred residence
+    (`coorbital_residences`, W28 C8; data only).
     """
     t = np.asarray(angle.t_yr, dtype=float)
     cycle_times = np.asarray(cycle_times_yr, dtype=float)
@@ -3986,9 +5688,12 @@ def finish_geometry(
         regimes = _regimes(t, zones, tau, geometry.turning_points.prominence_rad, regime_prominence)
         *before, last = regimes
         regime_window = (max(window0[0], regime_start), window0[1])
-        earlier = _runs_before(angle, before, (float(t[0]), float(t[-1])), window0, settings, regime_prominence)
+        fired: set = set()
+        earlier = _runs_before(angle, before, (float(t[0]), float(t[-1])), window0, settings, regime_prominence, fired)
         fresh = _measure(angle, last.prominence_rad, settings, regime_window, regime_start, len(earlier), regime_prominence)
         fresh.runs = earlier + fresh.runs
+        fresh.run_floors = run_floors_of(angle, fresh.runs)
+        fresh.rules_fired = rules.fire(fresh.rules_fired, *fired)
         fresh.record_centres = _centres_before(angle, before, earlier, geometry, window0, settings)
         fresh.centre = _stitched_centre(fresh.centre, fresh.record_centres, geometry.centre)
         geometry.__dict__.update(fresh.__dict__)
@@ -4023,5 +5728,10 @@ def finish_geometry(
     if geometry.pattern_b.rate_inconsistent:
         flags.append(str(Flag.STALL_RATE_INCONSISTENT))
     geometry.flags = list(dict.fromkeys(flags))
+    coorbital_marks(geometry, angle, settings)  # the 1:1 changes that are no boundary (needs the jumps)
+    coorbital_residences(geometry, angle, settings)  # the inferred 1:1 stay around each core (no decision reads it)
+    coorbital_single_legs(geometry, angle, settings)  # the 1:1 legs outside the accepted runs (leaf G4c reads them)
+    half_librations(geometry, angle, settings)  # the half-swings of another MMR between passages (leaf G4h reads them)
+    edge_stretches(geometry, angle, settings)  # how sigma_f meets the window's edges (rule end_arc_extend reads them)
     geometry.forget_derived()  # the runs before the last jump are marked now (and the regime may be measured anew)
     return geometry

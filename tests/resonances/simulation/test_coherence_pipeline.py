@@ -106,6 +106,9 @@ def build_free_gate_simulation(tmp_path, free_rate_e, free_rate_i, **config_kwar
         Nout=n,
         libration_period_min=0,
         coherence_enabled=False,
+        # the angle is supplied apart from the elements (above): the ecliptic frame classifies the stored angle, the
+        # invariable one (the default) would rebuild omega from these winding vectors
+        zlk_angle_frame='ecliptic',
     )
     kwargs.update(config_kwargs)
     sim = Simulation(**kwargs)

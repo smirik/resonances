@@ -8,7 +8,8 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
 ## Shared modules
 
 - `verdict`: string `Status` (resonant, transient, near_separatrix, non_resonant, uncertain, invalid) /
-  `AngleStatus`/`Reason`, `libration_origin` + `owner` + `origin_detail`, `final_regime` (how the record ends),
+  `AngleStatus`/`Reason`, `libration_origin` + `origin_detail` + the roles of the other resonance (`owner`,
+  `neighbours`, `resonant_argument`, `cause_role`, `cause_term`, `commensurability`; MMR only, `mmr/roles.py`), `final_regime` (how the record ends),
   `status_code` (a column for comparison with old runs; `verdict_from_status_code` only converts old integer summary
   files). `angle_status` describes the whole record: librating episodes followed by another regime, or a capture after
   one, are `episodic`. Old files: `angle_status_from_text` (angle `transient` → `episodic`, 2026-10-17), `reason_from_text`
@@ -45,11 +46,20 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   `centre_track.mean_separatrix_action`; Codex W25 #3: at a quarter of the mean strength 0.6 local is 0.3); no mean
   (a failed profile on the record's grid) → the pendulum's classes stay. The pendulum route does the same with
   √m_cycle. The zone classes reach L2, Z, caps and leaf 5o: not columns only.
+  W28 B3 (g07-1, g08-1), R0 with a: `fit_potential_from_force` has no free constant (a moving frame subtracts its own
+  s'', `frame_acceleration`; `SEPARATRIX_VF_FREE_CONSTANT` restores the old fit for comparison); a window's V_E takes
+  its N by held-out prediction (`fit_window_potential`, `SEPARATRIX_HOLDOUT_GAIN`; σ-only R0 keeps the in-sample
+  gain); `with_slow_check`/`agree_fraction` count eligible windows only (none: not_measured). A free constant on the
+  visited arc is worse than either alone (BG41 0.25, many passing rows fail): never combine them.
 - `confidence`: the level from margins and caps; `certain` is shown. certain needs every applicable margin full; high
-  allows thin or unmeasured evidence but no failed support; one failed support → medium, two → low; nothing physical
+  allows thin or unmeasured evidence but no failed support, and (W28 q-2 b, MMR own dynamics) at least one physical
+  support passing with its full margin (else cap `no_full_physics_support`); one failed support → medium, two → low; nothing physical
   measured and explicit caps limit it; uncertain/invalid have no level. The calibration cell's author-label counts are
   only reported (`cell_*`, `resonances/data/confidence_cells.json`, rebuilt by `benchmark/tools/calibrate.py`); they
   never cap a level. Every cap down to medium or low names its alternative (`verdict_text.CAP_ALTERNATIVES`).
+- `rules` (W28, cards s-4, g10-3): `Rule` (a StrEnum named by meaning), `RULES` (`RuleInfo`: doc id, `pending` until
+  the owner work package writes it; title; since), `rules_since`, `fire`, `ordered`. Every W28 rule name is
+  pre-registered; a work package only calls `fire` where its rule acts. Column `rules_fired` (contract below).
 - `orbit_type`: the header's tadpole/horseshoe/… text, descriptive only (`centre_moves` is shared with the text).
   Subtype `stationary` means the cycle bands overlap, not zero centre motion (2003 TX9 keeps it while its centre
   moves; the text says so).
@@ -62,10 +72,76 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   (`phase_return`: at the mid-level or a band of levels, `LIBRATION_RETURN_LEVELS`, `LIBRATION_RETURN_BAND_LEVELS`);
   a return-closed cycle caps the level at medium and cannot cross a confirmed jump. ≥ 3 TPs and a closed cycle, never a
   TP count, separate an episode from noise.
+- Runs break at a half-amplitude (or a midpoint jump) of `TurningPoints.break_half_amplitude_rad`, stamped from
+  `FilteredAngle.run_break_half_amplitude_rad` in `_find_episodes`/`_measure`: pi for MMR and secular, half a turn for a
+  ZLK omega (`ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG`, a 2 omega island; W28 D3, rule `zlk_half_turn_cut`). It only splits
+  runs: no rule may read which island (90/270) an episode is in (island_switch, centre mod 180: `dev/rejected.md`).
 - MMR only: an exit/entry is observed, not covered, when the orbit-averaged raw angle runs ≥ 1 turn monotonically from
-  the last TP (edge arc). A run whose centre moves is cut at a centre step or a stall of the slow centre (regime cuts).
+  the last TP (edge arc). |σ_f − c| > π and the arc's crossing read the local centre at that edge
+  (`Episode.edge_centre_rad`: the edge half-cycle's midpoint, or the well's c(t) at the edge TP in ψ; C9, W28 g03-2),
+  never the episode's mean (2016 JA: HS swing then tadpole, the mean put TP0 206° away) nor the first full cycle's
+  midpoint (still 190°); `_edge_reading` fires `local_centre_entry` when the mean reading differs. Secular/ZLK edges
+  keep the mean centre (not measured there). A run whose centre moves is cut at a centre step or a stall of the slow centre (regime cuts).
+  W28 B1, two joins (episode boundaries only, no status): rule q (`_frame_join`, `LIBRATION_FRAME_JOIN`) joins runs
+  broken by a half-cycle over the top in σ that stays below π in ψ (track valid, joined run accepted; a slow
+  `_split_regular` piece holding the join is classified in ψ too); rule s (`_stall_join`, `LIBRATION_STALL_JOIN`)
+  joins a stall cut's leftover that has a cycle of the stall's period (`_same_period`: any cycle with two leftover
+  TPs, not the median, since ripple adds TPs: 385266) and is accepted with it. Both fire into
+  `Geometry.rules_fired` through the `fired` collector of `_find_episodes`. W28 C16 (q-5 i), rule `regime_cut_mark`
+  (`_mark_regime_cuts` at the end of `_regime_pieces`, `LIBRATION_REGIME_CUT_MARKS`): two ACCEPTED neighbouring
+  pieces of a standing step/stall cut join when their facing full cycles share a band and a period
+  (`cycles_continue`); the joined run is `regime_change` (L6 not measured) only when it fails for `centre_moves`
+  alone, and the cut goes to `Episode.marks` (`centre_step@t0:t1`, `stall@t0:t1`). Never join an accepted|rejected
+  pair, and never drop the band test (VA14 60 kyr E17 and 2002 BG 20 kyr move: C15's naive reading).
+- MMR 1:1 only, rule `coorbital_edge_turn` (W28 C4, `_edge_raw_turns`, model `FilteredAngle.edge_turn` =
+  `mmr.coorbital_geometry.CoorbitalEdgeTurn`, wired in `mmr.analyse._measure`): a reversal of the raw angle averaged
+  over `MMR_COORBITAL_EDGE_TURN_ORBITS` orbits in the filter's edge trim, after the last (before the first) TP, is
+  added as a TP only when it closes a cycle of a run that was no episode (never extends an accepted one: that would
+  move its coverage); prominence ≥ `MMR_COORBITAL_EDGE_TURN_MIN_DEG` on both sides, a reflection site (planet/L3), a
+  crosses a_P, |ln out/in| ≤ `MMR_COORBITAL_TURN_ENERGY_TOL` (sides shrunk to the record left). Columns
+  `geo_edge_raw_tp_t`, `geo_edge_raw_read`, episodes `edge_raw_tp`. The centre scale drops the model; the x2 filter
+  guard keeps it (its trim is twice as wide, so an edge episode it cannot see makes `filter_sensitive`: BZ147, DJ1).
+- MMR 1:1 only, rule `coorbital_well_cut` (W28 C7, cards g03-1 A, g03-9 A; `FilteredAngle.coorbital_wells` =
+  `mmr.coorbital_geometry.CoorbitalWells`, `MMR_COORBITAL_WELL_EPISODES`): an episode ends only at a separatrix. A run
+  the band test rejects is accepted whole (`_accept_in_wells`, before split_regular/trims) when every full cycle's swing
+  holds a minimum of the run window's averaged potential to within the run's TP prominence (`cycle_wells`; XO3's
+  transitional cycles miss by 4-8° at 11°, BB2's drift past L5 by 7-25° at 4°) and its cycle centres stay within one
+  turn; two ACCEPTED neighbours join across a half-cycle below pi that does not circulate (`_join_in_wells`; a rejected
+  neighbour never: that is C8's residence, joining it moved TY11/277617/SZ2/PN/BT8/AP1); no regime cut for 1:1 with the
+  model. `coorbital_marks` (end of `finish_geometry`, needs the jumps) writes `Episode.wells` ('qs>compound>horseshoe')
+  and `Episode.marks` (`well_change@t0:t1`, `amplitude_change@t0:t1`, `kick@t`; episodes.csv); a run of several wells
+  gets shape REGIME_CHANGE (a horseshoe band holds a QS band: 164207), `FloorWell.holds` reads any of its cycle centres
+  (the floor of its fastest well; G1q keeps the outside episodes it contains, `analyse._kept_in_regime_change`), L5
+  not_applicable (`decide`). Trap: without the G1q/L5 parts 164207 and 469219 fell to transient/medium.
+- MMR 1:1 only, rule `coorbital_residence` (W28 C8, cards g03-3 C, g03-8 A, g03-9 A, g02-3 A;
+  `MMR_COORBITAL_RESIDENCE`; `Residence`, `SubRegime`, `AveragedLegs`, `residence_of`, `coorbital_residences` after
+  `coorbital_marks` in `finish_geometry` and again (residence only) in `refresh_edges`): every accepted run's core is its
+  TP span (`Episode.core_t0_yr/core_t1_yr`, what coverage, edges, margins and the status read); `subregimes` cut it at
+  the marks (each with its own 1:1 law from `WellsModel.law` for >= 2 pieces); the inferred `residence` walks the legs
+  of the 3-orbit averaged raw angle (`WellsModel.legs`, reversals of `MMR_COORBITAL_EDGE_TURN_MIN_DEG`) out from the
+  core until a leg sweeps `LIBRATION_EDGE_ARC_REV` turns ('circulation') or the record ends ('edge'); an observed
+  exit/entry bounds it at the core. |da|/da_max (`zone_max`) is reported only: TY11 20 kyr's accepted core starts at
+  a turn of zone 2.2 (as a bound it would cut the g03-8 A residence). Nothing reads it (test: decision equal with the
+  switch off). `well_sequence` feeds the 1:1 orbit type and `geo_orbit_type_sequence`.
+- MMR only, W28 C6 (leaves G4c/G4h read them; `MMR_COORBITAL_SINGLE_LEG`, `MMR_SINGLE_HALF_LIBRATION`):
+  `coorbital_single_legs` (end of `finish_geometry`, after the residences) stores `Geometry.single_legs` (`SingleLeg`:
+  the legs of `WellsModel.single_legs` outside every accepted run, period ≥ the floor less the thin band, with
+  `LegTurn` out/in and zone and the local law; columns `geo_leg_n`, `geo_leg_read`); `half_librations` stores the
+  2-TP half-swings of another MMR between passages with their one-harmonic law (`HalfLibration`,
+  `geo_half_libration_read`; needs a finite `identity_coefficient`, so secular/ZLK never get one).
+  `short_runs(runs, coorbital)` adds over_the_top 2-TP 1:1 runs whose half-swings cross at most one of 0 and pi
+  (`crosses_planet_and_l3`).
+- MMR only, W28 C14 (rule `end_arc_extend`, `MMR_RECORD_EDGE_STRETCH`): `edge_stretches` (end of `finish_geometry`)
+  stores `Geometry.edge_stretches` (`EdgeStretch`, one per window edge, the start mirrored in time): the edge pass of
+  σ_f from the slow centre's nearest turn, `slowdown` (≥ 1 revolution, then `duration_yr` without another, against the
+  pass's longest revolution `last_rev_yr`) or `reflection` (< 1 revolution after a turn, ≥ 1 beyond it); columns
+  `geo_start_edge_*`, `geo_end_edge_*`. Measurement only; `mmr.decide.record_edges` judges it. Cost trap: the
+  revolutions are found by bisection on the running maximum; an argmax per revolution was O(N × revolutions) and
+  took 100–260 s on circulating high-order rows (27103 14M+27, 18118 29M+49; FIX-perf 2026-11-01).
 - Episodes without circulation between them cover the record together (`regime_change`, `covering_union`): 1:1 rule
-  G2, any other MMR G2u; gaps ≤ `LIBRATION_UNION_GAP_PERIODS` × (P_l + P_r); edges reached within a period.
+  G2, any other MMR G2u; every gap bounded: each σ_f sample inside a neighbour's own band c ± A_max or the band carried
+  linearly between their facing centres (± max A_max), up to `LIBRATION_UNION_BAND_MARGIN_DEG` (`gap_band_overshoot`;
+  never the low-pass centre track, which follows a slow excursion; the carried band alone splits 524522 1V-1), whatever the gap's length (A7, cancels D1b); edges reached within a period.
 - After any cut (a jump of a or an action step) the record's entry is read on its first run (`Geometry.record_entry`,
   columns `record_entry_*`, flag `entry_suspected`; `Geometry.entry_suspected()` covers both).
 - Derived views (`Geometry.derived`, held in `derived_views`) are emptied by `forget_derived` wherever runs or their
@@ -96,8 +172,20 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   CSV rows first).
 - Tests of decision code build real result objects (`tests/resonances/analysis/builders.py`), not stubs; decision
   code reads dataclass fields directly.
+- Rule flags (`rules.py`): a rule fires where its predicate holds and it acts on an intermediate result (a cut, a
+  merge, a cap removed or added, an outcome), even when the verdict stays the same; a rule only evaluated does not
+  fire. Geometry-level rules go into `Geometry.rules_fired`; other result objects carry frozensets of their own
+  (secular `AngleDecision`/`StatusDecision.rules_fired`). The decide steps merge everything into
+  `Verdict.rules_fired` (`mmr.decide.rules_fired`, `secular.decide.rules_fired`: deduplicated, registry order); a
+  new carrier is added to that merge call by the work package that adds it. A second pass that replaces the verdict
+  (MMR G2c, G1q; the secular centre scale) keeps the first pass's geometry rules. `to_flat_dict`/`from_flat_dict`
+  round-trip the column; names outside the registry survive, after the registered ones. Not a setting
+  (settings_hash unchanged), no decision reads it, no figure prints it (`combined_numbers.SPECIAL_COLUMNS`). The W28
+  review folder's `same_rule/` is built from it, so firing too broadly inflates it.
 - Secular and ZLK: `analysis/secular/` (`analyse_secular`: cutoff from the forced waves, centre scale,
-  `decide_status` with the free-omega gate's outcome, `extend.recommend`: the action and `extend_to_years` of an uncertain verdict, `slow`: the centre's slow line, a column) and `analysis/zlk/` (`analyse_zlk`; `diagnostics`: e-i coupling, attribution and the centre-scale guard `centre_guard`, columns only; the guard runs only with the gate enabled, a split and no unfitted co-orbital, and rejects only a measured forced beat that explains the centre). Gate disabled ≠ gate
+  `decide_status` with the free-omega gate's outcome, `drift` only for a monotone slow centre (W28 D6: one that
+  turned back, `mmr.decide.interior_turns` ≥ 1, is `insufficient_time`/`few_cycles`), margin P thin below
+  1 + `CONFIDENCE_THIN_BAND` turns, `extend.recommend`: the action and `extend_to_years` of an uncertain verdict, `slow`: the centre's slow line, a column) and `analysis/zlk/` (`analyse_zlk`; `diagnostics`: the record's e-i coupling, attribution and the centre-scale guard `centre_guard`, columns only; `episode_ei`: the deciding episode's e-i, which decides an episodic row without a gate verdict, W28 D10; the guard runs only with the gate enabled, a split and no unfitted co-orbital, and rejects only a measured forced beat that explains the centre). Gate disabled ≠ gate
   unavailable: disabled keeps the geometric status with `check_zlk_free_omega` not_measured.
 
 ## Do not retry here

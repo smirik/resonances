@@ -919,7 +919,8 @@ def test_analyse_verdict_names_the_subresonance(analysed_n2):
     assert v.status == Status.RESONANT == analysed_n2.derived[0].verdict.status
     assert str(v.reason) == 'subresonance_librates'
     assert str(v.libration_origin) == 'subresonance'
-    assert v.owner == '9M-16+2+5'
+    # W28 A3a (card g06-1 A): the member is the row's resonant argument, not an owner
+    assert v.resonant_argument == '9M-16+2+5' and v.owner == ''
 
 
 def test_analyse_derived_row_of_the_member(analysed_n2):

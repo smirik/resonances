@@ -114,6 +114,11 @@ Conclusions measured during the programme, with the objects that showed them. Th
   real librations behind a fixed window.
 - A frequency error matters through accumulated phase: residual fraction √(1 − sinc²(δT/2)); 0.1″/yr at 500 kyr
   leaves ~7 %, 0.05″/yr at 5 Myr ~34 %.
+- The response of a secular angle belongs to the Poincaré actions Γ = L − G (conjugate to −ϖ) and Z = G − H
+  (conjugate to −Ω): an isolated term in σ = p ϖ + q Ω + … gives (Γ̇, Ż) ∝ (p, q) sin σ, so q Γ − p Z is conserved
+  and a g-only term need not keep i constant at finite i (Codex, W28 D9). The present response fits raw e and
+  sin(i/2) separately over the whole window; on z-type rows other waves dominate (1020: R² 0.002 and 0.012), so its
+  fail is no measurement of absence. It passes no non-resonant benchmark row (0/9).
 
 ## ZLK
 
@@ -129,6 +134,14 @@ Conclusions measured during the programme, with the objects that showed them. Th
 - One median e_free over the whole record hides a free circle that grows in part of it: compare rolling medians of
   both radii over one libration cycle (555527: 0.59 global, 0.66 local at 100 kyr; an instantaneous ratio reaches
   1.03 on noise).
+- e–i measured over a whole record is not the e–i of an episode (W28 D9): circulating stretches trade e and i at
+  constant H at their cos 2ω harmonic, which can lie near the libration period (88899 500 kyr: both episodes in
+  phase, H not conserved, η_H 1.1–1.4; the whole record at P reads zlk or none depending on the estimator).
+- The constant-H test is better read as H cancellation, η_H = |δH| / |cos i δG| at P (δG from e alone; 0 for an exact
+  trade), than as the first-order slope di/de = −e cot i/(1−e²): large cycles break the slope (1866 slope 3.0×, 477492
+  2.0×) while H stays cancelled to 4–5 %. On the benchmark ZLK items zlk sits at η_H ≤ 0.28, everything else ≥ 0.58.
+  A fixed-period fit over many cycles of a drifting period loses phase and amplitude (162474 1.5 Myr ep0: 121°);
+  demodulate cycle by cycle. Fewer than 3 periods do not separate the classes (two estimators agree 3/11).
 - A planetary-frequency free residual means leakage or a true secular resonance; either makes the ZLK reading
   ambiguous (withhold, do not call it kinematic; 4257).
 - Different baselines are different evidence: 162474 is episodic over 1.5 Myr, resonant on its first 0.5 Myr alone.

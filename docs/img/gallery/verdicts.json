@@ -320,7 +320,7 @@
   "step_yr": 1.0
  },
  "mmr3__2003_TX9__3E+2J-10+0+0+5": {
-  "action": "review",
+  "action": "extend",
   "angle_status": "libration",
   "confidence": "",
   "example_id": "mmr3__2003_TX9__3E+2J-10+0+0+5",
@@ -384,9 +384,9 @@
   "step_yr": 1.0
  },
  "mmr3__285637__3M+7J-6+0+0-4": {
-  "action": "spot_check",
+  "action": "none",
   "angle_status": "libration",
-  "confidence": "medium",
+  "confidence": "high",
   "example_id": "mmr3__285637__3M+7J-6+0+0-4",
   "final_regime": "libration",
   "integrator": "ias15",
@@ -485,12 +485,12 @@
  },
  "secular__2306__g-g6+s-s6": {
   "action": "extend",
-  "angle_status": "drift",
+  "angle_status": "insufficient_time",
   "confidence": "",
   "example_id": "secular__2306__g-g6+s-s6",
   "final_regime": "",
   "integrator": "SABA(10,6,4)",
-  "libration_origin": "unknown",
+  "libration_origin": "",
   "moon": false,
   "name": "2306",
   "output_step_yr": 99.99999988572381,

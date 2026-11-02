@@ -144,6 +144,36 @@ law is necessary, not sufficient: the kinematic tests, the energy and the streng
 angle. A fail with a bounded angle points to a kinematic or induced origin. *In the output:* `check_mmr_a_response`;
 the law taken in `rsp_force_law` (`mmr_numbers.csv`), the harmonic law in `rsp_force_harm_*`.
 
+### The direct averaged-force law
+
+A line of $\dot a$ between the response cutoff and the period can swamp the fitted sine and also add small turns that
+shorten the period the turning points give. 59358 8N-13 shows both: the conjunction cycle $13P_N \approx 2.1$ kyr in
+$\dot a$, a period of 4.4 kyr from the turns against a swing of 8.8 kyr, and L4 halves of 0.16. Where the harmonic
+L4 fails or passes thinly on a two-body angle that is not 1:1 and has a direct strength, the
+resonance's own force is then tested directly. Lagrange's equation with the directly averaged disturbing function of
+the term, the planet's **real mass** and each window's elements,
+
+$$
+\dot a_\text{th}(t) = \frac{2k}{na}\,G m_P\,\frac{d\langle D\rangle}{d\sigma}\big(\sigma(t)\big),
+$$
+
+is evaluated along the recorded $\sigma(t)$, and $\dot a_\text{th}$ and the observed $\dot a$ go through the **same**
+low-pass at $f\,P_\text{large}$, $f$ = `MMR_DIRECT_FORCE_CUTOFF_CYCLES` = 0.35 (the filter of the force is compared
+with the filter of $\dot a$, never $\sin$ of a filtered angle). Only one scale $s$ per window is free: shape and phase
+are the theory's. $P_\text{large}$ is the period of the turns that survive a change of the cutoff: the turns of
+$\sigma$ low-passed at $f P$ count when their number stays within `MMR_FILTER_GUARD_TP_REL` with the cutoff doubled;
+otherwise the doubled cutoff's period is tried (a clean libration keeps its own period at once).
+
+The law is taken when two windows share no sample (one stretch counted twice is not a confirmation), a shifted null
+exists, the smaller half median $R^2 \ge 0.4$ (thin below 0.7), every $s$ lies in $[1/\sqrt{10},\ \sqrt{10}]$
+(`MMR_STRENGTH_CHECK_RATIO`) and $R^2$ beats the null by 0.2. It lifts L4 (`rsp_force_law` = `direct_force`, rule
+`direct_force_law`), never lowers it, never makes an episode, and the level is at most medium (cap
+`force_law_theory_only`: a computed first-order average with a fitted scale, not the measured shape). F then reads the
+strength the large turns need. It is not consulted where the step folds short periods into $a$ (the guard above):
+it reads $a$ too. 59358: $R^2$ 0.75, $s$ 1.14–1.29, null 0.02 → transient, medium; 2005 GQ107 40M-57 stays
+uncertain (its episode at 31.7–38.8 kyr holds two overlapping windows only). *In the output:* `rsp_dforce_*`
+(`rsp_dforce_reason`: `taken` or the guard that refused it), `geo_period_large_yr`; per episode `force_dforce_*`.
+
 ### Co-orbital force law
 
 A 1:1 angle has its own law with no free shape ([The resonant pendulum](pendulum.md#co-orbitals-11)). The model
@@ -166,6 +196,39 @@ combination of the planets alone. The pendulum test (below) is the energy integr
     $M = \sigma + \lambda' - ((2k-1)\omega + \Omega)$: the angle of Li et al. (2019), built from $\Omega$, $\omega$ and
     $M$ only.
 
+### Local force and energy on a single leg
+
+A co-orbital body is often in the 1:1 well for less than a cycle: it is reversed once or twice by the averaged
+potential between two passages, then leaves. Such a stretch closes no cycle, so no episode is accepted, but it may
+still be a capture. The single-leg branch (status tree, leaf G4c) reads the *leg*: the
+orbit-averaged angle (`MMR_COORBITAL_EDGE_TURN_ORBITS` = 3 orbits) between two reversals of at least
+`MMR_COORBITAL_EDGE_TURN_MIN_DEG` = 20°, outside every accepted run, period $2L$ at least the floor less
+`CONFIDENCE_THIN_BAND`. Four questions, each from the averaged problem of
+[the co-orbital pendulum](pendulum.md#co-orbitals-11):
+
+- **Topology.** Which of the planet ($\theta = 0$) and L3 ($\pi$) the leg crosses: none (tadpole), L3 (horseshoe),
+  the planet (quasi-satellite), both (a lap past the planet, no swing of one well).
+- **Local law.** The 1:1 law above on the leg widened by `MMR_COORBITAL_LEG_WINDOW_FACTOR` × $L$ on each side, at the
+  leg's own cutoff $\max(2P_\text{orb},\ 0.1\cdot 2L)$ (`MMR_COORBITAL_LEG_CUTOFF_ORBITS`,
+  `MMR_COORBITAL_LEG_CUTOFF_FRACTION`): the angle's $P_c$ is as long as the shortest legs. Its force check with
+  $K > 0$ and its energy integral must pass. On the leg alone the energy is too short to fit; ±0.25 L keeps 85 % of
+  the legs of confirmed cycles passing and separates them 2.0× from the single legs of non-resonant rows.
+- **Turn conservation.** The averaged problem is time-reversible about a turn, so a reflection mirrors
+  $|a - a_P|$: out/in $= |a - a_P|_\text{after} / |a - a_P|_\text{before}$, medians over
+  `MMR_COORBITAL_TURN_SIDE_WINDOW` × the shorter adjacent leg on each side, is 1. A close approach (a kick) is not
+  reversible: $|\ln(\text{out}/\text{in})| >$ `MMR_COORBITAL_TURN_ENERGY_TOL` = ln 1.4, the 90th percentile of the
+  turns of confirmed cycles.
+- **Zone.** A level is reversed only below the highest $\tilde R$ before the planet or L3 ahead of the turn: the
+  zone $|a - a_P| / \Delta a_\text{max} \le$ `MMR_COORBITAL_TURN_ZONE_MAX` = 1.1 (97.6 % of the turns of confirmed
+  cycles; $\Delta a_\text{max} = a_P\sqrt{(8/3)\mu(\tilde R_\text{top} - \tilde R(\theta))}$).
+
+All four hold → a transient of one leg (≤ medium); one fails → uncertain; both turns fail → no capture, but a near
+miss (the near-episode cap). Example: 1991 VG's horseshoe leg 552–613 yr follows the Earth's law (K 2.1, energy
+passes), but its turns read out/in 0.61 and 1.59: two kicks by Earth approaches, not reflections, so the verdict is
+`non_resonant / medium` (near-episode), as the author read it; 2023 OE5's leg 586–665 yr (out/in 0.84 and
+1.20, K 1.2, energy passes) is a transient. The measurement and the reasons for its windows are in
+`dev/decisions.md`.
+
 ## Energy and potential
 
 *Question.* Does $\sigma$ move in a fixed potential well, with the period that well predicts?
@@ -177,13 +240,23 @@ $$
 \dot\sigma^2 = 2E_w - 2V(\sigma) \qquad \text{(one energy } E_w \text{ per cycle)},
 $$
 
-and, independently, $V_F$ from the force, $c\,\dot a = -V'(\sigma)$. The test has two parts:
+and, independently, $V_F$ from the force, $c\,\dot a = -V'(\sigma)$, with no free constant: a periodic $V$ has no
+mean force over a closed cycle, and on a short arc a constant column would take part of the force (137295 1N-2 visits
+98° of an asymmetric well; with the constant fitted and dropped, $V_F$'s well moved from 279° to 338°). In a frame
+that follows a moving well, $\varphi = \sigma - s(t)$, the frame's own acceleration is taken off instead,
+$c\,\dot a - \ddot s = -V'(\varphi)$, so $V_F$ sees the same motion as $V_E$. The test has two parts:
 
 - *$\sigma$ alone*: the **period law** $\lvert\operatorname{median}(T_\text{obs}/T_\text{pred}) - 1\rvert \le$
   `SEPARATRIX_PERIOD_TOL` = 0.2, and the wells fitted in different windows agree (phase coherence $\ge$
   `SEPARATRIX_PHASE_COHERENCE` = 0.9);
 - *with $a$*: $V_E$ and $V_F$ correlate at $r \ge$ `SEPARATRIX_VEVF_R_MIN` = 0.9 in at least
-  `SEPARATRIX_VEVF_FRACTION` = 2/3 of the windows.
+  `SEPARATRIX_VEVF_FRACTION` = 2/3 of the eligible windows (one window per cycle or turn). The two are compared on
+  the arc of $\varphi$ the window visits (`SEPARATRIX_VEVF_ARC`; outside it both fits are extrapolations), with the
+  number of harmonics chosen by held-out prediction (fitted on one half of the cycle, predicted on the other;
+  `SEPARATRIX_HOLDOUT_GAIN`). A window is eligible when $\sigma$ swings at least `MMR_A_RESPONSE_MIN_AMP_DEG` = 45°
+  in it, or turns: on a shorter arc the shape of $V$ is not constrained (2004 BG41 3J-1: $r$ = 0.64–0.90 at
+  ±20–30°, 0.98–1.00 at ±60–108°). No eligible window: not measured, never a pass. `sep_VE_VF_n_eligible` of
+  `sep_VE_VF_n_windows` counted, `sep_VE_VF_arc_deg` their median arc.
 
 $T_\text{pred}$ of a cycle is its period in a potential, through its own turning points. For a two-body angle (not
 1:1) with its planet saved, the potential is the **full averaged well**
@@ -244,6 +317,46 @@ drift (rule K2, `rec_rule` 3k2) when the force law fails under every law, the la
 ($\ge 0.9$) with the rate of the angle's secular part $s = \sigma - \psi_\lambda$ low-passed at the same $W_c$. A
 kinematic libration whose centre moves by more than `MMR_KIN_DRIFT_SHIFT_RATIO` = 1 amplitude over its episode is
 read the same way. *In the output:* `check_mmr_kinematic`, `kin_*`.
+
+**K1 on the episode and the swing shares.** On the decisive episode, $\sigma$ and $p\varpi$ are low-passed at the
+episode's response cutoff ($\max(P_c, 0.1\,P_e)$), cut to the episode and detrended; their difference is the
+$\lambda$ part $\psi_\lambda$. Three numbers describe who makes the swing:
+
+$$
+\text{K1e} = \operatorname{corr}(\sigma, p\varpi), \qquad
+\text{swing share} = \frac{\tfrac12\operatorname{range}(p\varpi)}{\tfrac12\operatorname{range}(\sigma)}, \qquad
+\lambda\text{ share} = \frac{\tfrac12\operatorname{range}(\psi_\lambda)}{\tfrac12\operatorname{range}(\sigma)} .
+$$
+
+A kinematic libration has K1e ≈ 1, a swing share ≈ 1 and a small $\lambda$ share; a pendulum swings $\sigma$ through
+its own $a$, so its $\lambda$ share is ≈ 1. The numbers are nan, with the reason in `kin_k1_episode_reason`, for
+$p = 0$, a retrograde angle, no librating episode, or an episode shorter than `MMR_KIN_MIN_POINTS` cutoffs.
+`kin_check_reason` names why the slow-angle correlation (K1) has no number, e.g. `too_few_points` when the record is
+shorter than three centre windows. 285637 3M+7J-6: K1e 0.971, swing share 1.13 ($\psi_\lambda$ carries a slow
+±7° wave longer than the 18-kyr cycle, $\lambda$ share 0.24). *In the output:* `kin_k1_episode`, `kin_swing_share`,
+`kin_lambda_swing_share`.
+
+**When a kinematic libration is measured.** K1e ≥ `MMR_KIN_CORR_MIN`, a flat $a$ (B1 < `MMR_KIN_B1_CLEAR` = 0.01, far
+below what a pendulum needs) and a period at a secular one (within `MMR_KIN_PERIOD_TOL`) together measure the
+kinematic cause: the margin K1e is full and counts as the verdict's physics, so the verdict may reach `high`
+([confidence](confidence.md)). 285637 (B1 6·10⁻⁵) and 481085 7E-10M-6 (3.2·10⁻³) are high; 41588 3J+9S-2 (B1 0.095)
+stays medium. No response of $a$ means no resonance: the class stays non_resonant, only the confidence in it rises.
+
+**A slower libration of the centre (slow scale).** Whenever the centre turns, the package stores the slower
+libration at its own scale (`MMR_SLOW_SCALE_REPORT`): the runs G2c finds at the centre scale $W_c$, even when they do
+not cover the record (episodes.csv rows with `scale` = `slow`), else the turns of the slow centre $c(t)$ of a
+librating angle. Its period, closed cycles and half-amplitude, its own identity $\dot\sigma_s = c\,(a_s - a_*)$, B1 in
+the band of its period, and the nearest secular period ($\pi/\lvert\dot\omega\rvert$, $2\pi/\lvert g - g_j\rvert$)
+are columns. A slow swing at a secular period is that cycle seen through the angle's $p\varpi$ part: a modulation, not
+a second libration. Its cause is named with a level: *identified* when the period matches a secular period and the
+centre follows that cycle ($\dot c$ on its harmonics, $R^2 \ge$ `MMR_OWNER_R2_MIN`, or the slow centre's rate follows the
+secular part of $\sigma$, $\ge$ `MMR_KIN_CORR_MIN`); *possible* with one of the two; *unknown* with neither, and then
+it is said as unknown. Where the identity holds on the slow scale the slow libration is a `dynamic_candidate`: it
+changes no status. An owner row names its owner's slow $x$ cause first. The swing $p\varpi$ alone makes is
+$\lvert p\rvert\arcsin(\min(e_f, e_F)/\max(e_f, e_F))$ (`kin_pred_swing_deg`, next to the measured
+`kin_meas_swing_deg`). 37087 3J+8S-3: slow runs 17.3–62.4 and 65.8–96.6 kyr, period 5.69 kyr against
+$2\pi/(g - g_5)$ = 5.70 kyr, identity slope/$c$ 2.8 (fails): identified. 2001 HW7 5J+6S-2 (owner row): one slow
+cycle, the $2\omega$ cause of its owner's $x$, identified. *In the output:* `slow_*`.
 
 ??? info "The perihelion rate of a two-mode eccentricity vector"
     With $z = e\,e^{i\varpi} = e_f e^{igt} + e_F e^{ig_5t}$ (free and forced parts, $\theta$ the angle between them),
@@ -312,14 +425,66 @@ own conditions (in the table).
 | identity | for a three-body $\sigma$ whose period needs $\ge 10^3\,\mu_i\mu_j e^q$: a two-body $\phi$ follows $\sigma$ by the identity, librates over $\sigma$'s episode and passes its own strength check | `MMR_OWNER_IDENTITY_RATIO_MIN` |
 
 An owner may itself librate (`owner_libration`) or circulate at the right period, a forced wave (`owner_forced_wave`).
-It takes $\sigma$'s episode only when its intervals cover at least `MMR_OWNER_COVER_MIN` = 0.5 of it. The owner of a
+It is credited only with its measured regimes (libration or admissible forced wave; a gap between two of its libration
+pieces is not its time), and it takes an episode of $\sigma$ only when these intervals cover at least
+`MMR_OWNER_COVER_MIN` = 0.5 of it, checked on every accepted episode (rule F7). Near the ends of the record its force
+is not measured at all: its windows keep clear of the band-pass edges, so the record's first and last stretch of
+about $2P$ is in no window, and neither is the tail the windows' step leaves. There the owner is neither present nor
+absent. A window where it circulates too fast to fit is a measurement: the owner is absent there. With covered fraction $c$ and an unmeasured fraction $u$ of the episode, the episode is induced when
+$c \ge 0.5$, the row's own when $c + u < 0.5$, and otherwise not measured: it neither counts for the owner nor
+decides against it (2001 HW7 without planets: an episode at 19.5 kyr, after the owner's last window ends at 19.0 kyr).
+A cover equal to the threshold counts as covering; round-off cannot push it below. An owner in its libration regime
+must also be slow enough to make $\sigma$'s cycles (P2): $\Psi/u$ turns less than
+`MMR_OWNER_PSI_TURNS_PER_CYCLE_MAX` = 1 per cycle, $\lvert\dot\Psi\rvert P/(2\pi u) < 1$; a closed cycle of $\sigma$
+cannot hold more than one turn of the remainder. The episodes it covers and passes P2 for are induced
+(`libration_origin` = `induced` in `episodes.csv`); the others are the row's own and decide the status: every episode
+induced gives non_resonant / induced_libration, an own episode next to induced ones is read without them (2000 SF8
+8M-9: 17E-36 librates before and after its episode, so it is a transient). The owner of a
 three-body angle can be a two-body resonance, and the multiplet law above applies to an owner too.
 
-*Two resonances at once?* Both angles can librate together only if $\Psi$ is itself bounded. When $x = \Psi/u$ sweeps
-at least `MMR_OWNER_CAPTURE_SWEEP_DEG` = 180° and $\dot x^2$ is not a function of $x$ ($R^2 < 0.7$ on its first
-harmonics), a second capture is excluded; otherwise it stays unresolved and caps the confidence at medium. A secular
+**Two librations are not two resonances.** Membership is judged by the term that moves $a$, not by a librating
+angle (Nesvorný & Morbidelli 1998, §2, pp. 3030–3031: a three-body resonance is identified by the correlation of the
+filtered $a$ with $\sigma$, a rival one rejected because $a$ does not follow its angles; Gallardo, Coito & Badano
+2016, p. 89: at small $e$ a high-order two-body and a zero-order three-body angle both librate, only the second moves
+$a$). Two angles sharing $\lambda$ are tied by $\Psi$: while the owner holds $a$, both librate as one oscillation, and
+the body is in both resonances only when $x = \Psi/u$ has a well of its own (*confirmed* below). An owner explains the
+measured forcing but does not exclude an extra restoring term, so an unresolved test caps the confidence (2001 HW7);
+a residual after the owner is no second capture either. A slow swing of the centre at $\pi/\lvert\dot\omega\rvert$
+or $2\pi/\lvert g - g_j\rvert$ is the secular cycle when $\ddot x$ is a function of $2\omega$ or $\varpi - g_jt$, not
+of $x$: a modulation, not a second libration. With no term holding $\lambda$ the same beat is a
+[kinematic libration](#kinematic-origins) (285637, 481085): $a$ stays flat, so non_resonant. Perihelion dominance is no
+veto by itself, and an apocentric centre is a branch of a resonant model, not a synonym for non-resonant.
+
+*Two resonances at once?* Both angles can librate together only if $\Psi$ is itself bounded, and a $\Psi$ held by
+$\sigma$'s own term is a pendulum in $x = \Psi/u$. A second capture is excluded by either of two routes:
+
+- *sweep and energy*: $x$ sweeps at least `MMR_OWNER_CAPTURE_SWEEP_DEG` = 180° and $\dot x^2$ is not a function of
+  $x$ ($R^2 < 0.7$ on its first harmonics);
+- *secular forcing* (F3): $\ddot x$ follows the secular cycle, $R^2 \ge 0.7$ on the harmonics of $2\omega$ or of
+  $\varpi - g_jt$ ($j = 5..8$), and not $x$ itself, $R^2 < $ `MMR_OWNER_CAPTURE_SELF_R2_MAX` = 0.2 on
+  $[1, \sin x, \cos x]$: the remainder is pushed by the perihelion's cycle, not held in a well of its own (78085
+  5J-4S-1: 0.98 against 0.001, while $x$ moved only 155°).
+
+*Confirmed* (the third outcome): "both angles librate" is not "in both resonances"; $\Psi$ is, when $x$
+has a well of its own. All of these on the test window: $x$ is bounded (sweep < 180°), $\dot x^2$ is a function of
+$x$ and $\ddot x$ of $\sin x$ ($R^2 \ge 0.7$ both), its period $P_x$ (the median full period of its turns at the
+centre-turn prominence `LIBRATION_CENTRE_TP_PROMINENCE_DEG` = 10°) is no secular one ($|P_x/(P_\text{sec}/k) - 1| >$
+`MMR_KIN_PERIOD_TOL` for $\pi/|\dot\omega|$, every $2\pi/|\dot\varpi - g_j|$ and $k = 1, 2$: a small forced
+sinusoid passes both fits like a pendulum, only its period tells it), and $x$ closes at least
+`LIBRATION_CENTRE_MIN_ESTIMATES` = 2 cycles (a monotonic $x$ fits the energy integral trivially: 2013 TW135, $R^2$
+1.00, no turn). The row then keeps the tree's own reading of $\sigma$ with origin `joint` (detail `joint_capture`,
+`owner` = the other resonance, role `joint`; rule `both_resonances_confirmed`), when that reading claims the
+libration; another reading stands as it is. With one cycle the row is `uncertain / baseline_needed`, origin `joint`.
+The owner's own row is untouched. No benchmark row is confirmed (2026-11-01: 45 owner rows; the bounded $x$ of nine
+of them has no turn but HW7's one).
+
+Otherwise it stays unresolved and caps the confidence at medium (2001 HW7: $\ddot x$ follows $2\omega$ but also
+$\sin x$, $R^2$ 0.63). A slow wobble of the centre on an owner row is described, not judged: the period of $x$ and its
+secular cause, `identified` when its period matches $\pi/|\dot\omega|$ or $2\pi/|g - g_j|$ (or a harmonic) within
+`MMR_KIN_PERIOD_TOL` and $\dot x$ follows that term with $R^2 \ge 0.7$, `possible` when one of the two holds (HW7:
+6.6 kyr against $\pi/|\dot\omega|$ = 7.2 kyr, identified). A secular
 or Lidov-Kozai angle never demotes an MMR verdict: it has no $\lambda$, so no identity ties them. *In the output:*
-`check_mmr_owner`, `owner`, `own_*`; the candidates are in `candidates.csv`.
+`check_mmr_owner`, the role columns below, `own_*`; the candidates are in `candidates.csv`.
 
 ??? info "Owner routes and the second capture in detail"
     - *Identity route.* The two-body $\varphi$ follows $\sigma$ on the decisive window as $\sigma_f = c\,\varphi_f + a + bt$
@@ -329,14 +494,42 @@ or Lidov-Kozai angle never demotes an MMR verdict: it has no $\lambda$, so no id
     - *Multiplet owner* (`MMR_OWNER_LAW` = `multiplet`). An owner whose single phase drifts is fitted with all its
       members $\varphi_j = \varphi_o + j(\varpi - \varpi_P)$, and must then beat $\sigma$'s own constant-coefficient $R^2$
       by 0.2.
-    - *Outside the episode.* An owner whose intervals cover less than `MMR_OWNER_COVER_MIN` of the episode (rule F7)
-      sets the flag `owner_outside_episode`, and the tree goes on.
-    - *Second capture.* $x = \Psi/u$ is low-passed at `MMR_OWNER_CAPTURE_LOWPASS_PERIODS` = 3 periods; $\dot x^2$ is
-      fitted as a function of $x$ with `MMR_OWNER_CAPTURE_HARMONICS` = 2 harmonics. Unresolved: the cap
-      `second_capture_unresolved`.
+    - *Outside the episode.* An owner whose intervals cover less than `MMR_OWNER_COVER_MIN` of an own episode (rule F7)
+      sets the flag `owner_outside_episode`; one that covers it but fails P2 sets `owner_psi_too_fast`. Its key goes to
+      `neighbours` with where it acts (before, during or after the row's own episodes), the origin is the tree's.
+    - *Second capture window.* The test runs on the hull of the owner's intervals that meet $\sigma$'s episodes: a test
+      window only, never owner time.
+    - *Second capture.* $x = \Psi/u$ is low-passed at `MMR_OWNER_CAPTURE_LOWPASS_PERIODS` = 3 periods before any
+      derivative; $\dot x^2$ is fitted as a function of $x$ with `MMR_OWNER_CAPTURE_HARMONICS` = 2 harmonics, and F3
+      fits $\ddot x$ on each secular phase alone with the same number of harmonics. A secular term or a period of $x$
+      is read only when `MMR_OWNER_X_MIN_CYCLES` = 2 of its cycles fit in the test window (over less, the cosine of a
+      nearly uniform phase is a low polynomial in $t$ and fits any trend). The phases are $2\omega$ and the body's
+      $\varpi$ against the giant planets' modes $g_jt$, not their osculating $\varpi_j$ (the fit's cosine and sine
+      take up the phase). Unresolved: the cap `second_capture_unresolved`; an exclusion by F3 fires the rule
+      `second_capture_f3`.
+    - *Well selection (F2), a column only.* Over $\sigma$'s episodes in the test window, the Rayleigh length of the
+      owner's centres against $\sigma$'s (78085: 0.97 against 0.24: the owner returns to its own well, $\sigma$ does
+      not). Not a criterion: the episodes are few and an owner that re-captures is what rule 2 already says.
     - *Catalogue longitudes.* A planet whose $\lambda$ was not saved enters the owner search (and nothing else) as the
       line $\lambda_{j0} + n_jt$. Candidates whose decision lies within the phase error this causes are
       neither accepted nor rejected (flag `owner_catalogue_ambiguous`), and every such search carries the cap `catalogue_longitudes` (at most `medium`).
+
+### Roles of the other resonance {#roles}
+
+The verdict names the other term by what it does; only an owner, a driver or the partner of a confirmed joint capture
+goes into `owner`, so the column suggests two resonances at once only when they were measured (role `joint`):
+
+| `cause_role` | when | column | example |
+|---|---|---|---|
+| owner | another commensurability librates and makes every deciding episode (F7, P2; `owner_libration`) | `owner` = `cause_term` = its key | 2001 HW7 5J+6S-2: 5E-16 |
+| driver | it circulates and its forced wave makes the cycles (`owner_forced_wave`) | `owner` = `cause_term` = its key | 385266 16N-27: 3N-5+0+2 |
+| neighbour | an accepted owner that does not make the row's own episodes (`owner_outside_episode`, `owner_psi_too_fast`): the body is in it before or after, not at the same time | `neighbours` = `KEY t0–t1 before\|during\|after;…` | 1999 GL4 1V-5: 4J-1 after |
+| empty | rule C: the librating member of the same multiplet; one resonance, its status is the row's | `resonant_argument` | 31935 9M-16+0+7: 9M-16+2+5 |
+| kinematic | the secular part of $\sigma$ makes the cycles, $a$ does not respond | `cause_term` = the term | 285637 3M+7J-6: `-4varpi` |
+| joint | 'both resonances at once?' confirmed: the other commensurability librates and $\Psi$ has a well of its own (origin `joint`) | `owner` = `cause_term` = its key | — (none on the benchmark) |
+
+`commensurability` (`9M-16`) is the key a statistic counts once per body. The place of a neighbour's block is read by
+its midpoint against the span of the row's own episodes.
 
 ## Subresonances
 
@@ -356,13 +549,33 @@ strongest term of the commensurability (a weaker member would librate over 30 ti
 oscillation); it librates itself in the window; its force-law phase is coherent ($\ge 0.8$, and 0.2 above the
 catalogue angle's) where the swing exceeds 45°; its centre lies near 0 or $\pi$ (within 30°, at low $e$ and $i$); it is
 unique; and its theoretical small-amplitude period is at most `MMR_SUBRESONANCE_T0_RATIO_MAX` = 2 times the observed
-period (it is a resonance at all). An accepted member gets a row of its own
+period (it is a resonance at all). Every one of these tests is a veto applied before the choice, so a member that fails
+one hands the choice to the next. The choice itself is physical, not a score: for a two-body angle whose orbits do not
+cross, the theory chooses the member whose theoretical centre $c_j(t) = \pi - \arg P(\beta(t)) + j\beta(t)$ is the
+flattest over the episode, provided the measured centre follows the theory (RMS ≤ `MMR_SUBRESONANCE_THEORY_RMS_DEG` =
+20°); the measured centre range $W$ breaks ties (within `MMR_SUBRESONANCE_TIE_FRACTION` = 20 %) and is the fallback
+(three-body, crossing orbits, a theory that does not follow). Each accepted episode is scanned in its own window; the
+row's member is that of the episode its status rests on, and episodes.csv names each episode's own. When nothing is
+admissible, the theory follows, the members are told apart ($\beta$ moves by more than
+`MMR_SUBRESONANCE_CENTRE_MOVE_RATIO` × the half-amplitude) and the two flattest theoretical centres tie (within the
+tie fraction: two members of equal weight do, since $C_a = C_b$ gives
+$P = 2C\cos\frac{(a-b)\beta}{2}\,e^{i(a+b)\beta/2}$ and both centres move by $|a-b|/2$ of $\beta$'s range), the
+regime is **composite**: the oscillation is about the moving centre of $P(\beta)$, the catalogue angle's own verdict
+stands, with `origin_detail` `composite_multiplet` and `resonant_argument` `composite`. An episode whose own window
+cannot decide (members only the unmeasured test A could tell apart) caps the row as the decisive one would
+(`subresonance_undetermined`). The theory names the same member as before on the five two-body accepted rows of the
+benchmark (12218, 27011, 31935, 65366, 67495; 82831's orbits cross Mars: W). An accepted member gets a row of its own
 (`added_by = subresonance_check`) and the catalogue angle gets origin `subresonance`
 ([Gallery](gallery.md#transient-subresonance)). *In the output:* `check_mmr_subresonances`, `sub_*`.
 
 ??? info "The subresonance scan in detail"
     The scan runs on a trigger: a drift; a moving, modulated or unclosed centre; $a$ responding with a rotating
-    $\phi_0$; a kinematic or unexplained-drift verdict; another member leading by the averaged coefficients. Members are
+    $\phi_0$; a kinematic or unexplained-drift verdict; another member leading by the averaged coefficients; the
+    theoretical centre of the catalogue member $\pi - \arg P + j\beta$ moving over an accepted episode by more than
+    `MMR_SUBRESONANCE_CENTRE_MOVE_RATIO` = 1 × its half-amplitude (T7, two-body). A centre that moves by more than that
+    while its bands still overlap, or an `origin_unknown` verdict (2003 ND, 2003 EH16), runs the scan as a
+    **diagnostic** (T8): its numbers go to `sub_diag_*`, it never accepts a member and the check stays
+    `not_applicable`. Members are
     every d'Alembert-valid split of the slow coefficients up to the catalogue's largest order
     (`MATRIX_2BODY_ORDER_MAX`, `MATRIX_3BODY_ORDER_MAX`); nodal members are built wholly in the invariable plane.
 
@@ -375,7 +588,19 @@ period (it is a resonance at all). An accepted member gets a row of its own
 
     `sub_top` lists the best `MMR_SUBRESONANCE_TOP_N` = 10 members as `key:W/W0:E:N:A/W`: the range $W$ of the
     member's slow centre against $W_0$ of the catalogue angle, $E = 1 - \operatorname{var}(c_s)/\operatorname{var}(c_0)$,
-    $N$ the number of its slow cycles the window holds, $A/W$ the swing over $W$. The list decides nothing.
+    $N$ the number of its slow cycles the window holds, $A/W$ the swing over $W$; `sub_rank1..3_pass_deg` is the
+    largest monotone pass of that member's centre in the scan window (≈ 360° for a centre that turns once there, which
+    step 1 rejects). The list decides nothing.
+
+    **Cheap numbers on every row** (prograde, not 1:1; scan or not; nothing reads them for the status). The theory
+    (two-body, planet saved, orbits not crossing) gives the planar shares $|C_j|/\sum|C_j|$, Rouché for the catalogue
+    member, $|P|/\max|P|$ of the compound term $P(\beta) = \sum_j C_j e^{ij\beta}$ inside the gaps between accepted
+    episodes and at their edges, and the centre travel behind T7. A gap where $|P|$ nearly vanishes is the compound term
+    cancelling as $\beta = \varpi_P - \varpi$ passes its cancellation phase (12218 4M-7: 9·10⁻⁵ between 48.7 and
+    76.2 kyr). The cheap list puts every planar member up to the catalogue's order on the existing centre of the
+    longest accepted episode, with test E′ and step 1: `sub_cheap_n` pass both, `sub_cheap_best` is the first of them,
+    else the flattest frame. A flat frame with a negligible factor is a frame, not a force (2003 UG22 40 kyr: +5+2 and
+    +6+1, factors 10⁻⁸ and 10⁻¹⁰).
 
 ## Onset of an episode (O1)
 
@@ -399,10 +624,28 @@ nor when an already librating owner covers at least `MMR_O1_OWNER_COVER_MIN` = 0
 episodes lie in the separatrix zone ([What the angle does](geometry.md#the-separatrix-zone)), where the wave before
 is the same force's near-separatrix circulation.
 
-*Meaning.* Full below `MMR_O1_RATIO_THIN` = 0.25, thin from 0.25 to below `MMR_O1_RATIO_FAIL` = 0.5, failed from 0.5.
-A failed applicable O1 caps the confidence at `low` (`onset_failed`), and in the branch where nothing else measured
-the force it is an objection that makes the status `uncertain` (leaf 5o, [The status tree](status-tree.md)).
-*In the output:* `ep_onset_ratio`, `mrg_O1`.
+A large ratio alone does not show a foreign wave. Before a capture from circulation the body circulates near the
+separatrix under the same force (Murray & Dermott 1999, §8.12), so $a$ already swings at about $P$; after an encounter
+kick the swing before is noise. Three more numbers on the background say which it is:
+
+- O1c, coherence: $R^2_\text{coh}$ of one sinusoid $A\cos(2\pi t/P - \varphi) + C$ fitted to $a_\text{band}$ there;
+- O1c, phase: $|\varphi_\text{bg} - \varphi_\text{ep}|$, with $\varphi_\text{ep}$ fitted on the episode's first $2P$
+  (both phases are absolute in $t$, so this is the background wave extrapolated into the episode; a capture starts
+  its own phase);
+- O1l, own law: $R^2$ of $\dot a$ on the background under the episode's own force law,
+  $\dot a = K\sin(\sigma - \varphi_0) + c$ with the episode's $K$ and $\varphi_0$ fixed (only $c$ free; for a 1:1
+  angle the co-orbital law with the episode's $K/K_\text{th}$), over the same $R^2$ on the episode.
+
+*Meaning.* Full below `MMR_O1_RATIO_THIN` = 0.25, thin from 0.25 to below `MMR_O1_RATIO_FAIL` = 0.5. From 0.5 O1
+fails only for a foreign wave: coherent ($R^2_\text{coh} \ge$ `MMR_O1_COHERENCE_R2_MIN` = 0.5), in phase (gap ≤
+`MMR_O1_PHASE_GAP_MAX_DEG` = 90°) and not explained by the own law (the ratio of the two $R^2$ below
+`MMR_O1_OWN_LAW_R2_FRACTION` = 0.5); otherwise it is thin. The three settings are conventions. A part that cannot be
+measured is no evidence of a wave (O1c) and explains nothing (O1l). A failed applicable O1 caps the confidence at
+`low` (`onset_failed`). Leaf 5o ([The status tree](status-tree.md)), where nothing else measured the force, still
+reads the ratio alone: narrowed, it would move two author labels (2013 VA14 over 60 kyr, the background incoherent
+at its period; 2003 TG2 over 100 kyr, coherence 0.23), whose objection is the strong wave itself.
+*In the output:* `ep_onset_ratio`, `ep_onset_coherence_r2`, `ep_onset_phase_gap_deg`, `ep_onset_own_law_r2`,
+`ep_onset_own_law_r2_episode`, `mrg_O1`.
 
 ## Strength
 

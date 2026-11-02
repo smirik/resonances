@@ -106,6 +106,37 @@ not shorter than $\max(P_{\min},\ 2P_c)$ (a faster one is a forced wave), and a 
 inside it. One that reaches both ends of the record, within `LIBRATION_COVERAGE_PERIODS` = 1 period, makes
 `libration`; otherwise the record is `episodic`.
 
+**A ZLK island is half a turn wide.** The averaged Lidov-Kozai Hamiltonian depends on $2\omega$, so its islands
+($\omega$ about 90° and 270°) are at most half a turn wide. A run of $\omega$ therefore breaks where a half-cycle swings
+`ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG` = 90° or more, or its midpoint jumps by more (a secular or MMR angle: 180°). This
+only splits runs; which island an episode is in decides nothing. 88899 over 500 kyr: two islands (67–169 kyr about
+90°, 191–294 kyr about 270°) that one run at 180° joined into a circulation (rule `zlk_half_turn_cut`).
+
+**Drift needs a monotone centre.** A drift is a slow centre that keeps going one way. When the runs are rejected for
+their moving centre but the slow centre turns back inside the record (away from the edges of its own low-pass) and its
+largest pass stays below a turn, the record holds part of one slow swing: `insufficient_time` / `few_cycles`, not
+`drift` (2306 $g-g_6+s-s_6$: a turn at 2.04 Myr, largest pass 0.92 rev in 10 Myr; rule `centre_turned_insufficient`).
+Status and extension are the same as for a drift.
+
+**A swing must exceed the uncertainty of the mode phases.** Under `SECULAR_PLANET_PHASES=linear` the angle uses
+$\ell_j = g_j t + \phi_j$ with constant phases, while the true phase $\phi_j(t)$ of an inner mode wanders (Laskar
+1990). Over a record of length $T$ the angle then carries an error whose swing is at most
+
+$$
+\Delta\phi(T) = \sum_j \lvert k_j\rvert\, \mathrm{range}_j(T),
+$$
+
+$k_j$ the angle's coefficient of mode $j$, $\mathrm{range}_j(T)$ the largest max − min of $\phi_j$ over a window of
+length $T$, measured on the package's own model (`resonances/data/mode_phase_uncertainty.json`, at 10 Myr: $g_4$ 30°,
+$g_3$ 24°, $s_4$ 81°, $s_2$ 87°, $g_2$ 2.7°, $g_6$ 0.9°, $s_6$ 9.5°; [how it is measured](../secular.md#mode-phases)).
+A libration or episode whose swing $2A_{\max}$ (the deciding episode's largest half-amplitude) is not larger than
+`SECULAR_PHASE_UNCERTAINTY_FACTOR` × $\Delta\phi$ (1, a convention) is not resolved from that error: its turning
+points may be the phases'. It becomes `insufficient_time` / `phase_unresolved`, action `review`: rerun with
+`SECULAR_PLANET_PHASES=measured` (`SAVE_PLANETS=all`), where the measured modes add nothing (rule `phase_unresolved`;
+columns `sec_phase_uncertainty_deg`, `sec_phase_swing_deg`, `sec_phase_swing_ratio`). 5026 $g+g_2-g_4-g_6$ over
+10 Myr: $2A_{\max}$ = 22° against $\Delta\phi$ = 34°. The outer modes stray too little to matter: the narrowest
+$z_1$/$z_2$ libration of the benchmark swings 4.6 times its $\Delta\phi$ (52773), $\nu_6$ 78 times.
+
 **The centre scale.** A slow secular libration often carries faster waves that break its turning points into
 fragments. When the fine scale shows no libration, the angle is filtered again at the scale of its centre,
 $W_c$ = `LIBRATION_CENTRE_CYCLES` × $P_{\rm cyc}$ = $3P_{\rm cyc}$; if the centre itself librates there (or shows episodes
@@ -121,15 +152,17 @@ $\max(P_{\min},\ 2W_c)$ and a turning point needs the prominence of a centre tur
     | no episode; the centre's largest monotone pass ≥ 1 turn | `circulation` |
     | no turning point; the filtered angle turns ≥ 1 time | `circulation` |
     | no turning point, less than a turn | `insufficient_time` (`arc` when it spans at least half a turn, else `stall`) |
-    | runs rejected for a moving centre cover ≥ `LIBRATION_DRIFT_MIN_WINDOW_FRACTION` (0.5) of the window | `drift` |
+    | runs rejected for a moving centre cover ≥ `LIBRATION_DRIFT_MIN_WINDOW_FRACTION` (0.5) of the window, the slow centre monotone | `drift` |
+    | the same, the slow centre turned back (largest pass < 1 turn) | `insufficient_time` (`few_cycles`) |
     | otherwise (fewer turning points than one cycle) | `insufficient_time` (`few_cycles`) |
+    | a libration or episode under linear phases swinging no more than `SECULAR_PHASE_UNCERTAINTY_FACTOR` × $\Delta\phi(T)$ | `insufficient_time` (`phase_unresolved`) |
 
 | angle_status | status | reason |
 |---|---|---|
 | libration | resonant | dynamic_libration |
 | episodic | transient | dynamic_episode |
 | circulation | non_resonant | circulation |
-| drift, insufficient_time | uncertain | baseline_needed (action extend) |
+| drift, insufficient_time | uncertain | baseline_needed (action extend; `phase_unresolved`: review) |
 | undefined | invalid / uncertain | unphysical ($e > 1.3$, $a < 0$) / unusable_series |
 
 **The response of $e$ and $i$.** To leading order in $e$ and $i$, a secular term
@@ -149,7 +182,7 @@ length would help ([How long to extend](confidence.md#actions)). Before a run, t
 shorter than that baseline ([Dry-run](../dry-run.md#secular-and-lidov-kozai-rows)).
 
 Examples: [1222 in $\nu_6$](gallery.md#secular-nu6), [1020 in $z_1$](gallery.md#secular-z1-resonant),
-[2306 transient](gallery.md#secular-z1-transient), [847 circulates](gallery.md#secular-z1-circulation),
+[2306 one unfinished slow swing](gallery.md#secular-z1-unfinished-swing), [847 circulates](gallery.md#secular-z1-circulation),
 [363 too short](gallery.md#secular-insufficient-time).
 
 ## The Lidov-Kozai angle
@@ -157,6 +190,17 @@ Examples: [1222 in $\nu_6$](gallery.md#secular-nu6), [1020 in $z_1$](gallery.md#
 **What should librate?** For a highly inclined orbit perturbed by a distant planet, the quadrupole problem makes the
 argument of perihelion $\omega$ librate about 90° or 270° ([Lidov's integrals](../lidov-kozai.md#lidovs-integrals)).
 The package reports $c_1$, $c_2$ and $h_{\rm quad}$ as diagnostics only; no threshold on them enters the status.
+
+**From which plane?** The quadrupole problem's reference plane is the perturbers' orbital plane; the package measures
+$\omega$, $i$ and $\Omega$ from the invariable plane (`ZLK_ANGLE_FRAME`, default `invariable`; `ecliptic` is kept for
+comparison), by rotating the orbit's angular momentum $\mathbf h$ and perihelion vector $\mathbf P$ exactly, never
+by subtracting angles. The free elements of a ZLK body, the gate, the attribution, the node lock, the e–i coupling and
+the figure use the same frame. The ecliptic is tilted by $I = 1.58°$ from that plane: the ecliptic node of an orbit
+with $i_{\rm inv} < I$ cannot turn (the orbit's pole circles the invariable pole without enclosing the ecliptic pole),
+so it librates about the plane's node, and with a bounded $\varpi$ the ecliptic $\omega$ looks confined while the
+invariable one circulates (555527, $i_{\rm inv} \approx 1.6°$: `non_resonant` / `circulation` / `certain` on both
+records). At $i \gtrsim 20°$ the two frames give the same number of turns. Rule `zlk_invariable_frame` marks a row whose
+two $\omega$ part by a whole turn or more (`zlk_frame_shift_turns`).
 
 The geometry of $\omega$ is that of a secular angle with $P_c = \max(F_{\rm GI} P_{\rm GI},\ P_{\min}/f_{\min})$ and
 no forced waves: $F_{\rm GI}$ = `ZLK_FILTER_GI_FACTOR` = 2, $P_{\min}$ = `ZLK_LIBRATION_PERIOD_MIN_YR` = 2 kyr, the
@@ -183,7 +227,8 @@ It judges every $\omega$ that stays within a turn (`libration`, `episodic`, `dri
 | angle_status | confirmed | kinematic | no verdict |
 |---|---|---|---|
 | libration | resonant / dynamic_libration (check `pass`) | non_resonant / kinematic_libration, origin `kinematic`, detail `free_omega_winds` (check `fail`) | uncertain / gate_unavailable, origin `unknown` |
-| episodic, drift, insufficient_time | unchanged | non_resonant / kinematic_libration **only if** $\rho_{\max} < 1$ (episodic: or every episode pinned, below), else unchanged | unchanged |
+| episodic | unchanged | non_resonant / kinematic_libration **only if** $\rho_{\max} < 1$ or every episode pinned (below), else unchanged | transient only if $e$ and $i$ trade at constant $H$ inside the deciding episode, else uncertain / gate_unavailable (below) |
+| drift, insufficient_time | unchanged | non_resonant / kinematic_libration **only if** $\rho_{\max} < 1$, else unchanged | unchanged |
 
 With `FREE_GATE_ENABLED` off the outcome is `disabled` and the geometry's status stands. On a record that does not
 librate throughout, free elements fitted over the whole record cannot judge a change of regime, so only the
@@ -216,11 +261,39 @@ have 3.0–13.7 and at most 0.04.
 
 `kinematic_libration` is a measurement and `gate_unavailable` the absence of one: keep them apart
 ([legacy codes](status-tree.md#legacy-integer-codes)). A co-orbital of a planet whose own modes the split does not
-fit (Mercury to Mars) gets no verdict (`unavailable`, detail `coorbital_unfitted_forcing`); a Jupiter Trojan is
+fit (Mercury to Mars) gets no verdict (`unavailable`, detail `coorbital_unfitted_forcing`): `uncertain` /
+`gate_unavailable` whatever bounded $\omega$ it has, an episodic one, a drift or too few cycles included, since the
+model does not apply (2020 PP1 and 10563 over 500 kyr; rule `zlk_coorbital_episodic`). A Jupiter Trojan is
 covered, its forced vector being Jupiter's g5 + g6 ([Free elements](../free-elements.md#where-the-method-stops-working)).
 
-**The scale.** The gate's period is $P_{\rm cyc}$ of the decisive geometry and `zlk_gate_n_cycles` = $T/P_{\rm cyc}$
-counts cycles of the osculating $\omega$. A libration at the centre scale whose period is within a Rayleigh width of a
+**An episodic $\omega$ without a gate verdict** (any other no-verdict outcome) needs the physics of a ZLK cycle inside
+its deciding episode: $e$ and $i$ must trade so that the quadrupole integral $H = \sqrt{1-e^2}\cos i$ stays constant.
+At the episode's own period $P$, on its samples only (the whole record also holds stretches where $\omega$
+circulates, which trade $e$ for $i$ near $P$ as well), $e$, $i$, $G = \sqrt{1-e^2}$, $H$ and $K = G(1-\cos i)$ are
+high-passed by a one-period running mean over the whole record and demodulated at $P$ cycle by cycle; then
+
+$$
+\eta_H = \frac{\operatorname{rms}\,\delta H}{\lvert\cos i\rvert\,\operatorname{rms}\,\delta G}
+$$
+
+is 0 when $H$ is held and 1 as if $i$ were frozen. The coupling `zlk_ei_episode_coupling` is `zlk` when $i$ is in
+antiphase with $e$ (within `ZLK_EI_PHASE_TOL_DEG`), the demodulated coherence is $\le -$`ZLK_EI_EPISODE_MIN_COHERENCE`
+and $\eta_H \le$ `ZLK_EI_H_RESIDUAL_MAX` (0.5, a convention: the benchmark's ZLK episodes measure at most 0.28, the
+others at least 0.58); `forced_beat` the same in phase with $K$; `none`; `not_measured` when the episode spans fewer than
+`ZLK_EI_MIN_CYCLES` = 3 periods (two independent estimators agree only by chance below that). With
+`ZLK_EPISODIC_NO_VERDICT` = `ei` (the default) the row stays `transient` only on `zlk`, otherwise it is `uncertain` /
+`gate_unavailable` (−9), rule `zlk_gate_unconfirmed`; `uncertain` always gives −9, `keep` the geometric transient.
+373136, 3752 and 797204 over 500 kyr stay transient ($\eta_H$ 0.05–0.23 over 4.6–8 periods); 88899 over 500 kyr
+($e$ and $i$ out of antiphase, $\eta_H$ 1.2) and 797204 over 100 kyr and 2023 RS2 (deciding episodes of 1.5 and 2.4
+periods) become uncertain. The record's coupling (`zlk_ei_coupling`) stays a column.
+
+**The scale.** The gate's period is that of the deciding librating episode (the covering one, or the one with the most
+turning points; `sec_decisive_period_yr`), and `zlk_gate_n_cycles` = $T/P$ counts cycles of the osculating $\omega$.
+F, the $e$–$i$ coupling, the $\rho$ window and the extension read the same $P$. Without a librating episode it is the
+median full period of the runs not faster than the floor. The median over every episode ($P_{\rm cyc}$,
+`geo_period_cycle_yr`) is a column only: 2020 PP1's five episodes run from 2.3 to 34 kyr. The attribution of an $\omega$
+pinned inside every episode tests the beat against the episodes' pooled period, since each episode is a cycle of the same
+beat (624 Hektor). A libration at the centre scale whose period is within a Rayleigh width of a
 beat $2\pi/|g_k - g_j|$ of two fitted forced modes with nonzero amplitudes, whose reconstructed forced phase wave
 explains the centre (correlation $\ge$ `ZLK_CENTRE_MODEL_R_MIN`, swing within a factor `ZLK_CENTRE_MODEL_AMP_FACTOR`),
 while $\rho_{\max} < 1$ at the fine period, is the forced vector turning its direction, not a libration of $\omega$:
@@ -229,7 +302,9 @@ old file) there is no measured beat and no rejection. The guard acts only where 
 without a split or for a co-orbital whose forcing the split does not fit, the geometric scale stands.
 
 **Columns that change no status** ([Free elements: beyond the gate](../free-elements.md#beyond-the-gate)): the $e$–$i$
-coupling at the decisive period (`zlk_ei_coupling`, every row; `check_zlk_ei` and `confirmed_ei` are `zlk` coupling),
+coupling of the whole record at the decisive period (`zlk_ei_coupling`, every row; `check_zlk_ei` and `confirmed_ei`
+are `zlk` coupling; the deciding episode's own coupling `zlk_ei_episode_*` is a column too, except for an episodic row
+without a gate verdict),
 the attribution of a kinematic libration to a forced mode (`zlk_forcing_*`), the node lock (`zlk_node_lock*`) and the
 slow line of the centre (`zlk_centre_*`, 591986: the g6−g5 beat). The strongest coherent line of the $e$–$i$ cross-spectrum
 ([Cross-spectral coherence](../coherence.md)) is the columns `zlk_coherent`, `zlk_check`.
@@ -252,7 +327,7 @@ angle has no physics margin; for ZLK it is G.
     | N (S) | turning points of the decisive episode | above the minimum (thin at it, with the cap `three_tp_episode`, ≤ high) |
     | S (S) | its centre | every cycle's band overlaps, with enough independent cycles; not measured with one; not applicable to a modulated centre |
     | F (S) | the filter | the libration period ≥ `FILTER_MIN_LIBRATION_CUTOFFS` × $P_c$; else not measured (flag `filter_too_slow`) |
-    | P (D) | a circulation | its largest centre pass ≥ 1 turn at every smoothing (×0.5, ×1, ×2); else thin |
+    | P (D) | a circulation | its largest centre pass ≥ 1 + `CONFIDENCE_THIN_BAND` = 1.1 turns at every smoothing (×0.5, ×1, ×2); else thin |
     | G (D) | ZLK: the gate | confirmed with its cycle count clear of `FREE_GATE_MIN_CYCLES` by `CONFIDENCE_THIN_BAND`; a kinematic outcome that decided the status is full |
 
 The summary row carries the analysis' columns (`flt_*`, `geo_*`, `sec_*`, `rsp_*`, `zlk_gate*`, `ep_*`;

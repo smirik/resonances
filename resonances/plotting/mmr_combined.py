@@ -2,8 +2,9 @@
 
 24 x 13.5 in (16:9), 120 dpi. Left: ten long thin time panels (a)–(j) sharing t, each in its own frame (eleven
 when the cycles are too dense for (b): the strip (b′) under it shows a few of them on their own time axis); below
-them the portrait of the whole record (k) with the time colour bar, the portrait of the accepted episodes (l), FAIR
-(m, two-body angles) and the legend (in the third slot too when there is no FAIR). Right (`draw_right_column`): the
+them the portrait of the whole record (k) with the time colour bar, the portrait of the accepted episodes (l) over
+their fill spans of (a) (`portrait_span`), FAIR (m, two-body angles) and the legend (in the third slot too when there
+is no FAIR, then under one warning line with the reason, `fair_warning`). Right (`draw_right_column`): the
 plaque with the status (printed nowhere else), the verdict explained in words, the steps of the decision, the margins
 and caps of the confidence and the numbers a reader needs (`mmr_verdict_panel.draw_explained`, `verdict_text`), or
 every number of the decision (plot option `combined.numbers='all'`). Height and layout are the same for every object
@@ -36,6 +37,12 @@ c_s = c0 + smooth_Wc(Delta_s) with Delta_s = sigma_s - sigma0 from the saved var
 planets (planar members of the same order), the accepted subresonance's own measured centre and the
 owner's centre; each minus its circular mean. A member whose line is flat is the one that librates.
 When a subresonance or an owner is accepted, its angle (filtered at the cutoff) is also drawn on (b).
+W28 B10b (cards g08-8 'if the cause is a secular cycle, show it as a line, here and everywhere', g08-7, g05-2, g05-3):
+(i) hatches the slow scale's intervals ('slow #id', `slow_intervals`); (j) adds the detrended p varpi of the slow
+scale, labelled with p and the secular period from the columns, whenever the slow cause is secular
+(`varpi_overlay`); for a kinematic libration (or a non_resonant row whose slow scale is a secular cycle) (j) is
+sigma = lambda part + p varpi on the scale of that swing (`kinematic_scale`: the decisive episode at its response
+cutoff, or the slow scale), in degrees.
 (c) draws sigma_dot / 2 omega0 on a symlog axis (linear inside +-1, the speed at the separatrix) and +-2 omega0 over
 each accepted episode with that episode's omega0; without an episode the theoretical omega0, thin. sigma_dot = 0 is a
 solid line in the colour of the centre (`style.RATE_ZERO`): a libration oscillates about it, sigma_dot changing sign at
@@ -60,6 +67,7 @@ import numpy as np
 from matplotlib import patheffects
 from matplotlib.ticker import FuncFormatter, NullLocator, ScalarFormatter
 
+from resonances.plotting import verdict_text
 from resonances.plotting.base import BasePlotter, time_unit
 from resonances.plotting.mmr_verdict_panel import (  # noqa: F401  (re-exported: the API of this module)
     TEXT_BLOCKS,
@@ -106,12 +114,14 @@ from resonances.plotting.style import (  # noqa: F401
 )
 from resonances.resonance import oscillations as osc
 from resonances.data.const import GAUSSIAN_YEAR_DAYS
-from resonances.resonance.analysis.filtering import circular_mean, is_finite, lowpass
-from resonances.resonance.analysis.geometry import RejectReason, wrap_pi
+from resonances.resonance.analysis.filtering import circular_mean, is_finite, lowpass, lowpass_or_none
+from resonances.resonance.analysis.geometry import MARK_AMPLITUDE_CHANGE, RejectReason, wrap_pi
 from resonances.resonance.analysis.geometry import well_shift
 from resonances.resonance.analysis.mmr import response as response_module
-from resonances.resonance.analysis.mmr.decide import taken_harmonic_law
-from resonances.resonance.analysis.mmr.models import MMRAnalysis, MMRSeries, ResonanceKind, ResonanceSpec
+from resonances.resonance.analysis.mmr.decide import taken_direct_law, taken_harmonic_law
+from resonances.resonance.analysis.mmr.models import MMRAnalysis, MMRSeries, ResonanceKind, ResonanceSpec, SlowOrigin
+from resonances.resonance.analysis.mmr.sampling import body_varpi_slow_unwrap
+from resonances.resonance.analysis.mmr.preprocess import coorbital_planet
 from resonances.resonance.analysis.mmr.owner import FLAG_CATALOGUE, wrapped_angle as owner_wrapped_angle
 from resonances.resonance.analysis.orbit_type import accepted_runs
 from resonances.resonance.analysis.verdict import AngleSubtype, LibrationOrigin
@@ -129,6 +139,8 @@ FAIR_STEP_FRACTION = 1 / 4.2  # FAIR resolves its strips only with a step <= P_o
 DEFAULT_FILTER_ORDER = 2  # FILTER_ORDER, when the configuration cannot be read
 LEGEND_CHAR_WIDTH = 0.56  # mean advance of a DejaVu Sans character, in units of the font size (wrapping estimate)
 LEGEND_MIN_FONT_PT = 6.0  # ~10 px at 120 dpi, the smallest legible size: keep LEGEND short enough to fit at it
+LEGEND_WARNING_GAP = 0.08  # inches between the FAIR warning line and the legend's heading
+FAIR_WARNING_COLOUR = '#b35900'  # the warning line of a figure without FAIR (dark orange, readable on white)
 # Drawing rules (pixels of a time panel at the layout's dpi)
 CYCLE_MIN_PX = 3.0  # sigma_f is not drawn in (b) when a cycle is narrower: the line would be a solid block
 STRIP_CYCLE_PX = CYCLE_MIN_PX  # below this the strip (b′) under (b) shows ZOOM_CYCLES cycles on their own time axis
@@ -136,6 +148,8 @@ ZOOM_CYCLES = 5
 ZOOM_MIN_STEPS = 8  # a window of the strip spans at least this many output steps
 ZOOM_SUBSTEPS = 24  # points per output step of the predicted path drawn in the strip
 STRIP_GAP = 0.5  # inches between the two windows of the strip (the y tick labels of the second)
+STRIP_MARK_PT = 6.0  # the ▼ over (b) at the middle of a window of the strip [pt]
+STRIP_MARK_GAP_PT = 3.6  # the window's number starts this far from its ▼'s middle (6 px at 120 dpi) [pt]
 H_FLOOR = 1e-3  # (h): the log axis stops here; h below it (or h <= 0) is a triangle at the bottom edge
 H_VIEW_FACTOR = 3.0  # (h): the axis spans the values / this factor .. the values x this factor (log)
 RATE_SYMLOG_VIEW = 2.2  # (c) on the symlog axis holds at least +-this (2 omega0): +-1 then clears the tick margin
@@ -178,8 +192,37 @@ ENVELOPE_VIEW_PAD = 0.04  # (d): margin around the osculating band (ENVELOPE_PER
 OUTLIER_MARKERS_MAX = 8  # per edge: the samples beyond the band are marked by groups, the largest excess first
 OUTLIER_MERGE_FRACTION = 0.02  # clipped samples closer than this share of the record are one group (one triangle)
 FORCED_WAVE_LABEL = ' wave'  # (a): after '#id' of an accepted run that is a forced wave (F6), no episode of the angle
+# (a), (l): the other marks of accepted runs that are no episodes of the angle (W28 B2, B6b; `ForcedWave`): a 5s row's
+# runs, named by the ground (its own force cannot make that period, not a driver found: card g11-1 A), and an
+# unconfirmed ripple, an auxiliary interval on an unfinished slow swing (card g08-4 A), its fill dotted
+STRENGTH_WAVE_LABEL = ' forced (strength)'
+RIPPLE_LABEL = ' ripple'
+RIPPLE_HATCH = '...'
+# (a): the fill of an accepted episode another resonance induces (A1, episodes.csv libration_origin induced; W28 A3b)
+# is hatched the other way from EPISODE_BEFORE_JUMP_HATCH ('////'), so both read when they meet ('xx'); (l) labels it
+INDUCED_HATCH = '\\\\\\\\'
+INDUCED_LABEL = ' induced'
+# (a), (d), 1:1 (W28 C13, cards g03-1 A, g03-3 C, g03-8 A, g03-9 A; what C7/C8 store): the inferred residence around an
+# accepted run's core (`geometry.Residence`) beyond its fill, lighter and hatched '--', labelled 'inferred' (a stay
+# without measured turning points: it decides nothing, and (l) never draws it); the sub-regimes of a run
+# (`Episode.subregimes`) as brackets just over (a), named by their well (a repeated well, after an amplitude change,
+# unnamed: the gap between two brackets is the transitional half-cycle); the kicks of a at such a change
+# (`Episode.marks`, kick@t) as ▼ at the top of (d)
+RESIDENCE_HATCH = '--'
+RESIDENCE_ALPHA_SCALE = 0.5  # its fill: EPISODE_ALPHA x this
+RESIDENCE_LABEL = 'inferred'
+BRACKET_RISE_PT = 3.0  # (a): the bracket's line this far over the top edge [pt]
+BRACKET_TICK_PT = 1.0  # its end ticks reach down to this height over the edge [pt]
+BRACKET_LABEL_PT = 4.0  # the names (and '#id' of a run with brackets) start this far over the edge [pt]
+BRACKET_GAP_PX = 2.0  # left free between the ticks of two neighbouring brackets [px]
+BRACKET_GID, RESIDENCE_GID, KICK_GID = 'subregime_bracket', 'residence', 'kick'
+NEW_AMPLITUDE_LABEL = 'new amplitude'  # (a): the bracket of a sub-regime in the same well after an amplitude change
+KICK_LABEL = 'kick'
+KICK_MARK_PT = 5.0  # (d): the ▼ of a kick [pt]
 PORTRAIT_MAX_CYCLES = 12  # (l): cycles per episode, evenly spaced; an episode with no more is drawn whole
 PORTRAIT_MAX_EPISODES = 5  # (l): the longest episodes only
+PORTRAIT_CORE_STYLE = {'lw': 0.7, 'alpha': 0.85}  # (l): an episode between its first and last turning point
+PORTRAIT_EXTENSION_STYLE = {'ls': (0, (2.5, 1.5)), 'lw': 0.6, 'alpha': 0.6}  # (l): its fill beyond them (W28 g03-6)
 PORTRAIT_SHARE_MAX = 3.0  # (k) and (l) share the union of their y views unless (k)'s is wider than this times the episodes'
 PORTRAIT_VIEW_PAD = 0.08  # (k), (l): margin around the samples' sigma_dot, fraction of their span
 MARGIN_FONT_DELTA = 0.5  # the compact legend right of the panels: font_note_pt minus this
@@ -189,6 +232,15 @@ MARGIN_KEY_GAP_IN = 0.04  # between a key and its text (inches)
 AXIS_STRONG_MIN_RATIO = 1.5  # (d): the black a is drawn only at a cutoff at least this many times P_c (else a_f is black)
 AXIS_DENSE_CYCLE_PX = 12.0  # (d): a_f with cycles narrower than this is a band: the slow a is drawn black over it
 AXIS_STRONG_CYCLES = 2.0  # (d): the black a at this many periods of the deciding episode when the response cutoff is P_c
+
+# (i): the slow scale's intervals (W28 B10b, card g08-7), hatched in the centre's colour, labelled 'slow #id'
+SLOW_LABEL = 'slow'
+SLOW_HATCH = '|'
+SLOW_HATCH_ALPHA = 0.35
+# (j) kinematic mode: the lambda part sigma - p varpi (W28 B10b, card g05-3), grey dotted beside red sigma, orange pϖ
+LAMBDA_PART = REFERENCE
+LAMBDA_PART_LABEL = 'λ part'
+NAN = float('nan')
 
 TYPE_LABELS = {ResonanceKind.TWO_BODY: 'mmr2', ResonanceKind.THREE_BODY: 'mmr3', ResonanceKind.RETROGRADE: 'mmr2 retrograde'}
 
@@ -202,32 +254,40 @@ PANELS = (
         'e',
         'a_dot as the force law read it (the raised cutoff of the line rule too) with the law that decided on sigma - '
         'c(t) at that cutoff: R sin(psi - phi0) + C per window (R^2) or the multiplet law; per episode half R^2; under '
-        'the harmonic or 1:1 law its numbers, no curve',
+        'the harmonic or 1:1 law its numbers, no curve; under the direct law (B8) a_dot and s x the averaged force of '
+        'the term, both low-passed at f P_large, per window',
     ),
     ('f', 'e: raw band, filtered line, min - max'),
     ('g', 'i: raw band, filtered line, min - max'),
     ('h', 'h per cycle on a log axis (libration dots, revolutions open) with the separatrix zone [h_lo, h_hi] and h = 1'),
-    ('i', 'the centre of sigma (sigma_f smoothed over W_c) over sigma_f, its turns and largest monotone pass'),
-    ('j', 'centres of sigma0, the members of the multiplet and the owner (minus their means), or the kinematic terms'),
+    ('i', 'the centre of sigma (sigma_f smoothed over W_c) over sigma_f, its turns, largest monotone pass, slow intervals'),
+    (
+        'j',
+        'centres of sigma0, the members of the multiplet and the owner (minus their means), p varpi of a secular slow '
+        'cause; or the kinematic terms sigma = lambda part + p varpi',
+    ),
 )
 # (b′) under (b) only when the cycles are narrower than STRIP_CYCLE_PX: a few cycles on their own time axis (yr)
 # Below the panels (`style.VerdictFigureLayout.bottom`): (k) the whole record's portrait and the time colour bar,
-# (l) the accepted episodes' portrait, (m) FAIR, the legend (in the slot of (m) too when there is no FAIR)
+# (l) the accepted episodes' portrait, (m) FAIR, the legend (in the slot of (m) too when there is no FAIR, under the
+# warning line of `fair_warning`)
 
 LEGEND = (
-    'Grey osculating; black filtered (pale dashed: filter edge, unused); ▲▼ at an edge: beyond the axis; values of ' '(c), (d), (h) right.',
-    '(a) red: centre; ▼▲ turning points; fill #id: accepted episode (to a record edge it covers, else ±P/4 beyond its '
-    'turns; hatched: before the last jump of a); grey strip: rejected run (T over the top, F few turning points, '
-    'C centre moves, O no closed cycle); dotted / hatched: jumps of a; ×: exit.',
-    '(b) σ mod 360°; purple dashed: owner, orange dash-dot: subresonance; ▼: window of (b′) (● samples, dashed: path).',
-    '(c) dσ/dt / 2ω₀, symlog; red σ̇ = 0; blue dashed: ±2ω₀ per episode (thin: theory); dotted: ν(λ̇); ○ slips.',
-    '(d) a: light grey osculating, mid grey a_f, black slow a; dotted a*, cyan dashed a_res (osculating frame); '
-    'blue band ±Δa; red dots: mean a per cycle.',
-    '(e) da/dt; blue: the deciding force law; #id: R² of the halves.  (f, g) e, i.',
-    '(h) h per cycle: ● libration, ○ revolution; dashed h = 1; blue band: separatrix zone.',
-    '(i) red: centre of σ_f, ▼▲ its turns; shaded: largest monotone pass ≥ 1 rev.  (j) centres minus means: red σ, pale '
-    'members, orange subresonance, purple owner (kinematic: red slow σ, orange pϖ).',
-    '(k) whole record, colour: time; (l) accepted episodes, ≤ 12 cycles; same scales; + centre.',
+    'Grey osculating, black filtered (pale: edge); ▲▼: off axis; (c), (d), (h) values right.',
+    '(a) red: centre; ▼▲ turns; fill #id: episode (to an edge it covers, else ±P/4 past its turns; / before the last '
+    'jump of a, \\ induced; #id wave / forced (strength) / ripple (dotted): not σ’s); grey strip: rejected run (T over '
+    'the top, F few TPs, C centre moves, O no closed cycle; grey #id < floor: not counted); dotted/hatched: '
+    'a jumps; × exit; 1:1: ⊓ sub-regime, hatched – inferred stay.',
+    '(b) σ mod 360°; purple dashed: owner, orange dash-dot: subresonance; ▼: window of (b′).',
+    '(c) dσ/dt / 2ω₀, symlog; red σ̇ = 0; blue dashed ±2ω₀ (thin: theory); dotted ν(λ̇); ○ slips.',
+    '(d) a: light grey osculating, mid grey a_f, black slow a; dotted a*, cyan dashed a_res; blue band ±Δa; red dots: '
+    'cycle means, ▼ kick.',
+    '(e) da/dt; blue: deciding force law (direct: black da/dt, blue s × mean force); #id R² halves.',
+    '(f, g) e, i.  (h) h per cycle: ● libration, ○ revolution; dashed h = 1; blue: separatrix.',
+    '(i) red: centre of σ_f, ▼▲ turns; shaded: monotone pass ≥ 1 rev; | slow #id: slow scale.  (j) centres − means: '
+    'red σ, pale members, orange subresonance, purple owner; dashed orange pϖ (kinematic: dotted λ part).',
+    # (k) and (l) share their scales (docs/reading-figures.md); the narrow box (FAIR drawn) has no room left to say so
+    '(k) whole record, colour: time; (l) episodes, ≤ 12 cycles, dashed past turns; +: centre.',
 )
 
 
@@ -540,6 +600,24 @@ def episode_spans(runs, record: Tuple[float, float], settings=None) -> Dict[int,
     return spans
 
 
+def induced_episode_ids(analysis: MMRAnalysis) -> frozenset:
+    """The accepted episodes another resonance induces, as the analysis wrote them (episodes.csv libration_origin
+    induced: every episode of an induced row, or those a second pass took out, A1 `analyse._induced_origins`)."""
+    if analysis.frozen_episode_rows is not None:
+        rows = [(row.get('episode_id'), row.get('libration_origin')) for row in analysis.frozen_episode_rows]
+    else:
+        rows = [(p.episode_id, p.libration_origin) for p in (analysis.episode_physics or ())]
+    ids = set()
+    for episode_id, origin in rows:
+        try:
+            value = float(episode_id)
+        except (TypeError, ValueError):
+            continue
+        if str(origin) == LibrationOrigin.INDUCED and np.isfinite(value):
+            ids.add(int(value))
+    return frozenset(ids)
+
+
 def shade_runs(
     ax,
     runs,
@@ -550,29 +628,57 @@ def shade_runs(
     layout: VerdictFigureLayout,
     spans: Optional[Mapping[int, Tuple[float, float]]] = None,
     forced_ids: Collection[int] = (),
+    induced_ids: Collection[int] = (),
+    uncounted: Optional[Mapping[int, str]] = None,
+    labelled: Collection[int] = (),
 ):
-    """Accepted episodes as a coloured fill (hatched when before the last jump of a) over their `spans` (yr,
-    `episode_spans`; first to last turning point without) with '#id' just above the panel's top edge when wide
-    enough (`ax` is the top panel: the label never covers the data or the panel letter; '#id wave' for a forced wave,
-    `forced_ids`, which is no episode of the angle), the other runs as a grey strip at the bottom with the letter of
-    their rejection reason (`REJECT_LETTERS`)."""
+    """Accepted episodes as a coloured fill (hatched '////' when before the last jump of a, '\\\\' when another
+    resonance induces it, `induced_ids`, `INDUCED_HATCH`; dotted for an unconfirmed ripple, `RIPPLE_HATCH`) over their
+    `spans` (yr, `episode_spans`; first to last turning point without) with '#id' just above the panel's top edge when
+    wide enough (`ax` is the top panel: the label never covers the data or the panel letter; '#id wave' for a forced
+    wave, '#id forced (strength)', '#id ripple': `forced_ids`, a collection (' wave') or id -> label (`wave_labels`),
+    none an episode of the angle), the other runs as a grey strip at the bottom with the letter of their rejection
+    reason (`REJECT_LETTERS`). An accepted run the status does not count (`uncounted`: id -> tag, `uncounted_tags`;
+    W28 C11, card g02-9 A: below the period floor, the centre turns) is drawn like a rejected run, over its turning
+    points, with its grey tag '#0 < floor' above the panel instead of an episode's fill. The runs in `labelled` get no
+    '#id' here: `draw_run_labels` writes it with their sub-regimes and residence (W28 C13)."""
     spans = spans or {}
+    uncounted = uncounted or {}
+    labels = dict(forced_ids) if isinstance(forced_ids, Mapping) else {i: FORCED_WAVE_LABEL for i in forced_ids}
     for run in runs:
         own = (run.t_start_yr, run.t_end_yr)
         start, end = (float(times(v)) for v in (spans.get(run.episode_id, own) if run.episode_id in accepted_ids else own))
         width_px = (end - start) * px_per_unit
         middle = 0.5 * (start + end)
-        if run.episode_id in accepted_ids:
+        if run.episode_id in accepted_ids and run.episode_id in uncounted:
+            start, end = (float(times(v)) for v in own)
+            ax.axvspan(start, end, ymin=0, ymax=REJECTED_STRIP, facecolor=REJECTED, alpha=REJECTED_ALPHA, lw=0, zorder=0)
+            if (end - start) * px_per_unit >= REJECT_LETTER_MIN_PX:
+                ax.text(
+                    0.5 * (start + end),
+                    1 + EPISODE_LABEL_PAD,
+                    f'#{run.episode_id}{uncounted[run.episode_id]}',
+                    transform=ax.get_xaxis_transform(),
+                    ha='center',
+                    va='bottom',
+                    fontsize=layout.font_note_pt,
+                    color=REJECTED,
+                    clip_on=False,
+                    zorder=8,
+                )
+        elif run.episode_id in accepted_ids:
             colour = colours.get(run.episode_id, EPISODE_COLOURS[0])
-            hatch = EPISODE_BEFORE_JUMP_HATCH if getattr(run, 'before_last_jump', False) else None
+            hatches = [EPISODE_BEFORE_JUMP_HATCH] if getattr(run, 'before_last_jump', False) else []
+            hatches += [INDUCED_HATCH] if run.episode_id in induced_ids else []
+            hatches += [RIPPLE_HATCH] if labels.get(run.episode_id) == RIPPLE_LABEL else []
             ax.axvspan(start, end, facecolor=colour, alpha=EPISODE_ALPHA, lw=0, zorder=0)
-            if hatch:
+            for hatch in hatches:
                 ax.axvspan(start, end, facecolor='none', edgecolor=colour, hatch=hatch, alpha=0.5, lw=0, zorder=0)
-            if width_px >= EPISODE_LABEL_MIN_PX:
+            if width_px >= EPISODE_LABEL_MIN_PX and run.episode_id not in labelled:
                 ax.text(
                     middle,
                     1 + EPISODE_LABEL_PAD,
-                    f'#{run.episode_id}' + (FORCED_WAVE_LABEL if run.episode_id in forced_ids else ''),
+                    f'#{run.episode_id}' + labels.get(run.episode_id, ''),
                     transform=ax.get_xaxis_transform(),
                     ha='center',
                     va='bottom',
@@ -615,9 +721,12 @@ def jump_groups(times_yr: Sequence[float], span_yr: float, fraction: float = JUM
 class _Frame:
     """Times and the time unit of one figure, the arrays every panel reads and the drawing options."""
 
-    def __init__(self, analysis: MMRAnalysis, series: MMRSeries, layout: VerdictFigureLayout = LAYOUT_V1, options=None, settings=None):
+    def __init__(
+        self, analysis: MMRAnalysis, series: MMRSeries, layout: VerdictFigureLayout = LAYOUT_V1, options=None, settings=None, row=None
+    ):
         self.analysis = analysis
         self.series = series
+        self._row = row  # summary ⋈ numbers row (the labels of (j) read its columns); built on first use when not given
         self.options = resolve_plot_options(options)
         self.settings = settings if settings is not None else _settings()  # the coverage rule of the episodes' fill
         self.t = np.asarray(series.t_yr, dtype=float)
@@ -641,6 +750,13 @@ class _Frame:
 
     def times(self, t_yr) -> np.ndarray:
         return np.asarray(t_yr, dtype=float) / self.divisor
+
+    @property
+    def row(self) -> Mapping[str, Any]:
+        """The analysis' numbers ⋈ summary row (the columns the labels of (i) and (j) print), built once."""
+        if self._row is None:
+            self._row = {**self.analysis.numbers_row(), **self.analysis.summary_row()}
+        return self._row
 
     def cycle_px(self) -> float:
         """Mean width of one cycle of sigma_f (libration or revolution) in pixels of a time panel; inf when unknown."""
@@ -728,10 +844,17 @@ def _is_alias(analysis: MMRAnalysis) -> bool:
 
 
 def draw_header(
-    fig, analysis: MMRAnalysis, layout: VerdictFigureLayout, series: Optional[MMRSeries] = None, stamp: Optional[str] = None
+    fig,
+    analysis: MMRAnalysis,
+    layout: VerdictFigureLayout,
+    series: Optional[MMRSeries] = None,
+    stamp: Optional[str] = None,
+    role: str = '',
 ) -> None:
     """Name, resonance, type and the orbit's type (`verdict.orbit_type`: tadpole L4, horseshoe, interior asymmetric
-    libration about 72°, ...); the record line. The status is printed once, in the plaque of the right column."""
+    libration about 72°, ...); under it the role of the other resonance, who makes the cycles (`role`, from
+    `verdict_text.cause_line`: 'driver: 3N-5+0+2 (circulates, P 4.51 kyr): forced wave', W28 A3b, cards g04-6/g04-7);
+    then the record line. The status is printed once, in the plaque of the right column."""
     width, height = fig.get_size_inches()
     x, y, w, h = layout.header
     top = y + h
@@ -743,9 +866,17 @@ def draw_header(
         title += f'   {orbit}'
     if analysis.parent:
         title += f'   subresonance of {analysis.parent}'
-    fig.text(x / width, top / height, title, fontsize=layout.font_title_pt, fontweight='bold', va='top', ha='left')
+    title_text = fig.text(x / width, top / height, title, fontsize=layout.font_title_pt, fontweight='bold', va='top', ha='left')
+    fit_width(title_text, w * fig.dpi, layout.text_font_pt)  # a long sequence of 1:1 wells (524522 1V-1 20 kyr)
+    below = HEADER_LINE_IN
+    if role:
+        line = fig.text(
+            x / width, (top - below) / height, role, fontsize=layout.font_title_pt * HEADER_ROLE_SCALE, color=INK, va='top', ha='left'
+        )
+        fit_width(line, w * fig.dpi, layout.text_font_pt)
+        below += HEADER_ROLE_LINE_IN
     if series is not None:
-        fig.text(x / width, (top - 0.36) / height, record_line(analysis, series), fontsize=layout.text_font_pt, color='#333333', va='top')
+        fig.text(x / width, (top - below) / height, record_line(analysis, series), fontsize=layout.text_font_pt, color='#333333', va='top')
     if stamp:
         fig.text(
             (x + w) / width,
@@ -759,9 +890,38 @@ def draw_header(
         )
 
 
+HEADER_LINE_IN = 0.36  # from the top of the header to the line under the title [in]
+HEADER_ROLE_SCALE = 0.75  # the role line's font, a fraction of the title's
+HEADER_ROLE_LINE_IN = 0.24  # the role line's height: the record line moves down by it
+
+
+def fit_width(text, width_px: float, min_pt: float) -> None:
+    """Shrink `text` until it is at most `width_px` wide, down to `min_pt` (a long three-body neighbour line)."""
+    renderer = text.figure.canvas.get_renderer()
+    extent = text.get_window_extent(renderer)
+    if extent.width > width_px > 0:
+        text.set_fontsize(max(min_pt, text.get_fontsize() * width_px / extent.width * 0.98))
+
+
+def header_role(analysis: MMRAnalysis, rows, settings) -> str:
+    """The role line of the header (`verdict_text.cause_line` on the figure's rows: summary ⋈ numbers, episodes); ''
+    without a role or for a derived row's missing rows."""
+    summary, numbers, episodes = rows[0], rows[1], rows[2]
+    facts = verdict_text.MMRFacts(analysis, settings, {**numbers, **summary}, episodes)
+    return verdict_text.cause_line(analysis.verdict, facts)[1]
+
+
+ORBIT_SEQUENCE_PREFIX, ORBIT_HEADER_PREFIX = 'compound: ', 'orbit: '
+
+
 def orbit_type_text(analysis: MMRAnalysis) -> str:
-    """The orbit's type for the header: `verdict.orbit_type`, else the 1:1 regime of a co-orbital (rsp_coorb_regime)."""
+    """The orbit's type for the header: `verdict.orbit_type`, else the 1:1 regime of a co-orbital (rsp_coorb_regime).
+    A sequence of 1:1 regimes (`orbit_type.coorbital_text`: 'compound: horseshoe → tadpole L4') reads 'orbit:
+    horseshoe → tadpole L4' (W28 C13, card g03-9 A: one episode, its sub-regimes in time order; 'compound' stays the
+    name of the regime whose swing holds the quasi-satellite and a tadpole well)."""
     orbit = str(getattr(analysis.verdict, 'orbit_type', '') or '')
+    if orbit.startswith(ORBIT_SEQUENCE_PREFIX):
+        return ORBIT_HEADER_PREFIX + orbit[len(ORBIT_SEQUENCE_PREFIX) :]
     if orbit:
         return orbit
     law = getattr(analysis.response, 'coorbital', None) if analysis.response is not None else None
@@ -818,14 +978,259 @@ def _style_axis(ax, letter: str, ylabel: str, layout: VerdictFigureLayout):
         spine.set_linewidth(0.6)
 
 
+def wave_labels(geometry) -> Dict[int, str]:
+    """episode id -> the label after '#id' of an accepted run that is no episode of the angle (`Geometry.forced_waves`):
+    ' wave' for a forced wave of another argument (F6), ' forced (strength)' for a run of a 5s row (B2), ' ripple' for
+    an unconfirmed ripple (B6b)."""
+    out = {}
+    for wave in getattr(geometry, 'forced_waves', ()) or ():
+        if getattr(wave, 'ripple', False):
+            out[wave.episode_id] = RIPPLE_LABEL
+        elif getattr(wave, 'by_strength', False):
+            out[wave.episode_id] = STRENGTH_WAVE_LABEL
+        else:
+            out[wave.episode_id] = FORCED_WAVE_LABEL
+    return out
+
+
+def uncounted_tags(geometry) -> Dict[int, str]:
+    """episode id -> the tag after '#id' of an accepted run the status does not count and no other mark names
+    (`Geometry.eligibility_reason`: below the period floor ' < floor', the centre turns ' centre turns'; W28 C11,
+    `verdict_text.UNCOUNTED_TAGS`)."""
+    out = {}
+    for run in getattr(geometry, 'runs', ()) or ():
+        reason = geometry.eligibility_reason(run) if run.accepted else None
+        if reason in verdict_text.UNCOUNTED_TAGS:
+            out[run.episode_id] = verdict_text.UNCOUNTED_TAGS[reason]
+    return out
+
+
 def _shade_episodes(ax, frame: _Frame, layout: VerdictFigureLayout):
     geometry = frame.analysis.geometry
     if geometry is None:
         return
     accepted = {run.episode_id for run in geometry.runs if run.accepted}
     spans = episode_spans(geometry.runs, (float(frame.t[0]), float(frame.t[-1])), frame.settings)
-    forced = getattr(geometry, 'forced_wave_ids', frozenset())
-    shade_runs(ax, geometry.runs, accepted, frame.colours, frame.times, frame.px_per_unit, layout, spans, forced)
+    forced = wave_labels(geometry)
+    induced = induced_episode_ids(frame.analysis)
+    uncounted = uncounted_tags(geometry)
+    pieces = residence_pieces(geometry.runs, spans, (float(frame.t[0]), float(frame.t[-1])), skip=uncounted)
+    bracketed = [
+        run for run in geometry.runs if run.accepted and run.episode_id not in uncounted and len(getattr(run, 'subregimes', ())) >= 2
+    ]
+    labelled = set(pieces) | {run.episode_id for run in bracketed}
+    shade_runs(
+        ax, geometry.runs, accepted, frame.colours, frame.times, frame.px_per_unit, layout, spans, forced, induced, uncounted, labelled
+    )
+    shade_residences(ax, pieces, frame.colours, frame.times)
+    draw_subregime_brackets(ax, bracketed, frame.colours, frame.times, frame.px_per_unit)
+    for run in geometry.runs:
+        if run.episode_id in labelled:
+            draw_run_labels(ax, run, spans[run.episode_id], pieces.get(run.episode_id, ()), frame, layout, forced.get(run.episode_id, ''))
+
+
+def residence_pieces(
+    runs, spans: Mapping[int, Tuple[float, float]], record: Tuple[float, float], skip: Collection[int] = ()
+) -> Dict[int, List[Tuple[float, float]]]:
+    """episode id -> the stretches [yr] of its inferred residence (`Episode.residence`, W28 C8) beyond its fill
+    (`spans`, `episode_spans`): before and after it, never past the record's edges nor into the fill of a neighbouring
+    accepted run; none for a run in `skip` (not counted) or without a residence beyond its fill."""
+    ordered = sorted((run for run in runs if run.accepted and run.episode_id in spans), key=lambda run: run.t_start_yr)
+    out: Dict[int, List[Tuple[float, float]]] = {}
+    for i, run in enumerate(ordered):
+        residence = getattr(run, 'residence', None)
+        if residence is None or run.episode_id in skip:
+            continue
+        fill0, fill1 = spans[run.episode_id]
+        low = spans[ordered[i - 1].episode_id][1] if i > 0 else record[0]
+        high = spans[ordered[i + 1].episode_id][0] if i + 1 < len(ordered) else record[1]
+        pieces = []
+        start, end = max(float(residence.t0_yr), low, record[0]), min(float(residence.t1_yr), high, record[1])
+        if start < fill0:
+            pieces.append((start, fill0))
+        if end > fill1:
+            pieces.append((fill1, end))
+        if pieces:
+            out[run.episode_id] = pieces
+    return out
+
+
+def shade_residences(ax, pieces: Mapping[int, Sequence[Tuple[float, float]]], colours: Mapping[int, str], times) -> None:
+    """(a): each run's inferred residence beyond its fill (`residence_pieces`) in its colour, lighter than an episode
+    and hatched RESIDENCE_HATCH (gid RESIDENCE_GID)."""
+    for episode_id, spans in pieces.items():
+        colour = colours.get(episode_id, EPISODE_COLOURS[0])
+        for t0, t1 in spans:
+            start, end = (float(times(v)) for v in (t0, t1))
+            ax.axvspan(start, end, facecolor=colour, alpha=EPISODE_ALPHA * RESIDENCE_ALPHA_SCALE, lw=0, zorder=0, gid=RESIDENCE_GID)
+            ax.axvspan(start, end, facecolor='none', edgecolor=colour, hatch=RESIDENCE_HATCH, alpha=0.4, lw=0, zorder=0, gid=RESIDENCE_GID)
+
+
+def _points_over_top(ax, points: float) -> float:
+    """y in axes fraction `points` over the top edge of `ax`."""
+    height_pt = ax.get_position().height * ax.figure.get_figheight() * 72
+    return 1.0 + points / height_pt if height_pt > 0 else 1.0
+
+
+def draw_subregime_brackets(ax, runs, colours: Mapping[int, str], times, px_per_unit: float) -> list:
+    """(a): one bracket per sub-regime of each run (`Episode.subregimes`, two or more) just over the top edge, in the
+    run's colour, BRACKET_GAP_PX apart where two meet (gid BRACKET_GID); the names are `draw_run_labels`'."""
+    rise, tick = _points_over_top(ax, BRACKET_RISE_PT), _points_over_top(ax, BRACKET_TICK_PT)
+    gap = 0.5 * BRACKET_GAP_PX / px_per_unit if px_per_unit > 0 else 0.0
+    lines = []
+    for run in runs:
+        colour = colours.get(run.episode_id, EPISODE_COLOURS[0])
+        for sub in run.subregimes:
+            x0, x1 = (float(times(v)) for v in (sub.t0_yr, sub.t1_yr))
+            if x1 - x0 > 2 * gap:
+                x0, x1 = x0 + gap, x1 - gap
+            (line,) = ax.plot(
+                [x0, x0, x1, x1], [tick, rise, rise, tick], color=colour, lw=0.9, transform=ax.get_xaxis_transform(), clip_on=False
+            )
+            line.set_gid(BRACKET_GID)
+            lines.append(line)
+    return lines
+
+
+def run_label_items(
+    run, fill: Tuple[float, float], pieces: Sequence[Tuple[float, float]], suffix: str = ''
+) -> List[Tuple[float, float, str, bool]]:
+    """The labels over (a) of an accepted 1:1 run with sub-regimes or a residence (W28 C13), (start, end, text, is a
+    sub-regime) [yr] in time order: '#id' (with `suffix`, `wave_labels`) and the first well over its first bracket, each
+    next well over its own (the same well after an amplitude change NEW_AMPLITUDE_LABEL), else '#id' over the fill;
+    'inferred' over each residence piece."""
+    subs = list(run.subregimes) if len(run.subregimes) >= 2 else []
+    head = f'#{run.episode_id}{suffix}'
+    items: List[Tuple[float, float, str, bool]] = []
+    if subs:
+        for k, sub in enumerate(subs):
+            name = verdict_text.well_words(sub.well) if k == 0 or sub.well != subs[k - 1].well else ''
+            if k and not name and sub.starts_at == MARK_AMPLITUDE_CHANGE:
+                name = NEW_AMPLITUDE_LABEL
+            text = ' '.join(part for part in (head if k == 0 else '', name) if part)
+            if text:
+                items.append((float(sub.t0_yr), float(sub.t1_yr), text, True))
+    else:
+        items.append((float(fill[0]), float(fill[1]), head, False))
+    items += [(float(t0), float(t1), RESIDENCE_LABEL, False) for t0, t1 in pieces]
+    return sorted(items, key=lambda item: 0.5 * (item[0] + item[1]))
+
+
+def merge_label_items(items: Sequence[Tuple[float, float, str, bool]], width_of: Callable[[str], float], gap: float = 0.0):
+    """`items` (start, end, text, is a sub-regime) whose text boxes centred over their spans overlap merged into one
+    over their joint span, in time order, until none overlap: two sub-regimes' names joined by ' → ', anything else
+    by ' · '. `width_of(text)` in the units of the spans."""
+    merged: List[Tuple[float, float, str, bool]] = []
+    for item in sorted(items, key=lambda item: 0.5 * (item[0] + item[1])):
+        merged.append(item)
+        while len(merged) > 1:
+            (s0, e0, a, sub_a), (s1, e1, b, sub_b) = merged[-2], merged[-1]
+            if 0.5 * (s0 + e0) + 0.5 * width_of(a) + gap <= 0.5 * (s1 + e1) - 0.5 * width_of(b):
+                break
+            merged[-2:] = [(min(s0, s1), max(e0, e1), f'{a}{" → " if sub_a and sub_b else " · "}{b}', sub_a and sub_b)]
+    return merged
+
+
+def draw_run_labels(ax, run, fill, pieces, frame: _Frame, layout: VerdictFigureLayout, suffix: str = '') -> list:
+    """The labels of `run_label_items` over (a), merged where they would overlap (`merge_label_items`): over the
+    brackets for a run with sub-regimes, else at the '#id' height; an 'inferred' wider than its piece is left out
+    (the hatch alone). When a merged name of wells is wider than the run's fill (524522 1V-1 20 kyr: 15 sub-regimes
+    in 2.3 kyr), the brackets keep no names and '#id' stands over the fill: the header and the text name the wells.
+    Nothing when the fill is narrower than EPISODE_LABEL_MIN_PX, as for '#id'."""
+    if (fill[1] - fill[0]) * frame.px_per_unit < EPISODE_LABEL_MIN_PX:
+        return []
+    units_per_pt = layout.dpi / 72 / frame.px_per_unit if frame.px_per_unit > 0 else 0.0
+
+    def width(text: str) -> float:
+        return _text_width_pt(text, layout.font_note_pt) * units_per_pt
+
+    items = []
+    for t0, t1, text, sub in run_label_items(run, fill, pieces, suffix):
+        x0, x1 = (float(frame.times(v)) for v in (t0, t1))
+        if text == RESIDENCE_LABEL and width(text) > x1 - x0:
+            continue
+        items.append((x0, x1, text, sub))
+    bracketed = len(run.subregimes) >= 2
+    y = _points_over_top(ax, BRACKET_LABEL_PT) if bracketed else 1 + EPISODE_LABEL_PAD
+    colour = frame.colours.get(run.episode_id, EPISODE_COLOURS[0])
+    gap = 2 * units_per_pt
+    merged = merge_label_items(items, width, gap=gap)
+    fill_x0, fill_x1 = (float(frame.times(v)) for v in fill)
+    if bracketed and any(text != RESIDENCE_LABEL and width(text) > fill_x1 - fill_x0 for _, _, text, _ in merged):
+        head = (fill_x0, fill_x1, f'#{run.episode_id}{suffix}', False)
+        merged = merge_label_items([head] + [item for item in items if item[2] == RESIDENCE_LABEL], width, gap=gap)
+    texts = []
+    for x0, x1, text, _ in merged:
+        texts.append(
+            ax.text(
+                0.5 * (x0 + x1),
+                y,
+                text,
+                transform=ax.get_xaxis_transform(),
+                ha='center',
+                va='bottom',
+                fontsize=layout.font_note_pt,
+                color=colour,
+                fontweight='normal' if text == RESIDENCE_LABEL else 'bold',
+                fontstyle='italic' if text == RESIDENCE_LABEL else 'normal',
+                clip_on=False,
+                zorder=8,
+            )
+        )
+    return texts
+
+
+def kick_times(runs) -> List[float]:
+    """The kicks of a at the changes inside accepted 1:1 runs that are no boundary (`Episode.marks`, kick@t) [yr]."""
+    out = []
+    for run in runs:
+        if run.accepted:
+            out += [t0 for name, t0, _ in verdict_text.episode_marks({'marks': getattr(run, 'marks', '')}) if name == 'kick']
+    return sorted(out)
+
+
+def draw_kicks(ax, frame: _Frame, layout: VerdictFigureLayout) -> list:
+    """(d): a ▼ at the top edge at each kick of a met at a change of a 1:1 run that is no boundary (`kick_times`; the
+    jump itself is the dotted line of (a)), labelled 'kick' to its right; labels that would overlap merge ('kicks')."""
+    geometry = frame.analysis.geometry
+    times = kick_times(geometry.runs) if geometry is not None else []
+    if not times:
+        return []
+    xs = [float(frame.times(t)) for t in times]
+    top = _points_over_top(ax, -0.5 * KICK_MARK_PT - 1.0)  # the triangle just under the top edge, inside the panel
+    marks = ax.plot(
+        xs,
+        [top] * len(xs),
+        ls='none',
+        marker='v',
+        ms=KICK_MARK_PT,
+        color=REFERENCE,
+        transform=ax.get_xaxis_transform(),
+        clip_on=False,
+        zorder=9,
+    )
+    marks[0].set_gid(KICK_GID)
+    units_per_pt = layout.dpi / 72 / frame.px_per_unit if frame.px_per_unit > 0 else 0.0
+    lead = 0.5 * KICK_MARK_PT * units_per_pt  # the label starts right of its ▼
+    reach = lead + _text_width_pt(f' {KICK_LABEL}s', layout.font_note_pt) * units_per_pt
+    texts = []
+    for x0, x1 in merge_overlapping_labels([(x, x + reach) for x in xs], lambda span: span[1] - span[0]):
+        n = sum(1 for x in xs if x0 <= x <= x1)
+        texts.append(
+            ax.text(
+                x0 + lead,
+                top,
+                f' {KICK_LABEL}s' if n > 1 else f' {KICK_LABEL}',
+                transform=ax.get_xaxis_transform(),
+                ha='left',
+                va='center',
+                fontsize=layout.font_note_pt,
+                color=REFERENCE,
+                zorder=9,
+                bbox={'facecolor': 'white', 'edgecolor': 'none', 'alpha': 0.8, 'pad': JUMP_LABEL_PAD_PT},
+            )
+        )
+    return texts
 
 
 def merge_overlapping_labels(
@@ -1043,19 +1448,24 @@ def draw_wrapped_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
     ax.set_yticks(ticks[(ticks > base + edge) & (ticks < base + 360 - edge)])
     ax.yaxis.set_major_formatter(_angle_formatter())
     if _is_alias(frame.analysis):  # one short plaque where the illusion is (the numbers are in the right column)
-        ax.text(
-            0.995,
-            0.94,
-            alias_text(frame.analysis),
-            transform=ax.transAxes,
-            ha='right',
-            va='top',
-            fontsize=layout.font_note_pt + 0.5,
-            color=CENTRE,
-            fontweight='bold',
-            zorder=11,
-            bbox={'facecolor': 'white', 'edgecolor': CENTRE, 'lw': 0.6, 'pad': 1.2},
-        )
+        alias_plaque(ax, alias_text(frame.analysis), layout)
+
+
+def alias_plaque(ax, text: str, layout: VerdictFigureLayout):
+    """The ALIAS plaque in the top right corner of (b)."""
+    return ax.text(
+        0.995,
+        0.94,
+        text,
+        transform=ax.transAxes,
+        ha='right',
+        va='top',
+        fontsize=layout.font_note_pt + 0.5,
+        color=CENTRE,
+        fontweight='bold',
+        zorder=11,
+        bbox={'facecolor': 'white', 'edgecolor': CENTRE, 'lw': 0.6, 'pad': 1.2},
+    )
 
 
 def needs_strip(frame: _Frame) -> bool:
@@ -1104,12 +1514,13 @@ def strip_windows(frame: _Frame) -> List[Tuple[float, float]]:
 def draw_strip(fig, rect: Rect, frame: _Frame, layout: VerdictFigureLayout, wrapped_ax) -> list:
     """The strip (b′) in `rect` (inches): one axes per window of `strip_windows`, each on its own time axis (yr) with
     the samples, the path between them by the predictive unwrap (dashed: a whole revolution may pass between two
-    samples) and sigma_f (broken where it turns by more than pi between samples). The windows are marked ▼ on (b)."""
+    samples) and sigma_f (broken where it turns by more than pi between samples). The windows are marked ▼ on (b)
+    (`strip_marks`)."""
     windows = strip_windows(frame)
     width, height = fig.get_size_inches()
     x, y, w, h = rect
     sub_w = (w - STRIP_GAP * (len(windows) - 1)) / max(len(windows), 1)
-    axes = []
+    axes, marks = [], []
     for i, (t0, t1) in enumerate(windows):
         mask = (frame.t >= t0) & (frame.t <= t1)
         if np.count_nonzero(mask) < 2:
@@ -1118,23 +1529,77 @@ def draw_strip(fig, rect: Rect, frame: _Frame, layout: VerdictFigureLayout, wrap
         letter = 'b′' if len(windows) == 1 else f'b′{i + 1}'
         _draw_strip_window(ax, frame, layout, mask, letter)
         axes.append(ax)
-        middle = frame.times(0.5 * (t0 + t1))
-        wrapped_ax.plot(
-            [middle], [1.0], marker='v', ms=6, color=REFERENCE, transform=wrapped_ax.get_xaxis_transform(), clip_on=False, zorder=9
-        )
-        if len(windows) > 1:
-            wrapped_ax.text(
-                middle + 6 / frame.px_per_unit,
-                1.0,
-                str(i + 1),
-                transform=wrapped_ax.get_xaxis_transform(),
-                ha='left',
-                va='top',
-                fontsize=layout.font_note_pt,
-                color=REFERENCE,
-                zorder=9,
-            )
+        marks.append((float(frame.times(0.5 * (t0 + t1))), str(i + 1) if len(windows) > 1 else ''))
+    strip_marks(wrapped_ax, marks, layout)
     return axes
+
+
+def text_box(text, renderer):
+    """The pixel box of a text with its white plaque (`bbox`), if it has one."""
+    from matplotlib.transforms import Bbox
+
+    box = text.get_window_extent(renderer)
+    patch = text.get_bbox_patch()
+    if patch is None:
+        return box
+    text.update_bbox_position_size(renderer)
+    return Bbox.union([box, patch.get_window_extent(renderer)])
+
+
+def _overlap_px2(box, others) -> float:
+    """The area [px²] that `box` shares with the boxes `others`."""
+    area = 0.0
+    for other in others:
+        w = min(box.x1, other.x1) - max(box.x0, other.x0)
+        h = min(box.y1, other.y1) - max(box.y0, other.y0)
+        area += w * h if w > 0 and h > 0 else 0.0
+    return area
+
+
+def strip_marks(ax, marks: Sequence[Tuple[float, str]], layout: VerdictFigureLayout) -> Tuple[list, list]:
+    """The ▼ over (b) at the middle of each window of the strip (b′) and its number when there are several (`marks`:
+    (x [display unit], number or '')); returns (markers, numbers). The x of a ▼ is the window's middle and never moves
+    (W28 g11-8). Neither may hide under the panel letter or the ALIAS plaque (the texts of (b) drawn before): a ▼ whose
+    box meets one is raised just over it; a number is tried right of its ▼ hanging from the frame, then level with
+    the ▼ (centred on the frame), then left of it level and hanging, and keeps the first place clear of those texts,
+    the ▼s and the numbers already placed (the least overlap when none is clear). In pixels at the figure's dpi."""
+    from matplotlib.transforms import ScaledTranslation
+
+    fig = ax.figure
+    renderer = fig.canvas.get_renderer()
+    base = ax.get_xaxis_transform()
+    obstacles = [text_box(text, renderer) for text in ax.texts if text.get_visible() and text.get_text().strip()]
+    markers, numbers, taken, lifts = [], [], [], []
+    for middle, _ in marks:
+        (marker,) = ax.plot([middle], [1.0], marker='v', ms=STRIP_MARK_PT, color=REFERENCE, transform=base, clip_on=False, zorder=12)
+        box = marker.get_window_extent(renderer)
+        hit = [other for other in obstacles if _overlap_px2(box, [other]) > 0]
+        lift = (max(other.y1 for other in hit) - box.y0 + 1.0) / fig.dpi if hit else 0.0  # [in]: over what it meets
+        marker.set_transform(base + ScaledTranslation(0.0, lift, fig.dpi_scale_trans))  # x unchanged
+        markers.append(marker)
+        lifts.append(lift)
+        taken.append(marker.get_window_extent(renderer))
+    gap = STRIP_MARK_GAP_PT / 72
+    places = (('left', 'top', gap), ('left', 'center', gap), ('right', 'center', -gap), ('right', 'top', -gap))
+    for (middle, number), lift in zip(marks, lifts):
+        if not number:
+            continue
+        best = None
+        for ha, va, dx in places:
+            text = ax.text(middle, 1.0, number, ha=ha, va=va, fontsize=layout.font_note_pt, color=REFERENCE, zorder=12)
+            text.set_transform(base + ScaledTranslation(dx, lift, fig.dpi_scale_trans))
+            area = _overlap_px2(text_box(text, renderer), obstacles + taken)
+            if best is None or area < best[0]:
+                if best is not None:
+                    best[1].remove()
+                best = (area, text)
+            else:
+                text.remove()
+            if area == 0:
+                break
+        numbers.append(best[1])
+        taken.append(text_box(best[1], renderer))
+    return markers, numbers
 
 
 def _draw_strip_window(ax, frame: _Frame, layout: VerdictFigureLayout, mask, letter: str):
@@ -1424,6 +1889,7 @@ def draw_axis_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
             if exceeded:
                 edge_marker(ax, EDGE_X_RAW, above, RAW)
     _style_axis(ax, 'd', 'a, au', layout)
+    draw_kicks(ax, frame, layout)
     ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
     margin_legend(ax, layout, axis_legend(frame, pieces[-1], strong_yr if strong is not None else float('nan'), high - low))
 
@@ -1557,7 +2023,9 @@ def draw_adot_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
     sigma. When the line rule raised the cutoff the law read (`Response.force_line_binding_yr`), a_dot and the angle
     are taken at that cutoff and the cutoff and the line are printed. When the law that decided is not a law on sigma
     alone, no curve is drawn and the panel prints its numbers: the N-harmonic law (CS12, `decide.taken_harmonic_law`:
-    'harmonic law N=k: R² … (single …)') or, for a 1:1 angle, its own law (`coorbital.CoorbitalLaw`)."""
+    'harmonic law N=k: R² … (single …)') or, for a 1:1 angle, its own law (`coorbital.CoorbitalLaw`). Under the direct
+    averaged-force law (W28 B8, `decide.taken_direct_law`) its own curves are drawn (`draw_direct_law`) with its numbers
+    (`direct_law_text`), not the single-sine windows."""
     analysis, prep = frame.analysis, frame.prep
     if prep is None:
         _style_axis(ax, 'e', r'$\dot a$', layout)
@@ -1586,6 +2054,14 @@ def draw_adot_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
         _style_axis(ax, 'e', label, layout)
         _value_text(ax, '   '.join([harmonic_law_text(harmonic)] + texts), layout)
         return
+    direct = taken_direct_law(response)
+    if direct is not None:
+        # B8: the term's averaged force decided L4; its windows, not the single-sine ones, are the law that was tested
+        drawn = draw_direct_law(ax, frame, scale)
+        _style_axis(ax, 'e', label, layout)
+        words = [direct_law_text(direct, frame.analysis)] + texts + ([] if drawn else ['(curve not rebuilt)'])
+        _value_text(ax, '   '.join(words), layout)
+        return
     psi = angle_law - _law_shift(frame)
     multiplet = response.multiplet if response is not None and response.force_law == 'multiplet' else None
     if multiplet is not None:
@@ -1609,18 +2085,67 @@ def draw_adot_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
         _note(ax, 'force law not computed', layout.font_note_pt, y=0.9)
 
 
+DIRECT_OBSERVED_STYLE = {'color': INK, 'lw': 1.5, 'alpha': 0.85, 'zorder': 3}  # (e): ȧ low-passed at the direct law's cutoff
+DIRECT_MODEL_STYLE = {'color': MODEL, 'lw': 1.2, 'alpha': 0.95, 'zorder': 4}  # (e): s × the term's averaged force there
+
+
+def draw_direct_law(ax, frame: _Frame, scale: float) -> bool:
+    """(e) under the direct averaged-force law that decided L4 (W28 B8/E19a, `response.direct_curves`): the observed
+    ȧ low-passed at the law's cutoff (thick black) and, per window, s × the term's averaged force low-passed alike
+    (blue), each window on its central half (the windows overlap by half; the first and last to their edges), inside
+    the analysis window. False when the curves cannot be rebuilt (the panel then prints the numbers only)."""
+    analysis = frame.analysis
+    if frame.settings is None or analysis.prep is None:
+        return False
+    curves = response_module.direct_curves(
+        frame.series, analysis.prep, analysis.context, analysis.response, analysis.geometry, frame.settings
+    )
+    if curves is None:
+        return False
+    _, observed, fits = curves
+    t = np.asarray(analysis.prep.t_yr, dtype=float)
+    shown = np.zeros(len(t), dtype=bool)
+    for part, _ in fits:
+        shown[part] = True
+    _line(ax, frame.x, np.where(shown & frame.inside, observed, np.nan) * scale, **DIRECT_OBSERVED_STYLE)
+    for i, (part, model) in enumerate(fits):
+        times = t[part]
+        quarter = (times[-1] - times[0]) / 4 if len(times) else 0.0
+        start = times[0] + (quarter if i else 0.0) if len(times) else 0.0
+        end = times[-1] - (quarter if i < len(fits) - 1 else 0.0) if len(times) else 0.0
+        keep = (times >= start) & (times <= end) & frame.inside[part]
+        _line(ax, frame.x[part][keep], np.asarray(model)[keep] * scale, **DIRECT_MODEL_STYLE)
+    return True
+
+
+def direct_law_text(law, analysis) -> str:
+    """'direct law 8N-13+0+5 (Neptune's mass) at 3.07 kyr: R² 0.75, s 1.14–1.29' (columns rsp_dforce_*)."""
+    spec = analysis.resonance
+    planet = f" ({spec.planets[0]}'s mass)" if spec is not None and spec.planets else ''
+    cutoff = f'{law.cutoff_yr / 1000:.3g} kyr' if law.cutoff_yr >= 1000 else f'{law.cutoff_yr:.3g} yr'
+    r2 = f'{law.r2:.2f}' if is_finite(law.r2) else '–'
+    scales = f'{law.scale_min:.2f}–{law.scale_max:.2f}' if is_finite(law.scale_min) and is_finite(law.scale_max) else '–'
+    return f'direct law {spec.key if spec is not None else ""}{planet} at {cutoff}: R² {r2}, s {scales}'
+
+
 def law_series(frame: _Frame) -> Tuple[np.ndarray, np.ndarray, bool]:
-    """(sigma, a_dot, raised) as the force law of the record read them: at the response cutoff (`prep.angle_response`,
-    `prep.adot_response`), or, when the line rule raised it (`Response.force_line_binding_yr` finite), at the cutoff
-    the law was measured at (`Response.force_cutoff_yr`, `response.smoothed_series` with the figure's settings)."""
+    """(sigma, a_dot, raised) as the force law that decided read them (`analysis.response` is rule R's response): at
+    the cutoff it was measured at (`Response.force_cutoff_yr`: the response cutoff of the witness episode's own period,
+    of the pool, or the line rule's raised cutoff), `response.smoothed_series` with the figure's settings. The
+    figure's response series (`prep.angle_response`, `prep.adot_response`, at the decisive period) are that series
+    when the cutoffs agree, and stand in when the law's cutoff is unknown. A witness that is not the decisive episode
+    has its own (W28 g11-7: 34706 7J-2 87 against 75 yr, 22000 5J-2S-2 637 against 538 yr). `raised`: the line
+    rule raised the cutoff (`Response.force_line_binding_yr` finite), so the cutoff and the line are printed."""
     prep, response = frame.prep, frame.analysis.response
     base = _angle_response(prep), _adot(prep)
-    if response is None or not (is_finite(response.force_line_binding_yr) and is_finite(response.force_cutoff_yr)):
+    cutoff = float(response.force_cutoff_yr) if response is not None else float('nan')
+    if not is_finite(cutoff) or frame.settings is None:
         return base[0], base[1], False
-    if frame.settings is None:
-        return base[0], base[1], False
-    angle, _, _, adot, _ = response_module.smoothed_series(prep, float(response.force_cutoff_yr), frame.settings)
-    return np.asarray(angle, dtype=float), np.asarray(adot, dtype=float), True
+    raised = is_finite(response.force_line_binding_yr)
+    if is_finite(prep.response_cutoff_yr) and np.isclose(cutoff, prep.response_cutoff_yr, rtol=1e-9, atol=0.0):
+        return base[0], base[1], raised
+    angle, _, _, adot, _ = response_module.smoothed_series(prep, cutoff, frame.settings)
+    return np.asarray(angle, dtype=float), np.asarray(adot, dtype=float), raised
 
 
 def _law_shift(frame: _Frame):
@@ -1859,14 +2384,18 @@ def _relative_degrees(centre, low_reference) -> np.ndarray:
 
 
 def centre_mode(analysis: MMRAnalysis) -> str:
-    """What panel (j) shows: 'subresonance', 'owner', 'kinematic' or 'centre'."""
+    """What panel (j) shows: 'subresonance', 'owner', 'kinematic' or 'centre'. Kinematic: a kinematic libration, or a
+    non_resonant row whose slow scale is a secular cycle (slow_origin kinematic, W28 B10b), with a ϖ term in σ."""
     subresonances, owner = analysis.subresonances, analysis.owner
     if subresonances is not None and subresonances.accepted is not None:
         return 'subresonance'
     if owner is not None and owner.accepted is not None:
         return 'owner'
-    kinematic = analysis.verdict.libration_origin == LibrationOrigin.KINEMATIC
-    if kinematic and analysis.slow is not None and analysis.resonance.body_varpi_coefficient:
+    slow = analysis.slow_scale
+    slow_kinematic = slow is not None and slow.origin == SlowOrigin.KINEMATIC and str(analysis.verdict.status) == 'non_resonant'
+    kinematic = analysis.verdict.libration_origin == LibrationOrigin.KINEMATIC or slow_kinematic
+    arrays = analysis.prep is not None or analysis.slow is not None
+    if kinematic and arrays and analysis.resonance.body_varpi_coefficient:
         return 'kinematic'
     return 'centre'
 
@@ -2084,7 +2613,7 @@ def centre_pass_matters(centre) -> bool:
 def draw_centre_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
     """(i) the centre of sigma: sigma_f smoothed over W_c drawn over sigma_f, the centre's turns and its largest
     monotone pass when it is a revolution or more (`centre_pass_matters`; the numbers geo_centre_window_yr,
-    geo_centre_n_tp, geo_centre_max_pass_rev)."""
+    geo_centre_n_tp, geo_centre_max_pass_rev); the slow scale's intervals hatched (`draw_slow_intervals`)."""
     geometry, prep = frame.analysis.geometry, frame.prep
     _style_axis(ax, 'i', 'centre\nrad', layout)
     if frame.centre is None or geometry is None:
@@ -2101,6 +2630,44 @@ def draw_centre_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
     if centre_pass_matters(centre):
         ax.axvspan(frame.times(centre.max_pass_t0_yr), frame.times(centre.max_pass_t1_yr), color=CENTRE, alpha=0.1, lw=0, zorder=0)
     _view(ax, prep.angle_f[frame.inside] if prep is not None else centre_in, pad=0.08)
+    draw_slow_intervals(ax, frame, layout)
+
+
+def slow_intervals(analysis: MMRAnalysis) -> List[Tuple[float, float, str]]:
+    """(t0, t1, label) [yr] of the slow scale (B10a `SlowScale`; W28 B10b, card g08-7: 'the period and the episodes of
+    the slow libration visible and checkable'): each slow episode 'slow #id' (episodes.csv scale='slow'), else the span
+    of the slow centre's closed cycles 'slow'. Empty without a slow scale or without a slow swing (half-amplitude nan)."""
+    slow = analysis.slow_scale
+    if slow is None or not slow.measured or not is_finite(slow.halfamp_rad):
+        return []
+    if slow.episodes:
+        return [(float(run.t_start_yr), float(run.t_end_yr), f'{SLOW_LABEL} #{run.episode_id}') for run in slow.episodes]
+    if is_finite(slow.t_start_yr) and is_finite(slow.t_end_yr) and slow.t_end_yr > slow.t_start_yr:
+        return [(float(slow.t_start_yr), float(slow.t_end_yr), SLOW_LABEL)]
+    return []
+
+
+def draw_slow_intervals(ax, frame: _Frame, layout: VerdictFigureLayout) -> int:
+    """The slow intervals on (i) (`slow_intervals`): hatched `SLOW_HATCH` in the centre's colour, the label at the top
+    when the span is at least EPISODE_LABEL_MIN_PX wide. Returns the number drawn."""
+    intervals = slow_intervals(frame.analysis)
+    for t0, t1, label in intervals:
+        x0, x1 = frame.times(t0), frame.times(t1)
+        ax.axvspan(x0, x1, facecolor='none', edgecolor=CENTRE, hatch=SLOW_HATCH, alpha=SLOW_HATCH_ALPHA, lw=0, zorder=0.5)
+        if (x1 - x0) * frame.px_per_unit >= EPISODE_LABEL_MIN_PX:
+            ax.text(
+                0.5 * (x0 + x1),
+                0.97,
+                label,
+                transform=ax.get_xaxis_transform(),
+                ha='center',
+                va='top',
+                fontsize=layout.font_note_pt,
+                color=CENTRE,
+                zorder=9,
+                bbox={'facecolor': 'white', 'edgecolor': 'none', 'alpha': 0.7, 'pad': 0.4},
+            )
+    return len(intervals)
 
 
 def draw_centres_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
@@ -2117,6 +2684,7 @@ def draw_centres_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
         _draw_kinematic(ax, frame, layout)
         return
     items = []
+    overlay = varpi_overlay(frame)  # B10b: p varpi where the slow cause is secular (card g08-8, 'here and everywhere')
     for i, line in enumerate(frame.centre_lines):
         colour, width, style, z = _line_style(line, i)
         values = np.where(frame.inside, _relative_degrees(line.centre_rad, line.centre_rad[frame.inside]), np.nan)
@@ -2124,6 +2692,8 @@ def draw_centres_panel(ax, frame: _Frame, layout: VerdictFigureLayout):
         finite = values[np.isfinite(values)]
         if len(finite):
             items.append((finite[-1], line.key, colour))
+    if overlay is not None:
+        items += draw_varpi_overlay(ax, frame, overlay)
     ax.axhline(0, color=REFERENCE, lw=0.5, alpha=0.5, zorder=0)
     ax.set_ylim(-CENTRES_AXIS_DEG, CENTRES_AXIS_DEG)
     ax.set_yticks([-180, -90, 0, 90, 180])
@@ -2145,23 +2715,196 @@ def _detrended(t, y) -> np.ndarray:
     return y - np.polyval(np.polyfit(t - t[0], y, 1), t - t[0]) if len(t) > 2 else y - np.mean(y)
 
 
-def _draw_kinematic(ax, frame: _Frame, layout: VerdictFigureLayout):
-    """Kinematic mode: the slow angle against p varpi (both detrended, labelled 'σ' and 'pϖ' at the right); a
-    kinematic libration follows p varpi (kin_corr_rate in the right column)."""
+@dataclass
+class KinematicTerms:
+    """The terms of sigma on one scale for panel (j) (W28 B10b, cards g05-3 'σ = λ part + pϖ on this scale', g08-8):
+    sigma, p varpi and the lambda part sigma - p varpi [rad] (the planets' slow terms go with it), each low-passed at
+    `cutoff_yr` and detrended over each span of `t_yr` (nan between spans). `scale`: 'episode' (σ's decisive episode
+    at its response cutoff, where K1e read kin_swing_share), 'slow' (the slow scale, `SlowScale.cutoff_yr`: K3s and
+    the p·ϖ overlay) or 'centre' (the slow components at W_c, when neither applies). A drawing aid: no status reads it."""
+
+    t_yr: np.ndarray
+    sigma: np.ndarray
+    p_varpi: np.ndarray
+    lambda_part: np.ndarray
+    p: int
+    scale: str
+    cutoff_yr: float
+
+
+def slow_spans(slow) -> List[Tuple[float, float]]:
+    """The spans [yr] of a slow scale the kinematic terms are detrended over, one by one: its episodes (a slow
+    libration holds within each; between them σ may slip a revolution, 37087 over 1 Myr), else its whole span."""
+    if slow.episodes:
+        return [(float(run.t_start_yr), float(run.t_end_yr)) for run in slow.episodes]
+    return [(float(slow.t_start_yr), float(slow.t_end_yr))]
+
+
+def kinematic_scale(analysis: MMRAnalysis, row: Mapping[str, Any], settings) -> Tuple[str, List[Tuple[float, float]], float]:
+    """(scale, spans [yr], cutoff [yr]) of the kinematic terms of (j): the slow scale's spans and cutoff when the
+    kinematic swing is the slow scale's (`verdict_text.slow_kinematic`, K3s: 37087 3J+8S-3 at 506 yr; or a non_resonant
+    row drawn kinematic for its slow scale alone, 285637 over 2 Myr); σ's decisive
+    episode (first to last turning point; the analysis window for a libration over the record) at its response cutoff
+    max(P_c, mmr_response_cutoff_cycles x P) when K1e measured the swing there (kin_swing_share; 285637 at 1.8 kyr,
+    where W_c = 54 kyr would erase its 18-kyr cycle); else ('centre', [], nan)."""
+    none = ('centre', [], NAN)
+    slow = analysis.slow_scale
+    slow_swing = verdict_text.slow_kinematic(row, settings.mmr_kin_period_tol)
+    # a non_resonant row drawn kinematic for its slow scale alone (`centre_mode`): that scale too
+    slow_swing = slow_swing or (
+        slow is not None and slow.origin == SlowOrigin.KINEMATIC and analysis.verdict.libration_origin != LibrationOrigin.KINEMATIC
+    )
+    if slow is not None and slow.measured and slow_swing and is_finite(slow.cutoff_yr):
+        return 'slow', slow_spans(slow), float(slow.cutoff_yr)
+    prep, geometry, kinematics = analysis.prep, analysis.geometry, analysis.kinematics
+    if prep is None or geometry is None or kinematics is None or not is_finite(kinematics.swing_share):
+        return none
+    run = _deciding_episode(analysis)
+    whole = str(analysis.verdict.angle_status) == 'libration'
+    if run is not None and not whole and len(run.tp_times_yr) >= 2:
+        window = (float(run.tp_times_yr[0]), float(run.tp_times_yr[-1]))
+    else:
+        window = (float(prep.window[0]), float(prep.window[1]))
+    period = run.period_med_yr if run is not None and is_finite(run.period_med_yr) else geometry.period_cycle_yr
+    return 'episode', [window], float(response_module.response_cutoff_yr(prep.cutoff.cutoff_yr, period, settings))
+
+
+def kinematic_terms(
+    analysis: MMRAnalysis, series: MMRSeries, settings, spans: Sequence[Tuple[float, float]], cutoff_yr: float, scale: str
+) -> Optional[KinematicTerms]:
+    """`KinematicTerms` at `cutoff_yr` over `spans`, as `kinematics.episode_kinematics` builds them: prep's unwrapped
+    sigma and p x the body's varpi unwrapped with its slow vector (`sampling.body_varpi_slow_unwrap`), low-passed,
+    detrended over each span on its own (a nan between two spans, so no line joins them); the lambda part their
+    difference. None without a varpi term, for a retrograde angle (no varpi
+    convention), without the arrays, or when the low-pass cannot run or the window holds fewer than 3 samples."""
+    prep, spec = analysis.prep, analysis.resonance
+    p = int(spec.body_varpi_coefficient)
+    if prep is None or not p or spec.retrograde or not (is_finite(cutoff_yr) and cutoff_yr > 0):
+        return None
+    t = np.asarray(prep.t_yr, dtype=float)
+    varpi = body_varpi_slow_unwrap(series, settings)[0]
+    source = np.asarray(series.t_yr, dtype=float)
+    if len(source) != len(t) or not np.array_equal(source, t):
+        varpi = np.interp(t, source, varpi)
+    sigma_f = lowpass_or_none(t, np.asarray(prep.angle_unwrapped, dtype=float), cutoff_yr, settings)
+    p_varpi_f = lowpass_or_none(t, p * varpi, cutoff_yr, settings)
+    if sigma_f is None or p_varpi_f is None:
+        return None
+    pieces = []
+    for start, end in spans:
+        inside = (t >= start) & (t <= end) & np.isfinite(sigma_f) & np.isfinite(p_varpi_f)
+        if np.count_nonzero(inside) < 3:
+            continue
+        t_in = t[inside]
+        if pieces:  # a gap between two spans
+            pieces.append((np.array([0.5 * (pieces[-1][0][-1] + t_in[0])]), np.array([np.nan]), np.array([np.nan])))
+        pieces.append((t_in, _detrended(t_in, sigma_f[inside]), _detrended(t_in, p_varpi_f[inside])))
+    if not pieces:
+        return None
+    t_all, sigma, p_varpi = (np.concatenate([piece[i] for piece in pieces]) for i in range(3))
+    return KinematicTerms(t_all, sigma, p_varpi, sigma - p_varpi, p, scale, float(cutoff_yr))
+
+
+def _centre_terms(frame: _Frame) -> Optional[KinematicTerms]:
+    """The terms of the slow components at W_c (`analysis.slow`), the fallback of `frame_kinematic_terms`."""
     analysis, slow = frame.analysis, frame.analysis.slow
-    p = analysis.resonance.body_varpi_coefficient
-    mask = (slow.t_yr >= slow.window[0]) & (slow.t_yr <= slow.window[1])
+    p = int(analysis.resonance.body_varpi_coefficient)
+    if slow is None or not p:
+        return None
+    t = np.asarray(slow.t_yr, dtype=float)
+    mask = (t >= slow.window[0]) & (t <= slow.window[1])
     if np.count_nonzero(mask) < 3:  # a record shorter than two centre windows: the analysis window
-        mask = (slow.t_yr >= frame.window[0]) & (slow.t_yr <= frame.window[1])
-    x = frame.times(slow.t_yr[mask])
-    # both detrended (kin_corr_detrended): the mean rate of p varpi is cancelled by the lambda part
-    angle = _detrended(slow.t_yr[mask], slow.angle_slow[mask])
-    varpi = _detrended(slow.t_yr[mask], p * slow.varpi_slow[mask])
-    _line(ax, x, angle, color=CENTRE, lw=1.1)
-    _line(ax, x, varpi, color=SUBRESONANCE, lw=1.0, ls='--')
-    ax.set_ylabel('rad', fontsize=layout.font_axis_pt, labelpad=2)
-    labels = [(values[-1], text, colour) for values, text, colour in ((angle, 'σ', CENTRE), (varpi, f'{p}ϖ', SUBRESONANCE)) if len(values)]
-    _right_labels(ax, labels, layout.font_note_pt)
+        mask = (t >= frame.window[0]) & (t <= frame.window[1])
+    if np.count_nonzero(mask) < 3:
+        return None
+    sigma = _detrended(t[mask], np.asarray(slow.angle_slow, dtype=float)[mask])
+    p_varpi = _detrended(t[mask], p * np.asarray(slow.varpi_slow, dtype=float)[mask])
+    return KinematicTerms(t[mask], sigma, p_varpi, sigma - p_varpi, p, 'centre', float(slow.window_yr))
+
+
+def frame_kinematic_terms(frame: _Frame) -> Optional[KinematicTerms]:
+    """The kinematic terms of (j) at `kinematic_scale`, else at the centre window W_c (`_centre_terms`; also without
+    readable settings)."""
+    if frame.settings is None:
+        return _centre_terms(frame)
+    scale, spans, cutoff = kinematic_scale(frame.analysis, frame.row, frame.settings)
+    if scale != 'centre':
+        terms = kinematic_terms(frame.analysis, frame.series, frame.settings, spans, cutoff, scale)
+        if terms is not None:
+            return terms
+    return _centre_terms(frame)
+
+
+def varpi_period(frame: _Frame, scale: str) -> float:
+    """The secular period [yr] the p·ϖ line of (j) is labelled with, from the columns: on the slow scale the slow
+    cause's term (`verdict_text.slow_secular_cause`), else its matched term (slow_secular_term); on σ's own scale the
+    secular period a secular_cycle verdict matched (`verdict_text.closest_secular_period`); nan otherwise."""
+    row = frame.row
+    if scale == 'slow':
+        period = verdict_text.slow_secular_cause(row)[1]
+        return period if is_finite(period) else verdict_text.secular_term_period(row, row.get('slow_secular_term'))
+    if str(frame.analysis.verdict.origin_detail) != 'secular_cycle':
+        return NAN
+    period = row.get('ep_period_med_yr')
+    period = period if verdict_text.finite(period) else row.get('geo_period_cycle_yr')
+    return verdict_text.closest_secular_period(row, period)[0]
+
+
+def varpi_label(p: int, period_yr: float) -> str:
+    """'−8ϖ 5.70 kyr': the term and the secular period it is drawn with; the term alone without a period."""
+    term = verdict_text.varpi_term(p)
+    return f'{term} {verdict_text.years(period_yr)}' if is_finite(period_yr) else term
+
+
+def _draw_kinematic(ax, frame: _Frame, layout: VerdictFigureLayout):
+    """Kinematic mode (W28 B10b): σ = λ part + pϖ on the scale of the kinematic swing (`frame_kinematic_terms`), each
+    detrended, in degrees: red σ, orange dashed pϖ labelled with its secular period (`varpi_label`), grey dotted λ part.
+    A kinematic libration follows pϖ and its λ part stays flat (kin_swing_share, kin_lambda_swing_share)."""
+    terms = frame_kinematic_terms(frame)
+    if terms is None:
+        _note(ax, 'kinematic terms not computed', layout.font_note_pt)
+        return
+    x = frame.times(terms.t_yr)
+    lines = (
+        (np.degrees(terms.sigma), 'σ', CENTRE, {'lw': 1.1, 'zorder': 5}),
+        (
+            np.degrees(terms.p_varpi),
+            varpi_label(terms.p, varpi_period(frame, terms.scale)),
+            SUBRESONANCE,
+            {'lw': 1.0, 'ls': '--', 'zorder': 6},
+        ),
+        (np.degrees(terms.lambda_part), LAMBDA_PART_LABEL, LAMBDA_PART, {'lw': 0.9, 'ls': ':', 'zorder': 4}),
+    )
+    for values, _, colour, style in lines:
+        _line(ax, x, values, color=colour, **style)
+    ax.axhline(0, color=REFERENCE, lw=0.5, alpha=0.5, zorder=0)
+    ax.set_ylabel('detrended\n°', fontsize=layout.font_axis_pt, labelpad=2)
+    _view(ax, np.concatenate([values for values, _, _, _ in lines]))
+    _right_labels(ax, [(values[-1], text, colour) for values, text, colour, _ in lines if len(values)], layout.font_note_pt)
+
+
+def varpi_overlay(frame: _Frame) -> Optional[Tuple[KinematicTerms, float]]:
+    """(the terms on the slow scale, the secular period [yr]) of the p·ϖ overlay of (j) outside the kinematic mode
+    (W28 B10b, card g08-8: 'if the cause is a secular cycle, show it as a line, here and everywhere'): only when the
+    slow scale names a secular cause (slow_cause secular_2omega/secular_g_gj, any level) and has a swing; None
+    otherwise (nothing is drawn without a slow swing)."""
+    slow = frame.analysis.slow_scale
+    if slow is None or not slow.measured or str(slow.cause) not in verdict_text.SECULAR_CAUSES or not is_finite(slow.halfamp_rad):
+        return None
+    if frame.settings is None:
+        return None
+    terms = kinematic_terms(frame.analysis, frame.series, frame.settings, slow_spans(slow), float(slow.cutoff_yr), 'slow')
+    return (terms, varpi_period(frame, 'slow')) if terms is not None else None
+
+
+def draw_varpi_overlay(ax, frame: _Frame, overlay: Tuple[KinematicTerms, float]) -> List[Tuple[float, str, str]]:
+    """The detrended p·ϖ of the slow scale on (j) in degrees (wrapped to ±180°, orange dashed, as in the kinematic
+    mode); returns its right label (value, '−9ϖ 7.16 kyr', colour)."""
+    terms, period = overlay
+    values = _break_jumps(np.degrees(wrap_pi(terms.p_varpi)), 180)
+    _line(ax, frame.times(terms.t_yr), values, color=SUBRESONANCE, lw=1.0, ls='--', zorder=6)
+    finite = values[np.isfinite(values)]
+    return [(float(finite[-1]), varpi_label(terms.p, period), SUBRESONANCE)] if len(finite) else []
 
 
 def panel_rects(layout: VerdictFigureLayout, n: Optional[int] = None) -> List[Rect]:
@@ -2181,14 +2924,17 @@ def stacked_axes(fig, layout: VerdictFigureLayout, n: int, rects: Optional[Seque
     return axes
 
 
-def draw_time_panels(fig, analysis: MMRAnalysis, series: MMRSeries, layout: VerdictFigureLayout, options=None, settings=None) -> list:
+def draw_time_panels(
+    fig, analysis: MMRAnalysis, series: MMRSeries, layout: VerdictFigureLayout, options=None, settings=None, row=None
+) -> list:
     """The time panels of PANELS sharing the time axis (kyr or Myr by `base.time_unit`); returns their axes. When the
     cycles are too dense for (b) (`needs_strip`), the column is split in eleven and the third slot holds the strip
     (b′) (`draw_strip`, axes created after the ten panels, not returned); otherwise ten equal panels.
 
     `options`: plot options (`style.DEFAULT_PLOT_OPTIONS`; the figure reads `combined`); `settings`: the
-    AnalysisSettings of the episodes' coverage rule (default: from the configuration)."""
-    frame = _Frame(analysis, series, layout, options, settings)
+    AnalysisSettings of the episodes' coverage rule (default: from the configuration); `row`: the numbers ⋈ summary
+    row whose columns label (j) (default: from the analysis, when needed)."""
+    frame = _Frame(analysis, series, layout, options, settings, row)
     strip = needs_strip(frame)
     rects = panel_rects(layout, len(PANELS) + 1) if strip else panel_rects(layout, len(PANELS))
     strip_rect = rects.pop(2) if strip else None
@@ -2274,6 +3020,32 @@ def portrait_cycles(run, tp_times, tp_kinds, max_cycles: int = PORTRAIT_MAX_CYCL
     return [bounds[i] for i in chosen]
 
 
+def portrait_span(run, spans: Mapping[int, Tuple[float, float]], window: Tuple[float, float]) -> Tuple[float, float]:
+    """(start, end) [yr] of an accepted run in the portraits: its fill span in (a) (`episode_spans`; first to last
+    turning point when it has none) clipped to the analysis window of (k) (W28 g03-6, the author 2026-10-31: (l) over
+    the interval of the fill, the extended edges in another style). An episode closed by its returns over the whole
+    record is the whole window, so (l) holds the samples of (k). (end <= start: nothing inside the window.)"""
+    start, end = spans.get(run.episode_id, (run.t_start_yr, run.t_end_yr))
+    return max(float(start), float(window[0])), min(float(end), float(window[1]))
+
+
+def portrait_pieces(run, span: Tuple[float, float], tp_times, tp_kinds, max_cycles: int = PORTRAIT_MAX_CYCLES):
+    """The pieces of an episode drawn in (l), each (t0, t1, extended): the cycles of `portrait_cycles` inside the
+    turning points (clipped to `span`, `portrait_span`), and the extensions of the fill beyond the first and the last
+    turning point (extended=True, drawn dashed), so the drawn interval is the fill's."""
+    start, end = span
+    if end <= start:
+        return []
+    core0, core1 = max(start, run.t_start_yr), min(end, run.t_end_yr)
+    pieces = [(t0, t1, False) for t0, t1 in portrait_cycles(run, tp_times, tp_kinds, max_cycles)]
+    pieces = [(max(t0, core0), min(t1, core1), False) for t0, t1, _ in pieces if min(t1, core1) > max(t0, core0)]
+    if start < core0:
+        pieces.insert(0, (start, min(core0, end), True))
+    if end > core1:
+        pieces.append((max(core1, start), end, True))
+    return pieces
+
+
 def _episodes_window_low(geometry, runs, t, angle) -> float:
     """Lower edge of the 360-degree window of (l): around the centre track over the episodes (a horseshoe's samples
     crowd its two ends, so their own mean would split it), else around sigma_f there."""
@@ -2313,19 +3085,31 @@ def portrait_window_low(analysis: MMRAnalysis) -> Optional[float]:
     return _window_low(geometry.centre.centre_rad if geometry is not None else np.asarray(prep.angle_f)[mask])
 
 
-def episode_rate_limits(analysis: MMRAnalysis) -> Optional[Tuple[float, float]]:
-    """The y view [rad/kyr] of every sample of every accepted episode inside the window of (k) (sigma_dot at the
-    response cutoff, padded as the portraits are): the least (k) may show, whatever cycles (l) draws. None without
-    a filtered angle or an accepted episode."""
+def _record(prep, record: Optional[Tuple[float, float]]) -> Tuple[float, float]:
+    """The record's edges [yr] the fill spans reach (`episode_spans`): `record`, else the first and last sample."""
+    if record is not None:
+        return float(record[0]), float(record[-1])
+    t = np.asarray(prep.t_yr, dtype=float)
+    return float(t[0]), float(t[-1])
+
+
+def episode_rate_limits(
+    analysis: MMRAnalysis, settings=None, record: Optional[Tuple[float, float]] = None
+) -> Optional[Tuple[float, float]]:
+    """The y view [rad/kyr] of every sample of every accepted episode over its portrait span (`portrait_span`: the
+    fill of (a) inside the window of (k); sigma_dot at the response cutoff, padded as the portraits are): the least
+    (k) may show, whatever cycles (l) draws. `settings`/`record`: as for `episode_spans` (without `settings`, P/4
+    beyond the turns). None without a filtered angle or an accepted episode."""
     prep, geometry = analysis.prep, analysis.geometry
     if prep is None or geometry is None:
         return None
     t = np.asarray(prep.t_yr, dtype=float)
+    spans = episode_spans(geometry.runs, _record(prep, record), settings)
     covered = np.zeros(len(t), dtype=bool)
     for run in geometry.runs:
         if run.accepted:
-            covered |= (t >= run.t_start_yr) & (t <= run.t_end_yr)
-    covered &= (t >= prep.window[0]) & (t <= prep.window[1])
+            start, end = portrait_span(run, spans, prep.window)
+            covered |= (t >= start) & (t <= end)
     if not covered.any():
         return None
     return _view_limits(_rate(prep)[covered] * PER_KYR, pad=PORTRAIT_VIEW_PAD)
@@ -2356,12 +3140,22 @@ def share_portrait_limits(axes, episodes: Optional[Tuple[float, float]] = None) 
 
 
 def draw_episode_portrait(
-    ax, analysis: MMRAnalysis, layout: VerdictFigureLayout = LAYOUT_V1, divisor: float = 1.0, unit: str = 'yr', low: Optional[float] = None
+    ax,
+    analysis: MMRAnalysis,
+    layout: VerdictFigureLayout = LAYOUT_V1,
+    divisor: float = 1.0,
+    unit: str = 'yr',
+    low: Optional[float] = None,
+    settings=None,
+    record: Optional[Tuple[float, float]] = None,
 ):
     """(l) the accepted episodes only: sigma_f against sigma_dot at the response cutoff, the PORTRAIT_MAX_EPISODES
-    longest, each whole or, when it holds more, PORTRAIT_MAX_CYCLES of its cycles (`portrait_cycles`), one colour per
-    episode (the colours of (a)); a forced wave is labelled '#id wave', as on (a). `low`: the lower edge of the
-    360-degree window [rad] (`portrait_window_low`, shared with (k)); default: around the episodes."""
+    longest, each over its fill span of (a) inside the window of (k) (`portrait_span`, `portrait_pieces`): whole or,
+    when it holds more, PORTRAIT_MAX_CYCLES of its cycles (`portrait_cycles`), the stretches beyond its first and last
+    turning point dashed; one colour per episode (the colours of (a)); a forced wave is labelled '#id wave', a run the
+    status does not count '#id < floor', as on (a); the label's times are the turning points'. `low`: the lower edge of the 360-degree window [rad]
+    (`portrait_window_low`, shared with (k)); default: around the episodes. `settings`/`record`: as for
+    `episode_spans` (the figure passes its own)."""
     _bottom_title(ax, '(l) accepted episodes', layout)
     prep, geometry = analysis.prep, analysis.geometry
     if _aliased(analysis):
@@ -2376,24 +3170,32 @@ def draw_episode_portrait(
         return
     colours = episode_colours(geometry.runs)
     chosen = _portrait_episodes(accepted)
-    waves = getattr(geometry, 'forced_wave_ids', frozenset())  # '#id wave', as on (a): no episode of the angle (F6)
+    waves = wave_labels(geometry)  # '#id wave', 'forced (strength)', 'ripple', as on (a): no episode of the angle
+    induced = induced_episode_ids(analysis)  # '#id induced', hatched on (a)
+    uncounted = uncounted_tags(geometry)  # '#id < floor', grey on (a): the status does not count it (W28 C11)
     t = np.asarray(prep.t_yr, dtype=float)
     rate = _rate(prep) * PER_KYR
     angle = np.asarray(prep.angle_f, dtype=float)
     low = _episodes_window_low(geometry, chosen, t, angle) if low is None else low
     tp = geometry.turning_points
+    spans = episode_spans(geometry.runs, _record(prep, record), settings)
     shown = []
     for run in chosen:
         colour = colours.get(run.episode_id, EPISODE_COLOURS[0])
-        label = f'#{run.episode_id}' + (FORCED_WAVE_LABEL if run.episode_id in waves else '')
+        label = f'#{run.episode_id}' + waves.get(run.episode_id, '')
+        label += INDUCED_LABEL if run.episode_id in induced else ''
+        label += uncounted.get(run.episode_id, '')
         label += f' {run.t_start_yr / divisor:.4g}–{run.t_end_yr / divisor:.4g} {unit}'
         label += ' (before jump)' if run.before_last_jump else ''
-        for n, (t0, t1) in enumerate(portrait_cycles(run, tp.times_yr, tp.kinds)):
+        pieces = portrait_pieces(run, portrait_span(run, spans, prep.window), tp.times_yr, tp.kinds)
+        labelled = next((n for n, piece in enumerate(pieces) if not piece[2]), 0)  # the legend shows the solid line
+        for n, (t0, t1, extended) in enumerate(pieces):
             mask = (t >= t0) & (t <= t1)
             x = np.degrees(_wrap_window(angle[mask], low))
             y = rate[mask].copy()
             y[1:][np.abs(np.diff(x)) > 180] = np.nan
-            ax.plot(x, y, color=colour, lw=0.7, alpha=0.85, label=label if n == 0 else None, rasterized=True)
+            look = PORTRAIT_EXTENSION_STYLE if extended else PORTRAIT_CORE_STYLE
+            ax.plot(x, y, color=colour, label=label if n == labelled else None, rasterized=True, **look)
             if n == 0 and len(x):
                 ax.plot(x[:1], y[:1], 'o', ms=3, color=colour)
             shown.append(y)
@@ -2471,6 +3273,35 @@ def fair_unavailable_reason(analysis: MMRAnalysis, series: MMRSeries, max_step_f
     return None
 
 
+# The warning line of a figure without FAIR (W28 g03-7, the author 2026-10-31: no empty slot, a warning with the reason
+# where FAIR would be): each `fair_unavailable_reason` in words; the header's 'FAIR no (<reason>)' stays as it is.
+FAIR_WARNING_PREFIX = 'FAIR not drawn: '
+FAIR_REASON_WORDS = {
+    'retrograde resonance': 'it is defined for prograde orbits only (for i > 90° the saved longitude and ϖ are in other ' 'conventions)',
+    'three-body angle': 'it is a two-body diagnostic; for a three-body angle its plane is σ shifted by qM and cannot ' 'identify p:q',
+    'no mean anomaly or mean longitude': 'the body\'s mean anomaly or mean longitude is not in the record',
+    'no planet longitudes': 'planet longitudes not saved (SAVE_PLANETS)',
+}
+FAIR_COORBITAL_WORDS = '; for a 1:1 FAIR = (M, σ) repeats (b)'  # q = 0: one strip, the range of sigma itself
+
+
+def fair_warning(analysis: MMRAnalysis, series: MMRSeries, max_step_fraction: float = FAIR_STEP_FRACTION) -> Optional[str]:
+    """The warning line printed at the top of the legend when FAIR is not drawn (`fair_unavailable_reason`), or None
+    when it is: 'FAIR not drawn: ' + the reason in words (`FAIR_REASON_WORDS`); a coarse step with its numbers; a 1:1
+    without the planet's longitudes adds that FAIR would only repeat (b) there."""
+    reason = fair_unavailable_reason(analysis, series, max_step_fraction)
+    if reason is None:
+        return None
+    if reason.startswith('step '):
+        fraction = analysis.context.fair_step_fraction if analysis.context is not None else float('nan')
+        words = f'output step {fraction:.2g} of the orbital period, coarser than 1/{1 / max_step_fraction:.2g}: its strips are not resolved'
+    else:
+        words = FAIR_REASON_WORDS.get(reason, reason)
+    if reason == 'no planet longitudes' and coorbital_planet(analysis.resonance) is not None:
+        words += FAIR_COORBITAL_WORDS
+    return FAIR_WARNING_PREFIX + words
+
+
 def draw_fair(ax, analysis: MMRAnalysis, series: MMRSeries, norm, layout: VerdictFigureLayout = LAYOUT_V1, divisor: float = 1.0) -> None:
     """(m) FAIR plane of a prograde two-body angle with dt <= P/4.2 (`fair_unavailable_reason` is None)."""
     _bottom_title(ax, '(m) FAIR', layout)
@@ -2495,24 +3326,43 @@ def legend_rect(layout: VerdictFigureLayout, third_slot_free: bool) -> Rect:
     return (left, y, x + w - left, h)
 
 
-def draw_legend(fig, layout: VerdictFigureLayout, lines: Sequence[str] = LEGEND, rect: Optional[Rect] = None) -> None:
+def draw_legend(
+    fig, layout: VerdictFigureLayout, lines: Sequence[str] = LEGEND, rect: Optional[Rect] = None, warning: Optional[str] = None
+) -> None:
     """What every line and mark of the panels means, wrapped to the legend box (`rect`, default `layout.legend`);
-    the font shrinks (to LEGEND_MIN_FONT_PT) until the text fits the box."""
+    the font shrinks (to LEGEND_MIN_FONT_PT) until the text fits the box. `warning` (`fair_warning`): one line in the
+    warning colour at the top of the box, above the heading, wrapped and shrunk with the legend."""
     width, height = fig.get_size_inches()
     x, y, w, h = rect or layout.legend
     top = y + h
-    fig.text(x / width, top / height, 'Legend', fontsize=layout.font_legend_pt + 1.5, fontweight='bold', va='top')
     renderer = fig.canvas.get_renderer()
     font = layout.font_legend_pt
     while True:
         chars = max(int(w * 72 / (LEGEND_CHAR_WIDTH * font)), 20)
+        artists, used = [], 0.0  # inches from the top of the box
+        if warning:
+            note = fig.text(
+                x / width,
+                top / height,
+                textwrap.fill(warning, chars, subsequent_indent='   '),
+                fontsize=font,
+                va='top',
+                color=FAIR_WARNING_COLOUR,
+                fontweight='bold',
+                linespacing=1.2,
+            )
+            artists.append(note)
+            used = note.get_window_extent(renderer).height / fig.dpi + LEGEND_WARNING_GAP
+        heading = fig.text(x / width, (top - used) / height, 'Legend', fontsize=layout.font_legend_pt + 1.5, fontweight='bold', va='top')
         text = '\n'.join(textwrap.fill(line, chars, subsequent_indent='   ') for line in lines)
-        artist = fig.text(x / width, (top - 0.22) / height, text, fontsize=font, va='top', color='#333333', linespacing=1.2)
-        box = artist.get_window_extent(renderer)
-        fits = box.width <= w * fig.dpi + 0.5 and box.height <= (h - 0.22) * fig.dpi + 0.5
+        artist = fig.text(x / width, (top - used - 0.22) / height, text, fontsize=font, va='top', color='#333333', linespacing=1.2)
+        artists += [heading, artist]
+        boxes = [a.get_window_extent(renderer) for a in artists]
+        fits = max(b.width for b in boxes) <= w * fig.dpi + 0.5 and boxes[-1].height <= (h - used - 0.22) * fig.dpi + 0.5
         if fits or font <= LEGEND_MIN_FONT_PT:
             return
-        artist.remove()
+        for a in artists:
+            a.remove()
         font -= 0.25
 
 
@@ -2570,8 +3420,8 @@ def draw_combined(
     summary, numbers, episodes, constants = rows if rows is not None else figure_rows(analysis)
     settings = settings if settings is not None else _settings()  # read once for the panels and the right column
     fig = plt.figure(figsize=layout.size, dpi=layout.dpi)
-    draw_header(fig, analysis, layout, series, stamp)
-    draw_time_panels(fig, analysis, series, layout, options, settings)
+    draw_header(fig, analysis, layout, series, stamp, header_role(analysis, (summary, numbers, episodes), settings))
+    draw_time_panels(fig, analysis, series, layout, options, settings, {**numbers, **summary})
     divisor, unit = time_unit(series.t_yr[-1] - series.t_yr[0])
     norm = Normalize(series.t_yr[0] / divisor, series.t_yr[-1] / divisor)
     whole_rect, episodes_rect, third_rect = layout.bottom
@@ -2579,12 +3429,13 @@ def draw_combined(
     portraits = (_rect_axes(fig, whole_rect), _rect_axes(fig, episodes_rect))
     draw_portrait(portraits[0], analysis, norm, layout, divisor, low)
     _colour_bar(fig, norm, layout, unit)
-    draw_episode_portrait(portraits[1], analysis, layout, divisor, unit, low)
-    share_portrait_limits(portraits, episode_rate_limits(analysis))
-    fair = fair_unavailable_reason(analysis, series) is None
-    if fair:
+    record = (float(series.t_yr[0]), float(series.t_yr[-1]))  # the edges the fill of (a) reaches (`_shade_episodes`)
+    draw_episode_portrait(portraits[1], analysis, layout, divisor, unit, low, settings, record)
+    share_portrait_limits(portraits, episode_rate_limits(analysis, settings, record))
+    warning = fair_warning(analysis, series)
+    if warning is None:
         draw_fair(_rect_axes(fig, third_rect), analysis, series, norm, layout, divisor)
-    draw_legend(fig, layout, rect=legend_rect(layout, third_slot_free=not fair))
+    draw_legend(fig, layout, rect=legend_rect(layout, third_slot_free=warning is not None), warning=warning)
     width, height = layout.size
     fig.add_artist(plt.Line2D([layout.separator_x / width] * 2, [0.3 / height, (height - 0.2) / height], color='#dddddd', lw=0.8))
     fig.text_stats = draw_right_column(fig, analysis, (summary, numbers, episodes, constants), layout, options, settings)

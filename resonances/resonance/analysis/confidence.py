@@ -121,6 +121,25 @@ class Cap(StrEnum):
     # one disjoint cycle of the larger swings (test 7 in sample) (`geometry.ActionStep.provisional`): one cycle shows
     # the other level, two confirm it (W24, Codex)
     ACTION_STEP_PROVISIONAL = 'action_step_provisional'
+    # q-2 b (author 2026-10-31; MMR_HIGH_NEEDS_FULL_SUPPORT): a verdict that claims the angle's own libration with no
+    # physical support (L4 or the 1:1 law, R0, F by direct averaging) passing with its full margin: thin evidence only
+    # (2020 CB: the 1:1 law thin, energy R^2 0.38)
+    NO_FULL_PHYSICS_SUPPORT = 'no_full_physics_support'
+    # W28 B8 (card g07-2 A): L4 passes only through the direct averaged-force law (the theory of the term, the planet's
+    # real mass, one fitted scale), the harmonic force law itself failed or was thin: a computed first-order average,
+    # not the measured shape of the force (59358 8N-13)
+    FORCE_LAW_THEORY_ONLY = 'force_law_theory_only'
+    # W28 B7 (card g07-4 A): the libration was read at a rung of the G2c scale ladder (a cutoff shorter than the centre
+    # scale, `geometry.slow_scale_rung`) and neither L4 nor R0 with a was measured there: only the directly averaged
+    # strength supports it, the angle's own force law was never tested on the series (385533 7N-12, two slow cycles)
+    SLOW_SCALE_PROVISIONAL = 'slow_scale_provisional'
+    # W28 C6 (leaf G4c, q-4 A): a 1:1 transient read on one clean leg between two passages (local 1:1 law, energy
+    # integral and two reflecting turns, no closed cycle): half a cycle shows the capture, not its period
+    ONE_COORBITAL_LEG = 'one_coorbital_leg'
+    # W28 C14 (card g01-7 A, rule end_arc_extend): a non_resonant circulation whose record ends in an arc or a stall
+    # after circulation (sigma_f slowed down after its last revolution for longer than that revolution took, no turn
+    # of the slow centre): the record ends before it shows whether sigma circulates on or is captured (2022 BB2)
+    RECORD_ENDS_UNRESOLVED = 'record_ends_unresolved'
 
 
 CAP_CEILING = {
@@ -156,6 +175,11 @@ CAP_CEILING = {
     Cap.STRENGTH_SCALE_ONLY: Confidence.MEDIUM,
     Cap.ONE_CYCLE_ENERGY_NOT_CONSERVED: Confidence.MEDIUM,
     Cap.ACTION_STEP_PROVISIONAL: Confidence.MEDIUM,
+    Cap.NO_FULL_PHYSICS_SUPPORT: Confidence.MEDIUM,
+    Cap.FORCE_LAW_THEORY_ONLY: Confidence.MEDIUM,
+    Cap.SLOW_SCALE_PROVISIONAL: Confidence.MEDIUM,
+    Cap.ONE_COORBITAL_LEG: Confidence.MEDIUM,
+    Cap.RECORD_ENDS_UNRESOLVED: Confidence.MEDIUM,
     Cap.ONSET_FAILED: Confidence.LOW,
     Cap.GEOMETRY_ONLY: Confidence.LOW,
     Cap.IMPLAUSIBLE_STRENGTH: Confidence.LOW,

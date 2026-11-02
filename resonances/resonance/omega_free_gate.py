@@ -47,7 +47,10 @@ own modes are not candidates at all, so whatever the residual does is no measure
 The honest cost: an object whose own g or s happens to sit within one Rayleigh width of a
 planetary fundamental is withheld rather than confirmed. That is a real ambiguity, not a
 missing feature. For screening, uncertain means "re-check on a longer baseline", so it
-belongs in the candidate list next to resonant, not in the discard pile.
+belongs in the candidate list next to resonant, not in the discard pile. When the free node
+is the only match (`node_near`, column zlk_gate_node_near: 1981 Midas, b_Omega 1.85 arcsec/yr
+from s6 over 500 kyr), the reason text says so and the extension asks for the baseline that
+separates it; a true nu16 lock (s locked to s6) is not separated by any length.
 """
 
 from dataclasses import dataclass, field
@@ -214,6 +217,31 @@ def evaluate_gate(elements: Optional[FreeElements], libration_period: Optional[f
     if close:
         return _residual(close, cycles)
     return OmegaFreeGate(GateOutcome.KINEMATIC, n_cycles=cycles)
+
+
+def node_near(elements: Optional[FreeElements]) -> Tuple[str, float]:
+    """(s_j, |b_Omega - s_j|) when the free node is the only planetary match of the gate's branch — b_Omega within
+    one Rayleigh width of s_j (the nearest), b_varpi (and on a winding omega b_omega) away from every planetary rate —
+    else ('', nan). Read with a planetary_residual outcome: such a residual is a node not yet separated from s_j by
+    the baseline (1981: s6, d 1.85 < 2.59 arcsec/yr over 500 kyr), not a defect of the eccentricity split. A number
+    for the reason text and the extension; no outcome reads it."""
+    nothing = ('', float('nan'))
+    if elements is None:
+        return nothing
+    frequencies, tolerance = elements.frequencies, elements.resolution
+    if elements.librates:
+        g_targets, s_targets = _confirmation_targets(elements, frequencies)
+        others = _close('b_varpi', elements.b_varpi, g_targets, tolerance)
+    else:
+        g_targets, s_targets, combos = _demotion_targets(frequencies)
+        others = _close('b_varpi', elements.b_varpi, g_targets, tolerance) + _close('b_omega', elements.b_omega, combos, tolerance)
+    if others or not np.isfinite(elements.b_Omega):
+        return nothing
+    near = [(name, abs(elements.b_Omega - target)) for name, target in s_targets.items() if abs(elements.b_Omega - target) < tolerance]
+    if not near:
+        return nothing
+    name, distance = min(near, key=lambda item: item[1])
+    return name, float(distance)
 
 
 SUMMARY_COLUMNS = ('free_gate', 'free_n_cycles', 'free_gate_matches')

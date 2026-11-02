@@ -61,8 +61,10 @@ def test_g2c_tries_the_turns_of_the_centre_after_p_cyc(phase, basis):
     """The first scale (~90 kyr) loses the libration and the second (~20 kyr) finds it. Phase 0 used to decide at the
     first scale: one 3-TP wave pair at 8.4-11.0 kyr (298.2, 297.2, 301.1 deg: 1.1 deg back, 3.9 deg on) was an episode
     and gave P_cyc 2.55 kyr. It closes no cycle (net 2.8 deg > mean swing 2.5 deg, W13), so P_cyc is the runs' 29.9 kyr
-    as at the other phases."""
-    analysis = analyse_mmr(_synthetic('7N-9r6', 2.1, 0.05, phase), S, scan_subresonances=False, scan_owner=False)
+    as at the other phases. Rule regime_cut_mark is off here so that G2c's second scale stays isolated (see the test
+    below for the default)."""
+    settings = replace(S, libration_regime_cut_marks=False)
+    analysis = analyse_mmr(_synthetic('7N-9r6', 2.1, 0.05, phase), settings, scan_subresonances=False, scan_owner=False)
     assert analysis.verdict.angle_status == 'libration'
     assert analysis.extra_columns['geo_centre_scale_basis'] == basis
     if basis == 'centre_turns':
@@ -72,3 +74,13 @@ def test_g2c_tries_the_turns_of_the_centre_after_p_cyc(phase, basis):
         # cycle of two turning points), that cycle's own period, P_t
         fine = analysis.extra_columns['geo_fine_period_cycle_yr']
         assert fine == pytest.approx(29_900.0, rel=0.02) or fine == pytest.approx(P_SLOW, rel=0.05)
+
+
+@pytest.mark.parametrize('phase, basis', [(0.0, 'centre_turns'), (1.3, None), (2.5, None)])
+def test_regime_cut_marks_keep_the_libration_at_the_first_scale(phase, basis):
+    """W28 C16 (rule regime_cut_mark, q-5 i): at phases 1.3 and 2.5 the stalls the wave pairs cut at the first scale
+    become marks inside one episode, so that scale already finds the libration and G2c tries no second scale; at
+    phase 0 nothing is joined and the turns of the centre still decide."""
+    analysis = analyse_mmr(_synthetic('7N-9r6', 2.1, 0.05, phase), S, scan_subresonances=False, scan_owner=False)
+    assert analysis.verdict.angle_status == 'libration'
+    assert analysis.extra_columns.get('geo_centre_scale_basis') == basis

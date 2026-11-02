@@ -286,6 +286,14 @@ class EnergyAnalysis:
     # J/<J_s> of those turning points' loops in the averaged well itself (finite ones): J/J_s(t) of the profile times
     # J_s(t)/<J_s>, the record's mean (W25, Codex #3); the averaged classes compare these with J_lo
     j_avgpot: Tuple[float, ...] = ()
+    # R0 with a, window by window (W28 B3): the windows compared, those where sigma swings >= mmr_a_response_min_amp_deg
+    # or turns (only they count in `ve_vf_agree_fraction`), and the median arc of phi the eligible windows visit
+    ve_vf_n_windows: int = 0
+    ve_vf_n_eligible: int = 0
+    ve_vf_arc_rad: float = float('nan')
+    # rules (`analysis.rules`) that changed R0 with a: r0_windows (counting the eligible windows only changed the
+    # check), potential_on_arc (the comparison without a free constant, on the visited arc, changed it)
+    rules_fired: frozenset = frozenset()
 
     @property
     def n_crossings(self) -> int:
@@ -332,6 +340,9 @@ class EnergyAnalysis:
             'sep_VE_R2': pe.r2 if pe is not None else NAN,
             'sep_VF_R2': pf.r2 if pf is not None else NAN,
             'sep_VE_VF_agree_fraction': self.ve_vf_agree_fraction,
+            'sep_VE_VF_n_windows': self.ve_vf_n_windows,
+            'sep_VE_VF_n_eligible': self.ve_vf_n_eligible,
+            'sep_VE_VF_arc_deg': float(np.degrees(self.ve_vf_arc_rad)) if np.isfinite(self.ve_vf_arc_rad) else NAN,
             'sep_Omega_rad_yr': pe.omega_rad_yr if pe is not None else NAN,
             'sep_well_deg': _deg_0_360(pe.well_rad) if pe is not None else NAN,
             'sep_top_deg': _deg_0_360(pe.top_rad) if pe is not None else NAN,
@@ -1139,27 +1150,102 @@ def fit_potential_from_rate(
     return _potential(coef, r2), _window_fits(samples, n_harmonics) if with_windows else []
 
 
+def _held_out_r2(t_yr, angle, rate, window: Tuple[float, float], settings: AnalysisSettings, frame, n_harmonics: int) -> float:
+    """Mean held-out R^2 of rate^2 = 2E - 2 m V(angle) in one window: V fitted on one half of the window in time and
+    predicted on the other, both ways, each half with its own E (demeaned). nan when a half is too short to fit."""
+    start, end = window
+    middle = (start + end) / 2
+    halves = [_window_samples(t_yr, angle, rate, [part], settings, frame) for part in ((start, middle), (middle, end))]
+    if any(half is None for half in halves):
+        return NAN
+    scores = []
+    for train, test in ((0, 1), (1, 0)):
+        design, target = _rate_design(halves[train], n_harmonics)
+        if design.shape[0] <= design.shape[1] + 1:
+            return NAN
+        coef, *_ = np.linalg.lstsq(design, target, rcond=None)
+        design, target = _rate_design(halves[test], n_harmonics)
+        scores.append(_r2(target, target - design @ coef))
+    return float(np.mean(scores))
+
+
+def fit_window_potential(
+    t_yr: np.ndarray,
+    angle: np.ndarray,
+    rate: np.ndarray,
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+    frame: Optional[ModulatedFrame] = None,
+) -> Optional[Potential]:
+    """V_E of one window for R0 with a, its number of harmonics chosen by held-out prediction (B3, W28 g07-1).
+
+    N grows from 1 up to separatrix_harmonics_max while one more harmonic raises the held-out R^2 (`_held_out_r2`:
+    fitted on one half of the window in time, predicted on the other, both ways) by >= separatrix_holdout_gain. The
+    in-sample gain separatrix_harmonic_gain (0.2) never admits a second harmonic once one harmonic explains ~93 %: the
+    asymmetric 1:2 well of 137295 (held out 0.92-0.93 with one harmonic, 0.99-1.00 with two, in all 4 windows) stayed
+    a cosine. Over the 6564 windows of the 126 R0 rows the held-out gain has median 0.008 and 90th percentile 0.044.
+    A turn's halves are half turns, so a second harmonic must predict the unseen half."""
+    samples = _window_samples(t_yr, angle, rate, [window], settings, frame)
+    if samples is None:
+        return None
+    n_harmonics = 1
+    coef, r2 = _fit_rate(samples, n_harmonics)
+    held_out = _held_out_r2(t_yr, angle, rate, window, settings, frame, n_harmonics)
+    while n_harmonics < settings.separatrix_harmonics_max:
+        more_coef, more_r2 = _fit_rate(samples, n_harmonics + 1)
+        more_held_out = _held_out_r2(t_yr, angle, rate, window, settings, frame, n_harmonics + 1)
+        if more_coef is None or not (np.isfinite(more_held_out) and np.isfinite(held_out)):
+            break
+        if more_held_out - held_out < settings.separatrix_holdout_gain:
+            break
+        n_harmonics, coef, r2, held_out = n_harmonics + 1, more_coef, more_r2, more_held_out
+    return _potential(coef, r2)
+
+
+def frame_acceleration(frame: Optional[ModulatedFrame], t_yr: np.ndarray) -> Optional[np.ndarray]:
+    """s''(t) of the frame's stable point on `t_yr` [rad/yr^2] (the time derivative of its rate); None in the fixed frame.
+
+    In a frame phi = sigma - s(t), phi'' = c a_dot - s'': the frame's own inertial term (W28 B3)."""
+    if frame is None or not np.any(frame.well_shift_rate_rad_yr != 0):
+        return None
+    rate = np.asarray(frame.well_shift_rate_rad_yr, dtype=float)
+    acceleration = np.gradient(rate, np.asarray(frame.t_yr, dtype=float)) if len(rate) > 1 else np.zeros_like(rate)
+    return np.interp(np.asarray(t_yr, dtype=float), frame.t_yr, acceleration)
+
+
 def fit_potential_from_force(
     angle: np.ndarray,
     slow_rate: np.ndarray,
     identity_coefficient: float,
     n_harmonics: int,
     strength_rel_sq: Optional[np.ndarray] = None,
+    frame_term: Optional[np.ndarray] = None,
+    free_constant: bool = False,
 ) -> Optional[Potential]:
-    """V_F: least squares c * x_dot = -m V'(sigma) on the whole window (x_dot the slow-variable rate).
+    """V_F: least squares c * x_dot - frame_term = -m V'(sigma) on the whole window (x_dot the slow-variable rate).
 
-    `strength_rel_sq` is m(t) of a modulated frame (then `angle` is phi of `in_frame`); None = 1."""
+    `strength_rel_sq` is m(t) of a modulated frame (then `angle` is phi of `in_frame`); None = 1. No free constant (W28
+    B3, g07-1): a periodic V has no mean force over a closed cycle, and on an arc of ~100 deg a constant column is nearly
+    collinear with the harmonics, so it took part of the force and the dropped constant moved V_F's well (137295 1N-2:
+    279 -> 338 deg). In a moving frame phi'' = c x_dot - s'', so the frame's own physical term `frame_term` = s''(t)
+    (`frame_acceleration`) is subtracted from the target instead: V_F then sees the same phi dynamics as V_E, which
+    is fitted on phi_dot. `free_constant=True` is the pre-W28 fit (a constant fitted, then dropped), for comparison."""
     angle = np.asarray(angle, dtype=float)
     target = identity_coefficient * np.asarray(slow_rate, dtype=float)
+    if frame_term is not None and not free_constant:
+        target = target - np.asarray(frame_term, dtype=float)
     weight = np.ones_like(angle) if strength_rel_sq is None else np.asarray(strength_rel_sq, dtype=float)
     mask = np.isfinite(angle) & np.isfinite(target) & np.isfinite(weight)
     angle, target, weight = angle[mask], target[mask], weight[mask]
     if n_harmonics < 1 or len(angle) <= 2 * n_harmonics + 1:
         return None
-    design = np.column_stack([_minus_derivative(angle, n_harmonics) * weight[:, None], np.ones_like(angle)])
+    columns = [_minus_derivative(angle, n_harmonics) * weight[:, None]]
+    if free_constant:
+        columns.append(np.ones_like(angle))
+    design = np.column_stack(columns)
     coef, *_ = np.linalg.lstsq(design, target, rcond=None)
     residual = target - design @ coef
-    return _potential(coef[:-1], filtering_r2(target, residual))
+    return _potential(coef[:-1] if free_constant else coef, filtering_r2(target, residual))
 
 
 def well_coherence(windows: Sequence[Potential]) -> float:
@@ -1327,16 +1413,27 @@ def sigma_only_check(period_law_med: float, coherence: float, settings: Analysis
     return CheckValue.PASS if law_holds and well_fixed else CheckValue.FAIL
 
 
-def with_slow_check(sigma_only: CheckValue, window_correlations: Sequence[float], settings: AnalysisSettings) -> CheckValue:
+def agree_fraction(window_correlations: Sequence[float], settings: AnalysisSettings, eligible: Optional[Sequence[bool]] = None) -> float:
+    """The share of the finite window correlations with r >= separatrix_vevf_r_min, over the eligible windows only
+    (`eligible` None = all); nan when none is left."""
+    keep = [True] * len(window_correlations) if eligible is None else list(eligible)
+    values = np.asarray([r for r, ok in zip(window_correlations, keep) if ok and r is not None and np.isfinite(r)], dtype=float)
+    return float(np.mean(values >= settings.separatrix_vevf_r_min)) if len(values) else NAN
+
+
+def with_slow_check(
+    sigma_only: CheckValue, window_correlations: Sequence[float], settings: AnalysisSettings, eligible: Optional[Sequence[bool]] = None
+) -> CheckValue:
     """R0 with the slow variable: sigma-only passes and V_E ~ V_F (r >= separatrix_vevf_r_min) in a
-    fraction >= separatrix_vevf_fraction of the windows. A sigma-only fail, not_measured or not_applicable
-    is passed through; no finite window correlation is not_measured."""
+    fraction >= separatrix_vevf_fraction of the eligible windows (`eligible`, one flag per window; None = every
+    window). A sigma-only fail, not_measured or not_applicable is passed through; no finite correlation in an eligible
+    window is not_measured, never pass (W28 B3, g08-1: a window where sigma swings less than
+    mmr_a_response_min_amp_deg does not constrain the shape of V, so it neither agrees nor disagrees)."""
     if sigma_only != CheckValue.PASS:
         return sigma_only
-    values = np.asarray([r for r in window_correlations if r is not None and np.isfinite(r)], dtype=float)
-    if not len(values):
+    fraction = agree_fraction(window_correlations, settings, eligible)
+    if not np.isfinite(fraction):
         return CheckValue.NOT_MEASURED
-    fraction = float(np.mean(values >= settings.separatrix_vevf_r_min))
     return CheckValue.PASS if fraction >= settings.separatrix_vevf_fraction else CheckValue.FAIL
 
 

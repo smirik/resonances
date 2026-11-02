@@ -44,9 +44,11 @@ from scipy.integrate import DOP853
 from scipy.interpolate import CubicSpline, PPoly
 
 from resonances.resonance.analysis import filtering, pendulum
+from resonances.resonance.analysis import rules as rules_module
 from resonances.resonance.analysis.geometry import (
     Geometry,
     confirm_jumps,
+    half_amplitude_values,
     half_amplitudes,
     jump_baseline_yr,
     jump_candidates,
@@ -63,6 +65,7 @@ from resonances.resonance.analysis.pendulum import (
     Zone,
     ZoneMethod,
 )
+from resonances.resonance.analysis.rules import Rule
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import CheckValue, Flag
 
@@ -574,6 +577,55 @@ def build_zone(
 # --------------------------------------------------------------------------------------------- analysis
 
 
+@dataclass(frozen=True)
+class WindowComparison:
+    """V_E ~ V_F in one window of R0 with a (W28 B3): the correlation that counts, whether the window counts, the arc of
+    phi it visits, and the pre-W28 correlation (a free constant in V_F, dropped; the full circle; N by the in-sample
+    gain), kept only to tell whether the new comparison changed the check (rule potential_on_arc)."""
+
+    r: float
+    eligible: bool
+    arc_rad: float = NAN
+    r_reference: float = NAN
+
+
+def window_eligible(geometry: Geometry, window: Tuple[float, float], rotation: bool, settings: AnalysisSettings) -> bool:
+    """A window counts in R0 with a when it holds a turn, or when its largest half-swing (consecutive turning points of
+    sigma inside it) reaches mmr_a_response_min_amp_deg: below that sin sigma ~ sigma, c a_dot ~ -Omega^2 (sigma -
+    sigma_s) holds for any oscillation carried by a, and the shape of V on so short an arc is not constrained (the
+    author's 15.10 rule, applied per window: W28 g08-1; 2004 BG41 3J-1: r 0.64-0.90 at +-20-30 deg, 0.98-1.00 at
+    +-60-108 deg)."""
+    if rotation:
+        return True
+    start, end = window
+    turning = geometry.turning_points
+    times = np.asarray(turning.times_yr, dtype=float)
+    inside = (times >= start) & (times <= end)
+    if np.count_nonzero(inside) < 2:
+        return False
+    swings = half_amplitude_values(np.asarray(turning.values_rad, dtype=float)[inside])
+    return bool(len(swings) and np.max(swings) >= np.radians(settings.mmr_a_response_min_amp_deg))
+
+
+def _correlation(first: np.ndarray, second: np.ndarray) -> float:
+    if np.std(first) <= 0 or np.std(second) <= 0:
+        return NAN
+    return float(np.corrcoef(first, second)[0, 1])
+
+
+def _visited_grid(phi: np.ndarray, n_points: int, settings: AnalysisSettings) -> Tuple[np.ndarray, float]:
+    """(grid, arc): the range of phi the window visits (unwrapped), widened by separatrix_arc_pad_deg on each side; the
+    full circle when that reaches a turn or separatrix_vevf_arc is off. arc [rad] is the visited range itself."""
+    unwrapped = np.unwrap(phi[np.isfinite(phi)])
+    if not len(unwrapped):
+        return np.linspace(0, TWO_PI, n_points, endpoint=False), NAN
+    low, high = float(unwrapped.min()), float(unwrapped.max())
+    pad = np.radians(settings.separatrix_arc_pad_deg)
+    if not settings.separatrix_vevf_arc or high - low + 2 * pad >= TWO_PI:
+        return np.linspace(0, TWO_PI, n_points, endpoint=False), min(high - low, TWO_PI)
+    return np.linspace(low - pad, high + pad, n_points), high - low
+
+
 def _window_correlation(
     t: np.ndarray,
     angle: np.ndarray,
@@ -583,24 +635,40 @@ def _window_correlation(
     frame: ModulatedFrame,
     identity_coefficient: float,
     settings: AnalysisSettings,
-) -> float:
-    """corr(V_E, V_F) on a grid of phi for the potentials fitted in one force window (both in the frame)."""
+    eligible: bool = True,
+    frame_term: Optional[np.ndarray] = None,
+) -> WindowComparison:
+    """V_E ~ V_F in one window (both in the frame): corr(V_E, V_F) on a grid of the visited arc of phi.
+
+    V_E: `pendulum.fit_window_potential` (N by held-out prediction). V_F: c a_dot - s''(t) = -m V'(phi) with the
+    same N and no free constant (`pendulum.fit_potential_from_force`; `frame_term` is s'' of the frame on `t`, None in
+    the fixed frame). Outside the visited arc the two fits are extrapolations: 137295 1N-2 visits 98 deg of its
+    asymmetric well. `separatrix_vf_free_constant` restores the pre-W28 V_F; the reference correlation (pre-W28 on
+    every count) is computed beside it for the rule flag."""
     start, end = window
     inside = (t >= start) & (t <= end)
     if np.count_nonzero(inside) < 2 * settings.separatrix_harmonics_max + 2:
-        return NAN
-    v_e, _ = pendulum.fit_potential_from_rate(t, angle, rate, [window], settings, frame=frame)
-    if v_e is None:
-        return NAN
+        return WindowComparison(NAN, eligible)
     phi, _, strength = pendulum.in_frame(t[inside], angle[inside], rate[inside], frame)
-    v_f = pendulum.fit_potential_from_force(phi, adot[inside], identity_coefficient, v_e.n_harmonics, strength)
-    if v_f is None:
-        return NAN
-    grid = np.linspace(0, TWO_PI, 2 * v_e.n_harmonics * settings.mmr_zone_phases, endpoint=False)
-    first, second = v_e.value(grid), v_f.value(grid)
-    if np.std(first) <= 0 or np.std(second) <= 0:
-        return NAN
-    return float(np.corrcoef(first, second)[0, 1])
+    term = frame_term[inside] if frame_term is not None else None
+    v_e = pendulum.fit_window_potential(t, angle, rate, window, settings, frame)
+    r, arc = NAN, NAN
+    if v_e is not None:
+        v_f = pendulum.fit_potential_from_force(
+            phi, adot[inside], identity_coefficient, v_e.n_harmonics, strength, term, settings.separatrix_vf_free_constant
+        )
+        grid, arc = _visited_grid(phi, 2 * v_e.n_harmonics * settings.mmr_zone_phases, settings)
+        r = _correlation(v_e.value(grid), v_f.value(grid)) if v_f is not None else NAN
+    # the pre-W28 comparison: V_E by the in-sample gain, V_F with a free constant (dropped), the full circle
+    reference_e, _ = pendulum.fit_potential_from_rate(t, angle, rate, [window], settings, frame=frame, with_windows=False)
+    reference = NAN
+    if reference_e is not None:
+        reference_f = pendulum.fit_potential_from_force(
+            phi, adot[inside], identity_coefficient, reference_e.n_harmonics, strength, free_constant=True
+        )
+        circle = np.linspace(0, TWO_PI, 2 * reference_e.n_harmonics * settings.mmr_zone_phases, endpoint=False)
+        reference = _correlation(reference_e.value(circle), reference_f.value(circle)) if reference_f is not None else NAN
+    return WindowComparison(r, eligible, arc, reference)
 
 
 def _percentile(values: Sequence[float], q: float) -> float:
@@ -738,6 +806,36 @@ def r0_checks(
     return sigma_only, pendulum.with_slow_check(sigma_only, correlations, settings)
 
 
+def r0_with_a(sigma_only: CheckValue, comparisons: Sequence[WindowComparison], settings: AnalysisSettings) -> Tuple[CheckValue, frozenset]:
+    """(R0 with a, rules fired) from the windows' V_E ~ V_F comparisons: `pendulum.with_slow_check` over the eligible
+    windows (none eligible: not_measured). A rule fires when it changes the check with the other part held either way
+    (2004 BG41 needs both: pre-W28 on every window fails, either part alone passes): r0_windows when counting every
+    window instead of the eligible ones changes it, potential_on_arc when the pre-W28 correlations
+    (`WindowComparison.r_reference`) instead of the new ones do."""
+    new = [c.r for c in comparisons]
+    old = [c.r_reference for c in comparisons]
+    eligible = [c.eligible for c in comparisons]
+
+    def check(values, only_eligible):
+        return pendulum.with_slow_check(sigma_only, values, settings, eligible if only_eligible else None)
+
+    final, old_all = check(new, True), check(old, False)
+    fired = frozenset()
+    if check(new, False) != final or check(old, True) != old_all:
+        fired = rules_module.fire(fired, Rule.R0_WINDOWS)
+    if check(old, True) != final or check(new, False) != old_all:
+        fired = rules_module.fire(fired, Rule.POTENTIAL_ON_ARC)
+    return final, fired
+
+
+def energy_rules(energy: Optional[EnergyAnalysis]) -> frozenset:
+    """The rules R0 with a fired (`EnergyAnalysis.rules_fired`), for `Verdict.rules_fired`; none without an energy
+    analysis or when R0 with a was read from the 1:1 law (`potential_law`), which replaced the harmonic comparison."""
+    if energy is None or energy.potential_law is not None:
+        return frozenset()
+    return energy.rules_fired
+
+
 def _zone_of(
     modulation: Modulation,
     window: np.ndarray,
@@ -805,7 +903,8 @@ def analyse_separatrix(
     in the frame that explains sigma_dot^2 best (`best_frame`). T_pred of a libration cycle is its period in the full
     averaged well when `well` exists (a two-body angle with its planet saved: `full_well_laws`) and the swing librates
     in it, else in the fitted V_E; a turn keeps V_E's. R0 with a: sigma-only passes and V_E ~ V_F cycle by
-    cycle (`r0_checks` says when they are not measured). Both not_measured under
+    cycle on the visited arc, counted over the eligible cycles only (`_window_correlation`, `window_eligible`,
+    `r0_with_a`; `r0_checks` says when they are not measured). Both not_measured under
     filter_too_slow (shape-dependent, DELTA item 1). The flags: zone_eq_only (no members: e^q or no modulation),
     zone_numeric_mismatch, zone_edge_cycle, episodes_in_separatrix_zone."""
     t = np.asarray(prep.t_yr, float)
@@ -831,17 +930,42 @@ def analyse_separatrix(
     laws, law_source, n_full_well = full_well_laws(well, cycles, geometry, fitted)
     period_law = float(np.nanmedian(laws)) if np.any(np.isfinite(laws)) else NAN
     phi, _, strength = pendulum.in_frame(t, angle, rate, frame)
-    v_f = pendulum.fit_potential_from_force(phi[window], adot[window], context.identity_coefficient, v_e.n_harmonics, strength[window])
+    frame_term = None if settings.separatrix_vf_free_constant else pendulum.frame_acceleration(frame, t)
+    v_f = pendulum.fit_potential_from_force(
+        phi[window],
+        adot[window],
+        context.identity_coefficient,
+        v_e.n_harmonics,
+        strength[window],
+        frame_term[window] if frame_term is not None else None,
+        settings.separatrix_vf_free_constant,
+    )
     # V_E ~ V_F cycle by cycle (SEPARATRIX §5: 29 of 37 windows for 52356); the force windows of the response are
     # 3.5 cycles long and do not exist inside the short episodes of a chaotic record. Computed only when R0 with a
     # is decided by them (a fast circulation has tens of thousands of turns and no measured potential).
     moving = frame is not None and bool(np.any(frame.well_shift_rad != 0))
     sigma_only, with_slow = r0_checks(v_e, period_law, coherence, len(per_window), None, geometry, prep, settings, moving)
-    correlations = []
+    comparisons: List[WindowComparison] = []
+    fired = frozenset()
     if with_slow is None:
-        correlations = [_window_correlation(t, angle, rate, adot, w, frame, context.identity_coefficient, settings) for w in windows]
-        with_slow = pendulum.with_slow_check(sigma_only, correlations, settings)
-    finite = [r for r in correlations if np.isfinite(r)]
+        comparisons = [
+            _window_correlation(
+                t,
+                angle,
+                rate,
+                adot,
+                (start, end),
+                frame,
+                context.identity_coefficient,
+                settings,
+                window_eligible(geometry, (start, end), rotation, settings),
+                frame_term,
+            )
+            for start, end, rotation in bounds
+        ]
+        with_slow, fired = r0_with_a(sigma_only, comparisons, settings)
+    eligible = [c.eligible for c in comparisons]
+    arcs = [c.arc_rad for c in comparisons if c.eligible and np.isfinite(c.arc_rad)]
 
     # the zone: time scale Omega_bar from sigma (V_E), the pulsation from the modulation
     omega_bar = v_e.omega_rad_yr
@@ -886,7 +1010,11 @@ def analyse_separatrix(
     return EnergyAnalysis(
         potential_e=v_e,
         potential_f=v_f,
-        ve_vf_agree_fraction=float(np.mean(np.asarray(finite) >= settings.separatrix_vevf_r_min)) if finite else NAN,
+        ve_vf_agree_fraction=pendulum.agree_fraction([c.r for c in comparisons], settings, eligible),
+        ve_vf_n_windows=len(comparisons),
+        ve_vf_n_eligible=sum(eligible),
+        ve_vf_arc_rad=float(np.median(arcs)) if arcs else NAN,
+        rules_fired=fired,
         well_coherence=coherence,
         cycles=cycles,
         h_med=float(np.median(h_finite)) if h_finite else NAN,

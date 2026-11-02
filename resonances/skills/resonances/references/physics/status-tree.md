@@ -23,12 +23,16 @@ flowchart TD
     G0 -->|yes| T{angle_status}
     T -->|undefined| INV
     T -->|insufficient_time| BN["uncertain<br/>baseline_needed"]
-    T -->|circulation| C{"alias?<br/>potential?"}
+    T -->|circulation| C{"alias? one leg (G4c/G4h)?<br/>potential?"}
     C --> CIRC["non_resonant: circulation,<br/>alias, no_resonant_potential<br/>(or invalid: alias)"]
+    C -->|one leg| LEG["transient (one leg) or<br/>uncertain: one_coorbital_leg,<br/>one_half_libration, baseline_needed"]
     T -->|"libration, episodic,<br/>near_separatrix, drift"| S1{"1. a member of the<br/>multiplet librates?"}
     S1 -->|yes| SUB["member's status<br/>subresonance_librates"]
     S1 -->|no| S2{"2. another resonance<br/>drives a?"}
-    S2 -->|yes| IND["non_resonant<br/>induced_libration"]
+    S2 -->|yes| J{"both resonances<br/>at once?"}
+    J -->|"no / open"| IND["non_resonant<br/>induced_libration"]
+    J -->|"one cycle of x"| JU["uncertain<br/>baseline_needed (joint)"]
+    J -->|"confirmed"| S3
     S2 -->|no| S3{"3. a does not<br/>carry σ?"}
     S3 -->|yes| KIN["non_resonant<br/>kinematic_libration / _drift"]
     S3 -->|no| S4{"4. drift?"}
@@ -58,10 +62,48 @@ nothing about the resonance at these settings, and the action says how to repair
 The tree reads the angle *as the status reads it*: a record that librates in episodes and then circulates, or
 librates before a jump of $a$, or is captured after one, is judged as the episodic angle its episodes show. The
 reported `angle_status` may then differ from the word the tree read; see [below](#the-reported-angle-word).
+The episodes the tree counts are the geometry's: for an angle that is not 1:1, a centre step or a stall between two
+accepted pieces in one libration region is a mark of one episode, not a boundary (rule `regime_cut_mark`,
+[geometry](geometry.md#runs-and-episodes)); a single half-libration between circulations is G4h below.
 
 **G6. Too short.** `angle_status = insufficient_time` (too few turning points, an arc, a stall): `uncertain`,
 `baseline_needed`, action `extend` ([Confidence](confidence.md#actions) gives the length asked for); action `review`
 when the period that decides already fits the record (`base_cause`): more time would decide nothing.
+
+*A ripple on an unfinished slow swing* (rule `ripple_on_arc`, `MMR_RIPPLE_ON_ARC`) does not stop G6. An accepted
+episode is set aside before G2, as an *unconfirmed ripple* (`forced_wave` = `unconfirmed_ripple`), when its
+half-amplitude stays below `MMR_A_RESPONSE_MIN_AMP_DEG` = 45° (there neither the force law nor $V_E pprox V_F$ can be
+measured), its identity is measured and fails, and the slow centre turns back once or twice within one revolution
+(fewer than three turns: no full slow cycle). A record-covering episode and a 1:1 angle are never set aside; a real small
+libration keeps its passing identity. G6 then counts only the turning points outside the ripples; with none the slow
+centre decides: one turn → the G5a arc, else `arc` or `stall` by its range. 2004 YG1 9M-10J-4 over 20 kyr: a 3° ripple
+at the turn of a 281° slow swing → `uncertain` / `insufficient_time` (`arc`), extend to 50 kyr.
+
+*A slow swing in the resonance's own well* (rule G5w, `slow_swing_in_well`, `MMR_SLOW_SWING_IN_WELL`).
+A drift needs a centre that keeps going: G5a already reads one slow turn back as an arc. With two turns the record holds
+one half-swing between them, and the author's drifts of 101703 and 142694 1V+3S-7 have two turns too, so the turns
+alone decide nothing. The half-swing reads as part of a slow libration of this resonance, `insufficient_time` / `arc`
+(instead of `drift`, or of `few_cycles` for the fast turning points riding on it), when it obeys the resonance's
+pendulum: the identity $\dot\sigma_s = c\,(a_s - a_*)$ holds on σ and $a$ low-passed at W_c, and between the turns
+both the $a$ swing (one side: $a_*$ to $a_* + 2\omega_0\sin(A/2)/|c|$) and the period $2(t_2-t_1)$ agree with the
+directly averaged well at the half-swing's amplitude $A$ ($T_{0,\text{th}}$, $T = T_{0,\text{th}}F(A)$,
+$F = \tfrac{2}{\pi}K(\sin^2\tfrac{A}{2})$) within $[1/\sqrt{x}, \sqrt{x}]$, $x$ = `MMR_STRENGTH_CHECK_RATIO`
+(no new threshold). Anything unmeasured (three-body: no direct theory; 1:1; one or three turns) leaves the row as it
+was. The extension asks for `MMR_EXTEND_SLOW_CYCLES` = 3 slow periods (a budget). 523683 2U-9 over 100 kyr (its
+379-yr cycles are its own orbital period, cut off by the cutoff ≥ 1.5 $P_\text{orb}$): turns at 11.9 and 67.7 kyr,
+$A$ = 114°, identity 1.00, $a$ swing 1.07 ×, period 1.00 × → `uncertain` / `insufficient_time`, extend to 400 kyr.
+101703 and 142694 fail the slow identity (slope/c −0.27, −0.25) and stay `drift`.
+
+*A cycle faster than the floor* (rule G1f, `MMR_SUBFLOOR_PASS`). The 150-yr floor stays, but a
+two-body angle (not 1:1) without a libration over the record is analysed once more at the floor of its own averaged
+potential, $\max(T_{0,\text{th}}/\sqrt{x},\ 2\Delta t \cdot$ `FILTER_MIN_LIBRATION_CUTOFFS`$)$, $x$ =
+`MMR_STRENGTH_CHECK_RATIO`, when that is below the floor. $T_{0,\text{th}}$ is the shortest small-amplitude period of
+the directly averaged potential at the snapshots whose swings lie in its well (no episode needed; a pendulum only gets
+slower with amplitude). The pass replaces the verdict only when its decisive cycle is faster than the floor, F passes by
+direct averaging, the theoretical centre lies inside every observed swing and L4 passes; otherwise the first verdict
+stays (columns `geo_subfloor_*`). The cap `short_period_aliased` keeps reading the 150-yr floor; three-body angles have
+no computed theory and are never eligible (the forced 115–121-yr waves of 52356 and 23240). 2001 VC2 16E-17:
+$T_{0,\text{th}}$ = 112 yr, a 105-yr libration over 20 kyr → `resonant` / `libration` / medium (the alias cap).
 
 **C. Circulation.** The centre of $\sigma$ runs through a full turn.
 
@@ -75,6 +117,29 @@ when the period that decides already fits the record (`base_cause`): more time w
   below).
 - If $\sigma$ turns back at times but the energy measured from $a$ does not follow a potential of $\sigma$ (R0 fails):
   `non_resonant / no_resonant_potential`.
+- **G4c, one 1:1 leg** (`MMR_COORBITAL_SINGLE_LEG`). A co-orbital angle without a librating episode is judged on
+  its single legs: the stretches of the orbit-averaged angle between two reversals, outside every accepted run, that
+  do not sweep a turn and whose period $2L$ is at least the floor less `CONFIDENCE_THIN_BAND`. Each leg is read
+  against the averaged potential ([Local force and energy on a single leg](response.md#local-force-and-energy-on-a-single-leg)):
+  is it one swing of a co-orbital well (tadpole, horseshoe, quasi-satellite, not a lap past the planet), does its
+  local 1:1 law hold with $K > 0$, is its energy conserved, and is each turn a reflection ($|\ln(\text{out}/\text{in})|
+  \le$ `MMR_COORBITAL_TURN_ENERGY_TOL`, zone $\le$ `MMR_COORBITAL_TURN_ZONE_MAX`)?
+  - everything holds → `transient / dynamic_episode`, cap `one_coorbital_leg` (≤ medium): 2023 OE5, 586–665 yr;
+  - one discrepancy → `uncertain / one_coorbital_leg`, action `review` (2018 KS: a lap past the Earth at 779–934 yr);
+  - a clean leg cut by the record edge whose observed turn reflects → `uncertain / baseline_needed`, angle word
+    `insufficient_time`, action `extend`;
+  - both turns are kicks → the circulation below, with the cap `near_episode` (1991 VG: out/in 0.61 and 1.59);
+  - no leg at all (one reflection between passages, 2008 EZ84) → the circulation below, unchanged.
+
+  The strongest outcome among the legs decides (transient > uncertain > extend > near-episode). The legs of an
+  accepted episode are never read again: its turns already closed a cycle. `MMR_COORBITAL_LEG_FORCE_GATE` (off)
+  reads a failed 1:1 law as a kick instead of a discrepancy.
+- **G4h, one half-swing of another resonance** (`MMR_SINGLE_HALF_LIBRATION`, not 1:1). A bounded half-swing between
+  two passages over the top (or a passage and the record edge), at least the floor less the thin band long, that
+  follows the resonance's own one-harmonic law ($\dot a = A\sin\sigma + B\cos\sigma + C$ with $R^2 \ge$
+  `MMR_FORCE_R2_FAIL` on each half of its window, the force turning $\sigma$ back at both turns) →
+  `uncertain / one_half_libration` (review); at the record edge `uncertain / baseline_needed`, extend (42946 43S-6).
+  A slow wide turn of a circulation does not follow that law and stays a circulation.
 - Otherwise `non_resonant / circulation`; an owner found for a circulating angle only names its origin.
 
 **1. Is a member of the multiplet librating instead?** A resonance $k\lambda + \sum k_j\lambda_j + p\varpi + \dots$
@@ -92,7 +157,9 @@ $a$, an $a$ driven by $\phi_o$ makes $\sigma$ oscillate too: an *induced* librat
 intervals cover at least `MMR_OWNER_COVER_MIN` = 0.5 of $\sigma$'s decisive episode; then `non_resonant /
 induced_libration`, origin `induced`. The detail says whether the owner librates (`owner_libration`) or circulates
 at the oscillation's period (`owner_forced_wave`). Examples: [117306](gallery.md#induced-forced-wave),
-[1997 GK3](gallery.md#induced-owner-librates).
+[1997 GK3](gallery.md#induced-owner-librates). The exception: when the remainder $x = \Psi/u$ closes cycles of a well
+of its own ('both resonances at once?' confirmed, [Response](response.md)), the tree goes on and the row keeps its own
+reading with origin `joint`; one such cycle gives `uncertain / baseline_needed`, origin `joint`.
 
 **3. Does $a$ carry the oscillation at all?** In a resonance the swing of $a$ follows from the swing of $\sigma$:
 $\delta a \simeq \delta\dot\sigma/|c|$. If $a$ carries less than `MMR_B1_RATIO_MIN` = 0.1 of that (test B1), or the
@@ -107,6 +174,15 @@ cannot be excluded and the centre's rate is consistent with an exact commensurab
 `MMR_B5_EXACT_SIGMA` = 2 standard errors, [B5](response.md#kinematic-origins)): `uncertain / baseline_needed`. The
 kinematic drift is rule K2 (`rec_rule` 3k2), the exact commensurability `rec_rule` 3b5. Examples:
 [285637](gallery.md#kinematic-libration), [62243](gallery.md#kinematic-drift).
+
+**K3s, after the leaf: a circulation whose slow scale is a secular cycle.** A `non_resonant / circulation` (no
+mechanism named, not 1:1) whose [slow scale](response.md#kinematic-origins) has the period of a secular cycle (within
+`MMR_KIN_PERIOD_TOL`) and fails its own identity becomes `non_resonant / kinematic_libration`, origin `kinematic`,
+detail `secular_cycle` (`rec_rule` K3s, `MMR_SECULAR_CYCLE_KINEMATIC`), whatever B1 or a thin L4. Only where the slow
+libration is the record's regime: the centre leaves it by slips of one turn (largest monotone pass ≤ 1 +
+`LIBRATION_SLIP_TOLERANCE` rev); a centre that circulates several turns in a row stays a circulation (285637 2 Myr,
+4.7 rev). The status and the level stay those of the circulation; a librating row is never demoted. Example: 37087
+3J+8S-3 (100 kyr and 1 Myr).
 
 **4. A drift without a cause.** `angle_status = drift` with no kinematic explanation: `uncertain /
 drift_mechanism_unknown`. Example: [142694](gallery.md#uncertain-drift).
@@ -146,9 +222,14 @@ $\sigma$ librates, the first leaf that holds:
 | 5d → 6 | the strength computed by direct averaging passes, required / theory within [1/x, x], x = `MMR_STRENGTH_CHECK_RATIO` = 10 | by the behaviour | dynamic |
 | 5s | the period needs ≥ $10^3$ × the strength (two-body: direct averaging; three-body: $\mu_i\mu_j e^q$ even after the small-divisor envelope) | non_resonant / implausible_strength | unknown |
 | 5s* | three-body ratio ≥ $10^3$, but the envelope could close the gap | uncertain / origin_unknown | unknown |
-| 5o | a measured objection: an episodic angle, whose episodes do not lie in the separatrix zone, with a strong $a$-wave already before the episode (O1 ≥ `MMR_O1_RATIO_FAIL` = 0.5, [O1](response.md#onset-of-an-episode-o1)); or F fails | uncertain / origin_unknown | unknown |
+| 5o | a measured objection: an episodic angle, whose episodes do not lie in the separatrix zone, with a strong $a$-wave already before the episode (O1 ≥ `MMR_O1_RATIO_FAIL` = 0.5, [O1](response.md#onset-of-an-episode-o1)); or F by direct averaging fails | uncertain / origin_unknown | unknown |
+| 5x | the order-of-magnitude strength ($\mu_i\mu_j e^q$, three-body and 1:1) lies outside [1/x, x]: a scale known to a factor 1–100 is a diagnostic, no objection; origin not established (79653 3M+3J-7: 39.5 ×) | uncertain / origin_unknown | unknown |
 | 5n | the decisive episode has fewer than `LIBRATION_CENTRE_MIN_ESTIMATES` = 2 independent cycles | uncertain / origin_unknown | unknown |
 | 5u → 6 | nothing measured | by the behaviour, reason `geometric_libration` / `geometric_episode`, cap ≤ low (`geometry_only`) or ≤ medium (`strength_scale_only`, when the order-of-magnitude strength agrees) | unknown |
+
+Two kinds of `uncertain / origin_unknown` leaves: a measurement **contradicts** the angle's own dynamics (5a, 5b,
+5e's failed R0, 5g's failed identity, 5o), or **nothing was measured** (5n, 5x). Where the only missing measurement
+is missing for lack of length, the action is `extend`, not `review` ([Actions](confidence.md#actions)).
 
 **6. By the observed behaviour.** When the force is measured, or nothing objects, the angle's own behaviour gives
 the status:
@@ -172,7 +253,9 @@ co-orbital 1:1 angle the union is a libration directly: its episodes are the tad
 regimes of one resonance.)
 
 **After the tree.** A non-resonant verdict next to a run of turning points one turn short of an episode
-(`LIBRATION_NEAR_EPISODE_TP_DEFICIT` = 1) gets the flag and cap `near_episode`; an owner search run on catalogue
+(`LIBRATION_NEAR_EPISODE_TP_DEFICIT` = 1) and at least the floor less `CONFIDENCE_THIN_BAND` long gets the flag and
+cap `near_episode`; for a 1:1 angle such a run may also be one rejected over the top, when each of its half-swings
+crosses at most one of the planet and L3 (rule `coorbital_near_episode`); an owner search run on catalogue
 planet longitudes caps the level (`catalogue_longitudes`). These change the confidence, not the status.
 
 ## Every reason
@@ -192,16 +275,19 @@ planet longitudes caps the level (`catalogue_longitudes`). These change the conf
 | `kinematic_libration` | non_resonant | kinematic | bounded by geometry ($p\varpi$ term, secular cycle); $a$ does not carry it | [285637](gallery.md#kinematic-libration) |
 | `kinematic_drift` | non_resonant | kinematic | the slow centre follows the secular part; librations are a ripple on it | [62243](gallery.md#kinematic-drift) |
 | `induced_libration` | non_resonant | induced | another resonance drives $a$; $\sigma$ follows by the identity | [117306](gallery.md#induced-forced-wave) |
+| (the own reading) | its own | joint | both resonances at once: the owner librates and $\Psi$ has a well of its own | — |
 | `subresonance_librates` | the member's | subresonance | a member of the same multiplet holds the fixed centre | [82831](gallery.md#transient-subresonance) |
 | `implausible_strength` | non_resonant | unknown | the observed period needs a force $\ge 10^3$ times the available one | [2897](gallery.md#implausible-strength) |
 | `baseline_needed` | uncertain | — | too few cycles to decide; integrate longer | [385458, 100 kyr](gallery.md#insufficient-time) |
+| `one_coorbital_leg` | uncertain | unknown | 1:1: one swing between passages with one discrepancy (a lap past the planet, the local law or energy, a turn that is a kick) | 2018 KS |
+| `one_half_libration` | uncertain | unknown | not 1:1: one half-swing between passages that follows the resonance's own law | — |
 | `drift_mechanism_unknown` | uncertain | unknown | the angle drifts and no mechanism is identified | [142694](gallery.md#uncertain-drift) |
 | `origin_unknown` | uncertain | unknown | it librates, but a measurement contradicts this resonance's own pendulum | [2003 TX9](gallery.md#uncertain-origin) |
 | `unphysical` | invalid | — | the orbit left the elliptic domain (or $e > 1.3$ for secular/ZLK) | [2010 HY22](gallery.md#zlk-invalid) |
 | `undefined_phase` | invalid | — | $\varpi$ is undefined at very small $e$ | — |
 | `undersampled` | invalid | — | the output step is too coarse for the filter, $P_c \le 2\Delta t$ | — |
 | `invalid_input` | invalid | — | the angle does not contain the body's $\lambda$ ($k = 0$) | — |
-| `gate_unavailable` | uncertain | unknown | Lidov-Kozai: the free-$\omega$ gate could not judge ([Secular and ZLK](secular-zlk.md)) | [1981](gallery.md#zlk-gate-unavailable) |
+| `gate_unavailable` | uncertain | unknown | Lidov-Kozai: the free-$\omega$ gate could not judge, or its model does not apply (a co-orbital of Mercury to Mars, any bounded $\omega$) ([Secular and ZLK](secular-zlk.md)) | [1981](gallery.md#zlk-gate-unavailable) |
 | `unusable_series` | uncertain | — | secular/ZLK: too few samples or non-finite values in the angle | — |
 
 The columns `libration_origin`, `origin_detail` and `owner` are described in [Output data](../output.md); the leaf
@@ -227,8 +313,37 @@ whole record. They differ in four cases:
 - **Forced waves.** Runs that are forced waves of another argument are not episodes for the status. If the record
   would otherwise be reported `circulation` or `drift` while $\sigma$ loops in those runs, the librating word is
   reported.
+- **Forced (strength).** On a row decided by 5s (not 5s\*) every accepted run is marked a forced wave of route
+  `strength` once the verdict is made (`MMR_FORCED_WAVE_STRENGTH`): its period needs a force ≥ $10^3$ times the one
+  the disturbing function gives, so it is no libration of this angle. The mark names that ground, not a driver;
+  nothing is measured again, and the status, word, reason and level stay as they are.
 
 Only the output changes; the margins and the confidence read the angle as the tree did.
+
+## How the record's edges end
+
+After the tree, the MMR verdict reads how $\sigma_f$ meets the record's edges (rule `end_arc_extend`,
+`MMR_RECORD_EDGE_STRETCH`). The edge pass is the stretch from the slow centre's turn nearest the edge (or the other
+edge without one) to the edge.
+
+- **End arc after circulation.** The pass holds at least one revolution, and after its last completed one $\sigma_f$
+  stays $D$ to the end without completing another, with $D >$ `MMR_END_ARC_SLOWDOWN_FACTOR` (2) × the pass's
+  longest revolution and $2D \ge$ `MMR_END_ARC_MIN_FLOOR_PERIODS` (1) × the floor, no librating episode in it. A
+  circulation whose rate depends on $\sigma$ alone completes the next revolution sooner than a full one takes, so
+  this is a slowdown. `final_regime` becomes `arc` (range ≥ π) or `stall` from the last revolution, when it was empty or
+  `circulation`, and the flag `extend_time` is set forward. A `non_resonant / circulation` verdict there gets the cap
+  `record_ends_unresolved` (≤ medium): the record ends before it shows whether $\sigma$ circulates on or is
+  captured (2022 BB2: 600 yr after 52-yr revolutions).
+- **Flag only.** The same slowdown at the start, one reflection of the slow centre cut by an edge (less than a
+  revolution between the turn and the edge, at least one beyond it: 2008 EZ84 before 144 yr), a clean 1:1 edge leg
+  whose turn reflects (G4c's extend) and an edge half-libration that holds its law (G4h) set `extend_time` with the
+  direction of their edge (`backward` at the start, `forward` at the end, `both`); a window that starts at a jump of
+  $a$ has no record start to extend. One reflection is no cycle: no cap.
+
+The flag changes no status and no level, whatever the action. `extend_direction` gives the direction and
+`extend_to_years` the length: the next check without an estimate, round_up(2T) (with action `extend` the action's
+length stays). The words `libration`, `drift`, `insufficient_time` and `undefined` already say how the record ends:
+no edge stretch is read under them.
 
 ## Secular and Lidov-Kozai angles
 

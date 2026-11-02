@@ -82,7 +82,10 @@ class FreeOmegaPlotter(BasePlotter):
             # body.omega lives on the integration grid; the free omega lives on a resampled
             # grid thinned further by the origin masks, so interpolate onto that one.
             # np.interp needs increasing abscissae: a backward run is put in time order first
-            years, omega = time_ordered(np.asarray(body.times) / (2 * np.pi), body.omega)
+            # the ZLK row's classified omega when there is one: the frame of the free elements (ZLK_ANGLE_FRAME)
+            stored = body.angles_unwrapped.get(resonance.to_s()) if resonance is not None else None
+            source = stored if stored is not None and len(stored) == len(body.times) else body.omega
+            years, omega = time_ordered(np.asarray(body.times) / (2 * np.pi), source)
             osculating = np.unwrap(np.interp(elements.omega_times, years, np.unwrap(omega)))
         return cls.from_elements(
             elements,

@@ -13,8 +13,10 @@ The author's status of an example, the newest source winning:
      variant suffix only; `__20kyr`-like variants are other regimes (DECISIONS: a label belongs to the same record).
   2. author_labels_*.csv, the newest row per example, updated by author_label_decisions_*.csv (`reclassify.author_labels`).
 
-Not counted, and listed as abstentions: a run verdict `uncertain` or `invalid` (it claims nothing) and an author
-status `uncertain` (no truth to compare with).
+Not counted, and listed as abstentions: a run verdict `uncertain` or `invalid` (it claims nothing), an author
+status `uncertain` (no truth to compare with), and a secular angle outside the 21 literature secular resonances
+(`LITERATURE_SECULAR`, `outside_literature`; author 2026-10-13, W28 g09-3: broad combinations with g1-g4, s1-s4 are
+near-commensurabilities of a model without GR, not the resonances the statistics are about).
 
 What is counted for a cell (`n_examples`, `n_errors` and the Wilson 95 % interval `accuracy_95` in the file) are the
 labelled verdicts at confidence `high` or `certain`, the strong claims. Medium and low verdicts of the cell carry a
@@ -53,6 +55,15 @@ Z_95 = 1.959963984540054  # two-sided 95 % normal quantile of the Wilson interva
 CALIBRATED_LEVELS = (Confidence.CERTAIN, Confidence.HIGH)  # the levels a cell counts (n_examples, n_errors)
 ABSTAINING = (str(Status.UNCERTAIN), str(Status.INVALID))
 CELL = ['status', 'angle_status', 'reason']
+# The 21 secular resonances the literature reports for main-belt and Hungaria orbits, the only ones the statistics count
+# (author 2026-10-13; experiments/2026-09-binary-asteroids/sim_secular_v5.py has the sources; secular/CLAUDE.md)
+LITERATURE_SECULAR = (
+    'g-g5', 'g-g6', 's-s6', 'g-g3', 'g-g4', 's-s3', 's-s4',
+    'g-g6+s-s6', 'g+g5-2g6', '2g-g5-g6', 'g-s-g5+s6', 'g-g5+s-s7',
+    's-g5+g8-s6', 's+g5-g8-s3', '2s-s4-s6',
+    '2(g-g6)+(s-s6)', '3(g-g6)+(s-s6)', 'g+2g5-3g6', '2g-3g5+g6', '2g-g5-g6+s-s6',
+    's-g6+g8-2s6+s7',
+)  # fmt: skip
 
 
 # ------------------------------------------------------------------ statistics
@@ -98,6 +109,28 @@ def author_truth(candidates: pd.DataFrame, labels: pd.DataFrame, label_rows: pd.
 # ------------------------------------------------------------------ cells
 
 
+def secular_terms(formula: str) -> frozenset:
+    """A secular formula as its terms {(mode, planet index or None, coefficient)}, so that 'g-2g6+g5' and 'g+g5-2g6'
+    are one resonance."""
+    from resonances.resonance.factory import create_resonance
+
+    totals: dict = {}
+    for term in create_resonance(formula).formula.terms:
+        key = (str(term.mode), term.index)
+        totals[key] = totals.get(key, 0) + int(term.coefficient)
+    return frozenset((mode, index, coefficient) for (mode, index), coefficient in totals.items() if coefficient)
+
+
+LITERATURE_TERMS = frozenset(secular_terms(formula) for formula in LITERATURE_SECULAR)
+
+
+def outside_literature(example_id: str, resonance: str) -> bool:
+    """A secular example whose angle is none of the 21 literature resonances (`LITERATURE_SECULAR`)."""
+    if example_id.split('__', 1)[0] != 'secular' or not resonance:
+        return False
+    return secular_terms(resonance) not in LITERATURE_TERMS
+
+
 def labelled_rows(summary: pd.DataFrame, truth: pd.DataFrame) -> pd.DataFrame:
     """Catalogue rows of the run with the author's status: `counted` (a claim that can be wrong), `error`,
     `calibrated_level` (confidence high or certain) and `certain` (confidence certain)."""
@@ -108,6 +141,8 @@ def labelled_rows(summary: pd.DataFrame, truth: pd.DataFrame) -> pd.DataFrame:
     frame['abstention'] = ''
     frame.loc[frame['author_status'] == str(Status.UNCERTAIN), 'abstention'] = 'author_uncertain'
     frame.loc[frame['status'].isin(ABSTAINING), 'abstention'] = 'run_' + frame['status']
+    outside = [outside_literature(example, resonance) for example, resonance in zip(frame['example_id'], frame['resonance'])]
+    frame.loc[outside, 'abstention'] = 'outside_literature'
     frame['counted'] = frame['abstention'] == ''
     frame['error'] = frame['counted'] & (frame['status'] != frame['author_status'])
     frame['calibrated_level'] = frame['confidence'].isin([str(level) for level in CALIBRATED_LEVELS])
@@ -239,7 +274,8 @@ def report(rows: pd.DataFrame, table: pd.DataFrame, run: str, cells_path: str, s
         '`author_verdict` read by `agree_author_verdicts.author_status` (controversial verdicts give none), on the '
         'candidate\'s own record only (no variant suffix such as `__20kyr`: a label belongs to the record it was given '
         'on), replaced by the newer author_labels_*.csv rows and author_label_decisions_*.csv. Abstentions: a run '
-        'verdict uncertain or invalid, an author label uncertain. A cell counts its verdicts at confidence high or '
+        'verdict uncertain or invalid, an author label uncertain, a secular angle outside the 21 literature '
+        'resonances (outside_literature). A cell counts its verdicts at confidence high or '
         'certain; their level does not depend on the file.',
         '',
         '## Cells',

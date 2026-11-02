@@ -78,7 +78,8 @@ it has its confidence capped at `medium` (cap `one_return_cycle`, `LIBRATION_RET
 
 Turning points are grouped into **runs**. A run breaks where a gap exceeds
 `LIBRATION_EPISODE_GAP_FACTOR` = 3 times its median half-period, where a half-amplitude reaches $\pi$ (the angle
-goes over the top), or where two consecutive midpoints differ by more than $\pi$ (a slip).
+goes over the top), or where two consecutive midpoints differ by more than $\pi$ (a slip). A Lidov-Kozai $\omega$
+breaks at half a turn instead (`ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG` = 90°; [Secular and ZLK](secular-zlk.md#geometry-and-status)).
 
 **Question: is this run a libration about a centre?** A run is an accepted **episode** when it has at least
 `LIBRATION_MIN_TURNING_POINTS` = 3 turning points (one full cycle; or two closed by their phase return), at least
@@ -113,8 +114,12 @@ shortest libration $P_\text{floor}$ (a faster one is a forced wave the cutoff le
 run a full revolution inside it. A run whose centre moves is tried again on its regular part (full periods within
 `LIBRATION_REGULAR_PERIOD_RATIO` = 2 of the median, or without one slow edge half-cycle), and may be cut where its
 regime changes: at a step of its centre between two measured librations, or at a stall of a slowly moving centre
-(`LIBRATION_REGIME_CUTS`, `LIBRATION_STALL_MIN_CYCLES` = 3). Rejected runs keep their reason (`too_few_tp`,
-`centre_moves`, `no_closed_cycle`, `over_the_top`, `edge`) in `episodes.csv`.
+(`LIBRATION_REGIME_CUTS`, `LIBRATION_STALL_MIN_CYCLES` = 3). Two joins undo a cut that separates no regimes (MMR):
+a half-cycle over the top in $\sigma$ but not in $\psi$ (rule q, `LIBRATION_FRAME_JOIN`), and a leftover of a
+stall cut that is the stall's own libration (rule s, `LIBRATION_STALL_JOIN`). A step or stall between two accepted
+pieces in one libration region is a mark, not a boundary (rule `regime_cut_mark`, `LIBRATION_REGIME_CUT_MARKS`).
+Rejected runs keep their reason
+(`too_few_tp`, `centre_moves`, `no_closed_cycle`, `over_the_top`, `edge`) in `episodes.csv`.
 
 ??? info "Regime cuts in detail"
     A run still rejected for its moving centre is cut where its regime changes, and the cut is kept only when the
@@ -124,6 +129,46 @@ regime changes: at a step of its centre between two measured librations, or at a
     slow centre*: the longest stretch of ≥ `LIBRATION_STALL_MIN_CYCLES` independent cycles whose midpoints move less
     per period than the cycles swing, at the run's own period, cut out as its own run. A steady drift has no stall
     and is not cut.
+
+??? info "Joins: rules q and s"
+    A cut must separate two regimes. **Rule q** (frame join): over the top means over the potential's maximum, and
+    the maximum moves with the well. Two runs broken by one half-cycle whose half-amplitude reaches $\pi$ in
+    $\sigma$ are one run when the angle has a centre track whose cycle centres follow it, no half-swing of the
+    joined run reaches $\pi$ in $\psi = \sigma - \sigma_c(t)$, and the joined run passes the band test. A slow
+    edge piece of the regular-part split that holds the joined half-cycle is judged in $\psi$ too. A true crossing
+    of the separatrix reaches $\pi$ in $\psi$ as well and stays a break. Example: 82831 13M−24, where the half-cycle
+    at 8.76 kyr passes $\pi$ in $\sigma$ only because the Mars well moved during it: two episodes, 1.9–28.6 and
+    29.8–71.3 kyr, both about the moving centre.
+
+    **Rule s** (stall join): after a stall cut, a leftover piece next to the stall joins it when the joined piece
+    passes the band test and the leftover carries the stall's oscillation: at least one of its full cycles (with
+    two of its own turning points) has the stall's period within `LIBRATION_REGULAR_PERIOD_RATIO`. Not the median:
+    ripple on the same wave adds turning points. A ripple of another period beside the stall has no such cycle and
+    is not joined. Example: 385266 16N−27, one forced wave of the circulating 3N−5 (5:3) at 56.6–98.7 kyr instead
+    of two pieces cut at 68.3 kyr. Both rules only change episode boundaries; each one that acts is listed in
+    `rules_fired` (`frame_join`, `stall_join`).
+
+??? info "A step or stall inside one libration region is a mark"
+    Rule `regime_cut_mark` (`LIBRATION_REGIME_CUT_MARKS`, an angle that is not 1:1): an episode boundary separates
+    two libration regions. Two neighbouring *accepted* pieces of a standing centre-step or stall cut are one
+    episode when the last full cycle before the cut and the first after it share a band and a period:
+
+    $$\min(m_l + A_l,\ m_r + A_r) - \max(m_l - A_l,\ m_r - A_r) > 0, \qquad
+      \frac{\max(P_l, P_r)}{\min(P_l, P_r)} \le \texttt{LIBRATION\_REGULAR\_PERIOD\_RATIO},$$
+
+    with $m = (v_0 + 2v_1 + v_2)/4$, $A$ the mean half-swing and $P = t_2 - t_0$ of each cycle's three turning
+    points, and when the turning points of the joined stretch, the step or the stall included, span less than a
+    turn ($\max v - \min v < 2\pi$): a libration is an angle that does not take every value, so a centre that
+    carries the swing around the circle leaves no region to be one of. $\sigma$ then swings in one region across the
+    cut (the non-1:1 analogue of the 1:1 "same well"); the test adds no threshold of its own. The joined run keeps the band test's verdict when it passes; when it fails
+    only for its moving centre it is accepted as `regime_change` with the centre stationarity not measured. The cut
+    becomes a mark of the episode, `centre_step@t0:t1` (the step half-cycle) or `stall@t0:t1` (the stall) in
+    `episodes.csv` `marks`. Boundaries that stay: an accepted piece next to a rejected one (a drift: 385266
+    16N−27), facing bands that do not overlap (2013 VA14 60 kyr at 41.3–41.7 kyr, −4.5° at half-amplitudes
+    9.1/11.3°), a joined stretch that spans a turn (55390 1J+3S−1 at its 8.3-kyr centre scale: the facing bands
+    share 17°, but the centre travels −299° in 75 kyr and the stretch spans 455°; 482824 19N−32: 572°), and every
+    gap, circulation, passage over the top, jump of $a$, action step and regular-part split. On the benchmark it
+    joins 8 boundaries in 6 angles and changes no status, level or reason.
 
 ??? info "Forced waves (rule F6)"
     Once each accepted episode's own response is measured ([Is it this resonance?](response.md)), an episode is a
@@ -140,6 +185,86 @@ about 57° in 20 kyr, and pass in $\psi$ with a margin of 35.5°; the cycle cent
 against 14.4° from a fixed centre and 28.2° from the reversed track.
 
 ![Stationary, modulated and moving-centre episodes](https://smirik.github.io/resonances/img/physics/centre_types.png)
+
+### A co-orbital turn in the edge trim
+
+**Question: does a 1:1 run lack only the turning point the filter hides?** The filter's edge trim
+(`FILTER_EDGE_TRIM_CUTOFFS` × $P_c$, 55.5 yr for an Earth co-orbital at 1 kyr) hides a turning point there. For a 1:1
+angle the reversal is then read on the raw angle averaged over `MMR_COORBITAL_EDGE_TURN_ORBITS` = 3 orbital periods
+(which drops the ripple of one orbit): after the run's last turning point (before its first) the extreme of the
+opposite kind, if it lies in the trim and the angle turns back from it before the record's edge. It counts when
+
+- it swings at least `MMR_COORBITAL_EDGE_TURN_MIN_DEG` = 20° on both sides (a convention);
+- it is a reflection on a top of the averaged potential (the planet's or L3's: a horseshoe turn), not a turn inside a
+  tadpole or quasi-satellite well;
+- $a$ crosses $a_P$ across it, as the identity $\dot\theta = -\tfrac32 n (a - a_P)/a_P$ requires;
+- $|a - a_P|$ is mirrored, $|\ln(\text{out}/\text{in})| \le$ `MMR_COORBITAL_TURN_ENERGY_TOL` = 0.34: the averaged
+  problem is time-reversible about a turn, a kick is not. Both sides are read on the same window, shrunk to the
+  stretch left to the record's edge.
+
+It is added as a turning point (`edge_raw_tp` in `episodes.csv`, `geo_edge_raw_tp_t`) only when it closes a cycle: the
+run was no episode without it and is an accepted one with it. It never extends an accepted episode and never continues
+the curve beyond the data (rule `coorbital_edge_turn`, `MMR_COORBITAL_EDGE_TURN`). 2006 BZ147 turns at 960 yr, 40 yr
+before the end (swing 180°, at the planet, out/in 0.90): its horseshoe cycle 817–960 yr closes and the verdict is
+`transient`. 2007 VU6 turns at 994 yr, but in the 6 yr left it swings back only 18.8°: no turning point.
+
+Only 1:1: the potential gives a co-orbital turn its site and its mirror, so a reversal can be told from a ripple. Other
+resonances have no such test of a single turn here, and their trimmed edge stays unread.
+
+### A co-orbital episode ends only at a separatrix
+
+**Question: where does a 1:1 episode end?** Only where $\sigma$ crosses a separatrix: a half-cycle over the top, or
+a turn of $\sigma_f$ or of the orbit-averaged raw angle (rule `coorbital_well_cut`, `MMR_COORBITAL_WELL_EPISODES`).
+A change of well (quasi-satellite, tadpole, horseshoe, a compound orbit)
+or of amplitude inside the co-orbital wells is a sub-regime of one libration, not a boundary. The wells are those of
+the averaged potential of the 1:1 force law ([pendulum](pendulum.md#co-orbitals-11)), on the run's window:
+
+- a run whose cycle bands do not overlap is accepted when every full cycle's swing (its three turning points) holds a
+  minimum of the potential, to within the run's turning-point prominence, and its cycle centres stay within one
+  turn. The prominence is the smallest swing the run resolves as a turn: a cycle whose amplitude collapses within it
+  misses its minimum by less (2021 XO3 1V−1: 4° and 8° at 11°), a ripple drifting past L5 by more (2022 BB2 1V−1:
+  7–25° at 4°, rejected);
+- two accepted neighbours, which `split_runs` separates where the next regime is slower or its centre jumps, join
+  when the half-cycle between them does not circulate and the joined run is accepted. A rejected neighbour is never
+  joined;
+- no regime cut (centre step, stall) applies to a 1:1 angle.
+
+`episodes.csv` keeps the changes as annotations: `wells`, the wells of the run's cycles in time order
+(`qs>compound>horseshoe`), and `marks`: `well_change@t0:t1` (the half-cycle two cycles of different wells share),
+`amplitude_change@t0:t1` and `kick@t` (a jump of $a$ inside either). An amplitude change is G2a's amplitude test on two
+half-cycles each side of the transitional one (separation ≥ `LIBRATION_ACTION_STEP_SEPARATION`, ratio ≥
+`LIBRATION_ACTION_STEP_RATIO`), in one well, with the turning points of the larger swings higher in the potential. A
+run of several wells has the subtype `regime_change`, the floor of the fastest well it holds, and no L5 (one pendulum
+per well). 2021 XO3: one episode 90–945 yr with amplitude changes at 326–446 and 708–809 yr; 469219 1E−1: one episode
+24–950 yr, quasi-satellite then horseshoe.
+
+### Core, residence and sub-regimes of a co-orbital episode
+
+**Question: what is a 1:1 episode made of?** Three intervals (rule `coorbital_residence`, `MMR_COORBITAL_RESIDENCE`):
+
+- the **core**, from the first to the last measured turning point (`core_t0_yr`, `core_t1_yr`). Coverage, the edges,
+  the margins and the status read only the core;
+- the **sub-regimes**, the stretches of the core between its changes of well or amplitude (`subregimes`,
+  `well@t0:t1`); for two or more, each one's own 1:1 force law and energy integral at the angle's cutoff
+  (`subregime_checks`, `force/energy`). They describe; the episode's own response decides. The header's orbit type is
+  their wells in time order (`compound: horseshoe → tadpole L4`);
+- the **residence**, the stay in the co-orbital region around the core. It is **inferred, not measured**. The raw
+  angle averaged over `MMR_COORBITAL_EDGE_TURN_ORBITS` orbits is cut into legs at its reversals of
+  `MMR_COORBITAL_EDGE_TURN_MIN_DEG`. By $\dot\sigma = -\tfrac32 n (a - a_P)/a_P$ each reversal is a crossing of $a_P$.
+  From the core outwards the residence takes legs until one sweeps `LIBRATION_EDGE_ARC_REV` turns (an arc above
+  $2\pi$ is no piece of libration, as for the edge rule) or the record ends: `residence_bounded_by_*` = `circulation`
+  or `edge`. An observed exit or entry bounds it at the core. `edge` means that the record ends inside the stay; it is
+  no exit, and the continuation is undetermined.
+
+  The largest $|a - a_P|/\Delta a_\text{max}$ at the reversals outside the core is reported (`residence_zone_max`)
+  but bounds nothing. Measured at 20 kyr, the accepted core of 2024 TY11 1M−1 starts at a turn of 2.2, where its own
+  force law passes.
+
+2020 CB 1E−1: the quasi-satellite core 443–601 yr, then swings below the turning-point prominence. The residence runs
+from 443 yr (the leg before it sweeps 3.1 turns) to the record's end: 601 yr is no exit. 2024 TY11 20 kyr: core
+2.65–8.69 kyr, residence from the record's start to 8.69 kyr (the next leg sweeps 4 turns). 2009 BE81 20 kyr: one
+episode 7.75–16.7 kyr. Its sub-regimes are tadpole L5, horseshoe, tadpole L4 and compound, and their laws read
+pass/pass, pass/fail, pass/pass and pass/pass.
 
 ## The centre and circulation
 
@@ -185,7 +310,14 @@ or more librating episodes).
 **Exit and entry.** After the last turning point the angle may leave its centre:
 
 - **suspected**: $\sigma_f$ leaves the episode's centre by more than $\pi$ with less than one period left. The label
-  stays, the flag `exit_suspected` caps the confidence at `medium`;
+  stays, the flag `exit_suspected` caps the confidence at `medium`. For an MMR the centre is the local one at that
+  edge, not the episode's mean: the midpoint of the edge swing (the half-cycle that ends at the last turning point,
+  or starts at the first), or the moving well's centre $c(t)$ at that turning point when the episode was accepted in
+  $\psi$. A mean over an episode whose regime changes inside it can lie more than $\pi$ from its own edge turning
+  point: 2016 JA in 1E−1 swings once as a horseshoe about 182° and then as a tadpole about 282° (mean 251°), so its
+  first turning point at 45° read as an entry; the edge swing's midpoint holds its turning point at the
+  half-amplitude, always below $\pi$ (rule `local_centre_entry` when the two readings differ; secular and ZLK
+  angles keep the mean);
 - **observed**: the raw angle averaged over one orbital period runs at least `LIBRATION_EDGE_ARC_REV` = 1 turn away
   from the last turning point to the end of the record and moves monotonically there. The edge is then not covered,
   there is no `exit_suspected`, and `final_regime` is a circulation from the exit. The same holds for an entry at the
@@ -195,11 +327,23 @@ or more librating episodes).
 runs 1.97 turns monotonically, so the exit is observed and the verdict is `transient`.
 
 **Union of episodes.** Consecutive librating episodes join into one libration over the record when nothing between
-them goes round: in each gap the range of the turning points and the range of the orbit-averaged raw angle are both
-below $2\pi$, the gap is at most `LIBRATION_UNION_GAP_PERIODS` = 1 times $(P_\text{left} + P_\text{right})$, nothing
-goes round over the whole chain, and the outer episodes reach the record's edges. The angle is then `libration` /
+them goes round and $\sigma_f$ stays in their libration band: in each gap the range of the turning points and the
+range of the orbit-averaged raw angle are both below $2\pi$, and the gap is bounded: at every sample of the gap
+$\sigma_f$ lies inside one of three bands, up to `LIBRATION_UNION_BAND_MARGIN_DEG` (10°, a convention),
+
+$$|\sigma_f - c_l| \le A_l, \qquad |\sigma_f - c_r| \le A_r, \qquad |\sigma_f - c(t)| \le \max(A_l, A_r),$$
+
+the band of the left episode about its centre at its end, that of the right one at its start (centres: the midpoints
+of their facing full cycles; $A$ the largest half-amplitude of each), and the band carried across the gap, $c(t)$
+linear from $c_l$ to $c_r$ (a step of the centre). The gap holds no libration to measure a centre on; a low-pass of
+$\sigma_f$ there would follow any excursion slower than its window, and the carried band alone misses a swing back
+into the other neighbour's band (the co-orbital 524522). How long the gap is does not matter (2001 WK15 32E−39: gaps of 1.5 and
+1.7 $(P_\text{left} + P_\text{right})$ inside the band; an excursion over the top and back stays two episodes, even
+without a full turn). Nothing may go round over the whole chain either, and the outer episodes must reach the record's
+edges. The angle is then `libration` /
 `regime_change`. For a 1:1 angle this is rule G2: a quasi-satellite becoming a horseshoe without circulating is one
-libration ([Gallery](gallery.md#coorbital-regime-change)). For any other angle it is rule G2u: the reported word is
+libration ([Gallery](gallery.md#coorbital-regime-change)); with `MMR_COORBITAL_WELL_EPISODES` such a change is one
+episode already (above), and the union joins only what a rejected stretch separates. For any other angle it is rule G2u: the reported word is
 `libration` / `regime_change`, but the status tree reads the chain as episodic and promotes it to `resonant` only from
 a dynamic transient ([The status tree](status-tree.md)).
 
@@ -401,7 +545,9 @@ is repeated at that cutoff, with its turning points taken at the centre-turn pro
 (`LIBRATION_CENTRE_SCALE_TP_AT_CENTRE`), and its verdict is kept when it is a whole-record libration, or an episode
 that would cover both edges of the record but for an exit or entry observed at that scale (rule G2c; column
 `geo_centre_scale_cutoff_yr`). If the libration found there is too fast for that cutoff, it is analysed once more at
-half its period. 385458 in 9N−17 over 300 kyr is a libration at $W_c$ = 4.6 kyr
+half its period, and a libration whose window at $W_c$ holds fewer than two of its periods is read at the
+shortest cutoff that keeps its slow extrema ([scale ladder](signal.md#a-shorter-cutoff-for-a-slow-libration-the-scale-ladder-g2c)).
+385458 in 9N−17 over 300 kyr is a libration at $W_c$ = 4.6 kyr
 ([Gallery](gallery.md#centre-scale)); over 100 kyr the same body is `insufficient_time`
 ([Gallery](gallery.md#insufficient-time)).
 

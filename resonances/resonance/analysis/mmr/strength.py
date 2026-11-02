@@ -73,7 +73,7 @@ ratio itself is judged by) before it calls the strength implausible (`decide`, r
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -519,6 +519,69 @@ def harmonic_theory(
     )
 
 
+@dataclass(frozen=True)
+class Swings:
+    """The observations `direct_theory` reads of an episode (`t_start_yr`, `t_end_yr`, `tp_times_yr`,
+    `tp_values_rad`, `centre_mod_2pi_rad`), built from a stretch of the angle without an episode (`record_swings`):
+    one (lowest, highest) pair of sigma per snapshot part, so that the half-cycle nearest each snapshot is that part's
+    range. Used where the record has no episode at the period floor (G1f, `theory_period`)."""
+
+    t_start_yr: float
+    t_end_yr: float
+    tp_times_yr: Tuple[float, ...]
+    tp_values_rad: Tuple[float, ...]
+    centre_mod_2pi_rad: float
+
+
+def record_swings(t: np.ndarray, angle_rad: np.ndarray, t_start_yr: float, t_end_yr: float, count: int) -> Optional[Swings]:
+    """`Swings` of the unwrapped `angle_rad` over [t_start, t_end] cut into `count` equal parts (the parts of
+    `snapshot_times`): each part gives the pair (min, max) of sigma at its middle -/+ a quarter of the part; None
+    without finite samples in some part. A part where sigma circulates spans more than a turn, which crosses the top
+    of any well (`averaging.swing_in_well`): its evaluation is then not consistent."""
+    t, angle = np.asarray(t, float), np.asarray(angle_rad, float)
+    edges = np.linspace(t_start_yr, t_end_yr, count + 1)
+    times, values = [], []
+    for lo_t, hi_t in zip(edges[:-1], edges[1:]):
+        inside = (t >= lo_t) & (t <= hi_t) & np.isfinite(angle)
+        if not np.any(inside):
+            return None
+        middle, quarter = (lo_t + hi_t) / 2, (hi_t - lo_t) / 4
+        times += [middle - quarter, middle + quarter]
+        values += [float(np.min(angle[inside])), float(np.max(angle[inside]))]
+    centre = float(np.mod(filtering.circular_mean(angle[np.isfinite(angle)]), TWO_PI))
+    return Swings(float(t_start_yr), float(t_end_yr), tuple(times), tuple(values), centre)
+
+
+@dataclass(frozen=True)
+class TheoryPeriod:
+    """`theory_period`: the shortest small-amplitude period T0_th [yr] of the consistent evaluations of the direct
+    theory (nan when none), how many of how many evaluations were consistent, the method and why it is missing."""
+
+    period_min_yr: float
+    n_consistent: int
+    n_evaluations: int
+    method: str
+    reason: str
+
+
+def theory_period(series: MMRSeries, context: Context, swings, element_window_yr: float, settings: AnalysisSettings) -> TheoryPeriod:
+    """T0_th = 2 pi / (|k| n sqrt(3 mu_th)) at the largest mu_th of the consistent evaluations of `direct_theory` at
+    the snapshots of `swings` (an `Episode` or `Swings`): the fastest small-amplitude libration the resonance's own
+    averaged potential allows there. A pendulum's period only grows with the amplitude (T(A) >= T0 in a cosine well),
+    so T0_th bounds every libration of that well from below. Two-body, not 1:1 only (`direct_applicable`); nan
+    otherwise or when no evaluation is consistent. Independent of the observed period, so it exists before any
+    episode is accepted (the G1f floor, `preprocess.profile_period_floor`)."""
+    spec = series.resonance
+    if not direct_applicable(spec):
+        return TheoryPeriod(NAN, 0, 0, METHOD_SCALE, 'not_two_body')
+    theory = direct_theory(series, context, swings, element_window_yr, settings)
+    k = spec.body_coefficient
+    period = NAN
+    if theory.measured:
+        period = _period(omega0_theory(k, context.mean_motion_rad_yr, float(np.max(theory.values))))
+    return TheoryPeriod(float(period), theory.n_consistent, len(theory.values_all), theory.method, theory.reason)
+
+
 def _missing(reason, centres, offsets, distances, nodes, saved, method: str = METHOD_DIRECT) -> DirectTheory:
     return DirectTheory(
         (),
@@ -651,6 +714,33 @@ def _direct_strength(context, decisive, required, scale, legal, k, series, geome
         planet_elements=theory.planet_elements,
         not_measured_reason=theory.reason,
         **_display_numbers(theory, episode, required, k, context),
+    )
+
+
+def at_large_period(strength: Optional[Strength], law, settings: AnalysisSettings) -> Optional[Strength]:
+    """W28 B8: F read with the strength the large turns need (`DirectForceLaw.mu_eff_large`, T0 of P_large at its
+    amplitude) instead of the decisive episode's, when the direct force law that measured P_large was taken: a lattice
+    line's wiggles add turns and shorten the episode's period (59358 8N-13: 4.4 kyr against the 8.8-kyr swing, ratio
+    5.9 against 1.4). Only a measured direct theory with a well is re-read (centre_outside_well keeps its failure);
+    unchanged otherwise. `law`: the `DirectForceLaw` of the measurement the tree reads (None: not consulted)."""
+    mu_eff_large = law.mu_eff_large if law is not None and law.taken and law.survived else NAN
+    if strength is None or strength.method not in DIRECT_METHODS or not np.isfinite(mu_eff_large) or mu_eff_large <= 0:
+        return strength
+    low, high = strength.mu_eff_theory_min, strength.mu_eff_theory_max
+    if strength.not_measured_reason or not (np.isfinite(low) and np.isfinite(high) and low > 0):
+        return strength
+    ratio_low, ratio_high = mu_eff_large / high, mu_eff_large / low
+    ratio = nearest_to_one(ratio_low, ratio_high)
+    return replace(
+        strength,
+        mu_eff_required=mu_eff_large,
+        ratio=ratio,
+        ratio_min=ratio_low,
+        ratio_max=ratio_high,
+        implausible=implausible_strength(True, ratio, settings),
+        check=strength_check(True, ratio, settings),
+        t_obs_yr=law.small_period_large_yr,
+        t_obs_source='period_large',
     )
 
 

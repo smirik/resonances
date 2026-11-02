@@ -10,14 +10,25 @@ column of summary.csv and the statuses `restore_statuses` reads back. The rows a
 The expected codes are those the hooks' own tests establish; here they must arrive as strings everywhere.
 """
 
+import dataclasses
+
 import numpy as np
 import pandas as pd
 import pytest
 
-from resonances.resonance.analysis.verdict import Status, Verdict
+from resonances.resonance.analysis.verdict import Action, AngleStatus, Confidence, LibrationOrigin, Reason, ResonanceType, Status, Verdict
 from resonances.simulation import DataManager, Simulation, SimulationSerializer
-from resonances.simulation.config import SavePlanets, parse_save_planets, status_selected
-from tests.resonances.simulation.test_restore_and_resume import CIRC, LIB, _saved_run, _secular_drift_run, _trojan_run
+from resonances.simulation.config import SavePlanets, SavePlotMode, parse_save_planets, status_selected
+from tests.resonances.simulation.test_restore_and_resume import (
+    CIRC,
+    LIB,
+    N,
+    _saved_run,
+    _secular_drift_run,
+    _series,
+    _simulation,
+    _trojan_run,
+)
 
 STATUS_STRINGS = {str(s) for s in Status}
 
@@ -116,6 +127,7 @@ SELECTED = {
     'candidates': [1, 1, 1, 1, 1, 0, 0, 0, 0],
     'extended': [1, 1, 1, 1, 1, 1, 1, 0, 0],
     'nonzero': [1, 1, 1, 1, 1, 1, 1, 0, 1],
+    'review': [1, 1, 1, 1, 1, 1, 1, 0, 1],  # without a level: what nonzero selects (the level: REVIEW_ROWS below)
     'negative': [0, 0, 1, 1, 1, 0, 0, 0, 1],
 }
 
@@ -262,3 +274,141 @@ def resonances_create(key):
     from resonances.resonance.factory import create_mmr
 
     return create_mmr(key)
+
+
+# --------------------------------------------------------------------------------------------- the review mode (W28 E1)
+
+# By hand from the card g10-1b (the author 2026-10-31): review = nonzero, plus a non_resonant row at medium or low
+# confidence (medium = spot check, low = review, the author's q1 of 19.10); the level decides on its own, so a medium
+# row whose action became resample stays (benchmark 1036 9J-2S-3); certain/high without an origin is not selected.
+# (status, origin, confidence, action) -> (nonzero, review)
+REVIEW_ROWS = [
+    (('resonant', 'dynamic', 'certain', 'none'), (1, 1)),
+    (('transient', 'dynamic', 'medium', 'spot_check'), (1, 1)),
+    (('non_resonant', '', 'certain', 'none'), (0, 0)),
+    (('non_resonant', '', 'high', 'none'), (0, 0)),
+    (('non_resonant', '', 'medium', 'spot_check'), (0, 1)),
+    (('non_resonant', '', 'low', 'review'), (0, 1)),
+    (('non_resonant', '', 'medium', 'resample'), (0, 1)),
+    (('non_resonant', 'kinematic', 'high', 'none'), (1, 1)),
+    (('uncertain', '', '', 'extend'), (1, 1)),
+    (('uncertain', 'unknown', '', 'review'), (1, 1)),
+    (('invalid', '', '', 'resample'), (1, 1)),
+]
+
+
+@pytest.mark.parametrize('row, expected', REVIEW_ROWS, ids=['-'.join(filter(None, row)) for row, _ in REVIEW_ROWS])
+def test_review_selects_nonzero_and_the_doubtful_negatives(row, expected):
+    status, origin, confidence, action = row
+    fields = (status, origin, action, confidence)  # the order of status_selected
+    assert (int(status_selected('nonzero', *fields)), int(status_selected('review', *fields))) == expected
+    # the level and the action are read by review only: every other mode selects as from the status and origin alone
+    for mode in set(SELECTED) - {'review'}:
+        assert status_selected(mode, *fields) == status_selected(mode, status, origin), mode
+
+
+def test_review_without_a_level_is_nonzero():
+    """An old summary.csv (no confidence, no action) or a caller that passes neither: review selects what nonzero does."""
+    for status, origin in ROWS:
+        assert status_selected('review', status, origin) == status_selected('nonzero', status, origin)
+    assert not status_selected('review', None)
+
+
+def _verdict(status, origin, confidence, action, **extra):
+    return Verdict(
+        resonance_type=ResonanceType.MMR,
+        status=Status(status),
+        angle_status=AngleStatus.CIRCULATION if status == 'non_resonant' else AngleStatus.LIBRATION,
+        confidence=Confidence(confidence),
+        action=Action(action),
+        libration_origin=LibrationOrigin(origin),
+        **extra,
+    )
+
+
+def test_review_columns_say_why():
+    medium = _verdict('non_resonant', '', 'medium', 'spot_check', caps=['catalogue_longitudes'], failed_support=['F'])
+    assert medium.review_required
+    assert medium.review_reasons == ['confidence:medium', 'cap:catalogue_longitudes', 'failed:F']
+    unknown = _verdict('uncertain', 'unknown', '', 'review', reason=Reason.ORIGIN_UNKNOWN)
+    assert unknown.review_required and unknown.review_reasons == ['action:review', 'origin_unknown']
+    sure = _verdict('non_resonant', '', 'high', 'none', caps=['catalogue_longitudes'])
+    assert not sure.review_required and sure.review_reasons == []
+    row = medium.to_flat_dict()
+    assert row['review_required'] is True and row['review_reasons'] == 'confidence:medium;cap:catalogue_longitudes;failed:F'
+    # the columns follow from the others: an older file without them rebuilds the same verdict
+    old = {k: v for k, v in row.items() if not k.startswith('review_')}
+    assert Verdict.from_flat_dict(old).review_reasons == medium.review_reasons == Verdict.from_flat_dict(row).review_reasons
+
+
+def _classified(path, **config):
+    """librator (LIB and CIRC) and circulator (CIRC), classified but not saved (the arrays of plotted rows kept)."""
+    sim = _simulation(path, **config)
+    sim.body_manager.add_body(ELEMENTS, [LIB, CIRC], name='librator')
+    sim.body_manager.add_body(ELEMENTS, [CIRC], name='circulator')
+    sim.times = np.linspace(0.0, sim.config.tmax, N)
+    axis, angles = _series(sim.times / (2 * np.pi))
+    for body in sim.bodies:
+        body.setup_vars_for_simulation(sim.times)
+        body.axis[:] = axis
+        body.ecc[:] = 0.1
+        for resonance in body.resonances():
+            body.angles_unwrapped[resonance.to_s()] = angles[resonance.to_s()].copy()
+    sim.prepare_angles()
+    sim.identify_librations()
+    return sim
+
+
+def test_save_release_and_plot_select_the_same_rows(tmp_path):
+    """The circulator's CIRC row is non_resonant at medium (no planets saved: cap catalogue_longitudes): review keeps its
+    arrays after the release and selects it for saving and plotting; a high copy of the same row is released."""
+    sim = _classified(tmp_path, save='review', plot='all')
+    circulator = sim.bodies[1]
+    resonance = circulator.resonances()[0]
+    key = resonance.to_s()
+    verdict, analysis = circulator.librations[key], circulator.mmr_analyses[key]
+    assert (str(verdict.status), str(verdict.confidence), str(verdict.libration_origin)) == ('non_resonant', 'medium', '')
+    assert not DataManager._arrays_dropped(analysis)
+
+    sim.config.plot = SavePlotMode.REVIEW
+    manager = sim.data_manager
+    assert manager.should_save_body(circulator, resonance) and manager.should_plot_body(circulator, resonance)
+    sim._release_unplotted(circulator, resonance, analysis)
+    assert not DataManager._arrays_dropped(analysis)
+
+    sim._finalise_verdict(circulator, key, dataclasses.replace(verdict, confidence=Confidence.HIGH, action=Action.NONE))
+    assert not manager.should_save_body(circulator, resonance) and not manager.should_plot_body(circulator, resonance)
+    sim._release_unplotted(circulator, resonance, analysis)
+    assert DataManager._arrays_dropped(analysis)
+
+    # every row: save and plot agree under the same mode
+    sim.config.save = sim.config.plot = SavePlotMode.REVIEW
+    for body in sim.bodies:
+        for res in body.resonances():
+            assert manager.should_save_body(body, res) == manager.should_plot_body(body, res)
+
+
+@pytest.mark.parametrize('mode, saved', [('review', {'librator', 'circulator'}), ('nonzero', {'librator'})])
+def test_review_saves_the_medium_circulator_and_restores_its_queue(tmp_path, mode, saved):
+    sim = _saved_run(tmp_path, save=mode)
+    assert {p.name for p in (tmp_path / 'data').glob('data-*.csv') if 'periodogram' not in p.name} == {f'data-{n}.csv' for n in saved}
+
+    summary = pd.read_csv(tmp_path / 'summary.csv', dtype=str, keep_default_na=False)
+    queue = {(r['name'], r['resonance']): (r['review_required'], r['review_reasons']) for _, r in summary.iterrows()}
+    assert queue[('circulator', CIRC)] == ('True', 'confidence:medium;cap:catalogue_longitudes')
+    restored = SimulationSerializer.restore(str(tmp_path / 'simulation.json'))
+    for body in restored.bodies:
+        for key, verdict in body.librations.items():
+            assert (str(verdict.review_required), ';'.join(verdict.review_reasons)) == queue[(str(body.name), key)]
+            original = next(b for b in sim.bodies if b.name == body.name)
+            assert restored.data_manager._selection_inputs(body, key) == sim.data_manager._selection_inputs(original, key)
+
+
+def test_the_log_counts_the_cells_and_the_queue(tmp_path, caplog):
+    sim = _classified(tmp_path, save='review', plot='review')
+    with caplog.at_level('INFO'):
+        sim.data_manager.log_selection(sim.bodies)
+    text = caplog.text
+    assert 'Verdicts by status/confidence (3 rows): resonant/medium 1; non_resonant/medium 2' in text
+    assert 'Review queue (summary.csv review_required): 3 of 3 rows; SAVE=review selects 3 rows, PLOT=review selects 3' in text
+    assert 'SAVE=review keeps the series of 2 rows more than SAVE=nonzero would (3 rather than 1)' in text

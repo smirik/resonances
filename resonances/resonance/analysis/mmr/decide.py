@@ -19,14 +19,17 @@ angle_status (first rule that fires, SPEC §5.2):
      within LIBRATION_COVERAGE_PERIODS periods of the record edge or with no turning point missed at the window edge
      (`geometry.covers_edges`), never when the raw angle shows the exit (entry) beyond it (the edge rule,
      `Episode.exit_observed`); librating episodes that cover the record together, no turn in any gap nor over the
-     chain, gaps <= LIBRATION_UNION_GAP_PERIODS x (P_left + P_right), each record edge covered or reached by the
+     chain, sigma_f inside its neighbours' band through every gap (LIBRATION_UNION_BAND_MARGIN_DEG, whatever the
+     gap's length: `geometry.gap_band_overshoot`), each record edge covered or reached by the
      turning points within LIBRATION_COVERAGE_PERIODS -> libration/regime_change (`_regimes_cover`; for an angle that
      is not 1:1, rule G2u: G2c is tried first and the status reads it as episodic, `promote_union`); an episode is
      accepted when it is not faster than the angle's
      shortest libration (`period_floor`) and its centre does not turn inside it (`librating_episodes`); a 3-TP episode
      has one centre estimate: L6 not_measured (thin); a 2-TP episode closed by its phase return caps medium; an
      accepted run that is a forced wave of another argument (its identity fails on a lattice line or with the wrong
-     sign, `forced_wave_episodes`, W20 F6) is no episode at all (`Geometry.forced_waves`)
+     sign, `forced_wave_episodes`, W20 F6) is no episode at all (`Geometry.forced_waves`); nor is an unconfirmed
+     ripple (W28 B6b, `ripple_waves`, MMR_RIPPLE_ON_ARC): half-amplitude below MMR_A_RESPONSE_MIN_AMP_DEG, identity
+     measured and failed, on a record whose slow centre holds an unfinished swing, not covering the record, not 1:1
   G2c (analyse.py) no libration at P_c (nor an observed exit or entry), but the centre librates: the record is analysed
      at the scale of its centre W_c = LIBRATION_CENTRE_CYCLES x P_cyc and that verdict is kept when it is a libration
      (or one bounded by an observed exit or entry) (once more at
@@ -35,16 +38,52 @@ angle_status (first rule that fires, SPEC §5.2):
      while the zone is not measured: cap near_separatrix_without_zone)
   G4 largest monotone centre pass >= 2pi -> circulation ('' | alias)
   G5 centre_moves runs cover >= libration_drift_min_window_fraction -> drift; G5a: the slow centre turns back once
-     (farther than W_c from the edges) and stays within one revolution -> insufficient_time/arc
-  G6 TPs without episode or drift -> insufficient_time/few_cycles; no TPs -> arc (range >= pi) | stall
+     (farther than W_c from the edges) and stays within one revolution -> insufficient_time/arc; G5w (W28 B6c,
+     MMR_SLOW_SWING_IN_WELL): it turns back twice within one revolution and the half-swing between the turns is a
+     swing in the resonance's own well (slow identity, the a swing and the period against the directly averaged
+     pendulum at its amplitude within sqrt(MMR_STRENGTH_CHECK_RATIO), `slow_swing.py`) -> insufficient_time/arc, also
+     without G5 (before the ripple and few_cycles reading of G6: the turning points are waves on the slow swing);
+     extension MMR_EXTEND_SLOW_CYCLES slow periods (`baseline`)
+  G6 TPs without episode or drift -> insufficient_time/few_cycles; no TPs -> arc (range >= pi) | stall; with
+     unconfirmed ripples set aside only the TPs outside them count, and without any the slow centre decides: G5a's
+     arc (one turn), else arc | stall by its range (`_g6_ripple`)
 The verdict reports G1c, G1e and G1l as episodic over the record (`reported_angle`) and their last regime as
 final_regime (`final_regime`); the rules above stay as they are.
+After the tree, the record's edges (W28 C14, rule end_arc_extend, `record_edges`, MMR_RECORD_EDGE_STRETCH): a record
+that ends, after >= one revolution of sigma_f, in a stretch without another one longer than MMR_END_ARC_SLOWDOWN_FACTOR
+x the pass's longest revolution and (doubled) MMR_END_ARC_MIN_FLOOR_PERIODS floors, with no centre turn and no
+librating episode in it, takes final_regime arc | stall and the flag extend_time forward; a non_resonant circulation
+there the cap record_ends_unresolved (<= medium). The start mirror, one reflection cut by either edge, a clean 1:1
+edge leg (G4c's extend) and an edge half-libration (G4h) give the flag only. No status changes.
+G4c / G4h (W28 C6, q-4 A, q-5 i; leaves of the status, before the circulation leaf): a circulation without a librating
+     episode is judged on its single legs. 1:1 (G4c, MMR_COORBITAL_SINGLE_LEG; `Geometry.single_legs`, the legs of the
+     orbit-averaged angle outside every accepted run, period 2 L >= the floor less CONFIDENCE_THIN_BAND): a clean leg
+     (tadpole, horseshoe, quasi-satellite) whose local 1:1 law (K > 0) and energy integral pass and whose two turns
+     reflect (|ln out/in| <= MMR_COORBITAL_TURN_ENERGY_TOL, zone <= MMR_COORBITAL_TURN_ZONE_MAX) -> transient (cap
+     one_coorbital_leg); one discrepancy -> uncertain/one_coorbital_leg (review); a clean edge leg whose turn reflects
+     -> uncertain/insufficient_time (extend); both turns scatter -> the circulation with the near-episode cap; the
+     strongest outcome of the legs decides. Not 1:1 (G4h, MMR_SINGLE_HALF_LIBRATION; `Geometry.half_librations`): a
+     half-swing between passages that follows the resonance's one-harmonic law (R^2 >= MMR_FORCE_R2_FAIL per half,
+     restoring at both turns) -> uncertain/one_half_libration (review), at the record edge insufficient_time (extend).
+     The structural near-episode of a 1:1 angle also counts a 2-TP run rejected over_the_top whose half-swings each
+     cross at most one of the planet and L3 (`geometry.short_runs`, rule coorbital_near_episode)
 status (SPEC §5.3 with DELTA 13b; G1c, G1e, G1l and G2u are judged as the episodic angle their episodes show,
 `status_basis`; a G2u union whose episodic reading is a dynamic transient becomes resonant, `promote_union`):
-subresonance accepted -> the member's status/subresonance_librates (owner = the member, its own row decides; both
-librating: each row keeps its own verdict); owner accepted (another commensurability) whose intervals cover at least
-mmr_owner_cover_min of sigma's decisive episode (F7; else origin none, flag owner_outside_episode, the tree goes on) ->
-non_resonant/induced_libration (cap second_capture_unresolved unless the owner excludes it); B1 or kinematic fail ->
+subresonance accepted -> the member's status/subresonance_librates (the member is the verdict's resonant_argument,
+its own row decides; both
+librating: each row keeps its own verdict; the member is the decisive episode's, chosen in its own window by the
+theory's flattest centre, W28 A6b; a composite regime names no member: an own libration takes origin_detail
+composite_multiplet, `composite_regime_detail`); owner accepted (another commensurability) whose measured regimes cover at
+least mmr_owner_cover_min of every accepted episode of sigma, with Psi/u turning less than
+mmr_owner_psi_turns_per_cycle_max per cycle for a librating owner (F7 per episode and P2, A1) ->
+non_resonant/induced_libration (cap second_capture_unresolved unless the second capture is excluded: by the sweep and
+energy route, or by F3 when x_ddot follows the secular cycle, rule second_capture_f3; confirmed, A2b: x = Psi/u
+bounded, with an energy integral, a well of its own (x_ddot on sin x) at a non-secular period and >=
+libration_centre_min_estimates closed cycles -> the angle's own reading below, origin joint when it claims the
+libration, rule both_resonances_confirmed; the same on one cycle -> uncertain/baseline_needed, origin joint, 2j); an
+episode it does not
+induce is the row's own: the own episodes decide (the induced ones out of the geometry in a second pass; none induced:
+origin none, flag owner_outside_episode or owner_psi_too_fast, the owner a neighbour, the tree goes on); B1 or kinematic fail ->
 kinematic_libration|kinematic_drift (K2, W20: a slow centre that drifts with the secular part under a ripple of
 episodes -> kinematic_drift with the slow centre's own angle word, drift or circulation, `slow_centre_is_kinematic`,
 `_k2_decision`); drift otherwise ->
@@ -59,11 +98,15 @@ direct strength F passes and the short-period scatter of a exceeds mmr_short_per
 whose force law and potential with a are both not measured at decision time takes the branch rule
 (`unmeasured_branch`, author 2026-10-17): direct averaging confirms the strength -> as below; an implausible strength
 -> non_resonant/implausible_strength (5s; three-body only when the small-divisor envelope cannot close the gap, else
-uncertain 5s*); a measured objection (O1, F) -> uncertain (5o); one independent cycle -> uncertain (5n); nothing
-measured -> the geometry's status with origin unknown and the cap geometry_only (5u/6: geometric_libration |
+uncertain 5s*); a measured objection (O1, F by direct averaging) -> uncertain (5o); the order-of-magnitude strength
+scale (eq_scale) out of range, no objection but no origin either -> uncertain (5x, W28 B9); one independent cycle ->
+uncertain (5n); nothing measured -> the geometry's status with origin unknown and the cap geometry_only (5u/6: geometric_libration |
 geometric_episode | separatrix_zone; strength_scale_only when the e^q scale agrees); dynamics -> resonant |
 transient | near_separatrix by the observed behaviour (the zone and the cycle energies are columns and change no
-status, DECISIONS 2026-10-15 evening).
+status, DECISIONS 2026-10-15 evening). After the leaf, K3s (W28 B10a, `secular_cycle_kinematic`): a non_resonant
+circulation whose slow scale (`analyse._slow_scale`) has a secular period and fails its own identity, its centre
+leaving the slow libration only by slips of one turn, becomes kinematic_libration/secular_cycle; graded as the
+circulation it was.
 Every comparison goes through the ledger; no bare numbers here, every threshold is a setting.
 
 The check values (pass/fail/...) are the truth of a test; the ledger entries next to them record the numbers
@@ -81,8 +124,17 @@ import numpy as np
 from resonances.resonance.analysis.confidence import Cap
 from resonances.resonance.analysis.filtering import is_finite
 from resonances.resonance.analysis.geometry import (
+    EDGE_REFLECTION,
+    EDGE_SLOWDOWN,
+    LEG_EDGE_END,
+    LEG_EDGE_START,
+    EdgeStretch,
     Episode,
     Geometry,
+    HalfLibration,
+    LegTurn,
+    RejectReason,
+    SingleLeg,
     UnionCover,
     break_range,
     centre_travel_in,
@@ -90,8 +142,8 @@ from resonances.resonance.analysis.geometry import (
     covering_episode,
     covering_union,
     covers_edges,
+    episode_eligibility as geometry_eligibility,
     half_amplitudes,
-    librating_episodes_with,
     run_of,
     short_runs,
     window_step_limit_yr,
@@ -100,6 +152,7 @@ from resonances.resonance.analysis.ledger import Ledger, Margin, Op
 from resonances.resonance.analysis.mmr.models import (
     Baseline,
     Context,
+    DirectForceLaw,
     EpisodePhysics,
     ForcedWave,
     HarmonicLaw,
@@ -108,6 +161,7 @@ from resonances.resonance.analysis.mmr.models import (
     Preprocessed,
     Response,
     Sampling,
+    SlowScale,
     StepVerdict,
     Strength,
     SubresonanceResult,
@@ -115,19 +169,28 @@ from resonances.resonance.analysis.mmr.models import (
 )
 from resonances.resonance.analysis.mmr import response as response_module
 from resonances.resonance.analysis.mmr.forced_lines import RESOLUTION
-from resonances.resonance.analysis.mmr.response import LAW_HARMONIC
+from resonances.resonance.analysis.mmr.kinematics import K1E_NO_VARPI, K1E_RETROGRADE
+from resonances.resonance.analysis.mmr.response import LAW_DIRECT, LAW_HARMONIC
 from resonances.resonance.analysis.mmr.owner import (
+    CAPTURE_CONFIRMED,
     CAPTURE_EXCLUDED,
+    CAPTURE_ONE_CYCLE,
+    ROUTE_SECULAR,
     FLAG_CATALOGUE,
     FLAG_COORBITAL,
     GAIN_PHASE,
     GAIN_POTENTIAL,
     INTERVAL_LIBRATION,
     REASON_PHASE_UNRESOLVED,
+    bridged_cover,
     covered_fraction,
+    induced_split,
     record_decisive,
 )
 from resonances.resonance.analysis.mmr.strength import DIRECT_METHODS, REASON_CENTRE_OUTSIDE_WELL
+from resonances.resonance.analysis.mmr import slow_swing as slow_swing_module
+from resonances.resonance.analysis.mmr.slow_swing import SlowSwing
+from resonances.resonance.analysis import rules as rules_module
 from resonances.resonance.analysis.pendulum import EPISODES_IN_SEPARATRIX_ZONE, EnergyAnalysis, SeparatrixMechanism, has_zone_cycle
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import (
@@ -168,6 +231,7 @@ MARGIN_CLASSES = {
     'C4': MarginClass.SUPPORT,
     'C5': MarginClass.DECISIVE,
     'K1': MarginClass.DECISIVE,
+    'K1e': MarginClass.SUPPORT,
     'B5': MarginClass.SUPPORT,
     'F': MarginClass.SUPPORT,
     'N': MarginClass.CAP,
@@ -178,13 +242,18 @@ MARGIN_CLASSES = {
 # (L3), B1 and one pendulum (L5) are not in it: they show that a carries the oscillation (against a kinematic origin)
 # but hold as well for an oscillation another resonance induces in a (PHYSICS N5).
 PHYSICS_MARGINS = ('L4', 'R0', 'Z', 'W', 'F')
+# A kinematic verdict has one more: K1e (A5, W28, card g05-3), the episode's sigma following p varpi with a flat a at a
+# secular period (`kinematic_episode_margin`); read only when the origin is kinematic (`physics_margins_of`)
+KINEMATIC_PHYSICS_MARGINS = ('K1e',)
 
 TWO_PI = 2 * math.pi
+NAN = float('nan')
 # G2, the union of librating episodes of an angle that is not 1:1 (`_g2`): the status tree reads it as episodic, and
 # promotes only a dynamic transient (`promote_union`)
 RULE_UNION = 'G2u'
 UNION_PROMOTED = '6u union of episodes covers the record: the episodic reading reached a dynamic transient'
 RULE_K2 = '3k2'  # step 3, the kinematic drift of the slow centre under a ripple of episodes (`slow_centre_is_kinematic`)
+RULE_K3S = 'K3s'  # B10a: a circulation whose slow scale is a secular cycle (`secular_cycle_kinematic`)
 # ledger names the explained verdict column reads (plotting/verdict_text.py finds the entries by these names)
 G4B_NET = 'G4b net shift of the slow centre'
 K2_NET = '3 K2 angle word: net shift of the slow centre (G4b)'
@@ -192,10 +261,19 @@ K2B_SHIFT = '3 K2b kinematic libration whose centre moves more than its amplitud
 K2_SHARE = '3 kinematic (slow centre): largest episode swing / range of the slow centre'
 K2_CORR = '3 kinematic (slow centre): the centre follows the lambda part + the secular part, corr of the rates'
 G5A_ONE_REVOLUTION = 'G5a slow centre stays within one revolution'
+# G5w (W28 B6c, `_g5w`): the unfinished slow swing is a swing in the resonance's own well
+RULE_G5W = 'G5w'
+G5W_IDENTITY_SLOPE = 'G5w slow identity |slope / c - 1| (sigma and a low-passed at W_c)'
+G5W_IDENTITY_CORR = 'G5w slow identity correlation'
+G5W_A_LOW = 'G5w a swing between the turns / pendulum at its amplitude, lower bound 1/sqrt(MMR_STRENGTH_CHECK_RATIO)'
+G5W_A_HIGH = 'G5w a swing between the turns / pendulum at its amplitude, upper bound sqrt(MMR_STRENGTH_CHECK_RATIO)'
+G5W_P_LOW = 'G5w period 2 (t2 - t1) / T0_th F(A), lower bound 1/sqrt(MMR_STRENGTH_CHECK_RATIO)'
+G5W_P_HIGH = 'G5w period 2 (t2 - t1) / T0_th F(A), upper bound sqrt(MMR_STRENGTH_CHECK_RATIO)'
 G6_RANGE = 'G6 range of sigma_f'
 C5_BRANCH = 'C5 alias: one branch over the a range'
 C5_FAR = 'C5 alias: far from the resonance'
 OWNER_COVER = '2 owner cover of the decisive episode'
+OWNER_PSI_TURNS = '2 owner Psi/u turns per sigma cycle (P2)'
 B1_AMPLITUDE = '3 B1 a carries the amplitude'
 KIN_VARPI = '3 kinematic: slow sigma follows p varpi'
 NULL_TEST = '5 L4 null test: R2 above the binding line - max R2 with a shifted'
@@ -250,6 +328,8 @@ class StatusDecision:
     reason: Reason
     origin: LibrationOrigin
     origin_detail: str
+    # the other key the tree named: the owner or driver (induced), the accepted member (subresonance) or an owner F7/P2
+    # refused (its flags); the verdict splits it into owner / resonant_argument / neighbours (`roles.verdict_roles`)
     owner: str
     flags: List[str] = field(default_factory=list)
     caps: List[str] = field(default_factory=list)
@@ -261,6 +341,11 @@ class StatusDecision:
     withdrawn: Dict[str, Withdrawal] = field(default_factory=dict)
     # the union of episodes (G2u) promoted from a dynamic transient to resonant (`promote_union`)
     union_promoted: bool = False
+    # rules (`analysis.rules`) that acted on the status (the owner per episode, P2), merged by `rules_fired`
+    rules_fired: frozenset = frozenset()
+    # A2b: the owner's key when 'both resonances at once?' was confirmed and the tree gave the angle's own reading;
+    # `joint_capture_origin` names it origin joint at the end of `decide_status`
+    joint_owner: str = ''
 
 
 # --------------------------------------------------------------------------------------------- helpers
@@ -280,15 +365,41 @@ def episodes_in_separatrix_zone(energy: Optional[EnergyAnalysis]) -> bool:
 def period_floor(geometry: Geometry, settings: AnalysisSettings, episode=None) -> Tuple[float, str]:
     """The shortest libration period of the angle [yr] and its setting: the one the preprocessing derived
     (geometry.period_floor_yr: a co-orbital's own, `preprocess.libration_period_floor`), else mmr_libration_period_min_yr.
-    With `episode` and a floor well (`geometry.FloorWell`: the 1:1 quasi-satellite pass, G1q), an episode centred
-    outside the well has the well's outside floor (the tadpole floor)."""
+    With `episode` (a run):
+    - inside a floor well (`geometry.FloorWell`: the 1:1 quasi-satellite pass, G1q): the angle's (the QS) floor;
+    - with a floor of its own (`Geometry.run_floor`: a 1:1 run whose turns reflect on the planet's or L3's top, the
+      loop through them, rule coorbital_floor_profile, W28 C3): that floor;
+    - outside a floor well: the well's outside floor (the tadpole floor)."""
     well = geometry.floor_well
-    if episode is not None and well is not None and not well.holds(episode):
-        return float(well.outside_floor_yr), well.outside_setting
+    if episode is not None and not (well is not None and well.holds(episode)):
+        own = geometry.run_floor(episode)
+        if own is not None and own.holds:
+            return float(own.floor_yr), own.setting
+        if well is not None:
+            return float(well.outside_floor_yr), well.outside_setting
     floor, setting = geometry.period_floor_yr, geometry.period_floor_setting
     if is_finite(floor) and setting:
         return float(floor), setting
     return float(settings.mmr_libration_period_min_yr), 'mmr_libration_period_min_yr'
+
+
+def run_floor_acts(geometry: Geometry, settings: AnalysisSettings) -> bool:
+    """A run's own floor (`Geometry.run_floor`, rule coorbital_floor_profile) changes what the angle's floor would
+    decide for it: an accepted run passes one floor and not the other, or a short run the near-episode test
+    (`near_episode_floor`) only by one of them."""
+    for run in geometry.runs:
+        own = geometry.run_floor(run)
+        if own is None or not own.holds or len(run.tp_times_yr) < 2:
+            continue
+        well = geometry.floor_well
+        default = float(well.outside_floor_yr) if well is not None else float(geometry.period_floor_yr)
+        if not is_finite(default):
+            continue
+        period = run.period_med_yr if run.accepted else 2 * float(np.median(np.diff(run.tp_times_yr)))
+        band = 1.0 if run.accepted else 1.0 - settings.confidence_thin_band
+        if is_finite(period) and (period >= own.floor_yr * band) != (period >= default * band):
+            return True
+    return False
 
 
 def fastest_episode(geometry: Geometry, settings: AnalysisSettings) -> Optional[Episode]:
@@ -309,21 +420,42 @@ def librating_episodes(geometry: Geometry, settings: AnalysisSettings, before_ju
       episode accepted in the frame of its moving well reads the travel there (`geometry.episode_centre_travel`): the
       centre running with the well is the libration about a moving centre, not a circulation."""
 
-    def compute() -> List[Episode]:
-        return librating_episodes_with(geometry, lambda episode: period_floor(geometry, settings, episode)[0], before_jump)
+    reasons = episode_eligibility(geometry, settings)
+    wanted = RejectReason.BEFORE_LAST_JUMP if before_jump else RejectReason.NONE
+    return [run for run in geometry.runs if run.accepted and reasons.get(run.episode_id) == wanted]
 
-    # once per geometry and settings (`Geometry.derived`; the forced waves are part of the key: F6 sets them later)
-    return list(geometry.derived(('librating_episodes', before_jump, geometry.forced_wave_ids), settings, compute))
+
+def episode_eligibility(geometry: Geometry, settings: AnalysisSettings) -> Dict[int, RejectReason]:
+    """`geometry.episode_eligibility` of the accepted runs at this angle's period floors (`period_floor`), by
+    episode_id: NONE for a librating episode of the last regime, BEFORE_LAST_JUMP for one of a regime before the last
+    jump of a (G1e, G1l), else why the run does not count (forced_wave, induced, below_period_floor, centre_turns).
+    `librating_episodes` reads it; episodes.csv writes it (`eligible`, `ineligible_reason`, W28 C11, card g02-9 A).
+    Computed once per geometry and settings (`Geometry.derived`; the forced waves and induced episodes are part of the
+    key: F6 and the owner's second pass set them later) and kept as `Geometry.eligibility`. Rule eligible_reason fires
+    when an accepted run of the last regime is no librating episode (a run before the last jump is counted by G1e/G1l
+    and fires nothing)."""
+
+    def compute() -> Dict[int, RejectReason]:
+        reasons = geometry_eligibility(geometry, lambda episode: period_floor(geometry, settings, episode)[0])
+        if any(reason not in (RejectReason.NONE, RejectReason.BEFORE_LAST_JUMP) for reason in reasons.values()):
+            geometry.rules_fired = rules_module.fire(geometry.rules_fired, rules_module.Rule.ELIGIBLE_REASON)
+        return reasons
+
+    reasons = geometry.derived(('episode_eligibility', geometry.excluded_ids), settings, compute)
+    geometry.eligibility = reasons
+    return reasons
 
 
 def librating_union(geometry: Geometry, settings: AnalysisSettings) -> UnionCover:
     """`geometry.covering_union` of the window's librating episodes (`librating_episodes`), once per geometry and
     settings (`Geometry.derived`)."""
-    key = ('librating_union', geometry.forced_wave_ids)
+    key = ('librating_union', geometry.excluded_ids)
     return geometry.derived(key, settings, lambda: covering_union(geometry, librating_episodes(geometry, settings), settings))
 
 
-def forced_wave_episodes(episode_responses: Sequence, settings: AnalysisSettings) -> Tuple[ForcedWave, ...]:
+def forced_wave_episodes(
+    episode_responses: Sequence, settings: AnalysisSettings, geometry: Optional[Geometry] = None
+) -> Tuple[ForcedWave, ...]:
     """The accepted episodes that are forced waves of another argument, not librations of this angle (W20 F6; 37087
     3J+8S-3: a 168-yr wave of 2 lambda_J - lambda - varpi at the edge of the 2:1 gap, sigma_dot against c (a - a*) at
     slope -0.35 c, corr -0.85). From each episode's own response (`EpisodeResponse`, rule R's measurement):
@@ -336,7 +468,8 @@ def forced_wave_episodes(episode_responses: Sequence, settings: AnalysisSettings
       laws, W12, so by default it needs the failed identity).
 
     `Geometry.forced_waves` holds them (`Geometry.episodes` leaves them out); the analysis measures the response again
-    without them."""
+    without them. With the window's `geometry`, the unconfirmed ripples on an unfinished slow swing follow
+    (`ripple_waves`, W28 B6b)."""
     scratch = Ledger.from_settings(settings)
     found = []
     for episode in episode_responses:
@@ -362,23 +495,136 @@ def forced_wave_episodes(episode_responses: Sequence, settings: AnalysisSettings
                 on_line=on_line,
             )
         )
+    taken = {wave.episode_id for wave in found}
+    return tuple(found) + tuple(w for w in ripple_waves(geometry, episode_responses, settings) if w.episode_id not in taken)
+
+
+def unfinished_slow_swing(geometry: Geometry) -> bool:
+    """The record holds part of one slow swing of the angle (W28 B6b, condition iii): its slow centre
+    (`Geometry.centre`) stays within one revolution and turns back once or twice away from the edges
+    (`interior_turns`). Fewer than three turns: no full slow cycle is seen, so the slow motion is unfinished; with
+    three or more the centre has completed a cycle (2003 UC22 16M-27: four turns over 0.9 rad, the modulated centre of
+    a 43-TP libration that covers the record). G5w (`_g5w`, B6c) asks more of a two-turn swing: that it is a swing
+    in the resonance's own well."""
+    turns = interior_turns(geometry)
+    return 1 <= turns <= 2 and is_finite(geometry.centre.range_rad) and geometry.centre.range_rad < TWO_PI
+
+
+def ripple_waves(geometry: Optional[Geometry], episode_responses: Sequence, settings: AnalysisSettings) -> Tuple[ForcedWave, ...]:
+    """W28 B6b (card g08-4 A, rule `ripple_on_arc`): the accepted episodes of the window that are ripples without
+    measurable physics on an unfinished slow swing, auxiliary intervals that do not decide the angle. All of:
+
+    - (i) the half-amplitude stays below MMR_A_RESPONSE_MIN_AMP_DEG (largest half-amplitude): sin sigma ~ sigma, so
+      neither the force law L4 nor R0 with a can be measured on it;
+    - (ii) its identity is measured on it and fails (`EpisodeResponse.identity`): sigma_dot does not follow c (a - a*)
+      as this angle's libration must;
+    - (iii) the record holds an unfinished slow swing (`unfinished_slow_swing`);
+
+    and it is no record-covering episode (`covers_edges` on both edges: then there is no arc beside it, the episode is
+    the angle's motion over the record) and the angle is not 1:1 (the co-orbital law is measured at any amplitude).
+    2004 YG1 9M-10J-4 over 20 kyr: a 3.1 deg ripple of 5 TPs at 13.5-14.9 kyr, identity fail (slope/c 0.65, corr
+    0.79), at the one turn (13.7 kyr) of a slow centre that sweeps 281 deg. A real small libration keeps its passing
+    identity, so it is never taken. No strength ratio and no global prominence (the card): () with MMR_RIPPLE_ON_ARC
+    off, without a geometry, or when (iii) does not hold. Set before G2 like F6 (`Geometry.forced_waves`, route
+    'unconfirmed_ripple'), so G5a/G6 read the slow centre (`_g4_to_g6`)."""
+    if not settings.mmr_ripple_on_arc or geometry is None or geometry.coorbital or not unfinished_slow_swing(geometry):
+        return ()
+    limit = math.radians(settings.mmr_a_response_min_amp_deg)
+    scratch = Ledger.from_settings(settings)
+    found = []
+    for episode in episode_responses:
+        run = run_of(geometry, episode.episode_id) if episode.episode_id is not None else None
+        if run is None or not run.accepted or run.before_last_jump or episode.identity != CheckValue.FAIL:
+            continue
+        if not scratch.compare('ripple', run.half_amp_max_rad, Op.LT, limit, 'rad', '') or all(covers_edges(run, settings)):
+            continue
+        found.append(
+            ForcedWave(
+                episode_id=run.episode_id,
+                n_tp=episode.n_tp,
+                period_yr=episode.period_yr,
+                identity_slope_ratio=episode.identity_slope_ratio,
+                identity_corr=episode.identity_corr,
+                force_line=episode.force_line,
+                force_line_offset=episode.force_line_offset,
+                wrong_sign=False,
+                on_line=False,
+                ripple=True,
+                half_amp_max_rad=run.half_amp_max_rad,
+            )
+        )
     return tuple(found)
 
 
+def ripples(geometry: Optional[Geometry]) -> Tuple[ForcedWave, ...]:
+    """The unconfirmed ripples of the geometry (`ripple_waves`, `ForcedWave.ripple`)."""
+    return tuple(wave for wave in geometry.forced_waves if wave.ripple) if geometry is not None else ()
+
+
+def tp_outside_ripples(geometry: Geometry) -> int:
+    """The turning points of the window that belong to no unconfirmed ripple (`ripples`): G6 counts these."""
+    times = np.asarray(geometry.turning_points.times_yr, dtype=float)
+    runs = [run_of(geometry, wave.episode_id) for wave in ripples(geometry)]
+    taken = [np.asarray(run.tp_times_yr, dtype=float) for run in runs if run is not None]
+    if not taken:
+        return len(times)
+    return int(np.count_nonzero(~np.isin(times, np.concatenate(taken))))
+
+
+def strength_forced_waves(geometry: Optional[Geometry], decision: StatusDecision, settings: AnalysisSettings) -> Tuple[ForcedWave, ...]:
+    """W28 B2 (card g11-1, rule `forced_strength_mark`): on a row that rule 5s decided (reason implausible_strength,
+    not the uncertain 5s*), every accepted run that is still an episode of the angle (before or after the last jump of
+    a; F6 waves and induced episodes already are none) as a forced wave with the route 'strength': the period of its
+    loops needs a force >= MMR_STRENGTH_IMPLAUSIBLE_RATIO x the one this angle's disturbing function gives, so they
+    are no libration of this angle. A name of the ground, not a driver found: nothing is measured again, and the
+    caller adds them to `Geometry.forced_waves` only after the verdict and its numbers (no status, word, reason,
+    level or ledger value reads them). Empty with MMR_FORCED_WAVE_STRENGTH off, without a geometry or another reason."""
+    if not settings.mmr_forced_wave_strength or geometry is None or decision.reason != Reason.IMPLAUSIBLE_STRENGTH:
+        return ()
+    excluded = geometry.excluded_ids
+    nan = float('nan')
+    return tuple(
+        ForcedWave(
+            episode_id=run.episode_id,
+            n_tp=run.n_tp,
+            period_yr=run.period_med_yr,
+            identity_slope_ratio=nan,
+            identity_corr=nan,
+            force_line='',
+            force_line_offset=nan,
+            wrong_sign=False,
+            on_line=False,
+            by_strength=True,
+        )
+        for run in geometry.runs
+        if run.accepted and run.episode_id not in excluded
+    )
+
+
+def _f6_waves(geometry: Optional[Geometry]) -> tuple:
+    """The forced waves F6 found by their identity or lattice line (`forced_wave_episodes`), without the marks of rule
+    5s (`ForcedWave.by_strength`) and the unconfirmed ripples (`ForcedWave.ripple`, B6b), which G2's forced-wave
+    lines, its columns and the angle word do not read (a ripple has its own G2 lines, `_ripple_entries`)."""
+    if geometry is None:
+        return ()
+    return tuple(wave for wave in geometry.forced_waves if not wave.by_strength and not wave.ripple)
+
+
 def _main_forced_wave(geometry: Optional[Geometry]) -> Optional[ForcedWave]:
-    """The forced wave with most turning points (the earlier on a tie); None without one."""
-    waves = geometry.forced_waves if geometry is not None else ()
+    """The F6 forced wave (`_f6_waves`) with most turning points (the earlier on a tie); None without one."""
+    waves = _f6_waves(geometry)
     return max(waves, key=lambda w: (w.n_tp, -w.episode_id)) if waves else None
 
 
 def forced_wave_columns(geometry: Optional[Geometry]) -> dict:
-    """mmr_numbers.csv: the count of forced waves (`forced_wave_episodes`) and the numbers of the one with most
-    turning points, which the ledger of G2 reads (nan without one)."""
+    """mmr_numbers.csv: the count of F6 forced waves (`forced_wave_episodes`; the strength marks of rule 5s are not
+    counted, `_f6_waves`) and the numbers of the one with most turning points, which the ledger of G2 reads (nan
+    without one)."""
     wave = _main_forced_wave(geometry)
     nan = float('nan')
     slope = wave.identity_slope_ratio if wave is not None else nan
     return {
-        'geo_n_forced_wave_episodes': len(geometry.forced_waves) if geometry is not None else 0,
+        'geo_n_forced_wave_episodes': len(_f6_waves(geometry)),
         'geo_forced_wave_episode_id': wave.episode_id if wave is not None else nan,
         'geo_forced_wave_period_yr': wave.period_yr if wave is not None else nan,
         'geo_forced_wave_line': wave.force_line if wave is not None else '',
@@ -458,6 +704,13 @@ def round_up(value: float) -> float:
         return float('nan')
     scale = 10.0 ** math.floor(math.log10(value))
     return float(math.ceil(value / scale - 1e-12) * scale)
+
+
+def rules_fired(geometry: Optional[Geometry], *fired) -> List[str]:
+    """`Verdict.rules_fired` of an MMR row: the rules of the geometry (`Geometry.rules_fired`) and of every other
+    frozenset of fired rules given (the result objects' own, added by the work package that fires them), deduplicated,
+    in registry order (`rules.ordered`). No geometry (a verdict before the measurements) adds none."""
+    return rules_module.ordered(geometry.rules_fired if geometry is not None else (), *fired)
 
 
 # --------------------------------------------------------------------------------------------- angle_status
@@ -696,7 +949,7 @@ def forced_wave_word(
     word): they keep reading the tree without the forced waves. A word the status tree set (K2) stays, and so does a
     word that is no description of the angle's motion over the record (insufficient_time, undefined: W20 round D,
     review C #5, 129772 4N-7 keeps insufficient_time/arc under its G6 verdict)."""
-    waves = geometry.forced_waves if geometry is not None else ()
+    waves = _f6_waves(geometry)
     rewritable = reported.angle_status in (AngleStatus.CIRCULATION, AngleStatus.DRIFT)
     if not waves or not rewritable or (decision is not None and decision.angle_word is not None):
         return reported
@@ -737,8 +990,35 @@ def final_regime(
     return '', float('nan')
 
 
+def _ripple_entries(geometry: Geometry, settings: AnalysisSettings, ledger: Ledger) -> None:
+    """G2 on the ledger when accepted runs were judged unconfirmed ripples (`ripple_waves`, B6b): the numbers of the one
+    with most turning points (half-amplitude, identity) and the slow centre's unfinished swing."""
+    found = ripples(geometry)
+    if not found:
+        return
+    wave = max(found, key=lambda w: (w.n_tp, -w.episode_id))
+    prefix = f'G2 unconfirmed ripple (episode {wave.episode_id}, P {wave.period_yr:.0f} yr)'
+    ledger.compare_setting(
+        f'{prefix}: half-amplitude (L4, R0 not measurable below)',
+        math.degrees(wave.half_amp_max_rad),
+        Op.LT,
+        settings,
+        'mmr_a_response_min_amp_deg',
+        'deg',
+        '',
+    )
+    name = f'{prefix}: identity |slope / c - 1| (fails above, or by its correlation)'
+    offset = abs(wave.identity_slope_ratio - 1) if is_finite(wave.identity_slope_ratio) else float('nan')
+    ledger.compare_setting(name, offset, Op.LE, settings, 'mmr_identity_slope_tol', '', '')
+    ledger.compare_setting(f'{prefix}: identity correlation', wave.identity_corr, Op.GE, settings, 'mmr_identity_corr_min', '', '')
+    name = 'G2 ripple on an unfinished slow swing: slow centre turns back inside the record (1 or 2)'
+    ledger.compare(name, interior_turns(geometry), Op.GE, 1, '', 'geo_centre_n_tp_interior')
+    ledger.compare(G5A_ONE_REVOLUTION, geometry.centre.range_rad, Op.LT, TWO_PI, 'rad', 'geo_centre_range_rad')
+
+
 def _g2(geometry: Geometry, settings: AnalysisSettings, ledger: Ledger) -> Optional[AngleDecision]:
     _forced_wave_entries(geometry, settings, ledger)
+    _ripple_entries(geometry, settings, ledger)
     episodes = librating_episodes(geometry, settings)
     if len(episodes) < len(geometry.episodes):
         fastest = fastest_episode(geometry, settings)
@@ -764,9 +1044,10 @@ def _g2(geometry: Geometry, settings: AnalysisSettings, ledger: Ledger) -> Optio
 
 def _regimes_cover(geometry: Geometry, episodes: List[Episode], settings: AnalysisSettings, ledger: Ledger) -> bool:
     """Librating episodes that cover the record together (`geometry.covering_union`): no turn in any gap between them
-    nor over the whole chain, no gap longer than libration_union_gap_periods x (P_left + P_right), both record edges
-    reached. A 1:1 quasi-satellite turning into a horseshoe or a tadpole is one libration (author 2026-10-19: "a regime
-    change without circulation is not an exit"; 469219, 164207, 524522); for every other MMR the same geometry
+    nor over the whole chain, sigma_f inside the band of its neighbours through every gap (`gap_band_overshoot` <=
+    libration_union_band_margin_deg), both record edges reached. A 1:1 quasi-satellite turning into a horseshoe or a
+    tadpole is one libration (author 2026-10-19: "a regime change without circulation is not an exit"; 469219, 164207,
+    524522); for every other MMR the same geometry
     (W22, TK14 31M-34) is read by the status as episodic (`status_basis`, `promote_union`). On the ledger only with
     several episodes."""
     if len(episodes) < 2:
@@ -778,8 +1059,9 @@ def _regimes_cover(geometry: Geometry, episodes: List[Episode], settings: Analys
     tp, raw = union.tp_range_rad, union.raw_range_rad
     ledger.compare('G2 union: range of the turning points in a gap', tp, Op.LT, TWO_PI, 'rad', 'geo_union_tp_range_rad')
     ledger.compare('G2 union: range of the raw angle in a gap', raw, Op.LT, TWO_PI, 'rad', 'geo_union_raw_range_rad')
-    name = 'G2 union: longest gap / (P_left + P_right)'
-    ledger.compare_setting(name, union.gap_max_p, Op.LE, settings, 'libration_union_gap_periods', '', 'geo_union_gap_max_P')
+    name = 'G2 union: sigma_f beyond its neighbours\' amplitude in a gap'  # bounded gap (A7, `geometry.gap_band_overshoot`)
+    overshoot = math.degrees(union.band_overshoot_rad)
+    ledger.compare_setting(name, overshoot, Op.LE, settings, 'libration_union_band_margin_deg', 'deg', 'geo_union_band_overshoot_deg')
     span_tp, span_raw = union.span_tp_range_rad, union.span_raw_range_rad
     ledger.compare('G2 union: range of the turning points over the chain', span_tp, Op.LT, TWO_PI, 'rad', 'geo_union_span_tp_range_rad')
     ledger.compare('G2 union: range of the raw angle over the chain', span_raw, Op.LT, TWO_PI, 'rad', 'geo_union_span_raw_range_rad')
@@ -806,8 +1088,8 @@ def edge_observed(geometry: Optional[Geometry], ledger: Ledger) -> bool:
 def union_columns(geometry: Optional[Geometry], settings: AnalysisSettings) -> dict:
     """The numbers `_regimes_cover` reads (mmr_numbers.csv): the episodes of the covering union, the largest ranges of
     the turning points and of the orbit-averaged raw angle in one gap and over the chain, the longest gap over
-    (P_left + P_right), the edge shortfalls (0 / nan without a union); and the turns of the slow centre G5a reads
-    (`interior_turns`)."""
+    (P_left + P_right), the largest swing of sigma_f beyond its neighbours' amplitude in a gap [deg], the edge
+    shortfalls (0 / nan without a union); and the turns of the slow centre G5a reads (`interior_turns`)."""
     union = librating_union(geometry, settings) if geometry is not None else UnionCover()
     return {
         'geo_union_n_episodes': len(union.episodes),
@@ -816,6 +1098,7 @@ def union_columns(geometry: Optional[Geometry], settings: AnalysisSettings) -> d
         'geo_union_span_tp_range_rad': union.span_tp_range_rad,
         'geo_union_span_raw_range_rad': union.span_raw_range_rad,
         'geo_union_gap_max_P': union.gap_max_p,
+        'geo_union_band_overshoot_deg': math.degrees(union.band_overshoot_rad),
         'geo_union_start_shortfall_P': union.start_shortfall_p,
         'geo_union_end_shortfall_P': union.end_shortfall_p,
         'geo_centre_n_tp_interior': interior_turns(geometry) if geometry is not None else 0,
@@ -895,7 +1178,9 @@ def _g3(geometry: Geometry, energy: Optional[EnergyAnalysis], settings: Analysis
     return None
 
 
-def _g4_to_g6(sampling: Sampling, geometry: Geometry, settings: AnalysisSettings, ledger: Ledger) -> AngleDecision:
+def _g4_to_g6(
+    sampling: Sampling, geometry: Geometry, settings: AnalysisSettings, ledger: Ledger, slow_swing: Optional[SlowSwing] = None
+) -> AngleDecision:
     alias = sampling.verdict in ALIASED or sampling.alias_numpy_differs
     rule = centre_circulates(geometry, settings, ledger, 'G4 largest centre pass', G4B_NET)
     if rule:
@@ -906,11 +1191,33 @@ def _g4_to_g6(sampling: Sampling, geometry: Geometry, settings: AnalysisSettings
     ):
         if _g5a(geometry, ledger):
             return AngleDecision(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.ARC, 'G5a')
+        if _g5w(slow_swing, settings, ledger):
+            return AngleDecision(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.ARC, RULE_G5W)
         return AngleDecision(AngleStatus.DRIFT, AngleSubtype.NONE, 'G5')
+    if _g5w(slow_swing, settings, ledger):  # the turning points are waves on a slow swing in the well (523683)
+        return AngleDecision(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.ARC, RULE_G5W)
+    if ripples(geometry):
+        return _g6_ripple(geometry, ledger)
     if ledger.compare('G6 turning points without an episode', len(geometry.turning_points), Op.GE, 1, '', 'geo_n_tp'):
         return AngleDecision(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.FEW_CYCLES, 'G6')
     arc_range = geometry.arc_stall.range_rad if geometry.arc_stall is not None else float('nan')
     if ledger.compare(G6_RANGE, arc_range, Op.GE, math.pi, 'rad', 'geo_arc_range_rad'):
+        return AngleDecision(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.ARC, 'G6')
+    return AngleDecision(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.STALL, 'G6')
+
+
+def _g6_ripple(geometry: Geometry, ledger: Ledger) -> AngleDecision:
+    """G6 when unconfirmed ripples were set aside (`ripple_waves`, B6b): turning points outside them are swings of the
+    angle (few_cycles, as G6); without any, the angle's own motion is the slow centre's unfinished swing: G5a's arc
+    when it turns back once (`_g5a`), else an arc or a stall by the slow centre's range (pi, as G6 reads sigma_f's)."""
+    name = 'G6 turning points without an episode, outside the unconfirmed ripples'
+    if ledger.compare(name, tp_outside_ripples(geometry), Op.GE, 1, '', ''):
+        return AngleDecision(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.FEW_CYCLES, 'G6')
+    if _g5a(geometry, ledger):
+        return AngleDecision(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.ARC, 'G5a')
+    if ledger.compare(
+        'G6 range of the slow centre (ripples set aside)', geometry.centre.range_rad, Op.GE, math.pi, 'rad', 'geo_centre_range_rad'
+    ):
         return AngleDecision(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.ARC, 'G6')
     return AngleDecision(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.STALL, 'G6')
 
@@ -964,6 +1271,35 @@ def _g5a(geometry: Geometry, ledger: Ledger) -> bool:
     return bool(ledger.compare(G5A_ONE_REVOLUTION, geometry.centre.range_rad, Op.LT, TWO_PI, 'rad', 'geo_centre_range_rad'))
 
 
+def _g5w(swing: Optional[SlowSwing], settings: AnalysisSettings, ledger: Ledger) -> bool:
+    """G5w (W28 B6c, cards g07-5/g07-6 A, rule `slow_swing_in_well`): the slow centre turned back twice within one
+    revolution and the half-swing between the turns is a swing in the resonance's own well (`slow_swing.holds`): the
+    slow identity passes, and the a swing and the period 2 (t2 - t1) agree with the directly averaged pendulum at the
+    half-swing's amplitude within [1/sqrt(x), sqrt(x)], x = MMR_STRENGTH_CHECK_RATIO. The record holds part of one slow
+    libration of this resonance: too short to tell, not a drift (523683 2U-9: turns at 11.9 and 67.7 kyr, identity
+    1.00, a 1.07, period 1.00). Unmeasured (one turn, three turns or more, 1:1, three-body: no direct theory) -> False
+    and the row reads as before: the author's drift of 101703/142694 1V+3S-7 (two turns, three-body, slow identity
+    slope / c -0.27/-0.25) stays. On the ledger only when measured."""
+    if swing is None or not swing.measured:
+        return False
+    offset = abs(swing.identity_slope_ratio - 1) if is_finite(swing.identity_slope_ratio) else None
+    column = 'geo_slow_swing_identity_slope_ratio'
+    held = bool(ledger.compare_setting(G5W_IDENTITY_SLOPE, offset, Op.LE, settings, 'mmr_identity_slope_tol', '', column))
+    corr, column = swing.identity_corr, 'geo_slow_swing_identity_corr'
+    held &= bool(ledger.compare_setting(G5W_IDENTITY_CORR, corr, Op.GE, settings, 'mmr_identity_corr_min', '', column))
+    if not held:
+        return False
+    bound = math.sqrt(settings.mmr_strength_check_ratio)
+    ratios = (
+        (swing.a_ratio, G5W_A_LOW, G5W_A_HIGH, 'geo_slow_swing_a_ratio'),
+        (swing.period_ratio, G5W_P_LOW, G5W_P_HIGH, 'geo_slow_swing_period_ratio'),
+    )
+    for ratio, low, high, column in ratios:
+        held &= bool(ledger.compare(low, ratio, Op.GE, 1 / bound, '', column, setting='mmr_strength_check_ratio'))
+        held &= bool(ledger.compare(high, ratio, Op.LE, bound, '', column, setting='mmr_strength_check_ratio'))
+    return held and slow_swing_module.holds(swing, settings)
+
+
 def decide_angle(
     sampling: Sampling,
     unphysical: bool,
@@ -971,9 +1307,10 @@ def decide_angle(
     energy: Optional[EnergyAnalysis],
     settings: AnalysisSettings,
     ledger: Ledger,
+    slow_swing: Optional[SlowSwing] = None,
 ) -> AngleDecision:
     """G0–G6 above (G1l after G2: a capture after a jump of a; G1e after G3–G6: episodes before the last jump of a,
-    for the status only)."""
+    for the status only); `slow_swing` holds G5w's numbers (`slow_swing.measure_slow_swing`; None: G5w unmet)."""
     undefined = _g0(sampling, unphysical, geometry, settings, ledger)
     if undefined is not None:
         return undefined
@@ -989,7 +1326,7 @@ def decide_angle(
     pattern = _g3(geometry, energy, settings, ledger)
     if pattern is not None:
         return _g1e(pattern, geometry, settings, ledger)
-    return _g1e(_g4_to_g6(sampling, geometry, settings, ledger), geometry, settings, ledger)
+    return _g1e(_g4_to_g6(sampling, geometry, settings, ledger, slow_swing), geometry, settings, ledger)
 
 
 # --------------------------------------------------------------------------------------------- status
@@ -1055,16 +1392,40 @@ def _subresonance_origin(subresonances: SubresonanceResult) -> Tuple[str, str]:
     return str(detail), subresonances.accepted.spec.key
 
 
+COMPOSITE_REGIME_ORIGINS = (LibrationOrigin.DYNAMIC, LibrationOrigin.UNKNOWN)  # own librations a composite regime names
+CLAIMING_STATUSES = (Status.RESONANT, Status.TRANSIENT, Status.NEAR_SEPARATRIX)
+
+
+def composite_regime_detail(decision: StatusDecision, subresonances: Optional[SubresonanceResult]) -> None:
+    """W28 A6b, card g06-8c A ('composite' is an allowed answer): the scan read the decisive episode as a composite
+    regime (`SubresonanceResult.composite_regime`: nothing admissible, no planar member's theoretical centre stands over
+    the episode, the measured centre follows the composite one pi - arg P(beta)). A libration verdict of the catalogue
+    angle's own (origin dynamic or unknown, no detail yet) then names origin_detail composite_multiplet, and its
+    resonant argument is 'composite' (`roles.verdict_roles`). In place; no status, reason or level changes."""
+    if subresonances is None or not subresonances.composite_regime or decision.origin_detail:
+        return
+    if decision.status in CLAIMING_STATUSES and decision.origin in COMPOSITE_REGIME_ORIGINS:
+        decision.origin_detail = str(OriginDetail.COMPOSITE_MULTIPLET)
+
+
 def owner_in_episode(
     owner: Optional[OwnerResult], settings: AnalysisSettings, ledger: Ledger, decisive: bool = True
 ) -> Tuple[Optional[OwnerResult], List[str]]:
-    """F7 (W20): an accepted owner takes sigma's oscillation only when its intervals cover at least mmr_owner_cover_min of
-    sigma's decisive episode (`OwnerResult.cover`). (the owner, []) when it does or when the cover is not measured (no
-    accepted owner, or a result without intervals); (None, [owner_outside_episode]) otherwise: the tree goes on without
-    it and `_decide_status` keeps its key in the verdict's `owner` column. The route, the phase lever and the potential
-    scale of the accepted owner are recorded next to it. `decisive` False (a circulation: the owner only names the
-    origin of a non_resonant verdict, 237743 5J-2S-2) records these comparisons without their settings: no convention
-    the verdict rests on, never a thin margin U."""
+    """F7 per episode and P2 (W20; A1, W28, cards g04-0..g04-3): an accepted owner takes an episode of sigma only when
+    its intervals (its measured regimes, no bridge) cover at least mmr_owner_cover_min of it and, in its libration
+    regime, Psi/u turns less than mmr_owner_psi_turns_per_cycle_max per cycle of it (`EpisodeCover.induced`); every
+    accepted episode is checked (`OwnerResult.episode_covers`; without them the decisive episode alone). The decisive
+    episode's cover (`OwnerResult.cover`, column own_cover) and turns (own_psi_turns_per_cycle) go on the ledger.
+
+    (the owner, []) when it induces every episode still in the geometry (rule 2), or when its cover is not measured (no
+    accepted owner, or a result without intervals); (None, flags) otherwise: the row's own episodes decide, the tree
+    goes on without the owner and `_decide_status` keeps its key in the verdict's `owner` column, flag
+    owner_outside_episode for an own episode the owner does not cover, owner_psi_too_fast for one it covers but whose
+    Psi/u turns too fast. A row with induced and own episodes reaches this with the induced ones out of the geometry
+    (the analysis' second pass, `OwnerResult.induced_ids`). The route, the phase lever and the potential scale of the
+    accepted owner are recorded next to it. `decisive` False (a circulation: the owner only names the origin of a
+    non_resonant verdict, 237743 5J-2S-2) records these comparisons without their settings: no convention the verdict
+    rests on, never a thin margin U."""
     if owner is None or owner.accepted is None:
         return owner, []
     accepted = owner.accepted
@@ -1082,22 +1443,80 @@ def owner_in_episode(
         record('2 potential scale: max(s, 1/s)', worst, Op.LE, 'mmr_owner_potential_scale_max', 'own_pot_scale_worst')
     if not is_finite(owner.cover):
         return owner, []
-    if record(OWNER_COVER, owner.cover, Op.GE, 'mmr_owner_cover_min', 'own_cover'):
+    covers = bool(record(OWNER_COVER, owner.cover, Op.GE, 'mmr_owner_cover_min', 'own_cover'))
+    slow = True
+    if is_finite(owner.psi_turns_per_cycle):
+        turns = owner.psi_turns_per_cycle
+        slow = bool(record(OWNER_PSI_TURNS, turns, Op.LT, 'mmr_owner_psi_turns_per_cycle_max', 'own_psi_turns_per_cycle'))
+    induced, own = induced_split(owner, settings)
+    if not induced and not own:  # no per-episode covers: the decisive episode alone
+        return (owner, []) if covers and slow else (None, _refusal_flags(not covers, covers and not slow))
+    if not own:
         return owner, []
-    return None, [str(Flag.OWNER_OUTSIDE_EPISODE)]
+    outside = any(not entry.cover >= settings.mmr_owner_cover_min for entry in own)
+    fast = any(entry.cover >= settings.mmr_owner_cover_min for entry in own)  # an own episode it covers: P2 refused it
+    return None, _refusal_flags(outside, fast)
+
+
+def _refusal_flags(outside: bool, too_fast: bool) -> List[str]:
+    """The flags of an owner that does not take the row (`owner_in_episode`), in this order."""
+    return [str(flag) for flag, holds in ((Flag.OWNER_OUTSIDE_EPISODE, outside), (Flag.OWNER_PSI_TOO_FAST, too_fast)) if holds]
+
+
+def owner_rules(owner: Optional[OwnerResult], flags: Sequence[str], settings: AnalysisSettings) -> frozenset:
+    """The rules the owner check acted with (`analysis.rules`): owner_per_episode where A1 changed the outcome (the
+    induced episodes a second pass took out, or an owner refused for lack of cover that the old slip bridge would have
+    given the decisive episode, `owner.bridged_cover`; an owner that acts elsewhere either way, 1627, does not fire
+    it), owner_psi_turns when P2 refused one."""
+    fired: frozenset = frozenset()
+    if owner is None or owner.accepted is None:
+        return fired
+    outside = str(Flag.OWNER_OUTSIDE_EPISODE) in flags
+    bridged = outside and bridged_cover(owner.intervals, owner.decisive_window) >= settings.mmr_owner_cover_min
+    if owner.induced_ids or bridged:
+        fired = rules_module.fire(fired, rules_module.Rule.OWNER_PER_EPISODE)
+    if str(Flag.OWNER_PSI_TOO_FAST) in flags:
+        fired = rules_module.fire(fired, rules_module.Rule.OWNER_PSI_TURNS)
+    return fired
 
 
 def second_capture_caps(owner: Optional[OwnerResult], settings: AnalysisSettings, ledger: Ledger) -> Tuple[List[str], List[str]]:
     """(flags, caps) of an induced libration: second_capture_unresolved (cap medium) unless the owner's second-capture
-    test excludes it (x = Psi / u sweeps >= mmr_owner_capture_sweep_deg and the energy R^2 < mmr_owner_r2_min)."""
+    test excludes it by one of its two routes (`owner.second_capture`): x = Psi / u sweeps >= mmr_owner_capture_sweep_deg
+    and the energy R^2 < mmr_owner_r2_min, or (F3) x_ddot follows the secular cycle (R^2 >= mmr_owner_r2_min) and not
+    x (R^2 on [1, sin x, cos x] < mmr_owner_capture_self_r2_max). The F3 comparisons are recorded with their settings
+    only when F3 is the route that excluded (otherwise they decided nothing and never make a thin margin)."""
     capture = owner.capture if owner is not None else None
     sweep = math.degrees(capture.x_sweep_rad) if capture is not None else None
     ledger.compare_setting('2 second capture: x sweep', sweep, Op.GE, settings, 'mmr_owner_capture_sweep_deg', 'deg', 'own_psi_sweep_deg')
     energy = capture.energy_r2 if capture is not None else None
     ledger.compare_setting('2 second capture: energy R2', energy, Op.LT, settings, 'mmr_owner_r2_min', '', 'own_psi_energy_R2')
+    if capture is not None and np.isfinite(capture.secular_r2):
+        named = capture.route == ROUTE_SECULAR
+        ledger.compare_setting(
+            '2 second capture: secular R2', capture.secular_r2, Op.GE, settings, 'mmr_owner_r2_min', '', 'own_psi_secular_R2', named=named
+        )
+        ledger.compare_setting(
+            '2 second capture: self R2',
+            capture.self_r2,
+            Op.LT,
+            settings,
+            'mmr_owner_capture_self_r2_max',
+            '',
+            'own_psi_self_R2',
+            named=named,
+        )
     if capture is not None and capture.verdict == CAPTURE_EXCLUDED:
         return [], []
     return [str(Flag.SECOND_CAPTURE_UNRESOLVED)], [str(Cap.SECOND_CAPTURE_UNRESOLVED)]
+
+
+def second_capture_rules(owner: Optional[OwnerResult]) -> frozenset:
+    """second_capture_f3 when the route F3 removed the cap second_capture_unresolved (rule 2)."""
+    capture = owner.capture if owner is not None else None
+    if capture is not None and capture.verdict == CAPTURE_EXCLUDED and capture.route == ROUTE_SECULAR:
+        return rules_module.fire(frozenset(), rules_module.Rule.SECOND_CAPTURE_F3)
+    return frozenset()
 
 
 def _foreign_origin(subresonances: Optional[SubresonanceResult], owner: Optional[OwnerResult]) -> Tuple[LibrationOrigin, str, str]:
@@ -1191,7 +1610,10 @@ def _foreign(
 ) -> Optional[StatusDecision]:
     """Steps 1 and 2: an accepted subresonance or owner carries the oscillation. Step 1 gives the member's status
     (`member_status`), or non_resonant/subresonance_librates when the member has no verdict of its own; when the
-    catalogue angle and the member both librate, the subresonance does not take the libration and step 2 decides."""
+    catalogue angle and the member both librate, the subresonance does not take the libration and step 2 decides.
+    Step 2 (A2b, `joint_capture`): 'both resonances at once?' confirmed -> None (the tree reads the angle as its own and
+    `joint_capture_origin` names it origin joint); confirmed on one cycle of x only -> uncertain/baseline_needed, origin
+    joint, rule 2j; otherwise non_resonant/induced_libration."""
     if subresonances is not None:
         best = subresonances.accepted or min(subresonances.candidates, key=lambda c: c.rank, default=None)
         value = best.phi0_coherence if best is not None else None
@@ -1209,9 +1631,67 @@ def _foreign(
             return shared
         origin, detail, key = _foreign_origin(None, owner)
     if origin == LibrationOrigin.INDUCED:
+        joint = joint_capture(owner, settings, ledger)
+        if joint == CAPTURE_ONE_CYCLE:  # the own well shows, on one cycle only: no reading either way yet
+            decision = StatusDecision(
+                Status.UNCERTAIN, Reason.BASELINE_NEEDED, LibrationOrigin.JOINT, str(OriginDetail.JOINT_CAPTURE), key, rule='2j'
+            )
+            decision.rules_fired = rules_module.fire(decision.rules_fired, rules_module.Rule.BOTH_RESONANCES_CONFIRMED)
+            return decision
+        if joint == CAPTURE_CONFIRMED:  # both resonances at once: the tree reads the angle as its own (`_decide_read`)
+            return None
         flags, caps = second_capture_caps(owner, settings, ledger)
-        return StatusDecision(Status.NON_RESONANT, Reason.INDUCED_LIBRATION, origin, detail, key, flags=flags, caps=caps, rule='2')
+        decision = StatusDecision(Status.NON_RESONANT, Reason.INDUCED_LIBRATION, origin, detail, key, flags=flags, caps=caps, rule='2')
+        decision.rules_fired = decision.rules_fired | second_capture_rules(owner)
+        return decision
     return None
+
+
+# A2b (card g05-8 B): the ledger names of the five conditions of 'both resonances at once? confirmed'
+JOINT_SWEEP = "2j both resonances at once: x sweep < mmr_owner_capture_sweep_deg"
+JOINT_ENERGY = '2j both resonances at once: energy R2 of x'
+JOINT_SELF = '2j both resonances at once: R2 of x_ddot on sin x (its own well)'
+JOINT_OFFSET = '2j both resonances at once: |P_x / P_secular - 1| (all secular periods and harmonics)'
+JOINT_CYCLES = '2j both resonances at once: closed cycles of x'
+
+
+def joint_capture(owner: Optional[OwnerResult], settings: AnalysisSettings, ledger: Ledger) -> str:
+    """The third outcome of the second capture (A2b W28, card g05-8 B; `owner.joint_outcome`): CAPTURE_CONFIRMED when
+    x = Psi / u is bounded, conserves an energy, has a well of its own at a period that is no secular one and closes at
+    least libration_centre_min_estimates cycles; CAPTURE_ONE_CYCLE when it closes one; '' otherwise. The five
+    comparisons go on the ledger with their settings only when the outcome is one of these two (elsewhere they decided
+    nothing: no thin margin)."""
+    capture = owner.capture if owner is not None else None
+    if capture is None or capture.route:
+        return ''
+    outcome = capture.verdict if capture.verdict in (CAPTURE_CONFIRMED, CAPTURE_ONE_CYCLE) else ''
+    named = bool(outcome)
+
+    def record(name, value, op, setting, column):
+        ledger.compare_setting(name, value, op, settings, setting, '', column, named=named)
+
+    record(JOINT_SWEEP, math.degrees(capture.x_sweep_rad), Op.LT, 'mmr_owner_capture_sweep_deg', 'own_psi_sweep_deg')
+    record(JOINT_ENERGY, capture.energy_r2, Op.GE, 'mmr_owner_r2_min', 'own_psi_energy_R2')
+    record(JOINT_SELF, capture.self_r2, Op.GE, 'mmr_owner_r2_min', 'own_psi_self_R2')
+    record(JOINT_OFFSET, capture.x_secular_offset, Op.GT, 'mmr_kin_period_tol', 'own_x_secular_offset')
+    record(JOINT_CYCLES, capture.x_cycles, Op.GE, 'libration_centre_min_estimates', 'own_x_cycles')
+    return outcome
+
+
+def joint_capture_origin(decision: StatusDecision, ledger: Ledger) -> None:
+    """A2b: the angle's own reading under a confirmed joint capture (`StatusDecision.joint_owner`) takes origin joint,
+    origin_detail joint_capture and the owner's key, when it reads the libration as the angle's own
+    (`own_dynamics_claimed`: the status and the reason stay the tree's); rule both_resonances_confirmed. Any other
+    reading (kinematic, implausible strength, uncertain, a circulation) stands as it is: the joint capture names no
+    mechanism the tree did not find. In place."""
+    if not decision.joint_owner:
+        return
+    name = '2j the own reading under a joint capture claims the libration (claims = 1)'
+    if not ledger.compare(name, _flag(own_dynamics_claimed(decision)), Op.EQ, 1, '', ''):
+        return
+    decision.origin, decision.origin_detail = LibrationOrigin.JOINT, str(OriginDetail.JOINT_CAPTURE)
+    decision.owner = decision.joint_owner
+    decision.rules_fired = rules_module.fire(decision.rules_fired, rules_module.Rule.BOTH_RESONANCES_CONFIRMED)
 
 
 def secular_period_offset(period_cycle_yr: float, kinematics: Optional[Kinematics]) -> float:
@@ -1251,7 +1731,19 @@ def force_laws(response: Response) -> Tuple[Tuple[str, float, str], ...]:
     harmonic = taken_harmonic_law(response)
     if harmonic is not None:
         laws += ((f'{harmonic.n_harmonics} harmonics', harmonic.r2, 'rsp_force_harm_R2'),)
+    direct = taken_direct_law(response)
+    if direct is not None:
+        laws += (('direct averaged force', direct.r2, 'rsp_dforce_R2'),)
     return laws
+
+
+def taken_direct_law(response: Optional[Response], angle: Optional[AngleDecision] = None) -> Optional[DirectForceLaw]:
+    """The direct averaged-force law (W28 B8) that decided the response's L4 (`force_law` 'direct_force'), else None.
+    With `angle` the response is first read as the tree reads it (rule R, `response.deciding_response`)."""
+    if response is not None and angle is not None:
+        response = response_module.deciding_response(response, other_regime(angle))
+    law = response.force_direct if response is not None else None
+    return law if law is not None and law.taken and response.force_law == LAW_DIRECT else None
 
 
 def taken_harmonic_law(response: Optional[Response]) -> Optional[HarmonicLaw]:
@@ -1652,8 +2144,12 @@ def unmeasured_branch(
                   x mu_i mu_j e^q (three-body, legal e^q) and the small-divisor envelope still leaves that factor
                   (`strength.small_divisor_envelope`): non_resonant/implausible_strength, origin unknown, cap <= low;
             5s*   the same three-body ratio, but the envelope can close the gap (or has no bound): uncertain;
-      (ii-b) 5o   a measured objection: O1 fails (a strong a-wave before the episode) or F fails (centre_outside_well
-                  included): uncertain/origin_unknown;
+      (ii-b) 5o   a measured objection: O1 fails (a strong a-wave before the episode) or F by direct averaging (or
+                  the harmonic) fails (centre_outside_well included): uncertain/origin_unknown;
+            5x    the order-of-magnitude scale (eq_scale: required / mu_i mu_j e^q, three-body and 1:1) lies outside
+                  [1/x, x]: no measured objection (an estimate known to a factor 1-100 is a diagnostic, W28 B9, card
+                  g08-6 A; 79653 3M+3J-7, 39.5 x), but it does not let the geometry decide either:
+                  uncertain/origin_unknown, 'origin not established';
             5n    the decisive episode holds fewer than libration_centre_min_estimates independent cycles (one centre,
                   nothing to compare): uncertain/origin_unknown;
       (iii) 5u/6  nothing measured: the geometry's status (`zone_rule`) with origin unknown, reason geometric_libration
@@ -1680,6 +2176,10 @@ def unmeasured_branch(
     physics = physics_of(episodes, angle.episode_id)
     if _measured_objection(angle, energy, strength, physics, settings, ledger):
         return _unknown('5o')
+    if _scale_out_of_range(strength, settings, ledger):
+        decision = _unknown('5x')
+        decision.rules_fired = rules_module.fire(decision.rules_fired, rules_module.Rule.EQ_SCALE_NOT_OBJECTION)
+        return decision
     episode = run_of(geometry, angle.episode_id)
     if episode is not None:
         name = INDEPENDENT_CYCLES
@@ -1805,15 +2305,21 @@ def _measured_objection(
     settings: AnalysisSettings,
     ledger: Ledger,
 ) -> bool:
-    """Leaf (ii-b) of `unmeasured_branch`: O1 of an episodic angle fails at decision time (`_o1`, before the filter
-    guard; not applicable when the episodes lie in the separatrix zone), or the strength check F fails (direct
-    averaging with every observed swing outside the theoretical well included, or the legal e^q scale)."""
+    """Leaf (ii-b) of `unmeasured_branch`: O1 of an episodic angle fails at decision time (before the filter guard;
+    not applicable when the episodes lie in the separatrix zone), or the strength check F fails by direct averaging or
+    the harmonic (every observed swing outside the theoretical well included). A failed order-of-magnitude scale
+    (eq_scale) is no measured objection: leaf 5x reads it (`_scale_out_of_range`, W28 B9, card g08-6 A).
+
+    The leaf reads O1's ratio alone, not the narrowed margin (`foreign_wave`, B4): measured on 2026-10-31, the
+    narrowed test would lift the objection from the author's uncertain/episodic labels 2013 VA14 60 kyr (coherent
+    0.69 but 135 deg out of phase) and 2003 TG2 100 kyr (coherence 0.23), so leaf 5o keeps the 23.10 rule (Q2: a
+    failed O1 is uncertain; dev/status.md)."""
     objects = False
     if angle.angle_status == AngleStatus.EPISODIC and physics is not None and not episodes_in_separatrix_zone(energy):
         name = O1_ONSET
         held = ledger.compare_setting(name, onset_ratio(physics), Op.LT, settings, 'mmr_o1_ratio_fail', '', 'ep_onset_ratio')
         objects = held.result is False
-    if strength is not None and strength.check in MEASURED:
+    if strength is not None and strength.check in MEASURED and strength.method in DIRECT_METHODS:
         if strength.not_measured_reason == REASON_CENTRE_OUTSIDE_WELL:
             name = F_IN_WELL
             ledger.compare(name, strength.n_consistent, Op.GE, 1, '', 'str_n_consistent')
@@ -1823,12 +2329,26 @@ def _measured_objection(
     return objects
 
 
+SCALE_OUT_OF_RANGE = '5x F scale out of range'  # the ledger label of leaf 5x (`_strength_within` names its two ends)
+
+
+def _scale_out_of_range(strength: Optional[Strength], settings: AnalysisSettings, ledger: Ledger) -> bool:
+    """Leaf 5x of `unmeasured_branch` (W28 B9, card g08-6 A): the order-of-magnitude strength (eq_scale, required /
+    mu_i mu_j e^q or mu e^q; known only to a factor 1-100) is measured and outside [1/x, x], x =
+    mmr_strength_check_ratio. Not an objection (that is 5o, direct averaging only): the origin is not established."""
+    if strength is None or strength.method in DIRECT_METHODS or strength.check != CheckValue.FAIL:
+        return False
+    _strength_within(strength, SCALE_OUT_OF_RANGE, settings, ledger)
+    return True
+
+
 def own_dynamics_claimed(decision: StatusDecision) -> bool:
     """The verdict reads the oscillation as this angle's own: origin dynamic, or origin unknown on a resonant,
     transient or near_separatrix status (rule 5u/6: the geometry alone). Its margins and flags are those of a dynamic
     verdict (L4, R0, Z, F; implausible_strength)."""
     claims = decision.status in (Status.RESONANT, Status.TRANSIENT, Status.NEAR_SEPARATRIX)
-    return decision.origin == LibrationOrigin.DYNAMIC or (claims and decision.origin == LibrationOrigin.UNKNOWN)
+    own = (LibrationOrigin.UNKNOWN, LibrationOrigin.JOINT)  # joint: the angle's own reading under a joint capture (A2b)
+    return decision.origin == LibrationOrigin.DYNAMIC or (claims and decision.origin in own)
 
 
 def decide_status(
@@ -1846,6 +2366,7 @@ def decide_status(
     member: Optional[Verdict] = None,
     episodes: Sequence[EpisodePhysics] = (),
     withdrawn: Optional[Mapping[str, Withdrawal]] = None,
+    slow_scale: Optional[SlowScale] = None,
 ) -> StatusDecision:
     """SPEC §5.3: the only place a status is set. Every combination of check values reaches a leaf.
 
@@ -1855,7 +2376,8 @@ def decide_status(
     oscillation (a column, no status). `member`: the verdict of the accepted subresonance's own row (the derived
     analysis, built before this call), whose status the catalogue row takes (`member_status`). `withdrawn`: the checks
     the filter guard withdrew from `energy` before the tree (`energy_for_tree`), recorded on the decision with those
-    of R-ALIAS-A (`StatusDecision.withdrawn`)."""
+    of R-ALIAS-A (`StatusDecision.withdrawn`). `slow_scale`: the slower libration of the centre (B10a), which K3s
+    reads after the leaf (`secular_cycle_kinematic`)."""
     if other_regime(angle):
         name = 'G1e the response and energy of the last regime describe no episode the status reads'
         ledger.compare(name, None, Op.EQ, 0, '', '')
@@ -1865,6 +2387,9 @@ def decide_status(
         angle, sampling, geometry, energy, response, kinematics, subresonances, owner, strength, settings, ledger, member, episodes
     )
     promote_union(angle, decision, energy, ledger)
+    secular_cycle_kinematic(decision, slow_scale, geometry, settings, ledger)
+    composite_regime_detail(decision, subresonances)
+    joint_capture_origin(decision, ledger)
     decision.withdrawn = {**dict(withdrawn or {}), **decision.withdrawn}
     if response_module.force_law_mixed(response):  # rule R: the witness decides, the other episode limits the level
         decision.flags.append(str(Flag.EPISODE_FORCE_LAW_MIXED))
@@ -1872,12 +2397,73 @@ def decide_status(
     if episodes_in_separatrix_zone(energy) and EPISODES_IN_SEPARATRIX_ZONE not in decision.flags:
         if decision.status not in (Status.INVALID,) and status_basis(angle).angle_status != AngleStatus.INSUFFICIENT_TIME:
             decision.flags.append(EPISODES_IN_SEPARATRIX_ZONE)
-    if near_episode(angle, decision, geometry, settings, ledger):
+    scatters = _claims_no_libration(angle, decision, geometry) and leg_scatters(status_basis(angle), geometry, settings)
+    if scatters:  # G4c: the best 1:1 leg is a near miss of a capture, both its turns kicks (1991 VG)
+        ledger.compare(G4C_SCATTER, 1.0, Op.EQ, 1, '', 'geo_leg_outcome')
+        decision.rules_fired = rules_module.fire(decision.rules_fired, rules_module.Rule.COORBITAL_LEG)
+    if near_episode(angle, decision, geometry, settings, ledger) or scatters:
         decision.flags.append(str(Flag.NEAR_EPISODE))
         decision.caps.append(str(Cap.NEAR_EPISODE))
+        if structural_near_episode(geometry, settings):  # the near-episode is a 1:1 leg rejected over the top
+            decision.rules_fired = rules_module.fire(decision.rules_fired, rules_module.Rule.COORBITAL_NEAR_EPISODE)
     if owner is not None and FLAG_CATALOGUE in owner.flags:  # the search ran on catalogue lines: approximate either way
         decision.caps.append(str(Cap.CATALOGUE_LONGITUDES))
+    if taken_direct_law(response) is not None:  # W28 B8: the direct averaged-force law decided L4 the tree read
+        decision.rules_fired = rules_module.fire(decision.rules_fired, rules_module.Rule.DIRECT_FORCE_LAW)
     return decision
+
+
+# K3s (W28 B10a, card g08-8 A): the ledger names; only these reasons, which name no mechanism, may take it
+K3S_OFFSET = 'K3s slow scale: |P_slow / P_secular - 1| (pi/|omega_dot|, 2 pi/|g - g_j|)'
+K3S_IDENTITY = 'K3s slow scale: its own identity sigma_s_dot = c (a_s - a*) fails (fail = 1)'
+K3S_SLIP = 'K3s the centre circulates only by slips: largest monotone pass <= 1 + libration_slip_tolerance'
+K3S_REASONS = (Reason.CIRCULATION,)
+
+
+def secular_cycle_kinematic(
+    decision: StatusDecision,
+    slow_scale: Optional[SlowScale],
+    geometry: Optional[Geometry],
+    settings: AnalysisSettings,
+    ledger: Ledger,
+) -> None:
+    """K3s (W28 B10a, card g08-8 A, rule `secular_cycle_kinematic`, MMR_SECULAR_CYCLE_KINEMATIC): a non_resonant
+    circulation (no mechanism named, origin none, not 1:1) whose slow scale (`SlowScale`) has the period of a secular
+    cycle (secular offset <= mmr_kin_period_tol) and fails its own identity is a kinematic libration with origin
+    detail secular_cycle: the slow swing is the secular cycle seen through the angle's varpi part, which a does not
+    follow (37087 3J+8S-3: 5.7 kyr = 2 pi/(g - g5), identity slope / c 2.6, corr 0.53). Only where the slow
+    libration is the record's regime: its centre leaves it by slips of one turn (the largest monotone pass of the
+    centre within a slip, 1 + libration_slip_tolerance rev; 37087 1.09 rev at 100 kyr, 1.16 at 1 Myr); a centre that
+    circulates for several turns in a row is a circulation with slow interludes, whatever their cause (285637 3M+7J-6
+    2 Myr: 4.7 rev, the author's circulation). B1 and a thin L4 do not block
+    it (B1 is pooled on the fast scale, where a forced wave carries a). The status never changes, nor a row that
+    librates, an induced or a subresonance one; nothing without a slow scale. The level stays the circulation's
+    (`_origin_margins`, `physics_margins_of`). In place, on the ledger when it is read."""
+    if not settings.mmr_secular_cycle_kinematic or slow_scale is None or not slow_scale.measured:
+        return
+    if decision.status != Status.NON_RESONANT or decision.reason not in K3S_REASONS or decision.origin != LibrationOrigin.NONE:
+        return
+    if geometry is None or geometry.coorbital:
+        return
+    slips = ledger.compare(
+        K3S_SLIP,
+        geometry.centre.max_pass_rev,
+        Op.LE,
+        1 + settings.libration_slip_tolerance,
+        'rev',
+        'geo_centre_max_pass_rev',
+        setting='libration_slip_tolerance',
+    )
+    if not slips:
+        return
+    offset = slow_scale.secular_offset if is_finite(slow_scale.secular_offset) else None
+    matched = ledger.compare_setting(K3S_OFFSET, offset, Op.LE, settings, 'mmr_kin_period_tol', '', 'slow_secular_offset')
+    failed = ledger.compare(K3S_IDENTITY, _flag(slow_scale.identity == CheckValue.FAIL), Op.EQ, 1, '', 'slow_identity')
+    if not (matched and failed):
+        return
+    decision.reason, decision.origin = Reason.KINEMATIC_LIBRATION, LibrationOrigin.KINEMATIC
+    decision.origin_detail, decision.rule = str(OriginDetail.SECULAR_CYCLE), RULE_K3S
+    decision.rules_fired = rules_module.fire(decision.rules_fired, rules_module.Rule.SECULAR_CYCLE_KINEMATIC)
 
 
 def promote_union(angle: AngleDecision, decision: StatusDecision, energy: Optional[EnergyAnalysis], ledger: Ledger) -> None:
@@ -1913,26 +2499,268 @@ def _claims_no_libration(angle: AngleDecision, decision: StatusDecision, geometr
     return geometry is not None and decision.status == Status.NON_RESONANT and status_basis(angle).angle_status not in LIBRATING
 
 
+def near_episode_floor(geometry: Geometry, settings: AnalysisSettings, run) -> float:
+    """The period a short run needs to count as a near-episode [yr]: its floor (`period_floor`) x (1 -
+    confidence_thin_band), for every MMR (card g01-8 A): a run within the thin margin of the floor is a thin miss of an
+    episode too (2023 RX1 1E-1: 0.899 of its floor). No new threshold."""
+    return period_floor(geometry, settings, run)[0] * (1.0 - settings.confidence_thin_band)
+
+
 def near_episode_tp(geometry: Geometry, settings: AnalysisSettings) -> int:
     """TPs of the longest run that would be a librating episode but for its count: a short run (`geometry.short_runs`)
-    whose period (twice its median half-cycle: a run of two TPs has no full period) is not shorter than the angle's shortest libration (`period_floor`)
-    and whose centre does not complete a revolution inside it: the criteria of `librating_episodes` but the count. A
-    faster back-and-forth is a forced wave, not half a libration (2012 XE133 1V-1: 46 yr against a 76-yr floor). 0
-    without one. Once per geometry and settings (`Geometry.derived`)."""
+    whose period (twice its median half-cycle: a run of two TPs has no full period) is not shorter than the angle's
+    shortest libration less the thin band (`near_episode_floor`) and whose centre does not complete a revolution inside
+    it: the criteria of `librating_episodes` but the count. A faster back-and-forth is a forced wave, not half a
+    libration (2012 XE133 1V-1: 46 yr against a 76-yr floor). 0 without one. Once per geometry and settings
+    (`Geometry.derived`)."""
 
     def compute() -> int:
         scratch = Ledger.from_settings(settings)
         counts = [
             run.n_tp
-            for run in short_runs(geometry.runs)
+            for run in short_runs(geometry.runs, coorbital=geometry.coorbital)
             if scratch.compare(
-                'period', 2 * float(np.median(np.diff(run.tp_times_yr))), Op.GE, period_floor(geometry, settings, run)[0], 'yr', ''
+                'period', 2 * float(np.median(np.diff(run.tp_times_yr))), Op.GE, near_episode_floor(geometry, settings, run), 'yr', ''
             )
             and scratch.compare('centre turn', centre_travel_in(geometry, run.t_start_yr, run.t_end_yr), Op.LT, TWO_PI, 'rad', '')
         ]
         return max(counts, default=0)
 
     return geometry.derived(('near_episode_tp',), settings, compute)
+
+
+def structural_near_episode(geometry: Geometry, settings: AnalysisSettings) -> bool:
+    """Whether the near-episode of a 1:1 angle rests on a run rejected over_the_top (`short_runs` with coorbital: a
+    leg of one co-orbital well between passages, cards g01-5 A, g01-8 A): rule coorbital_near_episode."""
+    if not geometry.coorbital:
+        return False
+    scratch = Ledger.from_settings(settings)
+    count = near_episode_tp(geometry, settings)
+    return any(
+        run.reject_reason == RejectReason.OVER_THE_TOP
+        and run.n_tp == count
+        and scratch.compare(
+            'period', 2 * float(np.median(np.diff(run.tp_times_yr))), Op.GE, near_episode_floor(geometry, settings, run), 'yr', ''
+        )
+        for run in short_runs(geometry.runs, coorbital=True)
+    )
+
+
+# --------------------------------------------------------------------------------------------- G4c: one 1:1 leg
+
+RULE_G4C = 'G4c'
+# the outcomes of one leg (`leg_outcome`), the record takes the strongest (`LEG_RANK`)
+LEG_TRANSIENT, LEG_UNCERTAIN, LEG_EXTEND, LEG_SCATTER = 'transient', 'uncertain', 'extend', 'scatter'
+LEG_RANK = {LEG_TRANSIENT: 4, LEG_UNCERTAIN: 3, LEG_EXTEND: 2, LEG_SCATTER: 1}
+# the first discrepancy of a leg that is not transient (column geo_leg_discrepancy)
+LEG_NOT_CLEAN, LEG_FORCE, LEG_ENERGY, LEG_TURN = 'passing', 'force_law', 'energy', 'turn'
+G4C_TURN = 'G4c turn |ln out/in| (|a - a_P| after / before: 0 for a reflection)'
+G4C_ZONE = 'G4c turn |a - a_P| / da_max on the leg side'
+G4C_CLEAN = 'G4c leg is one swing of a co-orbital well (crosses at most one of planet, L3)'
+G4C_FORCE = 'G4c local 1:1 law on the leg passes with K > 0'
+G4C_ENERGY = 'G4c local energy integral on the leg passes'
+G4C_SCATTER = 'G4c best 1:1 leg: both turns scatter (near-episode)'
+
+
+def turn_reflects(turn: Optional[LegTurn], settings: AnalysisSettings) -> bool:
+    """A turn of a 1:1 leg is a reflection by the averaged potential: |a - a_P| mirrored (|ln out/in| <=
+    mmr_coorbital_turn_energy_tol) at a level the potential can reverse (zone <= mmr_coorbital_turn_zone_max). A
+    turn not measured is no reflection."""
+    if turn is None or not (is_finite(turn.out_in) and turn.out_in > 0 and is_finite(turn.zone)):
+        return False
+    return abs(math.log(turn.out_in)) <= settings.mmr_coorbital_turn_energy_tol and turn.zone <= settings.mmr_coorbital_turn_zone_max
+
+
+def leg_law_holds(leg: SingleLeg) -> bool:
+    """The local 1:1 law of the leg passes and pushes a the right way (K / K_theory > 0)."""
+    return leg.force == CheckValue.PASS and is_finite(leg.force_scale) and leg.force_scale > 0
+
+
+def leg_outcome(leg: SingleLeg, settings: AnalysisSettings) -> Tuple[str, str]:
+    """(outcome, first discrepancy) of one 1:1 leg (q-4 A, the W28 C1 rule; '' when the leg decides nothing):
+
+    - an edge leg (one turn observed): clean, its turn reflects (with mmr_coorbital_leg_force_gate also its law
+      holds on the observed part) -> LEG_EXTEND, the record may hold the rest of the cycle; else '';
+    - neither turn reflects (both are kicks, or a level the potential cannot reverse), or with the force gate no 1:1
+      law -> LEG_SCATTER: no capture, but a near miss of one;
+    - clean, the law with K > 0 and the energy integral pass and both turns reflect -> LEG_TRANSIENT;
+    - anything else -> LEG_UNCERTAIN, with the first discrepancy (passing, force_law, energy, turn)."""
+    gate = settings.mmr_coorbital_leg_force_gate
+    if leg.edge:
+        turn = leg.exit if leg.edge == LEG_EDGE_START else leg.entry
+        held = leg.clean and turn_reflects(turn, settings) and (leg_law_holds(leg) or not gate)
+        return (LEG_EXTEND, '') if held else ('', '')
+    reflects = [turn_reflects(turn, settings) for turn in (leg.entry, leg.exit)]
+    if not any(reflects):
+        return LEG_SCATTER, LEG_TURN
+    if gate and not leg_law_holds(leg):
+        return LEG_SCATTER, LEG_FORCE
+    discrepancies = (
+        (not leg.clean, LEG_NOT_CLEAN),
+        (not leg_law_holds(leg), LEG_FORCE),
+        (leg.energy != CheckValue.PASS, LEG_ENERGY),
+        (not all(reflects), LEG_TURN),
+    )
+    first = next((name for failed, name in discrepancies if failed), '')
+    return (LEG_UNCERTAIN, first) if first else (LEG_TRANSIENT, '')
+
+
+def deciding_leg(geometry: Optional[Geometry], settings: AnalysisSettings) -> Optional[Tuple[SingleLeg, str, str]]:
+    """(leg, outcome, discrepancy) of the 1:1 leg that decides leaf G4c: the strongest outcome over
+    `Geometry.single_legs` (`LEG_RANK`; the longest leg among equals), None when no leg decides anything."""
+    if geometry is None or not geometry.single_legs:
+        return None
+    read = [(leg, *leg_outcome(leg, settings)) for leg in geometry.single_legs]
+    read = [item for item in read if item[1]]
+    if not read:
+        return None
+    return max(read, key=lambda item: (LEG_RANK[item[1]], item[0].t1_yr - item[0].t0_yr))
+
+
+def single_leg_columns(geometry: Optional[Geometry], settings: AnalysisSettings) -> dict:
+    """The deciding leg of leaf G4c (mmr_numbers.csv): span, topology, outcome and its first discrepancy."""
+    found = deciding_leg(geometry, settings)
+    if found is None:
+        return {'geo_leg_t0_yr': NAN, 'geo_leg_t1_yr': NAN, 'geo_leg_topology': '', 'geo_leg_outcome': '', 'geo_leg_discrepancy': ''}
+    leg, outcome, discrepancy = found
+    return {
+        'geo_leg_t0_yr': leg.t0_yr,
+        'geo_leg_t1_yr': leg.t1_yr,
+        'geo_leg_topology': leg.topology,
+        'geo_leg_outcome': outcome,
+        'geo_leg_discrepancy': discrepancy,
+    }
+
+
+def _leg_entries(leg: SingleLeg, settings: AnalysisSettings, ledger: Ledger) -> None:
+    """The deciding leg's comparisons on the ledger (the decision path and the figure read them)."""
+    ledger.compare(G4C_CLEAN, _flag(leg.clean), Op.EQ, 1, '', 'geo_leg_topology')
+    for turn in leg.turns:
+        out_in = abs(math.log(turn.out_in)) if is_finite(turn.out_in) and turn.out_in > 0 else None
+        ledger.compare_setting(G4C_TURN, out_in, Op.LE, settings, 'mmr_coorbital_turn_energy_tol', '', 'geo_leg_read')
+        zone = turn.zone if is_finite(turn.zone) else None
+        ledger.compare_setting(G4C_ZONE, zone, Op.LE, settings, 'mmr_coorbital_turn_zone_max', '', 'geo_leg_read')
+    ledger.compare(G4C_FORCE, _flag(leg_law_holds(leg)), Op.EQ, 1, '', 'geo_leg_read')
+    ledger.compare(G4C_ENERGY, _flag(leg.energy == CheckValue.PASS), Op.EQ, 1, '', 'geo_leg_read')
+
+
+def _g4c(angle: AngleDecision, geometry: Optional[Geometry], settings: AnalysisSettings, ledger: Ledger) -> Optional[StatusDecision]:
+    """Leaf G4c (W28 C6, rule coorbital_leg; cards g02-4 A, g02-5 B, g02-6 B, g02-7 A, g01-5 A, q-4 A): a prograde
+    1:1 circulation without a librating episode is judged on its best single leg (`deciding_leg`; the legs outside
+    every accepted run, `Geometry.single_legs`) before the circulation leaf:
+
+    - LEG_TRANSIENT -> transient/dynamic_episode, origin dynamic, the angle word episodic, cap one_coorbital_leg
+      (<= medium: half a cycle, no closed one; 2023 OE5);
+    - LEG_UNCERTAIN -> uncertain/one_coorbital_leg, origin unknown, the word episodic, action review (2018 KS: a
+      backward lap past the Earth at 779-934 yr);
+    - LEG_EXTEND -> uncertain/baseline_needed, the word insufficient_time, extend (a clean leg the record edge cuts);
+    - LEG_SCATTER -> None here: the circulation leaf decides, `decide_status` adds the near-episode cap (1991 VG:
+      552-613 yr, out/in 0.61 and 1.59).
+
+    None without a deciding leg (2008 EZ84: one reflection, no leg; it stays high) and for an alias or another angle.
+    """
+    if not settings.mmr_coorbital_single_leg or geometry is None or not geometry.coorbital:
+        return None
+    if angle.angle_status != AngleStatus.CIRCULATION or angle.subtype == AngleSubtype.ALIAS:
+        return None
+    found = deciding_leg(geometry, settings)
+    if found is None:
+        return None
+    leg, outcome, _ = found
+    _leg_entries(leg, settings, ledger)
+    fired = rules_module.fire(frozenset(), rules_module.Rule.COORBITAL_LEG)
+    if outcome == LEG_TRANSIENT:
+        return StatusDecision(
+            Status.TRANSIENT,
+            Reason.DYNAMIC_EPISODE,
+            LibrationOrigin.DYNAMIC,
+            '',
+            '',
+            caps=[str(Cap.ONE_COORBITAL_LEG)],
+            rule=RULE_G4C,
+            angle_word=AngleStatus.EPISODIC,
+            rules_fired=fired,
+        )
+    if outcome == LEG_UNCERTAIN:
+        return StatusDecision(
+            Status.UNCERTAIN,
+            Reason.ONE_COORBITAL_LEG,
+            LibrationOrigin.UNKNOWN,
+            '',
+            '',
+            rule=RULE_G4C,
+            angle_word=AngleStatus.EPISODIC,
+            rules_fired=fired,
+        )
+    if outcome == LEG_EXTEND:
+        return StatusDecision(
+            Status.UNCERTAIN,
+            Reason.BASELINE_NEEDED,
+            LibrationOrigin.NONE,
+            '',
+            '',
+            rule=RULE_G4C,
+            angle_word=AngleStatus.INSUFFICIENT_TIME,
+            rules_fired=fired,
+        )
+    return None
+
+
+RULE_G4H = 'G4h'
+G4H_LAW = 'G4h half-swing between passages: R2 of the one-harmonic law, the smaller half'
+G4H_RESTORING = 'G4h the fitted force turns sigma back at both turning points'
+
+
+def half_libration_holds(half: HalfLibration, settings: AnalysisSettings) -> bool:
+    """The half-swing follows the resonance's one-harmonic law: R^2 >= mmr_force_r2_fail on both halves of its
+    window, and the fitted force turns sigma back at both turning points."""
+    smaller = min(half.r2_h1, half.r2_h2)
+    return bool(half.restoring and is_finite(smaller) and smaller >= settings.mmr_force_r2_fail)
+
+
+def deciding_half_libration(geometry: Optional[Geometry], settings: AnalysisSettings) -> Optional[HalfLibration]:
+    """The half-swing that decides leaf G4h: of `Geometry.half_librations` those whose one-harmonic law reaches
+    mmr_force_r2_fail on both halves and turns sigma back at both turning points; one between two passages first,
+    then the longest. None without one."""
+    if geometry is None or not geometry.half_librations:
+        return None
+    held = [half for half in geometry.half_librations if half_libration_holds(half, settings)]
+    return max(held, key=lambda half: (not half.edge, half.t1_yr - half.t0_yr), default=None)
+
+
+def _g4h(angle: AngleDecision, geometry: Optional[Geometry], settings: AnalysisSettings, ledger: Ledger) -> Optional[StatusDecision]:
+    """Leaf G4h (W28 C6, rule single_half_libration, q-5 i): an angle that is not 1:1, circulating (G4, not an alias)
+    without an accepted run, whose bounded half-swing between passages follows the resonance's own one-harmonic law
+    (`deciding_half_libration`): between two passages -> uncertain/one_half_libration, the word episodic, action
+    review; next to the record's edge -> uncertain/baseline_needed, the word insufficient_time (extend: 42946 43S-6,
+    28.5-32.3 kyr to the end, R^2 0.72/0.62). Without the law nothing changes: a slow wide turn of a circulation is no
+    reflection by the resonance's potential (the W28 C15 audit: R^2 < 0.06 on most such swings)."""
+    if not settings.mmr_single_half_libration or geometry is None or geometry.coorbital:
+        return None
+    if angle.angle_status != AngleStatus.CIRCULATION or angle.subtype == AngleSubtype.ALIAS:
+        return None
+    half = deciding_half_libration(geometry, settings)
+    if half is None:
+        return None
+    column = 'geo_half_libration_read'
+    ledger.compare_setting(G4H_LAW, min(half.r2_h1, half.r2_h2), Op.GE, settings, 'mmr_force_r2_fail', '', column)
+    ledger.compare(G4H_RESTORING, _flag(half.restoring), Op.EQ, 1, '', column)
+    fired = rules_module.fire(frozenset(), rules_module.Rule.SINGLE_HALF_LIBRATION)
+    if half.edge:
+        word, reason, origin = AngleStatus.INSUFFICIENT_TIME, Reason.BASELINE_NEEDED, LibrationOrigin.NONE
+    else:
+        word, reason, origin = AngleStatus.EPISODIC, Reason.ONE_HALF_LIBRATION, LibrationOrigin.UNKNOWN
+    return StatusDecision(Status.UNCERTAIN, reason, origin, '', '', rule=RULE_G4H, angle_word=word, rules_fired=fired)
+
+
+def leg_scatters(angle: AngleDecision, geometry: Optional[Geometry], settings: AnalysisSettings) -> bool:
+    """Leaf G4c's LEG_SCATTER on this angle: the best leg's turns both scatter (the near-episode of a 1:1 leg)."""
+    if not settings.mmr_coorbital_single_leg or geometry is None or not geometry.coorbital:
+        return False
+    if angle.angle_status != AngleStatus.CIRCULATION or angle.subtype == AngleSubtype.ALIAS:
+        return False
+    found = deciding_leg(geometry, settings)
+    return found is not None and found[1] == LEG_SCATTER
 
 
 def near_episode_threshold(settings: AnalysisSettings) -> int:
@@ -1983,9 +2811,10 @@ def _decide_status(
     decision = _decide_read(
         angle, sampling, geometry, energy, response, kinematics, subresonances, kept, strength, settings, ledger, member, episodes
     )
-    if outside:  # F7: the owner acts elsewhere; its key stays for the reader, the origin is the tree's
+    if outside:  # F7/P2: the owner does not make the own episodes; its key goes to the verdict's neighbours (`roles`)
         decision.flags.extend(outside)
         decision.owner = decision.owner or owner.accepted.spec.key
+    decision.rules_fired = decision.rules_fired | owner_rules(owner, outside, settings)
     return decision
 
 
@@ -2006,10 +2835,34 @@ def _decide_read(
 ) -> StatusDecision:
     """The tree below G6 on the angle as the status reads it, with the owner F7 left in (`owner_in_episode`)."""
     if angle.angle_status == AngleStatus.CIRCULATION:
+        leg = _g4c(angle, geometry, settings, ledger) or _g4h(angle, geometry, settings, ledger)  # W28 C6: one leg
+        if leg is not None:
+            return leg
         return _circulation(angle, sampling, geometry, energy, subresonances, owner, settings, ledger, member)
     foreign = _foreign(angle, subresonances, owner, settings, ledger, member)
     if foreign is not None:
         return foreign
+    decision = _own_read(angle, sampling, geometry, energy, response, kinematics, strength, settings, ledger, episodes)
+    if owner is not None and owner.accepted is not None and owner.capture is not None:
+        if owner.capture.verdict == CAPTURE_CONFIRMED and not owner.capture.route:  # A2b: `_foreign` stepped aside
+            decision.joint_owner = owner.accepted.spec.key
+    return decision
+
+
+def _own_read(
+    angle: AngleDecision,
+    sampling: Sampling,
+    geometry: Optional[Geometry],
+    energy: Optional[EnergyAnalysis],
+    response: Optional[Response],
+    kinematics: Optional[Kinematics],
+    strength: Optional[Strength],
+    settings: AnalysisSettings,
+    ledger: Ledger,
+    episodes: Sequence[EpisodePhysics] = (),
+) -> StatusDecision:
+    """The tree after steps 1 and 2: the angle's own reading (kinematic, drift, contaminated force law, force law x
+    potential)."""
     kinematic = _kinematic(angle, geometry, response, kinematics, settings, ledger)
     if kinematic is not None:
         return kinematic
@@ -2100,7 +2953,8 @@ def baseline(
     angle: Optional[AngleDecision] = None,
     kinematics: Optional[Kinematics] = None,
 ) -> Baseline:
-    """required = (libration_min_turning_points / 2) P + 2 filter_edge_trim_cutoffs P_c [yr]; extend to a round value
+    """required = C P + 2 filter_edge_trim_cutoffs P_c [yr], C = libration_min_turning_points / 2 (mmr_extend_slow_cycles
+    for G5w, `baseline_cycles`); extend to a round value
     >= max(required, f_min T) (`mmr_extend_min_span_factor`, 2; the physical estimate N, column base_extend_to_years:
     an insufficient_time verdict asks for `next_check` instead); check pass when the span suffices, fail -> extend,
     not_measured without a period.
@@ -2113,13 +2967,22 @@ def baseline(
     if not is_finite(period) or period <= 0:
         extend = round_up(min_extension_yr(span_yr, settings))
         return Baseline(float('nan'), extend, CheckValue.NOT_MEASURED, float('nan'), '')
-    required = settings.libration_min_turning_points / 2 * period + 2 * settings.filter_edge_trim_cutoffs * cutoff_yr
+    required = baseline_cycles(angle, settings) * period + 2 * settings.filter_edge_trim_cutoffs * cutoff_yr
     enough = Ledger.from_settings(settings).compare('baseline', span_yr, Op.GE, required, 'yr', 'smp_span_yr')
     extend = None if enough else round_up(max(required, min_extension_yr(span_yr, settings)))
     cause = ''
     if enough and angle is not None and angle.angle_status == AngleStatus.INSUFFICIENT_TIME:
         cause = str(run.reject_reason) if run is not None and str(run.reject_reason) else BASE_CAUSE_PERIOD_FITS
     return Baseline(required, extend, CheckValue.PASS if enough else CheckValue.FAIL, period, source, cause)
+
+
+def baseline_cycles(angle: Optional[AngleDecision], settings: AnalysisSettings) -> float:
+    """The cycles of P the record needs: one full cycle (libration_min_turning_points / 2), or for a slow swing in the
+    well (G5w, W28 B6c) mmr_extend_slow_cycles slow periods (a budget convention: 523683 2U-9, P 112 kyr in 100 kyr,
+    asks for 400 kyr instead of 200 kyr, less than two slow cycles)."""
+    if angle is not None and angle.rule == RULE_G5W:
+        return float(settings.mmr_extend_slow_cycles)
+    return settings.libration_min_turning_points / 2
 
 
 BASE_CAUSE_PERIOD_FITS = 'period_fits_record'  # Baseline.cause without a run: P fits the record, nothing else known
@@ -2151,6 +3014,233 @@ def next_check(estimate_yr: float, span_yr: float, settings: AnalysisSettings) -
     return round_up(max(low, min(estimate_yr, settings.mmr_next_check_span_factor * span_yr)))
 
 
+# --------------------------------------------------------------------------------------------- B9: length-limited extend
+
+# The not-measured reasons a longer record removes (W28 B9; cards g08-5 B, g08-6 A, g06-6 A, g06-7 A). Names, not
+# thresholds: each is read from the measurement's own reason (`force_windows_short`, the leaf 5n itself).
+LENGTH_FORCE_WINDOWS = 'force_windows'  # L4 not_measured with fewer than mmr_force_min_windows windows
+LENGTH_CYCLES = 'independent_cycles'  # 5n: fewer than libration_centre_min_estimates independent cycles
+LENGTH_LIMITED = frozenset({LENGTH_FORCE_WINDOWS, LENGTH_CYCLES})
+# The uncertain leaves where nothing measured the angle's own force, and the not-measured check that decides each:
+# 5e (R0 failed, L4 missing: TX9), 5g (the identity fails, the force law that would tell a kinematic cycle is missing:
+# 2003 EH16), 5x (the scale out of range, nothing measured: 79653), 5n (one independent cycle: 2003 ND). The objection
+# leaves (5a, 5a*, 5b, 5f, 5o, 5s*) keep review: a longer record does not remove a measured objection.
+EXTEND_LEAVES = {'5e': LENGTH_FORCE_WINDOWS, '5g': LENGTH_FORCE_WINDOWS, '5x': LENGTH_FORCE_WINDOWS, '5n': LENGTH_CYCLES}
+
+
+def force_windows_short(response: Optional[Response], settings: AnalysisSettings) -> bool:
+    """L4 is not measured for lack of length: not_measured with fewer than mmr_force_min_windows windows of
+    mmr_force_window_cycles periods, and not for a forced line at its period (5f). L4 not measured with enough windows
+    (a swing below mmr_a_response_min_amp_deg, or R-ALIAS-A's withdrawal) is not length-limited."""
+    if response is None or response.a_response != CheckValue.NOT_MEASURED or response.force_contaminated:
+        return False
+    return len(response.windows) < settings.mmr_force_min_windows
+
+
+def last_episode_at_end(geometry: Geometry, settings: AnalysisSettings) -> Optional[Episode]:
+    """The last librating episode (not before a jump of a) that reaches the record's end (`covers_edges`), else None:
+    only such an episode gains windows and cycles from a longer record."""
+    episodes = [e for e in librating_episodes(geometry, settings) if covers_edges(e, settings)[1]]
+    return max(episodes, key=lambda e: e.t_end_yr, default=None)
+
+
+def force_window_extension(episode: Episode, settings: AnalysisSettings) -> float:
+    """A-FW [yr]: the total length that gives the last episode mmr_extend_force_windows force-law windows,
+    t_start + mmr_extend_force_windows x mmr_force_window_cycles x P (its median period), rounded up (`round_up`)."""
+    windows = settings.mmr_extend_force_windows * settings.mmr_force_window_cycles * episode.period_med_yr
+    return round_up(episode.t_start_yr + windows)
+
+
+def cycles_extension(episode: Episode, cutoff_yr: float, settings: AnalysisSettings) -> float:
+    """N of leaf 5n [yr]: the time the episode's turning points need to hold libration_centre_min_estimates independent
+    cycles (2 m + 1 TPs, `geometry` counts (n_TP - 1) // 2), at least one more TP, from its last TP at half its period
+    each, plus the edge trim filter_edge_trim_cutoffs x P_c that hides the record's end."""
+    missing = max(2 * settings.libration_centre_min_estimates + 1 - len(episode.tp_times_yr), 1)
+    trim = settings.filter_edge_trim_cutoffs * cutoff_yr
+    return float(episode.tp_times_yr[-1] + missing * episode.period_med_yr / 2 + trim)
+
+
+def length_limited_extension(
+    decision: StatusDecision,
+    angle: AngleDecision,
+    geometry: Optional[Geometry],
+    response: Optional[Response],
+    span_yr: float,
+    cutoff_yr: float,
+    settings: AnalysisSettings,
+) -> Optional[float]:
+    """W28 B9: extend_to [yr] for an uncertain verdict whose deciding not-measured check (`EXTEND_LEAVES`) is
+    length-limited, else None (the action stays review). `angle` is the angle the status read (`status_basis`),
+    `response` the one the tree read (rule R).
+
+    Only the last episode reaching the record's end gains from a longer record (`last_episode_at_end`). L4 short of
+    windows asks for A-FW (`force_window_extension`); leaf 5n, when its decisive episode is that last one, asks for the
+    N8 next check of its cycles (`next_check` of `cycles_extension`: round_up(max(f_min T, min(N, f_next T)))). The
+    result is the longest of them that exceeds the record; none exceeding it is no length limit."""
+    deciding = EXTEND_LEAVES.get(decision.rule)
+    if decision.status != Status.UNCERTAIN or deciding is None or geometry is None:
+        return None
+    late = last_episode_at_end(geometry, settings)
+    if late is None or not is_finite(late.period_med_yr):
+        return None
+    lengths = []
+    if force_windows_short(response, settings):
+        lengths.append(force_window_extension(late, settings))
+    elif deciding == LENGTH_FORCE_WINDOWS:
+        return None
+    if deciding == LENGTH_CYCLES:
+        if angle.episode_id != late.episode_id:
+            return None
+        lengths.append(next_check(cycles_extension(late, cutoff_yr, settings), span_yr, settings))
+    longest = max((x for x in lengths if is_finite(x) and x > span_yr), default=None)
+    return float(longest) if longest is not None else None
+
+
+# --------------------------------------------------------------------------------------------- C14: the record's edges
+
+# `RecordEdges.direction`: the record edge a longer integration would resolve (the flag extend_time)
+EXTEND_FORWARD, EXTEND_BACKWARD, EXTEND_BOTH = 'forward', 'backward', 'both'
+EDGE_DIRECTION = {LEG_EDGE_END: EXTEND_FORWARD, LEG_EDGE_START: EXTEND_BACKWARD}
+# words that already say how the record ends (or describe it whole): no edge stretch is read under them
+WORDS_OF_THEIR_OWN = (AngleStatus.LIBRATION, AngleStatus.DRIFT, AngleStatus.INSUFFICIENT_TIME, AngleStatus.UNDEFINED)
+# the final regimes an end arc may replace: none, or the circulation of G1c / an observed exit
+REPLACEABLE_REGIMES = ('', str(AngleStatus.CIRCULATION))
+
+
+@dataclass(frozen=True)
+class RecordEdges:
+    """What the record's edges add to a verdict (W28 C14, rule end_arc_extend, `record_edges`): the final regime (an
+    end arc or stall after circulation replaces '' or circulation), the cap record_ends_unresolved, the direction of
+    the flag extend_time ('' without it) and its length (`extend_to_years`), and what set the flag (`sources`:
+    'end:slowdown', 'start:reflection', 'leg:end', 'half:start', ...)."""
+
+    final_regime: str = ''
+    final_regime_start_yr: float = NAN
+    caps: Tuple[str, ...] = ()
+    direction: str = ''
+    extend_to_years: Optional[float] = None
+    sources: Tuple[str, ...] = ()
+
+    @property
+    def flags(self) -> List[str]:
+        """[extend_time] with a direction, else []."""
+        return [str(Flag.EXTEND_TIME)] if self.direction else []
+
+    @property
+    def rules_fired(self) -> frozenset:
+        """end_arc_extend when the rule acted (the flag is set)."""
+        return rules_module.fire(frozenset(), rules_module.Rule.END_ARC_EXTEND) if self.direction else frozenset()
+
+
+def edge_stretch_holds(
+    stretch: EdgeStretch, geometry: Geometry, episodes: Sequence[Episode], floor_yr: float, settings: AnalysisSettings, ledger: Ledger
+) -> bool:
+    """An edge stretch (`Geometry.edge_stretches`) the rule reads: of a kind (slowdown, or a reflection of a 1:1 angle:
+    q-5 i reads a non-1:1 turn only through G4h's law), at the record's own edge (not a window start after a jump of
+    a), no librating episode in it (the episode rules read those edges), 2 x its length at least
+    mmr_end_arc_min_floor_periods floor periods (the stretch holds no turn of the slow centre, so a cycle through it
+    lasts at least 2 D, read against the floor as a 1:1 leg's 2 L is, `geometry.coorbital_single_legs`; 2008 EZ84's
+    start, 87 yr, is 1.57 floors), and a slowdown longer than mmr_end_arc_slowdown_factor x the longest revolution of
+    its pass and, when the slow centre reverses inside the window, than the longest time between two of its turns (a
+    circulation near a* that reverses on its own slow scale slows before every reversal: 37908 23J-8, 323879 6V-41)."""
+    if not stretch.kind:
+        return False
+    if stretch.side == LEG_EDGE_START and Flag.LAST_REGIME_AFTER_JUMP in geometry.flags:
+        return False  # the window starts at a jump of a, not at the record's start: no backward integration reaches it
+    if stretch.kind == EDGE_REFLECTION and not geometry.coorbital:
+        return False  # q-5 i: a slow turn of a non-1:1 circulation is no reflection by its potential (G4h reads those)
+    edge = geometry.window[1] if stretch.side == LEG_EDGE_END else geometry.window[0]
+    lo, hi = sorted((stretch.t_mark_yr, edge))
+    if any(episode.t_end_yr > lo and episode.t_start_yr < hi for episode in episodes):
+        return False
+    prefix = f'{RULE_END_ARC} {stretch.side} {stretch.kind}'
+    column = f'geo_{stretch.side}_edge_duration_yr'
+    length = 2 * stretch.duration_yr / floor_yr if floor_yr > 0 else math.inf
+    if not ledger.compare_setting(f'{prefix}: 2 x length / floor', length, Op.GE, settings, 'mmr_end_arc_min_floor_periods', 'P', column):
+        return False
+    if stretch.kind != EDGE_SLOWDOWN:
+        return True
+    ratio = stretch.duration_yr / stretch.last_rev_yr if is_finite(stretch.last_rev_yr) and stretch.last_rev_yr > 0 else None
+    name = f'{prefix}: length / the longest revolution'
+    if not ledger.compare_setting(name, ratio, Op.GT, settings, 'mmr_end_arc_slowdown_factor', '', column):
+        return False
+    if not is_finite(stretch.reversal_yr):
+        return True
+    name = f'{prefix}: length against the longest time between turns of the slow centre'
+    return bool(ledger.compare(name, stretch.duration_yr, Op.GT, stretch.reversal_yr, 'yr', f'geo_{stretch.side}_edge_reversal_yr'))
+
+
+RULE_END_ARC = 'end arc'
+
+
+def record_edges(
+    geometry: Optional[Geometry],
+    decision: StatusDecision,
+    reported: AngleStatus | str,
+    regime: str,
+    regime_start_yr: float,
+    span_yr: float,
+    settings: AnalysisSettings,
+    ledger: Ledger,
+) -> RecordEdges:
+    """Rule end_arc_extend (W28 C14; cards g01-7 A, g01-4 A, g02-4 A; MMR_RECORD_EDGE_STRETCH), after the tree and the
+    final regime (`final_regime`: `regime`, `regime_start_yr`); `reported` is the verdict's angle word.
+
+    - End slowdown (`edge_stretch_holds`, the reported word not one of `WORDS_OF_THEIR_OWN`): final_regime arc
+      (range >= pi, as G6) or stall from the last completed revolution, when the final regime was '' or circulation;
+      flag extend_time forward; a non_resonant circulation gets the cap record_ends_unresolved (<= medium: the record
+      ends before it shows whether sigma circulates on or is captured; 2022 BB2's last 500 yr). Its comparisons go to
+      `ledger` only then.
+    - Start slowdown, and one reflection of a 1:1 angle at either edge (2008 EZ84 at 144 yr): the flag only (backward
+      at the start, forward at the end), no cap: one reflection is no cycle (g01-4 A keeps EZ84 high).
+    - Without a librating episode: a clean 1:1 edge leg whose turn reflects (leaf G4c's LEG_EXTEND) and an edge
+      half-libration that holds its law (G4h) give the flag of their edge as well (q-4 A: cut by the edge -> extend).
+
+    The flag's length: the N8 next check without an estimate, round_up(max(f_min T, ...)) = round_up(f_min T)
+    (`next_check` of `min_extension_yr`; no 1:1 exit estimate, D18 rejected). Comparisons that only set the flag are
+    read on a scratch ledger: the flag changes no status and no level."""
+    unchanged = RecordEdges(regime, regime_start_yr)
+    if not settings.mmr_record_edge_stretch or geometry is None:
+        return unchanged
+    episodes = librating_episodes(geometry, settings)
+    floor = period_floor(geometry, settings)[0]
+    found = edge_sources(geometry, reported, episodes, floor, settings)
+    if not found:
+        return unchanged
+    caps: Tuple[str, ...] = ()
+    arc = next((stretch for side, label, stretch in found if side == LEG_EDGE_END and label == EDGE_SLOWDOWN), None)
+    if arc is not None and regime in REPLACEABLE_REGIMES:
+        regime, regime_start_yr = str(AngleSubtype.ARC if arc.range_rad >= np.pi else AngleSubtype.STALL), arc.t_mark_yr
+        if decision.status == Status.NON_RESONANT and str(reported) == AngleStatus.CIRCULATION:
+            edge_stretch_holds(arc, geometry, episodes, floor, settings, ledger)  # the cap's numbers on the record
+            caps = (str(Cap.RECORD_ENDS_UNRESOLVED),)
+    sides = {side for side, _, _ in found}
+    direction = EXTEND_BOTH if len(sides) == 2 else EDGE_DIRECTION[found[0][0]]
+    extend = next_check(min_extension_yr(span_yr, settings), span_yr, settings)
+    sources = tuple(dict.fromkeys(f'{side}:{label}' if stretch else f'{label}:{side}' for side, label, stretch in found))
+    return RecordEdges(regime, regime_start_yr, caps, direction, extend, sources)
+
+
+def edge_sources(
+    geometry: Geometry, reported: AngleStatus | str, episodes: Sequence[Episode], floor_yr: float, settings: AnalysisSettings
+) -> List[Tuple[str, str, Optional[EdgeStretch]]]:
+    """(edge, what, the stretch or None) of everything that sets the flag extend_time (`record_edges`): the edge
+    stretches that hold (`edge_stretch_holds` on a scratch ledger, not under `WORDS_OF_THEIR_OWN`), and without a
+    librating episode the 1:1 edge legs of outcome LEG_EXTEND ('leg') and the edge half-librations that hold their
+    law ('half')."""
+    scratch = Ledger.from_settings(settings)
+    found: List[Tuple[str, str, Optional[EdgeStretch]]] = []
+    if str(reported) not in WORDS_OF_THEIR_OWN and is_finite(floor_yr):
+        held = (
+            stretch for stretch in geometry.edge_stretches if edge_stretch_holds(stretch, geometry, episodes, floor_yr, settings, scratch)
+        )
+        found += [(stretch.side, stretch.kind, stretch) for stretch in held]
+    if not episodes:
+        found += [(leg.edge, 'leg', None) for leg in geometry.single_legs if leg.edge and leg_outcome(leg, settings)[0] == LEG_EXTEND]
+        found += [(half.edge, 'half', None) for half in geometry.half_librations if half.edge and half_libration_holds(half, settings)]
+    return found
+
+
 def baseline_period(
     angle: Optional[AngleDecision], geometry: Optional[Geometry], kinematics: Optional[Kinematics], b5_period_yr: float
 ) -> Tuple[float, str, Optional[Episode]]:
@@ -2162,7 +3252,8 @@ def baseline_period(
       the 300-kyr record decides at the scale of the centre's turns, 76 kyr) and 1566 1R-7J-4 (two TPs 170 yr apart,
       then 10 kyr of a slow arc; the 200-kyr record circulates);
     - arc: `slow_timescale` (2003 KQ18: the 2 omega cycle, 22.8 kyr);
-    - stall: `stall_timescale` (2016 FA13: one revolution at 0.12 rad/kyr, 52 kyr);
+    - stall: `stall_timescale` (2016 FA13: one revolution at 0.12 rad/kyr, 52 kyr); a stall of the slow centre
+      under set-aside ripples (B6b, no `arc_stall`): `slow_timescale`;
     - otherwise, or when the subtype's own scale is not measured: the measured cycle (`cycle`), the shortest period
       a stall's force bound allows (`stall_force`), B5's P_min (`b5`)."""
     subtype = angle.subtype if angle is not None and angle.angle_status == AngleStatus.INSUFFICIENT_TIME else None
@@ -2176,6 +3267,8 @@ def baseline_period(
         candidates = slow_timescale(geometry, kinematics, b5_period_yr)
     elif geometry is not None and subtype == AngleSubtype.STALL and geometry.arc_stall is not None:
         candidates = stall_timescale(geometry, b5_period_yr)
+    elif geometry is not None and subtype == AngleSubtype.STALL and ripples(geometry):
+        candidates = slow_timescale(geometry, kinematics, b5_period_yr)  # B6b: the slow centre under set-aside ripples
     candidates = [(period, source) for period, source in candidates if is_finite(period) and period > 0]
     if candidates:
         return (*max(candidates), run)
@@ -2328,7 +3421,7 @@ def evaluate_margins(
         margins['W'] = _w_margin(owner, scratch, settings)
     if angle.angle_status == AngleStatus.CIRCULATION:
         margins.update(_circulation_margins(angle, context, sampling, geometry, response, scratch, settings))
-    margins.update(_origin_margins(angle, decision, response, kinematics, scratch, settings))
+    margins.update(_origin_margins(angle, decision, response, kinematics, scratch, settings, geometry))
     near = near_episode_tp(geometry, settings)
     if _claims_no_libration(angle, decision, geometry) and near and settings.libration_near_episode_tp_deficit > 0:
         margins['N'] = _grade(scratch, 'N', near, (Op.LT, near_episode_threshold(settings)))
@@ -2361,19 +3454,85 @@ def kinematic_strength_margin(strength: Strength) -> MarginValue:
 
 
 def _origin_margins(
-    angle: AngleDecision, decision: StatusDecision, response, kinematics, scratch: Ledger, settings: AnalysisSettings
+    angle: AngleDecision,
+    decision: StatusDecision,
+    response,
+    kinematics,
+    scratch: Ledger,
+    settings: AnalysisSettings,
+    geometry: Optional[Geometry] = None,
 ) -> Dict[str, MarginValue]:
-    """K1 for a kinematic origin, B5 for non_resonant drift and kinematic libration. K2 (rule 3k2) decided on the slow
-    centre's correlation, so K1 grades that one, and its verdict is a drift of the centre, so B5 grades it too."""
+    """K1 for a kinematic origin, K1e for a kinematic libration, B5 for non_resonant drift and kinematic libration. K2
+    (rule 3k2) decided on the slow centre's correlation, so K1 grades that one, and its verdict is a drift of the centre,
+    so B5 grades it too. K3s (rule K3s) adds none: its level is the circulation's the tree read (C1-C5 grade the fine
+    scale; the slow scale only names the mechanism of the slow swing, and its failed identity is what B5 would ask)."""
     margins = {}
+    if decision.rule == RULE_K3S:
+        return margins
     k2 = decision.rule == RULE_K2
     if decision.origin == LibrationOrigin.KINEMATIC and kinematics is not None:
         corr = kinematics.centre_corr_rate if k2 else kinematics.corr_rate
         margins['K1'] = _grade(scratch, 'K1', corr, (Op.GE, settings.mmr_k1_full))
+        if decision.reason == Reason.KINEMATIC_LIBRATION:
+            margins['K1e'] = kinematic_episode_margin(angle, response, kinematics, geometry, scratch, settings)
     drift_or_kinematic = angle.angle_status == AngleStatus.DRIFT or decision.reason == Reason.KINEMATIC_LIBRATION or k2
     if decision.status == Status.NON_RESONANT and drift_or_kinematic:
         margins['B5'] = _b5_margin(response, scratch, settings)
     return margins
+
+
+def kinematic_episode_margin(
+    angle: AngleDecision,
+    response: Optional[Response],
+    kinematics: Kinematics,
+    geometry: Optional[Geometry],
+    scratch: Ledger,
+    settings: AnalysisSettings,
+) -> MarginValue:
+    """K1e (A5, W28, card g05-3 B; support, value: K1 on the episode): the measured physics of a kinematic libration.
+    Full when three measurements hold together: the decisive episode's sigma follows p varpi (`Kinematics.k1_episode`
+    >= mmr_kin_corr_min, `kinematics.episode_kinematics`), a is flat (the B1 ratio of the response the tree read <
+    mmr_kin_b1_clear, far below what a pendulum needs) and the episode's period is a secular one
+    (`secular_period_offset` <= mmr_kin_period_tol: the e-cycle or the double omega cycle). The conjunction is the
+    measurement of the kinematic cause, so a part that does not hold leaves it not_measured: it argues for no other
+    status (41588 3J+9S-2: B1 0.095). not_applicable for a retrograde angle or one without the body's varpi.
+    In the physics list of a kinematic verdict (`physics_margins_of`), a full K1e lifts all_physics_not_measured
+    (285637 3M+7J-6: 0.971, B1 6e-5, offset 0.004; 481085 7E-10M-6: 1.000, 3.2e-3, 0.004)."""
+    if kinematics.k1_episode_reason in (K1E_RETROGRADE, K1E_NO_VARPI):
+        return _margin(Margin.NOT_APPLICABLE, None, 'K1e')
+    corr = kinematics.k1_episode
+    b1 = response.b1_ratio if response is not None else None
+    offset = secular_period_offset(decisive_period(angle, geometry), kinematics)
+    holds = (
+        is_finite(corr)
+        and is_finite(b1)
+        and is_finite(offset)
+        and scratch.compare('K1e', corr, Op.GE, settings.mmr_kin_corr_min, '', '')
+        and scratch.compare('K1e B1', b1, Op.LT, settings.mmr_kin_b1_clear, '', '')
+        and scratch.compare('K1e period', offset, Op.LE, settings.mmr_kin_period_tol, '', '')
+    )
+    return _margin(Margin.FULL if holds else Margin.NOT_MEASURED, corr, 'K1e')
+
+
+def physics_margins_of(decision: StatusDecision, physics: Sequence[str]) -> Tuple[str, ...]:
+    """The physics margins of a verdict (confidence.raw_level): `physics` (`strength.physics_margins` of
+    PHYSICS_MARGINS) and, for a kinematic origin, KINEMATIC_PHYSICS_MARGINS (K1e; not for K3s, graded as the
+    circulation it read)."""
+    if decision.origin == LibrationOrigin.KINEMATIC and decision.rule != RULE_K3S:
+        return tuple(physics) + KINEMATIC_PHYSICS_MARGINS
+    return tuple(physics)
+
+
+def kinematic_high_rules(decision: StatusDecision, margins: Mapping[str, MarginValue], physics: Sequence[str]) -> frozenset:
+    """Rule kinematic_high where K1e acted: it is full and without it every physics margin of the verdict would be
+    not_measured (the cap all_physics_not_measured it removed)."""
+    k1e = margins.get('K1e')
+    if decision.origin != LibrationOrigin.KINEMATIC or k1e is None or k1e.margin != Margin.FULL:
+        return frozenset()
+    others = [margins[m].margin for m in physics if m in margins and m != 'K1e' and margins[m].margin != Margin.NOT_APPLICABLE]
+    if others and any(margin != Margin.NOT_MEASURED for margin in others):
+        return frozenset()
+    return rules_module.fire(frozenset(), rules_module.Rule.KINEMATIC_HIGH)
 
 
 def _episode_margins(
@@ -2404,6 +3563,8 @@ def _episode_margins(
     if own or decision.origin == LibrationOrigin.NONE:
         margins['L4'] = _l4(response, decision)
     margins['L5'] = _l5(physics, energy, context, scratch, settings)
+    if episode.several_wells:  # one pendulum per well: the small periods of a 1:1 regime change differ (W28 C7)
+        margins['L5'] = _margin(Margin.NOT_APPLICABLE, margins['L5'].value, 'L5')
     margins['L6'] = _l6(episode, scratch, settings)
     if angle.angle_status == AngleStatus.LIBRATION:
         gap = max(episode.coverage_start_gap_p, episode.coverage_end_gap_p)
@@ -2411,6 +3572,8 @@ def _episode_margins(
     if angle.angle_status == AngleStatus.EPISODIC and physics is not None:
         applies = capture_claimed(decision) and not owner_librates_before(decision, owner, physics, settings, scratch)
         margins['O1'] = _o1(physics, energy, scratch, settings) if applies else _margin(Margin.NOT_APPLICABLE, None, 'O1')
+        if applies and onset_ratio_fails(physics, settings):  # the narrowed O1 decided between fail and thin (B4)
+            decision.rules_fired = rules_module.fire(decision.rules_fired, rules_module.Rule.O1_FOREIGN_WAVE)
     if own:
         margins['R0'] = _potential_margin(energy)
     return margins
@@ -2474,8 +3637,53 @@ def owner_background_cover(owner: Optional[OwnerResult], window: Tuple[float, fl
     return covered_fraction(librations, window)
 
 
+# the ledger names of O1's three parts (B4, W28; the figure's O1 rows read them)
+O1C_COHERENCE = 'O1c background a-wave coherent at P: R2 of one sinusoid at P'
+O1C_PHASE = 'O1c background a-wave continues into the episode in phase: phase gap'
+O1L_OWN_LAW = "O1l episode's own law explains the background: R2 there / R2 on the episode"
+
+
+def onset_ratio_fails(physics: Optional[EpisodePhysics], settings: AnalysisSettings) -> bool:
+    """O1's ratio (`onset_ratio`) is measured and at least mmr_o1_ratio_fail (the old failure; leaf 5o still reads it
+    alone, `_measured_objection`)."""
+    ratio = onset_ratio(physics)
+    return is_finite(ratio) and ratio >= settings.mmr_o1_ratio_fail
+
+
+def foreign_wave(physics: EpisodePhysics, ledger: Ledger, settings: AnalysisSettings) -> bool:
+    """O1's objection (B4, W28; cards g03-4 A, g08-3 A, author 2026-10-31): the a-wave before the episode is a foreign
+    wave the libration only rides. All three must hold:
+
+      O1c  one sinusoid at the episode's period P explains >= mmr_o1_coherence_r2_min of the background's band-passed
+           a (a wave: encounter kicks or a circulation sweeping through the band are not coherent at P; 2020 CB 0.02);
+      O1c  its phase, extrapolated into the episode, lies within mmr_o1_phase_gap_max_deg of the one fitted on the
+           episode's first 2P (a capture starts its own phase; 2024 JZ64: coherent, 146 deg off);
+      O1l  NOT explained: a_dot there under the episode's own law (K, phi0; the 1:1 law's K/K_theory) reaches less than
+           mmr_o1_own_law_r2_fraction of the same R^2 on the episode. Capture theory: before a capture the body
+           circulates near the separatrix under the same force (Murray & Dermott 1999 §8.12), so a wave that follows
+           the episode's own law is the cause of the capture, not a rival explanation (16183: 0.52 of 0.63).
+
+    A part that cannot be measured is no evidence of a foreign wave for O1c (nan never coherent) and no explanation
+    for O1l (nan never explains)."""
+    coherent = ledger.compare_setting(
+        O1C_COHERENCE, physics.onset_coherence_r2, Op.GE, settings, 'mmr_o1_coherence_r2_min', '', 'ep_onset_coherence_r2'
+    )
+    in_phase = ledger.compare_setting(
+        O1C_PHASE, physics.onset_phase_gap_deg, Op.LE, settings, 'mmr_o1_phase_gap_max_deg', 'deg', 'ep_onset_phase_gap_deg'
+    )
+    episode = physics.onset_own_law_r2_episode
+    share = physics.onset_own_law_r2 / episode if is_finite(physics.onset_own_law_r2) and is_finite(episode) and episode > 0 else None
+    explained = ledger.compare_setting(O1L_OWN_LAW, share, Op.GE, settings, 'mmr_o1_own_law_r2_fraction', '', '')
+    return bool(coherent) and bool(in_phase) and not bool(explained)
+
+
 def _o1(physics: EpisodePhysics, energy: Optional[EnergyAnalysis], scratch: Ledger, settings: AnalysisSettings) -> MarginValue:
     """Onset: the a-wave in the band before the episode over the one inside it (a capture makes its own wave).
+
+    The ratio grades it (full below mmr_o1_ratio_thin, thin below mmr_o1_ratio_fail); at or above mmr_o1_ratio_fail it
+    fails only for a foreign wave (`foreign_wave`: coherent at P, in phase, not the episode's own law) and is thin
+    otherwise: the wave before a capture from circulation or after a kick is the capture's cause (B4, W28). The cap
+    onset_failed reads this margin (`collect_caps`); leaf 5o keeps the ratio alone (`_measured_objection`).
 
     not_applicable under episodes_in_separatrix_zone: there the angle crosses the separatrix back and forth inside the
     zone, and the a-wave before the episode is the same force's near-separatrix circulation, not an external wave
@@ -2485,7 +3693,10 @@ def _o1(physics: EpisodePhysics, energy: Optional[EnergyAnalysis], scratch: Ledg
     ratio = onset_ratio(physics)
     if not is_finite(ratio):
         return _margin(Margin.NOT_MEASURED, None, 'O1')
-    return _grade(scratch, 'O1', ratio, (Op.LT, settings.mmr_o1_ratio_thin), (Op.LT, settings.mmr_o1_ratio_fail))
+    margin = _grade(scratch, 'O1', ratio, (Op.LT, settings.mmr_o1_ratio_thin), (Op.LT, settings.mmr_o1_ratio_fail))
+    if margin.margin == Margin.FAIL and not foreign_wave(physics, scratch, settings):
+        return _margin(Margin.THIN, ratio, 'O1')
+    return margin
 
 
 def _l4(response: Optional[Response], decision: StatusDecision) -> MarginValue:
@@ -2496,6 +3707,9 @@ def _l4(response: Optional[Response], decision: StatusDecision) -> MarginValue:
     harmonic = taken_harmonic_law(response)
     if harmonic is not None:  # the N-harmonic law took L4 (CS12): its R^2 is the margin's value
         value = harmonic.r2
+    direct = taken_direct_law(response)
+    if direct is not None:  # the direct averaged-force law took L4 (B8): its R^2 is the margin's value
+        value = direct.r2
     if response.a_response == CheckValue.FAIL and decision.rule.startswith('5c'):
         return _margin(Margin.THIN, value, 'L4')  # 5c: the potential with a carries the dynamics
     return _check_margin(response.a_response, value, 'L4', thin=response.a_response_thin)
@@ -2597,7 +3811,7 @@ def _w_margin(owner: OwnerResult, scratch: Ledger, settings: AnalysisSettings) -
     implemented) or the best candidate is phase_unresolved; an owner accepted by 'potential' full when its R^2 >=
     mmr_w_r2_full and its scale range lies within [1/mmr_owner_potential_scale_full, mmr_owner_potential_scale_full];
     another accepted owner full when it fits a strongly with a reachable force; none accepted: full while the best
-    candidate's R^2 stays below mmr_w_r2_none."""
+    candidate's R^2 stays below mmr_w_r2_none; an accepted owner refused by F7 (cover) or P2 (Psi/u turns) is thin."""
     if owner.check == CheckValue.NOT_APPLICABLE and FLAG_COORBITAL in owner.flags:
         return _margin(Margin.NOT_APPLICABLE, None, 'W')
     if owner.check not in MEASURED:
@@ -2605,6 +3819,10 @@ def _w_margin(owner: OwnerResult, scratch: Ledger, settings: AnalysisSettings) -
     if owner.accepted is not None and scratch.compare('W cover', owner.cover, Op.LT, settings.mmr_owner_cover_min, '', ''):
         # F7: an owner acts elsewhere in the record, not in sigma's episode: a near miss of the foreign explanation
         return _margin(Margin.THIN, owner.cover, 'W')
+    turns = owner.psi_turns_per_cycle
+    if owner.accepted is not None and scratch.compare('W P2', turns, Op.GE, settings.mmr_owner_psi_turns_per_cycle_max, '', ''):
+        # P2: the owner fits a in sigma's episode but cannot make its cycles: the same near miss
+        return _margin(Margin.THIN, turns, 'W')
     if owner.accepted is not None:
         accepted = owner.accepted
         potential = accepted.potential
@@ -2743,6 +3961,7 @@ def collect_caps(
     caps += near_separatrix_caps(angle, decision, energy, margins)
     if margins.get('O1') is not None and margins['O1'].margin == Margin.FAIL and capture_claimed(decision):
         caps.append(str(Cap.ONSET_FAILED))
+    caps += theory_only_caps(decision, margins, response)
     if margins.get('Z') is not None and margins['Z'].margin == Margin.NOT_MEASURED:
         caps.append(str(Cap.ZONE_NOT_MEASURED))
     no_zone = energy is None or energy.zone is None
@@ -2758,6 +3977,44 @@ def collect_caps(
     if sampling is not None and sampling.jitter_low_e:
         caps.append(str(Cap.JITTER_LOW_E))
     return list(dict.fromkeys(caps))
+
+
+def theory_only_caps(decision: StatusDecision, margins: Mapping[str, MarginValue], response: Optional[Response]) -> List[str]:
+    """force_law_theory_only (<= medium; W28 B8, card g07-2 A): L4 of the response the tree read passes only through
+    the direct averaged-force law (`taken_direct_law`) on a verdict that claims the angle's own dynamics: a computed
+    first-order average with a fitted scale, not the measured shape of the force law; the harmonic law itself failed
+    or was thin (59358 8N-13: transient, medium at most)."""
+    l4 = margins.get('L4')
+    if l4 is None or l4.margin not in (Margin.FULL, Margin.THIN) or not own_dynamics_claimed(decision):
+        return []
+    return [str(Cap.FORCE_LAW_THEORY_ONLY)] if taken_direct_law(response) is not None else []
+
+
+# the physical supports of the angle's own force for the cap no_full_physics_support (q-2 b): the force law (the 1:1
+# law of a co-orbital takes L4), the potential with a and the strength (in the physics list only when measured by
+# direct averaging: `strength.physics_margins`). The zone (Z) and the owner search (W) exclude rivals, they do not
+# show the own force
+FULL_SUPPORT_MARGINS = ('L4', 'R0', 'F')
+
+
+def full_support_caps(
+    decision: StatusDecision, margins: Mapping[str, MarginValue], physics: Sequence[str], settings: AnalysisSettings
+) -> List[str]:
+    """no_full_physics_support (<= medium; author 2026-10-31, q-2 b, MMR_HIGH_NEEDS_FULL_SUPPORT): a resonant,
+    transient or near_separatrix verdict that claims the angle's own libration (`own_dynamics_claimed`) is high only
+    when at least one of its physical supports (`FULL_SUPPORT_MARGINS` that are in `physics`, the margins as the tree
+    read them) passes with its full margin. Not added when every applicable physics margin is not_measured: the cap
+    all_physics_not_measured says that already. Kinematic, induced and subresonance verdicts rest on other evidence."""
+    claims = decision.status in (Status.RESONANT, Status.TRANSIENT, Status.NEAR_SEPARATRIX)
+    if not (settings.mmr_high_needs_full_support and claims and own_dynamics_claimed(decision)):
+        return []
+    applicable = [margins[m].margin for m in physics if m in margins and margins[m].margin != Margin.NOT_APPLICABLE]
+    if not applicable or all(margin == Margin.NOT_MEASURED for margin in applicable):
+        return []
+    supports = [m for m in FULL_SUPPORT_MARGINS if m in physics and m in margins]
+    if any(margins[m].margin == Margin.FULL for m in supports):
+        return []
+    return [str(Cap.NO_FULL_PHYSICS_SUPPORT)]
 
 
 def one_cycle_energy_caps(caps: Sequence[str], response: Optional[Response], settings: AnalysisSettings, one_to_one: bool) -> List[str]:
@@ -2796,7 +4053,9 @@ def subresonance_caps(decision: StatusDecision, subresonances: Optional[Subreson
       by the order only (subresonance_tie), or test D did not confirm the member (not computed or disagrees);
     - any verdict after a scan that could not decide (check not_measured): no planets of the angle (planets_missing),
       beta = varpi_P - varpi librates (subresonance_undetermined) or a nodal member won (nodal_subresonance_candidate).
-      The subresonance mechanism is then not excluded, so a kinematic or dynamic reading is not above medium."""
+      The subresonance mechanism is then not excluded, so a kinematic or dynamic reading is not above medium. Since
+      W28 A6b every accepted episode is scanned in its own window: another episode whose window could not decide
+      (`SubresonanceResult.episode_undecided`) leaves the mechanism open there, and caps the same way."""
     if subresonances is None:
         return []
     caps = []
@@ -2807,14 +4066,16 @@ def subresonance_caps(decision: StatusDecision, subresonances: Optional[Subreson
             caps.append(str(Cap.SUBRESONANCE_TIE))
         if not subresonances.theory_measured:
             caps.append(str(Cap.SUBRESONANCE_THEORY_UNCONFIRMED))
-    if subresonances.check == CheckValue.NOT_MEASURED:
-        flags = set(subresonances.flags)
-        if str(Flag.PLANETS_MISSING) in flags:
-            caps.append(str(Cap.PLANETS_MISSING))
-        if str(Flag.SUBRESONANCE_UNDETERMINED) in flags or subresonances.undetermined:
-            caps.append(str(Cap.SUBRESONANCE_UNDETERMINED))
-        if str(Flag.NODAL_SUBRESONANCE_CANDIDATE) in flags:
-            caps.append(str(Cap.NODAL_SUBRESONANCE_CANDIDATE))
+    flags = {flag for episode in subresonances.episode_undecided.values() for flag in episode}
+    decisive_open = subresonances.check == CheckValue.NOT_MEASURED
+    if decisive_open:
+        flags |= set(subresonances.flags)
+    if str(Flag.PLANETS_MISSING) in flags:
+        caps.append(str(Cap.PLANETS_MISSING))
+    if str(Flag.SUBRESONANCE_UNDETERMINED) in flags or (decisive_open and subresonances.undetermined):
+        caps.append(str(Cap.SUBRESONANCE_UNDETERMINED))
+    if str(Flag.NODAL_SUBRESONANCE_CANDIDATE) in flags:
+        caps.append(str(Cap.NODAL_SUBRESONANCE_CANDIDATE))
     return caps
 
 

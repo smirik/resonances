@@ -23,11 +23,13 @@ CIRCULATION = ('non_resonant', 'circulation', 'circulation')
 LIBRATION = ('resonant', 'libration', 'dynamic_libration')
 
 
-def summary_row(example_id, cell, confidence, flags='', parent=''):
+def summary_row(example_id, cell, confidence, flags='', parent='', resonance=''):
+    # `resonance`: a summary.csv column; calibrate reads it since W28 D5 (the outside_literature abstention)
     status, angle_status, reason = cell
     return dict(
         example_id=example_id,
         parent=parent,
+        resonance=resonance,
         status=status,
         angle_status=angle_status,
         reason=reason,
@@ -155,6 +157,24 @@ def test_labelled_rows_abstentions_and_errors():
     assert rows.loc[rows['error'], :].index.tolist() == ['e3', 'e4']  # abstentions are never errors
     assert rows['certain'].to_dict() == {k: k == 'e2' for k in rows.index}
     assert rows['calibrated_level'].to_dict() == {k: k in ('e1', 'e2', 'e4', 'e7') for k in rows.index}
+
+
+def test_a_secular_angle_outside_the_21_literature_resonances_abstains():
+    # 'g-2g6+g5' is 'g+g5-2g6' (literature) with its terms reordered; g-g1 and 2s-s1-s2 are no literature resonance;
+    # an MMR row is never a secular abstention whatever its key
+    summary = pd.DataFrame(
+        [
+            summary_row('secular__A__g-g6', CIRCULATION, 'high', resonance='g-g6'),
+            summary_row('secular__B__g-2g6+g5', CIRCULATION, 'high', resonance='g-2g6+g5'),
+            summary_row('secular__C__g-g1', CIRCULATION, 'high', resonance='g-g1'),
+            summary_row('secular__D__2s-s1-s2', LIBRATION, 'high', resonance='2s-s1-s2'),
+            summary_row('mmr2__E__2J-1+0+0', CIRCULATION, 'high', resonance='2J-1+0+0'),
+        ]
+    )
+    ids = summary['example_id'].tolist()
+    rows = cal.labelled_rows(summary, truth([(i, 'non_resonant', 'labels') for i in ids])).set_index('example_id')
+    assert rows['abstention'].to_dict() == {ids[0]: '', ids[1]: '', ids[2]: 'outside_literature', ids[3]: 'outside_literature', ids[4]: ''}
+    assert rows.loc[rows['error'], :].index.tolist() == []  # D would be an error if it were counted
 
 
 def test_cell_table_counts_the_calibrated_levels():

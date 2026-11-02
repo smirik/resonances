@@ -22,6 +22,7 @@ from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import Action, AngleSubtype, Status
 
+from tests.resonances.analysis.builders import make_geometry
 from tests.resonances.analysis.test_impl_w3_guards_ledger_columns import missing_numbers
 
 S = settings_from_config()
@@ -171,7 +172,9 @@ def test_quasi_satellites_librate(example):
 
 @pytest.mark.benchmark
 def test_469219_quasi_satellite_then_horseshoe():
-    """The quasi-satellite (24-257 yr, period ~39 yr) and the horseshoe (426-950 yr) join without a circulation."""
+    """The quasi-satellite (24-257 yr, period ~39 yr) and the horseshoe (426-950 yr) without a circulation between
+    them: one episode since W28 C7 (g03-9 A, a 1:1 episode ends only at a separatrix), its wells in time order and the
+    changes marked at 257 and 426 yr."""
     analysis = analyse_mmr(needs('coorbital__469219__1E-1+0+0'), S)
     assert (analysis.verdict.status, analysis.verdict.angle_status, analysis.verdict.angle_subtype) == (
         'resonant',
@@ -179,8 +182,11 @@ def test_469219_quasi_satellite_then_horseshoe():
         'regime_change',
     )
     assert analysis.verdict.confidence == 'high'
-    periods = sorted(e.period_med_yr for e in decide.librating_episodes(analysis.geometry, S))
-    assert periods[0] == pytest.approx(39.0, rel=0.1)  # the quasi-satellite, below the 111-yr tadpole floor
+    (episode,) = decide.librating_episodes(analysis.geometry, S)
+    assert episode.wells.startswith('qs>') and episode.wells.endswith('>horseshoe')
+    assert analysis.geometry.floor_well.holds(episode)  # its floor is the quasi-satellite's
+    # the median period is that of the quasi-satellite's 10 cycles (~39 yr), below the 111-yr tadpole floor
+    assert episode.period_med_yr == pytest.approx(43.0, rel=0.1) and episode.period_med_yr < 111.0
 
 
 @pytest.mark.benchmark
@@ -188,21 +194,25 @@ def test_164207_quasi_satellite_episode_is_seen():
     """The quasi-satellite episode (43-521 yr, period ~70 yr) is accepted at its floor. The horseshoe part (turning
     points at 752 and 932 yr) never crosses its mid-level before 752 yr; it closes by its return at 0.2 of its swing
     (W20 FIX2, LIBRATION_RETURN_LEVELS), and the two regimes without a circulation between them cover the record:
-    resonant (author 2026-10-19)."""
+    resonant (author 2026-10-19). Since W28 C7 they are one episode."""
     analysis = analyse_mmr(needs('coorbital__164207__1E-1+0+0'), S)
     assert analysis.extra_columns['geo_qs_pass'] == 'kept'
     in_well = [e for e in decide.librating_episodes(analysis.geometry, S) if analysis.geometry.floor_well.holds(e)]
     assert len(in_well) == 1 and in_well[0].period_med_yr == pytest.approx(70.0, rel=0.1)
+    # W28 C7 (g03-9 A): the horseshoe is a sub-regime of the same episode, the change of well marked at 521 yr
+    assert in_well[0].several_wells and 'well_change@520.7' in in_well[0].marks
     assert analysis.verdict.status == 'resonant' and analysis.verdict.angle_subtype == 'regime_change'
 
 
 @pytest.mark.benchmark
 def test_2021_ed2_is_not_high():
-    """The angle stays in the quasi-satellite well for 26 yr, less than 1.5 P_QS (46 yr): no second pass; the one
-    horseshoe cycle closed by its return keeps it transient/episodic at medium."""
+    """The angle stays in the quasi-satellite well for 26 yr (from 884 yr) and turns twice there. Before W28 C5 that
+    was less than 1.5 P_QS (46 yr) and no pass ran; now the stay is longer than the loop through its turns (19 yr), the
+    pass runs and holds no librating episode centred in the well: rejected. The one horseshoe cycle closed by its
+    return keeps it transient/episodic at medium."""
     analysis = analyse_mmr(needs('coorbital__2021_ED2__1E-1+0+0'), S)
-    assert analysis.extra_columns['geo_qs_pass'] == ''
-    assert analysis.extra_columns['geo_qs_visit_yr'] < analysis.extra_columns['geo_qs_visit_needed_yr']
+    assert analysis.extra_columns['geo_qs_pass'] == 'rejected'
+    assert analysis.extra_columns['geo_qs_visit_yr'] >= analysis.extra_columns['geo_qs_visit_needed_yr']
     assert (analysis.verdict.status, analysis.verdict.angle_status, analysis.verdict.confidence) == ('transient', 'episodic', 'medium')
 
 
@@ -256,13 +266,16 @@ def _well(outside_floor=111.0):
 
 
 def _episode(centre_deg, period_yr=40.0):
-    return SimpleNamespace(t_start_yr=100.0, t_end_yr=500.0, centre_mod_2pi_rad=math.radians(centre_deg), period_med_yr=period_yr)
+    # one well (W28 C7: an episode of several wells reads its cycle centres, `FloorWell.holds`)
+    return SimpleNamespace(
+        t_start_yr=100.0, t_end_yr=500.0, centre_mod_2pi_rad=math.radians(centre_deg), period_med_yr=period_yr, several_wells=False
+    )
 
 
 def test_episode_floor_inside_and_outside_the_well():
     """In the quasi-satellite well (centre 355 deg, 5 deg from 0 < 15 deg) the pass's own floor holds; a horseshoe
     centred at 180 deg keeps the tadpole floor."""
-    geometry = SimpleNamespace(period_floor_yr=20.0, period_floor_setting='mmr_coorbital_period_floor_factor', floor_well=_well())
+    geometry = make_geometry(period_floor_yr=20.0, period_floor_setting='mmr_coorbital_period_floor_factor', floor_well=_well())
     assert decide.period_floor(geometry, S, _episode(355.0))[0] == 20.0
     assert decide.period_floor(geometry, S, _episode(180.0))[0] == 111.0
     assert decide.period_floor(geometry, S)[0] == 20.0

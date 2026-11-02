@@ -242,7 +242,11 @@ def test_g1c_one_episode_then_circulation_is_transient_ending_in_circulation():
     assert v.angle_subtype in (AngleSubtype.NONE, '')  # one episode: not recurrent
     assert v.final_regime == AngleStatus.CIRCULATION
     assert v.final_regime_start_yr == pytest.approx(last_tp, abs=10.0)  # G1c: from the last TP
-    assert v.status == Status.TRANSIENT
+    # W28 B3 reads R0 on the arc each window visits: 13 of 22 windows agree (0.59, was 0.68 on the full circle), so R0
+    # fails next to a passing force law (leaf 5b) - this libration is harmonic, not a pendulum, and its circulation
+    # feels no force; the G1c words above are what this test checks
+    assert v.status == Status.UNCERTAIN and v.reason == Reason.ORIGIN_UNKNOWN
+    assert 'force_law_disagrees' in {str(f) for f in v.flags}
 
 
 def test_g1c_two_episodes_then_circulation_is_recurrent():

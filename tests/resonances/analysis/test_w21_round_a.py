@@ -467,16 +467,17 @@ def test_c_levels_by_hand():
 
 @pytest.mark.benchmark
 @pytest.mark.parametrize(
-    'example, expected, onset',
+    'example, expected, onset, o1_margin',
     [
         # facts-a: non_resonant/implausible_strength, raw medium (L3 failed), O1 1.03 -> no cap, O1 not_applicable,
         # the level stays low by implausible_strength (the author decides that cap, not this round)
-        ('mmr2__2897__35S-4+0-31', ('non_resonant', 'episodic', 'low', 'implausible_strength'), False),
-        # a transient of the angle's own dynamics keeps the cap (O1 0.536 >= 0.5): low as in v2-w20f
-        ('mmr2__34706__7J-2+0-5', ('transient', 'episodic', 'low', 'dynamic_episode'), True),
+        ('mmr2__2897__35S-4+0-31', ('non_resonant', 'episodic', 'low', 'implausible_strength'), False, 'not_applicable'),
+        # W28 B4 (g08-3 A): the ratio 0.536 >= 0.5 fails O1 only for a foreign background wave; 34706's is not one,
+        # so O1 is thin, no onset_failed, and the transient of the angle's own dynamics is high (was low in v2-w20f)
+        ('mmr2__34706__7J-2+0-5', ('transient', 'episodic', 'high', 'dynamic_episode'), False, 'thin'),
     ],
 )
-def test_c_benchmark_onset_cap(example, expected, onset):
+def test_c_benchmark_onset_cap(example, expected, onset, o1_margin):
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
     verdict = analyse_mmr(io.load_series(example), S).verdict
@@ -484,8 +485,10 @@ def test_c_benchmark_onset_cap(example, expected, onset):
     assert got == expected
     assert (str(Cap.ONSET_FAILED) in verdict.caps) is onset
     o1 = verdict.margins['O1']
-    assert str(o1.margin) == ('fail' if onset else 'not_applicable')
-    if not onset:
+    assert str(o1.margin) == o1_margin
+    if o1_margin == 'thin':
+        assert o1.value == pytest.approx(0.536, abs=0.001)  # the ratio itself is unchanged, only its reading
+    if o1_margin == 'not_applicable':
         assert str(Cap.IMPLAUSIBLE_STRENGTH) in verdict.caps and str(verdict.confidence_raw) == 'medium'
 
 
@@ -620,7 +623,10 @@ def test_d_va14_60kyr_measures_the_onset_of_the_group():
     # the explained column names the group: the wave O1 reads lies before #4, not on it
     row = {**analysis.numbers_row(), **analysis.summary_row()}
     text = ' '.join(vt.explain_mmr(analysis, S, row, analysis.episode_rows()).sentences)
-    assert 'a strong a-wave precedes the episode (before/inside 0.733 ≥ 0.5, the wave before episode 4, which no' in text
+    assert (
+        'before the episode a already oscillated with comparable strength (before/inside 0.733 ≥ 0.5, the wave before episode 4, which no'
+        in text
+    )
 
 
 @pytest.mark.benchmark
@@ -705,5 +711,7 @@ def test_q1d_a_forced_wave_circulation_keeps_the_cap():
 @pytest.mark.benchmark
 def test_q1d_a_kinematic_drift_keeps_the_cap():
     v = _q1d('mmr3__2002_BG__1E-10S-1+0+0+10').verdict
-    assert (str(v.status), str(v.reason), str(v.confidence)) == ('non_resonant', 'kinematic_drift', 'medium')
+    # W28 B6b ripple_on_arc (g08-4 A): the 2.6-deg ep2 (identity fails) is set aside, so K2 loses the ripple it read
+    # and 5s with B2's strength mark decide (was kinematic_drift/medium); still no circulation, so the cap stays
+    assert (str(v.status), str(v.reason), str(v.confidence)) == ('non_resonant', 'implausible_strength', 'low')
     assert CAP in v.caps

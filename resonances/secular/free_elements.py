@@ -38,7 +38,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
-from scipy.signal import decimate
+from scipy.signal import decimate, resample_poly
 
 from resonances.data.const import PLANETARY_FREQUENCIES
 from resonances.data.util import time_ordered
@@ -222,6 +222,14 @@ class FreeElements:
     # The fundamentals this split was built from, carried along so that anything judging
     # the residual compares it against the same numbers that were subtracted.
     frequencies: Dict[str, float] = field(default_factory=lambda: dict(PLANETARY_FREQUENCIES))
+    # The decimation passes that built `times` (`decimation_steps`; () without resampling, and on a split restored from
+    # omega_free.csv, which does not store them). A pass above 10 is the polyphase leftover (rule free_resample_remainder).
+    resample_steps: Tuple[int, ...] = ()
+
+    @property
+    def resample_remainder(self) -> bool:
+        """Whether the resampling ended in a polyphase pass (a factor with a prime above 10, e.g. 31)."""
+        return has_remainder(self.resample_steps)
 
     @property
     def baseline(self) -> float:
@@ -362,12 +370,17 @@ class FreeElements:
     def local_rho(self, period_yr: Optional[float] = None, window_cycles: float = 1.0) -> Tuple[np.ndarray, np.ndarray]:
         """(times [yr], rollmed(|z_e_free|, W) / rollmed(|z_e_forced|, W)): the ratio of `rho_local_max` along the
         record, each value at the middle of its window (the mean of its first and last sample times)."""
+        return self._local_ratio(self.z_e_free, self.z_e_forced, self.basis_e, period_yr, window_cycles)
+
+    def _local_ratio(self, free, forced, basis, period_yr, window_cycles) -> Tuple[np.ndarray, np.ndarray]:
+        """(times, rollmed(|free|, W) / rollmed(|forced|, W)), W = max(the beat window of `basis`, window_cycles x
+        period_yr) samples, each value at the middle of its window."""
         step = self.step
-        window = _beat_window(self.basis_e, step)
+        window = _beat_window(basis, step)
         if period_yr is not None and np.isfinite(period_yr) and period_yr > 0 and step > 0:
             window = max(window, int(round(window_cycles * period_yr / step)))
-        free = _rolling_median(np.abs(self.z_e_free), window)
-        forced = _rolling_median(np.abs(self.z_e_forced), window)
+        free = _rolling_median(np.abs(free), window)
+        forced = _rolling_median(np.abs(forced), window)
         with np.errstate(divide='ignore', invalid='ignore'):
             ratio = np.where(forced > 0, free / forced, np.inf)
         times = np.asarray(self.times, dtype=float)
@@ -375,6 +388,35 @@ class FreeElements:
             span = len(times) - len(ratio)
             times = 0.5 * (times[: len(ratio)] + times[span : span + len(ratio)])
         return times, ratio
+
+    def forced_i_turning(self) -> Optional[np.ndarray]:
+        """The fitted forced inclination vector without its constant term, sum over the s modes != const of
+        c_j exp(i s_j t) on `times`; None when no such term was fitted (the baseline merged s6-s8 into the constant)
+        or the per-mode amplitudes are missing (a file written before they were persisted).
+
+        The constant (s5 = 0) is the tilt of the reference plane, not a forcing that turns the node: from the
+        invariable plane it is about zero, from the ecliptic about 1.6 deg."""
+        terms = {label: c for label, c in self.amplitudes_i.items() if label != 'const' and label in self.basis_i}
+        if not terms:
+            return None
+        times = np.asarray(self.times, dtype=float)
+        return sum(c * np.exp(1j * self.basis_i[label] * RAD_PER_ARCSEC * times) for label, c in terms.items())
+
+    def rho_i_local_max(self, period_yr: Optional[float] = None, window_cycles: float = 1.0) -> float:
+        """max over the record of rollmed(|z_i_free|, W) / rollmed(|z_i_forced without the constant|, W): the free
+        inclination over the turning forced one (column free_rho_i_max; W as in `rho_local_max`, from the fitted s
+        modes' beats). nan when no turning forced term was fitted (`forced_i_turning`).
+
+        A number, not a verdict. Far above one, a free node near s_j cannot be a leak of the forced s_j term (a leak is
+        at most as large as that term); but when b_Omega is within one Rayleigh width of the fitted s_j, least squares
+        splits the free node between the two and the ratio is not the physical one (1981 over 500 kyr: |c_s6| 0.30
+        against a median |z_i_free| 0.25, ratio 0.5-1.4)."""
+        forced = self.forced_i_turning()
+        if forced is None:
+            return float('nan')
+        basis = {label: rate_ for label, rate_ in self.basis_i.items() if label != 'const'}
+        ratio = self._local_ratio(self.z_i_free, forced, basis, period_yr, window_cycles)[1]
+        return float(np.max(ratio)) if len(ratio) else float('nan')
 
     def episode_pinning(self, start_yr: float, end_yr: float, cycles_end_yr: float, cycles: int) -> Tuple[float, float]:
         """(median |z_e_free| / |z_e_forced|, turns of the free omega per cycle) inside one librating episode of the
@@ -452,12 +494,17 @@ class FreeElements:
 
 
 def decimation_steps(factor: int) -> List[int]:
-    """Split a decimation factor into steps of at most 10.
+    """Split a decimation factor into passes of at most 10, then the leftover factor.
 
     scipy's FIR design stays accurate up to about a factor of 10 per pass; a single large
-    factor produces a filter whose transition band swallows the signal. Steps that do not
-    divide the remaining factor are shrunk rather than rounded, so the product is exact and
-    the thinned time grid matches the decimated series.
+    factor produces a filter whose transition band swallows the signal. Passes that do not
+    divide the remaining factor are shrunk rather than rounded. What no pass of at most 10
+    divides (a prime factor above 10, e.g. 31 at a 15.918-yr step) is returned whole as the
+    last step and goes through a polyphase filter (`_resample`): the product of the steps is
+    always the factor, so every factor is filtered and the thinned time grid
+    `times[::factor]` matches the decimated series. (Before W28 the leftover was dropped:
+    at a factor of 31 nothing was filtered and the 11.86-yr ripple folded into the secular
+    band as steps of the free varpi, 555527.)
     """
     steps = []
     while factor > 1:
@@ -465,16 +512,36 @@ def decimation_steps(factor: int) -> List[int]:
         while factor % step and step > 1:
             step -= 1
         if step == 1:
+            steps.append(factor)  # the leftover, > 10 and without a divisor <= 10
             break
         steps.append(step)
         factor //= step
     return steps
 
 
+def has_remainder(steps: Sequence[int]) -> bool:
+    """Whether a decimation (`decimation_steps`) ends in a polyphase pass of more than 10."""
+    return any(step > 10 for step in steps)
+
+
+def _decimate_real(x: np.ndarray, step: int) -> np.ndarray:
+    """One anti-aliased decimation pass of a real series.
+
+    Up to 10: scipy's zero-phase FIR `decimate`. Above (the leftover of `decimation_steps`):
+    `resample_poly(x, 1, step)`, a linear-phase polyphase FIR whose output sample k sits at
+    input sample k * step, like `decimate`; `padtype='line'` extends the record along its end
+    trend rather than with zeros, which would pull the first and last filter lengths towards
+    the origin. Both return ceil(len(x) / step) samples.
+    """
+    if step <= 10:
+        return decimate(x, step, ftype='fir', zero_phase=True)
+    return resample_poly(x, 1, step, padtype='line')
+
+
 def _resample(z: np.ndarray, steps: Sequence[int]) -> np.ndarray:
-    """Decimate a complex series with an anti-aliasing filter on each component."""
+    """Decimate a complex series with an anti-aliasing filter on each component, pass by pass."""
     for step in steps:
-        z = decimate(z.real, step, ftype='fir', zero_phase=True) + 1j * decimate(z.imag, step, ftype='fir', zero_phase=True)
+        z = _decimate_real(z.real, step) + 1j * _decimate_real(z.imag, step)
     return z
 
 
@@ -500,7 +567,8 @@ def free_elements(
         Osculating elements; angles in radians. `omega` is the argument of pericentre, the
         longitude is rebuilt internally as varpi = Omega + omega.
     sampling_years : float, optional
-        Resample to about this step first, with an anti-aliasing filter. Secular work needs
+        Resample to about this step first (the integer factor round(sampling_years / dt)),
+        with an anti-aliasing filter at every factor (`decimation_steps`). Secular work needs
         nothing finer, and short-period terms folded into the secular band would otherwise
         show up as free motion. None keeps the integration grid.
     frequencies : dict, optional
@@ -582,6 +650,7 @@ def free_elements(
         clusters_e=clusters_e,
         clusters_i=clusters_i,
         frequencies=dict(PLANETARY_FREQUENCIES if frequencies is None else frequencies),
+        resample_steps=tuple(steps),
     )
 
 

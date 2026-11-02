@@ -38,7 +38,7 @@ Formulas (a in au, t in Gaussian years of 2 pi REBOUND units, n = 2 pi a^(-3/2) 
   taken as delta a_sp / a: short-period terms of a/a and of e have the same order (mu) in Lagrange's equations;
   an order of magnitude only, the pilot measures it.
 - Cutoff: the analysis' rule `preprocess.choose_cutoff`, P_c = max(MMR_FILTER_SYNODIC_FACTOR x longest P_syn,
-  P_floor / FILTER_MIN_LIBRATION_CUTOFFS), P_floor the shortest libration the angle can have
+  MMR_FILTER_ORBIT_FACTOR x P_orb, P_floor / FILTER_MIN_LIBRATION_CUTOFFS), P_floor the shortest libration the angle can have
   (`preprocess.libration_period_floor`: MMR_LIBRATION_PERIOD_MIN_YR, or for a co-orbital
   MMR_COORBITAL_PERIOD_FLOOR_FACTOR x the tadpole period). The step does not enter.
 - Validity of the step (the analysis' G0): P_c <= 2 dt -> invalid / undersampled (`preprocess.filter_realizable`):
@@ -328,7 +328,8 @@ def _row_limits(spec: ResonanceSpec, inputs: BodyInputs, settings, tables) -> di
     planet = preprocess.coorbital_planet(spec)  # its synodic angle is the resonant angle: no bound (`choose_cutoff`)
     synodic_all = context_module.synodic_periods(n_body, planet_n, spec.planets, spec.retrograde)
     synodic = {name: period for name, period in synodic_all.items() if name != planet}
-    cutoff = preprocess.choose_cutoff(synodic, 1.0, settings, floor).cutoff_yr  # independent of the step
+    period = orbital_period_yr(inputs.a_au)
+    cutoff = preprocess.choose_cutoff(synodic, 1.0, settings, floor, period).cutoff_yr  # independent of the step
     step_libration = floor / settings.mmr_resample_steps_per_cycle if floor > 0 else math.inf
     synodic_cutoff = settings.mmr_filter_synodic_factor * max(synodic.values()) if synodic else 0.0
     jitter = abs(spec.body_varpi_coefficient) * inputs.de_sp / inputs.e if spec.body_varpi_coefficient and inputs.e > 0 else 0.0
@@ -373,7 +374,7 @@ def _row_at_step(spec, inputs: BodyInputs, limits: dict, step_yr: float, span_yr
     verdict, branches = sampling.step_verdict(limits['rate_lo'], limits['rate_hi'], step_yr, math.radians(settings.mmr_step_resolved_deg))
     halfwidth = sampling.nyquist_halfwidth(inputs.a_au, k, step_yr)
     ghost = _nearest_ghost(spec, inputs.a_au, limits['rate'], limits['slow'], step_yr, planet_n)
-    cutoff = preprocess.choose_cutoff(limits['synodic'], step_yr, settings, limits['floor'])
+    cutoff = preprocess.choose_cutoff(limits['synodic'], step_yr, settings, limits['floor'], limits['orbital_period'])
     baseline = 0.5 * settings.libration_min_turning_points * limits['floor'] + 2 * settings.filter_edge_trim_cutoffs * cutoff.cutoff_yr
     distance = abs(inputs.a_au - limits['a_res'])
     undersampled = not preprocess.filter_realizable(cutoff.cutoff_yr, step_yr)
@@ -721,7 +722,7 @@ def leak(spec: ResonanceSpec, pilot: dict, limits: dict, step_yr: float, setting
     index = np.arange(0, len(t), stride)
     t_dec, a_dec = t[index], a[index]
     decimated_step = float(np.median(np.diff(t_dec)))
-    cutoff = preprocess.choose_cutoff(limits['synodic'], decimated_step, settings, limits['floor']).cutoff_yr
+    cutoff = preprocess.choose_cutoff(limits['synodic'], decimated_step, settings, limits['floor'], limits['orbital_period']).cutoff_yr
     window = edge_window(t_dec, settings.filter_edge_trim_cutoffs * cutoff)
     inside = window_mask(t_dec, window)
     if inside.sum() < 3 or not preprocess.filter_realizable(cutoff, decimated_step):
@@ -1310,7 +1311,7 @@ def _run_pilots(simulation, prepared, plan, span: float, settings, dry, tables, 
         for resonance in getattr(body, 'mmrs', []) or []:
             spec = ResonanceSpec.from_resonance(resonance)
             limits = _row_limits(spec, measured, settings, tables)
-            cutoff = preprocess.choose_cutoff(limits['synodic'], step, settings, limits['floor']).cutoff_yr
+            cutoff = preprocess.choose_cutoff(limits['synodic'], step, settings, limits['floor'], limits['orbital_period']).cutoff_yr
             measured_leak = leak(spec, pilot, limits, step, settings, tables[0])
             lines = forced_terms(spec, pilot, cutoff, settings, dry, tables[0])
             pilot_rows[(inputs.name, spec.key)] = {

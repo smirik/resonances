@@ -7,7 +7,9 @@
     portrait — (r cos sigma, r sin sigma), r = e when sigma holds varpi, else i from the invariable plane in
                degrees: osculating in grey, classified coloured by time;
     combined — the one-page V1 figure of the verdict (`draw_long_period_combined`, below): time panels, portraits
-               and every number of the decision in the shared right column (`combined_numbers`).
+               and every number of the decision in the shared right column (`combined_numbers`). A ZLK row's ω, i, Ω
+               and free elements are those of its analysis, measured from the plane ZLK_ANGLE_FRAME names (the
+               header's record line says which; (a), (a′), (e) and (h) share it).
 
 Nothing here changes a status. Reading guide: docs/plots.md, "Secular diagnostics".
 """
@@ -797,6 +799,11 @@ def _draw_portraits(fig, frame, layout, norm, free_elements):
     ax2.set_title('(i)', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
 
 
+def _inclination_label(series) -> str:
+    """The label of (e): the inclination of a ZLK series measured from the invariable plane (ZLK_ANGLE_FRAME) says so."""
+    return 'i (invariable), °' if getattr(series, 'frame', '') == 'invariable' else 'i, °'
+
+
 def _draw_header(fig, analysis, layout, stamp):
     """Name, angle, type and the orbit's type (`verdict.orbit_type`); the record line. The status is printed once, in
     the plaque of the right column."""
@@ -820,6 +827,8 @@ def _draw_header(fig, analysis, layout, stamp):
         f'span {series.span_yr:.6g} yr  |  step {series.step_yr:.4g} yr  |  {len(series.t_yr)} rows  |  '
         f'P_c {cutoff:.4g} yr ({analysis.cutoff.binding if analysis.cutoff is not None else "—"})  |  scale {analysis.scale or "—"}'
     )
+    if kind == 'ZLK':
+        line += f'  |  ω, i, Ω from the {getattr(series, "frame", "ecliptic")} plane'
     fig.text(x / width, (top - 0.36) / height, line, fontsize=layout.text_font_pt, color='#333333', va='top')
     if stamp:
         fig.text(
@@ -883,7 +892,7 @@ def draw_long_period_combined(
         _draw_wrapped(rest[0], frame, layout)
         _draw_rate(rest[1], frame, layout)
         _draw_element(rest[2], frame, layout, analysis.series.e, 'd', 'e', '{:.4g}')
-        _draw_element(rest[3], frame, layout, np.degrees(analysis.series.inc), 'e', 'i, °', '{:.4g}°')
+        _draw_element(rest[3], frame, layout, np.degrees(analysis.series.inc), 'e', _inclination_label(analysis.series), '{:.4g}°')
         _draw_physics(rest[4], frame, layout, free_elements)
         _draw_centre(rest[5], frame, layout)
         for ax in axes[:-1]:
@@ -953,15 +962,34 @@ def _rate_text(value: float, constant: bool = False) -> str:
     return text.replace('-', '−')
 
 
+@dataclass(frozen=True)
+class Frequency:
+    """One row of FREQUENCIES: its name ('g5 Jup', 'g − g6', 'σ'), the rate [arcsec/yr], the period [yr] (360°/|rate|
+    unless given: a beat's own), a note, and how the rate prints (`constant`: 4 decimals; `rate_text`: instead). The
+    explanation identifies the periods seen on the angle against these rows (`verdict_text.time_scale_line`)."""
+
+    name: str
+    rate: float
+    period: float
+    note: str = ''
+    constant: bool = False
+    rate_text: Optional[str] = None
+
+
 def _frequency_line(name: str, rate: float, note: str = '', period: Optional[float] = None, constant=False, rate_text=None):
-    """One row 'name  rate  period  note' (monospaced, aligned); the period is 360°/|rate| unless given."""
+    """One row of FREQUENCIES (`Frequency`); the period is 360°/|rate| unless given."""
+    if period is None:
+        period = TURN_ARCSEC / abs(rate) if np.isfinite(rate) and rate else float('nan')
+    return Frequency(name, rate, period, note, constant, rate_text)
+
+
+def frequency_number_line(item: Frequency):
+    """The printed row 'name  rate  period  note' (monospaced, aligned, kept in one column)."""
     from resonances.plotting.combined_numbers import NumberLine
     from resonances.plotting.verdict_text import years
 
-    if period is None:
-        period = TURN_ARCSEC / abs(rate) if np.isfinite(rate) and rate else float('nan')
-    rate_text = rate_text if rate_text is not None else _rate_text(rate, constant)
-    text = f'{name:<8}{rate_text:>9} {years(period):>9}' + (f'  {note}' if note else '')
+    rate_text = item.rate_text if item.rate_text is not None else _rate_text(item.rate, item.constant)
+    text = f'{item.name:<8}{rate_text:>9} {years(item.period):>9}' + (f'  {item.note}' if item.note else '')
     return NumberLine('numbers', '', text, group=FREQUENCY_GROUP, keep=True)
 
 
@@ -1064,37 +1092,57 @@ def _zlk_frequency_lines(analysis, row, free_elements) -> list:
     return lines
 
 
-def long_period_frequency_lines(analysis, row, free_elements=None) -> list:
-    """FREQUENCIES of a secular/ZLK figure: one row 'name  rate ″/yr  period  note' per frequency a period seen on
-    sigma(t) may come from (period = 1296000/|rate| yr); `row` is the figure's summary row, `free_elements` (ZLK) the
-    body's FreeElements (the fitted modes and their |c_j|)."""
+def long_period_frequencies(analysis, row, free_elements=None) -> list:
+    """The rows of FREQUENCIES (`Frequency`): every frequency a period seen on sigma(t) may come from; `row` is the
+    figure's summary row, `free_elements` (ZLK) the body's FreeElements (the fitted modes and their |c_j|)."""
+    if analysis.series is None:
+        return []
     if str(analysis.series.resonance_type) == 'lidov_kozai':
-        lines = _zlk_frequency_lines(analysis, row, free_elements)
-    else:
-        lines = _secular_frequency_lines(analysis, row)
-    if not lines:
+        return _zlk_frequency_lines(analysis, row, free_elements)
+    return _secular_frequency_lines(analysis, row)
+
+
+def long_period_frequency_lines(analysis, row, free_elements=None, frequencies=None) -> list:
+    """FREQUENCIES of a secular/ZLK figure: one row 'name  rate ″/yr  period  note' per frequency a period seen on
+    sigma(t) may come from (period = 1296000/|rate| yr; `long_period_frequencies`, or the given `frequencies`)."""
+    items = long_period_frequencies(analysis, row, free_elements) if frequencies is None else list(frequencies)
+    if not items:
         return []
     from resonances.plotting.combined_numbers import NumberLine
 
     amplitude = '  |c|' if str(analysis.series.resonance_type) == 'lidov_kozai' else ''
     header = NumberLine('numbers', '', f'{"":<8}{"arcsec/yr":>9} {"period":>9}{amplitude}', group=FREQUENCY_GROUP, keep=True)
-    return [header, *lines]
+    return [header, *(frequency_number_line(item) for item in items)]
+
+
+def point_to_text(lines, columns) -> list:
+    """W20 CS11 (no number twice): a table line whose column (or one it stands for, `also`) a bullet of the explanation
+    prints keeps its label and prints `verdict_text.TEXT_POINTER` ('↑ in the text') instead of its number."""
+    from resonances.plotting.combined_numbers import replace_line
+    from resonances.plotting.verdict_text import TEXT_POINTER
+
+    printed = set(columns)
+    return [
+        replace_line(line, value=TEXT_POINTER, unit='') if line.label and printed & {line.column, *line.also} else line for line in lines
+    ]
 
 
 def draw_long_period_explained(fig, analysis, summary, layout, settings=None, free_elements=None):
     """The explained right column of a secular/ZLK figure (`verdict_text.explain_long_period`, layout A′)."""
     from resonances.plotting import combined_numbers as numbers
     from resonances.plotting.mmr_verdict_panel import config_settings, explained_episode_lines, short_hashes
-    from resonances.plotting.verdict_text import explain_long_period
+    from resonances.plotting.verdict_text import bullet_columns, explain_long_period
 
     episodes = analysis.episode_rows()
-    text = explain_long_period(analysis, config_settings(settings), episodes)
+    frequencies = long_period_frequencies(analysis, summary, free_elements)
+    text = explain_long_period(analysis, config_settings(settings), episodes, summary, frequencies)
     row = short_hashes(dict(summary))
     lines = explained_episode_lines(episodes, row.get('ep_episode_id'))
     for title, columns in LONG_PERIOD_EXPLAINED_GROUPS:
         lines += numbers.group_lines(row, ((title, columns),), LONG_PERIOD_EXPLAINED_PREFIXES, text.bold_columns, text.grey_columns)
         if title == 'SCALE, FILTER':
-            lines += long_period_frequency_lines(analysis, summary, free_elements)
+            lines += long_period_frequency_lines(analysis, summary, frequencies=frequencies)
+    lines = point_to_text(lines, bullet_columns(text))
     stats = numbers.draw_explained(fig, text, lines, layout)
     stats['text'] = text
     return stats

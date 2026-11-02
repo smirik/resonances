@@ -16,7 +16,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 
-from resonances.resonance.analysis.geometry import Geometry
+from resonances.resonance.analysis.geometry import Geometry, subregime_checks_text, subregimes_text, well_sequence
 from resonances.resonance.analysis.mmr.coorbital import CoorbitalLaw
 from resonances.resonance.analysis.pendulum import EnergyAnalysis
 from resonances.resonance.analysis.verdict import CheckValue, Status, Verdict, join_list
@@ -216,6 +216,17 @@ class PlanetSeries:
     mean_longitude: Optional[np.ndarray] = None
 
 
+ORBIT_OVERLAP_NONE = 'none'  # ctx_orbit_overlap when the bands were compared and none overlaps (blank = no data)
+
+
+def orbit_overlap_columns(overlap: Optional[Tuple[str, ...]], source: str) -> dict:
+    """CSV columns ctx_orbit_overlap ('Venus;Earth', 'none', blank = no data) and ctx_orbit_overlap_source of
+    `context.orbit_overlap` (MMR and, in secular.models, secular/ZLK rows)."""
+    if overlap is None:
+        return {'ctx_orbit_overlap': None, 'ctx_orbit_overlap_source': None}
+    return {'ctx_orbit_overlap': join_list(overlap) if overlap else ORBIT_OVERLAP_NONE, 'ctx_orbit_overlap_source': source}
+
+
 @dataclass(frozen=True)
 class Regime:
     """How the record was produced (the analysis reads the step from the series itself)."""
@@ -390,6 +401,9 @@ class Context:
     # nu with the body's measured mean lambda_dot instead of n(<a>): free of the offset of the osculating <a>
     # (1999 UQ: 71.9786 against 71.9986 deg/yr; 21514: +0.04 against -0.17), not of the angle's unwrap.
     rate_from_mean_longitude_rad_yr: float = NAN
+    # Radial overlap with all eight planets (context.orbit_overlap, card g10-6; no decision reads it): None = no data
+    orbit_overlap: Optional[Tuple[str, ...]] = None
+    orbit_overlap_source: str = ''  # 'saved' | 'J2000' | 'saved:Earth+Mars' (those saved, the others J2000)
 
     @property
     def delta_axis_au(self) -> float:
@@ -418,6 +432,7 @@ class Context:
             'ctx_Q_max_au': column_number(self.big_q_max_au),
             'ctx_P_orb_yr': column_number(self.orbital_period_yr),
             'ctx_crosses': join_list(self.crosses),
+            **orbit_overlap_columns(self.orbit_overlap, self.orbit_overlap_source),
             'ctx_n_deg_yr': column_number(self.mean_motion_rad_yr, RAD_TO_DEG),
             'ctx_c_rad_yr_au': column_number(self.identity_coefficient),
             'ctx_a_res_nominal_au': column_number(self.nominal_axis_au),
@@ -611,6 +626,7 @@ class Cutoff:
     synodic_bound_yr: float
     floor_bound_yr: float  # P_floor / filter_min_libration_cutoffs
     samples_per_cutoff: float  # P_c / dt
+    orbit_bound_yr: float = 0.0  # mmr_filter_orbit_factor x the body's P_orb (binding 'orbit', B6a); 0 = not set
 
 
 @dataclass
@@ -640,6 +656,10 @@ class Preprocessed:
     # mmr_libration_period_min_yr
     period_floor_yr: float = NAN
     period_floor_basis: str = ''
+    # the period below which the angle holds no libration, the reference of the fast residual of the TP prominence
+    # (`analyse.fast_part`): a 1:1 angle's shortest run floor (`coorbital_geometry.fast_reference_yr`, W28 C3); nan =
+    # period_floor_yr
+    fast_reference_yr: float = NAN
     # blocks of slowly varying elements the 1:1 law tabulates its averaged potential on [yr]: P_c, but in the G1q pass at
     # the quasi-satellite floor min(the angle's own P_c, P_QS) (`quasi_satellite.QuasiSatellite.elements_block_yr`)
     elements_block_yr: float = NAN
@@ -736,6 +756,39 @@ class HarmonicLaw:
         return self.r2 - self.null_max
 
 
+@dataclass(frozen=True)
+class DirectForceLaw:
+    """W28 B8 (card g07-2 A), the direct averaged-force law at the libration scale (`response.direct_force_law`).
+
+    The theoretical a_dot = (2 k / (n a)) G m_P d<D>/dsigma (sigma(t)) of the resonance's own two-body term, the
+    planet's real mass and the window's elements (the directly averaged disturbing function, `owner_potential`), and
+    the observed a_dot are low-passed identically at MMR_DIRECT_FORCE_CUTOFF_CYCLES x P_large; one scale s per window
+    (only s is free: the shape and the phase are the theory's). Consulted only where the harmonic L4 fails or passes
+    thin on a two-body, non-1:1 angle with a direct strength; `taken` lifts L4, never lowers it. P_large: the period
+    of the turns of sigma that survive the cutoff change (`response.period_large`)."""
+
+    period_yr: float  # P_e of the measurement the law was consulted for
+    period_large_yr: float  # the fixed point of the turns at MMR_DIRECT_FORCE_CUTOFF_CYCLES x P (nan: none)
+    survived: bool  # those turns are kept when the cutoff is doubled (TP counts within MMR_FILTER_GUARD_TP_REL)
+    cutoff_yr: float  # the cutoff both a_dot were low-passed at
+    n_windows: int = 0
+    r2: float = NAN  # the smaller of the two half medians of the window R^2 (as L4)
+    scale_min: float = NAN
+    scale_max: float = NAN
+    scale_med: float = NAN
+    null_max: float = NAN  # the largest R^2 with the observed a_dot shifted in time (`response.shifted_rates`)
+    nodes_per_turn: int = 0  # the largest L of the profiles
+    small_period_large_yr: float = NAN  # T0 = small_period(P_large, A_large) of the large turns (survived only)
+    mu_eff_large: float = NAN  # the strength they need (`strength.mu_eff_required` of that T0)
+    taken: bool = False
+    reason: str = ''  # '' when taken, else why not (`response.DIRECT_*`)
+
+    @property
+    def null_gain(self) -> float:
+        """R^2 over the shifted null (nan without a null)."""
+        return self.r2 - self.null_max
+
+
 def harmonic_reason(law: Optional[HarmonicLaw]) -> Optional[str]:
     """The CSV word of the harmonic law: 'taken', the guard that refused it, or None (an empty cell: not consulted)."""
     if law is None:
@@ -756,7 +809,19 @@ class ForcedWave:
     """An accepted episode that is a forced wave of another argument, not a libration of this angle (W20 F6,
     `decide.forced_wave_episodes`): its identity fails with the wrong sign (`wrong_sign`), or its period sits on a
     forced line of the angle's lattice and its identity fails (`on_line`). `Geometry.forced_waves` holds them; they
-    are no episodes of the angle (`Geometry.episodes`)."""
+    are no episodes of the angle (`Geometry.episodes`).
+
+    `by_strength` (W28 B2, card g11-1): an accepted episode of a row that rule 5s decided (reason implausible_strength:
+    its period needs a force >= MMR_STRENGTH_IMPLAUSIBLE_RATIO x the one the disturbing function gives), marked after
+    the verdict (`decide.strength_forced_waves`). The name says why it is no libration of this angle (its own force
+    cannot make that period), not which argument drives it; nothing was measured again for it, and no decision reads
+    it (its identity numbers are nan, its line '').
+
+    `ripple` (W28 B6b, card g08-4, rule `ripple_on_arc`): an unconfirmed ripple, no driver found either: an accepted
+    episode whose half-amplitude stays below MMR_A_RESPONSE_MIN_AMP_DEG (neither L4 nor R0 can be measured) and whose
+    identity is measured and fails, on a record whose slow centre holds an unfinished slow swing
+    (`decide.ripple_waves`). It is set before G2, like F6, so the angle is decided without it (G5a/G6 on the slow
+    centre); `half_amp_max_rad` is its largest half-amplitude (nan for the other routes)."""
 
     episode_id: int
     n_tp: int
@@ -767,11 +832,21 @@ class ForcedWave:
     force_line_offset: float
     wrong_sign: bool
     on_line: bool
+    by_strength: bool = False
+    ripple: bool = False
+    half_amp_max_rad: float = float('nan')
 
     @property
     def route(self) -> str:
-        """episodes.csv `forced_wave`: 'wrong_sign', 'lattice_line' or both joined by ';'."""
-        return ';'.join(name for name, holds in (('wrong_sign', self.wrong_sign), ('lattice_line', self.on_line)) if holds)
+        """episodes.csv `forced_wave`: 'wrong_sign', 'lattice_line' or both joined by ';'; 'strength' for a mark of
+        rule 5s (`by_strength`); 'unconfirmed_ripple' for a ripple on an unfinished slow swing (`ripple`)."""
+        routes = (
+            ('wrong_sign', self.wrong_sign),
+            ('lattice_line', self.on_line),
+            ('strength', self.by_strength),
+            ('unconfirmed_ripple', self.ripple),
+        )
+        return ';'.join(name for name, holds in routes if holds)
 
 
 @dataclass(frozen=True)
@@ -824,6 +899,7 @@ class EpisodeResponse:
     force_r2_null_max: float = NAN
     force_null_gain: float = NAN
     force_harmonic: Optional[HarmonicLaw] = None  # CS12: the N-harmonic law when it was consulted
+    force_direct: Optional[DirectForceLaw] = None  # B8: the direct averaged-force law when it was consulted
 
     @property
     def witness(self) -> bool:
@@ -872,11 +948,30 @@ class EpisodeResponse:
             'force_harm_N': self.force_harmonic.n_harmonics if self.force_harmonic is not None else None,
             'force_R2_harm': column_number(self.force_harmonic.r2) if self.force_harmonic is not None else None,
             'force_harm_reason': harmonic_reason(self.force_harmonic),
+            'force_dforce_R2': column_number(self.force_direct.r2) if self.force_direct is not None else None,
+            'force_dforce_scale': column_number(self.force_direct.scale_med) if self.force_direct is not None else None,
+            'force_dforce_reason': self.force_direct.reason if self.force_direct is not None else None,
             'check_identity': check(self.identity),
             'check_a_amplitude': check(self.a_amplitude),
             'episode_filter_too_slow': bool(self.filter_too_slow),
             'witness': self.witness,
         }
+
+
+@dataclass(frozen=True)
+class LineShare:
+    """The lines of a_dot on one episode (`forced_lines.line_share`; columns `rsp_line_*`). `period_yr`, `share` and `ids` are the
+    dominant component's (its period, its share of var(a_dot), its names, 'P_lib' or 'unidentified'); `share_all` is
+    R^2 of every lattice line together (0 without one in the band). nan / '' with `reason` when nothing was fitted."""
+
+    period_yr: float
+    share: float
+    share_all: float
+    ids: str
+    t_start_yr: float
+    t_end_yr: float
+    cutoff_yr: float = float('nan')  # the cutoff of the a_dot that was fitted
+    reason: str = ''  # '' measured | 'no_samples' | 'no_band' | 'no_lines'
 
 
 @dataclass
@@ -950,6 +1045,8 @@ class Response:
     force_r2_null_max: float = NAN
     force_null_gain: float = NAN
     force_harmonic: Optional[HarmonicLaw] = None  # CS12 (EpisodeResponse)
+    force_direct: Optional[DirectForceLaw] = None  # B8 (EpisodeResponse; the record's, else the measured episode's)
+    line_share: Optional[LineShare] = None  # B8b: the lattice lines of a_dot on the decisive window (columns only)
 
     def to_columns(self) -> dict:
         """CSV columns `rsp_*`."""
@@ -985,12 +1082,121 @@ class Kinematics:
     centre_corr_rate: float = NAN
     centre_slope: float = NAN
     centre_intercept_rad_yr: float = NAN
+    # A5 (W28): why the slow-angle correlation (K1's number, check_mmr_kinematic) has none ('' when it has one);
+    # K1 on the decisive episode and the swing shares there (`kinematics.episode_kinematics`), with their own reason
+    check_reason: str = ''
+    k1_episode: float = NAN
+    swing_share: float = NAN
+    lambda_swing_share: float = NAN
+    k1_episode_reason: str = ''
+    # B10a (W28, cards g08-8, g05-3): the half-swing of sigma that p varpi alone makes, |p| asin(min / max) of the free
+    # and forced radii (`kinematics.predicted_swing_rad`), and the measured half-swing of the slow scale (`SlowScale`)
+    pred_swing_rad: float = NAN
+    meas_swing_rad: float = NAN
 
     def to_columns(self) -> dict:
         """CSV columns `kin_*`."""
         from resonances.resonance.analysis.mmr.kinematics import kinematics_columns
 
         return kinematics_columns(self)
+
+
+class SlowSource(StrEnum):
+    """Where a slow scale was read (`SlowScale.source`)."""
+
+    CENTRE_SCALE = 'centre_scale'  # the episodes of G2c's angle at the centre scale W_c (the record covered or not)
+    CENTRE_TRACK = 'centre_track'  # the turns of the slow centre c(t) of a librating angle (no G2c pass)
+    NONE = ''
+
+
+class SlowOrigin(StrEnum):
+    """What the slow scale is (`SlowScale.origin`): a description, only K3s reads it (`decide.secular_cycle_kinematic`)."""
+
+    KINEMATIC = 'kinematic'  # its period matches a secular period and its own identity fails: a secular cycle
+    DYNAMIC_CANDIDATE = 'dynamic_candidate'  # its identity holds: a slow libration a may make (no status follows)
+    UNRESOLVED = 'unresolved'  # neither (identity not measured, or failed at no secular period)
+    NONE = ''
+
+
+class CauseLevel(StrEnum):
+    """How sure the named slow cause is (`SlowScale.cause_level`, card g05-2)."""
+
+    IDENTIFIED = 'identified'  # the period matches a secular period AND the centre follows that cycle
+    POSSIBLE = 'possible'  # one of the two
+    UNKNOWN = 'unknown'  # neither: said as unknown
+    NONE = ''  # no slow scale
+
+
+@dataclass(frozen=True)
+class SlowScale:
+    """The slower libration of the angle's centre, stored at its own scale (B10a, W28, cards g08-7, g08-8, g05-2;
+    `kinematics.slow_scale`), columns `slow_*`, episodes.csv rows with scale='slow'.
+
+    `source` centre_scale: G2c's analysis of the angle at the centre scale W_c (`cutoff_yr`) found accepted runs that it
+    kept no verdict from (they do not cover the record: 37087 3J+8S-3, 17.3-62.4 and 65.8-96.6 kyr); `episodes` are
+    those runs. centre_track: the angle librates at P_c and its slow centre c(t) (`Geometry.centre`, smoothed at W_c)
+    turns at least three times away from the edges (one closed slow cycle); no episodes. The numbers: the span
+    [t_start_yr, t_end_yr], the independent closed slow cycles, their median full period (nan below
+    libration_centre_min_estimates cycles) and half-amplitude; the identity on that scale (sigma_dot_s against a_s,
+    `response.identity`, over the span); B1 in the band of the slow period (`response.b1_amplitude`); the nearest
+    secular period (pi / |omega_dot|, 2 pi / |g - g_j|; `secular_offset` = |P / P_sec - 1|, its term) and the R^2 of
+    c_dot on that term's harmonics; the slow centre's rate against the secular part of sigma (`centre_corr`,
+    `Kinematics.centre_corr_rate`). Then the origin (`SlowOrigin`) and the cause named with a level (`CauseLevel`;
+    an owner row takes A2's own_x cause when it has one, `cause_source` 'owner_x')."""
+
+    source: str = SlowSource.NONE
+    cutoff_yr: float = NAN
+    episodes: Tuple[Any, ...] = ()
+    t_start_yr: float = NAN
+    t_end_yr: float = NAN
+    n_cycles: int = 0
+    period_yr: float = NAN
+    halfamp_rad: float = NAN
+    identity_slope_ratio: float = NAN
+    identity_corr: float = NAN
+    identity: CheckValue = CheckValue.NOT_MEASURED
+    b1_ratio: float = NAN
+    secular_offset: float = NAN
+    secular_period_yr: float = NAN
+    secular_term: str = ''
+    secular_r2: float = NAN
+    centre_corr: float = NAN
+    origin: str = SlowOrigin.NONE
+    cause: str = ''
+    cause_term: str = ''
+    cause_level: str = CauseLevel.NONE
+    cause_source: str = ''  # 'centre' (this scale's own numbers) | 'owner_x' (A2's slow x of the owner)
+
+    @property
+    def measured(self) -> bool:
+        return self.source != SlowSource.NONE
+
+    def to_columns(self) -> dict:
+        """CSV columns `slow_*` (mmr_numbers.csv)."""
+        return {
+            'slow_source': str(self.source),
+            'slow_cutoff_yr': column_number(self.cutoff_yr),
+            'slow_n_episodes': len(self.episodes),
+            'slow_t0_yr': column_number(self.t_start_yr),
+            'slow_t1_yr': column_number(self.t_end_yr),
+            'slow_n_cycles': self.n_cycles,
+            'slow_period_yr': column_number(self.period_yr),
+            'slow_halfamp_deg': column_number(self.halfamp_rad, RAD_TO_DEG),
+            'slow_identity': str(self.identity) if self.measured else '',
+            'slow_identity_slope_ratio': column_number(self.identity_slope_ratio),
+            'slow_identity_corr': column_number(self.identity_corr),
+            'slow_b1_ratio': column_number(self.b1_ratio),
+            'slow_secular_offset': column_number(self.secular_offset),
+            'slow_secular_period_yr': column_number(self.secular_period_yr),
+            'slow_secular_term': self.secular_term,
+            'slow_secular_R2': column_number(self.secular_r2),
+            'slow_centre_corr': column_number(self.centre_corr),
+            'slow_origin': str(self.origin),
+            'slow_cause': self.cause,
+            'slow_cause_term': self.cause_term,
+            'slow_cause_level': str(self.cause_level),
+            'slow_cause_source': self.cause_source,
+        }
 
 
 @dataclass(frozen=True)
@@ -1085,7 +1291,11 @@ class EpisodePhysics:
     zone_class: str
     response: Optional[EpisodeResponse]  # force law, identity, B1 on the run (checks only on a librating episode)
     libration_origin: str = ''
-    owner: str = ''
+    owner: str = ''  # an owner or driver that makes this episode (the verdict's `owner`, or the inducing owner, A1)
+    # the member of the multiplet that librates in this episode (rule C, the verdict's `resonant_argument`, or
+    # 'composite'): the verdict's on the decisive episode (A3a), on every other one the member chosen in its own scan
+    # window (A6b, `SubresonanceResult.episode_arguments`) when the verdict names an argument
+    resonant_argument: str = ''
     # why the a-wave before the episode is not measured: 'record_edge' | 'jump' | 'episode' (`response.onset_clear`),
     # '' otherwise
     onset_short: str = ''
@@ -1094,6 +1304,12 @@ class EpisodePhysics:
     onset_before_t0_yr: float = NAN
     onset_before_t1_yr: float = NAN
     onset_group_ids: Tuple[int, ...] = ()
+    # O1's three parts (B4, W28; `response.OnsetWave`): the background's coherence at P, its phase gap to the episode
+    # [deg] and a_dot under the episode's own law on the background / on the episode (nan: not measured)
+    onset_coherence_r2: float = NAN
+    onset_phase_gap_deg: float = NAN
+    onset_own_law_r2: float = NAN
+    onset_own_law_r2_episode: float = NAN
 
 
 def physics_of(episodes: Iterable[EpisodePhysics], episode_id: Optional[int]) -> Optional[EpisodePhysics]:
@@ -1108,6 +1324,20 @@ class SubresonanceTrigger(StrEnum):
     T2 = 'T2'  # a responds but the phi0 coherence is low
     T5 = 'T5'  # before any kinematic or drift_mechanism_unknown verdict
     T6 = 'T6'  # theory: the binomial mode j* != 0
+    # W28 A6a (card g06-8a A): the multiplet theory moves the catalogue member's centre over an accepted episode by more
+    # than mmr_subresonance_centre_move_ratio x its half-amplitude (two-body, `subresonances.theory_numbers`)
+    T7 = 'T7'
+    # W28 A6a (cards g06-6, g06-7, g06-8a): an accepted episode whose centre moves by more than that ratio x its
+    # half-amplitude while its bands still overlap, or the pending reason origin_unknown; a diagnostic scan only
+    # (sub_diag_*): it never accepts a member and the check stays not_applicable
+    T8 = 'T8'
+
+
+DIAGNOSTIC_TRIGGERS = (SubresonanceTrigger.T8,)  # triggers whose scan is diagnostic only (never read by the tree)
+# W28 A6b (card g06-8c A): how a scan window's member was chosen (`SubresonanceResult.choice`, column sub_choice)
+SUBRESONANCE_CHOICE_THEORY = 'theory'  # the flattest theoretical centre c_j(t) among the admissible members
+SUBRESONANCE_CHOICE_MEASURED = 'measured'  # the smallest measured centre range W (no theory, or it does not follow)
+SUBRESONANCE_CHOICE_COMPOSITE = 'composite'  # no planar member's theoretical centre stands: the composite multiplet
 
 
 @dataclass(frozen=True)
@@ -1153,6 +1383,22 @@ class SubresonanceResult:
     plane_offset_rad: float
     theory_cache: str = ''
     flags: List[str] = field(default_factory=list)
+    # W28 A6b (card g06-8c A): how the decisive episode's member was chosen ('theory': the flattest theoretical centre
+    # c_j(t) among the admissible members; 'measured': the smallest measured centre range W, the fallback; 'composite':
+    # no planar member's theoretical centre stands over the episode while the measured centre follows the composite
+    # one, so no member is named; '' nothing chosen), and the choice of every episode window (episode id -> member key,
+    # 'composite' or ''; episodes.csv `resonant_argument` of the non-decisive episodes)
+    choice: str = ''
+    episode_arguments: Dict[int, str] = field(default_factory=dict)
+    # the other episodes whose own window could not decide (check not_measured): episode id -> its flags
+    # (subresonance_undetermined, nodal_subresonance_candidate); the caps read them with the decisive window's
+    # (`decide.subresonance_caps`: the mechanism is not excluded in that episode)
+    episode_undecided: Dict[int, List[str]] = field(default_factory=dict)
+
+    @property
+    def composite_regime(self) -> bool:
+        """No member is chosen because the multiplet's regime is composite (`choice` 'composite'; card g06-8c A)."""
+        return self.choice == SUBRESONANCE_CHOICE_COMPOSITE
 
     def to_columns(self) -> dict:
         """CSV columns `sub_*` (sub_triggers, sub_n_scanned, sub_best, ...)."""
@@ -1180,6 +1426,73 @@ class SubresonanceResult:
             'sub_plane_offset_deg': column_number(self.plane_offset_rad, RAD_TO_DEG),
             'sub_theory_cache': self.theory_cache,
             'sub_flags': join_list(self.flags),
+            'sub_choice': self.choice,
+            'sub_episode_arguments': join_list(f'{i}:{key}' for i, key in sorted(self.episode_arguments.items())),
+            'sub_episode_undecided': join_list(
+                f'{i}:{flag}' for i, flags in sorted(self.episode_undecided.items()) for flag in flags or ['not_measured']
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class SubresonanceCheap:
+    """The cheap subresonance numbers every prograde non-co-orbital row gets (W28 A6a, cards g06-8a A, g06-2, g06-4;
+    `subresonances.cheap_subresonances`), whether the scan runs or not; nothing here is read by the status tree.
+
+    Theory (two-body, the planet saved, the orbits not crossing; `subresonances.theory_numbers`): the planar shares
+    |C_j| / sum |C_j| of the multiplet at the record's e(t), e_P(t), the leading member, Rouche for the catalogue
+    member, |P| / max|P| of the composite term P(beta(t)) at its minimum inside the gaps between accepted episodes and at
+    every episode edge (the 12218 gap: the compound term cancels), and the travel of the catalogue member's theoretical
+    centre pi - arg P + j_cat beta over each accepted episode against its half-amplitude (trigger T7).
+    Cheap list (`subresonances.cheap_list`): every planar member up to `degree_max` on the existing centre track in the
+    episode window, its d'Alembert factor (test E') and step 1 (S1); `n` members pass both (a full scan could accept
+    one of them), `best` is the first of them, else the planar member with the flattest centre (2003 UG22 40 kyr:
+    +6+1, a frame, not a force). `diagnostic`: the columns of the T8 diagnostic scan (`sub_diag_*`), empty without
+    one."""
+
+    theory_flag: str = ''  # why the theory is not computed ('' = computed): three_body, planets_missing, crossing, ...
+    shares: Tuple[Tuple[int, float], ...] = ()  # (j, |C_j| / sum over the planar members)
+    leading_j: Optional[int] = None
+    catalogue_j: Optional[int] = None
+    rouche: Optional[bool] = None  # |C_cat| > sum of the other |C_j|: the catalogue member dominates
+    p_min_gap: float = NAN  # min |P| / max |P| inside the gaps between accepted episodes (nan: no gap)
+    p_edges: Tuple[Tuple[float, float], ...] = ()  # (t [yr], |P| / max |P|) at each accepted episode's start and end
+    centre_travel_rad: float = NAN  # largest range of the catalogue member's theoretical centre over an episode
+    travel_ratio: float = NAN  # largest (that range / the episode's median half-amplitude) over the episodes
+    window: Tuple[float, float] = (NAN, NAN)  # the cheap list's episode window [yr]
+    n_members: int = 0  # planar members measured
+    n: int = 0  # members passing E' and S1
+    best: str = ''
+    best_strength_rel: float = NAN
+    best_range_ratio: float = NAN  # its centre range / that of the catalogue angle in the window
+    best_reason: str = ''  # '' = passes E' and S1, else E_strength or the first failed part of S1
+    best_pass_rad: float = NAN  # its largest monotone centre pass in the window
+    members: str = ''  # the first members of the list, 'key:range_ratio:strength_rel:reason' (`CheapMember.text`)
+    diagnostic: Dict[str, Any] = field(default_factory=dict)
+
+    def to_columns(self) -> dict:
+        deg = RAD_TO_DEG
+        return {
+            'sub_th_flag': self.theory_flag,
+            'sub_th_shares': join_list(f'{j}:{share:.3g}' for j, share in self.shares),
+            'sub_th_leading_j': self.leading_j,
+            'sub_th_catalogue_j': self.catalogue_j,
+            'sub_th_rouche': self.rouche,
+            'sub_th_P_min_gap': column_number(self.p_min_gap),
+            'sub_th_P_edges': join_list(f'{t / KYR:.4g}:{value:.3g}' for t, value in self.p_edges),
+            'sub_th_centre_travel_deg': column_number(self.centre_travel_rad, deg),
+            'sub_th_travel_ratio': column_number(self.travel_ratio),
+            'sub_cheap_window_t0_yr': column_number(self.window[0]),
+            'sub_cheap_window_t1_yr': column_number(self.window[1]),
+            'sub_cheap_n_members': self.n_members,
+            'sub_cheap_n': self.n,
+            'sub_cheap_best': self.best,
+            'sub_cheap_best_strength_rel': column_number(self.best_strength_rel),
+            'sub_cheap_best_range_ratio': column_number(self.best_range_ratio),
+            'sub_cheap_best_reason': self.best_reason,
+            'sub_cheap_best_pass_deg': column_number(self.best_pass_rad, deg),
+            'sub_cheap_list': self.members,
+            **self.diagnostic,
         }
 
 
@@ -1222,6 +1535,26 @@ class OwnerCandidate:
     potential: Optional['PotentialFit'] = None  # the potential route (`owner_potential`), None when not evaluated
 
 
+@dataclass(frozen=True)
+class EpisodeCover:
+    """The accepted owner on one accepted episode of sigma (F7 per episode, P2; `owner.cover_episodes`): the episode
+    (`episode_id` None = the analysis window of a libration over the record or of no episode), its window [yr] from
+    the first to the last turning point, its period, the covered fraction of the window by the owner's intervals and
+    the turns of Psi/u per cycle of the episode (nan when P2 does not apply: a forced-wave owner, the route
+    'identity', no psi rate)."""
+
+    episode_id: Optional[int]
+    t0_yr: float
+    t1_yr: float
+    period_yr: float
+    cover: float
+    psi_turns: float = NAN
+
+    def induced(self, cover_min: float, turns_max: float) -> bool:
+        """The owner makes this episode: it covers at least `cover_min` of it and P2 holds (or does not apply)."""
+        return bool(self.cover >= cover_min) and not bool(self.psi_turns >= turns_max)
+
+
 @dataclass
 class OwnerResult:
     """The owner search (SPEC §4.8; columns `own_*`, `check_mmr_owner`)."""
@@ -1239,15 +1572,23 @@ class OwnerResult:
     freq_period_yr: float
     detail: str = ''  # 'owner_libration' | 'owner_forced_wave'
     flags: List[str] = field(default_factory=list)
-    # where the accepted owner acts (F7): (t0, t1, regime) with regime libration | forced_wave | slip, the decisive
-    # window of sigma it is compared with and the covered fraction of it (nan without an accepted owner)
+    # where the accepted owner acts (F7): (t0, t1, regime) with regime libration | forced_wave (its measured regimes
+    # only, no bridge between them; A1 W28), the decisive window of sigma it is compared with and the covered fraction
+    # of it (nan without an accepted owner)
     intervals: List[Tuple[float, float, str]] = field(default_factory=list)
     decisive_window: Tuple[float, float] = (NAN, NAN)
     cover: float = NAN
+    # F7 per episode and P2 (A1 W28): the owner on every accepted episode of sigma (`owner.cover_episodes`), the
+    # turns of Psi/u per cycle of the decisive episode (nan when P2 does not apply), and the episodes a second pass
+    # took out of the geometry as induced (`Geometry.induced_ids`: the own episodes decide, `owner.induced_split`)
+    episode_covers: Tuple[EpisodeCover, ...] = ()
+    psi_turns_per_cycle: float = NAN
+    induced_ids: frozenset = frozenset()
     step_yr: float = NAN  # the record's step: the intervals are written rounded to it
     psi_def: str = ''  # Psi = u sigma - v phi_o of the shown candidate, e.g. '17*sigma-3*phi'
     identity_text: str = ''  # sigma = (v/u) phi + Psi/u written out, e.g. '(27/5)φ + (ϖ − λ_N)/5'
     capture: Optional['SecondCapture'] = None  # the second-capture test of the accepted owner
+    wells: Optional['WellSelection'] = None  # F2 on sigma's episodes in the capture span (diagnostic only)
     sigma_force_bound: float = NAN  # max |s - 1| of the potential route: the bound on sigma's own term
     sigma_period_min_yr: float = NAN  # T_obs / sqrt(|v/u| bound): the shortest own period sigma's term could have
     sigma_wave_rad: float = NAN  # band amplitude of sigma on sin/cos phi_o (measured only)
@@ -1299,9 +1640,12 @@ class OwnerResult:
             'own_identity_text': self.identity_text,
             'own_intervals': intervals_text(self.intervals, self.step_yr),
             'own_cover': column_number(self.cover),
+            'own_episode_covers': episode_covers_text(self.episode_covers),
+            'own_psi_turns_per_cycle': column_number(self.psi_turns_per_cycle),
             'own_decisive_t0_yr': column_number(self.decisive_window[0]),
             'own_decisive_t1_yr': column_number(self.decisive_window[1]),
             **(self.capture.to_columns() if self.capture is not None else SecondCapture.empty_columns()),
+            **(self.wells.to_columns() if self.wells is not None else WellSelection.empty_columns()),
             **(potential.to_columns() if potential is not None else PotentialFit.empty_columns()),
             'own_wave_da_pred_au': (
                 column_number(potential.k_direct / abs(self.owner_rate_rad_yr))
@@ -1357,7 +1701,7 @@ class IdentityRoute:
         return blank_columns(IdentityRoute('', NAN, NAN, NAN, '', NAN, NAN, 0, 0).to_columns())
 
 
-def _interval_number(value: float, step_yr: float) -> str:
+def interval_number(value: float, step_yr: float) -> str:
     """A time [yr] rounded to the record's step, with the decimals the step needs."""
     if not (np.isfinite(step_yr) and step_yr > 0):
         return f'{value:.0f}'
@@ -1365,9 +1709,14 @@ def _interval_number(value: float, step_yr: float) -> str:
     return f'{round(value / step_yr) * step_yr:.{decimals}f}'
 
 
+def episode_covers_text(covers: Iterable[EpisodeCover]) -> str:
+    """'id:cover;...' (column own_episode_covers; 'window' for the analysis window), the cover to 3 decimals."""
+    return ';'.join(f'{"window" if c.episode_id is None else c.episode_id}:{c.cover:.3f}' for c in covers if math.isfinite(c.cover))
+
+
 def intervals_text(intervals: Iterable[Tuple[float, float, str]], step_yr: float = NAN) -> str:
     """'t0-t1:regime;...' [yr] (column own_intervals)."""
-    return join_list(f'{_interval_number(a, step_yr)}-{_interval_number(b, step_yr)}:{kind}' for a, b, kind in intervals)
+    return join_list(f'{interval_number(a, step_yr)}-{interval_number(b, step_yr)}:{kind}' for a, b, kind in intervals)
 
 
 @dataclass(frozen=True)
@@ -1463,11 +1812,50 @@ class PotentialFit:
 
 
 @dataclass(frozen=True)
+class SlowX:
+    """The slow motion of x = Psi_slow / u on the second capture's test span (`owner.slow_x`, A2 W28, card g05-2): the
+    dominant period of x and its half-amplitude at that period, the secular phase that explains x_dot best (R^2 and
+    period, `kinematics.secular_forcing_fit`), and the cause named with a level: 'identified' when x's period matches
+    that term's period within mmr_kin_period_tol and its R^2 >= mmr_owner_r2_min, 'possible' when one of the two holds,
+    '' otherwise. A description, no decision reads it."""
+
+    period_yr: float = NAN
+    halfamp_rad: float = NAN
+    secular_r2: float = NAN
+    secular_period_yr: float = NAN
+    term: str = ''  # '2omega' | 'g-g5' | ... | ''
+    cause: str = ''  # 'secular_2omega' | 'secular_g_gj' | ''
+    level: str = ''  # 'identified' | 'possible' | ''
+
+    def to_columns(self) -> dict:
+        return {
+            'own_x_period_yr': column_number(self.period_yr),
+            'own_x_halfamp_deg': column_number(self.halfamp_rad, RAD_TO_DEG),
+            'own_x_secular_R2': column_number(self.secular_r2),
+            'own_x_secular_period_yr': column_number(self.secular_period_yr),
+            'own_x_secular_term': self.term,
+            'own_x_cause': self.cause,
+            'own_x_cause_level': self.level,
+        }
+
+    @staticmethod
+    def empty_columns() -> dict:
+        return blank_columns(SlowX().to_columns())
+
+
+@dataclass(frozen=True)
 class SecondCapture:
-    """Is sigma held by its own term while the owner pins phi_o (`owner.second_capture_blocks`)? x = Psi_slow / u on a
-    connected block of the owner intervals covering sigma's decisive episode (the deciding one): the net turns of Psi,
+    """Is sigma held by its own term while the owner pins phi_o (`owner.second_capture_blocks`)? x = Psi_slow / u on the
+    hull of the owner intervals that meet sigma's episodes (`owner.capture_spans`, a test window, not owner time;
+    `t_start_yr`, `t_end_yr`): the net turns of Psi,
     the sweep of x, the R^2 of x_dot^2 on [1, cos jx, sin jx] (the pendulum's energy integral), lambda_ad and the
-    verdict ('excluded' | 'unresolved')."""
+    verdict ('excluded' | 'unresolved'). Route F3 (A2 W28, card g05-6): `self_r2` = R^2 of x_ddot on [1, sin x, cos x],
+    `secular_r2` = the best R^2 of x_ddot on the secular harmonics (`kinematics.secular_forcing_fit`); `route` names the
+    exclusion that held: 'sweep_energy' (the sweep and energy route) or 'secular_forcing' (F3), '' when unresolved.
+    `slow_x`: the slow motion of x on the same span (columns own_x_*). The third outcome (A2b W28, card g05-8 B):
+    'confirmed' when x closes cycles of a well of its own (`owner.joint_outcome`), 'one_cycle' when it closes only one;
+    `x_cycles` = its independent closed cycles (turns at the centre-turn prominence), `x_cycle_period_yr` = their
+    median full period, `x_secular_offset` = min |P_x / (P_sec / k) - 1| over the secular periods and harmonics."""
 
     psi_turns: float
     x_sweep_rad: float
@@ -1476,6 +1864,13 @@ class SecondCapture:
     verdict: str
     t_start_yr: float = NAN
     t_end_yr: float = NAN
+    self_r2: float = NAN
+    secular_r2: float = NAN
+    route: str = ''
+    slow_x: SlowX = field(default_factory=SlowX)
+    x_cycles: int = 0
+    x_cycle_period_yr: float = NAN
+    x_secular_offset: float = NAN
 
     def to_columns(self) -> dict:
         return {
@@ -1484,11 +1879,42 @@ class SecondCapture:
             'own_psi_energy_R2': column_number(self.energy_r2),
             'own_adiabatic': column_number(self.adiabatic),
             'own_second_capture': self.verdict,
+            'own_psi_self_R2': column_number(self.self_r2),
+            'own_psi_secular_R2': column_number(self.secular_r2),
+            'own_second_capture_route': self.route,
+            'own_x_cycles': self.x_cycles,
+            'own_x_cycle_period_yr': column_number(self.x_cycle_period_yr),
+            'own_x_secular_offset': column_number(self.x_secular_offset),
+            **self.slow_x.to_columns(),
         }
 
     @staticmethod
     def empty_columns() -> dict:
         return blank_columns(SecondCapture(NAN, NAN, NAN, NAN, '').to_columns())
+
+
+@dataclass(frozen=True)
+class WellSelection:
+    """F2, a diagnostic only (A2 W28, card g05-6): does sigma pick its own well at each capture? Over sigma's accepted
+    episodes inside the second capture's test span, the centre of sigma and of phi_o in each (the circular mean of the
+    angle low-passed at mmr_owner_capture_lowpass_periods x P) and their Rayleigh lengths R = |<exp(i c)>|: an owner
+    that re-captures into its own well gives R_owner near 1 while sigma's centres scatter (78085: 0.97 against 0.27).
+    `n_recaptures` = the episodes used - 1; R is nan below two episodes. No decision reads it."""
+
+    r_owner: float = NAN
+    r_sigma: float = NAN
+    n_recaptures: int = 0
+
+    def to_columns(self) -> dict:
+        return {
+            'own_capture_R_owner': column_number(self.r_owner),
+            'own_capture_R_sigma': column_number(self.r_sigma),
+            'own_capture_n_recaptures': self.n_recaptures,
+        }
+
+    @staticmethod
+    def empty_columns() -> dict:
+        return blank_columns(WellSelection().to_columns())
 
 
 @dataclass(frozen=True)
@@ -1552,6 +1978,12 @@ class MMRAnalysis:
     # the CSV rows taken just before `drop_arrays` (the rows read prep and the centre track, which it releases)
     frozen_numbers: Optional[Dict[str, Any]] = None
     frozen_episode_rows: Optional[List[dict]] = None
+    frozen_slow_episode_rows: Optional[List[dict]] = None
+    # B10a (W28): the slower libration of the centre at its own scale (columns slow_*, episodes.csv scale='slow')
+    slow_scale: Optional[SlowScale] = None
+    # A6a (W28): the cheap theory numbers and candidate list of every prograde non-co-orbital row (sub_th_*, sub_cheap_*,
+    # sub_diag_*); None for a row without them (retrograde, 1:1, a derived or owner row, a refused record)
+    subresonance_cheap: Optional[SubresonanceCheap] = None
 
     def _results(self) -> list:
         return [
@@ -1566,6 +1998,8 @@ class MMRAnalysis:
             self.owner,
             self.strength,
             self.baseline,
+            self.slow_scale if self.slow_scale is not None else SlowScale(),
+            self.subresonance_cheap,
         ]
 
     def _identity(self) -> dict:
@@ -1601,6 +2035,7 @@ class MMRAnalysis:
             if result is not None:
                 row.update(result.to_columns())
         row.update(self._decisive_episode_columns())
+        row.update(described_coorbital_columns(self.geometry, self.decisive_episode_id))
         row.update(self.extra_columns)
         return row
 
@@ -1611,11 +2046,18 @@ class MMRAnalysis:
         rows = [r for r in self.episode_rows() if r['episode_id'] == self.decisive_episode_id]
         if not rows:
             return {}
-        skip = ('name', 'resonance', 'tp_times_yr')
+        skip = ('name', 'resonance', 'tp_times_yr', 'scale')
         return {f'ep_{key}': value for key, value in rows[0].items() if key not in skip}
 
-    def episode_rows(self) -> List[dict]:
-        """episodes.csv rows: geometry.Episode joined with EpisodePhysics by episode_id."""
+    def episode_rows(self, include_slow: bool = False) -> List[dict]:
+        """episodes.csv rows: geometry.Episode joined with EpisodePhysics by episode_id (scale 'main'); with
+        `include_slow` also the runs of the slow scale (`SlowScale.episodes`, scale 'slow', B10a: what the CSV writers
+        save). The default is the main scale alone: the figure, the verdict text and every reader of the decisive
+        episode read only it."""
+        rows = self._main_episode_rows()
+        return rows + self.slow_episode_rows() if include_slow else rows
+
+    def _main_episode_rows(self) -> List[dict]:
         if self.frozen_episode_rows is not None:
             return [dict(row) for row in self.frozen_episode_rows]
         if self.geometry is None:
@@ -1623,7 +2065,21 @@ class MMRAnalysis:
         physics = {p.episode_id: p for p in self.episode_physics}
         cutoff = self.prep.cutoff.cutoff_yr if self.prep is not None else None
         window = self.geometry.window
-        return [_episode_row(self, run, physics.get(run.episode_id), cutoff, window) for run in self.geometry.runs]
+        rows = [_episode_row(self, run, physics.get(run.episode_id), cutoff, window) for run in self.geometry.runs]
+        return [{**row, 'scale': SCALE_MAIN} for row in rows]
+
+    def slow_episode_rows(self) -> List[dict]:
+        """The episodes.csv rows of the slow scale (scale 'slow'): the geometric columns of each run G2c found at the
+        centre scale (no physics: no response was measured there), its cutoff W_c; empty without such runs."""
+        if self.frozen_slow_episode_rows is not None:
+            return [dict(row) for row in self.frozen_slow_episode_rows]
+        slow = self.slow_scale
+        if slow is None or not slow.episodes or self.geometry is None:
+            return []
+        window = (slow.t_start_yr, slow.t_end_yr)
+        rows = [_episode_row(self, run, None, slow.cutoff_yr, window) for run in slow.episodes]
+        # the slow runs belong to another geometry (their ids are not the main runs'): no forced wave, no eligibility
+        return [{**row, 'scale': SCALE_SLOW, 'forced_wave': '', 'eligible': None, 'ineligible_reason': ''} for row in rows]
 
     def candidate_rows(self, top_only: bool = True) -> List[dict]:
         """candidates.csv rows (subresonances and owners; top-N and the accepted one when `top_only`)."""
@@ -1644,7 +2100,8 @@ class MMRAnalysis:
         `numbers_row`, `summary_row` and `episode_rows` give the same values after it; a figure re-runs the analysis."""
         if self.frozen_numbers is None:
             self.frozen_numbers = self.numbers_row()
-            self.frozen_episode_rows = self.episode_rows()
+            self.frozen_episode_rows = self._main_episode_rows()
+            self.frozen_slow_episode_rows = self.slow_episode_rows()
         empty = np.empty(0)
         self.prep = None
         self.slow = None
@@ -1658,6 +2115,7 @@ class MMRAnalysis:
             self.geometry.record_centres = []
             self.geometry.floor_well = None  # G1q: the quasi-satellite well per sample
             self.geometry.averaged_raw, self.geometry.averaged_raw_t_yr = None, None
+            self.geometry.angle_f, self.geometry.angle_f_t_yr = None, None  # the union's bounded gap (A7)
             self.geometry.forget_derived()  # they read the centre and the averaged angle dropped here
         if self.energy is not None:
             self.energy.model_frame = None
@@ -1668,9 +2126,16 @@ class MMRAnalysis:
 
 
 ADDED_BY_SUBRESONANCE = 'subresonance_check'
+# episodes.csv `scale` (B10a, W28 card g08-7; benchmark/tools/episode_expectations.py reads it)
+SCALE_MAIN, SCALE_SLOW = 'main', 'slow'
 KYR = 1e3
 # The short fixed set of summary.csv (SPEC §11.1 item 5) besides the ledger's columns
 SUMMARY_FIXED_COLUMNS = (
+    # the 1:1 sub-regimes and the inferred residence of the described episode (W28 C8, cards g03-3 C, g03-9 A)
+    'geo_orbit_type_sequence',
+    'geo_residence_t0_yr',
+    'geo_residence_t1_yr',
+    'geo_residence_bounded_by_end',
     'ctx_a_mean_au',
     'ctx_delta_a_au',
     'smp_step_yr',
@@ -1686,7 +2151,23 @@ SUMMARY_FIXED_COLUMNS = (
     'own_name',
     'sub_best',
     'base_extend_to_years',  # the physical estimate N next to extend_to_years (the next check, N8)
+    # the slower libration of the centre and its named cause (B10a, card g05-2: next to the verdict, not only in numbers)
+    'slow_period_yr',
+    'slow_cause',
+    'slow_cause_term',
+    'slow_cause_level',
 )
+
+
+def _run_floor_columns(geometry, run) -> dict:
+    """The `cpl_*` columns of a 1:1 run's own floor reading (`geometry.Geometry.run_floor`, W28 C3); {} without one."""
+    reading = geometry.run_floor(run) if geometry is not None else None
+    if reading is None:
+        return {}
+    return {
+        name: (column_number(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else value)
+        for name, value in reading.columns
+    }
 
 
 def _episode_row(analysis: MMRAnalysis, run, physics: Optional[EpisodePhysics], cutoff_yr, window) -> dict:
@@ -1696,6 +2177,7 @@ def _episode_row(analysis: MMRAnalysis, run, physics: Optional[EpisodePhysics], 
         'resonance': analysis.resonance.key,
         'episode_id': run.episode_id,
         'accepted': bool(run.accepted),
+        **eligibility_columns(analysis.geometry, run),
         'subtype': str(run.shape),
         'reject_reason': str(run.reject_reason),
         't_start_yr': run.t_start_yr,
@@ -1733,11 +2215,18 @@ def _episode_row(analysis: MMRAnalysis, run, physics: Optional[EpisodePhysics], 
         'return_t_a_yr': column_number(run.return_t_a_yr),
         'return_t_b_yr': column_number(run.return_t_b_yr),
         'return_level_fraction': column_number(run.return_level_fraction),
-        # the route that made the accepted run a forced wave, no episode of the angle (`decide.forced_wave_episodes`)
+        'edge_raw_tp': run.edge_raw_tp,  # rule coorbital_edge_turn (W28 C4): the side of a turning point from the trim
+        'marks': run.marks,  # rule coorbital_well_cut (W28 C7): the 1:1 changes inside the run that are no boundary
+        'wells': run.wells,  # and the wells its full cycles hold, in time order
+        **residence_columns(run),  # rule coorbital_residence (W28 C8): the core, the inferred stay, the sub-regimes
+        # the route that made the accepted run a forced wave, no episode of the angle (`decide.forced_wave_episodes`;
+        # 'strength': an episode of a row rule 5s decided, marked after the verdict, `decide.strength_forced_waves`;
+        # 'unconfirmed_ripple': a ripple without measurable physics on an unfinished slow swing, `decide.ripple_waves`)
         'forced_wave': next((w.route for w in analysis.geometry.forced_waves if w.episode_id == run.episode_id), ''),
         'cutoff_yr': column_number(cutoff_yr),
         'window_start_yr': column_number(window[0]),
         'window_end_yr': column_number(window[1]),
+        **_run_floor_columns(analysis.geometry, run),
     }
     if physics is not None:
         row.update(
@@ -1759,6 +2248,10 @@ def _episode_row(analysis: MMRAnalysis, run, physics: Optional[EpisodePhysics], 
                 'onset_before_t0_yr': column_number(physics.onset_before_t0_yr),
                 'onset_before_t1_yr': column_number(physics.onset_before_t1_yr),
                 'onset_group': ';'.join(str(i) for i in physics.onset_group_ids),
+                'onset_coherence_r2': column_number(physics.onset_coherence_r2),
+                'onset_phase_gap_deg': column_number(physics.onset_phase_gap_deg),
+                'onset_own_law_r2': column_number(physics.onset_own_law_r2),
+                'onset_own_law_r2_episode': column_number(physics.onset_own_law_r2_episode),
                 'h_min': column_number(physics.h_min),
                 'h_med': column_number(physics.h_med),
                 'h_max': column_number(physics.h_max),
@@ -1769,9 +2262,75 @@ def _episode_row(analysis: MMRAnalysis, run, physics: Optional[EpisodePhysics], 
                 'deciding_witness': physics.episode_id == witness_id,
                 'libration_origin': physics.libration_origin,
                 'owner': physics.owner,
+                'resonant_argument': physics.resonant_argument,
             }
         )
     return row
+
+
+def eligibility_columns(geometry, run) -> dict:
+    """episodes.csv `eligible` and `ineligible_reason` (W28 C11, card g02-9 A): whether an accepted run counts for the
+    status, the episodes `decide.librating_episodes` keeps (`Geometry.eligibility_reason`), and why not
+    (`forced_wave`, `induced`, `below_period_floor`, `centre_turns`, `before_last_jump`; '' when it counts). `accepted`
+    keeps its meaning. A rejected run: False and '' (its reason is `reject_reason`); an accepted run the decision never
+    read (no eligibility): None and ''."""
+    if not run.accepted:
+        return {'eligible': False, 'ineligible_reason': ''}
+    reason = geometry.eligibility_reason(run) if geometry is not None else None
+    if reason is None:
+        return {'eligible': None, 'ineligible_reason': ''}
+    return {'eligible': reason == '', 'ineligible_reason': str(reason)}
+
+
+def residence_columns(run) -> dict:
+    """episodes.csv columns of rule coorbital_residence (W28 C8, `geometry.Residence`, `geometry.SubRegime`): the
+    core (the accepted run's first and last turning points; nan for a rejected run), the inferred residence around it
+    and what bounds each side ('edge' | 'circulation'; '' without one), the largest |a - a_P| / da_max at the averaged
+    angle's reversals outside the core (reported only), the sub-regimes (`well@t0:t1`) and their own 1:1 laws
+    (`force/energy`)."""
+    residence = run.residence
+    return {
+        'core_t0_yr': column_number(run.core_t0_yr),
+        'core_t1_yr': column_number(run.core_t1_yr),
+        'residence_t0_yr': column_number(residence.t0_yr) if residence is not None else None,
+        'residence_t1_yr': column_number(residence.t1_yr) if residence is not None else None,
+        'residence_bounded_by_start': residence.bounded_by_start if residence is not None else '',
+        'residence_bounded_by_end': residence.bounded_by_end if residence is not None else '',
+        'residence_zone_max': column_number(residence.zone_max) if residence is not None else None,
+        'subregimes': subregimes_text(run.subregimes),
+        'subregime_checks': subregime_checks_text(run.subregimes),
+    }
+
+
+def described_coorbital_columns(geometry, decisive_id) -> dict:
+    """summary.csv `geo_orbit_type_sequence` (the wells of the accepted runs' sub-regimes in time order, the forced
+    waves left out, `geometry.well_sequence`; the orbit type's text reads the same) and `geo_residence_*` of the
+    decisive episode, else of the longest accepted run with a residence (W28 C8). Empty values for any other angle."""
+    out = {
+        'geo_orbit_type_sequence': '',
+        'geo_residence_t0_yr': None,
+        'geo_residence_t1_yr': None,
+        'geo_residence_bounded_by_start': '',
+        'geo_residence_bounded_by_end': '',
+    }
+    if geometry is None:
+        return out
+    waves = geometry.forced_wave_ids
+    runs = [run for run in geometry.runs if run.accepted and run.episode_id not in waves]
+    out['geo_orbit_type_sequence'] = well_sequence(runs)
+    held = [run for run in runs if run.residence is not None]
+    chosen = next((run for run in held if run.episode_id == decisive_id), None)
+    if chosen is None and held:
+        chosen = max(held, key=lambda run: run.t_end_yr - run.t_start_yr)
+    if chosen is not None:
+        residence = chosen.residence
+        out.update(
+            geo_residence_t0_yr=column_number(residence.t0_yr),
+            geo_residence_t1_yr=column_number(residence.t1_yr),
+            geo_residence_bounded_by_start=residence.bounded_by_start,
+            geo_residence_bounded_by_end=residence.bounded_by_end,
+        )
+    return out
 
 
 def moving_centre_columns(run) -> dict:

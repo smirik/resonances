@@ -137,6 +137,7 @@ def period_floor(series: LongPeriodSeries, cutoff_yr: float, settings: AnalysisS
 def filtered_angle(series: LongPeriodSeries, cutoff: Cutoff, settings: AnalysisSettings) -> Optional[FilteredAngle]:
     """sigma_f at P_c (and at P_c x 0.5 and x 2 for the robustness of the turning-point count), its rate, e_f as the
     slow variable, the edge-trimmed window and the shortest libration (`period_floor`); sets the prominence of `cutoff`.
+    A Lidov-Kozai omega breaks its runs at ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG (half a turn), a secular angle at pi.
     None when the record cannot be filtered (non-uniform grid, or shorter than the cutoff needs)."""
     t = np.asarray(series.t_yr, dtype=float)
     x = np.asarray(series.angle, dtype=float)
@@ -149,6 +150,7 @@ def filtered_angle(series: LongPeriodSeries, cutoff: Cutoff, settings: AnalysisS
     window = edge_window(t, settings.filter_edge_trim_cutoffs * cutoff.cutoff_yr)
     floor = period_floor(series, cutoff.cutoff_yr, settings)
     _set_prominence(series, cutoff, x, angle_f, window, floor[0], settings)
+    zlk = series.resonance_type == ResonanceType.LIDOV_KOZAI
     return FilteredAngle(
         t_yr=t,
         angle_raw=x,
@@ -163,6 +165,8 @@ def filtered_angle(series: LongPeriodSeries, cutoff: Cutoff, settings: AnalysisS
         window=window,
         period_floor_yr=floor[0],
         period_floor_setting=floor[1],
+        # a ZLK island is at most half a turn wide (2 omega): its runs break there (`geometry.split_runs`)
+        run_break_half_amplitude_rad=float(np.radians(settings.zlk_run_break_half_amplitude_deg)) if zlk else np.pi,
     )
 
 

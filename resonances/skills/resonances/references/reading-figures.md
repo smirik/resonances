@@ -32,7 +32,7 @@ These hold for the combined figures; most hold for the standalone ones too.
 - **Time** runs left to right in yr, kyr or Myr, whichever suits the span (below $10^4$ yr: yr; below $10^6$ yr:
   kyr). Time colour bars use one colour map (viridis without its palest yellow): dark is early, yellow-green late.
 - **Angles** folded into one turn are labelled from 0° to 360° (270°, not −90°). The unwrapped angle of MMR panels
-  (a) and (i) is in radians; (j) shows offsets in degrees (radians in its kinematic version).
+  (a) and (i) is in radians; (j) shows offsets in degrees (its kinematic version: detrended terms, in degrees).
 - **▲ and ▼ at the edge of a panel** mean "beyond the axis". The view holds 99 % of the osculating samples; the rare
   samples outside it are grouped in time, and each group is one small triangle at the time it goes furthest out (at
   most 8 per edge). A reference level outside the view (for example the resonant semi-major axis) is a triangle in
@@ -70,7 +70,21 @@ orbit in the librating episodes (for example `tadpole L4`, `horseshoe`, `interio
 For a non-resonant or uncertain verdict whose episodes come from somewhere else it reads
 `episodes about X° (not this resonance)`. A row found as a subresonance adds `subresonance of <parent>`.
 
-The second line describes the record: its span and direction, the integrator and its step, the output step and
+When another resonance or term makes the cycles, the second line names it by its role
+([roles](physics/response.md#roles)):
+
+- `owner: 5E-16+0+11 (librates in the episode)`: the owner librates and drives $a$;
+- `driver: 3N-5+0+2 (circulates, P 4.51 kyr): forced wave`: the other angle circulates, its forced wave makes the
+  cycles; `candidate driver: X` when the owner's measured regimes do not cover σ's deciding episode;
+- `6E-11+0+5 librates after the episode (13.7 kyr–17.9 kyr), outside it`: a neighbour, a resonance the body is in
+  before or after these episodes, not the cause (`… during … but does not make σ's cycles` inside them);
+- `resonant argument: 9M-16+2+5 (one resonance 9M-16)`: the member of the multiplet that librates;
+- `kinematic: −4ϖ term (2ω cycle, 18 kyr); a does not follow`: σ's perihelion term makes the swing, at the secular
+  period σ's period matched;
+- `also in: 5J+6S-2+0+0-9 (both resonances at once)`: origin joint, the other resonance librates at the same time
+  and keeps its own row ([both resonances at once](physics/response.md)).
+
+The next line describes the record: its span and direction, the integrator and its step, the output step and
 number of rows, the filter cutoff and what set it, the cutoff used for rates, the epoch, and whether the FAIR
 plane (m) could be drawn.
 
@@ -85,11 +99,29 @@ The resonant angle $\sigma$, unwrapped: a circulation runs off upwards or downwa
 - ▼ and ▲: the turning points of $\sigma_f$ (a maximum, a minimum), marked only when there are at most 80;
 - coloured fills labelled `#1`, `#2`, …: the accepted librating episodes. A fill runs to a record edge the episode
   covers, else a quarter period beyond its first and last turning points. A hatched fill is an episode before the
-  last jump of the semi-major axis; `#3 wave` is a forced wave, not a libration of this angle;
+  last jump of the semi-major axis (`////`); a fill hatched the other way (`\\\\`) is an episode another
+  resonance induces (the header names it). Three labels mark accepted runs that are no libration of this angle:
+  `#3 wave`, a forced wave of another argument; `#3 forced (strength)`, a run of a row the strength decided (this
+  angle's force cannot make that period; the label names that ground, not a driver); `#3 ripple`, dotted, an
+  unconfirmed ripple below 45° on an unfinished slow swing, an auxiliary interval that decides nothing;
 - a grey strip along the bottom: runs of turning points that were rejected, with a letter for the reason:
   **T** over the top of the well, **F** too few turning points, **C** the centre moves, **O** no closed cycle;
+- a grey strip with a grey label `#0 < floor` (or `#0 centre turns`) above the panel: a run the shape accepted but
+  the status does not count, because it is faster than the angle's shortest libration (the period floor) or its
+  centre turns a whole revolution inside it (episodes.csv `eligible` False). It is drawn like a rejected run, never
+  as an episode, so the figure and the verdict agree (2022 AP1: `#0 < floor`, verdict circulation);
+- a turning point inside the filter's pale edge of a 1:1 angle: a turn read on the orbit-averaged raw angle; it is
+  added only when it closes a cycle (2006 BZ147, 960 yr);
 - dotted lines (or a hatched band with "N jumps of a"): jumps of the semi-major axis; a shaded half-cycle with
   "action step (G2a)": a sudden change of the libration's amplitude, treated like a jump;
+- 1:1 only, one episode in parts ([one episode of a 1:1 angle](physics/geometry.md)): brackets just above the panel,
+  one per sub-regime, named by its well (`#0 horseshoe`, `tadpole L4`; `new amplitude`: the same well after an
+  amplitude change, the gap between two brackets is the transitional half-cycle); names that would overlap merge
+  (`#1 compound → quasi-satellite`). A lighter fill hatched `--` labelled `inferred`: the stay in the co-orbital
+  region beyond the measured turning points (episodes.csv `residence_*`), up to the record's edge or a whole turn of
+  the orbit-averaged angle. It is inferred, not measured: coverage, the edges and the status read only the turning
+  points, and (l) does not draw it (2020 CB 1E-1: measured 443–601 yr, hatched from 601 yr to the end: 601 yr is no
+  exit);
 - ×: where the analysis places the exit from the resonance. It may be only suspected: then the right column shows
   `check_mmr_exit` failed, and the cap `exit_suspected` when the verdict rests on that edge.
 
@@ -123,7 +155,9 @@ period: the samples, like a stroboscope, make a fast circulation look slow
 **The strip (b′).** When the cycles are too dense to see in (b), a strip below it shows about five cycles from the
 middle of the deciding episode on their own time axis (in yr): ● the samples, a grey dashed line the path the
 analysis' unwrap assumes between them (a whole turn may pass between two samples), black $\sigma_f$. A ▼ on the top
-edge of (b) marks where the strip was taken; a second strip (b′2) shows the last regime after a jump.
+edge of (b) marks the middle of the strip's time window; a second strip (b′2) shows the last regime after a jump, and
+the ▼s are then numbered. A ▼ never moves sideways: next to the panel letter or the ALIAS plaque it is raised just
+above it, and its number moves level with the ▼ or to its left.
 
 ??? info "The maths: sampling"
     With the output step $\Delta t$, a rate $\nu$ is seen as $\nu - 2\pi m/\Delta t$ for a whole number $m$: the
@@ -175,7 +209,9 @@ filtered $a$ itself is black).
 
 - dotted: $a_*$, where the angle would stand still; dashed cyan: $a_{\rm res}$, the value of the resonance catalogue;
 - light blue band: $a_* \pm \Delta a$, the half-width of the resonance measured from the episodes;
-- red dots: the mean of $a$ over each cycle of $\sigma_f$ (maximum to maximum), drawn when there are 2 to 200 maxima.
+- red dots: the mean of $a$ over each cycle of $\sigma_f$ (maximum to maximum), drawn when there are 2 to 200 maxima;
+- ▼ `kick` at the top edge (1:1): a jump of $a$ at a change inside an episode that is no boundary, a change of well or
+  of amplitude (episodes.csv `marks`, `kick@t`; the jump itself is the dotted line of (a)).
 
 $a_*$ and $a_{\rm res}$ are mean-motion values, while the curves are osculating. To compare like with like, both
 lines are moved by the difference between the mean osculating $a$ and the $a$ that the measured mean motion gives,
@@ -216,12 +252,17 @@ The blue curve is the law that decided (column `rsp_force_law`), on the series t
 - `multiplet`: one curve, the multiplet law (its one fit over its windows, drawn over them), with
   `multiplet law j = …: R² … (single …)` at the top: the multiplet's $R^2$ against the single sine's;
 - `harmonic` (several harmonics) or a 1:1 law: no blue curve; the panel prints that law's numbers
-  (`harmonic law N=k: R² … (single …)`).
+  (`harmonic law N=k: R² … (single …)`);
+- `direct_force` (the [direct averaged-force law](physics/response.md#the-direct-averaged-force-law)): a thick black
+  $\dot a$ and, per window, a blue curve $s\times$ the term's averaged force with the planet's real mass, both
+  low-passed at the law's cutoff ($f\,P_\text{large}$), with `direct law 8N-13+0+5 (Neptune's mass) at 3.07 kyr: R² 0.75,
+  s 1.14–1.29` at the top. The single-sine windows are not drawn: they are the law that failed.
 
 When the line rule raised the cutoff (a line of $\dot a$ rivalled the force), the black $\dot a$ and the angle are
 taken at that raised cutoff, and the panel prints `cutoff … yr (line … yr)` (columns `rsp_response_cutoff_ep_yr`,
-`rsp_line_binding_yr`). The panel shows the whole record's fit; when one episode decided (rule R), its numbers are in
-the right column.
+`rsp_line_binding_yr`). The law drawn is the one the status read: when a witness episode decided (rule R, column
+`rsp_force_source = witness`), its windows and law, on $\sigma$ and $\dot a$ smoothed at its own response cutoff
+(`rsp_response_cutoff_ep_yr`, which can differ from the record's); otherwise the fit pooled over the episodes.
 
 ??? info "The maths: the force law"
     In each window of about 3.5 cycles,
@@ -266,7 +307,9 @@ the resonance.
 
 Grey: $\sigma_f$ in the analysed window; red: its centre, $\sigma_f$ smoothed over a few libration periods; large
 red ▼▲: turns of the centre; light red shading: the centre's longest one-way run, drawn only when it reaches a full
-turn.
+turn. Red vertical hatching labelled `slow #id` (or `slow`): the intervals of the slow scale, a slower libration of
+the centre stored apart from the main one (its period, cycles and cause are the `slow_*` columns and a `Slow scale:`
+line of the right column); nothing is hatched without a slow swing.
 
 What to look for: a centre that runs a full turn one way is a circulation, however the angle swings around it.
 
@@ -284,9 +327,17 @@ an accepted subresonance, purple dashed the owner resonance.
 What to look for: **a flat line is the angle that librates.** If the catalogue angle wanders while a member's line
 is flat, the libration belongs to that member.
 
-For a kinematic case the panel shows instead the slow part of $\sigma$ (red) and $p\varpi$ (orange dashed), each
-with its own straight-line trend removed, in radians: compare their swings, not their mean rates. When $\sigma$
-follows $p\varpi$, the perihelion's own precession bounds the angle, not the resonance.
+When the slow scale's cause is a secular cycle (`slow_cause` 2ω or $g - g_j$, at any level), the panel adds
+$p\varpi$ of that scale, detrended, orange dashed, labelled with $p$ and the secular period from its column
+(`−9ϖ 7.11 kyr`): the line that would explain the slow swing of the red centre.
+
+For a kinematic libration (or a non-resonant row whose slow scale is a secular cycle) the panel shows instead
+$\sigma = (\lambda\ \text{part}) + p\varpi$ on the scale of that swing, in degrees, each term with its straight-line
+trend removed: red $\sigma$, orange dashed $p\varpi$ with its secular period (`−4ϖ 18 kyr`), grey dotted the
+$\lambda$ part. The scale is the deciding episode at its response cutoff (285637: the 18-kyr cycle at 1.8 kyr), or
+the slow scale, detrended over each slow episode (37087: 506 yr). When $\sigma$ follows $p\varpi$ and the $\lambda$
+part stays flat, the perihelion's own precession bounds the angle, not the resonance; compare the swings, not the mean
+rates.
 
 ??? info "The maths: the members' centres"
     A member $\sigma_s$ differs from the catalogue angle $\sigma_0$ by perihelion terms, $\Delta_s = \sigma_s -
@@ -298,7 +349,10 @@ follows $p\varpi$, the perihelion's own precession bounds the angle, not the res
 ### (k), (l) Phase portraits
 
 (k) is the whole record, (l) the accepted episodes (the five longest, each in its episode colour, up to 12 cycles
-each, a dot at its first sample). Both show $\sigma_f$ (modulo 360°) against $\dot\sigma$ in rad/kyr, with the same
+each, a dot at its first sample; `#2 induced` in its legend is an episode another resonance induces, `#0 < floor` a
+run the status does not count). (l) draws each episode over the same interval as its fill in (a), cut to the
+window of (k): solid between its first and last turning point, dashed beyond them. An episode that covers the whole
+record is the whole window, so its (l) holds the same samples as (k). Both show $\sigma_f$ (modulo 360°) against $\dot\sigma$ in rad/kyr, with the same
 scales; colour is time in (k). Red line: $\dot\sigma = 0$; red +: the centre of each accepted episode.
 
 What to look for: a libration draws closed loops around the +; a circulation draws a band across the whole width.
@@ -310,7 +364,10 @@ episodes, it uses the episodes' view and marks the clipped part with ▲▼.
 The mean anomaly $M$ against the longitude difference to the planet, coloured by time (Forgács-Dajka, Sándor &
 Érdi 2018). A libration draws slanted bands with empty gaps between them, since the body avoids some phases
 relative to the planet; a circulation fills the square over time. It is drawn only for a prograde two-body angle, with the planet's longitudes saved and an output step of at
-most 1/4.2 of the orbital period; otherwise the header says `FAIR no (reason)` and the legend takes the slot.
+most 1/4.2 of the orbital period. Otherwise there is no (m) frame: the header says `FAIR no (reason)`, the legend
+takes the slot, and one orange line at its top gives the reason in words, e.g. `FAIR not drawn: planet longitudes
+not saved (SAVE_PLANETS); for a 1:1 FAIR = (M, σ) repeats (b)` (for a 1:1, $q = 0$: the plane would only show
+the range of σ again).
 
 ??? info "The maths: FAIR coordinates"
     $x = M \bmod 360°$, $y = (\lambda_P - \lambda) \bmod 360°$ for a body inside the planet's orbit and
@@ -322,26 +379,132 @@ The right column says in words what was decided and why. From top to bottom:
 
 1. **The plaque**: `STATUS · angle_status (subtype) · CONFIDENCE`, coloured by the status; a tag `ends: …` beside
    it when the record ends in another regime (for example a capture, then circulation). The status is printed only
-   here. The line under it gives the reason, the origin of the libration, the owner and the deciding rule.
-2. **Sentences**: what $\sigma$ does, the rule that decided, how sure the verdict is, and what to do next.
-3. **How it was decided**: the steps of the [status tree](physics/status-tree.md#the-tree) in their fixed order.
-   ● decided here, ↓ passed on to the next step, ◌ not run; a pale step was not reached.
-4. **Confidence: every margin and cap the level read**:
-   ✓ full, ⚠ thin, ✗ failed, – skipped by design, ? not measured, · not applicable, ▼ a cap.
-   A cap that lowers the level names the other reading it leaves open and what on the figure would decide between
-   them. The margins are explained on the [Confidence](physics/confidence.md#margins) page.
+   here. The line under it gives the reason, the origin of the libration, the role of the other resonance as in the
+   header (`driver 3N-5+0+2`, `owner …`, `neighbour …`, `resonant argument 9M-16+2+5`, `kinematic −4ϖ`, `also in …`) and the
+   deciding rule by its meaning, with its ID in parentheses (`decided: circulation (C)`; every ID and its name:
+   [names on the figure](libration-analysis.md#names)).
+2. **The explanation**. On an MMR figure, short lines in a fixed order: the verdict in plain words, in bold
+   (`NOT THIS RESONANCE: σ librates, but 3J+9S-2 does not make the swing.`); then • bullets: what $\sigma$ does
+   (turning points, period, amplitude); the argument that decided, with its rule ID; an objection, a check that
+   failed but was not read by this verdict (`Objection, not read by this verdict: …`); the cause; what limits the
+   level (with the calibration cell and the action); the radial overlap of the body's band $q$…$Q$ with the planets'
+   bands (`Radial overlap with Mars.`, `none`, or `no data`; needed for an encounter, not enough for one). The cause
+   line is one of three kinds. `Driven by 11J-4+0-7 [driver: …]` stands first, right under the plaque, and only when
+   the owner's measured regimes cover σ's deciding episode and Ψ stays bounded there (the decision's own test);
+   otherwise `Candidate driver: X (its regimes; why it was not taken): not shown to make these cycles`. Without a
+   driver: `Other resonances: not tested (reason)`, with `; not needed: a is not driven` at a kinematic leaf. A
+   kinematic libration at a secular period puts `Driven by: secular cycle −4ϖ (the 2ω cycle π/|ω̇|, P 18 kyr)
+   [measured]` first, where an owner would be (`measured` when the period matches and the swing is shown to be that
+   term's: margin K1e on the episode, or the identified cause on the slow scale; else `candidate`); its cause line
+   names σ's perihelion term, its share of σ's swing against the λ part (`over the episode −10ϖ spans 1 of σ's swing,
+   the λ part 0.08`) and the swing the free and forced $e$ predict against the measured one (`the free and forced e
+   predict ±28.7° for −4ϖ, the episode's half-amplitude is ±25.6°`); on the slow scale (rule K3s, 37087) the slow
+   period, the matched cycle, both swings and the failed identity there. Any row with a slow scale prints it at its
+   cause level: `Slow scale: σ's centre swings by ±22.2° with period 2.64 kyr (36 slow cycles, …): the e cycle
+   2π/|g − g5| = 2.62 kyr (identified).` (153), `probably …` with `a slow libration of another resonance is not
+   excluded`, or `cause not identified`; an induced row prints the identity (`σ = φ/8 + Ψ/8: …`: σ is in both
+   resonances only if Ψ/8 stays bounded too), and, when its cause is found, the slow swing of σ's centre against the
+   owner (`σ's centre swings against the owner with period 6.6 kyr (±11.5°): the 2ω cycle π/|ω̇| = 7.11 kyr.`). A rule C
+   row names its resonant argument and the term by which the two angles differ (`Resonant argument: 9M-16+2+5, one
+   resonance 9M-16 with this angle; the two differ by −2ϖ + 2ϖ_M, …`); a member the multiplet test rejected as too
+   weak is called a frame, not a force (`A steadier centre of a member such as 10E-17+6+1 would be a frame, not a
+   force: its term is 1e-9 of the strongest`; without a scan the cheap member list names the flattest weak members,
+   `Members 10E-17+5+2 and 10E-17+6+1 give a flatter centre (W/W0 0.42, 0.45), but their terms are 7.6e-9 and
+   1.8e-10 of the strongest: a frame, not a force`). The resonant argument says how it was chosen (`chosen by the
+   multiplet theory: its centre π − arg P + jβ is the flattest over the episode`, or the flattest measured centre),
+   `composite` when no single member stands, and what the other episodes chose in their own windows (`#1 76.2–99.8
+   kyr chose no member in its own window`); a gap between the episodes where the composite term cancels is named
+   (`The gap 48.7–76.2 kyr … |P|/max |P| falls to 8.84e-5 there (0.142 and 0.195 at its edges) as ϖ_M − ϖ passes its
+   cancellation phase`, 12218). A diagnostic member scan (trigger T8) says what it found and that it changes
+   nothing. A joint row says `Both resonances at once: x = Ψ/u: x closes 18 cycles of its own well (period …, off
+   every secular period by …) while … holds φ`. Where the force law fails or only the direct law holds, a cause line
+   names the forced lines that carry $\dot a$ (`ȧ's oscillation is mostly the 107 yr line 57 P_M = P_conj (7M-10):
+   93% of its variance`; columns `rsp_line_*`). An uncertain row whose swing its perihelion term spans more than the λ
+   part does reads `Suspected kinematic: …` with both shares (2003 EH16): a suspicion, not a status. A row the
+   strength decided says that its episodes are drawn `forced (strength)` and that the driver is not identified; a row
+   decided by the order-of-magnitude scale (rule 5x) says the scale is out of range and that this is a diagnostic,
+   not an objection. When the action is a length-limited extend, the line after it says what the extension serves
+   (`The extension serves the late regime: 2 force windows of 3.5 P for #0 (…); the failed potential stays
+   measured`). A flag `extend_time` adds where and why (`Extend: a longer integration forward (next check: 2 kyr) would
+   show how the record ends (σ_f slows to an arc after circulating; a clean 1:1 leg is cut by the end).`), and a
+   circulation that ends in an arc says from when (`from 361 yr to the end σ_f slows to an arc`). An accepted run the
+   status does not count is named under what σ does (`Not counted: #0 263–299 yr, P 74 yr < its floor 75.7 yr`).
+   A 1:1 circulation judged on one leg (leaf G4c) says what the leg showed: `one horseshoe leg 586–665 yr, force and
+   energy conserved: its local 1:1 law holds (K/K_theory 1.24), its energy integral passes and both turns reflect
+   (out/in 0.836 and 1.2)` (transient, 2023 OE5), `one passing leg 779–934 yr between passages: it laps past the
+   planet …, so no capture is shown and none excluded` (uncertain, 2018 KS), a clean leg cut by the record's edge
+   (extend), or, at the circulation leaf, `its best 1:1 leg 552–613 yr turns by kicks (out/in 0.605 and 1.59), not
+   reflections` (1991 VG, the near-episode cap). A non-1:1 half-swing between passages (leaf G4h) reads the same way
+   with its one-harmonic law (42946 43S-6). Secular and Lidov-Kozai figures use the same slots, plus the time scales
+   ([below](#the-secular-and-lidov-kozai-figure)).
+3. **How it was decided**: first, over both columns, where the tree stopped and what it gave, for example
+   `Decided at 5d → 6: force measured, then judged by behaviour → TRANSIENT`. Then the steps of the
+   [status tree](physics/status-tree.md#steps-in-order) in their fixed order, each a question with the IDs it reads:
+   `0 · Angle shape [G2]` (with the G rules of the [angle word](physics/geometry.md#from-geometry-to-angle_status)),
+   `1 · Does a sibling angle hold the centre? [S]`, `2 · Does another resonance drive a? [W]`, `3 · Does a swing with
+   σ? [B1]`, `4 · Does the centre drift without a cause?`, `5 · Is it σ's own force? [L4, R0]`, `6 · How does σ
+   behave? [Z]`. The step where the tree took a branch carries its letter (`5d`). A step that ran says why it is asked
+   ("Why: …"), then its answer. ● decided here, ↓ passed on, ◌ not run (a gap: the reason is given), ○ not needed (it
+   did not run and the leaf decides without it: at a kinematic leaf the owner search is "n/a: no force on a"),
+   · n/a (the owner search is not applied to a 1:1; no drift step without a drift). The steps after the leaf are one
+   pale line, `4–6 · drift, own force, behaviour: not reached`. Step 0 names the angle rule in words: a two-body
+   cycle below the 150-yr floor kept by its own potential (`G1f`), a ripple set aside (`F6r`), the slow centre turning
+   back twice with the half-swing of this resonance's well (`G5w`, with the slow identity, the $a$ and period ratios
+   and, beyond a planet's 1:2, `the 379 yr cycles are the orbital period`). For an `insufficient_time` angle the
+   header names that rule (`Decided at G5w: slow swing in the well`). A circulation decided on one swing has two
+   steps: step 0 the circulation (`→ a circulation judged on its best single leg → episodic`) and the leaf, `G4c · Is
+   its one leg near the planet a capture?` or `G4h · Is its one half-swing the resonance's own?`. On a 1:1 angle step
+   0 also names its own period floor (`1:1 floor of #0: … the loop through them takes 119 yr, so its own floor is
+   59.4 yr (the tadpole floor 111 yr)`, 2003 YN107) and a turn read in the edge trim (`… it only closes the cycle`). Secular and Lidov-Kozai figures use the same form
+   (the free-ω gate is step 1 of a Lidov-Kozai row). When the column is crowded, the "Why" lines are left out.
+4. **Confidence: how firm the verdict is**. Every row reads `name [ID]: what was measured`. The limits come first,
+   as ▼ `LIMIT: earlier a-wave [O1] → LOW`: a cap, with the failed margin that explains it printed inside it once (a
+   failed cap margin is never drawn ✗), what it means, the other reading it leaves open and what on the figure would
+   decide between them; `→ at most MEDIUM` when the cap sits above the shown level. Then the support margins: ✗ failed,
+   ? not measured (K1 without a value says why), ⚠ thin, – skipped by design (with the reason); the full ones ✓ in one
+   line `full: …`, the ones that do not apply · in one grey line without numbers. The O1 row prints its three
+   parts when the ratio reaches its fail level: coherence at the episode's period, the phase gap and the share of
+   the episode's own law (`… → not a foreign wave`); only a foreign wave fails it. R0 counts `k of n eligible
+   windows` (a window counts with a half-swing ≥ 45° or a revolution) on the visited arc. L4 decided by the direct
+   law reads `ȧ follows the averaged force of the term [L4]` with its R², scale band and null. The margins are
+   explained on the [Confidence](physics/confidence.md#margins) page.
 5. **The physics block**: A, "Is σ the own pendulum of …?" (the period and strength the cycles need against what
    the averaged potential gives, and the width in $a$); B, "What makes the cycles?" (the owner resonance and its
-   evidence, or why there is none).
-6. **The arithmetic line**, for example `raw: 0 failed, 1 thin, 0 not measured (thin or not measured → high) = high ·
-   caps: none → high`: two or more failed margins give low, one gives medium, any thin or unmeasured one high, all
-   full certain; the caps can then only lower the level ([from margins to a level](physics/confidence.md#from-margins-to-a-level)).
-   "Also measured, not read by this verdict" lists the numbers that exist but did not count.
-7. **The numbers**, in monospaced columns: the episodes table (`*` marks the deciding episode, ✗ a rejected run with
-   its reason) and groups such as LIBRATION, RESPONSE OF a, PENDULUM ENERGY ZONE, SUBRESONANCES OWNER, RESONANCE
+   evidence, or why there is none). Its row `both resonances at once?` asks whether σ is held by its own term too
+   while the owner pins φ: x = Ψ/u over the tested window either moved ≥ 180° following no potential, or its
+   acceleration follows the secular harmonics (2ω, ϖ − ϖ_j) and not sin x: `excluded`; else `not ruled out`, with
+   each comparison printed the way it went; `both resonances at once` when x closes cycles of its own well, off every
+   secular period, and `one cycle of x: not decided yet (extend)` with only one. The grey row `slow x` gives the slow swing of x and its cause at its
+   level (identified, probably, or not identified: then a slow libration of another resonance is not excluded).
+6. **The arithmetic**, two lines, for example `Support: no counted failures, 4 thin, 5 not measured → HIGH` and
+   `Limits: earlier a-wave [O1] (a-wave before/inside 0.865 ≥ 0.5) → LOW`. The first gives the raw level from the
+   support margins: two or more failed give low, one gives medium, any thin or unmeasured one high, all full certain.
+   The second lists the limits, which can only lower it, and gives the shown level
+   ([from margins to a level](physics/confidence.md#from-margins-to-a-level)).
+   "Also measured, not read by this verdict" lists the numbers that exist but did not count. Under the legend, one
+   line names the docs pages that hold the steps, the rules, the margins and the names.
+7. **Numbers behind this verdict** (MMR), a short block over the numbers: one framed line per number that matters for
+   this case, tagged in words (the frame's line style repeats the tag, so it survives a grey print). `DECISIVE` (solid
+   frame): the comparisons of the rule that set the status, for example `a carries the swing [B1]: b1_ratio 0.0954 <
+   0.1`; `LIMIT` (dashed): the cap that sets the shown level, with its comparison when it has one (`earlier a-wave
+   [O1]: a-wave before/inside 0.865 ≥ 0.5 → LOW`); `CONFLICT` (dash-dot): a measured check that fails and that the
+   verdict did not read; `UNMEASURED` (dotted): a test of the deciding rule that has no value. At most five lines;
+   on a crowded figure the lines without a number go first (they repeat a LIMIT row), and on the most crowded the
+   block goes. A number of the block is printed once: its row in the table below keeps its label and points up,
+   `b1_ratio ↑ decisive [B1]`; a number the pendulum block above already prints stays there and the line names it.
+8. **The numbers**, in monospaced columns: the episodes table (`EPISODES (1 accepted, 0 counted, 2 rejected runs)`:
+   the runs the shape accepted and those the status counts; `*` marks the deciding episode, a grey `not counted: below
+   the period floor` a run it does not count, ✗ a rejected run with its reason) and groups such as LIBRATION, RESPONSE OF a, PENDULUM ENERGY ZONE, SUBRESONANCES OWNER, RESONANCE
    RATES, STEP ALIAS FILTER, STRENGTH, KINEMATICS, ORBIT, RECORD. A bold number was compared by the decision; a grey
    one marked "(not used)" belongs to a test skipped by design. When the column is full it ends with "… N more
-   lines: every number is in summary.csv".
+   lines: every number is in summary.csv". The pendulum numbers are labelled in words with their source:
+   `observed cycle period P` is measured on σ; `small-swing period T0 (from observed cycles)` is inferred from those
+   cycles (T0 = P/F(A), the amplitude correction of the cosine pendulum; never a theory), and so are
+   `well half-width in a (from T0)` and `strength needed μ_eff (effective, not a mass)`; `theory period (strength)`
+   is the period the planet's mass predicts (block A compares it with T0). `cycle energy h (1 = top of the fitted V)`
+   is normalised to the fitted potential, the cosine separatrix only when that has one harmonic. Two columns of one
+   quantity print as one range (`separatrix layer in h 0.9–1.1`). Every other number keeps its column name without
+   the prefix and the unit; the `all` form uses the same labels.
 
 With `plot_options={'combined': {'numbers': 'all'}}` the right column lists every number of the decision in blocks
 instead of the explanation.
@@ -355,7 +518,15 @@ instead of the explanation.
 
 The figure is the same, with these differences:
 
-- the header names the regime (`tadpole L4`, `horseshoe`, `quasi-satellite`, or `compound: …`);
+- the header names the regime (`tadpole L4`, `horseshoe`, `quasi-satellite`, `compound (horseshoe ↔ quasi-satellite)`),
+  or for one episode in several wells `orbit: …`, the wells of its sub-regimes in time order (`orbit: horseshoe →
+  tadpole L4`, 2016 JA; more than four are shortened with `…` and their count; summary `geo_orbit_type_sequence`);
+- (a) brackets the sub-regimes and hatches the inferred residence, (d) marks the kicks of $a$ (above); the first
+  bullet of the right column says the same in words: `σ librates, measured, from 443 yr to 601 yr …; stays in the
+  quasi-satellite well from 601 yr to the end (inferred, not measured)` (2020 CB), `horseshoe 129–339 yr → tadpole
+  L4 339–537 yr` (2016 JA), `its amplitude changes at ~326–446 yr and ~708–809 yr` (2021 XO3, one quasi-satellite
+  episode, not three), `kick of a at ~4.69 kyr` (2024 TY11 20 kyr); the EPISODES block lists the stay (`stay
+  start–end (inferred)`) and the marks (`well 339 yr`, `amplitude 326–446 yr`, `kick 4.69 kyr`) under the episode;
 - (e) draws no sine windows: a co-orbital is judged by its own force law, and the panel prints its $R^2$ (with the
   two halves) and $K/K_{\rm th}$, the fitted strength over the planet's (1 means the planet's own mass);
 - block A of the right column names the 1:1 force law; block B is left out, and the owner step says that a 1:1 angle
@@ -378,7 +549,9 @@ The figure is the same, with these differences:
 
 The page and the right column follow the MMR figure, but the time panels are fewer and **their letters differ**.
 The header gives the span, step, number of rows, the cutoff $P_c$ and what set it, and the scale the verdict rests
-on (`fine`, or `centre` when the slower centre scale decided).
+on (`fine`, or `centre` when the slower centre scale decided). A Lidov-Kozai figure adds the plane $\omega$, $i$ and
+$\Omega$ are measured from (`ω, i, Ω from the invariable plane`, `ZLK_ANGLE_FRAME`): (a), (a′), (e) (labelled
+`i (invariable)`), (f), (h) and (i) all read that frame, the free elements included.
 
 | panel | what it shows |
 |---|---|
@@ -426,7 +599,38 @@ $\omega$ that follows the orange curve is the forcing's, not the Lidov-Kozai mec
 turn (624 Hektor: $\omega$ circulates between its episodes, the centre $\varpi_5 - \Omega$ turns with the node) the
 panel is drawn modulo 360° about the forced direction, and $\omega_f$ only inside the librating episodes.
 
-**The cause** of a kinematic libration is the third sentence of the right column, from the measured columns only: the
+**The explanation** of the right column is the MMR figure's bullets in the same slots, in plain physics:
+
+- the verdict in words (`UNCERTAIN: ω librates, but the free-ω gate gives no verdict.`);
+- what the angle does. An episodic angle counts its librating episodes only (those not faster than the type's
+  shortest libration) and names the deciding one: `ω librates in 3 separate episodes …; the deciding one 8.08–18.1
+  kyr, … ; 2 more accepted runs not counted`;
+- the argument that decided:
+    - the free-ω gate's outcome, said physically: `The free node is not yet separated from s6: |b_Ω − s6| 1.85″/yr
+      < 2.59″/yr (1/T …); they separate after 700 kyr` (1981 Midas: not a lack of cycles), or `the free-element model
+      does not apply to a co-orbital of Earth` (2020 PP1);
+    - for a secular angle, its shape: `The swing 21.9° ≤ 33.9°, the phase uncertainty of g2, g4, g6 (mostly g4) …`
+      (5026: rerun with measured phases), or `The centre turned back within less than one revolution: … not a drift`
+      (2306);
+- `Objection, not deciding the status: …`: $e$ (or $\sin(i/2)$) does not follow the angle; only one independent
+  centre estimate; a ZLK libration without the $e$–$i$ exchange at its deciding period. These leave the grey line;
+- for a Lidov-Kozai row, the cause:
+    - its physics: the ranges of $i$ and $e$, where $i$ stands against Kozai's 39.2° (the classical quadrupole ZLK
+      under an outer planet; a literature reference printed for reading, not a test);
+    - how many times the free $\omega$ turns in the record, $|g - s|/(1/T)$ (555527: about 8);
+- the time scales:
+    - $1/T$, the record's frequency resolution in ″/yr;
+    - for a secular angle $|\dot\sigma|/(1/T)$, the turns of $\sigma$'s mean rate in the record (5026: 0.05, below
+      the resolution; 2306: 1.24);
+    - the search window, from $2P_c$ (or the type's shortest libration) to one full cycle inside the trimmed record;
+    - the period seen on the angle with the FREQUENCIES rows within $1/T$ of it (`≈ g − g5`), or `unidentified` with
+      the nearest row;
+    - one sentence: *planetary periods are precession times; they are not the period of a libration*;
+- what limits the level, the cell and the action; the radial overlap with the planets' bands.
+
+A number a bullet prints is not printed again: its row in the numbers keeps the label and reads `↑ in the text`.
+
+**The cause** of a kinematic libration is also a bullet of the right column, from the measured columns only: the
 mode that holds $\varpi$, the beat the free vector circles it with, what the centre's slow line is, and the node
 (locked, or following the mode with no full cycle of $\Omega - \varpi_j$ in the record: a lock not resolved; for an
 episodic row, the centre's turns). Not attributed: "Cause not attributed" and why.
@@ -572,7 +776,9 @@ libration is kinematic (below).
 
 ### free_omega (Lidov-Kozai)
 
-Three figures from the forced/free split ([Free elements](free-elements.md#files-and-figures)).
+Three figures from the forced/free split ([Free elements](free-elements.md#files-and-figures)), in the frame of the
+Lidov-Kozai row (`ZLK_ANGLE_FRAME`, the invariable plane by default): the osculating ω of the drift figure is the
+row's classified angle.
 
 ![free omega drift of (3040) Kozai](https://smirik.github.io/resonances/img/figures/zlk_free_omega_drift.png)
 

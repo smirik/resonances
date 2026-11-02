@@ -49,7 +49,8 @@ def test_82831_is_a_circulation_in_its_last_regime():
     assert verdict.angle_status == AngleStatus.EPISODIC and verdict.final_regime == AngleStatus.CIRCULATION
     assert analysis.extra_columns.get('rec_rule') != 'G2'
     # rule C (W7 'ug22'): the member 13M-24+2+9 librates for a while, the commensurability is its transient
-    assert (verdict.status, verdict.reason, verdict.owner) == (Status.TRANSIENT, 'subresonance_librates', '13M-24+2+9')
+    # (W28 A3a: the member is the row's resonant argument, not its owner)
+    assert (verdict.status, verdict.reason, verdict.resonant_argument) == (Status.TRANSIENT, 'subresonance_librates', '13M-24+2+9')
 
 
 @pytest.mark.benchmark

@@ -22,6 +22,10 @@ Working conventions agreed with the author during the programme, and the resourc
    (summary.csv keyed by (example_id, resonance)) and explain every changed verdict.
 6. **Independent review of the result.** Each wave ended with a review that tried to break it; its findings were
    verified one by one before fixing (several "fixes" in W17 corrected earlier claims of the implementer).
+   For a new measurement that will decide a status, two blind implementations (W28 D9, e–i per episode): both read the
+   same exported series and item list (`tmp/.../w28/audit-secular-zlk/data/`), Codex freezes and hashes its part
+   before it reads the repository, and the comparison separates conventions (a coherence cut) from disagreements of
+   sign or physics. A change to one's estimator after the comparison is recorded with its reason and old output.
 7. **Author page.** Open questions go to the author on one page (see below). No new iteration starts while
    disagreements remain undiscussed, and an iteration starts on his explicit go.
 

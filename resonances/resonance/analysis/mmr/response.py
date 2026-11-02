@@ -38,11 +38,12 @@ from resonances.resonance.analysis.geometry import (
 from resonances.resonance.analysis.mmr import coorbital as coorbital_module
 from resonances.resonance.analysis.mmr import forced_lines as forced_lines_module
 from resonances.resonance.analysis.mmr import strength as strength_module
-from resonances.resonance.analysis.mmr.context import mean_motion, table_mean_motion
+from resonances.resonance.analysis.mmr.context import mean_longitude_rate, mean_motion, table_mean_motion
 from resonances.resonance.analysis.mmr.coorbital import LAW_COORBITAL, CoorbitalInput, CoorbitalLaw
 from resonances.resonance.analysis.mmr.preprocess import coorbital_inputs, coorbital_planet, filter_guard, law_planet
 from resonances.resonance.analysis.mmr.models import (
     Context,
+    DirectForceLaw,
     EpisodePhysics,
     EpisodeResponse,
     ForceWindow,
@@ -74,6 +75,7 @@ ALIASED = (StepVerdict.ALIASED_UNAMBIGUOUS, StepVerdict.AMBIGUOUS)
 LAW_SINGLE = 'single'
 LAW_MULTIPLET = 'multiplet'
 LAW_HARMONIC = 'harmonic'  # CS12: N harmonics of the angle (`harmonic_law`)
+LAW_DIRECT = 'direct_force'  # B8: the directly averaged force of the term at the libration scale (`direct_force_law`)
 ROUTE_DATA, ROUTE_GEOMETRY, ROUTE_OWNER, ROUTE_NONE = 'data', 'geometry', 'owner', 'none'
 REVOLUTION = 1.0  # a centre pass of one revolution is a circulation of the centre (its definition, not a threshold)
 MIN_FIT_SAMPLES = 4  # a three-parameter least-squares fit needs more points than parameters
@@ -922,6 +924,332 @@ def harmonic_law(
     )
 
 
+# --- B8: the direct averaged-force law at the libration scale ----------------------------------------------------
+#
+# The harmonic L4 fits a_dot = K sin(sigma - phi0) + C at the response cutoff ~0.1 P; a lattice line of a_dot between
+# that cutoff and P (59358 8N-13: the conjunction cycle 13 P_N = 2.1 kyr against an 8.8-kyr swing) swamps the fit and
+# shortens the period the turns give (4.4 kyr: the line's wiggles add turns). The theory of the resonance's own term
+# is then tested directly: Lagrange's a_dot = (2 k / (n a)) G m_P d<D>/dsigma (`owner_potential`, the planet's real
+# mass, each window's elements), evaluated along the recorded sigma(t), and the observed a_dot both go through the same
+# low-pass at f P_large, f = mmr_direct_force_cutoff_cycles; only a scale s per window is free (shape and phase are
+# the theory's). F[V'(sigma)] is compared with F[a_dot], never sin(F[sigma]) with it (Codex g07: F[sin] != sin F).
+
+SHORT_PERIOD_ALIASED_FLAG = 'short_period_aliased'  # verdict.Flag.SHORT_PERIOD_ALIASED (R-ALIAS-A's trigger)
+DIRECT_PERIOD_ITERATIONS = 8  # the fixed point of P_large converges in 2-3 steps; this bounds a pathological record
+# why the direct force law was not taken (`DirectForceLaw.reason`), in the order the guards are read
+DIRECT_NO_PERIOD = 'no_period'
+DIRECT_HARMONIC_ONLY = 'harmonic_only'  # direct_harmonic: double precision resolves no profile to differentiate
+DIRECT_NO_PLANET = 'no_planet_elements'
+DIRECT_NOT_INDEPENDENT = 'no_independent_windows'  # fewer than two windows that share no sample
+DIRECT_NULL_UNMEASURED = 'null_not_measured'
+DIRECT_BELOW_FAIL = 'below_fail'
+DIRECT_SCALE = 'scale_outside'  # some window's s outside [1/sqrt(r), sqrt(r)]
+DIRECT_BELOW_NULL = 'below_null'
+
+
+def _turn_periods(t_yr: np.ndarray, angle: np.ndarray, prominence_rad: float, pieces: Sequence[Tuple[float, float]]):
+    """(median full period [yr], turning points, median half-amplitude [rad]) of `angle` inside the pieces."""
+    from resonances.resonance.analysis.geometry import find_turning_points, full_periods
+
+    periods, count, amplitudes = [], 0, []
+    for start, end in pieces:
+        found = find_turning_points(t_yr, angle, prominence_rad, (start, end))
+        periods += list(full_periods(found))
+        amplitudes += list(half_amplitudes(found))
+        count += len(found)
+    period = float(np.median(periods)) if periods else NAN
+    return period, count, float(np.median(amplitudes)) if amplitudes else NAN
+
+
+def period_large(
+    t_yr: np.ndarray, angle: np.ndarray, prominence_rad: float, pieces: Sequence[Tuple[float, float]], period_yr: float, settings
+) -> Tuple[float, bool, float]:
+    """(P_large [yr], survived, its median half-amplitude [rad]): the period of the turns of `angle` (the clean sigma)
+    that survive a cutoff change. Starting at P = `period_yr`: P1 = the period of the turns of `angle` low-passed at
+    mmr_direct_force_cutoff_cycles x P; they survive when the TP count with that cutoff doubled stays within
+    mmr_filter_guard_tp_rel of theirs (the x2 guard's convention: turns the filter does not make), and P1 is returned;
+    otherwise the doubled cutoff's period becomes P and the step repeats (the larger scale its turns belong to). A
+    clean libration returns its own period at once (its cycle keeps G = 0.81 at 0.7 P); faster wiggles of a lattice
+    line drop out. nan without turns; survived False when no scale's turns survive within the iterations."""
+    factor, tolerance = settings.mmr_direct_force_cutoff_cycles, settings.mmr_filter_guard_tp_rel
+    if not (np.isfinite(period_yr) and period_yr > 0):
+        return NAN, False, NAN
+    period, found, amplitude = period_yr, NAN, NAN
+    for _ in range(DIRECT_PERIOD_ITERATIONS):
+        smooth = filtering.lowpass_or_none(t_yr, angle, factor * period, settings)
+        doubled = filtering.lowpass_or_none(t_yr, angle, 2 * factor * period, settings)
+        if smooth is None:
+            break
+        found, count, amplitude = _turn_periods(t_yr, smooth, prominence_rad, pieces)
+        if not np.isfinite(found) or doubled is None:
+            break
+        wider, wider_count, _ = _turn_periods(t_yr, doubled, prominence_rad, pieces)
+        if abs(wider_count - count) <= tolerance * count:
+            return found, True, amplitude
+        if not (np.isfinite(wider) and wider > period):
+            break
+        period = wider
+    return found, False, amplitude
+
+
+def direct_force_eligible(spec: Optional[ResonanceSpec], series: Optional[MMRSeries], strength, settings) -> str:
+    """'' when the direct force law can be measured on this angle, else the reason it is not consulted: the switch,
+    a two-body, prograde, non-1:1 angle (`strength.direct_applicable`) with the planet's saved elements and a strength
+    from the disturbing function (DIRECT_METHODS; direct_harmonic: harmonic_only)."""
+    from resonances.resonance.analysis.mmr import owner_potential
+
+    if not settings.mmr_direct_force_law:
+        return owner_potential.REASON_OFF
+    if spec is not None and len(spec.planets) != 1:
+        return owner_potential.REASON_THREE_BODY
+    if spec is not None and (spec.retrograde or not strength_module.direct_applicable(spec)):
+        return owner_potential.REASON_COORBITAL
+    if spec is None or series is None or strength is None:
+        return DIRECT_NO_PLANET
+    if strength.method not in strength_module.DIRECT_METHODS:
+        return 'strength_' + str(strength.method or 'none')
+    if strength.method == strength_module.METHOD_HARMONIC:
+        return DIRECT_HARMONIC_ONLY
+    planet = series.planets.get(spec.planets[0])
+    if planet is None or any(getattr(planet, name, None) is None for name in owner_potential.PLANET_ELEMENTS):
+        return DIRECT_NO_PLANET
+    return ''
+
+
+def _independent(windows: Sequence[Tuple[float, float]], window_yr: float) -> bool:
+    """Two of the windows share no sample (their span holds two window lengths): one scale confirmed on another stretch;
+    overlapping windows are one measurement counted twice."""
+    return bool(windows) and windows[-1][1] - windows[0][0] >= 2 * window_yr * (1 - 1e-9)
+
+
+def direct_force_law(
+    series: MMRSeries,
+    prep: Preprocessed,
+    context: Context,
+    pieces: Sequence[Tuple[float, float]],
+    period_yr: float,
+    prominence_rad: float,
+    settings: AnalysisSettings,
+):
+    """B8 (card g07-2 A): the direct averaged-force law on `pieces` read with period P (the module comment above).
+
+    P_large (`period_large`) replaces P when its turns survive the cutoff change. Windows of mmr_force_window_cycles x P
+    stepped by mmr_force_window_step inside the pieces, filter_edge_trim_cutoffs cutoffs from the record ends; the
+    profile in at most mmr_direct_force_snapshots of them (each window reads the nearest). Taken when, in this order:
+    two windows share no sample, a shifted null exists, the smaller half median R^2 >= mmr_force_r2_fail, every s lies
+    in [1/sqrt(r), sqrt(r)] (r = mmr_strength_check_ratio) and R^2 - null >= mmr_force_null_gain. The angle and the
+    elements are the series' own (the caller checked `direct_force_eligible`)."""
+    from resonances.resonance.analysis.mmr import owner_potential
+
+    t = np.asarray(prep.t_yr, float)
+    large, survived, amplitude = period_large(t, np.asarray(prep.angle_clean, float), prominence_rad, pieces, period_yr, settings)
+    period = large if survived else period_yr
+    if not (np.isfinite(period) and period > 0):
+        return DirectForceLaw(period_yr, large, survived, NAN, reason=DIRECT_NO_PERIOD)
+    cutoff = settings.mmr_direct_force_cutoff_cycles * period
+    k, n_mean = strength_module.body_coefficient(context, series.resonance), context.mean_motion_rad_yr
+    t0_large = small_period(large, amplitude) if survived else NAN
+    mu_large = strength_module.mu_eff_required(t0_large, k, n_mean)
+    blank = dict(
+        period_yr=period_yr,
+        period_large_yr=large,
+        survived=survived,
+        cutoff_yr=cutoff,
+        small_period_large_yr=t0_large,
+        mu_eff_large=mu_large,
+    )
+    windows = direct_windows(t, pieces, period, cutoff, settings)
+    if not _independent(windows, settings.mmr_force_window_cycles * period):
+        return DirectForceLaw(**blank, n_windows=len(windows), reason=DIRECT_NOT_INDEPENDENT)
+    mu = float(context.planet_mass.get(series.resonance.planets[0], NAN))
+    sigma = np.mod(np.asarray(prep.angle_unwrapped, float), TWO_PI)
+    profiles = _direct_profiles(series, mu, sigma, windows, settings, owner_potential)
+    if isinstance(profiles, str):
+        return DirectForceLaw(**blank, n_windows=len(windows), reason=profiles)
+    return judge_direct(t, np.asarray(prep.a_f, float), sigma, windows, profiles, blank, settings)
+
+
+def direct_windows(t_yr: np.ndarray, pieces: Sequence[Tuple[float, float]], period_yr: float, cutoff_yr: float, settings) -> list:
+    """The windows of the direct force law: mmr_force_window_cycles x P stepped by mmr_force_window_step inside each
+    piece, at least filter_edge_trim_cutoffs x the cutoff from the record ends (the filter's edge spread)."""
+    window_yr = settings.mmr_force_window_cycles * period_yr
+    trim = settings.filter_edge_trim_cutoffs * cutoff_yr
+    windows = []
+    for start, end in pieces:
+        start, end = max(start, t_yr[0] + trim), min(end, t_yr[-1] - trim)
+        if end - start >= window_yr:
+            windows += sliding_windows(t_yr[samples_between(t_yr, start, end)], window_yr, settings.mmr_force_window_step)
+    return windows
+
+
+def judge_direct(t_yr: np.ndarray, a: np.ndarray, sigma: np.ndarray, windows, profiles, blank: dict, settings) -> DirectForceLaw:
+    """The comparison of `direct_force_law` once its windows and profiles exist (pure: arrays and profiles in).
+
+    `a` [au] is low-passed at blank['cutoff_yr'] and differentiated (the observed a_dot); in each window the theory
+    coefficient x d<D>/dsigma(sigma) of the nearest profile ([(centre, (grid, coefficient, slope))], `_direct_profiles`)
+    is evaluated along `sigma` [rad, mod 2 pi] over the window +- filter_edge_trim_cutoffs cutoffs and low-passed
+    alike; s and R^2 per window by `owner_potential.scale_fit` (means removed). The guards as `direct_force_law`."""
+    from resonances.resonance.analysis.mmr.owner_potential import scale_fit
+
+    cutoff, n_windows = blank['cutoff_yr'], len(windows)
+    period = cutoff / settings.mmr_direct_force_cutoff_cycles
+    if not _independent(windows, settings.mmr_force_window_cycles * period):
+        return DirectForceLaw(**blank, n_windows=n_windows, reason=DIRECT_NOT_INDEPENDENT)
+    fitted = direct_window_fits(t_yr, a, sigma, windows, profiles, cutoff, settings)
+    if fitted is None:
+        return DirectForceLaw(**blank, n_windows=n_windows, reason=DIRECT_NO_PERIOD)
+    observed, fits = fitted
+    predicted = [(part, inner) for part, inner, _, _ in fits]
+    scales = [scale for _, _, scale, _ in fits]
+    r2s = [r2_w for _, _, _, r2_w in fits]
+    value = lower_half_median([w[0] for w in windows], np.asarray(r2s, float))
+    null = _direct_null(t_yr, observed, windows, predicted, period, settings, scale_fit)
+    band = np.sqrt(settings.mmr_strength_check_ratio)
+    finite = [s for s in scales if np.isfinite(s)]
+    inside = len(finite) == len(scales) and all(1 / band <= s <= band for s in finite)
+    guards = (
+        (DIRECT_NULL_UNMEASURED, np.isfinite(null)),
+        (DIRECT_BELOW_FAIL, np.isfinite(value) and value >= settings.mmr_force_r2_fail),
+        (DIRECT_SCALE, inside),
+        (DIRECT_BELOW_NULL, np.isfinite(value) and value - null >= settings.mmr_force_null_gain),
+    )
+    reason = next((name for name, holds in guards if not holds), '')
+    return DirectForceLaw(
+        **blank,
+        n_windows=n_windows,
+        r2=value,
+        scale_min=float(min(finite)) if finite else NAN,
+        scale_max=float(max(finite)) if finite else NAN,
+        scale_med=float(np.median(finite)) if finite else NAN,
+        null_max=null,
+        nodes_per_turn=max(len(p[1][0]) for p in profiles),
+        taken=not reason,
+        reason=reason,
+    )
+
+
+def direct_window_fits(t_yr: np.ndarray, a: np.ndarray, sigma: np.ndarray, windows, profiles, cutoff_yr: float, settings):
+    """(the observed a_dot, [(samples, prediction, s, R^2)] per window) of the direct force law (`judge_direct`): `a`
+    [au] low-passed at `cutoff_yr` and differentiated; in each window the theory coefficient x d<D>/dsigma(sigma) of the
+    nearest profile, evaluated along `sigma` over the window +- filter_edge_trim_cutoffs cutoffs and low-passed alike,
+    and its scale s and R^2 (`owner_potential.scale_fit`, means removed). None when a low-pass cannot be formed."""
+    from resonances.resonance.analysis.mmr.owner_potential import scale_fit
+
+    a_low = filtering.lowpass_or_none(t_yr, a, cutoff_yr, settings)
+    if a_low is None:
+        return None
+    observed = filtering.time_derivative(t_yr, a_low)
+    pad = settings.filter_edge_trim_cutoffs * cutoff_yr
+    fits = []
+    for start, end in windows:
+        centre = 0.5 * (start + end)
+        grid, coefficient, slope = min(profiles, key=lambda p: abs(p[0] - centre))[1]
+        segment = samples_between(t_yr, start - pad, end + pad)
+        smooth = filtering.lowpass_or_none(
+            t_yr[segment], coefficient * np.interp(sigma[segment], grid, slope, period=TWO_PI), cutoff_yr, settings
+        )
+        if smooth is None:
+            return None
+        part = samples_between(t_yr, start, end)
+        inner = smooth[part.start - segment.start : part.stop - segment.start]
+        scale, r2_w = scale_fit(inner, observed[part])
+        fits.append((part, inner, scale, r2_w))
+    return observed, fits
+
+
+def direct_law_pieces(response: Response, geometry: Geometry) -> List[Tuple[float, float]]:
+    """The spans [yr] the direct law of `response` (rule R's, `deciding_response`) was measured on, as
+    `with_direct_force` consulted it: the witness episode, the episodes before the last jump pooled, or the record's
+    accepted episodes (`_response_pieces`)."""
+    source = str(response.force_source)
+    if source == 'witness':
+        found = [e for e in response.episode_responses if e.episode_id == response.witness_episode_id]
+        if found:
+            return [(found[0].t_start_yr, found[0].t_end_yr)]
+    before = response.before_jump_response
+    if source == 'before_jump' and before is not None:
+        pieces = [(e.t_start_yr, e.t_end_yr) for e in response.episode_responses if e.before_jump and e.episode_id is not None]
+        return pieces or [(before.t_start_yr, before.t_end_yr)]
+    return _response_pieces(geometry)
+
+
+def direct_curves(series: MMRSeries, prep: Preprocessed, context: Context, response: Optional[Response], geometry, settings):
+    """Figure (e) (W28 E19a, B8): (cutoff [yr], the observed a_dot low-passed there, [(samples, s x prediction)] per
+    window) of the direct averaged-force law that decided L4 (law 'direct_force', taken), measured again on the spans,
+    windows and profiles `direct_force_law` read (`direct_law_pieces`, `direct_windows`, `_direct_profiles`,
+    `direct_window_fits`); None without such a law or when it cannot be rebuilt (no planet mass, a profile refused)."""
+    from resonances.resonance.analysis.mmr import owner_potential
+
+    law = response.force_direct if response is not None else None
+    if law is None or not law.taken or response.force_law != LAW_DIRECT or geometry is None or series is None:
+        return None
+    cutoff = law.cutoff_yr
+    period = cutoff / settings.mmr_direct_force_cutoff_cycles
+    t = np.asarray(prep.t_yr, float)
+    windows = direct_windows(t, direct_law_pieces(response, geometry), period, cutoff, settings)
+    if not windows:
+        return None
+    mu = float(context.planet_mass.get(series.resonance.planets[0], NAN))
+    sigma = np.mod(np.asarray(prep.angle_unwrapped, float), TWO_PI)
+    profiles = _direct_profiles(series, mu, sigma, windows, settings, owner_potential)
+    if isinstance(profiles, str):
+        return None
+    fitted = direct_window_fits(t, np.asarray(prep.a_f, float), sigma, windows, profiles, cutoff, settings)
+    if fitted is None:
+        return None
+    observed, fits = fitted
+    return cutoff, observed, [(part, scale * inner) for part, inner, scale, _ in fits if np.isfinite(scale)]
+
+
+def _direct_profiles(series: MMRSeries, mu: float, sigma: np.ndarray, windows, settings: AnalysisSettings, owner_potential):
+    """[(window centre, (grid, coefficient 2 k G m_P / (n a) [au/yr], d<D>/dsigma))] in at most
+    mmr_direct_force_snapshots windows (`owner_potential.chosen_starts`), each from that window's median elements; or
+    the reason no profile could be made (potential_cost, not_converged, close_approach, no_planet_mass). Along the
+    values of sigma the window visits (`sigma`: the recorded angle mod 2 pi) the body must stay
+    mmr_strength_min_distance_hill Hill radii from the planet (an encounter is no average; as `owner_potential`)."""
+    spec = series.resonance
+    name = spec.planets[0]
+    if not (np.isfinite(mu) and mu > 0):
+        return owner_potential.REASON_NO_MASS
+    k, k_p = spec.body_coefficient, spec.planet_coefficients[0]
+    lengths = {w[0]: w[1] - w[0] for w in windows}
+    t = np.asarray(series.t_yr, float)
+    profiles = []
+    for start in owner_potential.chosen_starts(list(lengths), settings.mmr_direct_force_snapshots):
+        part = samples_between(t, start, start + lengths[start])
+        body, body_phase = strength_module.body_ellipse(series, part, spec)
+        planet, varpi_p, node_p = strength_module.saved_planet(series, name, part)
+        phase = body_phase + strength_module.planet_phase(spec, varpi_p, node_p)
+        _, slope, closest, nodes, why = owner_potential.derivative_profile(body, planet, k, k_p, phase, settings)
+        if why:
+            return why
+        visited = np.unique(np.round(np.mod(sigma[part], TWO_PI) / (TWO_PI / nodes)).astype(int) % nodes)
+        if float(np.min(closest[visited])) / strength_module.hill_radius(planet.a, mu) < settings.mmr_strength_min_distance_hill:
+            return owner_potential.REASON_CLOSE_APPROACH
+        n = np.sqrt(strength_module.GM_SUN / body.a**3)
+        coefficient = 2 * k / (n * body.a) * strength_module.GM_SUN * mu
+        profiles.append((start + 0.5 * lengths[start], (TWO_PI * np.arange(nodes) / nodes, coefficient, slope)))
+    return profiles
+
+
+def _direct_null(t_yr, observed, windows, predicted, period_yr: float, settings: AnalysisSettings, scale_fit) -> float:
+    """The largest smaller-half median R^2 of the same per-window scale fit with the observed a_dot shifted in time
+    (`shifted_rates`), counting only the windows the shift keeps whole; nan when no shift keeps mmr_force_min_windows."""
+    values = []
+    for moved in shifted_rates(t_yr, observed, period_yr, settings.mmr_force_null_shifts):
+        starts, r2s = [], []
+        for (start, _), (part, inner) in zip(windows, predicted):
+            target = moved[part]
+            if np.all(np.isfinite(target)):
+                starts.append(start)
+                r2s.append(scale_fit(inner, target)[1])
+        if len(starts) >= settings.mmr_force_min_windows:
+            value = lower_half_median(starts, np.asarray(r2s, float))
+            if np.isfinite(value):
+                values.append(value)
+    return float(max(values)) if values else NAN
+
+
 def omega0_from_force(identity_coefficient: float, force_au_yr: float) -> float:
     """omega0_K = sqrt(|c| K) [rad/yr]."""
     return float(np.sqrt(abs(identity_coefficient) * force_au_yr)) if np.isfinite(force_au_yr) and force_au_yr >= 0 else NAN
@@ -1545,6 +1873,7 @@ RESPONSE_PARTS = {
         'force_r2_null_max',
         'force_null_gain',
         'force_harmonic',
+        'force_direct',
     ),
     'identity': ('identity', 'identity_slope_ratio', 'identity_corr'),
     'b1': ('a_amplitude', 'b1_required_au', 'b1_measured_au', 'b1_ratio'),
@@ -1576,6 +1905,7 @@ UNMEASURED_PART = {
         force_r2_null_max=NAN,
         force_null_gain=NAN,
         force_harmonic=None,
+        force_direct=None,
     ),
     'identity': dict(identity=CheckValue.NOT_MEASURED, identity_slope_ratio=NAN, identity_corr=NAN),
     'b1': dict(a_amplitude=CheckValue.NOT_MEASURED, b1_required_au=NAN, b1_measured_au=NAN, b1_ratio=NAN),
@@ -1651,14 +1981,72 @@ def force_line(
     the table; n_c with the context's slow rate."""
     if settings.mmr_force_contamination == 'off' or spec is None or spec.retrograde or coorbital_planet(spec) is not None:
         return None
-    planet_n = {}
+    return forced_lines_module.coincident_line(_lattice(spec, context, settings), period_yr, settings.mmr_force_window_cycles)
+
+
+def _lattice(spec: ResonanceSpec, context: Context, settings: AnalysisSettings) -> Tuple[forced_lines_module.ForcedLine, ...]:
+    """S1 of the angle (`forced_lines.lattice_lines`): the planets of `_planet_rates`; n_c with the context's slow rate."""
+    return forced_lines_module.lattice_lines(
+        spec, _planet_rates(spec, context), context.slow_rate_rad_yr, settings.matrix_2body_order_max, settings.matrix_3body_order_max
+    )
+
+
+def _planet_rates(spec: ResonanceSpec, context: Context) -> Dict[str, float]:
+    """The mean motion [rad/yr] of each planet of the angle: the context's, else the table's."""
+    rates = {}
     for name in spec.planets:
         value = context.planet_mean_motion_rad_yr.get(name, NAN)
-        planet_n[name] = value if np.isfinite(value) else table_mean_motion(name)
-    lines = forced_lines_module.lattice_lines(
-        spec, planet_n, context.slow_rate_rad_yr, settings.matrix_2body_order_max, settings.matrix_3body_order_max
-    )
-    return forced_lines_module.coincident_line(lines, period_yr, settings.mmr_force_window_cycles)
+        rates[name] = value if np.isfinite(value) else table_mean_motion(name)
+    return rates
+
+
+def line_share_on(
+    series: Optional[MMRSeries],
+    prep: Preprocessed,
+    context: Context,
+    window_yr: Tuple[float, float],
+    period_yr: float,
+    settings: AnalysisSettings,
+) -> Optional[forced_lines_module.LineShare]:
+    """W28 B8b (card g07-3): which lattice lines carry a_dot on the decisive window (`forced_lines.line_share`), for
+    the right column when the own force law fails. a_dot is the force law's before the line rule: low-passed at
+    `response_cutoff_yr` of the window's period, the band from mmr_response_line_band_cutoffs x that cutoff (as
+    `line_margin_cutoff`) to the window's length. The lines and P_orb are taken at the body's mean motion on the
+    window (the slope of its mean longitude; n_c without one). None without `series`, for a co-orbital (its own law)
+    or retrograde angle (no lattice). Columns only."""
+    spec = series.resonance if series is not None else None
+    if spec is None or spec.retrograde or coorbital_planet(spec) is not None:
+        return None
+    _, _, _, adot, cutoff = smoothed_series(prep, response_cutoff_yr(prep.cutoff.cutoff_yr, period_yr, settings), settings)
+    t = np.asarray(prep.t_yr, float)
+    part = samples_between(t, *window_yr)
+    rates = _planet_rates(spec, context)
+    body_n = NAN
+    if series.mean_longitude is not None:
+        times = np.asarray(series.t_yr, float)
+        own = samples_between(times, *window_yr)
+        body_n = mean_longitude_rate(times[own], np.asarray(series.mean_longitude)[own], np.asarray(series.a)[own])
+    if not (np.isfinite(body_n) and body_n > 0):
+        body_n = abs(forced_lines_module.commensurate_mean_motion(spec, rates, context.slow_rate_rad_yr))
+    orbit = TWO_PI / body_n if np.isfinite(body_n) and body_n > 0 else NAN
+    lines = forced_lines_module.lattice_lines_at(spec, rates, body_n, settings.matrix_2body_order_max, settings.matrix_3body_order_max)
+    shortest = settings.mmr_response_line_band_cutoffs * cutoff
+    return forced_lines_module.line_share(t[part], adot[part], lines, spec, period_yr, shortest, cutoff, orbit)
+
+
+def with_line_share(
+    response: Optional[Response],
+    series: Optional[MMRSeries],
+    prep: Preprocessed,
+    context: Context,
+    window_yr: Tuple[float, float],
+    period_yr: float,
+    settings: AnalysisSettings,
+) -> Optional[Response]:
+    """The response with `line_share` measured on the decisive window (`line_share_on`); a copy, never in place."""
+    if response is None:
+        return None
+    return replace(response, line_share=line_share_on(series, prep, context, window_yr, period_yr, settings))
 
 
 def _phase_sigma(windows: Sequence[ForceWindow], t_yr: np.ndarray, adot_f: np.ndarray, cutoff_yr: float) -> float:
@@ -1778,9 +2166,27 @@ def coorbital_response(
     is nonlinear in it), `adot_f` the response's a_dot, `cycle_edges_yr` every second turning point (one energy per
     cycle). The model goes through the data's filters: P_c, then the response cutoff when `response_series` applied it.
     The samples inside `zones` (`jump_zones`: around the confirmed jumps of a) are left out of the fit."""
+    data = coorbital_input(series, prep, context, sampling, response_cutoff_yr, angle, adot_f, pieces, cycle_edges_yr, zones)
+    return coorbital_module.coorbital_law(data, settings) if data is not None else None
+
+
+def coorbital_input(
+    series: Optional[MMRSeries],
+    prep: Preprocessed,
+    context: Context,
+    sampling: Sampling,
+    response_cutoff_yr: float,
+    angle: np.ndarray,
+    adot_f: np.ndarray,
+    pieces: Sequence[Tuple[float, float]],
+    cycle_edges_yr: Sequence[float] = (),
+    zones: Sequence[Tuple[float, float]] = (),
+) -> Optional[CoorbitalInput]:
+    """What `coorbital_response` hands the 1:1 law (None where it gives no law); also O1's own-law test on the
+    background (`onset_own_law`)."""
     spec = series.resonance if series is not None else None
     planet = law_planet(spec) if spec is not None else None
-    if planet is None or sampling.verdict in ALIASED:
+    if planet is None or sampling is None or sampling.verdict in ALIASED:
         return None
     inputs = coorbital_inputs(series, context, planet)
     if inputs is None:
@@ -1812,7 +2218,7 @@ def coorbital_response(
         omega_coefficient=spec.body_node_coefficient - 1 if spec.retrograde else 1,  # 2k - 1 of 1J-1r<k>
         block_yr=float(getattr(prep, 'elements_block_yr', NAN)),
     )
-    return coorbital_module.coorbital_law(data, settings)
+    return data
 
 
 def coorbital_check(law: CoorbitalLaw, amplitude_max_rad: float) -> Tuple[CheckValue, bool]:
@@ -1984,6 +2390,110 @@ def harmonic_columns(law: Optional[HarmonicLaw]) -> dict:
     }
 
 
+def direct_force_columns(law: Optional[DirectForceLaw]) -> dict:
+    """`rsp_dforce_*` and `geo_period_large_yr`: the direct averaged-force law (B8; empty when it was not consulted)."""
+    blank = law is None
+    return {
+        'rsp_dforce_R2': NAN if blank else law.r2,
+        'rsp_dforce_scale_min': NAN if blank else law.scale_min,
+        'rsp_dforce_scale_max': NAN if blank else law.scale_max,
+        'rsp_dforce_scale_med': NAN if blank else law.scale_med,
+        'rsp_dforce_null_max': NAN if blank else law.null_max,
+        'rsp_dforce_null_gain': NAN if blank else law.null_gain,
+        'rsp_dforce_n_windows': NAN if blank else law.n_windows,
+        'rsp_dforce_cutoff_yr': NAN if blank else law.cutoff_yr,
+        'rsp_dforce_period_yr': NAN if blank else law.period_yr,
+        'rsp_dforce_mu_eff_large': NAN if blank else law.mu_eff_large,
+        'rsp_dforce_reason': '' if blank else (law.reason or 'taken'),
+        'geo_period_large_yr': NAN if blank or not law.survived else law.period_large_yr,
+    }
+
+
+def line_share_columns(share: Optional[forced_lines_module.LineShare]) -> dict:
+    """`rsp_line_*`: the lines of a_dot on the decisive window (B8b; empty for an angle without a lattice)."""
+    blank = share is None
+    return {
+        'rsp_line_share': NAN if blank else share.share,
+        'rsp_line_share_all': NAN if blank else share.share_all,
+        'rsp_line_period_yr': NAN if blank else share.period_yr,
+        'rsp_line_ids': '' if blank else share.ids,
+        'rsp_line_reason': '' if blank else share.reason,
+    }
+
+
+def short_period_folded(sampling: Sampling, settings: AnalysisSettings) -> bool:
+    """The step folds short periods (flag short_period_aliased) and their scatter in a exceeds mmr_short_period_a_ratio x
+    the decisive a half-excursion (`Sampling.a_scatter_ratio`): R-ALIAS-A's numbers (`decide.short_period_unmeasured`)."""
+    ratio = sampling.a_scatter_ratio
+    return SHORT_PERIOD_ALIASED_FLAG in sampling.flags and np.isfinite(ratio) and ratio > settings.mmr_short_period_a_ratio
+
+
+def _consults_direct(check: Optional[CheckValue], thin: bool) -> bool:
+    """The direct force law is read where the harmonic L4 was measured and fails or passes thin."""
+    return check == CheckValue.FAIL or (check == CheckValue.PASS and thin)
+
+
+def _lifted(measured, law: Optional[DirectForceLaw], settings: AnalysisSettings):
+    """`measured` (an EpisodeResponse or the Response) with the law kept and, when it is taken, L4 lifted to pass (thin
+    below mmr_force_r2_full, law 'direct_force'); a thin pass stays the harmonic law's unless the direct one is full."""
+    if law is None:
+        return measured
+    thin = law.r2 < settings.mmr_force_r2_full
+    if not law.taken or (measured.a_response == CheckValue.PASS and thin):
+        return replace(measured, force_direct=law)
+    return replace(measured, a_response=CheckValue.PASS, a_response_thin=thin, force_law=LAW_DIRECT, force_direct=law)
+
+
+def with_direct_force(
+    response: Optional[Response],
+    series: Optional[MMRSeries],
+    prep: Preprocessed,
+    geometry: Optional[Geometry],
+    context: Context,
+    strength,
+    settings: AnalysisSettings,
+    sampling: Optional[Sampling] = None,
+) -> Optional[Response]:
+    """B8: the response with the direct averaged-force law (`direct_force_law`) consulted on every measurement whose
+    harmonic L4 fails or passes thin: each librating episode (its own span and P_e; a lifted episode can become rule R's
+    witness), the episodes before the last jump pooled, and the record's pooled response (the accepted episodes, P_cyc).
+    Only on an eligible angle (`direct_force_eligible`) with accepted episodes: the route confirms that the angle's own
+    force drives a, it never makes an episode. Not on a record whose step folds short periods into a beyond
+    mmr_short_period_a_ratio of the decisive a half-excursion (`sampling`: flag short_period_aliased and
+    `Sampling.a_scatter_ratio`, R-ALIAS-A's predicate): the a-based checks are not measured there, and this law reads a
+    too. Unchanged otherwise; a copy, never in place."""
+    if sampling is not None and short_period_folded(sampling, settings):
+        return response
+    if (
+        response is None
+        or geometry is None
+        or not geometry.episodes
+        or direct_force_eligible(series.resonance if series else None, series, strength, settings)
+    ):
+        return response
+    prominence = geometry.turning_points.prominence_rad
+
+    def consult(measured, pieces, period):
+        if not _consults_direct(measured.a_response, measured.a_response_thin):
+            return measured
+        return _lifted(measured, direct_force_law(series, prep, context, pieces, period, prominence, settings), settings)
+
+    episodes = [
+        consult(e, [(e.t_start_yr, e.t_end_yr)], e.period_yr) if e.episode_id is not None and e.a_response is not None else e
+        for e in response.episode_responses
+    ]
+    before = response.before_jump_response
+    if before is not None and before.a_response is not None:
+        pieces = [(e.t_start_yr, e.t_end_yr) for e in response.episode_responses if e.before_jump and e.episode_id is not None]
+        before = consult(before, pieces or [(before.t_start_yr, before.t_end_yr)], before.period_yr)
+    lifted = consult(response, _response_pieces(geometry), geometry.period_cycle_yr)
+    if lifted.force_direct is None:  # the columns show the law measured on the episode with most turning points
+        measured = [e for e in episodes if e.force_direct is not None]
+        if measured:
+            lifted = replace(lifted, force_direct=max(measured, key=lambda e: (e.n_tp, -e.t_start_yr)).force_direct)
+    return replace(lifted, episode_responses=episodes, before_jump_response=before)
+
+
 def response_columns(response: Response) -> dict:
     """CSV columns `rsp_*` (the body of `Response.to_columns`)."""
     deg = np.degrees
@@ -2020,6 +2530,8 @@ def response_columns(response: Response) -> dict:
         'rsp_force_R2_null_max': response.force_r2_null_max,
         'rsp_force_null_gain': response.force_null_gain,
         **harmonic_columns(response.force_harmonic),
+        **direct_force_columns(response.force_direct),
+        **line_share_columns(response.line_share),
         'rsp_omega0_K_rad_yr': response.omega0_force_rad_yr,
         'rsp_omega0_ratio': response.omega0_ratio,
         'rsp_b1_req_au': response.b1_required_au,
@@ -2188,6 +2700,143 @@ def onset_clear(
     return (low, high), reason
 
 
+@dataclass(frozen=True)
+class OnsetWave:
+    """O1's three parts on one episode (B4, W28; cards g03-4, g08-3): is the a-wave before the episode a foreign wave
+    that the libration only rides? `coherence_r2`: R^2 of one sinusoid at the episode's period P on the background's
+    band-passed a (O1c); `phase_gap_deg`: |phase of that sinusoid - phase of the one fitted on the episode's first 2P|
+    in [0, 180] (both phases are absolute in t, so the gap is the background wave extrapolated into the episode);
+    `own_law_r2` / `own_law_r2_episode`: R^2 of a_dot under the episode's own force law, K and phi0 (the 1:1 law's
+    K/K_theory) fixed and only a constant free, on the background / on the episode (O1l). nan where not measured."""
+
+    coherence_r2: float = NAN
+    phase_gap_deg: float = NAN
+    own_law_r2: float = NAN
+    own_law_r2_episode: float = NAN
+
+
+def sinusoid_at(t_yr: np.ndarray, values: np.ndarray, period_yr: float) -> Tuple[float, float]:
+    """values = A cos(2 pi t / P - phase) + C by least squares: (R^2, phase [rad]); nan below MIN_FIT_SAMPLES finite
+    samples or for a constant series."""
+    t, y = np.asarray(t_yr, float), np.asarray(values, float)
+    mask = _finite(t, y)
+    if np.count_nonzero(mask) < MIN_FIT_SAMPLES or not (np.isfinite(period_yr) and period_yr > 0):
+        return NAN, NAN
+    t, y = t[mask], y[mask]
+    if np.std(y) <= 0:
+        return NAN, NAN
+    x = TWO_PI * t / period_yr
+    coef, value = _fit(np.column_stack([np.cos(x), np.sin(x), np.ones_like(x)]), y)
+    return value, float(np.arctan2(coef[1], coef[0]))
+
+
+def onset_coherence(
+    t_yr: np.ndarray,
+    band: np.ndarray,
+    period_yr: float,
+    background: Tuple[float, float],
+    episode: Tuple[float, float],
+) -> Tuple[float, float]:
+    """O1c: (R^2 of one sinusoid at `period_yr` on `band` over `background`, the phase gap [deg, 0..180] to the one
+    fitted over `episode`); nan for a stretch shorter than one period (as `onset_bands`)."""
+    t = np.asarray(t_yr, float)
+
+    def fit(start, end):
+        if not (np.isfinite(start) and np.isfinite(end)) or end - start < period_yr:
+            return NAN, NAN
+        piece = samples_between(t, start, end)
+        return sinusoid_at(t[piece], np.asarray(band, float)[piece], period_yr)
+
+    r2_bg, phase_bg = fit(*background)
+    _, phase_ep = fit(*episode)
+    gap = abs(float(wrap_pi(phase_bg - phase_ep))) if np.isfinite(phase_bg) and np.isfinite(phase_ep) else NAN
+    return r2_bg, float(np.degrees(gap))
+
+
+def fixed_law_r2(angle: np.ndarray, adot: np.ndarray, force_au_yr: float, phi0_rad: float) -> float:
+    """O1l for a harmonic law: R^2 of adot = K sin(angle - phi0) + C with K and phi0 given and only C free (the law of
+    `ForceWindow`, read on another stretch); nan below MIN_FIT_SAMPLES finite samples."""
+    angle, adot = np.asarray(angle, float), np.asarray(adot, float)
+    if not (np.isfinite(force_au_yr) and np.isfinite(phi0_rad)):
+        return NAN
+    return coorbital_module.fixed_scale_r2(adot, np.sin(angle - phi0_rad), force_au_yr)
+
+
+def onset_own_law(
+    t_yr: np.ndarray,
+    model_adot: np.ndarray,
+    adot: np.ndarray,
+    scale: float,
+    background: Tuple[float, float],
+    episode: Tuple[float, float],
+    zones: Sequence[Tuple[float, float]] = (),
+) -> Tuple[float, float]:
+    """O1l: (R^2 of adot = scale x model + C over `background`, the same over `episode`), the samples in `zones`
+    (`jump_zones`) left out. `model_adot` is the law's shape along the record: sin(sigma - phi0) of a harmonic law
+    (scale K), the 1:1 model (1) of `coorbital.law_model` (scale K/K_theory)."""
+    t = np.asarray(t_yr, float)
+    keep = zones_mask(t, zones)
+
+    def r2_on(start, end):
+        if not (np.isfinite(start) and np.isfinite(end)) or end <= start:
+            return NAN
+        inside = (t >= start) & (t <= end) & keep
+        return coorbital_module.fixed_scale_r2(np.asarray(adot, float)[inside], np.asarray(model_adot, float)[inside], scale)
+
+    return r2_on(*background), r2_on(*episode)
+
+
+def _onset_wave(
+    t: np.ndarray,
+    a_f: np.ndarray,
+    run: Episode,
+    period_med: float,
+    bounds: Tuple[float, float],
+    clear: Tuple[float, float],
+    response: EpisodeResponse,
+    prep: Preprocessed,
+    context: Context,
+    settings: AnalysisSettings,
+    judge: Optional[ResponseJudge],
+    filtered: Tuple[np.ndarray, ...],
+    guard: Optional[JumpGuard],
+) -> OnsetWave:
+    """O1's three parts (`OnsetWave`) of a judged episode with a measured background (`bounds`, its clear part); the
+    episode's phase is read on its first 2P (the junction a continuing wave crosses; a long episode's own period drift
+    would blur a whole-episode phase), cut to `clear`."""
+    times = np.asarray(run.tp_times_yr, float)
+    if judge is None or not len(times) or not (np.all(np.isfinite(bounds)) and np.isfinite(period_med) and period_med > 0):
+        return OnsetWave()
+    start, end = float(times[0]), float(times[-1])
+    step = float(np.median(np.diff(t)))
+    if period_med / ONSET_BAND_FACTOR <= 2 * step:
+        return OnsetWave()
+    band = filtering.band_pass(t, a_f, period_med, ONSET_BAND_FACTOR, settings.filter_order)
+    junction = (max(start, clear[0]), min(end, start + 2 * period_med, clear[1]))
+    coherence, gap = onset_coherence(t, band, period_med, bounds, junction)
+    episode = (max(start, clear[0]), min(end, clear[1]))
+    angle_f, _, _, adot_f, smoothing = filtered
+    zones = jump_zones(guard, smoothing, settings)
+    own_bg, own_ep = NAN, NAN
+    law = response.coorbital
+    if law is not None:
+        data = coorbital_input(judge.series, prep, context, judge.sampling, smoothing, prep.angle_clean, adot_f, [])
+        if data is not None:
+            model = coorbital_module.law_model(data, settings)
+            own_bg, own_ep = onset_own_law(t, model.adot, adot_f, law.scale, bounds, episode, zones)
+    elif np.isfinite(response.force_amplitude_au_yr) and np.isfinite(response.phi0_rad):
+        angle, adot = angle_f, adot_f
+        if np.isfinite(response.force_cutoff_yr) and response.force_cutoff_yr > smoothing:  # the line rule's cutoff
+            angle, _, _, adot, _ = smoothed_series(prep, response.force_cutoff_yr, settings)
+            zones = jump_zones(guard, response.force_cutoff_yr, settings)
+        shift = well_shift(t, [run])
+        if shift is not None:
+            angle = angle - shift
+        shape = np.sin(angle - response.phi0_rad)
+        own_bg, own_ep = onset_own_law(t, shape, adot, response.force_amplitude_au_yr, bounds, episode, zones)
+    return OnsetWave(coherence, gap, own_bg, own_ep)
+
+
 def _episode_zone_class(classes: Sequence[CycleClass]) -> str:
     """'zone' if any cycle is in the zone, else 'not_measured' if a cycle is not measured (a loop around several wells:
     it may be the one in the zone), else the common class of the cycles ('' without cycles)."""
@@ -2217,7 +2866,7 @@ def _onset(t, a_f, run: Episode, period_med: float, guard, settings: AnalysisSet
     bounds = (max(background.start_yr, clear[0]), min(background.end_yr, clear[1]))
     if not bounds[1] > bounds[0]:  # nothing of the stretch is clear (a group starting at the record's edge)
         bounds = (NAN, NAN)
-    return bands, short, background, bounds
+    return bands, short, background, bounds, clear
 
 
 def episode_physics(
@@ -2269,7 +2918,7 @@ def episode_physics(
         cycles = [a_f[samples_between(t, a, b)] for a, b in zip(times[:-2], times[2:])]
         cycle_ptp = [np.ptp(cycle) / 2 for cycle in cycles if len(cycle)]
         excursion_meas = float(np.median(cycle_ptp)) if cycle_ptp else NAN
-    (before, inside, after), onset_short, background, (before_t0, before_t1) = _onset(
+    (before, inside, after), onset_short, background, (before_t0, before_t1), clear = _onset(
         t, a_f, run, period_med, guard, settings, accepted, circulates
     )
 
@@ -2308,6 +2957,12 @@ def episode_physics(
         values = [v for v in values if np.isfinite(v)]
         return float(function(values)) if values else NAN
 
+    wave = OnsetWave()
+    if np.isfinite(before) and np.isfinite(inside):  # O1 measured: its three parts (B4)
+        filtered = (angle_f, rate_f, a_f, adot_f, smoothing)
+        bounds = (before_t0, before_t1)
+        wave = _onset_wave(t, a_f, run, period_med, bounds, clear, response, prep, context, settings, judge, filtered, guard)
+
     return EpisodePhysics(
         episode_id=run.episode_id,
         small_period_min_yr=t0_min,
@@ -2327,6 +2982,10 @@ def episode_physics(
         onset_before_t0_yr=before_t0,
         onset_before_t1_yr=before_t1,
         onset_group_ids=background.group_ids,
+        onset_coherence_r2=wave.coherence_r2,
+        onset_phase_gap_deg=wave.phase_gap_deg,
+        onset_own_law_r2=wave.own_law_r2,
+        onset_own_law_r2_episode=wave.own_law_r2_episode,
         h_min=finite_stat(h_values, np.min),
         h_med=finite_stat(h_values, np.median),
         h_max=finite_stat(h_values, np.max),

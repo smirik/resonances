@@ -118,13 +118,15 @@ def test_an_earth_coorbital_libration_has_no_gate_verdict():
     assert analyse_zlk(series, SETTINGS, free_elements=elements).verdict.status == Status.RESONANT
 
 
-def test_an_episodic_coorbital_keeps_its_status():
-    # 2020 PP1 (Earth co-orbital, episodic): unavailable never changes an episodic row
+def test_an_episodic_coorbital_has_no_gate_verdict():
+    # 2020 PP1 (Earth co-orbital, episodic): the model does not apply, uncertain/gate_unavailable as a libration (W28
+    # g09-6 B; it kept its transient before; tests/resonances/analysis/test_zlk_coorbital_episodic.py)
     result = GateResult('unavailable', n_cycles=10.0, min_cycles=3.0, rho_max=7.0, detail=omega_free_gate.COORBITAL_UNFITTED)
     decision = decide.decide_status(
         ResonanceType.LIDOV_KOZAI, decide.AngleDecision(AngleStatus.EPISODIC), result, Ledger.from_settings(SETTINGS)
     )
-    assert decision.status == Status.TRANSIENT and decision.checks['check_zlk_free_omega'] == CheckValue.NOT_MEASURED
+    assert (decision.status, decision.reason) == (Status.UNCERTAIN, Reason.GATE_UNAVAILABLE)
+    assert decision.checks['check_zlk_free_omega'] == CheckValue.NOT_MEASURED
 
 
 # --------------------------------------------------------------------------------- the double-scale synthetic

@@ -12,10 +12,13 @@
                    former secular centre check with the scale of the centre measured instead of 10% of the record.
                    A `centre_guard` (ZLK) can refuse the centre scale: a period that is a beat of the forced vector
                    while the free circle stays off the origin is no libration of omega (`sec_centre_rejected`).
+    4p phases      secular: a libration or episode whose swing is within dphi(T), how far the linear phases of its
+                   modes stray over the record, is insufficient_time/phase_unresolved (`decide.phase_check`)
     5 physics      secular: response.analyse_response (a column); ZLK: the free-omega gate (analysis.zlk)
     6 status       decide.decide_status
     7 confidence   decide.margins_and_caps, confidence.assess
     8 action       an uncertain verdict: extend (with extend_to_years) or review, `extend.recommend`; no status changes
+                   (5, 7 and 8 read the deciding librating episode's period, `decide.decisive_period_yr`)
     9 columns      a modulated secular angle: the slow line of its centre (`slow.secular_centre_line`); ZLK: the
                    slow line, e-i coupling and attribution (`analysis.zlk`). No status reads them.
 
@@ -118,6 +121,7 @@ def analyse_long_period(
     geometry = measure_geometry(angle, cutoff.prominence_rad, settings)
     angle_decision = decide.decide_angle(geometry, settings, ledger)
     fine_geometry, scale, rejected = geometry, SCALE_FINE, ''
+    fine_rules = angle_decision.rules_fired  # rules that acted on the fine angle word, kept if the centre scale decides
     if angle_decision.angle_status != AngleStatus.LIBRATION:
         slow = _centre_scale(series, cutoff, angle, geometry, angle_decision, settings, ledger)
         rejected = centre_guard(slow[1], geometry, ledger) if slow is not None and centre_guard is not None else ''
@@ -125,9 +129,14 @@ def analyse_long_period(
             angle, geometry, angle_decision = slow
             scale = SCALE_CENTRE
 
+    delta_phi = decide.phase_uncertainty_rad(series)
+    swing = decide.phase_swing_rad(angle_decision, geometry) if np.isfinite(delta_phi) else float('nan')
+    angle_decision = decide.phase_check(angle_decision, geometry, delta_phi, settings, ledger)
+
     response = analyse_response(series, angle, settings) if series.resonance_type == ResonanceType.SECULAR else None
     gate_result = gate(angle_decision, geometry) if gate is not None else None
     status = decide.decide_status(series.resonance_type, angle_decision, gate_result, ledger)
+    period = decide.decisive_period_yr(geometry, angle_decision.decisive_episode_id)
     # F is read at the cutoff of the decisive angle (the centre scale's when it decided)
     margins, caps, flags = decide.margins_and_caps(angle_decision, geometry, angle.cutoff_yr, gate_result, settings, ledger)
     assessment = confidence_module.assess(
@@ -145,10 +154,11 @@ def analyse_long_period(
         status.reason,
         gate_result,
         angle.period_floor_yr,
-        geometry.period_cycle_yr,
+        period,
         angle.cutoff_yr,
         series.span_yr,
         settings,
+        subtype=angle_decision.subtype,
     )
     checks = unmeasured_checks(series.resonance_type)
     if response is not None:
@@ -178,6 +188,8 @@ def analyse_long_period(
         checks=checks,
         margins=margins,
         decision_path=list(ledger),
+        # the fine scale's rules too when the centre scale decided: they acted on the row before it
+        rules_fired=decide.rules_fired(geometry, angle_decision, status, fine_geometry.rules_fired, fine_rules),
     )
     centre_line = None
     if series.resonance_type == ResonanceType.SECULAR and angle_decision.subtype == AngleSubtype.MODULATED:
@@ -198,6 +210,9 @@ def analyse_long_period(
         centre_rejected=rejected,
         centre_line=centre_line,
         n_librating_episodes=len(decide.librating_episodes(geometry)),
+        decisive_period_yr=period,
+        phase_uncertainty_rad=delta_phi,
+        phase_swing_rad=swing,
         **common,
     )
 

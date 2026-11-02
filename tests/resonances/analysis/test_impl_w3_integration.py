@@ -143,7 +143,9 @@ def test_31935_subresonance_gets_a_derived_row_of_its_own():
     verdict = analysis.verdict
     # rule C (W7 'ug22'): the catalogue row takes the status of its member
     assert verdict.status == Status.TRANSIENT and verdict.libration_origin == LibrationOrigin.SUBRESONANCE
-    assert verdict.owner == '9M-16+2+5' and analysis.subresonances.accepted.spec.key == '9M-16+2+5'
+    # W28 A3a (card g06-1 A): the member is the row's resonant argument, the owner column stays empty
+    assert verdict.resonant_argument == '9M-16+2+5' and verdict.owner == ''
+    assert analysis.subresonances.accepted.spec.key == '9M-16+2+5'
     (derived,) = analysis.derived
     # its angle is the one the integration saved for the member (an independent source)
     saved = io.load_series('mmr2__31935__9M-16+2+5') if io.example_path('mmr2__31935__9M-16+2+5').exists() else None
@@ -169,7 +171,7 @@ def test_82831_circulates_and_its_subresonance_is_named():
     analysis = _analysis('mmr2__82831__13M-24+0+11')
     verdict = analysis.verdict
     assert str(verdict.final_regime) == 'circulation' and verdict.status == Status.TRANSIENT  # rule C: the member's
-    assert verdict.libration_origin == LibrationOrigin.SUBRESONANCE and verdict.owner == '13M-24+2+9'
+    assert verdict.libration_origin == LibrationOrigin.SUBRESONANCE and verdict.resonant_argument == '13M-24+2+9'
 
 
 @pytest.mark.benchmark
@@ -189,10 +191,10 @@ def test_owner_names_the_origin(example, owner):
 @pytest.mark.benchmark
 def test_owner_outside_the_window_does_not_name_the_origin():
     """A circulation: 7E-23 librates only 0.7-6.4 kyr of the 20-kyr record (cover < MMR_OWNER_COVER_MIN, F7 of W20):
-    its key stays in `owner`, the origin is not induced."""
+    its key is a neighbour (W28 A3a, card g06-3 A), not the owner; the origin is not induced."""
     analysis = _analysis('mmr3__2000_YG4__2R-8E-1+0+0+7__rerun')
     verdict = analysis.verdict
-    assert verdict.status == Status.NON_RESONANT and verdict.owner == '7E-23+0+16'
+    assert verdict.status == Status.NON_RESONANT and verdict.owner == '' and verdict.neighbours.startswith('7E-23+0+16 ')
     assert verdict.libration_origin != LibrationOrigin.INDUCED and 'owner_outside_episode' in verdict.flags
     assert analysis.owner.cover < 0.5
 

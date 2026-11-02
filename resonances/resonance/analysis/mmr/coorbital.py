@@ -791,8 +791,21 @@ def energy_fit(
     return -slope, r2
 
 
-def coorbital_law(data: CoorbitalInput, settings: AnalysisSettings) -> CoorbitalLaw:
-    """The force law (1) and the energy integral (2) of a 1:1 angle on the response pieces (module docstring)."""
+@dataclass(frozen=True)
+class LawModel:
+    """The models (1) and (2) along the whole record, through the data's filters (`law_model`)."""
+
+    adot: np.ndarray  # 2 mu n a_P F~(theta(t)) [au/yr], K_theory = 1
+    potential: np.ndarray  # 3 mu n^2 R~(theta(t)) [rad^2/yr^2]
+    theta: np.ndarray  # angle_sign x sigma (unfiltered)
+    n_tables: int
+    n_blocks: int
+
+
+def law_model(data: CoorbitalInput, settings: AnalysisSettings) -> LawModel:
+    """The 1:1 models (1) and (2) of `data` on every sample of the record (the mask is not read): the blocks of the
+    slowly varying elements, one table per run of blocks within the retabulation tolerances, then the data's
+    low-passes (module docstring)."""
     t = np.asarray(data.t_yr, dtype=float)
     sign = 1 if data.body_coefficient > 0 else -1
     theta = sign * np.asarray(data.angle, dtype=float)  # sigma = k (lambda - lambda_P), k = +-1
@@ -805,9 +818,34 @@ def coorbital_law(data: CoorbitalInput, settings: AnalysisSettings) -> Coorbital
     planet_blocks = _planet_blocks(data, starts, block_yr)
     softening = hill_softening(mu, settings.mmr_coorbital_softening_hill)
     potential, force, n_tables = model_along(t, theta, body_blocks, planet_blocks, starts, softening, settings)
-
     model_adot = _filtered(t, 2 * mu * n * a_planet * force, data.cutoffs_yr, settings)  # (1)
     model_v = _filtered(t, 3 * mu * n**2 * potential, data.cutoffs_yr, settings)  # (2)
+    return LawModel(model_adot, model_v, theta, n_tables, len(starts))
+
+
+def fixed_scale_r2(target: np.ndarray, model: np.ndarray, scale: float) -> float:
+    """R^2 of target = scale x model + C with the scale given and only the constant C free (the law of one stretch
+    read on another: O1's own-law test, `response.onset_own_law`); nan below MIN_FIT_SAMPLES finite samples, for a
+    non-finite scale or a constant target."""
+    target, model = np.asarray(target, dtype=float), np.asarray(model, dtype=float)
+    mask = np.isfinite(target) & np.isfinite(model)
+    if np.count_nonzero(mask) < MIN_FIT_SAMPLES or not np.isfinite(scale):
+        return NAN
+    target = target[mask]
+    total = float(np.var(target))
+    if total <= 0:
+        return NAN
+    return 1 - float(np.var(target - scale * model[mask])) / total
+
+
+def coorbital_law(data: CoorbitalInput, settings: AnalysisSettings) -> CoorbitalLaw:
+    """The force law (1) and the energy integral (2) of a 1:1 angle on the response pieces (module docstring)."""
+    t = np.asarray(data.t_yr, dtype=float)
+    sign = 1 if data.body_coefficient > 0 else -1
+    n = float(data.planet_mean_motion_rad_yr)
+    a_planet = (GM_SUN / n**2) ** (1.0 / 3.0) if n > 0 else NAN
+    model = law_model(data, settings)
+    theta, model_adot, model_v, n_tables = model.theta, model.adot, model.potential, model.n_tables
     mask = np.asarray(data.mask, dtype=bool)
     adot = np.asarray(data.adot, dtype=float)
     scale, r2 = scale_fit(adot[mask], model_adot[mask])
@@ -831,7 +869,7 @@ def coorbital_law(data: CoorbitalInput, settings: AnalysisSettings) -> Coorbital
         planet=data.planet,
         angle_sign=sign,
         n_tables=n_tables,
-        n_blocks=len(starts),
+        n_blocks=model.n_blocks,
         r2=r2,
         r2_h1=r2_h1,
         r2_h2=r2_h2,

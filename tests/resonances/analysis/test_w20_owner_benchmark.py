@@ -112,7 +112,9 @@ def test_2003_tg2_owner_acts_outside_the_episode():
     v, result = analysis.verdict, analysis.owner
     assert result.accepted.spec.key == '27V-40+0+13' and result.cover < S.mmr_owner_cover_min
     assert all(b <= 30e3 or a >= 31e3 for a, b, _ in result.intervals)
-    assert (str(v.status), str(v.libration_origin)) == ('uncertain', 'unknown') and v.owner == '27V-40+0+13'
+    assert (str(v.status), str(v.libration_origin)) == ('uncertain', 'unknown')
+    # W28 A3a (card g06-3 A): a resonance outside the episode is a neighbour, after it here, not the owner
+    assert v.owner == '' and v.neighbours.startswith('27V-40+0+13 ') and v.neighbours.endswith(' after')
     assert 'owner_outside_episode' in v.flags and v.checks['check_mmr_owner'] == 'pass'
 
 
@@ -142,9 +144,9 @@ def test_1997_gk3_owner_covers_the_episode():
     v, result = analysis.verdict, analysis.owner
     assert (str(v.status), str(v.reason), v.owner) == ('non_resonant', 'induced_libration', '10E-17+0+7')
     assert result.accepted.route in ('phase', 'potential') and result.cover >= S.mmr_owner_cover_min
-    # the libration intervals of R5 (0.1-11.3, 12.8-18.5 kyr) with a slip between
+    # the libration intervals of R5 (0.1-11.3, 12.8-18.5 kyr); since A1 (W28, card g04-2) no slip bridge between them
     kinds = [kind for _, _, kind in result.intervals]
-    assert 'slip' in kinds and kinds.count('libration') >= 2
+    assert 'slip' not in kinds and kinds.count('libration') >= 2
     starts = [a for a, _, kind in result.intervals if kind == 'libration']
     assert starts[0] < 1e3 and any(12.0e3 < a < 13.5e3 for a in starts)
 

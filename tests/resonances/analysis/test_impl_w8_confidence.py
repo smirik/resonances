@@ -202,7 +202,8 @@ def test_the_24820_member_is_scanned_by_the_decision():
     'example_id, expected',
     [
         ('coorbital__121514__1M-1+0+0__20kyr', 'tadpole L4'),
-        ('coorbital__2002_AA29__1E-1+0+0', 'compound (horseshoe ↔ quasi-satellite)'),
+        # W28 C8: the wells of its sub-regimes in time order (one episode; it was the force law's 'compound' piece)
+        ('coorbital__2002_AA29__1E-1+0+0', 'compound: horseshoe → compound → horseshoe'),
     ],
 )
 def test_real_coorbitals(example_id, expected):

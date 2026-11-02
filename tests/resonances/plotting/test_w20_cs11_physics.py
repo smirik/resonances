@@ -79,11 +79,13 @@ def test_every_cap_that_lowers_the_level_names_its_alternative():
 
 
 def test_cap_alternative_is_drawn_with_the_cap():
-    """The cap row of the confidence column carries the alternative (full and compact)."""
+    """The cap row of the confidence column carries the alternative (full and compact); since W28 E4 it is drawn as
+    'LIMIT: short name [id] → LEVEL' with what the cap means under it."""
     row = vt.cap_rows(['near_episode'], 'medium')[0]
-    full = numbers._check_detail(row)
-    assert full.startswith('cap ≤ medium') and 'if not: transient: one more turning point' in full
-    assert 'look at (a): the grey run with most turning points' in numbers._check_detail(row, compact=True)
+    assert vt.limit_heading(row, 'medium') == 'LIMIT: almost an episode [cap:near_episode] → MEDIUM'
+    full = numbers._limit_lines(row)
+    assert full[0] == vt.CAP_WORDS['near_episode'] and full[-1].startswith('if not: transient: one more turning point')
+    assert 'look at (a): the grey run with most turning points' in numbers._limit_lines(row, compact=True)[-1]
 
 
 W20_ENTRIES = {
@@ -101,8 +103,8 @@ W20_ENTRIES = {
     'G2 entry observed: the raw angle moves monotonically': 'entry seen: the orbit-averaged σ moved one way',
     '2 owner cover of the decisive episode': 'the owner’s intervals cover σ’s decisive episode',
     '2 owner route (potential)': 'the owner is accepted by its route',
-    '2 second capture: x sweep': 'Ψ/u sweeps far enough to test a second capture',
-    '2 second capture: energy R2': 'Ψ/u follows no potential (no second capture)',
+    '2 second capture: x sweep': 'x = Ψ/u sweeps far enough to answer “both resonances at once?”',
+    '2 second capture: energy R2': 'x = Ψ/u follows no potential (not both resonances at once)',
     'G1q quasi-satellite floor from the averaged potential': 'the quasi-satellite floor lies below the tadpole floor',
     'G1q the orbit-averaged angle stays in the quasi-satellite well': 'θ stays in the quasi-satellite well long enough',
 }
@@ -287,7 +289,7 @@ def test_385266_block_against_the_r1_prototype():
     assert rows[('What', 'theory')].icon == '✓' and rows[('What', 'amplitude')].icon == '✓'
     assert 'a linear forced wave' in rows[('What', 'amplitude')].text
     assert rows[('What', 'sigma_wave')].text.startswith('σ on sin/cos φ: 12.6°') and rows[('What', 'sigma_wave')].grey
-    assert rows[('What', 'capture')].icon == '✓' and rows[('What', 'capture')].text.endswith('second capture excluded')
+    assert rows[('What', 'capture')].icon == '✓' and rows[('What', 'capture')].text.endswith('→ excluded')
     assert 'model limit' in rows[('What', 'own_term')].text  # bound 0.0105 < MMR_OWNER_POTENTIAL_MODEL_ERROR
     assert not any('strength' in item for item in text.info)  # shown in section A, not under 'also measured'
 
@@ -315,8 +317,10 @@ def test_rows_say_why_when_not_measured():
     *_, text = _analysis('mmr2__153__3J-2+0-1')
     owner = _rows(text)[('What', 'owner')]
     assert owner.icon == '✗' and owner.text.startswith('18 candidates, none accepted; best ')
+    # 385533 lost its 'no cycle to read a required strength from' at W_c 22.7 kyr: since W28 B7 the scale ladder reads
+    # it at 7.95 kyr, where F by direct averaging measures T0_th 33.9-36.8 kyr (Codex's scratch at 2 kyr: 33.8-36.7)
     *_, text = _analysis('mmr2__385533__7N-12+0+5')
-    assert text.physics[0].subtitle == 'not measured' and text.physics[0].rows[0].text == 'no cycle to read a required strength from'
+    assert text.physics[0].subtitle == 'directly averaged potential' and text.physics[0].rows[0].text.startswith('T0_th 33.9')
     *_, text = _analysis('mmr3__237743__5J-2S-2+0+0-1')
     assert _rows(text)[('What', 'theory')].text.startswith('no direct theory for a three-body owner (second order)')
     assert _rows(text)[('What', 'phases')].grey  # accepted by R², the phases are context
@@ -328,15 +332,16 @@ def test_hw7_second_capture_and_its_cap():
     comparisons, and the medium cap names the other reading."""
     *_, row, text = _analysis('mmr3__2001_HW7__5J+6S-2+0+0-9')
     capture = _rows(text)[('What', 'capture')]
-    assert capture.icon == '?' and capture.text.endswith('second capture unresolved')
-    assert f'Ψ/u sweeps {vt.fmt(row["own_psi_sweep_deg"])}° < 180°' in capture.text
+    assert capture.icon == '?' and capture.text.endswith('→ not ruled out') and capture.label == 'both resonances at once?'
+    assert f'x moved {vt.fmt(row["own_psi_sweep_deg"])}° < 180°' in capture.text
     assert 'The other reading: two resonances at once' in text.sentences[2]
 
 
 W20_WORDING = {
     'coorbital__2017_UM52__1E-1+0+0': ('steps', 'exit seen: the orbit-averaged σ runs 1.97 rev ≥ 1 rev beyond the episode, one way'),
     'coorbital__2016_CA138__1E-1+0+0': ('steps', 'one cycle closed by its phase return: σ_f leaves the 0.5 level of the swing at'),
-    'coorbital__164207__1E-1+0+0': ('steps', 'θ stays in the quasi-satellite well for 566 yr ≥ 145 yr'),
+    # W28 C5 (g01-2): the stay needs one loop through its own turns (69.8 yr), no longer 1.5 small-amplitude P_QS,max
+    'coorbital__164207__1E-1+0+0': ('steps', 'θ stays in the quasi-satellite well for 566 yr ≥ 69.8 yr'),
     'mmr2__33128__6N-7+0+1': ('sentences', 'the force law beats a shifted in time (null test): R² gain 0.264 ≥ 0.2'),
     # W20 round D: no lift by the record; the cap names the scatter of a (0.597 of the a swing, MEASURE: 0.60)
     'mmr3__2001_HW7__5J+6S-2+0+0-9': ('cap', 'short-period scatter of a 0.597 > 0.5 × the a swing'),
@@ -347,7 +352,7 @@ W20_WORDING = {
 @pytest.mark.parametrize('example', sorted(W20_WORDING))
 def test_w20_rules_in_words(example):
     """The W20 rules that decided a record are said in words with their numbers (the ledger values of the CS10 run:
-    UM52 arc 1.97 rev, 164207 visit 566 yr against 145 yr, 33128 null gain 0.264, HW7 scatter of a 0.597)."""
+    UM52 arc 1.97 rev, 164207 visit 566 yr against 145 yr, 69.8 yr since W28 C5, 33128 null gain 0.264, HW7 scatter of a 0.597)."""
     *_, text = _analysis(example)
     where, words = W20_WORDING[example]
     parts = {
@@ -425,15 +430,9 @@ def _owner(accepted, candidates=(), check='fail', flags=()):
 
 
 def test_the_owner_step_follows_the_decision():
-    """1627 13E-33 (F7): 11E-28 fits a (R² 0.9) but covers 0 of σ's decisive episode, the verdict's origin is dynamic:
-    the step says the owner acts elsewhere; an induced verdict keeps the leaf. 433 1R-5V+7: the best candidate has
-    R² 0.73 but an incoherent phase (0.41): the step names that test."""
-    spec = SimpleNamespace(key='11E-28+0+17')
-    accepted = SimpleNamespace(spec=spec, r2_median=0.9)
-    cover = LedgerEntry('2 owner cover of the decisive episode', 0.0, Op.GE, S.mmr_owner_cover_min, '', 'own_cover', '', True, False)
-    step = vt._owner_step(_facts(_owner(accepted), ['owner_outside_episode'], 'dynamic', [cover]))
-    assert step.outcome == '11E-28+0+17 drives a (R² 0.9), but covers 0 < 0.5 of σ’s decisive episode: it acts elsewhere, the tree goes on'
-    assert vt._owner_step(_facts(_owner(accepted))).outcome == '11E-28+0+17 drives a (R² 0.9) → transient, induced'
+    """433 1R-5V+7: the best candidate has R² 0.73 but an incoherent phase (0.41): the step names that test. (The
+    refused owner of 1627 13E-33 and the induced leaf are worded by role since W28 A3b and tested on real result
+    objects in test_verdict_text_roles.py.)"""
     best = SimpleNamespace(spec=SimpleNamespace(key='47M-44+0-3'), r2_median=0.73, phi0_coherence=0.41, reason='phase_incoherent', rank=1)
     step = vt._owner_step(_facts(_owner(None, [best]), origin='unknown'))
     assert step.outcome == '1 candidate, none drives a (best 47M-44+0-3: R² 0.73, but its phase φ0 does not hold, coherence 0.41)'

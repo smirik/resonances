@@ -237,10 +237,15 @@ def _analyse(example, settings=S):
 def test_33128_6n7_a_thin_witness_makes_the_transient():
     """33128 6N-7: the pooled force law fails, episode 0 passes thin with L3 and B1 (the study: uncertain ->
     transient/medium, the only status change of rule R on the benchmark). Since 2026-10-18 the mark exit_and_capture
-    lifts its cap transient_unexplained (author): high."""
+    lifts its cap transient_unexplained (author): high. Since W28 (B4, q-2 b) high needs one physical support with its
+    full margin; the witness's L4 is thin and R0 not measured, so the cap no_full_physics_support holds it at medium."""
     analysis = _analyse('mmr2__33128__6N-7+0+1')
     v, response = analysis.verdict, analysis.response
-    assert (str(v.status), str(v.libration_origin), str(v.confidence)) == ('transient', 'dynamic', 'high')
+    # W28 B4 (q-2 b): medium with the ceiling (KNOWN open_question), high without it (the exit_and_capture lift)
+    assert (str(v.status), str(v.libration_origin), str(v.confidence)) == ('transient', 'dynamic', 'medium')
+    assert v.caps == ['no_full_physics_support']
+    no_ceiling = _analyse('mmr2__33128__6N-7+0+1', replace(S, mmr_high_needs_full_support=False)).verdict
+    assert (str(no_ceiling.status), str(no_ceiling.confidence)) == ('transient', 'high')
     assert response.force_source == m.ResponseSource.WITNESS and response.witness_episode_id == 0
     assert response.a_response == PASS and response.a_response_thin
     assert v.checks['check_mmr_a_response'] == PASS
@@ -305,9 +310,14 @@ def test_34706_mixed_episodes_flag_and_cap():
     """34706 7J-2 at the old response cutoff: episode 0 is a witness, another librating episode's force law fails (the
     study's conflict). That failure was the 23.7-yr forced line (2 P_Jupiter): at 0.1 P_cyc both episodes pass, the
     conflict is gone and the status stays. The narrow case keeps the record's cutoff of that study, 10 yr (20 x 0.5 yr):
-    the physical cutoff 75 yr removes the 23.7-yr line by itself."""
-    v = _analyse('mmr2__34706__7J-2+0-5', replace(NARROW, mmr_filter_cutoff_yr=10.0)).verdict
+    the physical cutoff 75 yr removes the 23.7-yr line by itself. The study's conflict is read without the direct
+    averaged-force law (W28 B8): at the libration scale it explains the failing episode's a_dot and lifts its L4."""
+    narrow = replace(NARROW, mmr_filter_cutoff_yr=10.0)
+    v = _analyse('mmr2__34706__7J-2+0-5', replace(narrow, mmr_direct_force_law=False)).verdict
     assert str(Flag.EPISODE_FORCE_LAW_MIXED) in v.flags and str(Cap.EPISODE_FORCE_LAW_MIXED) in v.caps
+    lifted = _analyse('mmr2__34706__7J-2+0-5', narrow)
+    assert str(Flag.EPISODE_FORCE_LAW_MIXED) not in lifted.verdict.flags and lifted.verdict.status == v.status
+    assert any(e.force_law == 'direct_force' for e in lifted.response.episode_responses)
     analysis = _analyse('mmr2__34706__7J-2+0-5')
     assert str(Flag.EPISODE_FORCE_LAW_MIXED) not in analysis.verdict.flags and analysis.verdict.status == v.status
     assert all(e.a_response != FAIL for e in analysis.response.episode_responses)

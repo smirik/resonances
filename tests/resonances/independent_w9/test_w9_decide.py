@@ -290,7 +290,8 @@ def test_catalogue_row_takes_the_status_of_its_librating_member():
     assert v.status == dv.status
     assert v.confidence == dv.confidence
     assert v.reason == Reason.SUBRESONANCE_LIBRATES
-    assert v.owner == member_key
+    # W28 A3a (card g06-1 A): the member is the row's resonant argument, not an owner of another commensurability
+    assert v.resonant_argument == member_key and v.owner == ''
     assert v.angle_status == AngleStatus.CIRCULATION
 
 

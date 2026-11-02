@@ -21,7 +21,8 @@ The ops (times in yr; 'plain' episodes are the accepted ones not flagged as a fo
   tol, optional min_tp and centre_deg within CENTRE_TOL_DEG), no_episode_in (t0, t1), no_plain_episode, all_forced;
 - union (min) / no_union: geo_union_n_episodes of mmr_numbers.csv;
 - return_cycle (t_a, t_b, tol): an accepted episode closed by its phase return at those crossings;
-- exit_observed / entry_observed (mmr_numbers.csv), final_regime (value), angle (value, optional subtype);
+- exit_observed (optional value, default true) / entry_observed (mmr_numbers.csv), final_regime (value), angle (value,
+  optional subtype);
 - last_reaches_end / last_ends_before_end (the last episode's end gap <= 1 P or above), last_covers_end (the end as
   the package's `geometry.covers_edges` reads it: gap <= 1 P, or no turning point missed at the analysis window's end,
   window gap <= min(longest TP step, 1 P), with the filter's trim hiding <= 1 P; never with an observed exit),
@@ -29,7 +30,27 @@ The ops (times in yr; 'plain' episodes are the accepted ones not flagged as a fo
   'max' or the median period: the first episode starts before t + P);
 - boundary_in (t0, t1): a boundary between consecutive episodes overlaps the interval; n_runs_in (t0, t1, max): runs,
   accepted or not, starting there; max_half_amp (max_deg); episode_covers_t (t);
+- period_in (lo, hi, which): which = 'decisive' (default) reads the decisive episode's period `ep_period_med_yr`
+  (mmr_numbers.csv, or the summary row of a secular/ZLK run), 'any' passes when one episode's `period_med_yr` is in
+  [lo, hi];
+- episode_mark (t0, t1, tol, mark): a run of episodes.csv, accepted or not, carries the mark `mark` over an interval
+  within tol of t0-t1. The `marks` column is ';'-separated items `name`, `name@t` or `name@t0:t1` [yr]; a mark
+  without a time spans its run. A run without the column fails ('marks not written');
+- core_near (t0, t1, tol): a plain episode whose core (episodes.csv core_t0_yr/core_t1_yr, its first and last measured
+  turning points) lies within tol of t0-t1; residence_reaches_end: the last plain episode's inferred 1:1 residence is
+  bounded by the record's edge (residence_bounded_by_end = 'edge': the stay goes on to the end, its continuation
+  undetermined); residence_starts_before (t): the first plain episode's residence_t0_yr <= t (W28 C8; a run without the
+  columns fails: 'core / residence not written');
+- action (value, optional min_extend_to): the summary's `action`, and `extend_to_years` >= min_extend_to;
+- flag (value, optional present = true): the flag is (or is not) in the summary's ';'-separated `flags`;
+- field (column and one of value, contains, min): a summary column equals value (numerically when both are
+  numbers), holds `contains` as an item of its ';'-separated list (rules_fired, caps, failed_support), or is >= min.
+  A missing column fails.
 - any_of (alternatives): a list of check lists, one of which passes in full.
+
+Every check may take `scale` (default 'main'): the episode ops then read only the episodes.csv rows of that scale
+(B10a writes scale='slow' rows; a run without the column, or an empty value, is the main scale). The summary ops
+ignore it.
 """
 
 from __future__ import annotations
@@ -57,7 +78,9 @@ LONG_PERIOD_SCOPES = ('secular', 'zlk')
 CENTRE_TOL_DEG = 30.0  # episode_near: the episode's centre within this of `centre_deg` (an island, not a position)
 NAN_VALUE = float('nan')
 COVER_P = 1.0  # an edge gap of at most one period of the episode covers the edge (DECISIONS: LIBRATION_COVERAGE_PERIODS)
-NUMBER_COLUMNS = ('example_id', 'resonance', 'geo_union_n_episodes', 'exit_observed', 'entry_observed')
+DECISIVE_PERIOD = 'ep_period_med_yr'  # period_in which='decisive': the period of the episode the verdict rests on
+NUMBER_COLUMNS = ('example_id', 'resonance', 'geo_union_n_episodes', 'exit_observed', 'entry_observed', DECISIVE_PERIOD)
+MAIN_SCALE = 'main'  # the episodes.csv scale of a row without one
 PASS, FAIL, MISSING = 'PASS', 'FAIL', 'MISSING'
 
 
@@ -165,14 +188,26 @@ def _flag(value) -> bool:
     return str(value) in ('True', 'true', '1', '1.0')
 
 
-class Record:
-    """One example of a run: its summary row (None: not in the run), its episode rows (accepted or not) and the numbers
-    the ops read. The plain episodes are the accepted ones without a forced-wave flag."""
+def _scales(frame: pd.DataFrame) -> pd.Series:
+    """The scale of every episode row: the `scale` column, MAIN_SCALE where it is absent or empty."""
+    if 'scale' not in frame:
+        return pd.Series(MAIN_SCALE, index=frame.index, dtype=object)
+    return frame['scale'].where(frame['scale'].map(_ok), MAIN_SCALE).astype(str)
 
-    def __init__(self, summary: Optional[Mapping], episodes: pd.DataFrame, numbers: Optional[Mapping] = None):
+
+class Record:
+    """One example of a run at one scale: its summary row (None: not in the run), its episode rows of that scale
+    (accepted or not) and the numbers the ops read. The plain episodes are the accepted ones without a forced-wave
+    flag. `at_scale` gives the same example at another scale (the summary and the numbers are shared)."""
+
+    def __init__(self, summary: Optional[Mapping], episodes: pd.DataFrame, numbers: Optional[Mapping] = None, scale: str = MAIN_SCALE):
         self.summary = summary
         self.numbers = numbers
-        runs = episodes.copy()
+        self.scale = scale
+        self.all_episodes = episodes  # every scale
+        self.marks_written = 'marks' in episodes
+        self._other_scales: Dict[str, 'Record'] = {}
+        runs = episodes[(_scales(episodes) == scale).to_numpy()].copy()
         if 't_start_yr' in runs:
             runs = runs.sort_values('t_start_yr', kind='stable')
         self.runs = runs.reset_index(drop=True)
@@ -181,6 +216,14 @@ class Record:
         forced = self.accepted['forced_wave'].map(_ok) if 'forced_wave' in self.accepted and len(self.accepted) else None
         self.forced = self.accepted[forced] if forced is not None else self.accepted.iloc[0:0]
         self.plain = self.accepted[~forced] if forced is not None else self.accepted
+
+    def at_scale(self, scale: str) -> 'Record':
+        """The same example with the episode rows of `scale`."""
+        if scale == self.scale:
+            return self
+        if scale not in self._other_scales:
+            self._other_scales[scale] = Record(self.summary, self.all_episodes, self.numbers, scale)
+        return self._other_scales[scale]
 
     def number(self, key: str):
         return None if self.numbers is None else self.numbers.get(key)
@@ -360,7 +403,7 @@ def op_return_cycle(rec, c):
 
 def op_exit_observed(rec, c):
     value = rec.number('exit_observed')
-    return _flag(value), f'exit_observed={value}'
+    return _flag(value) == bool(c.get('value', True)), f'exit_observed={value}'
 
 
 def op_entry_observed(rec, c):
@@ -442,6 +485,126 @@ def op_episode_covers_t(rec, c):
     return hit, 'covers' if hit else f'no accepted episode at {c["t"]}'
 
 
+def _number(value) -> Optional[float]:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return None if math.isnan(number) else number
+
+
+def _items(value) -> List[str]:
+    """The items of a ';'-separated summary list (flags, rules_fired, caps)."""
+    return [item.strip() for item in str(value).split(';') if item.strip()] if _ok(value) else []
+
+
+def op_period_in(rec, c):
+    which = c.get('which', 'decisive')
+    if which == 'decisive':
+        if rec.scale != MAIN_SCALE:
+            raise ValueError(f'bad check {c}: the decisive period is a main-scale number; use which=any')
+        value = rec.number(DECISIVE_PERIOD)
+        period = _number(value if _ok(value) else rec.field(DECISIVE_PERIOD))
+        if period is None:
+            return False, 'no decisive period'
+        return c['lo'] <= period <= c['hi'], f'decisive P {period:.1f} yr'
+    if which != 'any':
+        raise ValueError(f'bad check {c}: which must be decisive or any')
+    periods = [p for p in (_number(e['period_med_yr']) for e in _rows(_pool(rec, c))) if p is not None]
+    hit = any(c['lo'] <= p <= c['hi'] for p in periods)
+    return hit, f'periods {[round(p, 1) for p in periods]} yr'
+
+
+def _marks(value) -> List[Tuple[str, Optional[float], Optional[float]]]:
+    """(name, t0, t1) of every item `name`, `name@t` or `name@t0:t1` of a marks cell; no time: (name, None, None)."""
+    marks = []
+    for item in _items(value):
+        name, _, span = item.partition('@')
+        if not span:
+            marks.append((name.strip(), None, None))
+            continue
+        t0, _, t1 = span.partition(':')
+        marks.append((name.strip(), float(t0), float(t1 if t1 else t0)))
+    return marks
+
+
+def op_episode_mark(rec, c):
+    if not rec.marks_written:
+        return False, 'marks not written'
+    found = []
+    for run in _rows(rec.runs):
+        for name, t0, t1 in _marks(run.get('marks')):
+            if name == c['mark']:
+                found.append((run['t_start_yr'] if t0 is None else t0, run['t_end_yr'] if t1 is None else t1))
+    hit = any(abs(t0 - c['t0']) <= c['tol'] and abs(t1 - c['t1']) <= c['tol'] for t0, t1 in found)
+    return hit, f'{c["mark"]} at {[(round(a), round(b)) for a, b in found]}'
+
+
+RESIDENCE_EDGE = 'edge'  # geometry.RESIDENCE_EDGE: the record's edge bounds the residence
+
+
+def _written(rec: Record, column: str) -> bool:
+    return column in rec.runs
+
+
+def op_core_near(rec, c):
+    if not _written(rec, 'core_t0_yr'):
+        return False, 'core not written'
+    found = [(e['core_t0_yr'], e['core_t1_yr']) for e in _rows(_pool(rec, c)) if _ok(e['core_t0_yr'])]
+    hit = any(abs(float(a) - c['t0']) <= c['tol'] and abs(float(b) - c['t1']) <= c['tol'] for a, b in found)
+    return hit, f'cores {[(round(float(a)), round(float(b))) for a, b in found]}'
+
+
+def op_residence_reaches_end(rec, c):
+    if not _written(rec, 'residence_bounded_by_end'):
+        return False, 'residence not written'
+    pool = _pool(rec, c)
+    if not len(pool):
+        return False, 'no episode'
+    last = pool.iloc[-1]
+    bound, t1 = last['residence_bounded_by_end'], last.get('residence_t1_yr')
+    return str(bound) == RESIDENCE_EDGE, f'residence to {_fmt(t1, 0)} yr, bounded by {bound if _ok(bound) else "none"}'
+
+
+def op_residence_starts_before(rec, c):
+    if not _written(rec, 'residence_t0_yr'):
+        return False, 'residence not written'
+    pool = _pool(rec, c)
+    if not len(pool):
+        return False, 'no episode'
+    t0 = pool.iloc[0]['residence_t0_yr']
+    return _ok(t0) and float(t0) <= c['t'], f'residence from {_fmt(t0, 0)} yr'
+
+
+def op_action(rec, c):
+    action, extend = rec.field('action'), rec.field('extend_to_years')
+    good = action == c['value']
+    if c.get('min_extend_to') is not None:
+        good = good and _number(extend) is not None and _number(extend) >= c['min_extend_to']
+    return good, f'action={action} extend_to={extend}'
+
+
+def op_flag(rec, c):
+    present = c['value'] in _items(rec.field('flags'))
+    return present == c.get('present', True), f'{c["value"]} present={present}'
+
+
+def op_field(rec, c):
+    column = c['column']
+    if rec.summary is None or column not in rec.summary:
+        return False, f'no column {column}'
+    value = rec.summary[column]
+    if 'value' in c:
+        want, got = _number(c['value']), _number(value)
+        good = want == got if want is not None and got is not None else str(value) == str(c['value'])
+    elif 'contains' in c:
+        good = str(c['contains']) in _items(value)
+    else:
+        got = _number(value)
+        good = got is not None and got >= c['min']
+    return good, f'{column}={value}'
+
+
 def op_any_of(rec, c):
     notes = []
     for alternative in c['alternatives']:
@@ -476,22 +639,36 @@ OPS: Dict[str, Tuple[Callable[[Record, dict], Tuple[bool, str]], Tuple[str, ...]
     'n_runs_in': (op_n_runs_in, ('t0', 't1', 'max')),
     'max_half_amp': (op_max_half_amp, ('max_deg',)),
     'episode_covers_t': (op_episode_covers_t, ('t',)),
+    'period_in': (op_period_in, ('lo', 'hi')),
+    'episode_mark': (op_episode_mark, ('t0', 't1', 'tol', 'mark')),
+    'core_near': (op_core_near, ('t0', 't1', 'tol')),
+    'residence_reaches_end': (op_residence_reaches_end, ()),
+    'residence_starts_before': (op_residence_starts_before, ('t',)),
+    'action': (op_action, ('value',)),
+    'flag': (op_flag, ('value',)),
+    'field': (op_field, ('column',)),
     'any_of': (op_any_of, ('alternatives',)),
 }
+ONE_OF_KEYS = {'field': ('value', 'contains', 'min')}  # op -> exactly one of these keys
 
 
 def missing_keys(c: dict) -> List[str]:
-    """The keys an op needs that the check lacks (an unknown op lacks 'op')."""
+    """The keys an op needs that the check lacks (an unknown op lacks 'op'; a field check without exactly one of
+    value/contains/min lacks 'value|contains|min')."""
     if c.get('op') not in OPS:
         return ['op']
-    return [key for key in OPS[c['op']][1] if key not in c]
+    missing = [key for key in OPS[c['op']][1] if key not in c]
+    one_of = ONE_OF_KEYS.get(c['op'])
+    if one_of and sum(key in c for key in one_of) != 1:
+        missing.append('|'.join(one_of))
+    return missing
 
 
 def check(rec: Record, c: dict) -> Tuple[bool, str]:
-    """(passes, note) of one check on a record."""
+    """(passes, note) of one check on a record, at the check's scale (default main)."""
     if missing_keys(c):
         raise ValueError(f'bad check {c}: missing {missing_keys(c)}')
-    good, note = OPS[c['op']][0](rec, c)
+    good, note = OPS[c['op']][0](rec.at_scale(c.get('scale', MAIN_SCALE)), c)
     return bool(good), note
 
 

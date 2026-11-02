@@ -132,8 +132,10 @@ def test_an_entry_whose_raw_arc_exceeds_a_turn_is_observed():
 
 
 def _edge_episode():
-    # an episode about the centre pi, period 500 yr, its last turning point at 1000 yr (a maximum, pi + 60 deg)
-    return SimpleNamespace(centre_mean_rad=np.pi, period_med_yr=500.0, t_start_yr=0.0, t_end_yr=1000.0)
+    # an episode about the centre pi, period 500 yr, its last turning point at 1000 yr (a maximum, pi + 60 deg): mean
+    # and edge-swing centres both pi
+    values = np.pi + np.radians([60.0, -60.0, 60.0])
+    return make_episode(tp_times_yr=np.array([500.0, 750.0, 1000.0]), tp_values_rad=values, period_med_yr=500.0)
 
 
 def test_an_exit_the_filter_hides_is_read_on_the_averaged_angle():
@@ -389,7 +391,8 @@ def test_transient_unexplained_is_not_a_cap_of_a_one_to_one_angle():
     'example, expected, unexplained',
     [
         ('coorbital__2013_BS45__1E-1+0+0', ('transient', 'high'), False),
-        ('mmr2__33128__6N-7+0+1', ('transient', 'high'), False),
+        # W28 B4 q-2 b ceiling: L4 thin, R0 not measured, F no physical support -> no_full_physics_support, medium
+        ('mmr2__33128__6N-7+0+1', ('transient', 'medium'), False),
         ('mmr2__471155__6N-7+0+1', ('transient', 'medium'), True),
     ],
 )

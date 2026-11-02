@@ -40,14 +40,23 @@ def test_episodes_are_the_ones_the_author_asked_for(reclassified_run, secular_zl
 
 def test_the_cases_are_well_formed():
     names = [case.case for case in CASES]
-    assert len(names) == len(set(names)) == 80
+    # W28 F3: 30 cases added, E17 rewritten, C04 and C11 replaced; A1: E65 (2000 SF8); A2: E98 (78085); D2: E85, E85b (555527)
+    # D6: E86 (2306); D3 moved D01 (88899) to tier B; B6b: E84 (2004 YG1 20 kyr); B6c: E76 (523683 2U-9); B7: C28 (385533)
+    # B10a: C38 (37087 slow scale), E94, E95 (37087 x2 K3s), C39 (HW7 slow cause); C3: E68 (2003 YN107), C21 (2026 AC4);
+    # C4: E69 (2006 BZ147), E67 (2007 VU6); C8: E70 (2009 BE81 20 kyr, tier C); C6: C25, C26, C40-C53 (tier C, leaf G4c)
+    # C14: C54 (2022 BB2, flag extend_time, tier C)
+    assert len(names) == len(set(names)) == 146
     assert {case.tier for case in CASES} <= set(ee.TIERS)
     assert {case.scope for case in CASES} <= set(ee.SCOPES)
     for case in CASES:
         assert case.checks and case.quotes, case.case
         assert not case.known_fail or (case.gates and case.known_reason), case.case  # only A/B, always with a reason
-    # the known failures at W23 S3 (attrib.json of the history design); E16 removed by the author 2026-10-26 (Q4)
-    assert sorted(case.case for case in CASES if case.known_fail) == ['E15', 'E17', 'E21', 'E30', 'E43']
+    # the known failures at W23 S3 (attrib.json of the history design); E16 removed by the author 2026-10-26 (Q4); E17
+    # rewritten by his W28 answer g11-4 A (two episodes allowed) and passing; E21 and E30 pass with rules q and s (B1);
+    # E15 passes with the forced (strength) mark of rule 5s (B2, g11-1 A); E67 (2007 VU6): its edge turn swings back
+    # 18.8 deg, below MMR_COORBITAL_EDGE_TURN_MIN_DEG (C4, for F9); E43 (2021 XO3) passes as one episode with its
+    # amplitude changes as marks (C7, g03-1 A), and E07-E09 are one episode each (g03-9 A)
+    assert sorted(case.case for case in CASES if case.known_fail) == ['E67']
 
 
 def test_every_quote_is_verbatim_at_its_line():
@@ -84,6 +93,9 @@ def test_every_op_is_known_with_its_parameters():
             assert ee.missing_keys(check) == [], (case.case, check)
     assert ee.missing_keys({'op': 'episode_near', 't0': 0}) == ['t1', 'tol']
     assert ee.missing_keys({'op': 'no_such_op'}) == ['op']
+    assert ee.missing_keys({'op': 'field', 'column': 'reason'}) == ['value|contains|min']  # what to compare is missing
+    assert ee.missing_keys({'op': 'field', 'column': 'reason', 'value': 'x', 'min': 1}) == ['value|contains|min']  # two
+    assert ee.missing_keys({'op': 'episode_mark', 't0': 330, 't1': 450, 'tol': 30}) == ['mark']
     with pytest.raises(ValueError):
         ee.check(ee.table_from_tuples([]), {'op': 'boundary_in', 't0': 1.0})
 
@@ -161,6 +173,34 @@ def test_ops_on_hand_made_tables(episodes, check, expected):
             {'op': 'angle', 'value': 'libration', 'subtype': 'moving_centre'},
             False,
         ),
+        # period_in, decisive: the decisive episode's period from mmr_numbers.csv (MMR) or the summary (secular/ZLK)
+        ({}, {'ep_period_med_yr': 100.0}, {'op': 'period_in', 'lo': 95, 'hi': 120}, True),
+        ({}, {'ep_period_med_yr': 130.0}, {'op': 'period_in', 'lo': 95, 'hi': 120, 'which': 'decisive'}, False),
+        ({'ep_period_med_yr': '100.0'}, None, {'op': 'period_in', 'lo': 95, 'hi': 120}, True),
+        ({}, {'ep_period_med_yr': NAN}, {'op': 'period_in', 'lo': 95, 'hi': 120}, False),  # no decisive episode
+        # period_in, any: COVERING's one episode has P = 300 yr
+        ({}, None, {'op': 'period_in', 'lo': 250, 'hi': 350, 'which': 'any'}, True),
+        ({}, None, {'op': 'period_in', 'lo': 95, 'hi': 120, 'which': 'any'}, False),
+        # action: extend to 30 000 yr
+        ({'action': 'extend', 'extend_to_years': '30000.0'}, None, {'op': 'action', 'value': 'extend', 'min_extend_to': 25000}, True),
+        ({'action': 'extend', 'extend_to_years': '30000.0'}, None, {'op': 'action', 'value': 'extend', 'min_extend_to': 40000}, False),
+        ({'action': 'extend', 'extend_to_years': ''}, None, {'op': 'action', 'value': 'extend', 'min_extend_to': 25000}, False),
+        ({'action': 'none', 'extend_to_years': ''}, None, {'op': 'action', 'value': 'extend'}, False),
+        # flag: present (default) and absent
+        ({'flags': 'jump_locator_aliased;zone_eq_only'}, None, {'op': 'flag', 'value': 'zone_eq_only'}, True),
+        ({'flags': 'jump_locator_aliased;zone_eq_only'}, None, {'op': 'flag', 'value': 'zone_eq_only', 'present': False}, False),
+        ({'flags': 'jump_locator_aliased'}, None, {'op': 'flag', 'value': 'second_capture_unresolved', 'present': False}, True),
+        ({'flags': ''}, None, {'op': 'flag', 'value': 'second_capture_unresolved'}, False),
+        # field: equal (numbers compared as numbers), an item of a ';' list (not a substring), at least min, no column
+        ({'reason': 'kinematic_libration'}, None, {'op': 'field', 'column': 'reason', 'value': 'kinematic_libration'}, True),
+        ({'reason': 'induced_libration'}, None, {'op': 'field', 'column': 'reason', 'value': 'kinematic_libration'}, False),
+        ({'extend_to_years': '60000.0'}, None, {'op': 'field', 'column': 'extend_to_years', 'value': 60000}, True),
+        ({'rules_fired': 'owner_per_episode;frame_join'}, None, {'op': 'field', 'column': 'rules_fired', 'contains': 'frame_join'}, True),
+        ({'rules_fired': 'owner_per_episode;frame_join'}, None, {'op': 'field', 'column': 'rules_fired', 'contains': 'frame'}, False),
+        ({'rules_fired': ''}, None, {'op': 'field', 'column': 'rules_fired', 'contains': 'frame_join'}, False),
+        ({'extend_to_years': '30000'}, None, {'op': 'field', 'column': 'extend_to_years', 'min': 25000}, True),
+        ({'extend_to_years': '20000'}, None, {'op': 'field', 'column': 'extend_to_years', 'min': 25000}, False),
+        ({}, None, {'op': 'field', 'column': 'gate_outcome', 'value': 'unavailable'}, False),  # no such column
     ],
 )
 def test_ops_on_the_summary_and_the_numbers(summary, numbers, check, expected):
@@ -203,6 +243,117 @@ def test_return_cycle_and_runs_read_their_own_columns():
     # n_runs_in counts runs whether accepted or not: two start in 900-1000
     assert ee.run_check(rec, {'op': 'n_runs_in', 't0': 900, 't1': 1000, 'max': 2}) is True
     assert ee.run_check(rec, {'op': 'n_runs_in', 't0': 900, 't1': 1000, 'max': 1}) is False
+
+
+def _scaled_runs():
+    """Three accepted episodes: one at the main scale by name, one without a scale (main), one slow (P 5700 yr)."""
+    return pd.DataFrame(
+        {
+            't_start_yr': [100.0, 9400.0, 17200.0],
+            't_end_yr': [9000.0, 19900.0, 62400.0],
+            'period_med_yr': [300.0, 300.0, 5700.0],
+            'accepted': [True, True, True],
+            'scale': ['main', NAN, 'slow'],
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    'check, expected',
+    [
+        ({'op': 'n_accepted', 'min': 2, 'max': 2}, True),  # main by default: the named row and the empty one
+        ({'op': 'n_accepted', 'min': 1, 'max': 1, 'scale': 'slow'}, True),
+        ({'op': 'n_accepted', 'max': 0, 'scale': 'fast'}, True),  # no rows at that scale
+        ({'op': 'episode_near', 't0': 17200, 't1': 62400, 'tol': 2000, 'scale': 'slow'}, True),
+        ({'op': 'episode_near', 't0': 17200, 't1': 62400, 'tol': 2000}, False),  # not a main-scale episode
+        ({'op': 'period_in', 'lo': 5000, 'hi': 6500, 'which': 'any', 'scale': 'slow'}, True),
+        ({'op': 'period_in', 'lo': 5000, 'hi': 6500, 'which': 'any'}, False),
+        ({'op': 'any_of', 'alternatives': [[{'op': 'single_covers'}], [{'op': 'n_accepted', 'min': 1, 'scale': 'slow'}]]}, True),
+    ],
+)
+def test_the_scale_key_selects_the_episode_rows(check, expected):
+    assert ee.run_check(ee.Record({}, _scaled_runs()), check) is expected
+
+
+def test_a_run_without_a_scale_column_is_the_main_scale():
+    rec = ee.table_from_tuples(TWO)
+    assert ee.run_check(rec, {'op': 'n_accepted', 'min': 2, 'max': 2, 'scale': 'main'})
+    assert ee.run_check(rec, {'op': 'n_accepted', 'max': 0, 'scale': 'slow'})
+    with pytest.raises(ValueError):  # the decisive period belongs to the main scale
+        ee.check(rec, {'op': 'period_in', 'lo': 5000, 'hi': 6500, 'scale': 'slow'})
+
+
+@pytest.mark.parametrize(
+    'check, expected',
+    [
+        ({'op': 'episode_mark', 't0': 330, 't1': 450, 'tol': 30, 'mark': 'amplitude_change'}, True),
+        ({'op': 'episode_mark', 't0': 710, 't1': 810, 'tol': 30, 'mark': 'amplitude_change'}, True),
+        ({'op': 'episode_mark', 't0': 500, 't1': 600, 'tol': 30, 'mark': 'amplitude_change'}, False),  # none there
+        ({'op': 'episode_mark', 't0': 348, 't1': 348, 'tol': 5, 'mark': 'kick'}, True),  # a mark at one time
+        ({'op': 'episode_mark', 't0': 330, 't1': 450, 'tol': 30, 'mark': 'sub_regime'}, False),  # absent
+        ({'op': 'episode_mark', 't0': 8600, 't1': 9240, 'tol': 10, 'mark': 'forced_strength'}, True),  # spans its run
+    ],
+)
+def test_episode_marks(check, expected):
+    runs = pd.DataFrame(
+        {
+            't_start_yr': [90.0, 8600.0],
+            't_end_yr': [945.0, 9240.0],
+            'accepted': [True, False],  # a mark on a rejected run counts too
+            'marks': ['amplitude_change@330:450;kick@348;amplitude_change@710:810', 'forced_strength'],
+        }
+    )
+    assert ee.run_check(ee.Record({}, runs), check) is expected
+
+
+def test_episode_mark_fails_when_the_marks_are_not_written():
+    good, note = ee.check(ee.table_from_tuples(XO3), {'op': 'episode_mark', 't0': 330, 't1': 450, 'tol': 30, 'mark': 'amplitude_change'})
+    assert (good, note) == (False, 'marks not written')
+
+
+def _cores(rows):
+    """A hand-made W28 C8 episodes table: (accepted, core t0, core t1, residence t0, t1, bounded at the start, end)."""
+    names = ['accepted', 'core_t0_yr', 'core_t1_yr', 'residence_t0_yr', 'residence_t1_yr', 'residence_bounded_by_start']
+    frame = pd.DataFrame([dict(zip(names + ['residence_bounded_by_end'], row)) for row in rows])
+    frame['t_start_yr'] = frame['core_t0_yr'].fillna(0.0)
+    frame['t_end_yr'] = frame['core_t1_yr'].fillna(0.0)
+    return ee.Record({}, frame)
+
+
+# 2020 CB 1E-1 as the package reads it (W28 C8): a rejected over-the-top run, then the quasi-satellite core 443-601 yr
+# whose inferred residence runs from 443 yr (a leg of 3.1 turns before it) to the record's end (1000 yr)
+CB = [(False, NAN, NAN, NAN, NAN, '', ''), (True, 442.9, 600.5, 442.9, 1000.0, 'circulation', 'edge')]
+# 2024 TY11 1M-1 20 kyr: the core 2.65-8.69 kyr, its residence from the record's start to the core's end (4 turns after)
+TY11 = [(True, 2652.2, 8687.2, 0.0, 8687.2, 'edge', 'circulation')]
+
+
+@pytest.mark.parametrize(
+    'rows, check, expected',
+    [
+        (CB, {'op': 'core_near', 't0': 443, 't1': 601, 'tol': 30}, True),
+        (CB, {'op': 'core_near', 't0': 443, 't1': 1000, 'tol': 30}, False),  # the residence is no core
+        (CB, {'op': 'residence_reaches_end'}, True),
+        (TY11, {'op': 'residence_reaches_end'}, False),  # a circulation bounds it
+        (TY11, {'op': 'residence_starts_before', 't': 1000}, True),
+        (CB, {'op': 'residence_starts_before', 't': 400}, False),  # 443 > 400
+        (TY11, {'op': 'core_near', 't0': 2654, 't1': 8688, 'tol': 100}, True),
+    ],
+)
+def test_core_and_residence_ops(rows, check, expected):
+    assert ee.run_check(_cores(rows), check) is expected
+
+
+def test_core_and_residence_ops_fail_when_the_columns_are_not_written():
+    rec = ee.table_from_tuples(XO3)
+    assert ee.check(rec, {'op': 'core_near', 't0': 90, 't1': 945, 'tol': 30}) == (False, 'core not written')
+    assert ee.check(rec, {'op': 'residence_reaches_end'}) == (False, 'residence not written')
+    assert ee.check(rec, {'op': 'residence_starts_before', 't': 100}) == (False, 'residence not written')
+
+
+@pytest.mark.parametrize('value, check, expected', [('False', {}, False), ('True', {}, True), ('False', {'value': False}, True)])
+def test_exit_observed_takes_the_value_it_expects(value, check, expected):
+    rec = ee.Record({}, pd.DataFrame({'t_start_yr': [0.0], 't_end_yr': [1.0], 'accepted': [True]}), {'exit_observed': value})
+    assert ee.run_check(rec, {'op': 'exit_observed', **check}) is expected
 
 
 # --- the gate on a hand-made run ------------------------------------------------------------------------------------

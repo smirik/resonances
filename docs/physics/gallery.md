@@ -56,7 +56,7 @@ The angle $\lambda - \lambda_E$ alternates between horseshoe and quasi-satellite
 
 ### Two co-orbital regimes in turn {#coorbital-regime-change}
 
-Quasi-satellite motion, then horseshoe motion: two regimes of the same 1:1 resonance follow each other without a circulation in between, so together they cover the record (subtype regime_change).
+Quasi-satellite motion, then horseshoe motion: two regimes of the same 1:1 resonance follow each other without a circulation in between. A 1:1 episode ends only at a separatrix, so this is one episode with a change of well (the mark well_change in episodes.csv; subtype regime_change). The header names the wells in time order (`orbit: …`) and (a) brackets each sub-regime with its well.
 
 **164207**, `1E-1+0+0`: `resonant` · `libration` · `dynamic_libration` · `high`. Record: 1 kyr, step 0.05 yr, ias15 + Moon.
 
@@ -186,7 +186,7 @@ Sampled finely, the angle circulates fast, as the alias analysis of the coarse r
 
 $\sigma$ librates over the whole record, but $a$ does not follow it: the bound comes from the secular cycle of the elements, not from the resonant force (origin kinematic).
 
-**285637**, `3M+7J-6+0+0-4`: `non_resonant` · `libration` · `kinematic_libration` · `medium`. Record: 50 kyr, step 0.6 yr, ias15.
+**285637**, `3M+7J-6+0+0-4`: `non_resonant` · `libration` · `kinematic_libration` · `high`. Record: 50 kyr, step 0.6 yr, ias15.
 
 [![mmr3__285637__3M+7J-6+0+0-4](../img/gallery/mmr3__285637__3M+7J-6+0+0-4.png){ loading=lazy }](../img/gallery/mmr3__285637__3M+7J-6+0+0-4.png)
 
@@ -244,7 +244,7 @@ $\sigma$ drifts, and neither a kinematic nor an induced explanation passes: unce
 
 ### A libration the physics does not confirm {#uncertain-origin}
 
-$\sigma$ librates about a moving centre, but the energy test of the pendulum fails and no other origin explains the libration: uncertain, origin_unknown, review.
+$\sigma$ librates about a moving centre, but the energy test of the pendulum fails and no other origin explains the libration: uncertain, origin_unknown. The force law has only one window in this record, so the action is to extend the integration.
 
 **2003 TX9**, `3E+2J-10+0+0+5`: `uncertain` · `libration` · `origin_unknown`. Record: 20 kyr, step 5 yr, ias15.
 
@@ -282,11 +282,11 @@ A slow libration of g − g6 + s − s6: few cycles fit in the record, so the co
 
 [![secular__1020__g-g6+s-s6](../img/gallery/secular__1020__g-g6+s-s6.png){ loading=lazy }](../img/gallery/secular__1020__g-g6+s-s6.png)
 
-### z1 in episodes {#secular-z1-transient}
+### z1: one unfinished slow swing {#secular-z1-unfinished-swing}
 
-The z1 angle librates in part of the record and circulates in the rest.
+The centre of the z1 angle moves, then turns back after less than one revolution: the record holds part of one slow swing, not a drift, so it is too short to decide (insufficient_time, extend).
 
-**2306**, `g-g6+s-s6`: `uncertain` · `drift` · `baseline_needed`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
+**2306**, `g-g6+s-s6`: `uncertain` · `insufficient_time` · `baseline_needed`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
 
 [![secular__2306__g-g6+s-s6](../img/gallery/secular__2306__g-g6+s-s6.png){ loading=lazy }](../img/gallery/secular__2306__g-g6+s-s6.png)
 

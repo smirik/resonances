@@ -262,7 +262,13 @@ def test_31935_catalogue_row_is_the_transient_of_its_member():
     # W7 'ug22' spec: 9M-16+0+7 circulates while 9M-16+2+5 librates for a while; the commensurability is transient
     analysis = _analysed('mmr2__31935__9M-16+0+7')
     verdict, (member,) = analysis.verdict, analysis.derived
-    assert (verdict.status, verdict.reason, verdict.owner) == (Status.TRANSIENT, Reason.SUBRESONANCE_LIBRATES, '9M-16+2+5')
+    # W28 A3a (card g06-1 A): one resonance 9:16, the member is the row's resonant argument and no owner
+    assert (verdict.status, verdict.reason, verdict.resonant_argument, verdict.owner) == (
+        Status.TRANSIENT,
+        Reason.SUBRESONANCE_LIBRATES,
+        '9M-16+2+5',
+        '',
+    )
     # the catalogue angle's own behaviour: it librates about the moving minimum of the averaged potential at 31-82 kyr
     # (W18 moving centre; the author's angle label since 2026-10-16: episodic, DECISIONS.md)
     assert verdict.angle_status == AngleStatus.EPISODIC

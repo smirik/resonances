@@ -277,7 +277,9 @@ def test_33128_is_refused_on_independent_halves():
     assert columns['rsp_force_harm_reason'] == R.HARMONIC_HALVES
     assert columns['rsp_force_harm_oos'] == pytest.approx(0.26, abs=0.02)
     assert columns['rsp_force_law'] != R.LAW_HARMONIC
-    assert (str(verdict.status), str(verdict.confidence)) == ('transient', 'high')
+    # W28 B4 (q-2 b): high needs a physical support with its full margin; L4 is thin, R0 not measured -> medium
+    assert (str(verdict.status), str(verdict.confidence)) == ('transient', 'medium')
+    assert 'no_full_physics_support' in verdict.caps
 
 
 @pytest.mark.benchmark

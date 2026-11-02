@@ -25,6 +25,7 @@ from resonances.resonance.analysis.mmr import strength as st
 from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.mmr.coorbital import Orbit
 from resonances.resonance.analysis.settings import AnalysisSettings, settings_from_config
+from tests.resonances.analysis.builders import make_episode
 
 sys.path.insert(0, str(Path(__file__).parent))
 import test_w20_undefined_phase as undefined_phase  # noqa: E402
@@ -139,7 +140,8 @@ def test_a_floor_well_needs_its_share_of_the_episode():
     t = np.arange(100.0)
     centre = np.where(t < 30, 0.0, np.nan)
     well = g.FloorWell(t, centre, np.where(t < 30, 1.0, np.nan), 111.0, 'mmr_coorbital_period_floor_factor')
-    episode = SimpleNamespace(t_start_yr=0.0, t_end_yr=99.0, centre_mod_2pi_rad=0.2)
+    # a real Episode: holds() reads Episode.several_wells (W28 C7), which a SimpleNamespace stub lacks
+    episode = make_episode(tp_times_yr=np.array([0.0, 99.0]), centre_mod_2pi_rad=0.2)
     assert well.holds(episode)
     assert not replace(well, min_share=S.mmr_coorbital_qs_well_share).holds(episode)
     assert replace(well, min_share=0.3).holds(episode)

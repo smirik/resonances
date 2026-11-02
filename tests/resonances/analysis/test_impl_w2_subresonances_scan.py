@@ -8,14 +8,15 @@ prototype numbers of SISTERS §2 and codex B-review §4 (phi0 coherence 0.94/0.8
 
 import itertools
 import math
-from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
+from resonances.resonance.analysis.geometry import EpisodeShape, RejectReason
 from resonances.resonance.analysis.ledger import Ledger
 from resonances.resonance.analysis.mmr import io, subresonances as sr
 from resonances.resonance.analysis.mmr.models import (
+    ForceWindow,
     MMRSeries,
     PlanetSeries,
     Regime,
@@ -25,6 +26,7 @@ from resonances.resonance.analysis.mmr.models import (
 )
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import CheckValue, Flag, Reason
+from tests.resonances.analysis import builders
 
 S = settings_from_config()
 NAN = float('nan')
@@ -294,15 +296,18 @@ def test_decide_nodal_winner_beta_librating_and_test_e():
 
 
 def _geometry(runs=(), drift=0.0, max_pass=0.5):
-    return SimpleNamespace(runs=list(runs), drift_fraction=drift, centre=SimpleNamespace(max_pass_rad=max_pass))
+    return builders.make_geometry(runs=list(runs), drift_fraction=drift, centre=builders.make_centre(max_pass_rad=max_pass))
 
 
 def _run(n_tp, accepted, reject='', shape=''):
-    return SimpleNamespace(n_tp=n_tp, accepted=accepted, reject_reason=reject, shape=shape)
+    reject_reason = RejectReason(reject) if reject else RejectReason.NONE
+    return builders.make_episode(
+        n_tp, accepted=accepted, reject_reason=reject_reason, shape=EpisodeShape(shape) if shape else EpisodeShape.NONE
+    )
 
 
 def _response(r2, coherence):
-    return SimpleNamespace(windows=[SimpleNamespace(r2=v) for v in r2], phi0_coherence=coherence)
+    return builders.make_response(windows=[builders.make(ForceWindow, r2=v) for v in r2], phi0_coherence=coherence)
 
 
 def test_triggers():
@@ -396,13 +401,15 @@ def _sin_half_inc_invariable(inc, Omega) -> float:
 
 
 @pytest.mark.benchmark
-def test_nodal_twin_ties_and_loses_by_degree_and_e_prime_rejects_it():
+def test_nodal_twin_is_vetoed_by_test_b_and_e_prime_rejects_it():
     # SISTERS §1.4: the node member 6M-11+2+3[N-1,NM+1] drifts at nearly the rate of 6M-11+1+4 (g - g_P ~ s_P - s).
-    # 65366 has i = 4.6 deg, below MMR_SUBRESONANCE_NODAL_INC_MIN_DEG: the nodal members are forced in here.
+    # 65366 has i = 4.6 deg, below MMR_SUBRESONANCE_NODAL_INC_MIN_DEG: the nodal members are forced in here. Before W28
+    # A6b the twin tied with 6M-11+1+4 on W and lost by degree (test C, cap subresonance_tie); since A6b test B is a veto
+    # before the choice (card g06-8c A) and the twin's centre, 231 deg, is 51 deg from pi (> 30): it never reaches C.
     series, _, result = _scan('mmr2__65366__6M-11+0+5', mmr_subresonance_nodal_inc_min_deg=0.0, mmr_subresonance_strength_rel_min=0.0)
-    assert result.nodal_scanned and result.accepted.spec.key == '6M-11+1+4' and result.tie_by_order
+    assert result.nodal_scanned and result.accepted.spec.key == '6M-11+1+4' and not result.tie_by_order
     twin = next(c for c in result.candidates if c.spec.key == '6M-11+2+3[N-1,NM+1]')
-    assert twin.nodal and twin.reason == sr.REASON_C
+    assert twin.nodal and twin.reason == sr.REASON_B and math.degrees(twin.centre_distance_rad) > S.mmr_subresonance_centre_tol_deg
     assert np.isfinite(result.plane_offset_rad) and result.plane_offset_rad < math.radians(5)
     # its d'Alembert factor e_M^2 e^3 sin(i/2) sin(i_M/2) against the strongest term e^5 (e = 0.126 > e_M = 0.097)
     mars = series.planets['Mars']
@@ -411,13 +418,13 @@ def test_nodal_twin_ties_and_loses_by_degree_and_e_prime_rejects_it():
     expected = e_m**2 * e**3 * s * s_m / max(e, e_m) ** 5
     assert twin.strength_rel == pytest.approx(expected, rel=0.05) and expected < 1e-3
     # test E' (default 1e-3) rejects it before step 1 (a weak nodal member is only counted). The other twin
-    # 6M-11+0+5[N+1,NM-1] (e^5 sin(i/2) sin(i_M/2), factor 1.03e-3) just passes E', ties and loses by degree
+    # 6M-11+0+5[N+1,NM-1] (e^5 sin(i/2) sin(i_M/2), factor 1.03e-3) just passes E' and is vetoed by B (centre 125 deg)
     _, _, default = _scan('mmr2__65366__6M-11+0+5', mmr_subresonance_nodal_inc_min_deg=0.0)
     assert all(c.spec.key != '6M-11+2+3[N-1,NM+1]' for c in default.candidates) and default.n_weak > 0
     assert any("E' " in entry.name and not entry for entry in default.entries)
     other = next(c for c in default.candidates if c.spec.key == '6M-11+0+5[N+1,NM-1]')
-    assert other.strength_rel == pytest.approx(e**5 * s * s_m / max(e, e_m) ** 5, rel=0.05) and other.reason == sr.REASON_C
-    assert default.accepted.spec.key == '6M-11+1+4' and default.tie_by_order
+    assert other.strength_rel == pytest.approx(e**5 * s * s_m / max(e, e_m) ** 5, rel=0.05) and other.reason == sr.REASON_B
+    assert default.accepted.spec.key == '6M-11+1+4' and not default.tie_by_order
 
 
 @pytest.mark.benchmark

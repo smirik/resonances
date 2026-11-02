@@ -3,13 +3,14 @@ import functools
 import math
 import os
 import subprocess
+from collections import Counter
 from contextlib import contextmanager
 import numpy as np
 import pandas as pd
 from pathlib import Path
 
 from . import layout
-from .config import SimulationConfig, status_selected
+from .config import SavePlotMode, SimulationConfig, status_selected
 from resonances.body import Body
 from resonances.logger import logger
 from resonances.secular.secular_resonance import SecularResonance
@@ -18,7 +19,7 @@ from resonances.mmr.mmr import MMR
 from resonances.plotting import Plotter, EccentricityVectorPlotter, CrossSpectrumPlotter, FreeOmegaPlotter, MMRPlotter, SecularPlotter
 from resonances.plotting.base import BasePlotter
 from resonances.resonance import coherence_analysis, omega_free_gate
-from resonances.resonance.analysis.verdict import OLD_ANGLE_STATUS, Status, Verdict, reason_from_text
+from resonances.resonance.analysis.verdict import CONFIDENCE_ORDER, OLD_ANGLE_STATUS, STATUS_RANK, Status, Verdict, reason_from_text
 from resonances.secular import free_elements
 from .mmr_adapter import series_from_body
 from .serializer import SimulationSerializer
@@ -111,34 +112,78 @@ class DataManager:
     # ------------------------------------------------------------------ what is saved and plotted
 
     def should_save_body(self, body: Body, resonance):
-        """Check if body data of this resonance should be saved (by status string and libration origin)."""
-        status, origin = self._status_and_origin(body, resonance.to_s())
-        return self._process_status(status, self.config.save, origin)
+        """Check if body data of this resonance should be saved (`config.status_selected` on the verdict's fields)."""
+        status, origin, action, confidence = self._selection_inputs(body, resonance.to_s())
+        return self._process_status(status, self.config.save, origin, action, confidence)
 
     def should_plot_body(self, body: Body, resonance):
         """Check if the figures of this body-resonance pair should be drawn.
 
-        The `plot` mode decides by status; resonance types listed in `config.plot_always`
-        are drawn whatever their status, as long as plotting is on at all.
+        The `plot` mode decides by the verdict (`_selection_inputs`); resonance types listed in `config.plot_always`
+        are drawn whatever their status, as long as plotting is on at all. `Simulation._release_unplotted` asks this
+        same question, so a row that will be drawn keeps its arrays.
         """
         if self.config.plot is not None and getattr(resonance, 'type', None) in getattr(self.config, 'plot_always', []):
             return True
-        status, origin = self._status_and_origin(body, resonance.to_s())
-        return self._process_status(status, self.config.plot, origin)
+        status, origin, action, confidence = self._selection_inputs(body, resonance.to_s())
+        return self._process_status(status, self.config.plot, origin, action, confidence)
 
     @staticmethod
-    def _status_and_origin(body: Body, key: str):
-        """The status string of a row and the libration origin of its verdict ('' without a verdict)."""
+    def _selection_inputs(body: Body, key: str):
+        """(status, libration origin, action, confidence) of a row, what `status_selected` reads: the status string
+        and the verdict's fields ('' without a verdict). After a restore without recomputation the verdict is the one
+        rebuilt from summary.csv, so the selection is the run's."""
         verdict = getattr(body, 'librations', {}).get(key)
-        origin = str(verdict.libration_origin) if isinstance(verdict, Verdict) else ''
-        return body.statuses.get(key), origin
+        if not isinstance(verdict, Verdict):
+            return body.statuses.get(key), '', '', ''
+        return body.statuses.get(key), str(verdict.libration_origin), str(verdict.action), str(verdict.confidence)
 
     @staticmethod
-    def _process_status(status, mode, origin: str = '') -> bool:
-        """Whether a row with this status string and libration origin is saved/plotted under `mode` (SPEC §11.5,
-        `config.status_selected`)."""
+    def _process_status(status, mode, origin: str = '', action: str = '', confidence: str = '') -> bool:
+        """Whether a row with these verdict fields is saved/plotted under `mode` (SPEC §11.5, `config.status_selected`)."""
         _refuse_integer_status(status)
-        return status_selected(mode, status, origin)
+        return status_selected(mode, status, origin, action, confidence)
+
+    def log_selection(self, bodies) -> None:
+        """Log the run's rows by status x confidence, the review queue (`Verdict.review_required`) and how many rows
+        SAVE and PLOT selected (W28 g10-1b), once per run after every verdict (`Simulation.run`). With SAVE=review a
+        warning says how many more rows keep their series than SAVE=nonzero would keep: the data folder grows with them."""
+        cells, total, queue, saved, plotted, saved_nonzero = Counter(), 0, 0, 0, 0, 0
+        for body in bodies:
+            for resonance in body.resonances():
+                status, origin, action, confidence = self._selection_inputs(body, resonance.to_s())
+                verdict = getattr(body, 'librations', {}).get(resonance.to_s())
+                if not isinstance(verdict, Verdict):
+                    continue
+                total += 1
+                cells[(status, confidence)] += 1
+                queue += verdict.review_required
+                saved += self.should_save_body(body, resonance)
+                plotted += self.should_plot_body(body, resonance)
+                saved_nonzero += status_selected(SavePlotMode.NONZERO, status, origin, action, confidence)
+        if not total:
+            return
+        status_order = [str(s) for s in STATUS_RANK]
+        level_order = [str(level) for level in CONFIDENCE_ORDER] + ['']
+
+        def rank(cell):
+            status, level = cell
+            return (
+                status_order.index(status) if status in status_order else len(status_order),
+                level_order.index(level) if level in level_order else len(level_order),
+            )
+
+        table = '; '.join(f"{status}/{level or '-'} {cells[(status, level)]}" for status, level in sorted(cells, key=rank))
+        logger.info(f"Verdicts by status/confidence ({total} rows): {table}")
+        logger.info(
+            f"Review queue (summary.csv review_required): {queue} of {total} rows; "
+            f"SAVE={self.config.save or 'none'} selects {saved} rows, PLOT={self.config.plot or 'none'} selects {plotted}"
+        )
+        if self.config.save == SavePlotMode.REVIEW and saved > saved_nonzero:
+            logger.warning(
+                f"SAVE=review keeps the series of {saved - saved_nonzero} rows more than SAVE=nonzero would ({saved} rather than "
+                f"{saved_nonzero}): the data folder grows with them; SAVE=nonzero keeps the old selection"
+            )
 
     def ensure_save_path_exists(self):
         """Ensure save and plot paths exist."""
@@ -752,7 +797,7 @@ class DataManager:
                 name = {'name': body.name}
                 tables['mmr_numbers'].append({**analysis.numbers_row(), **name})
                 if getattr(self.config, 'save_episodes', True):
-                    tables['episodes'].extend({**row, **name} for row in analysis.episode_rows())
+                    tables['episodes'].extend({**row, **name} for row in analysis.episode_rows(include_slow=True))
                 tables['candidates'].extend({**row, **name} for row in analysis.candidate_rows(top_only=top_only))
                 if not constants and analysis.context is not None:
                     constants = analysis.context.constants_rows()

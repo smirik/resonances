@@ -3,9 +3,13 @@
 `status` is the physics, `angle_status` (+ `angle_subtype`) only the geometry of the angle over the record
 (librating episodes followed by another regime are `episodic`; `final_regime` says how the record ends),
 `reason` the one main explanation, `libration_origin` who makes the bounded oscillation
-(with `owner`, the angle that carries it, and `origin_detail`, the concrete cause for a human),
+(with `origin_detail`, the concrete cause for a human, and the roles of the other resonance: `owner` an owner or driver
+that covers the episode, `neighbours` one that sits before, during or after it without making it, `resonant_argument`
+the member of the multiplet that librates, `cause_role`/`cause_term` the term behind the verdict, `commensurability`
+the key a statistic counts once; `analysis.mmr.roles`),
 `checks` the values of the named checks, `margins` and `decision_path` how sure the decision is
-and which comparisons made it. `status_code` is the old integer, kept for a transition period.
+and which comparisons made it, `rules_fired` which named rules acted on the row (`analysis.rules`).
+`status_code` is the old integer, kept for a transition period.
 
 MMR verdicts come from `analysis.mmr.decide`; secular and ZLK verdicts are, until they move to
 the same scheme, translated from their integer status by `verdict_from_status_code` (SPEC §5.7).
@@ -19,6 +23,7 @@ from enum import StrEnum
 from typing import Any, Iterable, Mapping, Optional
 
 from resonances.resonance.analysis.ledger import LedgerEntry, Margin
+from resonances.resonance.analysis.rules import ordered as ordered_rules
 
 
 class ResonanceType(StrEnum):
@@ -58,6 +63,8 @@ class AngleSubtype(StrEnum):
     FEW_CYCLES = 'few_cycles'
     UNPHYSICAL = 'unphysical'
     UNDEFINED_PHASE = 'undefined_phase'
+    # a secular swing within how far the linear mode phases stray over the record (W28 D5, `secular.decide.phase_check`)
+    PHASE_UNRESOLVED = 'phase_unresolved'
     PATTERN_A = 'pattern_a'
     PATTERN_B = 'pattern_b'
     NONE = ''
@@ -105,6 +112,9 @@ class LibrationOrigin(StrEnum):
     INDUCED = 'induced'  # another resonance (the owner) drives a; the angle follows by the identity
     SUBRESONANCE = 'subresonance'  # another member of the same multiplet has the fixed centre
     KINEMATIC = 'kinematic'  # bounded by geometry (varpi part, secular cycle), a does not respond
+    # the owner holds its own angle and this angle's own term holds Psi = u sigma - v phi_o as well: both resonances at
+    # once (`owner.second_capture` confirmed, W28 A2b); the verdict is the angle's own reading
+    JOINT = 'joint'
     UNKNOWN = 'unknown'  # bounded, mechanism not established
     NONE = ''  # no bounded oscillation
 
@@ -120,6 +130,19 @@ class OriginDetail(StrEnum):
     FIXED_SUBRESONANCE = 'fixed_subresonance'  # subresonance: one member has a fixed centre (Rouche holds)
     COMPOSITE_MULTIPLET = 'composite_multiplet'  # subresonance: composite regime, no single member dominates
     FREE_OMEGA_WINDS = 'free_omega_winds'  # kinematic (ZLK): the free omega winds, the forced e holds the osculating one
+    # joint: x = Psi / u closes cycles of its own well (energy integral, x_ddot on sin x, a period no secular one)
+    JOINT_CAPTURE = 'joint_capture'
+    NONE = ''
+
+
+class CauseRole(StrEnum):
+    """The role of the other term named next to an MMR verdict (`analysis.mmr.roles`, W28 A3a, card g04-6)."""
+
+    OWNER = 'owner'  # another commensurability librates and makes the episode (origin_detail owner_libration)
+    DRIVER = 'driver'  # another commensurability circulates; its forced wave makes the cycles (owner_forced_wave)
+    NEIGHBOUR = 'neighbour'  # an accepted owner that does not make the row's own episodes (F7/P2): before/during/after
+    KINEMATIC = 'kinematic'  # the secular part of sigma (p varpi, ...) makes the cycles, a does not respond
+    JOINT = 'joint'  # another commensurability librates at the same time; both resonances hold (origin joint, A2b)
     NONE = ''
 
 
@@ -153,6 +176,13 @@ class Reason(StrEnum):
     # mmr_strength_implausible_ratio x the directly averaged one (two-body) or x mu_i mu_j e^q even after the generous
     # small-divisor envelope (three-body): non_resonant, origin unknown (W18, author 2026-10-17)
     IMPLAUSIBLE_STRENGTH = 'implausible_strength'
+    # a 1:1 angle without a librating episode whose best single leg between two passages (leaf G4c, W28 C6, q-4 A) is
+    # a bounded swing of a co-orbital well with one discrepancy (a lap past the planet, the local law or energy, a turn
+    # that does not reflect): no capture shown, none excluded (uncertain; the figure decides, action review)
+    ONE_COORBITAL_LEG = 'one_coorbital_leg'
+    # an MMR angle that is not 1:1 circulating but for one bounded half-swing between passages that follows the
+    # resonance's own one-harmonic law (leaf G4h, W28 C6, q-5 i): a half cycle, no capture shown, none excluded
+    ONE_HALF_LIBRATION = 'one_half_libration'
 
 
 class Flag(StrEnum):
@@ -195,9 +225,12 @@ class Flag(StrEnum):
     CATALOGUE_LONGITUDES = 'catalogue_longitudes'
     # a candidate on catalogue longitudes whose coherence lies within the line's error bound of a threshold
     OWNER_CATALOGUE_AMBIGUOUS = 'owner_catalogue_ambiguous'
-    # an accepted owner whose intervals cover less than mmr_owner_cover_min of sigma's decisive episode: kept in `owner`,
-    # origin none (F7)
+    # an accepted owner whose intervals (its measured regimes only) cover less than mmr_owner_cover_min of an accepted
+    # episode of sigma: that episode is the row's own; kept in `owner`, origin none when no episode is induced (F7)
     OWNER_OUTSIDE_EPISODE = 'owner_outside_episode'
+    # P2: an owner in its libration regime whose Psi/u turns at least mmr_owner_psi_turns_per_cycle_max times per cycle
+    # of an episode of sigma: it cannot make that episode's cycles, the episode is the row's own (A1, W28)
+    OWNER_PSI_TOO_FAST = 'owner_psi_too_fast'
     # no owner accepted, the best candidate's phases cannot separate it from sigma (phase_unresolved) and its potential
     # route is not applicable: check_mmr_owner not_measured
     OWNER_UNRESOLVED = 'owner_unresolved'
@@ -228,6 +261,10 @@ class Flag(StrEnum):
     OWNER_SEARCH_SKIPPED = 'owner_search_skipped'
     CONFIDENCE_UNCALIBRATED = 'confidence_uncalibrated'
     PROBABLE_NEAR_SEPARATRIX = 'probable_near_separatrix'  # secular/ZLK only: the old -5
+    # W28 C14 (card g01-7, rule end_arc_extend): a longer integration would resolve how a record edge ends, in
+    # `Verdict.extend_direction` to `extend_to_years` (an end arc after circulation, one reflection or a clean 1:1 leg
+    # or half-libration cut by the edge); changes no status and no level, whatever the action
+    EXTEND_TIME = 'extend_time'
 
 
 MMR_CHECKS = (
@@ -312,20 +349,60 @@ class Verdict:
     failed_support: list[str] = field(default_factory=list)
     caps: list[str] = field(default_factory=list)
     action: Action = Action.NONE
+    # with action extend: the total length to integrate; with the flag extend_time (any action) the length that flag
+    # asks for, `extend_direction` forward (past the end), backward (before the start) or both; '' without the flag
     extend_to_years: Optional[float] = None
+    extend_direction: str = ''
     resample_step_yr: Optional[float] = None
     libration_origin: LibrationOrigin = LibrationOrigin.NONE
     origin_detail: OriginDetail | str = OriginDetail.NONE
+    # the roles of the other resonance (MMR, `analysis.mmr.roles`; '' for another type and in older files): `owner` keeps
+    # only an owner or driver that covers the deciding episode; `neighbours` 'KEY t0–t1 before|during|after;...' [yr]
+    # for an accepted owner F7/P2 refused; `resonant_argument` the multiplet member that librates (rule C) or 'composite';
+    # `cause_role` (CauseRole) and `cause_term` the full key of that resonance or the secular term ('-4varpi') of a
+    # kinematic libration; `commensurability` the key without the varpi and node coefficients ('9M-16')
     owner: str = ''
+    neighbours: str = ''
+    resonant_argument: str = ''
+    cause_role: CauseRole | str = CauseRole.NONE
+    cause_term: str = ''
+    commensurability: str = ''
     multiplet_status: Optional[Status] = None
     checks: dict[str, CheckValue] = field(default_factory=dict)
     margins: dict[str, MarginValue] = field(default_factory=dict)
     decision_path: list[LedgerEntry] = field(default_factory=list)
+    # the named rules (`analysis.rules.Rule`) that acted on this row, also when the verdict stayed the same: merged by
+    # the decide steps from the geometry and the result objects, deduplicated, in registry order (column `rules_fired`)
+    rules_fired: list[str] = field(default_factory=list)
 
     @property
     def status_code(self) -> int:
         """The old integer status (temporary, see `status_code`)."""
         return status_code(self.resonance_type, self.status, self.angle_status, self.reason, self.flags)
+
+    @property
+    def review_required(self) -> bool:
+        """Whether the row is in the review queue (`needs_review`; column `review_required`). Changes no status."""
+        return needs_review(self.confidence, self.action, self.libration_origin, self.reason)
+
+    @property
+    def review_reasons(self) -> list[str]:
+        """Why the row is in the review queue (column `review_reasons`; empty outside it): `confidence:<level>` for
+        medium/low, `action:<action>` for a spot_check/review action at no such level, `origin_unknown` for a bounded
+        angle without an established mechanism, then `cap:<cap>` for every cap and `failed:<check>` for every failed
+        support (what lowered the level)."""
+        if not self.review_required:
+            return []
+        reasons = []
+        if str(self.confidence) in REVIEW_LEVELS:
+            reasons.append(f'confidence:{self.confidence}')
+        elif str(self.action) in REVIEW_ACTIONS:
+            reasons.append(f'action:{self.action}')
+        if _origin_unknown(self.libration_origin, self.reason):
+            reasons.append(str(Reason.ORIGIN_UNKNOWN))
+        reasons.extend(f'cap:{cap}' for cap in self.caps)
+        reasons.extend(f'failed:{check}' for check in self.failed_support)
+        return reasons
 
     def to_flat_dict(self) -> dict[str, Any]:
         """The verdict columns of summary.csv; unmeasured numbers are None, empty texts ''."""
@@ -346,11 +423,19 @@ class Verdict:
             'reason': str(self.reason),
             'flags': join_list(self.flags),
             'action': str(self.action),
+            'review_required': self.review_required,
+            'review_reasons': join_list(self.review_reasons),
             'extend_to_years': self.extend_to_years,
+            'extend_direction': self.extend_direction,
             'resample_step_yr': self.resample_step_yr,
             'libration_origin': str(self.libration_origin),
             'origin_detail': str(self.origin_detail),
             'owner': self.owner,
+            'neighbours': self.neighbours,
+            'resonant_argument': self.resonant_argument,
+            'cause_role': str(self.cause_role),
+            'cause_term': self.cause_term,
+            'commensurability': self.commensurability,
             'multiplet_status': str(self.multiplet_status) if self.multiplet_status is not None else '',
             'status_code': self.status_code,
         }
@@ -363,6 +448,7 @@ class Verdict:
             row[f'mrg_{margin_id}'] = str(margin.margin)
             row[f'mrg_{margin_id}_value'] = margin.value
         row['decision_path'] = join_list(entry.name for entry in self.decision_path)
+        row['rules_fired'] = join_list(ordered_rules(self.rules_fired))
         return row
 
     @classmethod
@@ -371,6 +457,7 @@ class Verdict:
 
         The decision path keeps only the comparison names (the numbers are in the row's columns);
         margins keep their class as DECISIVE (the class is a property of the rule, not stored).
+        `review_required`/`review_reasons` are not read: they follow from the other columns (absent in older files).
         """
         margins = {}
         for key, value in row.items():
@@ -399,14 +486,21 @@ class Verdict:
             caps=flags_from_cell(row.get('caps')),
             action=Action(cell_text(row.get('action')) or Action.NONE),
             extend_to_years=_number(row.get('extend_to_years')),
+            extend_direction=cell_text(row.get('extend_direction')),
             resample_step_yr=_number(row.get('resample_step_yr')),
             libration_origin=LibrationOrigin(cell_text(row.get('libration_origin'))),
             origin_detail=_enum_or_text(OriginDetail, cell_text(row.get('origin_detail'))),
             owner=cell_text(row.get('owner')),
+            neighbours=cell_text(row.get('neighbours')),
+            resonant_argument=cell_text(row.get('resonant_argument')),
+            cause_role=_enum_or_text(CauseRole, cell_text(row.get('cause_role'))),
+            cause_term=cell_text(row.get('cause_term')),
+            commensurability=cell_text(row.get('commensurability')),
             multiplet_status=Status(multiplet) if multiplet else None,
             checks={name: CheckValue(cell_text(row.get(name))) for name in ALL_CHECKS if cell_text(row.get(name))},
             margins=margins,
             decision_path=[LedgerEntry.name_only(name) for name in split_list(row.get('decision_path'))],
+            rules_fired=ordered_rules(split_list(row.get('rules_fired'))),
         )
 
 
@@ -508,18 +602,43 @@ def best_status(statuses: Iterable[Status]) -> Optional[Status]:
     return min(present, key=STATUS_RANK.index)
 
 
+# uncertain reasons a longer record does not settle: the figure decides (action review)
+REVIEW_UNCERTAIN = (Reason.ORIGIN_UNKNOWN, Reason.ONE_COORBITAL_LEG, Reason.ONE_HALF_LIBRATION)
+
+
 def default_action(status: Status, reason: Reason | str, confidence: Confidence) -> Action:
     """The action of SPEC §5.6: invalid alias or undersampled -> resample, invalid -> review, uncertain -> extend
-    (origin_unknown -> review), otherwise by confidence (certain/high none, medium spot_check, low review)."""
+    (origin_unknown, one_coorbital_leg, one_half_libration -> review), otherwise by confidence (certain/high none,
+    medium spot_check, low review)."""
     if status == Status.INVALID:
         return Action.RESAMPLE if reason in (Reason.ALIAS, Reason.UNDERSAMPLED) else Action.REVIEW
-    if status == Status.UNCERTAIN:
-        return Action.REVIEW if reason == Reason.ORIGIN_UNKNOWN else Action.EXTEND
+    if status == Status.UNCERTAIN:  # one co-orbital leg: the body has left, a longer record need not help (g02-4 A)
+        return Action.REVIEW if reason in REVIEW_UNCERTAIN else Action.EXTEND
     if confidence == Confidence.MEDIUM:
         return Action.SPOT_CHECK
     if confidence == Confidence.LOW:
         return Action.REVIEW
     return Action.NONE
+
+
+# The review queue (W28 g10-1b; the author's q1 of 19.10: medium = spot check, low = review)
+REVIEW_LEVELS = frozenset({str(Confidence.MEDIUM), str(Confidence.LOW)})
+REVIEW_ACTIONS = frozenset({str(Action.SPOT_CHECK), str(Action.REVIEW)})
+
+
+def _origin_unknown(libration_origin: Any, reason: Any) -> bool:
+    return str(libration_origin or '') == LibrationOrigin.UNKNOWN or str(reason or '') == Reason.ORIGIN_UNKNOWN
+
+
+def needs_review(confidence: Any, action: Any = '', libration_origin: Any = '', reason: Any = '') -> bool:
+    """Whether a human should look at a row (the review queue, column `review_required`, `SavePlotMode.REVIEW`): its
+    level is medium or low, its action is spot_check or review, or it has a bounded angle whose origin is not
+    established. The level decides on its own (a medium row whose action became resample stays in the queue); the
+    action adds the rows without a level (invalid, uncertain origin_unknown). Plain strings are accepted (a clone's
+    row in a results archive has no action). Changes no status."""
+    if str(confidence or '') in REVIEW_LEVELS or str(action or '') in REVIEW_ACTIONS:
+        return True
+    return _origin_unknown(libration_origin, reason)
 
 
 _MMR_CODES = {

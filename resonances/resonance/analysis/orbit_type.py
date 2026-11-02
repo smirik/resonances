@@ -3,7 +3,8 @@
 Descriptive only: it changes no status and no confidence; '' when no episode was accepted. A verdict whose angle word
 neither librates nor is episodic (circulation, drift, ...) names no libration: only the side.
 
-  co-orbital (prograde 1:1): the regime of theta = lambda - lambda_P over the librating episodes, from the force law's
+  co-orbital (prograde 1:1): the regime of theta = lambda - lambda_P over the librating episodes, from the wells of
+      their sub-regimes (`geometry.well_sequence`, W28 C8; summary geo_orbit_type_sequence), else the force law's
       pieces (`coorbital.CoorbitalLaw.regime_sequence`), else from the episodes' turning points (`coorbital.piece_regimes`):
       'tadpole L4', 'tadpole L5', 'horseshoe', 'quasi-satellite';
       'compound: horseshoe → quasi-satellite' (the episodes' regimes in time order);
@@ -32,7 +33,7 @@ from typing import List, Optional, Sequence
 
 import numpy as np
 
-from resonances.resonance.analysis.geometry import FRAME_PSI, Episode, Geometry
+from resonances.resonance.analysis.geometry import FRAME_PSI, WELLS_SEPARATOR, Episode, Geometry, well_sequence
 from resonances.resonance.analysis.mmr import coorbital, preprocess
 from resonances.resonance.analysis.mmr.models import ResonanceKind, ResonanceSpec
 from resonances.resonance.analysis.settings import AnalysisSettings
@@ -103,18 +104,35 @@ def libration_text(episode: Episode, runs: Sequence[Episode], tolerance_deg: flo
     return text
 
 
+# the wells of `geometry.well_sequence` (coorbital_geometry's names) as the regimes of `REGIME_NAMES`
+WELL_REGIMES = {'qs': coorbital.REGIME_QUASI_SATELLITE}
+# the header names at most this many sub-regimes, the first ones and the last, '…' and the count between (display
+# only, not a criterion: 524522 1V-1 at 20 kyr goes through 15; geo_orbit_type_sequence keeps them all)
+SEQUENCE_SHOWN = 4
+
+
 def coorbital_text(sequence: Sequence[str]) -> str:
-    """'horseshoe', 'compound: horseshoe → quasi-satellite', ... from the episodes' regimes in time order."""
-    names = [REGIME_NAMES.get(name, name.replace('_', ' ')) for name in sequence if name]
-    if not names:
+    """'horseshoe', 'compound: horseshoe → quasi-satellite', ... from the episodes' regimes in time order; inside a
+    sequence the compound regime is 'compound' (one swing holds the quasi-satellite well and a tadpole well); above
+    SEQUENCE_SHOWN regimes the first ones, '…' and the last with the count."""
+    regimes = [name for name in sequence if name]
+    if not regimes:
         return ''
-    if len(names) == 1:
-        return names[0]
+    if len(regimes) == 1:
+        return REGIME_NAMES.get(regimes[0], regimes[0].replace('_', ' '))
+    names = [name if name == coorbital.REGIME_COMPOUND else REGIME_NAMES.get(name, name.replace('_', ' ')) for name in regimes]
+    if len(names) > SEQUENCE_SHOWN:
+        names = names[: SEQUENCE_SHOWN - 1] + [f'… {names[-1]} ({len(names)} sub-regimes)']
     return 'compound: ' + ' → '.join(names)
 
 
 def _coorbital_sequence(spec: ResonanceSpec, runs: Sequence[Episode], law: Optional[coorbital.CoorbitalLaw]) -> Sequence[str]:
-    """The regimes of the librating episodes: the force law's pieces, else the episodes' turning points."""
+    """The regimes of the librating episodes: the wells of their sub-regimes in time order (`geometry.well_sequence`,
+    W28 C8: 2016 JA 1E-1 'compound: horseshoe → tadpole L4', one episode), else the force law's pieces, else the
+    episodes' turning points."""
+    wells = well_sequence(runs)
+    if wells:
+        return tuple(WELL_REGIMES.get(name, name) for name in wells.split(WELLS_SEPARATOR))
     if law is not None and law.regime_sequence:
         return law.regime_sequence
     sign = 1 if spec.body_coefficient > 0 else -1  # theta = sign x sigma (`coorbital.coorbital_law`)

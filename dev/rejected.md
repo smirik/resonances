@@ -19,7 +19,11 @@ reason given. Sources in `tmp/` are local and git-ignored.
 | A fitted pure 2(ϖ − ϖ_J) term in ȧ | A λ-free secular term cannot change a | Oct 17 | same |
 | Frozen-potential portrait overlays on by default | Near-separatrix period agreement proves nothing; h errors 0.1–0.2 at low e; (σ, a) stretches the e origin into a line | Oct 17 | `impl/w17/q15-frozen-portrait/REPORT-fixed.md` |
 | `island_switch` flag for ZLK | Not robust; 162474 over 1.5 Myr is simply transient | Oct 17 | W16 |
+| Gap length (gap ≤ k × (P_l + P_r), D1b) as the criterion for joining episodes | The length of a gap says nothing about an exit: 2001 WK15 (1.5, 1.7) and 2002 XA (1.05) stay inside the band; replaced by the bounded gap | Oct 31 | W28 g06-5, A7 |
+| The low-pass centre track as the band's centre in a gap | It is σ_f's own running mean: it follows any excursion slower than W_c = 3 P (π + 200° over 2 P overshoots it by 31°); the gap is read against the neighbours' own bands and the band carried linearly between their centres instead | Oct 31 | A7 (`tests/…/test_episode_detection.py` (x)) |
+| The episode's mean centre, or its first/last full cycle's midpoint (v₀ + 2v₁ + v₂)/4, as c of the MMR exit/entry test | Both mix the edge swing with the regime after it: 2016 JA 1E−1 (a horseshoe half-swing about 182°, then tadpole cycles about 282°) has its first turning point 206° from the mean and 190° from the full-cycle midpoint, so either reading saw an entry at that turning point (entry_suspected, medium); the edge half-cycle's midpoint holds it at the half-amplitude, < π (C9) | Oct 31 | `w28/scratch/impl-C9/` |
 | Episode rules (b) "the claimed regular core must pass by itself" and (c) "carry a fine-scale force failure into the coarse verdict" | (c) fires on a pass that found no libration; (b) deferred | Oct 25 | `w23-work/design/spec/SPEC.md` §1 |
+| Rule (b) in its current form ("the claimed regular core must pass by itself": `_find_episodes` requires `split[regular].accepted`) | Measured on 2003 TX9 3E+2J-10 at 5 yr: it turns the author's uncertain into resonant/low, because the measured objection (R0's failure) of the candidate is lost when the scale changes; it also shifts 719 55S-8's episode. Return condition: the measured objection of the same candidate must not be lost at another scale (strength and energy re-checked on every allowed scale; a conflict = uncertain with a scale-sensitivity mark). Rule (c) stays rejected | Oct 31 | W28 g11-6 B, g08-5 B |
 
 ## Force, strength, owner
 
@@ -33,6 +37,7 @@ reason given. Sources in `tmp/` are local and git-ignored.
 | Tightening co-orbital K/K_th to 0.75–1.25 | Removes real resonances (2016 HF2, WQ3, 2019 YB4, 614689 at 1.29–1.45), keeps the false 2024 WJ at 1.18 | Oct 16 | `impl/W4-REPORT.md` |
 | Deleting small turning-point pairs before estimating P_cyc | Selects the slow libration itself, so W_c = 3 P_cyc erases it (2011 KT19: 40 kyr → 120 kyr smoothing); the second centre-turn scale is used instead | Oct 16 | `impl/W5-Q12.md` |
 | Owner-grid frequency-coincidence veto | Fires on about half the sample by chance, real 1162/1362 included | Oct 17 | `impl/W12-REPORT.md` |
+| A failed order-of-magnitude strength (eq_scale, μ_iμ_j e^q) as a measured objection (leaf 5o) | The scale is known to a factor 1–100 (the coefficient): outside [1/x, x] it is a diagnostic. Leaf 5x keeps such a row uncertain/origin_unknown ('origin not established', 79653 3M+3J-7 at 39.5 ×) without calling the strength measured; 5o keeps O1 and the directly averaged F | Oct 31 | W28 g08-6 A, B9 |
 | Lifting caps for an implausible strength (R-IS, R-SP-IS) | The author changed the 2001 PG14 label; dropped | Oct 24 | DECISIONS D2 |
 | A physical exit estimate for 1:1 in the "next check" (N8) | Too complex; the 4T ceiling is used for every resonance | Oct 24 | DECISIONS D18 |
 | Tuning 2003 TX9's window lengths or line cap in CS12 | Helped one record; coefficients and independent halves were unstable | Oct 25 | `w23-work/design/cs12/REPORT.md` |
@@ -47,6 +52,7 @@ reason given. Sources in `tmp/` are local and git-ignored.
 | The libration-image TP threshold patch alone | Lost UG22's early episode; accepted only with moving-centre geometry | Oct 18 | `impl/W18-REPORT.md` |
 | A universal 1-yr default output step | Still aliases 38/215 angles, too coarse for FAIR at P < 4.2 yr, ~70 GB/body for 10-Myr secular runs; `OUTPUT_STEP=auto` instead | Oct 15 | `research/SAMPLING.md` §9 |
 | Lifting `short_period_aliased` by the a-scatter ratio (variant b) | Kept conservative: always capped; (b) only as an opt-in setting | Oct 20–23 | DECISIONS round D, Q1 |
+| A turning point continued beyond the data, or read on the raw angle in the edge trim for any resonance and any run (W28 C4, g02-2) | The trim hides the turn because the filtered angle is not valid there; extrapolating the curve invents it. Only a 1:1 reversal read on the orbit-averaged raw angle is added, only to close a cycle of a run that was no episode, with its site, the crossing of a_P and the mirror of \|a − a_P\| tested (`coorbital_edge_turn`): it never extends an accepted episode (that would move its coverage) and no other resonance has a test of a single turn | Nov 1 | `w28/scratch/impl-C4/` |
 | Certifying an alias from the turn count or rate the predictive unwrap produced | The unwrap inserted those turns; use the distance from resonance and branch evidence | Oct 15 | `reviews/PHYSICS.md` |
 
 ## Secular and ZLK

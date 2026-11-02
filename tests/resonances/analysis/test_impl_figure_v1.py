@@ -402,7 +402,12 @@ class TestTextBlocks:
         row = {**numbers, **summary}
         printed = {line.column: line for line in cn.printed_lines(blocks, panel.TEXT_BLOCKS) if line.column and line.label}
         for column, value in row.items():
-            if column.startswith(('mrg_', 'check_')) or column in ('decision_path',) or column.endswith('_value'):
+            # rules_fired (W28 F1) and the review queue (W28 E1) are review columns the figure does not print
+            if (
+                column.startswith(('mrg_', 'check_'))
+                or column in ('decision_path', 'rules_fired', 'review_required', 'review_reasons')
+                or column.endswith('_value')
+            ):
                 continue
             assert column in printed, column
             line = printed[column]
@@ -680,4 +685,5 @@ class TestCentrePanelModes:
         )
         analysis.kinematics = make(m.Kinematics, corr_rate=0.991)
         assert mc.centre_mode(analysis) == 'kinematic'
-        assert self.labels(analysis, series) == {'σ': mc.CENTRE, '-1ϖ': mc.SUBRESONANCE}
+        # W28 B10b (card g05-3): the kinematic terms σ = λ part + pϖ, the term written '−ϖ', the λ part grey dotted
+        assert self.labels(analysis, series) == {'σ': mc.CENTRE, '−ϖ': mc.SUBRESONANCE, mc.LAMBDA_PART_LABEL: mc.LAMBDA_PART}

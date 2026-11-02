@@ -103,16 +103,10 @@ def test_37087_1myr_without_its_forced_wave_is_non_resonant(analysed):
 
 
 @pytest.mark.benchmark
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        'W20 CS7: the 168-yr forced wave is no episode now (non_resonant/circulation/medium), but the 5.7-kyr '
-        'kinematic loops are no episodes at the 75-yr cutoff either: the 168-yr turning points fill the record '
-        '(10294 TPs). They show only above the line (cutoff 505 yr: two episodes, P 5.73 kyr), where the force law '
-        'passes thin (R2 0.58/0.61) and the verdict would be transient; reason kinematic_libration open (author)'
-    ),
-)
 def test_37087_1myr_is_a_kinematic_libration(analysed):
+    """Strict xfail from W20 CS7 to W27 (the 5.7-kyr kinematic loops were no episodes at the 75-yr cutoff, so the
+    reason was circulation). W28 B10a (rule K3s, secular_cycle_kinematic) reads the slow centre at its own scale: its
+    period sits on a secular one and its own identity fails, so the reason is kinematic_libration; flag removed."""
     verdict = analysed[0].verdict
     assert (verdict.status, verdict.reason, verdict.libration_origin) == (
         Status.NON_RESONANT,

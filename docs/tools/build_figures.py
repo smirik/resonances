@@ -128,7 +128,9 @@ CASES = (
         'resonant',
         'Two co-orbital regimes in turn',
         'Quasi-satellite motion, then horseshoe motion: two regimes of the same 1:1 resonance follow each other without a '
-        'circulation in between, so together they cover the record (subtype regime_change).',
+        'circulation in between. A 1:1 episode ends only at a separatrix, so this is one episode with a change of well '
+        '(the mark well_change in episodes.csv; subtype regime_change). The header names the wells in time order '
+        '(`orbit: …`) and (a) brackets each sub-regime with its well.',
     ),
     Case(
         'moving-centre',
@@ -296,7 +298,8 @@ CASES = (
         'uncertain',
         'A libration the physics does not confirm',
         '$\\sigma$ librates about a moving centre, but the energy test of the pendulum fails and no other origin explains the '
-        'libration: uncertain, origin_unknown, review.',
+        'libration: uncertain, origin_unknown. The force law has only one window in this record, so the action is to '
+        'extend the integration.',
     ),
     # invalid
     Case(
@@ -323,11 +326,12 @@ CASES = (
         'A slow libration of g − g6 + s − s6: few cycles fit in the record, so the confidence is high rather than certain.',
     ),
     Case(
-        'secular-z1-transient',
+        'secular-z1-unfinished-swing',
         'secular__2306__g-g6+s-s6',
         'secular',
-        'z1 in episodes',
-        'The z1 angle librates in part of the record and circulates in the rest.',
+        'z1: one unfinished slow swing',
+        'The centre of the z1 angle moves, then turns back after less than one revolution: the record holds part of one '
+        'slow swing, not a drift, so it is too short to decide (insufficient_time, extend).',
     ),
     Case(
         'secular-z1-circulation',

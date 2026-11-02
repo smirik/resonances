@@ -58,7 +58,7 @@ The exact current behaviour is in the code and in `docs/physics/`; the rule IDs 
   monotonically from the last TP. Regime cuts at a centre step or stall (K3 stall cut left to the author, still open).
 - **Oct 24 (author, D1).** The union rule extends from 1:1 (G2) to every MMR (G2u): episodes without circulation
   between them cover the record together; gaps ≤ 1 × (P_l + P_r). A G2u union read as episodic is promoted to
-  resonant only from a dynamic transient (6u).
+  resonant only from a dynamic transient (6u). The gap criterion is superseded Oct 31 (W28 g06-5 A).
 - **Oct 24 (author, D14).** G4b: a slow centre whose net shift is ≥ 2 turns is circulation.
 - **Oct 25 (author).** TX9's episodes were found wrongly; episode-detection tests from the author's history were asked
   for → the episode gate (W23, 79 cases after E16 was removed on Oct 26).
@@ -88,6 +88,59 @@ The exact current behaviour is in the code and in `docs/physics/`; the rule IDs 
   87555 4N-5 (deep → zone: zone_edge_cycle gone); 3233 30M-53 loses the route (a failed profile on the grid). 82831
   13M-24 (both rows, J/<J_s> ≤ 0.47 ≥ J_lo 0.1) and the 1:1 rows (no averaged route) are unchanged.
 
+- **Oct 31 (author, W28 g06-5 A).** Episodes join when σ stays inside the neighbours' libration band through the
+  gap (bounded-gap criterion), replacing D1b's 1 × (P_l + P_r); 2001 WK15 and 2002 XA are expected resonant/medium.
+  Implemented in A7: every gap sample within `LIBRATION_UNION_BAND_MARGIN_DEG` (10°, a convention) of one of three
+  bands — the left neighbour's own c_l ± A_l at its end, the right one's c_r ± A_r at its start (facing full-cycle
+  centres, A = half_amp_max), or the band carried linearly from c_l to c_r with ± max(A) (a step of the centre).
+  Claude's choice, not the WP's low-pass centre track: the track follows an excursion slower than its 3-P window (a
+  synthetic excursion to π + 200° over 2 P overshoots it by 31°, the bands by more than 100°). The carried band alone split
+  the co-orbital 524522 1V-1 (σ swings back into the first band as the second episode starts: 21° beyond the carried
+  band, inside the first; author 19.10 wants it joined); the two own bands alone split every step between separated
+  bands (q-5 i: steps are annotations) — hence all three; the no-2π tests, the chain span and the edges unchanged;
+  `LIBRATION_UNION_GAP_PERIODS` removed (no row needed it: TK14 ×2, TX9 ×2, 88710 9V-16, YG1 100 kyr unchanged).
+  Applies to the 1:1 union as well (a glide between two centres joins however long; C7 re-reads the 1:1 boundaries).
+- **Oct 31 (author, W28 g03-2 A, g03-8 A).** The MMR exit/entry test reads the local centre at that edge, not the
+  episode's mean (C9): the edge half-cycle's midpoint, or the moving well's c(t) at the edge turning point in ψ
+  (`Episode.edge_centre_rad`, rule `local_centre_entry` when the mean reading differs). Claude's choice over the WP's
+  first-full-cycle midpoint, measured: on 2016 JA 1E−1 (horseshoe half-swing about 182°, then tadpole about 282°) the
+  full-cycle midpoint still put the first turning point 190° away and kept entry_suspected. Over the 719 MMR rows the
+  verdict moves only on 2016 JA (medium → high, expected), 2017 XG62 1M−1 20 kyr and both 27011 4M−7 rows (medium →
+  high: entry_suspected gone, the episode's centre moves 34–47° from its start) and 2003 UG22 10E−17 (action
+  spot_check → resample); 2004 PY27 2E−7 gains entry_suspected (σ runs 333° down to its first turning point, an arc
+  0.92 turn: a near-full turn at the record's start), level unchanged. Secular and ZLK edges keep the mean centre.
+- **Oct 31 (author, W28 g11-4 A).** 2013 VA14 60 kyr: the stall remainder #4 and episode #5 may be two episodes (the
+  centre moved between them); supersedes the Oct 23 reading "one episode"; the label is unchanged.
+- **Oct 31 (author, W28 g03-1 A, g03-9 A, q-5 i).** A 1:1 episode ends only at a separatrix crossing or an owner
+  change; well and amplitude changes are marks (2021 XO3 one episode, E07–E09 one episode with a sub-regime),
+  superseding the XO3 boundaries of Oct 23/30. For non-1:1 only centre steps and stalls become marks, a single
+  non-1:1 half-libration between circulations is uncertain, and the VA14, 82831 and TX9 decisions stay.
+- **Nov 1 (W28 C16, q-5 i, g03-9, g11-4 A, g11-2 A; Claude's implementation of C15's physical reading).** A K3 centre
+  step or stall between two ACCEPTED pieces of an angle that is not 1:1 is a mark of one episode (`Episode.marks`
+  `centre_step@t0:t1`, the step half-cycle; `stall@t0:t1`, the stall) when the last full cycle before the cut and
+  the first after it share a band (m ± A overlap > 0) and a period (ratio ≤ LIBRATION_REGULAR_PERIOD_RATIO): σ stays
+  in one libration region, the non-1:1 analogue of C7's same well; no threshold of its own (`cycles_continue`, rule
+  `regime_cut_mark`, `LIBRATION_REGIME_CUT_MARKS`). The joined run keeps the band test's shape when it passes; when
+  it fails only for its moving centre and closes a cycle it is accepted as `regime_change`, L6 not measured (as
+  `_accept_in_wells`); any other rejection keeps the cut. An accepted|rejected boundary always stays (385266). Why
+  not "every step is a mark": that breaks E17 (VA14 60 kyr, facing bands −4.5° apart) and moves 2002 BG 20 kyr.
+  Measured on one-example runs: 9 boundaries in 7 angles join (138537 ×2, 182259, 482824, 719 36J-13, 2002 BG 100 kyr
+  ×2, 2004 YG1 100 kyr, 2012 DE61), no status, level or reason moves; 46596 (C15's prototype, a trial pass) is
+  unchanged. The single half-libration (q-5 i, second part) was already leaf G4h of C6.
+- **Nov 1 (W28 FIX-c16, Claude; F7 found it).** The facing-cycle test alone joined 55390 1J+3S-1 at its 8.3-kyr centre
+  scale across a "step" of a steady drift (centres 114 → −185° over 75 kyr, half-amplitudes 40–90°; P 16 kyr at a
+  secular period, identity failing): G2c then made a non_resonant/high row uncertain + extend 200 kyr. Bound added:
+  the turning points of the joined stretch, through the step or the stall, span less than a turn
+  (`within_one_turn`; a libration does not take every value; no threshold, 2π is the circle). 55390 returns to
+  non_resonant/circulation/high (span 455°); 482824 19N-32 loses its join (572°; back to its two W27 episodes, no
+  status move); the other 8 joins span 3.3–159° and stay. Rejected: the facing bound |Δm| ≤ max(A_l, A_r) (the
+  orchestrator's first spec). Physics does not require it (a sudden shift of the well keeps the swing through the
+  point where σ was, i.e. band overlap, not |Δm| ≤ A), and it does not separate: 55390 is at |Δm|/A = 1.26 while
+  the intended joins are at 0.91–1.9 (182259 1.13, 719 1.35, 2002 BG 1.45/1.3, 2012 DE61 1.84, 138537 1.9/1.1), so
+  it would have undone 7 of the 9.
+- **Oct 31 (author, W28 g11-6 B, g08-5 B).** Rule (b) ("the regular core must pass on its own") deferred with a return
+  condition (candidate identity); 2003 TX9 stays uncertain with action extend to ~30 kyr.
+
 ## Response, force and strength (MMR)
 
 - **Oct 13 (author).** Gallardo's resonance strength is not used for statuses. Confirmed by measurement on Oct 26
@@ -103,7 +156,7 @@ The exact current behaviour is in the code and in `docs/physics/`; the rule IDs 
 - **Oct 20 (W20, author Oct 19).** F6 forced waves; K2 kinematic drift of the slow centre; F8 baseline N from the
   deciding scale; subresonance members σ ± 2mω in one invariable frame; `certain` for far circulations.
 - **Oct 23 (independent reviews).** A failed O1 = uncertain (a real pendulum capture gives O1 ≈ 0.5); the earlier
-  recommendation to the contrary was wrong.
+  recommendation to the contrary was wrong. Reformulated Oct 31 (W28 g03-4 A).
 - **Oct 24 (author, D3–D15).** R-C4 (C4 not_measured when no force law explains ȧ), R-WJ (1:1 on one cycle with a
   failed energy R² ≤ medium), R-L3K/R-FK (L3 n/a and F read differently for kinematic verdicts), R-O1-OWNER,
   R-KDRIFT (K2b), R-ALIAS-A, owner route 'identity', R-DIV (B ≤ n·min(P, P_cyc)/2π), R-F (5u/6 cap
@@ -111,6 +164,45 @@ The exact current behaviour is in the code and in `docs/physics/`; the rule IDs 
 - **Oct 24 (author, D2).** R-IS and R-SP-IS (lift caps for an implausible strength) dropped after he changed the
   2001 PG14 label.
 - **Oct 26 (W23).** CS12 multi-harmonic force law: lifts L4, never lowers it; never for 1:1 or a null test.
+
+- **Oct 31 (author, W28 g03-4 A, g08-3 A).** O1 stays a measured check but objects only to a coherent foreign a-wave:
+  coherent at P, continuing in phase and not explained by the episode's own force law (one rule for 1:1 and other
+  MMRs); the D4 labels of Oct 24 (TG2 100 kyr, VA14 ×2) must not move.
+- **Oct 31 (author, W28 g04-0 A, g04-2 A, g04-3 A).** Owner (F7): the owner is credited only with its measured
+  regimes, cover is checked in every accepted episode (0.5), the slip gap is not credited, P2 is a guard; with one
+  induced and one own episode, the own episodes decide.
+- **Nov 1 (W28 FIX-owner-edge, Claude; tfix-bench found it).** F7 at the record edges: the owner's windows lie inside
+  the band-pass trim (filter_edge_trim_cutoffs × f P from either end) and stop a step short of its end, so an
+  episode there was read as "owner absent" (2001 HW7 without planets: episode 8 at 19.5–19.8 kyr got cover 0, became
+  the row's own and made the mixed path: transient/geometric_episode/low instead of induced). Now the cover lies in
+  [c, c + u], u = the part outside the hull of the frame's force windows (`owner.measured_span`). Induced when
+  c ≥ cover_min, own when c + u < cover_min, else not measured (nan, in neither list of `induced_split`). No new
+  setting: nothing is assumed about the edge zone. Covers are rounded to 9 decimals (HW7 episode 0 was
+  0.49999999999796 for an exact half). `own_cover` (the decisive episode) keeps c: a nan there would hit
+  `decide.owner_in_episode`'s early return and hand the owner the row. A row whose every episode is not measured
+  therefore falls back to c (owner refused). Two variants were rejected. (1) Extending the intervals half a window
+  past the first and last window centres: the intervals are already the full windows, the unmeasured stretch is the
+  trim, and extending into it would credit the owner with time it was never measured on. (2) The hull of the
+  candidate's own fitted windows: a window it turns too fast to be fitted in (`resolved_windows`) measures its
+  absence. That variant made 1998 UM1, 2001 ND13 and 1862 covers not measured; their verdicts did not change.
+  Moves on the benchmark: none (67 owner rows before/after, only the rounding).
+- **Oct 31 (author, W28 g05-3 B, g05-4 A).** 285637 3M+7J-6: label medium → high (kinematic libration: K1, B1 < 0.01,
+  period equal to the secular one); 481085 7E-10M-6 non_resonant/libration, kinematic. Claude's reading: the term
+  (−4ϖ, 9ϖ) goes into `cause_role`/`cause_term` and the figure's owner slot, not the `owner` column.
+- **Oct 31 (author, W28 g08-8 A).** 37087 3J+8S-3: reason kinematic_libration (secular cycle); status and level of the
+  Oct 23 label stay.
+- **Oct 31 (author, W28 q-2 b).** Confidence ceiling: high only when at least one physical support (L4, R0, F, the
+  1:1 law) passes with a full margin, else medium. Claude's reading: it replaces the "low" of g03-3 C for 2020 CB.
+- **Oct 31 (author, W28 g06-8c A; g06-1 A, g06-2 A).** The subresonance is chosen physically, no scalar score: every
+  veto (E′, L, A, B, E) before the choice, one window per episode, the theory's flattest centre c_j(t) for two-body
+  non-crossing rows (the measured centre must follow it, W breaks ties and is the fallback), 'composite' allowed. One
+  resonance per (body, commensurability); the member is the row's `resonant_argument`. Claude's reading (A6b,
+  Nov 1): 'composite' is not Rouché's failure (it fails on all six accepted rows, whose member the author named) nor
+  "the member's centre travels more than the half-amplitude" (that flags clean 3J-2/3J-1 rows) nor "the flattest
+  moves by half of β's range" (2003 SL215 8J-3); it is "the two flattest theoretical centres tie" (equal weights),
+  with the members told apart (range β > MMR_SUBRESONANCE_CENTRE_MOVE_RATIO × half-amplitude) and nothing
+  admissible. An episode whose own window cannot decide caps the row (`subresonance_undetermined`) as the old
+  single window did (78085 5J-4S-1 keeps medium, the author's s-1 control).
 
 ## Co-orbitals (1:1)
 
@@ -124,6 +216,91 @@ The exact current behaviour is in the code and in `docs/physics/`; the rule IDs 
   the second well after Mars encounters); after CS12 and G2a measured no per-regime physics, the author accepted
   uncertain.
 - **Oct 17 (author).** "All Jupiter Trojans uncertain" was a bug; fixed in W16.
+
+- **Oct 31 (author, W28 q-3 A).** The co-orbital check F2 (2026 AC4, g01-6) is replaced by a period floor from the
+  resonance's own averaged potential, for all resonances; AC4's outcome follows the measurement.
+- **Nov 1 (W28 C3, cards g02-1 A, g01-6 A, g01-8 A, q-3 A; Claude's implementation).** F2 of g01-6 ("a crosses a_P
+  at each turn") is not implemented: by the a<->sigma identity it holds for every turn of sigma, so it tests nothing.
+  It is replaced by the floor of the resonance's own averaged potential, per run: a 1:1 run whose turns (read on the
+  orbit-averaged angle: the filter rounds a planet turn off, YN107 39/319 deg -> 2.0/358.3 deg) all reflect on a top
+  has the floor 0.5 x the loop through its turns, if its local law has K/K_th > 0; other runs keep the tadpole floor,
+  the QS well G1q's (rule `coorbital_floor_profile`). The fast-residual reference became min(tadpole floor, 0.5 x the
+  fastest horseshoe loop turning 3 r_H out), not the WP's T_hs(3 r_H) alone: measured, T_hs(3 r_H) is above the
+  tadpole floor on every profile tried (Earth 113 vs 111 yr, Jupiter 235 vs 74), so it would have raised every 1:1
+  prominence; the reference is the shortest floor any run can get. The own floor is above the tadpole floor on 53 of
+  the 102 reflection runs of the 259 co-orbitals and rejects none of them. Moves (259 co-orbitals, profile floor on vs
+  off): 2003 YN107 non_resonant/medium -> transient/episodic/medium (author label); 2026 AC4 non_resonant/high ->
+  uncertain/episodic/origin_unknown (the 274-369-yr cycle appears, period 94 yr = 0.90 of its 105-yr loop, K/K_th 1.4;
+  the force law is unmeasured under filter_too_slow at P_c 55.5 yr; q-3 A: by measurement, no label); 2023 RX1
+  high -> medium (near_episode). The near-episode now needs floor x (1 - CONFIDENCE_THIN_BAND) for every MMR (g01-8
+  A): on the 29.10 run this adds 1991 VG and 2020 HO8 20 kyr (high -> medium) and no non-1:1 row. The cutoff is
+  unchanged.
+- **Nov 1 (W28 C7, cards g03-1 A, g03-9 A, g11-5; Claude's implementation).** A 1:1 episode ends only at a
+  separatrix (rule `coorbital_well_cut`, `MMR_COORBITAL_WELL_EPISODES`); changes of well and amplitude are
+  `episodes.csv` marks (`well_change@t`, `amplitude_change@t0:t1`, `kick@t`) with the wells sequence (`wells`). Measured
+  choices: (1) a run the band test rejects is accepted when every full cycle's swing holds a minimum of the averaged
+  potential to within the run's turning-point prominence: the strict test (W2) fails XO3 (transitional cycles 4-8 deg
+  off at 11 deg) and the centre-range-only test (W0, the WP's "no monotone pass") accepts 2022 BB2, a ripple drifting
+  past L5 7-25 deg off at 4 deg, which the author keeps non_resonant (g01-7 A); the centre bound is one turn (the
+  bound `librating_episodes_with` already applies), not LIBRATION_CIRCULATION_NET_REV = 2 rev of the WP; (2) only
+  accepted neighbours join (joining a rejected neighbour extended TY11 20 kyr to 420 yr, 277617 20 kyr, SZ2, PN, BT8,
+  AP1: C8's residence, not a measured libration); (3) an amplitude change reuses G2a's amplitude tests on two
+  half-cycles each side plus a same-well and an energy-level check, an annotation only; (4) a run of several wells has
+  shape regime_change, the floor of the fastest well it holds (`FloorWell.holds`), G1q keeps the outside episodes it
+  contains and L5 is not applicable: without them 164207 and 469219 fell to transient/medium. Sweep of the 259
+  co-orbitals (scratch impl-C7/sweep1.csv), status/level moves, none with an author label: 2009 BE81 20 kyr
+  non_resonant/medium -> transient/episodic/medium (one episode 7.75-16.7 kyr; C8 refines it to two cores, g02-3 A
+  low); 2026 SZ2 transient/high -> resonant/libration/medium (the slow first half-cycle the regular-part split cut off is
+  part of the episode: 121-897 yr, cap force_law_disagrees); 2015 YA transient high -> medium (cap episodes_in_separatrix_zone);
+  2024 JR16 uncertain/drift -> uncertain/libration (review; a tadpole whose amplitude changes). Episodes only: XO3,
+  524522, 164207, 469219 one each (status unchanged, E07-E09 and E43 rewritten), 2025 RB7 3 kyr, 524522 20 kyr. No
+  non-1:1 row is touched (the model is None there).
+- **Nov 1 (W28 C8, cards g03-3 C, g03-8 A, g03-9 A, g02-3 A; Claude's implementation).** A 1:1 episode stores its
+  core (the measured TP span; coverage, edges, margins and status read only it), its sub-regimes (the core cut at the
+  C7 marks, each with its own 1:1 law when there are two or more) and an inferred residence (rule
+  `coorbital_residence`, `MMR_COORBITAL_RESIDENCE`). Measured choices: (1) the residence is bounded only by a leg of the
+  3-orbit averaged angle (reversals of 20 deg, the C1 legs) that sweeps `LIBRATION_EDGE_ARC_REV` = 1 turn, or by the
+  record's edge; the WP's |a - a_P| <= da_max bound is reported only (`residence_zone_max`): on local profiles the
+  accepted core of 2024 TY11 20 kyr starts at a turn of zone 2.2 (its law passes there), so as a bound it would cut the
+  residence g03-8 A asks for; (2) the 2-rev `LIBRATION_CIRCULATION_NET_REV` of the WP is replaced by the edge rule's one
+  turn (an arc above 2 pi is no piece of libration; consistent with exit_observed and C7's joins); (3) the G1q visit
+  is not reused: it is the quasi-satellite well only. Sweep of the 259 co-orbitals with the switch on and off
+  (scratch impl-C8/sweep.csv): no verdict field and no episode differs; 128 rows get a residence, 74 reach the record's
+  end. 2020 CB: core 443-601, residence 443-1000 (edge: 601 is no exit); TY11 20 kyr: residence 0-8.69 kyr; JA: core
+  128-537 (horseshoe 128-339, tadpole L4 339-537), residence 0-1000 (inferred); 2009 BE81 20 kyr: one episode
+  7.75-16.7 kyr, residence = core (legs of 1.7 and 1.3 turns on both sides), sub-regime laws (force/energy) tadpole L5
+  pass/pass, horseshoe pass/fail (energy R² 0.02), tadpole L4 pass/pass, compound pass/pass: the author's low (g02-3
+  A, given for an unverified continuation) is not reproduced by a physical criterion; medium stays, the label is in
+  KNOWN_DISAGREEMENTS for F9. The 1:1 orbit type now reads the sub-regimes' wells (summary `geo_orbit_type_sequence`;
+  more than 4 shortened in the header): text only, e.g. JA 'compound: horseshoe → tadpole L4', AA29 'compound: horseshoe →
+  compound → horseshoe', 522684 'horseshoe' → 'tadpole L4'. Cost: +0.04-0.2 s CPU on most records, +1.2 s on 524522
+  20 kyr (15 sub-regime laws).
+- **Oct 31 (author, W28 q-4 A, g02-5 B, g02-6 B).** One default rule for a single co-orbital leg (clean leg + local
+  1:1 force + energy + conservative turns → transient; one mismatch → uncertain/episodic; cut by the edge →
+  uncertain + extend; encounters → non_resonant/medium with a near-episode); where it disagrees with an earlier
+  per-object answer, the row is shown in the final review folder.
+- **Nov 1 (W28 C6, cards g01-1/4/5/8, g02-4..g02-7, q-4 A, q-5 i; Claude's implementation).** Leaf G4c: a 1:1
+  circulation without an episode is judged on the legs of its 3-orbit averaged angle outside every accepted run
+  (C1's measurement and thresholds: W2 = leg +- 0.25 L at max(2 P_orb, 0.1 x 2 L), out/in band ln 1.4, zone 1.1).
+  Choices: (1) the default is q-4 A literally, a failed 1:1 law is one discrepancy (uncertain); C1's force gate is
+  `MMR_COORBITAL_LEG_FORCE_GATE` (off; it moves 138175, 2015 WZ12, 2019 JX1, 2020 CL1, 2021 VH2, 2022 TD); (2) the
+  strongest outcome of the legs decides (C1's rule 6), not the longest leg of the WP text; (3) a leg overlapping an
+  accepted run is never read (C1's rule 7, extended to an accepted run below the floor: 2022 AP1 stays non_resonant,
+  where C1 read uncertain); (4) the scattering outcome keeps the circulation leaf and adds the near-episode cap; (5) the
+  structural near-episode adds 1:1 over_the_top 2-TP runs whose half-swings cross at most one of 0 and pi (g01-8 A).
+  Leaf G4h (q-5 i): a 2-TP half-swing of another MMR between passages becomes uncertain only with its own one-harmonic
+  law (C15's test, R^2 >= MMR_FORCE_R2_FAIL per half, restoring): of C15's 19 candidate records only 42946 43S-6
+  moves (non_resonant/high -> uncertain/insufficient_time, extend); without the law 18 slow circulation turns would
+  move. Moves on the 259 co-orbitals (scratch impl-C6, base.csv -> new2.csv): to transient OE5, XP16, YU11 (medium,
+  cap one_coorbital_leg); to uncertain/one_coorbital_leg 138175, VU6, RZ53, WZ12, YQ1, KS, SS2, XH2, VF, VH2, BB2,
+  BY39, RA, TD, AV2, DU7, FP4, GL, SC; to uncertain/extend TG24, JX1, CL1, YF4; high -> medium (near-episode) RQ2
+  20 kyr, KS3, 613440 20 kyr (scattering legs) and HM4 (structural over_the_top run). Unchanged: VG, HO8 20 kyr,
+  RX1, FN3, 255071 (already medium, near-episode), EZ84 and every negative control (JE1, QS7, GP2, JL1, XC352), CA138,
+  XW2, WJ, AP1, 85770, XE133 20 kyr, 872436 20 kyr. Against the author's per-object answers (the rule decides, F9
+  shows them on the W28 review page, d06/d07; 17 of 36 differ): the g01-5 rows read
+  uncertain where he expected non_resonant/medium (the same legs as his g02-5/g02-7 uncertain rows), FN3 and 255071
+  stay non_resonant (scattering), AV2 uncertain (energy fails, entry kick), XP16 transient, WZ12 uncertain (its law
+  fails). Cost: +18 % CPU over the 259 records (330 -> 389 s), mostly the local laws of clean legs.
 
 ## Sampling and aliasing
 
@@ -184,6 +361,15 @@ The exact current behaviour is in the code and in `docs/physics/`; the rule IDs 
   the centre origin `forced_direction`, and the attribution of an episodic row inside its episodes (scope
   `episodes`, 624). Columns only: no status changes.
 
+- **Oct 31 (author, W28 g09-6 B).** An episodic ZLK row of a co-orbital with unfitted modes
+  (`coorbital_unfitted_forcing`) → uncertain −9 (2020 PP1, 10563 500 kyr); supersedes Claude's W25 note "2020 PP1
+  stays transient".
+- **Oct 31 (author, W28 q-1 E).** An episodic ZLK row without a gate verdict is transient only when the e–i class at
+  the decisive period is zlk, else uncertain −9: for these rows e–i becomes a status condition (supersedes "e–i
+  changes no status"; rows with a gate verdict keep it). Per-episode classes are rechecked with Codex first (D9).
+- **Oct 31 (author, W28 g09-4 B).** 2306 g−g6+s−s6: angle insufficient_time instead of drift when the centre turned
+  back; the uncertain label stays.
+
 ## Figures
 
 - **Oct 15 (author).** One combined figure per row (layout V1, "everything on one screen"); every decision number on
@@ -196,6 +382,32 @@ The exact current behaviour is in the code and in `docs/physics/`; the rule IDs 
 - **Oct 24–25 (author).** a_res style B (width 1.3, alpha 0.8, halo); a* alpha 0.8 (`AXIS_LEVEL_ALPHA`).
 - **Oct 27 (author, W24 Q6/Q8).** `PLOTS=combined` by default; output layout `confidence/status` by default; a command
   to regenerate the documentation figures is required.
+
+- **Oct 31 (author, W28 g10-1b A, g10-1a A).** PLOT and SAVE default to `review` (queue in the CSV, count in the
+  log), replacing nonzero; doubtful non_resonant rows keep a physical status. Implemented (E1): `review` = nonzero ∪
+  `verdict.needs_review` (level medium/low, or action spot_check/review, or origin unknown); the level decides on its
+  own, so a medium row whose action became `resample` stays in it (measured: by the action alone the benchmark gives
+  539 rows, 1036 9J-2S-3 missing; by the level 540, the card's count). Columns `review_required`, `review_reasons`;
+  save, release and plot share `DataManager._selection_inputs`; the counts are logged after the run, not before the
+  figures (a body is analysed and drawn before the next one).
+- **Oct 31 (author, W28 right column: g10-2 A, g10-3 C, g10-4/4b A, g10-5 B, g10-6 B, g10-7 C, g10-8 A, g03-5 A).**
+  The explanation is slotted bullets (verdict, σ, decisive, objection, cause, scale, change, orbit), the same for
+  secular/ZLK; every rule and check prints `short name [id]` (ids of docs/libration-analysis.md, `RULE_NAMES`); the
+  steps are questions with a "Why"; LIMIT ▼ rows come first (a failed cap margin is never ✗) and the arithmetic is two
+  lines; a framed block 'Numbers behind this verdict' (DECISIVE, LIMIT, CONFLICT, UNMEASURED) sits over the table;
+  the radial overlap with all eight planets' bands is one line; pendulum numbers are labelled in words with their
+  source (observed / from observed cycles / theory); the cause line has three kinds (a driver whose regimes cover the
+  episode, a candidate, none). Implemented by E2–E4, E6, E8–E11.
+- **Oct 31 (author, W28 g03-6 A, g03-7 A, g02-9 A, g04-6 A, g08-8 A).** (l) draws each episode over its fill interval
+  of (a); no empty (m) slot, a warning line says why FAIR is missing; an accepted run the status does not count is a
+  grey strip `#id < floor` (episodes.csv `eligible`); the header names the other resonance by its role (owner,
+  driver, neighbour); a secular cause is drawn as a line (pϖ on (j), slow intervals on (i)).
+- **Oct 31 (author, W28 C13: g03-1 A, g03-3 C, g03-8 A, g03-9 A).** One 1:1 episode in parts: sub-regime brackets
+  named by their well, a hatched `inferred` residence beyond the measured core (never on (l)), ▼ `kick` on (d), header
+  `orbit: A → B`. Detail: resonances/plotting/CLAUDE.md, The author's figure decisions.
+- **Nov 1 (E16).** Docs figures regenerated once after the code freeze; gallery 2306 renamed `secular-z1-unfinished-swing`
+  (D6 makes it uncertain / insufficient_time), the TX9 caption follows its action extend (B9). The W28 rules have their
+  doc ids (`rules.RuleInfo.doc_id`), new rows 2j, 5x, K3s, Pc, extend, ZF, FE, SZ.G, SZ.ei on the rule index.
 
 ## Benchmark and process
 
@@ -227,3 +439,15 @@ The exact current behaviour is in the code and in `docs/physics/`; the rule IDs 
   nominal columns (`clone_store._rewrite_nominal_rows`): one writer of the verdict (`Simulation._finalise_verdict`),
   two projections that cannot disagree on disk. Clones are still not reclassified (Q3 kept): with `SAVE` other than
   `all` the saved clone series are a status-selected subset, so a recompute of those alone would bias the shares.
+- **Oct 31 (author, W28 s-1 A, s-2 A, s-4 A; log entry by Claude, F5).** Card labels use
+  `author:2026-10-31 (W28 <card>)` (the date of the answers: Claude's reading of s-2 A); the 30.10 blanket "certain
+  resonant/transient: all correct" gives `author:2026-10-30` labels (Claude's reading); the s-2 rows that the later
+  group answers supersede are listed in the log; the final review folder is discussed + changed + same_rule
+  (`benchmark/tools/sort_figures.py --review`).
+- **Nov 1 (Claude, W28 close; `benchmark/DECISIONS.md` 2026-11-01, second entry).** The card answers are implemented
+  and measured: 49 status moves against `v2-w26-final` (co-orbital 34, mostly C6's single-leg rule; mmr2 9; secular 1,
+  5026 by D5; ZLK 5 to −9 by D4/D10), 29 level-only moves, 7 L1 records; `KNOWN_DISAGREEMENTS.csv` goes from empty to
+  32 rows (all W28, each on the review page); only E67 stays `known_fail`. Four post-F7 fixes changed no author
+  decision (C14 speed, C16 union bound, owner edge cover, figure text). Open for the author: decisions d01–d16 and
+  Codex's 9 serious findings (S1 42946 G4h edge and S7 VU6 edge-turn threshold are real bugs, not fixed before he
+  discusses them).

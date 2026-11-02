@@ -7,10 +7,20 @@ holds whoever drives a, so a shared oscillation (psi without power at the period
 sigma's oscillation on an interval I when B's force explains a_dot there, by one of three routes (`accept`,
 `potential_pass`): the R^2 gain over sigma; the phase with the Psi lever (`better_than_sigma`); the potential, B's
 directly averaged force (`owner_potential.py`, two-body B). The row then reads non_resonant / induced_libration: on I no
-trapping in A independent of B is established, which does not mean that A's term is absent. The owner takes sigma's
-episode only when its intervals cover at least mmr_owner_cover_min of it (F7: `owner_intervals`, `covered_fraction`;
-decide.owner_in_episode), and a second capture of sigma by its own term is tested on the owner's intervals that meet the
-episode (`second_capture`; not excluded: cap second_capture_unresolved).
+trapping in A independent of B is established, which does not mean that A's term is absent. The owner is credited only
+with its measured regimes (libration or admissible forced wave, no bridge between them: A1, W28) and takes an episode
+of sigma only when those intervals cover at least mmr_owner_cover_min of it, checked on every accepted episode (F7:
+`owner_intervals`, `covered_fraction`, `cover_episodes`; decide.owner_in_episode; an episode whose verdict hangs on
+the record edges the owner's windows cannot reach is not measured, `episode_cover`); an owner in its libration regime
+makes the episode's cycles only when Psi/u turns less than mmr_owner_psi_turns_per_cycle_max per cycle (P2,
+`psi_turns`). The covered episodes that pass P2 are induced, the others are the row's own and decide its status
+(`induced_split`). A second capture of sigma by its own term is tested on the hull of the owner's intervals that meet
+sigma's episodes (`capture_spans`, `second_capture`; not excluded: cap second_capture_unresolved). It is excluded when
+x = Psi/u sweeps without an energy integral, or (F3, A2 W28) when x_ddot follows the secular cycle and not x; the slow
+motion of x and its secular cause (`slow_x`) and F2's well selection (`well_selection`) are columns only. It is
+confirmed (A2b W28, `joint_outcome`) when x is bounded, conserves an energy, has a well of its own at a period that is
+no secular one and closes at least libration_centre_min_estimates cycles: both resonances hold at once, and the row
+keeps its own reading with origin joint (`decide._foreign`); 'both angles librate' alone is not that.
 
 Steps of `run_owner`:
   1. The reference period P: the strongest a_dot oscillation within a factor mmr_owner_band_factor of P_cyc
@@ -54,9 +64,9 @@ Steps of `run_owner`:
      (`strength_ratio`, a force scale without the coefficient) is an order of magnitude, not an upper bound (Gallardo
      2006a p. 30, Nesvorny & Morbidelli 1998 p. 3031), so it neither rejects nor accepts an owner
      (W3-F3); it only orders the candidates and qualifies `owner_probable` (`within_scale`).
-  5. The owner's description (`describe_owner`): its intervals (every passing regime's windows, the slips between two
-     librations), their cover of sigma's decisive episode, the second capture on the connected block of intervals that
-     meets the episode (x = Psi_slow / u with Psi from sigma and phi_o with the planets' slow ripple removed: the
+  5. The owner's description (`describe_owner`): its intervals (every passing regime's windows), their cover of sigma's
+     decisive episode and of every accepted episode with P2 (`cover_episodes`), the second capture on the hull of the
+     intervals that meet sigma's episodes (x = Psi_slow / u with Psi from sigma and phi_o with the planets' slow ripple removed: the
      ripple of lambda_P is an outside forcing that would break any energy integral), the bound on sigma's own term
      max |s - 1| (with T_obs / sqrt(|v/u| bound) its shortest own period), the identity written out.
 
@@ -163,6 +173,7 @@ from resonances.data import const
 from resonances.resonance.analysis import filtering
 from resonances.resonance.analysis.filtering import band_pass
 from resonances.resonance.analysis.mmr.context import linear_slope, mean_motion, table_mean_motion, trend_line
+from resonances.resonance.analysis.mmr import kinematics as kinematics_module
 from resonances.resonance.analysis.mmr import owner_potential as potential_module
 from resonances.resonance.analysis.mmr.models import (
     PLANET_NAMES_ORDER,
@@ -170,11 +181,14 @@ from resonances.resonance.analysis.mmr.models import (
     ForceWindow,
     MMRSeries,
     OwnerCandidate,
+    EpisodeCover,
     OwnerResult,
     PotentialFit,
     Preprocessed,
     ResonanceSpec,
     SecondCapture,
+    SlowX,
+    WellSelection,
     planet_letter,
     planet_terms,
 )
@@ -193,7 +207,7 @@ from resonances.resonance.analysis.mmr.response import (
     window_bounds,
 )
 from resonances.resonance.analysis.mmr.sampling import predictive_unwrap
-from resonances.resonance.analysis.geometry import find_turning_points, wrap_pi
+from resonances.resonance.analysis.geometry import find_turning_points, full_periods, wrap_pi
 from resonances.resonance.analysis.ledger import Ledger, Op
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, CheckValue, Flag, OriginDetail
@@ -211,8 +225,15 @@ GAIN_IDENTITY = 'identity'  # the route of `owner_identity` (W22 R-OWNER-ID): ph
 PHASE_UNRESOLVED = 'phase_unresolved'  # `better_than_sigma`: the phases cannot separate the owner from sigma
 
 # interval kinds of an accepted owner (`owner_intervals`)
-INTERVAL_LIBRATION, INTERVAL_FORCED, INTERVAL_SLIP = 'libration', 'forced_wave', 'slip'
+INTERVAL_LIBRATION, INTERVAL_FORCED = 'libration', 'forced_wave'
 CAPTURE_EXCLUDED, CAPTURE_UNRESOLVED = 'excluded', 'unresolved'
+# the third outcome (A2b W28, card g05-8 B): x closes cycles of a well of its own, both resonances hold at once;
+# 'one_cycle' when every condition holds but x closes a single cycle (the row is uncertain, `decide._foreign`)
+CAPTURE_CONFIRMED, CAPTURE_ONE_CYCLE = 'confirmed', 'one_cycle'
+# the exclusion route that held (`SecondCapture.route`): x sweeps without an energy integral, or x_ddot follows the
+# secular cycle and not x (F3, A2 W28)
+ROUTE_SWEEP_ENERGY, ROUTE_SECULAR = 'sweep_energy', 'secular_forcing'
+CAUSE_IDENTIFIED, CAUSE_POSSIBLE = 'identified', 'possible'  # own_x_cause_level
 
 # Reasons of a candidate (candidates.csv `reason`): the first test that fails, or 'accepted:<route>'.
 REASON_ACCEPTED = 'accepted'
@@ -244,6 +265,10 @@ FLAG_UNRESOLVED = str(Flag.OWNER_UNRESOLVED)
 
 # max over D of |d sinc(D / 2) / dD| (at D = 4.16 rad): |C(alpha) - C(alpha')| <= this x |alpha - alpha'| T_eff
 SINC_HALF_SLOPE_MAX = 0.2181
+ROUND_OFF = float(np.sqrt(np.finfo(float).eps))  # a change below this fraction of |x_dot| is round-off
+# a covered fraction is rounded to this many decimals (`covered_fraction`): the difference of two times of ~1e4 yr
+# leaves ~1e-12 of round-off, and the HW7 edge episode got 0.49999999999796 for exactly half (W28 FIX-owner-edge)
+COVER_DIGITS = 9
 
 
 def _finite_or(value, default: float) -> float:
@@ -1734,6 +1759,7 @@ def run_owner(
     window: Optional[Tuple[float, float]] = None,
     decisive_window: Optional[Tuple[float, float]] = None,
     decisive_period_yr: float = NAN,
+    episode_windows: Sequence[Tuple[Optional[int], float, float, float]] = (),
 ) -> OwnerResult:
     """The search; check pass when none is accepted, fail when one is, not_measured without planet longitudes,
     with mmr_owner_search='off' or when the planets' lambda cannot be unwrapped.
@@ -1742,7 +1768,9 @@ def run_owner(
     measured one at a time through `AngleBasis` and only their numbers are kept (W3-M2). After the R^2 and phase routes
     the potential route (`potential_pass`). `decisive_window` (default the fitted window) is sigma's decisive episode:
     the accepted owner's intervals are compared with it (`OwnerResult.cover`, F7) and the second capture is tested on
-    the intervals that meet it; `decisive_period_yr` is that episode's period (lambda_ad, the bound on sigma's term)."""
+    the intervals that meet it; `decisive_period_yr` is that episode's period (lambda_ad, the bound on sigma's term).
+    `episode_windows`: (id, t0, t1, period) of every accepted episode of sigma, each compared with the owner's
+    intervals (F7 per episode, P2: `cover_episodes`); default the decisive window alone."""
     skipped = _not_searched(series, settings)
     if skipped is not None:
         return skipped
@@ -1807,7 +1835,7 @@ def run_owner(
         phi_clean = basis.clean(basis.coefficients(result.candidates[0].spec))
         _describe_top(result, top, phi_clean, frame, series, prep, settings)
         decisive = tuple(decisive_window) if decisive_window is not None else (float(t[frame.mask][0]), float(t[frame.mask][-1]))
-        describe_owner(result, top, phi_clean, basis, series, decisive, decisive_period_yr, settings)
+        describe_owner(result, top, phi_clean, basis, series, decisive, decisive_period_yr, settings, episode_windows)
     return result
 
 
@@ -1938,32 +1966,18 @@ def _potential_fallback(judged: List[Judged], basis: AngleBasis, series: MMRSeri
 
 
 def owner_intervals(regimes: Sequence[RegimeFit], window_yr: float) -> List[Tuple[float, float, str]]:
-    """Where the owner acts (F7): the union of each passing regime's windows (libration or forced_wave), and a slip
-    between two libration intervals where only forced or unfitted windows lie between them (its 2 pi slip of phi_o);
-    sorted by time."""
+    """Where the owner acts (F7): the union of each passing regime's windows (libration or forced_wave), sorted by
+    time. Only the measured regimes count (A1, W28, card g04-2): a gap between two libration pieces is no owner time,
+    whatever happened there (2000 SF8: 17E-36 circulates 50 turns between its two librations)."""
     pieces: List[Tuple[float, float, str]] = []
     for regime in regimes:
         kind = INTERVAL_LIBRATION if regime.regime == REGIME_LIBRATION else INTERVAL_FORCED
         pieces += [(a, b, kind) for a, b in regime_pieces(regime.starts, window_yr)]
-    pieces.sort()
-    librations = [(a, b) for a, b, kind in pieces if kind == INTERVAL_LIBRATION]
-    forced = [(a, b) for a, b, kind in pieces if kind == INTERVAL_FORCED]
-    for (_, end), (start, _) in zip(librations[:-1], librations[1:]):
-        pieces += [(a, b, INTERVAL_SLIP) for a, b in _subtract((end, start), forced)]
     return sorted(pieces)
 
 
-def _subtract(span: Tuple[float, float], covered: Sequence[Tuple[float, float]]) -> List[Tuple[float, float]]:
-    """The parts of `span` outside every interval of `covered`."""
-    parts = [span] if span[1] > span[0] else []
-    for a, b in covered:
-        parts = [piece for lo, hi in parts for piece in ((lo, min(hi, a)), (max(lo, b), hi)) if piece[1] > piece[0]]
-    return parts
-
-
 def connected_blocks(intervals: Sequence[Tuple[float, float, str]]) -> List[Tuple[float, float]]:
-    """The union of the intervals as disjoint blocks: librations joined by their slips are one block (the owner held
-    throughout, R5 §1.7: the second capture is tested on the block that covers sigma's episode)."""
+    """The union of the intervals as disjoint blocks (overlapping or touching intervals joined)."""
     blocks: List[Tuple[float, float]] = []
     for a, b, _ in sorted(intervals):
         if blocks and a <= blocks[-1][1]:
@@ -1973,8 +1987,25 @@ def connected_blocks(intervals: Sequence[Tuple[float, float, str]]) -> List[Tupl
     return blocks
 
 
+def _meets(interval: Tuple[float, float], window: Tuple[float, float]) -> bool:
+    return interval[1] > window[0] and interval[0] < window[1]
+
+
+def capture_spans(intervals: Sequence[Tuple[float, float, str]], windows: Sequence[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    """The test windows of the second capture (R5 §1.7): the hull of the owner intervals that meet the episodes of
+    sigma (`windows`), one span; [] when none meets them. A test window only, never owner time (F7 counts the
+    intervals themselves): the remainder Psi must stay bounded across the whole stretch the owner holds sigma's
+    episodes, the 2 pi slips of phi_o between its libration pieces included (78085 5J-4S-1: 3.4-81.6 kyr, as before
+    A1)."""
+    meeting = [(a, b) for a, b, _ in intervals if any(_meets((a, b), w) for w in windows)]
+    if not meeting:
+        return []
+    return [(min(a for a, _ in meeting), max(b for _, b in meeting))]
+
+
 def covered_fraction(intervals: Sequence[Tuple[float, float, str]], window: Tuple[float, float]) -> float:
-    """|union of the intervals within the window| / |window| (nan for an empty window)."""
+    """|union of the intervals within the window| / |window| (nan for an empty window), rounded to COVER_DIGITS
+    decimals: a cover that is exactly a threshold must not fall below it by round-off."""
     lo, hi = float(window[0]), float(window[1])
     if not hi > lo:
         return NAN
@@ -1984,7 +2015,117 @@ def covered_fraction(intervals: Sequence[Tuple[float, float, str]], window: Tupl
             continue
         total += b - max(a, reach)
         reach = b
-    return total / (hi - lo)
+    return round(total / (hi - lo), COVER_DIGITS)
+
+
+def measured_span(windows: Sequence[Tuple[float, float]]) -> Tuple[float, float]:
+    """Where the owner's force law could be measured at all: the hull of the frame's force windows (`frame.windows`),
+    (nan, nan) without one. Outside it lie the band-pass edges of the record (`band_window`: filter_edge_trim_cutoffs
+    x f P at either end) and the tail the sliding windows' step leaves: there the owner is neither present nor absent,
+    it is not measured (HW7 without planets: 630-18981 yr of 0-20000). Inside it, a window the candidate is not fitted
+    in (it turns faster than the grid resolves, `resolved_windows`) is a measurement: far from its resonance, it is
+    absent there."""
+    if not len(windows):
+        return NAN, NAN
+    return float(min(a for a, _ in windows)), float(max(b for _, b in windows))
+
+
+def unmeasured_fraction(window: Tuple[float, float], measured: Tuple[float, float]) -> float:
+    """The fraction of `window` outside the `measured` span (`measured_span`); 0 when the span is unknown (nan)."""
+    lo, hi = float(window[0]), float(window[1])
+    if not hi > lo or not all(np.isfinite(measured)):
+        return 0.0
+    inside = max(0.0, min(hi, measured[1]) - max(lo, measured[0]))
+    return round(1.0 - inside / (hi - lo), COVER_DIGITS)
+
+
+def episode_cover(
+    intervals: Sequence[Tuple[float, float, str]],
+    window: Tuple[float, float],
+    measured: Optional[Tuple[float, float]] = None,
+    cover_min: Optional[float] = None,
+) -> float:
+    """F7 on one episode with the record edges the owner cannot measure (W28 FIX-owner-edge): the covered fraction c
+    (`covered_fraction`, its measured regimes only) when it decides, nan (not measured: neither covers nor refuses)
+    when the part u of the window outside the `measured` span could decide it, c < cover_min <= c + u. The owner's
+    cover is only known to lie in [c, c + u]; nothing is assumed about the edge zone, so no new convention enters.
+    Without `measured` or `cover_min`, c (the rule before)."""
+    covered = covered_fraction(intervals, window)
+    if measured is None or cover_min is None or not np.isfinite(covered):
+        return covered
+    if covered >= cover_min or covered + unmeasured_fraction(window, measured) < cover_min:
+        return covered
+    return NAN
+
+
+def bridged_cover(intervals: Sequence[Tuple[float, float, str]], window: Tuple[float, float]) -> float:
+    """The cover of `window` the rule before A1 gave: the intervals with every gap between two consecutive libration
+    pieces bridged (the old slip). Only tells whether A1 changed the outcome (`decide.owner_rules`); never owner time."""
+    librations = sorted((a, b) for a, b, kind in intervals if kind == INTERVAL_LIBRATION)
+    bridges = [(end, start, 'bridge') for (_, end), (start, _) in zip(librations[:-1], librations[1:]) if start > end]
+    return covered_fraction(list(intervals) + bridges, window)
+
+
+def psi_turns(result: OwnerResult, period_yr: float) -> float:
+    """P2: the turns of Psi/u = sigma - (k/k_o) phi_o per cycle of period `period_yr`, |own_psi_rate| P / 2 pi, for an
+    owner accepted in its libration regime (a forced-wave owner moves a at its own rate, sigma's cycles are not its
+    librations: not tested); nan when it does not apply: no accepted owner, a forced wave, the route 'identity' (the
+    psi rate of the result belongs to the search's best candidate, not to phi) or no rate or period."""
+    accepted = result.accepted
+    if accepted is None or accepted.regime != REGIME_LIBRATION or accepted.route == GAIN_IDENTITY:
+        return NAN
+    rate = _finite_or(result.psi_rate_rad_yr, NAN)
+    if not (np.isfinite(rate) and _finite_or(period_yr, 0.0) > 0):
+        return NAN
+    return abs(rate) * float(period_yr) / TWO_PI
+
+
+def cover_episodes(
+    result: OwnerResult,
+    windows: Sequence[Tuple[Optional[int], float, float, float]],
+    decisive_period_yr: float,
+    measured: Optional[Tuple[float, float]] = None,
+    cover_min: Optional[float] = None,
+) -> None:
+    """F7 per episode and P2 (A1, W28; cards g04-0, g04-2), in place: for an accepted owner, its cover of every
+    accepted episode of sigma, `windows` = (episode id or None, t0, t1, period) from the first to the last turning point
+    (a libration over the record or no episode: one entry, the analysis window), and the turns of Psi/u per cycle of
+    each and of the decisive episode (`psi_turns`). With the owner's `measured` span and `cover_min`, an episode whose
+    verdict hangs on the unmeasured record edges gets cover nan, not measured (`episode_cover`). Nothing without an
+    accepted owner or its intervals."""
+    if result.accepted is None or not result.intervals:
+        return
+    result.episode_covers = tuple(
+        EpisodeCover(
+            episode_id,
+            float(t0),
+            float(t1),
+            float(period),
+            episode_cover(result.intervals, (t0, t1), measured, cover_min),
+            psi_turns(result, period),
+        )
+        for episode_id, t0, t1, period in windows
+    )
+    result.psi_turns_per_cycle = psi_turns(result, decisive_period_yr)
+
+
+def induced_split(result: Optional[OwnerResult], settings: AnalysisSettings) -> Tuple[List[EpisodeCover], List[EpisodeCover]]:
+    """(induced, own) episodes of an accepted owner among those still in the geometry (not `result.induced_ids`): an
+    episode is induced when the owner covers at least mmr_owner_cover_min of it and P2 holds
+    (mmr_owner_psi_turns_per_cycle_max, `EpisodeCover.induced`), else it is the row's own (card g04-3: the own episodes
+    decide the status). An episode with cover nan (not measured: the record edges the owner's windows cannot reach
+    decide it, `episode_cover`) is in neither list. ([], []) without per-episode covers."""
+    if result is None or result.accepted is None:
+        return [], []
+    induced, own = [], []
+    for entry in result.episode_covers:
+        if entry.episode_id is not None and entry.episode_id in result.induced_ids:
+            continue
+        if not np.isfinite(entry.cover):
+            continue
+        holds = entry.induced(settings.mmr_owner_cover_min, settings.mmr_owner_psi_turns_per_cycle_max)
+        (induced if holds else own).append(entry)
+    return induced, own
 
 
 def capture_terms(settings: AnalysisSettings) -> int:
@@ -2005,6 +2146,142 @@ def capture_energy_r2(x: np.ndarray, x_dot: np.ndarray, settings: AnalysisSettin
     return 1.0 - float(np.var(y - design @ coefficients)) / float(np.var(y))
 
 
+def capture_self_r2(x: np.ndarray, x_ddot: np.ndarray, settings: AnalysisSettings) -> float:
+    """R^2 of x_ddot on [1, sin x, cos x] (F3): a Psi held by sigma's own term is a pendulum in x, x_ddot = -K sin(x -
+    x0); nan below mmr_owner_capture_samples_per_term samples per term or for a constant x_ddot."""
+    x, y = np.asarray(x, float), np.asarray(x_ddot, float)
+    if len(x) < settings.mmr_owner_capture_samples_per_term * 3 or not np.var(y) > 0:
+        return NAN
+    design = np.column_stack([np.ones_like(x), np.sin(x), np.cos(x)])
+    coefficients, *_ = np.linalg.lstsq(design, y, rcond=None)
+    return 1.0 - float(np.var(y - design @ coefficients)) / float(np.var(y))
+
+
+def _resolved_change(t_yr: np.ndarray, x_dot: np.ndarray, x_ddot: np.ndarray) -> bool:
+    """x_ddot changes x_dot by more than round-off over the span (a uniform sweep has x_ddot = 0 up to round-off, and
+    an R^2 of round-off on any basis is meaningless)."""
+    if len(t_yr) < 2:
+        return False
+    return bool(np.std(x_ddot) * (t_yr[-1] - t_yr[0]) > ROUND_OFF * max(float(np.max(np.abs(x_dot))), np.finfo(float).tiny))
+
+
+def _period_offset(period_yr: float, reference_yr: float) -> float:
+    if not (np.isfinite(period_yr) and np.isfinite(reference_yr) and reference_yr > 0):
+        return np.inf
+    return abs(period_yr / reference_yr - 1.0)
+
+
+def slow_x(
+    t_yr: np.ndarray,
+    x: np.ndarray,
+    x_dot: np.ndarray,
+    omega: np.ndarray,
+    varpi_terms: Mapping[str, np.ndarray],
+    cut_yr: float,
+    settings: AnalysisSettings,
+) -> SlowX:
+    """The slow motion of x = Psi_slow / u on the test span (card g05-2, columns own_x_*): its dominant period between
+    the low-pass cut and span / mmr_owner_x_min_cycles (`dominant_period`, detrended), its half-amplitude at that period
+    (x on [1, t, cos, sin]), and its cause among the secular phases (`kinematics.secular_forcing_terms` of x_dot: a
+    forced x = drift + sum A_k cos k theta has x_dot = const + harmonics of theta; a term is tested only when
+    mmr_owner_x_min_cycles of its cycles fit in the span). The term with a harmonic P_term / k (k = 1 ..
+    mmr_owner_capture_harmonics) that matches x's period within mmr_kin_period_tol is the cause: 'identified' when its
+    R^2 >= mmr_owner_r2_min, else 'possible'; without a matching period the best term is 'possible' when its R^2
+    passes; otherwise no cause."""
+    t, x = np.asarray(t_yr, float), np.asarray(x, float)
+    if len(t) < 4:
+        return SlowX()
+    longest = (t[-1] - t[0]) / settings.mmr_owner_x_min_cycles
+    period = dominant_period(t, x, cut_yr, longest)
+    halfamp = NAN
+    if np.isfinite(period):
+        phase = TWO_PI * (t - t[0]) / period
+        design = np.column_stack([np.ones_like(t), t - t[0], np.cos(phase), np.sin(phase)])
+        coefficients, *_ = np.linalg.lstsq(design, x, rcond=None)
+        halfamp = float(math.hypot(coefficients[2], coefficients[3]))
+    harmonics = settings.mmr_owner_capture_harmonics
+    terms = kinematics_module.secular_forcing_terms(
+        t, x_dot, omega, varpi_terms, harmonics, settings.mmr_owner_capture_samples_per_term, longest
+    )
+    measured = {name: value for name, value in terms.items() if np.isfinite(value[0])}
+    if not measured:
+        return SlowX(period, halfamp)
+    tolerance = settings.mmr_kin_period_tol
+    offsets = {name: min(_period_offset(period, ref / k) for k in range(1, harmonics + 1)) for name, (_, ref) in measured.items()}
+    matching = [name for name in measured if offsets[name] <= tolerance]
+    best = max(measured, key=lambda name: measured[name][0])
+    if matching:
+        term = min(matching, key=lambda name: offsets[name])
+        level = CAUSE_IDENTIFIED if measured[term][0] >= settings.mmr_owner_r2_min else CAUSE_POSSIBLE
+    else:
+        term = best
+        level = CAUSE_POSSIBLE if measured[best][0] >= settings.mmr_owner_r2_min else ''
+    r2, ref = measured[term]
+    return SlowX(period, halfamp, r2, ref, term, kinematics_module.secular_cause(term) if level else '', level)
+
+
+def x_cycles(t_yr: np.ndarray, x: np.ndarray, settings: AnalysisSettings) -> Tuple[int, float]:
+    """(independent closed cycles, median full period [yr]) of x = Psi_slow / u: its turning points at the prominence
+    of a turn of the centre (libration_centre_tp_prominence_deg; x is sigma's slow centre against the owner), cycles =
+    (turning points - 1) // 2 (no shared half-cycle); (0, nan) without three turning points. A monotonic x has none,
+    whatever its energy R^2 (a single-valued x_dot(x) fits any monotonic x: 2013 TW135 8M-4S-7, R^2 1.00, no turn)."""
+    t, values = np.asarray(t_yr, float), np.asarray(x, float)
+    if len(t) < 3:
+        return 0, NAN
+    tp = find_turning_points(t, values, math.radians(settings.libration_centre_tp_prominence_deg), (t[0], t[-1]))
+    periods = full_periods(tp)
+    return max(len(tp) - 1, 0) // 2, float(np.median(periods)) if len(periods) else NAN
+
+
+def secular_periods(t_yr: np.ndarray, omega: np.ndarray, varpi_terms: Mapping[str, np.ndarray]) -> Dict[str, float]:
+    """{term: period [yr]} of the secular phases on the samples given: pi / |omega_dot| ('2omega') and 2 pi /
+    |theta_dot| of each varpi term (`kinematics.secular_varpi_terms`), the rates by least squares; inf at a zero rate."""
+    t = np.asarray(t_yr, float)
+    rates = {kinematics_module.SECULAR_2OMEGA: 2 * slope(t, np.unwrap(np.asarray(omega, float)))}
+    rates.update({name: slope(t, np.asarray(theta, float)) for name, theta in varpi_terms.items()})
+    return {name: (TWO_PI / abs(rate) if np.isfinite(rate) and rate != 0 else np.inf) for name, rate in rates.items()}
+
+
+def secular_offset(period_yr: float, periods: Mapping[str, float], harmonics: int) -> float:
+    """min |P / (P_sec / k) - 1| over the secular periods and k = 1..harmonics (a forced x carries the harmonics of
+    its phase); nan without a period of x or a secular period."""
+    offsets = [
+        abs(period_yr / (reference / k) - 1.0)
+        for reference in periods.values()
+        if np.isfinite(reference) and reference > 0
+        for k in range(1, harmonics + 1)
+    ]
+    return float(min(offsets)) if offsets and np.isfinite(period_yr) else NAN
+
+
+def joint_outcome(sweep_rad: float, energy_r2: float, self_r2: float, cycles: int, offset: float, settings) -> str:
+    """'Both resonances at once?' answered confirmed (A2b W28, card g05-8 B): x = Psi / u is bounded (sweep <
+    mmr_owner_capture_sweep_deg), conserves an energy (x_dot^2 on [1, cos jx, sin jx], R^2 >= mmr_owner_r2_min), has a
+    well of its own (x_ddot on [1, sin x, cos x], R^2 >= mmr_owner_r2_min), its period is no secular one (offset >
+    mmr_kin_period_tol: the fits alone cannot tell a small forced sinusoid from a pendulum) and it closes at least
+    libration_centre_min_estimates cycles -> CAPTURE_CONFIRMED; one cycle -> CAPTURE_ONE_CYCLE; otherwise ''. A missing
+    number fails its condition."""
+    holds = (
+        _finite_or(sweep_rad, np.inf) < math.radians(settings.mmr_owner_capture_sweep_deg)
+        and _finite_or(energy_r2, -np.inf) >= settings.mmr_owner_r2_min
+        and _finite_or(self_r2, -np.inf) >= settings.mmr_owner_r2_min
+        and _finite_or(offset, -np.inf) > settings.mmr_kin_period_tol
+    )
+    if not holds or cycles < 1:
+        return ''
+    return CAPTURE_CONFIRMED if cycles >= settings.libration_centre_min_estimates else CAPTURE_ONE_CYCLE
+
+
+def secular_phases(series: MMRSeries, t_yr: np.ndarray) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
+    """(omega unwrapped, {'g-g5': varpi - g5 t, ...}) of the body on the grid `t_yr` (interpolated when the record's
+    grid differs): the secular phases of F3 and of the slow x."""
+    t, source = np.asarray(t_yr, float), np.asarray(series.t_yr, float)
+    omega, varpi = np.unwrap(np.asarray(series.omega, float)), np.unwrap(np.asarray(series.varpi, float))
+    if len(source) != len(t) or not np.array_equal(source, t):
+        omega, varpi = np.interp(t, source, omega), np.interp(t, source, varpi)
+    return omega, kinematics_module.secular_varpi_terms(t, varpi)
+
+
 def second_capture(
     t_yr: np.ndarray,
     sigma_clean: np.ndarray,
@@ -2014,14 +2291,22 @@ def second_capture(
     period_yr: float,
     omega0_rad_yr: float,
     settings: AnalysisSettings,
+    secular: Optional[Tuple[np.ndarray, Mapping[str, np.ndarray]]] = None,
 ) -> SecondCapture:
     """Is sigma also held by its own term while the owner pins phi_o (R5 §1.7)? Both resonances hold at once only if
     Psi = u sigma - v phi_o stays bounded, and a Psi held by A's term obeys the energy integral in x = Psi / u. On `span`
-    (an owner interval block that meets sigma's decisive episode), with Psi low-passed at mmr_owner_capture_lowpass_periods x P
-    and its filter edges trimmed (one connected block of them: `second_capture_blocks`): the net turns of Psi, the sweep
-    of x, `capture_energy_r2` and lambda_ad =
-    |<Psi_dot / v>| / omega0 (Shevchenko 2020, p. 9). Excluded when x sweeps at least mmr_owner_capture_sweep_deg and the
-    energy R^2 < mmr_owner_r2_min; otherwise unresolved."""
+    (the hull of the owner intervals that meet sigma's episodes, `capture_spans`), with Psi low-passed at
+    mmr_owner_capture_lowpass_periods x P (before any derivative) and its filter edges trimmed (one connected block of
+    them: `second_capture_blocks`): the net turns of Psi, the sweep of x, `capture_energy_r2` and lambda_ad =
+    |<Psi_dot / v>| / omega0 (Shevchenko 2020, p. 9). Excluded by either of two routes:
+    'sweep_energy' when x sweeps at least mmr_owner_capture_sweep_deg and the energy R^2 < mmr_owner_r2_min;
+    'secular_forcing' (F3, card g05-6) when x_ddot follows the secular cycle (`kinematics.secular_forcing_fit` on
+    `secular` = (omega, varpi terms) on the full grid, terms of which mmr_owner_x_min_cycles cycles fit in the span:
+    R^2 >= mmr_owner_r2_min) and not x itself
+    (`capture_self_r2` < mmr_owner_capture_self_r2_max). Confirmed (A2b, `joint_outcome`) when x is bounded, conserves
+    an energy, has a well of its own at a period that is no secular one and closes its own cycles (`x_cycles`);
+    'one_cycle' when it closes one. Otherwise unresolved. Without `secular` neither F3 nor the confirmation is
+    measured. The slow motion of x (`slow_x`) is measured on the same samples."""
     u, v = uv
     t = np.asarray(t_yr, float)
     cut = settings.mmr_owner_capture_lowpass_periods * period_yr
@@ -2033,15 +2318,59 @@ def second_capture(
     slow = filtering.lowpass_or_none(t, psi, cut, settings)
     if slow is None:
         return unresolved
-    rate = filtering.time_derivative(t, slow)[inside]
+    rate_full = filtering.time_derivative(t, slow)
+    rate = rate_full[inside]
     x, x_dot = slow[inside] / u, rate / u
+    x_ddot = filtering.time_derivative(t, rate_full)[inside] / u
     sweep = float(np.ptp(x))
     energy = capture_energy_r2(x, x_dot, settings)
+    self_r2, secular_r2, motion, offset = NAN, NAN, SlowX(), NAN
+    cycles, cycle_period = x_cycles(t[inside], x, settings)
+    if _resolved_change(t[inside], x_dot, x_ddot):
+        self_r2 = capture_self_r2(x, x_ddot, settings)
+    if secular is not None:
+        omega = np.asarray(secular[0], float)[inside]
+        terms = {name: np.asarray(theta, float)[inside] for name, theta in secular[1].items()}
+        longest = (t[inside][-1] - t[inside][0]) / settings.mmr_owner_x_min_cycles
+        secular_r2 = (
+            NAN
+            if not np.isfinite(self_r2)
+            else kinematics_module.secular_forcing_fit(
+                t[inside],
+                x_ddot,
+                omega,
+                terms,
+                settings.mmr_owner_capture_harmonics,
+                settings.mmr_owner_capture_samples_per_term,
+                longest,
+            )[0]
+        )
+        motion = slow_x(t[inside], x, x_dot, omega, terms, cut, settings)
+        offset = secular_offset(cycle_period, secular_periods(t[inside], omega, terms), settings.mmr_owner_capture_harmonics)
     adiabatic = abs(float(np.mean(rate)) / v) / omega0_rad_yr if omega0_rad_yr > 0 else NAN
-    excluded = sweep >= math.radians(settings.mmr_owner_capture_sweep_deg) and _finite_or(energy, np.inf) < settings.mmr_owner_r2_min
+    by_energy = sweep >= math.radians(settings.mmr_owner_capture_sweep_deg) and _finite_or(energy, np.inf) < settings.mmr_owner_r2_min
+    by_secular = (
+        _finite_or(secular_r2, -np.inf) >= settings.mmr_owner_r2_min
+        and _finite_or(self_r2, np.inf) < settings.mmr_owner_capture_self_r2_max
+    )
+    route = ROUTE_SWEEP_ENERGY if by_energy else (ROUTE_SECULAR if by_secular else '')
+    joint = '' if route else joint_outcome(sweep, energy, self_r2, cycles, offset, settings)
     turns = float(slow[inside][-1] - slow[inside][0]) / TWO_PI
     return SecondCapture(
-        turns, sweep, energy, adiabatic, CAPTURE_EXCLUDED if excluded else CAPTURE_UNRESOLVED, float(span[0]), float(span[1])
+        turns,
+        sweep,
+        energy,
+        adiabatic,
+        CAPTURE_EXCLUDED if route else (joint or CAPTURE_UNRESOLVED),
+        float(span[0]),
+        float(span[1]),
+        self_r2=self_r2,
+        secular_r2=secular_r2,
+        route=route,
+        slow_x=motion,
+        x_cycles=cycles,
+        x_cycle_period_yr=cycle_period,
+        x_secular_offset=offset,
     )
 
 
@@ -2054,23 +2383,68 @@ def second_capture_blocks(
     period_yr: float,
     omega0_rad_yr: float,
     settings: AnalysisSettings,
+    secular: Optional[Tuple[np.ndarray, Mapping[str, np.ndarray]]] = None,
 ) -> SecondCapture:
-    """`second_capture` on each connected block of the owner's intervals that meets sigma's decisive episode, separately
-    (Codex W20 A #6): a stretch between two blocks, where the owner does not hold phi_o, is no part of the test.
+    """`second_capture` on each test span (`capture_spans`: since A1 one hull of the owner intervals that meet sigma's
+    episodes; Codex W20 A #6 tested disjoint blocks separately), each on its own.
     Excluded only when every block is measured (a finite energy R^2) and excludes (W20 round C, review B #3: a block
     whose capture was never tested leaves it open); no block is unresolved. The numbers shown are those of the block
     that decides: the block with the highest energy R^2 when excluded (the weakest exclusion), else the first measured
-    block that does not exclude, else the first unmeasured one."""
-    tests = [second_capture(t_yr, sigma_clean, phi_clean, uv, block, period_yr, omega0_rad_yr, settings) for block in blocks]
+    block that does not exclude, else the first unmeasured one. Either route may exclude a block (`second_capture`).
+    Confirmed (A2b) only when every block confirms (the numbers of the block with the lowest of its two R^2); one_cycle
+    when every block confirms or closes one cycle (the first one_cycle block); a block that neither confirms nor
+    excludes leaves the capture unresolved."""
+    tests = [second_capture(t_yr, sigma_clean, phi_clean, uv, block, period_yr, omega0_rad_yr, settings, secular) for block in blocks]
     if not tests:
         return SecondCapture(NAN, NAN, NAN, NAN, CAPTURE_UNRESOLVED)
+    if all(test.verdict == CAPTURE_CONFIRMED for test in tests):
+        return min(tests, key=lambda test: min(test.energy_r2, test.self_r2))
+    if all(test.verdict in (CAPTURE_CONFIRMED, CAPTURE_ONE_CYCLE) for test in tests):
+        return next(test for test in tests if test.verdict == CAPTURE_ONE_CYCLE)
     measured = [test for test in tests if np.isfinite(test.energy_r2)]
     if len(measured) == len(tests) and all(test.verdict == CAPTURE_EXCLUDED for test in tests):
         return max(tests, key=lambda test: test.energy_r2)
     open_ones = [test for test in measured if test.verdict != CAPTURE_EXCLUDED] or [
         test for test in tests if not np.isfinite(test.energy_r2)
     ]
-    return replace(open_ones[0], verdict=CAPTURE_UNRESOLVED)
+    return replace(open_ones[0], verdict=CAPTURE_UNRESOLVED, route='')
+
+
+def _episode_centre(t: np.ndarray, angle_slow: np.ndarray, t0: float, t1: float) -> float:
+    """Circular mean [rad] of the low-passed angle on [t0, t1]; nan without a sample."""
+    inside = (t >= t0) & (t <= t1)
+    if not np.any(inside):
+        return NAN
+    return float(np.angle(np.mean(np.exp(1j * angle_slow[inside]))))
+
+
+def well_selection(
+    t_yr: np.ndarray,
+    sigma_clean: np.ndarray,
+    phi_clean: np.ndarray,
+    windows: Sequence[Tuple[Optional[int], float, float, float]],
+    spans: Sequence[Tuple[float, float]],
+    period_yr: float,
+    settings: AnalysisSettings,
+) -> WellSelection:
+    """F2 (`WellSelection`, diagnostic only): the Rayleigh lengths of sigma's and phi_o's centres over sigma's
+    episodes (`windows`: (id, t0, t1, period)) that meet the second capture's test spans, both angles low-passed at
+    mmr_owner_capture_lowpass_periods x P."""
+    t = np.asarray(t_yr, float)
+    used = [(t0, t1) for _, t0, t1, _ in windows if any(_meets((t0, t1), span) for span in spans)]
+    if not used:
+        return WellSelection()
+    cut = settings.mmr_owner_capture_lowpass_periods * period_yr
+    sigma_slow = filtering.lowpass_or_none(t, np.asarray(sigma_clean, float), cut, settings)
+    phi_slow = filtering.lowpass_or_none(t, np.asarray(phi_clean, float), cut, settings)
+    if sigma_slow is None or phi_slow is None:
+        return WellSelection(n_recaptures=len(used) - 1)
+    centres = np.array([(_episode_centre(t, sigma_slow, t0, t1), _episode_centre(t, phi_slow, t0, t1)) for t0, t1 in used])
+    centres = centres[np.all(np.isfinite(centres), axis=1)]
+    if len(centres) < 2:
+        return WellSelection(n_recaptures=max(len(centres) - 1, 0))
+    r_sigma, r_owner = (float(abs(np.mean(np.exp(1j * centres[:, k])))) for k in (0, 1))
+    return WellSelection(r_owner, r_sigma, len(centres) - 1)
 
 
 ANGLE_SYMBOLS = {'lambda': 'λ', 'varpi': 'ϖ', 'Omega': 'Ω'}
@@ -2169,11 +2543,15 @@ def describe_owner(
     decisive_window: Tuple[float, float],
     decisive_period_yr: float,
     settings: AnalysisSettings,
+    episode_windows: Sequence[Tuple[Optional[int], float, float, float]] = (),
 ) -> None:
     """The numbers of the shown candidate (rank 1) that the verdict and the figure read, in place: Psi and the identity;
-    for an accepted owner its intervals and their cover of `decisive_window` (F7), the second capture on the intervals
-    that meet it, the bound on sigma's own term from the potential route, sigma's and a's band wave on phi_o (a's corrected
-    for the band's gain at the owner's period: comparable with K_direct / |nu_o|)."""
+    for an accepted owner its intervals (its measured regimes only) and their cover of `decisive_window` (F7) and of
+    every accepted episode (`episode_windows`, `cover_episodes`, P2 included), the second capture on the hull of the
+    intervals that meet sigma's episodes (`capture_spans`; the decisive window when no episode is given; both
+    exclusion routes and the slow x, `second_capture`) with F2 on the same episodes (`well_selection`), the bound on
+    sigma's own term from the potential route, sigma's and a's band wave on phi_o (a's corrected for the band's gain at
+    the owner's period: comparable with K_direct / |nu_o|)."""
     sigma_spec, spec = series.resonance, top.fit.spec
     uv = psi_combination(sigma_spec, spec)
     t = basis.t
@@ -2196,10 +2574,17 @@ def describe_owner(
         return
     result.intervals = owner_intervals(top.passing or ([regime] if regime is not None else []), frame.window_yr)
     result.cover = covered_fraction(result.intervals, decisive_window)
-    meeting = [(a, b) for a, b in connected_blocks(result.intervals) if b > decisive_window[0] and a < decisive_window[1]]
+    windows = list(episode_windows) or [(None, decisive_window[0], decisive_window[1], decisive_period_yr)]
+    measured = measured_span(frame.windows)
+    cover_episodes(result, windows, decisive_period_yr, measured, settings.mmr_owner_cover_min)
+    meeting = capture_spans(result.intervals, [(t0, t1) for _, t0, t1, _ in windows])
     if meeting and uv[0]:
         period = decisive_period_yr if _finite_or(decisive_period_yr, 0.0) > 0 else frame.period_yr
-        result.capture = second_capture_blocks(t, frame.sigma_clean, phi_clean, uv, meeting, frame.period_yr, TWO_PI / period, settings)
+        secular = secular_phases(series, t)
+        result.capture = second_capture_blocks(
+            t, frame.sigma_clean, phi_clean, uv, meeting, frame.period_yr, TWO_PI / period, settings, secular
+        )
+        result.wells = well_selection(t, frame.sigma_clean, phi_clean, windows, meeting, frame.period_yr, settings)
     fit = result.accepted.potential
     if fit is not None and fit.measured and uv[0]:
         bound = max(abs(fit.scale_lo - 1.0), abs(fit.scale_hi - 1.0))

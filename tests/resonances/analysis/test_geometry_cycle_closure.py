@@ -170,11 +170,22 @@ def test_1864_reads_circulation_again(analysis_1864):
 
 def test_every_strip_reason_has_a_letter_in_both_legends():
     """Panel (a) draws rejected runs as a grey strip with a letter: every reason a run keeps as a strip (all but `edge`,
-    a half-cycle trimmed off another run, and none) has one, and both legends (MMR and secular/ZLK) explain it."""
+    a half-cycle trimmed off another run, and none) has one, and both legends (MMR and secular/ZLK) explain it. The
+    reasons an ACCEPTED run is not counted (W28 C11, episodes.csv `ineligible_reason`) are never a `reject_reason`, so
+    no strip letter; the two that no other mark names get a tag after '#id' instead (`verdict_text.UNCOUNTED_TAGS`)."""
     from resonances.plotting.mmr_combined import LEGEND, REJECT_LETTERS
     from resonances.plotting.secular_plots import LONG_PERIOD_LEGEND
+    from resonances.plotting.verdict_text import UNCOUNTED_TAGS
 
-    strip_reasons = set(g.RejectReason) - {g.RejectReason.EDGE, g.RejectReason.NONE}
+    not_counted = {
+        g.RejectReason.FORCED_WAVE,
+        g.RejectReason.INDUCED,
+        g.RejectReason.BELOW_PERIOD_FLOOR,
+        g.RejectReason.CENTRE_TURNS,
+        g.RejectReason.BEFORE_LAST_JUMP,
+    }
+    assert set(UNCOUNTED_TAGS) == {g.RejectReason.BELOW_PERIOD_FLOOR, g.RejectReason.CENTRE_TURNS}
+    strip_reasons = set(g.RejectReason) - {g.RejectReason.EDGE, g.RejectReason.NONE} - not_counted
     assert set(REJECT_LETTERS) == strip_reasons
     assert REJECT_LETTERS[g.RejectReason.NO_CLOSED_CYCLE] == 'O'
     assert len(set(REJECT_LETTERS.values())) == len(REJECT_LETTERS)

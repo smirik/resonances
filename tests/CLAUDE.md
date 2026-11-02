@@ -5,9 +5,10 @@ the detail. Benchmark gates: `benchmark/CLAUDE.md`.
 
 ## Layout and markers
 
-- `make test-fast`: tests of at most 1 s, about 1 min. `make test-slow` (marker `slow`): integrations and any test of
-  more than 1 s (a shared module setup of more than 1 s: `pytestmark = pytest.mark.slow` on the module), about
-  5 min. `make test-benchmark` about 15 min. All on pytest-xdist (`XDIST`, default `-n 4 --dist loadfile`: a module
+- `make test-fast`: tests of at most 1 s, about 1.5–2.5 min (5212 on 2026-11-01). `make test-slow` (marker `slow`):
+  integrations and any test of more than 1 s (a shared module setup of more than 1 s: `pytestmark = pytest.mark.slow`
+  on the module), about 10 min (406). `make test-benchmark` 20–50 min (655; the reclassification dominates). All on
+  pytest-xdist (`XDIST`, default `-n 4 --dist loadfile`: a module
   stays on one worker; the benchmark reclassification runs once per session under a file lock). `make test-long` (marker `long`): integrations of 10 min and more (z1 over 10 Myr); outside `test`,
   `test-fast` and `test-slow`. `make test-benchmark` (marker `benchmark`): local-only data and the author gates.
   `make test` = fast + slow. Measure with `--durations=0` before marking; on 2026-10-29 the split moved 234 functions
@@ -33,6 +34,9 @@ the detail. Benchmark gates: `benchmark/CLAUDE.md`.
 - A test must fail on the broken implementation: an oracle that omits a check (L4/R0) can pass a wrong leaf.
 - Time CPU, not wall clock, with a margin (a 5-s wall assert flaked under load).
 - Do not cite `tmp/` files in tests; cite docs.
+- Never set `mpmath.mp.dps` globally in a test: the precision leaks into the next tests on the same xdist worker
+  (W28: a 40-digit setting broke 7 tests of `test_action_occupied_well.py`, depending on the module order). Use
+  `monkeypatch.setattr(mp.mp, 'dps', N)` or `with mp.workdps(N):`.
 
 ## Slow tests and dates
 

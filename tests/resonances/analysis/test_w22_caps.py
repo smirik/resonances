@@ -100,9 +100,9 @@ def test_without_a_passed_scale_the_geometry_leaf_stays_at_low(check):
     assert (decision.rule, decision.caps) == ('5u/6', [GEOMETRY_ONLY])
 
 
-def test_a_failed_scale_is_an_objection_not_the_geometry_leaf():
-    decision, _ = _branch(_scale_strength(64.0, CheckValue.FAIL))  # 10 < 64 < 1000: rule 5o
-    assert (decision.status, decision.rule, decision.caps) == (Status.UNCERTAIN, '5o', [])
+def test_a_failed_scale_is_uncertain_not_the_geometry_leaf():
+    decision, _ = _branch(_scale_strength(64.0, CheckValue.FAIL))  # 10 < 64 < 1000: leaf 5x (W28 B9; was 5o)
+    assert (decision.status, decision.rule, decision.caps) == (Status.UNCERTAIN, '5x', [])
 
 
 # --- R-WJ: a 1:1 on one cycle ----------------------------------------------------------------------------------------

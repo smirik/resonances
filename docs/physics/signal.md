@@ -99,10 +99,22 @@ angle, $P_{\text{syn},j} = 2\pi/\lvert n - n_j\rvert$ ($2\pi/(n + n_j)$ for a re
 cutoff period is
 
 $$
-P_c = \max\!\left(1.5\,\max_j P_{\text{syn},j},\ \ \frac{P_\text{floor}}{2}\right),
+P_c = \max\!\left(1.5\,\max_j P_{\text{syn},j},\ \ 1.5\,P_\text{orb},\ \ \frac{P_\text{floor}}{2}\right),
 $$
 
-with the factor `MMR_FILTER_SYNODIC_FACTOR` = 1.5 and the divisor `FILTER_MIN_LIBRATION_CUTOFFS` = 2.
+with the factors `MMR_FILTER_SYNODIC_FACTOR` = 1.5 and `MMR_FILTER_ORBIT_FACTOR` = 1.5 (a convention), the body's
+own period $P_\text{orb} = 2\pi/n(\langle a\rangle)$ and the divisor `FILTER_MIN_LIBRATION_CUTOFFS` = 2
+(`flt_cutoff_binding` names the bound that sets $P_c$).
+
+The orbit bound is there because heliocentric elements osculate about $GM_\odot$ alone, while a body moves about the
+Sun and the planets inside its orbit, of mass $\varepsilon M_\odot$ ($\varepsilon \approx 1.34\times10^{-3}$ for
+Jupiter to Neptune). From the energy integral, $1/a_\text{osc} = (1+\varepsilon)/a - 2\varepsilon/r$, so $a$ (and
+$\lambda$) carry a wave at the body's own $P_\text{orb}$ of half-amplitude $\approx 2\varepsilon e a$: measured
+0.126 au for 15874 (0.128 predicted), 0.038 au for 523683 (0.038). An inner body has
+$P_{\text{syn},j} > P_\text{orb}$ with every outer planet, and so has an outer body inside the planet's 1:2, so the
+orbit bound acts only beyond a 1:2 ($P_\text{orb} > P_{\text{syn},j}$): TNOs and Centaurs against Uranus or
+Neptune. Without it the synodic bound let that wave through as libration cycles (523683 2U-9, 379 yr). Barycentric
+elements would remove the wave at its source; they change $a$ and every angle and are a separate study.
 $P_\text{floor}$ is the **shortest libration** the angle may have:
 
 - `MMR_LIBRATION_PERIOD_MIN_YR` = 150 yr for every MMR except the 1:1. This is a convention, not a physical minimum.
@@ -113,7 +125,23 @@ $P_\text{floor}$ is the **shortest libration** the angle may have:
   $P_\text{floor} = 73.9$ yr and $P_c = 36.9$ yr; 222 yr for the Earth. The planet of a 1:1 angle does not enter the
   synodic bound: its synodic angle is the resonant angle itself. A quasi-satellite librates faster than a tadpole;
   when the orbit-averaged angle stays in the quasi-satellite well long enough, the record is analysed again with the
-  floor set by the period of that well (rule G1q).
+  floor set by the period of that well (rule G1q). A horseshoe that turns close to the planet is faster than a
+  tadpole too: a run whose turning points, read on the orbit-averaged angle, all reflect on a top of the averaged
+  potential (the planet's or L3's) gets its own floor, 0.5 times the period of the loop through those turns, provided
+  its local 1:1 law has $K/K_\text{th} > 0$ (rule `coorbital_floor_profile`, [pendulum](pendulum.md); 2003 YN107: a
+  103-yr cycle turning 2° from the Earth, loop 119 yr, floor 59 yr instead of 111 yr). Other runs keep the tadpole
+  floor. The cutoff stays the tadpole floor's; what the prominence counts as fast is what is faster than the shortest
+  floor any run can get, 0.5 times the fastest horseshoe loop turning `MMR_COORBITAL_MIN_TURN_HILL` = 3 Hill radii
+  from the planet (at most the tadpole floor; Earth, circular: 57 yr), else the horseshoe itself raised the
+  prominence over its own swing (YN107: 233°);
+- a two-body angle (not 1:1) keeps 150 yr, but a cycle below it can still be accepted by a second pass at the floor of
+  its own averaged potential, $T_{0,\text{th}}/\sqrt{x}$ ($x$ = `MMR_STRENGTH_CHECK_RATIO`), when the theory, the centre
+  and L4 confirm it (rule G1f, [status tree](status-tree.md)); `preprocess.profile_period_floor` is the shared hook
+  (the 1:1 floor is the run's own loop above; three-body angles keep 150 yr).
+
+A short run counts as a near-episode (the confidence cap `near_episode`) when its period is at least its floor times
+$1 - b$, $b$ = `CONFIDENCE_THIN_BAND` = 0.1, for every MMR: a run within the thin margin of the floor is a thin miss
+of an episode too.
 
 `MMR_FILTER_CUTOFF_YR` overrides the rule. The output step does not enter $P_c$: as in the classical proper-element
 filters, the band is set by the physics, and the filter is applied before any decimation
@@ -164,6 +192,35 @@ energy) is partly the filter's. The flag `filter_too_slow` is set and the checks
 `not_measured`: the identity L3, the force law L4 and the amplitude check B1 of the response, both potential checks R0,
 one pendulum, and the margins L2 (separatrix distance), L5 and L6 (centre shift). A margin that already failed or does
 not apply keeps its value; the numbers themselves stay in the output.
+
+### A shorter cutoff for a slow libration: the scale ladder (G2c)
+
+**Question: is the centre scale itself hiding the libration's cycles?** The centre scale $W_c$
+([geometry](geometry.md#the-centre-scale)) trims $W_c$ from each end of the record. For a slow libration
+($P_\text{slow}$ comparable to the record) the trimmed window may hold fewer than `LIBRATION_CENTRE_MIN_ESTIMATES` = 2
+slow periods, so the tree sees one cycle where the record holds two. Then shorter cutoffs are tried,
+
+$$
+W_k = f_k\,\min\!\left(W_c,\ \frac{P_\text{slow}}{2}\right),\qquad f_k \in \texttt{MMR\_SCALE\_LADDER} = 0.71, 0.5, 0.35, \dots,
+\qquad W_k \ge \max(P_c,\ 3\,P_\text{fast}),
+$$
+
+$P_\text{slow}$ being the libration's period at $W_c$ (from its phase return when it closes only one cycle) and
+$P_\text{fast}$ the shortest full period of the fine turning points (the fast wave: at $3P_\text{fast}$ the filter
+keeps $G \approx 0.012$ of it; the factor is `LIBRATION_CENTRE_CYCLES`). Walking down, a rung holds while its turning
+points at the centre prominence $p_c$ agree, in their common window, with those at $W_c$ and at the rung above: the
+same number and kind, each within `MMR_SCALE_TP_TIME_TOL` = 0.1 $P_\text{slow}$. The shortest rung that holds is taken
+when it shows more slow extrema than $W_c$, and its verdict is kept when it again decides libration (columns
+`geo_scale_ladder_*`, rule `scale_ladder`). With neither the force law L4 nor R0 with $a$ measured there, only the
+directly averaged strength supports it: the cap `slow_scale_provisional` holds it at medium; a record of
+$\ge 5.25\,P$ decides.
+
+385533 in 7N−12 (100 kyr): at $W_c$ = 22.7 kyr only the extrema at 44.8 and 67.6 kyr remain (one cycle closed by its
+phase return, $P$ = 45.4 kyr; `uncertain`). $P_\text{fast}$ = 1.95 kyr (the residual's spectral peak, 3°), so the
+ladder stops above 5.85 kyr; at 7.95 kyr four extrema 19.5–89.5 kyr agree with $W_c$ within 0.004 $P$, F by direct
+averaging passes ($T_{0,\text{th}}$ 33.9–36.8 kyr against 34.4 kyr observed): `resonant`, medium. The other G2c rows
+of the benchmark hold 1.5–8.5 slow periods in their window (136108, 15875, TX9) or find no libration at the rung
+(182223) and keep $W_c$.
 
 ## Short periods folded by the step
 

@@ -489,23 +489,17 @@ def _regime(kind, starts):
     return owner.RegimeFit(kind, tuple(starts), 0.9, (0.9,) * len(starts), 0.9, 1.0, 0.0, 0.0, 0.0)
 
 
-def test_owner_intervals_slips_and_cover_by_hand():
+def test_owner_intervals_and_cover_by_hand():
     librations = _regime(owner.REGIME_LIBRATION, [0, 50, 100, 400, 450])
     forced = _regime(owner.REGIME_FORCED_POSITIVE, [250])
     intervals = owner.owner_intervals([librations, forced], 100.0)
-    # libration 0-200 and 400-550, forced 250-350, slips 200-250 and 350-400 between the librations
-    assert intervals == [
-        (0.0, 200.0, 'libration'),
-        (200.0, 250.0, 'slip'),
-        (250.0, 350.0, 'forced_wave'),
-        (350.0, 400.0, 'slip'),
-        (400.0, 550.0, 'libration'),
-    ]
-    assert owner.connected_blocks(intervals) == [(0.0, 550.0)]
-    assert owner.covered_fraction(intervals, (100.0, 300.0)) == pytest.approx(1.0)
+    # libration 0-200 and 400-550, forced 250-350; no slip between the librations since A1 (W28, card g04-2)
+    assert intervals == [(0.0, 200.0, 'libration'), (250.0, 350.0, 'forced_wave'), (400.0, 550.0, 'libration')]
+    assert owner.connected_blocks(intervals) == [(0.0, 200.0), (250.0, 350.0), (400.0, 550.0)]
+    assert owner.covered_fraction(intervals, (100.0, 300.0)) == pytest.approx(0.75)  # 100-200 and 250-300 of 200 yr
     assert owner.covered_fraction([(0.0, 50.0, 'libration'), (80.0, 100.0, 'libration')], (0.0, 100.0)) == pytest.approx(0.7)
     assert owner.covered_fraction(intervals, (600.0, 700.0)) == 0.0
-    assert intervals_text(intervals[:2], 0.25) == '0.0-200.0:libration;200.0-250.0:slip'  # the step's order: 1 decimal
+    assert intervals_text(intervals[:2], 0.25) == '0.0-200.0:libration;250.0-350.0:forced_wave'  # the step's order: 1 decimal
     assert intervals_text([(11585.33, 14639.07, 'libration')], 5.0) == '11585-14640:libration'
 
 

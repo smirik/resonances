@@ -477,3 +477,52 @@ def test_plot_always_overrides_status_for_listed_types():
         SimulationConfig(plot=None, plot_always=['lidov_kozai'], save=None, save_path=f'{TEST_CACHE}/pa4', plot_path=f'{TEST_CACHE}/pa4')
     )
     assert off.should_plot_body(body, lk) is False
+
+
+def test_review_is_the_default_of_save_and_plot_in_code_env_and_docs():
+    """W28 g10-1b (the author 2026-10-31): SAVE and PLOT default to review in .env.dist, the config and docs/config.md."""
+    from resonances.simulation.config import SavePlotMode
+
+    config = SimulationConfig(save_path=f'{TEST_CACHE}/rv0', plot_path=f'{TEST_CACHE}/rv0')
+    assert config.save == SavePlotMode.REVIEW and config.plot == SavePlotMode.REVIEW
+    root = Path(__file__).parents[3]
+    env = (root / 'resonances' / '.env.dist').read_text()
+    assert re.search(r'^SAVE=review$', env, re.MULTILINE) and re.search(r'^PLOT=review$', env, re.MULTILINE)
+    docs = (root / 'docs' / 'config.md').read_text()
+    for key in ('save` / `SAVE', 'plot` / `PLOT'):
+        assert re.search(rf'^\| `{re.escape(key)}` \| `review` \|', docs, re.MULTILINE), key
+    assert re.search(r'^\| `review` \| `nonzero`, and the review queue', docs, re.MULTILINE)
+
+
+def test_save_and_plot_read_the_same_verdict_fields():
+    """A body with real verdicts (no stubs): under review, should_save_body and should_plot_body agree on every row, and
+    select exactly the nonzero rows plus the non_resonant rows at medium or low (by hand)."""
+    from resonances.resonance.analysis.verdict import Action, AngleStatus, Confidence, LibrationOrigin, ResonanceType, Verdict
+    from resonances.simulation.simulation import Simulation
+
+    rows = {  # key: (status, origin, confidence, action, selected by review)
+        '4J-2S-1+0+0-1': ('resonant', 'dynamic', 'high', 'none', True),
+        '5J-2S-2+0+0-1': ('non_resonant', '', 'high', 'none', False),
+        '3J-1S-1+0+0-1': ('non_resonant', '', 'medium', 'spot_check', True),
+        '6J-7S-1+0+0+2': ('non_resonant', '', 'low', 'review', True),
+        '2J-1S-1+0+0+0': ('non_resonant', 'kinematic', 'certain', 'none', True),
+        '7J-3S-2+0+0-2': ('non_resonant', '', 'certain', 'none', False),
+    }
+    manager = DataManager(SimulationConfig(save='review', plot='review', save_path=f'{TEST_CACHE}/rv1', plot_path=f'{TEST_CACHE}/rv1'))
+    body = Body()
+    for key, (status, origin, confidence, action, _) in rows.items():
+        verdict = Verdict(
+            resonance_type=ResonanceType.MMR,
+            status=Status(status),
+            angle_status=AngleStatus.CIRCULATION if origin == '' and status == 'non_resonant' else AngleStatus.LIBRATION,
+            confidence=Confidence(confidence),
+            action=Action(action),
+            libration_origin=LibrationOrigin(origin),
+        )
+        Simulation._finalise_verdict(body, key, verdict)
+    for key, (*_, expected) in rows.items():
+        resonance = resonances.create_mmr(key)
+        assert manager.should_save_body(body, resonance) is expected, key
+        assert manager.should_plot_body(body, resonance) is expected, key
+    nonzero = DataManager(SimulationConfig(save='nonzero', plot='nonzero', save_path=f'{TEST_CACHE}/rv2', plot_path=f'{TEST_CACHE}/rv2'))
+    assert [nonzero.should_save_body(body, resonances.create_mmr(k)) for k in rows] == [True, False, False, False, True, False]

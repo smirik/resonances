@@ -88,11 +88,11 @@ def test_episode_rate_limits_hold_every_accepted_sample_inside_the_window():
     for t0, t1, value in ((100, 200, 1.0), (400, 500, 0.5), (700, 800, 9.0), (900, 1000, 1.0), (951, 1000, 3.0)):
         inside = (t >= t0) & (t <= t1)
         rate[inside] = np.where(np.arange(len(t))[inside] % 2, value, -value)
-    runs = [
-        SimpleNamespace(t_start_yr=100.0, t_end_yr=200.0, accepted=True),
-        SimpleNamespace(t_start_yr=400.0, t_end_yr=500.0, accepted=True),
-        SimpleNamespace(t_start_yr=700.0, t_end_yr=800.0, accepted=False),
-        SimpleNamespace(t_start_yr=900.0, t_end_yr=1000.0, accepted=True),
+    runs = [  # no period: the portrait span is the turning points (`episode_spans` without one)
+        SimpleNamespace(episode_id=0, t_start_yr=100.0, t_end_yr=200.0, accepted=True),
+        SimpleNamespace(episode_id=1, t_start_yr=400.0, t_end_yr=500.0, accepted=True),
+        SimpleNamespace(episode_id=2, t_start_yr=700.0, t_end_yr=800.0, accepted=False),
+        SimpleNamespace(episode_id=3, t_start_yr=900.0, t_end_yr=1000.0, accepted=True),
     ]
     prep = SimpleNamespace(t_yr=t, window=(0.0, 950.0), rate_response=rate / mc.PER_KYR)
     analysis = SimpleNamespace(prep=prep, geometry=SimpleNamespace(runs=runs))
@@ -828,3 +828,171 @@ def test_harmonic_law_draws_no_sine_and_prints_its_r2():
     ax = _axis()
     mc.draw_adot_panel(ax, _adot_frame(make_response(windows=windows, force_law='single', force_harmonic=refused)), LAYOUT)
     assert len(_model_lines(ax)) == 2 and not any(text.startswith('harmonic law') for text in _texts(ax))
+
+
+# --------------------------------------------------------------------------------------------- W28 C12 (g03-6, g03-7)
+# The truths, by hand:
+# - FAIR (M, lambda_J - lambda) needs the planet's mean longitude: a 1:1 record (1J-1+0+0, q = 0) without the planet has
+#   no (m) slot, the legend widened over it from x = 7.45 in (the third bottom slot) under the line 'FAIR not drawn:
+#   planet longitudes not saved (SAVE_PLANETS); for a 1:1 FAIR = (M, σ) repeats (b)'; a 3J-2 record without the planet
+#   gets the first half only; the header keeps 'FAIR no (no planet longitudes)';
+# - a step of 0.3 orbital periods is coarser than 1/4.2 = 0.238: 'output step 0.3 of the orbital period ...';
+# - the episode 70.7-883 yr (P 193.3 yr, record-edge gaps 0.366 P and 0.607 P <= 0.7 P) covers both edges: its fill is
+#   the record 0-1000 yr, so its portrait span in a window 20-980 yr is the window itself; drawn as 20-70.7 dashed,
+#   70.7-883 solid, 883-980 dashed;
+# - the libration case (turning points 125-9875 yr, P 500 yr, window 71.2-9928.8 yr, 1-yr samples): P/4 = 125 yr
+#   beyond the turns reaches 0 yr, clipped to the window: the dashed head holds the samples 72..125 (54); the tail stops
+#   halfway to the rejected run starting at 9900 yr, 9887.5 yr: the samples 9875..9887 (13).
+
+from tests.resonances.analysis.test_impl_figure_v1 import circulation_case, libration_case, rows_of  # noqa: E402
+
+COORBITAL_J = ResonanceSpec('1J-1+0+0', mc.ResonanceKind.TWO_BODY, ('Jupiter',), (1,), -1, 0, (0,))
+
+
+def _without_planets(spec=None):
+    import dataclasses
+
+    analysis, series = libration_case()
+    spec = spec or analysis.resonance
+    analysis.resonance = spec
+    return analysis, dataclasses.replace(series, resonance=spec, planets={})
+
+
+def test_fair_warning_names_the_reason():
+    analysis, series = libration_case()
+    assert mc.fair_warning(analysis, series) is None  # FAIR is drawn
+    assert mc.fair_warning(*_without_planets(COORBITAL_J)) == (
+        'FAIR not drawn: planet longitudes not saved (SAVE_PLANETS); for a 1:1 FAIR = (M, σ) repeats (b)'
+    )
+    assert mc.fair_warning(*_without_planets()) == 'FAIR not drawn: planet longitudes not saved (SAVE_PLANETS)'
+    analysis.context.fair_step_fraction = 0.3
+    assert mc.fair_warning(analysis, series).startswith('FAIR not drawn: output step 0.3 of the orbital period, coarser than 1/4.2')
+    three_body = mc.fair_warning(*circulation_case())
+    assert three_body.startswith('FAIR not drawn: it is a two-body diagnostic')
+    for reason, words in mc.FAIR_REASON_WORDS.items():  # every fixed reason has its own words, none repeats the code
+        assert words and words != reason
+
+
+def _texts_of(fig):
+    return [text.get_text() for text in fig.findobj(matplotlib.text.Text)]
+
+
+def test_figure_without_fair_has_a_warning_line_instead_of_the_slot():
+    analysis, series = _without_planets(COORBITAL_J)
+    fig = mc.draw_combined(analysis, series, rows=rows_of(analysis))
+    texts = _texts_of(fig)
+    assert '(m) FAIR' not in texts
+    assert any('FAIR no (no planet longitudes)' in text for text in texts)  # the header's record line stays
+    warning = [text for text in fig.texts if text.get_text().startswith('FAIR not drawn')]
+    heading = [text for text in fig.texts if text.get_text() == 'Legend']
+    assert len(warning) == 1 and len(heading) == 1
+    renderer = fig.canvas.get_renderer()
+    box, below = warning[0].get_window_extent(renderer), heading[0].get_window_extent(renderer)
+    x, y, w, h = mc.legend_rect(LAYOUT, third_slot_free=True)
+    assert x == pytest.approx(LAYOUT.bottom[2][0])  # the legend took the slot of (m)
+    assert box.x0 >= x * fig.dpi - 1 and box.x1 <= (x + w) * fig.dpi + 1 and box.y1 <= (y + h) * fig.dpi + 1
+    assert below.y1 <= box.y0 + 0.5  # the warning sits above the heading, at the top of the block
+    legend = max((t for t in fig.texts if t.get_text().startswith(mc.LEGEND[0][:12])), key=lambda t: len(t.get_text()))
+    extent = legend.get_window_extent(renderer)
+    assert extent.y0 >= y * fig.dpi - 1 and extent.x1 <= (x + w) * fig.dpi + 1  # still inside its box
+
+
+def test_figure_with_fair_has_no_warning():
+    analysis, series = libration_case()
+    texts = _texts_of(mc.draw_combined(analysis, series, rows=rows_of(analysis)))
+    assert '(m) FAIR' in texts and not any(text.startswith('FAIR not drawn') for text in texts)
+
+
+def test_return_closed_episode_is_drawn_over_the_whole_window():
+    run = _coverage_run(0, 70.7, 883.0, 193.3, 0.3656, 0.607)
+    spans = mc.episode_spans([run], (0.0, 1000.0), SETTINGS)
+    assert mc.portrait_span(run, spans, (20.0, 980.0)) == (20.0, 980.0)
+    maxima = np.array([100.0, 293.3, 486.6, 679.9, 873.2])
+    times = np.sort(np.concatenate([maxima, maxima + 96.65]))
+    kinds = np.where(np.isin(times, maxima), 1, -1)
+    assert mc.portrait_pieces(run, (20.0, 980.0), times, kinds) == [(20.0, 70.7, True), (70.7, 883.0, False), (883.0, 980.0, True)]
+    # without a fill (no span given) the turning points, clipped to the window
+    assert mc.portrait_span(run, {}, (100.0, 980.0)) == (100.0, 883.0)
+    assert mc.portrait_pieces(run, (100.0, 883.0), times, kinds) == [(100.0, 883.0, False)]
+    assert mc.portrait_pieces(run, (990.0, 980.0), times, kinds) == []  # outside the window: nothing
+
+
+def test_many_cycles_keep_their_evenly_chosen_cycles_and_the_dashed_ends():
+    run = SimpleNamespace(t_start_yr=0.0, t_end_yr=1050.0)
+    maxima = np.arange(0.0, 1001.0, 100.0)
+    times = np.sort(np.concatenate([maxima, maxima[:-1] + 50]))
+    kinds = np.where(np.isin(times, maxima), 1, -1)
+    pieces = mc.portrait_pieces(run, (-40.0, 1100.0), times, kinds, max_cycles=4)
+    assert pieces == [(-40.0, 0.0, True), (0, 100, False), (300, 400, False), (600, 700, False), (900, 1000, False), (1050.0, 1100.0, True)]
+
+
+def test_episode_portrait_draws_the_fill_beyond_the_turns_dashed():
+    analysis, _ = libration_case()
+    analysis.geometry.runs[0].period_med_yr = 500.0
+    ax = _axis()
+    mc.draw_episode_portrait(ax, analysis, LAYOUT, record=(0.0, 10000.0))
+    colour = to_hex(mc.episode_colours(analysis.geometry.runs)[1])
+    lines = [line for line in ax.lines if len(line.get_xdata()) > 1 and to_hex(line.get_color()) == colour]
+    dashed = [line for line in lines if line.get_linestyle() == '--']
+    assert len(dashed) == 2 and [len(line.get_xdata()) for line in dashed] == [54, 13]
+    assert lines[0] is dashed[0] and lines[-1] is dashed[1]  # head and tail, the cycles solid between them
+    assert all(line.get_linestyle() == '-' for line in lines[1:-1])
+    assert lines[1].get_label().startswith('#1 ')  # the legend shows the solid line of the episode
+
+
+# --------------------------------------------------------------------------------------------- W28 E18 (g11-8)
+# The ▼ of the strip's windows on (b) with their numbers, at the positions of the three benchmark figures where they
+# overlapped (W23 census): 1862 12V-35 and 2000 YG4 7E-23 (20 kyr, ALIAS plaque; window 2 at 16.637 and 19.600 kyr
+# lies under it) and 2025 PN7 1E-1 20 kyr (window 1 at 0.352 kyr, next to the letter '(b)'). Truths: no ▼ or number
+# box meets the letter, the plaque, another ▼ or number, or panel (a) above; the ▼ maps back to the window's middle
+# (its x is never moved); a ▼ clear of every text keeps the old look (at the frame, its number hanging right of it).
+
+ALIAS_10 = 'ALIAS  step 5.0012 yr ≈ P_σ 10 yr · 2624 rev'
+ALIAS_57 = 'ALIAS  step 5.0012 yr ≈ P_σ 56.926 yr · 495 rev'
+STRIP_CASES = {
+    '1862 12V-35': (19.999887613800002, ALIAS_10, (4.0584918226, 16.63656567825)),
+    '2000 YG4 7E-23': (19.999887613800002, ALIAS_57, (3.443341490889, 19.59978983705)),
+    '2025 PN7 1E-1 20 kyr': (20.0, None, (0.3519, 19.4912)),
+}
+
+
+def _strip_marked(span: float, plaque, middles):
+    fig = plt.figure(figsize=LAYOUT.size, dpi=LAYOUT.dpi)
+    above, wrapped = mc.stacked_axes(fig, LAYOUT, 2, mc.panel_rects(LAYOUT, len(mc.PANELS) + 1)[:2])
+    wrapped.set_xlim(0.0, span)
+    mc._style_axis(above, 'a', 'σ, °', LAYOUT)
+    mc._style_axis(wrapped, 'b', 'σ, °', LAYOUT)
+    if plaque is not None:
+        mc.alias_plaque(wrapped, plaque, LAYOUT)
+    fixed = list(wrapped.texts)
+    markers, numbers = mc.strip_marks(wrapped, [(m, str(i + 1)) for i, m in enumerate(middles)], LAYOUT)
+    return fig, above, wrapped, fixed, markers, numbers
+
+
+@pytest.mark.parametrize('case', list(STRIP_CASES))
+def test_strip_marks_clear_the_letter_and_the_alias_plaque(case):
+    span, plaque, middles = STRIP_CASES[case]
+    fig, above, wrapped, fixed, markers, numbers = _strip_marked(span, plaque, middles)
+    renderer = fig.canvas.get_renderer()
+    assert len(markers) == len(numbers) == 2 and [n.get_text() for n in numbers] == ['1', '2']
+    marks = [m.get_window_extent(renderer) for m in markers] + [mc.text_box(n, renderer) for n in numbers]
+    obstacles = [mc.text_box(text, renderer) for text in fixed] + [above.get_window_extent(renderer)]
+    for i, box in enumerate(marks):
+        assert mc._overlap_px2(box, obstacles) == 0.0
+        assert mc._overlap_px2(box, marks[:i] + marks[i + 1 :]) == 0.0
+    for marker, middle in zip(markers, middles):
+        x_px, _ = marker.get_transform().transform((marker.get_xdata()[0], marker.get_ydata()[0]))
+        back = wrapped.transData.inverted().transform((x_px, 0.0))[0]
+        assert back == pytest.approx(middle, abs=1e-9)  # the window's middle
+
+
+def test_a_strip_mark_clear_of_every_text_keeps_its_place():
+    fig, _, wrapped, _, markers, numbers = _strip_marked(*STRIP_CASES['1862 12V-35'])
+    renderer = fig.canvas.get_renderer()
+    top = wrapped.get_window_extent(renderer).y1
+    first = markers[0].get_window_extent(renderer)
+    assert 0.5 * (first.y0 + first.y1) == pytest.approx(top, abs=0.5)  # centred on the frame, not raised
+    label = numbers[0].get_window_extent(renderer)
+    assert label.x0 >= first.x1 - 0.5 and label.y1 == pytest.approx(top, abs=0.5)  # right of it, hanging
+    second = markers[1].get_window_extent(renderer)
+    assert second.y0 > first.y0  # window 2 sits under the plaque's corner: raised over it

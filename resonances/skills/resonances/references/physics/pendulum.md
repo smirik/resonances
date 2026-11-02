@@ -299,12 +299,23 @@ compound libration ([Gallery](gallery.md#coorbital-regime-change)).
 The shortest co-orbital libration the analysis keeps is `MMR_COORBITAL_PERIOD_FLOOR_FACTOR` = 0.5 of the linear
 tadpole period $P_\text{orb}/\sqrt{27\mu/4}$ (Jupiter 148 yr, Earth 222 yr). A quasi-satellite needs its own floor,
 from the same averaged potential: $\omega_{QS}^2 = 3\mu n^2\tilde R''(\theta_c)$ in the well about 0. When the
-orbit-averaged angle stays in that well for at least half `LIBRATION_MIN_TURNING_POINTS` small-amplitude periods
-$P_{QS} = 2\pi/\omega_{QS}$ and the first pass found no libration, the record is analysed again with the floor
-0.5 $P_{QS}$ (`MMR_COORBITAL_QS_FLOOR`, rule G1q).
+orbit-averaged angle turns inside that well during a stay of at least one loop of the averaged potential through its
+own turns (`MMR_COORBITAL_QS_TRIGGER_PERIODS`) and the first pass found no libration, the record is analysed again
+with the floor 0.5 $P_{QS}$, $P_{QS} = 2\pi/\omega_{QS}$ (`MMR_COORBITAL_QS_FLOOR`, rule G1q). A horseshoe that turns close to the planet is faster than a
+tadpole as well: a run whose turns all reflect on a top (below) has the floor 0.5 $T$ of the loop through its own
+turns, when its local law has $K/K_\text{th} > 0$ (`MMR_COORBITAL_PROFILE_FLOOR`, rule `coorbital_floor_profile`;
+2003 YN107: 103 yr against a 119-yr loop and a 111-yr tadpole floor). The fastest such loop of a physical horseshoe,
+turning `MMR_COORBITAL_MIN_TURN_HILL` = 3 Hill radii $a_P(\mu/3)^{1/3}$ from the planet (closer the averaged problem
+does not hold), sets what the prominence counts as fast ([signal](signal.md)).
 
 ??? info "The quasi-satellite pass in detail"
-    $\theta_c$ is the local minimum of $\tilde R$ nearest 0 whose basin holds $\theta = 0$. The pass is kept when it
+    $\theta_c$ is the local minimum of $\tilde R$ nearest 0 whose basin holds $\theta = 0$. The trigger needs a turn
+    (a reversal of at least `MMR_TP_PROMINENCE_FLOOR_DEG`): by $\dot\sigma \propto -(a - a_P)$ it is a crossing of
+    $a_P$, and a slow drift through the well has none. The stay is measured against the loop through its turns, not
+    against $P_{QS}$: at low $e$ the well is far from harmonic (2002 PN, $e = 0.09$: a loop of $\pm 8.7°$ takes 17.8 yr
+    and follows the 1:1 law with $K/K_\text{th} = 1.00$; the loop through its turns gives 19.5 yr, $P_{QS}$ there 32.5 yr).
+    Without a loop through the turns the longest $P_{QS}$ along the stay is used. For Venus at $e = 0.41$ (2021 XA1)
+    $P_{QS} \approx 150$ yr is the tadpole period, so the pass changes nothing there. The pass is kept when it
     holds a librating episode centred in the well and no fewer episodes outside the well than the first pass. An
     episode takes the quasi-satellite floor only where the well exists on at least `MMR_COORBITAL_QS_WELL_SHARE` = 0.5
     of its samples. The 1:1 force law is then tabulated on blocks of $\min(P_c, P_{QS})$, at most
@@ -314,6 +325,22 @@ $P_{QS} = 2\pi/\omega_{QS}$ and the first pass found no libration, the record is
 The co-orbital law has **no free shape and a fixed scale**: fitting $\dot a_\text{data} = K\,\dot a_\text{model} + C$
 should give $K/K_\text{theory} = 1$, the planet's own mass. That is the 1:1 force-law test
 ([Is it this resonance?](response.md#co-orbital-force-law)). The strength check is not applied to 1:1 angles.
+
+The same potential answers where a 1:1 turning point lies and how far it reaches (`coorbital_geometry.py`): with
+$\dot\theta = -\tfrac32 n\,\delta a/a_P$ the energy integral reads $(\delta a/a_P)^2 + \tfrac83\mu\tilde R(\theta) =
+\text{const}$, so a turn at $\theta_t$ below its well's barrier is a tadpole or quasi-satellite turn, above it a
+reflection on the planet's (horseshoe) or an L3 top, and the potential reverses a body only while
+$\lvert\delta a\rvert \le \delta a_\text{max} = a_P\sqrt{\tfrac83\mu(\tilde R_\text{top} - \tilde R(\theta))}$, the
+top being the highest $\tilde R$ before the body reaches the planet or L3. A reflection mirrors $\lvert\delta a\rvert$
+(out/in = 1), and the loop through the observed turning points has the period
+$T = 2\int d\theta/\sqrt{2(E - 3\mu n^2\tilde R)}$: the horseshoe period $T_{hs}(\theta_t)$, or the tadpole and
+quasi-satellite periods at that amplitude. These are columns (`cpl_*` in episodes.csv) and inputs for the 1:1 rules,
+not a status of their own. The turns are read on the orbit-averaged angle: the low-pass rounds a sharp turn at the
+planet off (YN107's turns read 39° and 319° on $\sigma_f$, a tadpole turn, and 2.0° and 358.3° averaged).
+A record without a closed cycle is judged on its single legs with the same three numbers, the local law and the
+energy ([Local force and energy on a single leg](response.md#local-force-and-energy-on-a-single-leg)): out/in tells
+a reflection from a kick by a close approach, $\lvert\delta a\rvert/\delta a_\text{max}$ a level the potential
+can reverse from one it cannot.
 
 !!! note "Limits of the model"
     The cosine pendulum is a local normal form: it assumes one dominant resonant term, nearly constant coefficients
