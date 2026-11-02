@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from resonances.resonance.analysis.settings import AnalysisSettings, DryRunSettings, format_value  # noqa: E402
+from resonances.resonance.analysis.settings import AnalysisSettings, DryRunSettings, format_value, nominal_default  # noqa: E402
 
 CONFIG_MD = ROOT / 'docs' / 'config.md'
 ENV_DIST = ROOT / 'resonances' / '.env.dist'
@@ -102,7 +102,7 @@ def table() -> str:
                 meaning += f' [{unit}]'
             if f.metadata['convention']:
                 meaning += ' *Convention.*'
-            default = format_value(f.default)
+            default = format_value(nominal_default(f))
             out.append(f"| `{key}` | {f'`{default}`' if default else 'empty'} | {meaning} |")
         out.append('')
     # a field documented in another section of .env.dist (MATRIX_*_ORDER_MAX: the Matrices section) is fine

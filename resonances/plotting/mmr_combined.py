@@ -216,6 +216,17 @@ BRACKET_TICK_PT = 1.0  # its end ticks reach down to this height over the edge [
 BRACKET_LABEL_PT = 4.0  # the names (and '#id' of a run with brackets) start this far over the edge [pt]
 BRACKET_GAP_PX = 2.0  # left free between the ticks of two neighbouring brackets [px]
 BRACKET_GID, RESIDENCE_GID, KICK_GID = 'subregime_bracket', 'residence', 'kick'
+# (a) under the minimal policy (W29 SPEC §7, PRINCIPLES 6): the counted episodes are filled and numbered as before (a
+# covered edge filled to the record's edge, the stretch the filter's trim hides pale), a counted 1:1 leg from the
+# policy's spans labelled 'leg'; a candidate (a vetoed episode that survives the filter, a leg or half-swing that is not
+# counted, a near-episode run) faint with a dashed outline, labelled 'cand', not numbered; every other run is not drawn
+# (it stays in episodes.csv). The gids name the artists for the tests.
+COUNTED_GID, TRIM_GID, CANDIDATE_GID = 'counted_episode', 'counted_trim', 'candidate'
+CANDIDATE_ALPHA_SCALE = 0.25  # a candidate's fill: EPISODE_ALPHA x this (faint: PRINCIPLES 6)
+CANDIDATE_EDGE_ALPHA = 0.7  # its dashed outline
+TRIM_ALPHA_SCALE = 0.4  # the filter-trim stretch of a counted episode filled to a covered record edge: EPISODE_ALPHA x this
+CANDIDATE_LABEL = 'cand'
+LEG_LABEL = 'leg'
 NEW_AMPLITUDE_LABEL = 'new amplitude'  # (a): the bracket of a sub-regime in the same well after an amplitude change
 KICK_LABEL = 'kick'
 KICK_MARK_PT = 5.0  # (d): the ▼ of a kick [pt]
@@ -289,6 +300,20 @@ LEGEND = (
     # (k) and (l) share their scales (docs/reading-figures.md); the narrow box (FAIR drawn) has no room left to say so
     '(k) whole record, colour: time; (l) episodes, ≤ 12 cycles, dashed past turns; +: centre.',
 )
+# the line of (a) under the minimal policy (W29 SPEC §7): only counted episodes are filled, candidates faint
+LEGEND_POLICY_A = (
+    '(a) red: centre; ▼▲ turns; fill #id: counted episode (to an edge it covers, pale in the filter trim, else ±P/4 past '
+    'its turns; / before the last jump of a, \\ induced; #id wave / ripple: not σ’s); leg: a counted 1:1 leg; faint '
+    'dashed cand: candidate, not counted; other runs not drawn; dotted/hatched: a jumps; × exit; 1:1: ⊓ sub-regime, '
+    'hatched – inferred stay.'
+)
+
+
+def legend_lines(analysis) -> Tuple[str, ...]:
+    """LEGEND, with the line of (a) of the minimal policy when the row is under it (`policy_marks`)."""
+    if policy_marks(analysis) is None:
+        return LEGEND
+    return LEGEND[:1] + (LEGEND_POLICY_A,) + LEGEND[2:]
 
 
 # --------------------------------------------------------------------------------------------- helpers
@@ -706,6 +731,133 @@ def shade_runs(
                 )
 
 
+@dataclass(frozen=True)
+class PolicyMarks:
+    """What (a) draws under the minimal policy (`policy_marks`): the counted and candidate episode ids, and the spans
+    [yr] of a counted 1:1 leg and of candidate legs / half-swings, which are no episode row."""
+
+    counted: frozenset = frozenset()
+    candidates: frozenset = frozenset()
+    counted_spans: Tuple[Tuple[float, float], ...] = ()
+    candidate_spans: Tuple[Tuple[float, float], ...] = ()
+
+
+def policy_marks(analysis) -> Optional[PolicyMarks]:
+    """The episodes the minimal policy counts and its candidates (W29 SPEC §3.3), or None when the row is not under it
+    (`policy` '' or 'v2': (a) is drawn as before). Read from the analysis' `PolicyResult` (`analysis.policy`), else from
+    its verdict's `counted_episode_ids`/`candidate_episode_ids` (a stored verdict: the figure re-run path, §7), where a
+    leg or a half-swing has no span and is not drawn."""
+    result = getattr(analysis, 'policy', None)
+    if result is not None and str(getattr(result, 'policy', '')) == verdict_text.POLICY_MINIMAL:
+        return PolicyMarks(
+            frozenset(result.counted_episode_ids),
+            frozenset(result.candidate_episode_ids),
+            tuple(tuple(span) for span in result.counted_spans_yr),
+            tuple(tuple(span) for span in result.candidate_spans_yr),
+        )
+    verdict = getattr(analysis, 'verdict', None)
+    if verdict is None or not verdict_text.policy_minimal(verdict):
+        return None
+    return PolicyMarks(
+        verdict_text.policy_ids(getattr(verdict, 'counted_episode_ids', '')),
+        verdict_text.policy_ids(getattr(verdict, 'candidate_episode_ids', '')),
+    )
+
+
+def _span_label(ax, middle: float, text: str, colour: str, layout: VerdictFigureLayout, bold: bool = True):
+    return ax.text(
+        middle,
+        1 + EPISODE_LABEL_PAD,
+        text,
+        transform=ax.get_xaxis_transform(),
+        ha='center',
+        va='bottom',
+        fontsize=layout.font_note_pt,
+        color=colour,
+        fontweight='bold' if bold else 'normal',
+        clip_on=False,
+        zorder=8,
+    )
+
+
+def fill_counted(ax, start: float, end: float, window: Tuple[float, float], colour: str, hatches: Sequence[str] = ()) -> None:
+    """A counted episode's fill over [start, end] (display units): solid inside the analysis `window`, pale
+    (TRIM_ALPHA_SCALE) over the stretch the filter's trim hides between the window and a covered record edge."""
+    pieces = [(max(start, window[0]), min(end, window[1]), EPISODE_ALPHA, COUNTED_GID)]
+    pieces += [(start, min(end, window[0]), EPISODE_ALPHA * TRIM_ALPHA_SCALE, TRIM_GID)]
+    pieces += [(max(start, window[1]), end, EPISODE_ALPHA * TRIM_ALPHA_SCALE, TRIM_GID)]
+    for x0, x1, alpha, gid in pieces:
+        if x1 <= x0:
+            continue
+        ax.axvspan(x0, x1, facecolor=colour, alpha=alpha, lw=0, zorder=0, gid=gid)
+        for hatch in hatches:
+            ax.axvspan(x0, x1, facecolor='none', edgecolor=colour, hatch=hatch, alpha=0.5, lw=0, zorder=0, gid=gid)
+
+
+def fill_candidate(ax, start: float, end: float, colour: str) -> None:
+    """A candidate's fill (display units): faint (CANDIDATE_ALPHA_SCALE) with a dashed outline."""
+    ax.axvspan(start, end, facecolor=colour, alpha=EPISODE_ALPHA * CANDIDATE_ALPHA_SCALE, lw=0, zorder=0, gid=CANDIDATE_GID)
+    ax.axvspan(start, end, facecolor='none', edgecolor=colour, alpha=CANDIDATE_EDGE_ALPHA, lw=0.8, ls='--', zorder=0, gid=CANDIDATE_GID)
+
+
+def shade_policy_runs(
+    ax,
+    runs,
+    marks: PolicyMarks,
+    colours: Mapping[int, str],
+    times,
+    px_per_unit: float,
+    layout: VerdictFigureLayout,
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings=None,
+    labels: Optional[Mapping[int, str]] = None,
+    induced_ids: Collection[int] = (),
+    labelled: Collection[int] = (),
+) -> Dict[int, Tuple[float, float]]:
+    """(a) under the minimal policy (W29 SPEC §7): the counted runs filled and labelled '#id' (with `labels`, e.g.
+    ' wave'; '/' before the last jump of a, '\\' induced) over their `episode_spans` among the drawn runs (`record`,
+    `window` in yr: the fill reaches a covered record edge, `fill_counted`), a counted leg (`marks.counted_spans`)
+    labelled 'leg'; candidates (`marks.candidates` over their turning points, `marks.candidate_spans`) faint and
+    dashed, labelled 'cand' and not numbered; nothing for any other run. A counted run in `labelled` gets no '#id'
+    here (`draw_run_labels` writes it). Returns the fill spans [yr] of the counted runs."""
+    labels = labels or {}
+    drawn = [run for run in runs if run.episode_id in marks.counted or run.episode_id in marks.candidates]
+    spans = episode_spans(drawn, record, settings)
+    shown_window = (float(times(window[0])), float(times(window[1])))
+    counted_spans: Dict[int, Tuple[float, float]] = {}
+    for run in sorted(drawn, key=lambda run: run.t_start_yr):
+        eid = run.episode_id
+        if eid in marks.counted:
+            span = spans.get(eid, (run.t_start_yr, run.t_end_yr))
+            counted_spans[eid] = span
+            start, end = (float(times(v)) for v in span)
+            colour = colours.get(eid, EPISODE_COLOURS[0])
+            hatches = [EPISODE_BEFORE_JUMP_HATCH] if getattr(run, 'before_last_jump', False) else []
+            hatches += [INDUCED_HATCH] if eid in induced_ids else []
+            hatches += [RIPPLE_HATCH] if labels.get(eid) == RIPPLE_LABEL else []
+            fill_counted(ax, start, end, shown_window, colour, hatches)
+            if (end - start) * px_per_unit >= EPISODE_LABEL_MIN_PX and eid not in labelled:
+                _span_label(ax, 0.5 * (start + end), f'#{eid}' + labels.get(eid, ''), colour, layout)
+        else:
+            start, end = (float(times(v)) for v in (run.t_start_yr, run.t_end_yr))
+            colour = colours.get(eid, REJECTED)
+            fill_candidate(ax, start, end, colour)
+            if (end - start) * px_per_unit >= REJECT_LETTER_MIN_PX:
+                _span_label(ax, 0.5 * (start + end), CANDIDATE_LABEL, colour, layout, bold=False)
+    for t0, t1 in marks.counted_spans:
+        start, end = (float(times(v)) for v in (t0, t1))
+        fill_counted(ax, start, end, shown_window, EPISODE_COLOURS[0])
+        if (end - start) * px_per_unit >= REJECT_LETTER_MIN_PX:
+            _span_label(ax, 0.5 * (start + end), LEG_LABEL, EPISODE_COLOURS[0], layout)
+    for t0, t1 in marks.candidate_spans:
+        start, end = (float(times(v)) for v in (t0, t1))
+        fill_candidate(ax, start, end, REJECTED)
+        if (end - start) * px_per_unit >= REJECT_LETTER_MIN_PX:
+            _span_label(ax, 0.5 * (start + end), CANDIDATE_LABEL, REJECTED, layout, bold=False)
+    return counted_spans
+
+
 def jump_groups(times_yr: Sequence[float], span_yr: float, fraction: float = JUMP_MERGE_FRACTION) -> List[Tuple[float, float, int]]:
     """Jumps closer than `fraction` of the record merged: (first time, last time, count) per group."""
     times = sorted(float(t) for t in times_yr if np.isfinite(t))
@@ -1009,6 +1161,10 @@ def _shade_episodes(ax, frame: _Frame, layout: VerdictFigureLayout):
     geometry = frame.analysis.geometry
     if geometry is None:
         return
+    marks = policy_marks(frame.analysis)
+    if marks is not None:
+        _shade_policy_episodes(ax, frame, layout, marks)
+        return
     accepted = {run.episode_id for run in geometry.runs if run.accepted}
     spans = episode_spans(geometry.runs, (float(frame.t[0]), float(frame.t[-1])), frame.settings)
     forced = wave_labels(geometry)
@@ -1026,6 +1182,39 @@ def _shade_episodes(ax, frame: _Frame, layout: VerdictFigureLayout):
     draw_subregime_brackets(ax, bracketed, frame.colours, frame.times, frame.px_per_unit)
     for run in geometry.runs:
         if run.episode_id in labelled:
+            draw_run_labels(ax, run, spans[run.episode_id], pieces.get(run.episode_id, ()), frame, layout, forced.get(run.episode_id, ''))
+
+
+def _shade_policy_episodes(ax, frame: _Frame, layout: VerdictFigureLayout, marks: PolicyMarks) -> None:
+    """(a) under the minimal policy (`shade_policy_runs`); a counted 1:1 run keeps its sub-regime brackets, its
+    inferred residence and their labels (W28 C13)."""
+    geometry = frame.analysis.geometry
+    record = (float(frame.t[0]), float(frame.t[-1]))
+    counted = [run for run in geometry.runs if run.episode_id in marks.counted]
+    forced = wave_labels(geometry)
+    bracketed = [run for run in counted if len(getattr(run, 'subregimes', ())) >= 2]
+    probe = episode_spans([run for run in geometry.runs if run.episode_id in marks.counted | marks.candidates], record, frame.settings)
+    pieces = residence_pieces(counted, probe, record)
+    labelled = set(pieces) | {run.episode_id for run in bracketed}
+    spans = shade_policy_runs(
+        ax,
+        geometry.runs,
+        marks,
+        frame.colours,
+        frame.times,
+        frame.px_per_unit,
+        layout,
+        record,
+        frame.window,
+        frame.settings,
+        forced,
+        induced_episode_ids(frame.analysis),
+        labelled,
+    )
+    shade_residences(ax, pieces, frame.colours, frame.times)
+    draw_subregime_brackets(ax, bracketed, frame.colours, frame.times, frame.px_per_unit)
+    for run in counted:
+        if run.episode_id in labelled and run.episode_id in spans:
             draw_run_labels(ax, run, spans[run.episode_id], pieces.get(run.episode_id, ()), frame, layout, forced.get(run.episode_id, ''))
 
 
@@ -3435,7 +3624,7 @@ def draw_combined(
     warning = fair_warning(analysis, series)
     if warning is None:
         draw_fair(_rect_axes(fig, third_rect), analysis, series, norm, layout, divisor)
-    draw_legend(fig, layout, rect=legend_rect(layout, third_slot_free=warning is not None), warning=warning)
+    draw_legend(fig, layout, legend_lines(analysis), rect=legend_rect(layout, third_slot_free=warning is not None), warning=warning)
     width, height = layout.size
     fig.add_artist(plt.Line2D([layout.separator_x / width] * 2, [0.3 / height, (height - 0.2) / height], color='#dddddd', lw=0.8))
     fig.text_stats = draw_right_column(fig, analysis, (summary, numbers, episodes, constants), layout, options, settings)

@@ -214,7 +214,7 @@ def test_an_induced_libration_gets_the_forcing_panel():
     _, fig = _figure(series, elements)
     try:
         panels = _time_panels(fig)
-        assert len(panels) == 8
+        assert len(panels) == 9  # eight since the a panel of W29, and (a′)
         legend = [text.get_text() for text in panels[1].get_legend().get_texts()]
         assert legend[0] == 'ω_f'
         # the two largest fitted amplitudes and their beat 1296000 / (g6 - g5) = 54.0 kyr
@@ -224,7 +224,7 @@ def test_an_induced_libration_gets_the_forcing_panel():
         plt.close(fig)
 
 
-def test_a_confirmed_libration_keeps_the_seven_panels_in_place():
+def test_a_confirmed_libration_keeps_the_eight_panels_in_place():
     import matplotlib.pyplot as plt
 
     from resonances.plotting.mmr_combined import panel_rects
@@ -233,9 +233,9 @@ def test_a_confirmed_libration_keeps_the_seven_panels_in_place():
     _, fig = _figure(series, elements)
     try:
         panels = _time_panels(fig)
-        assert len(panels) == 7
+        assert len(panels) == 8  # seven before the a panel of W29
         width, height = fig.get_size_inches()
-        for ax, (x, y, w, h) in zip(panels, panel_rects(LAYOUT_V1, 7)):
+        for ax, (x, y, w, h) in zip(panels, panel_rects(LAYOUT_V1, 8)):
             assert ax.get_position().bounds == pytest.approx((x / width, y / height, w / width, h / height))
         assert not any(ax.get_legend() and 'arg z_forced' in ' '.join(t.get_text() for t in ax.get_legend().get_texts()) for ax in fig.axes)
     finally:

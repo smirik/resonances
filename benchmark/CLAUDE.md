@@ -20,12 +20,14 @@ overridable by `RESONANCES_BENCHMARK_DATA`) and the runs' package output stay ou
   map in `dev/decisions.md`). Entries written by Claude say so.
 - `KNOWN_DISAGREEMENTS.csv`: every current disagreement with the author (MMR, co-orbital, secular, ZLK), as
   (example_id, field) with field in status, angle_status, confidence, author_verdict; its category and reason are
-  Claude's reading, not labels. Empty from `v2-w24-tx9b` to `v2-w26-final`; 32 rows since W28 (2026-11-01:
-  open_question 18, old_verdict 14; 24 from C6's single-leg rule), all on the author's W28 review page.
-- `EPISODE_EXPECTATIONS.csv`: 146 episode cases from the author's history (tier A 55 his words, B 35 a review he
+  Claude's reading, not labels. Empty from `v2-w24-tx9b` to `v2-w26-final`; 32 rows after W28; 109 since W29
+  (`v2-w29-final`, 2026-11-02: minimal_policy 100, a label against a minimal rule the author accepted by default,
+  each reason naming the rule and the RESULTS question; old_verdict 5; open_question 4).
+- `EPISODE_EXPECTATIONS.csv`: 152 episode cases (E100-E105: the author's episode notes of 2026-11-02) from the author's history (tier A 55 his words, B 35 a review he
   accepted, C 56 old verdicts or provisional readings), checks as JSON ops of
   `benchmark/tools/episode_expectations.py`, verbatim quotes with file:line in `benchmark/EPISODE_QUOTES.json`;
-  `known_fail`/`known_reason` are Claude's reading (since W28 only E67, 2007 VU6: the edge-turn threshold). W28 F3
+  `known_fail`/`known_reason` are Claude's reading (W28: only E67, 2007 VU6, the edge-turn threshold; W29: 13 more
+  where the minimal policy counts differently, e.g. a vetoed episode is a candidate, not counted). W28 F3
   added the no-code cases of the author's 2026-10-31 answers (quotes: the answer line of the card and the s-1 approval
   of the case list), rewrote E17 (g11-4 A: two episodes allowed) and replaced C04/C11; a later WP that moves a guard
   (E66 by C5, E72 by C8, E99 by A2) updates it with a reason.

@@ -3,6 +3,7 @@ tables of SPEC §2.2 and §5.7, the ledger classifies margins, and the settings 
 
 import ast
 import importlib
+import os
 import math
 from dataclasses import fields
 from pathlib import Path
@@ -11,7 +12,14 @@ import pytest
 from dotenv import dotenv_values
 
 from resonances.resonance.analysis.ledger import Ledger, Margin, Op
-from resonances.resonance.analysis.settings import AnalysisSettings, DryRunSettings, format_value, settings_from_config, settings_hash
+from resonances.resonance.analysis.settings import (
+    AnalysisSettings,
+    DryRunSettings,
+    format_value,
+    nominal_default,
+    settings_from_config,
+    settings_hash,
+)
 from resonances.resonance.analysis.verdict import (
     Action,
     AngleStatus,
@@ -206,7 +214,15 @@ def test_settings_agree_with_env_dist_and_validate():
     env = dotenv_values(Path(importlib.import_module('resonances').__file__).parent / '.env.dist')
     for cls in (AnalysisSettings, DryRunSettings):
         for f in fields(cls):
-            assert env.get(f.metadata['env']) == format_value(f.default), f.metadata['env']
+            assert env.get(f.metadata['env']) == format_value(nominal_default(f)), f.metadata['env']
+    # CLASSIFIER_POLICY (W29): the one field read from the environment; with none set its factory gives the nominal
+    policy = next(f for f in fields(AnalysisSettings) if f.name == 'classifier_policy')
+    saved = os.environ.pop('CLASSIFIER_POLICY', None)
+    try:
+        assert policy.default_factory() == nominal_default(policy) == env['CLASSIFIER_POLICY'] == 'minimal'
+    finally:
+        if saved is not None:
+            os.environ['CLASSIFIER_POLICY'] = saved
     assert 'SECULAR_MIN_TURNING_POINTS' not in env
     config = SimulationConfig(save=None, plot=None, save_summary=False, mmr_force_r2_full=0.75)
     assert config.libration_min_turning_points == 3

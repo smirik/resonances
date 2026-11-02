@@ -149,7 +149,7 @@ notes
 angle_status, confidence (метки автора, только где он дал значение) и author_verdict (candidates.csv; не сравнивается
 для записи с собственной меткой автора со статусом, R-AV 2026-10-24); колонки
 `example_id, field, author, package, category, reason, since`. `category` и `reason` — прочтение Claude (open_question,
-step_aliasing, cs12, q1d, calibration, old_verdict), а не метка автора. `make test-benchmark` падает на любом
+step_aliasing, cs12, q1d, calibration, old_verdict; с W29 minimal_policy — правило минимальной политики, принятое автором по умолчанию 2026-11-02, с номером вопроса RESULTS), а не метка автора. `make test-benchmark` падает на любом
 расхождении не из списка, на исчезнувшем из прогона и на изменившемся (`tools/known_disagreements.py <run>
 [--secular-zlk <run>] [--write]`). Вековые и ZLK-примеры (свой прогон `tools/reclassify_secular_zlk.py`) сверяются так же:
 метки автора и, как author_verdict, вердикты автора `reclassify_secular_zlk.AUTHOR_VERDICTS` (14 записей, прочтение

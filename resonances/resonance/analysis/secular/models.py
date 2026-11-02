@@ -18,7 +18,7 @@ from resonances.data.invariable_plane import FRAME_ECLIPTIC
 from resonances.resonance.analysis.geometry import FilteredAngle, Geometry
 from resonances.resonance.analysis.ledger import Ledger
 from resonances.resonance.analysis.mmr.context import orbit_overlap
-from resonances.resonance.analysis.mmr.models import orbit_overlap_columns
+from resonances.resonance.analysis.mmr.models import orbit_overlap_columns, policy_episode_columns
 from resonances.resonance.analysis.verdict import ResonanceType, Verdict, finite_or_none, join_list
 
 RAD_TO_DEG = 180.0 / np.pi
@@ -319,6 +319,8 @@ class LongPeriodAnalysis:
     confidence_cells_sha: str = ''
     frozen_numbers: Optional[Dict[str, Any]] = None
     frozen_episode_rows: Optional[List[Dict[str, Any]]] = None
+    # W29: what the minimal policy layer counted and drew (`analysis.policy.PolicyResult`); None under policy v2
+    policy: Optional[Any] = None
 
     @property
     def libration_period_yr(self) -> float:
@@ -447,4 +449,5 @@ def _episode_row(analysis: LongPeriodAnalysis, run) -> Dict[str, Any]:
         'centre_returns': run.centre_returns,
         'coverage_start_gap_P': finite_or_none(run.coverage_start_gap_p),
         'coverage_end_gap_P': finite_or_none(run.coverage_end_gap_p),
+        **policy_episode_columns(analysis.policy, run.episode_id),
     }

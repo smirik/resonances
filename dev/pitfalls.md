@@ -8,7 +8,9 @@ Things that cost a session hours. Each says what happens and what to do instead.
   `benchmark/data/examples/<id>/` even with `--out`. Trial renders go elsewhere, or back up and restore.
 - **Environment variables do not reach the benchmark's settings.** `settings_from_config()` without a source returns
   the dataclass defaults, so an env-var experiment through `reclassify.py` is a no-op. Pass overrides explicitly and
-  check `settings_hash` in `run.json` before reading a run.
+  check `settings_hash` in `run.json` before reading a run. The one exception (W29) is `CLASSIFIER_POLICY`: its
+  default factory reads the environment, so an exported `CLASSIFIER_POLICY=v2` silently changes every
+  `AnalysisSettings()`. The tests pin v2 in `tests/conftest.py`; the benchmark tools take `--policy` explicitly.
 - **Spawned workers import the current working tree.** Editing code during a paired run mixes versions (the W11/W12
   base and fix runs were contaminated this way; the first W23 baseline was discarded). Freeze a copy of the code and
   load it through `PYTHONPATH`; compare frozen trees and settings hashes, not run-folder names.
@@ -99,6 +101,24 @@ Things that cost a session hours. Each says what happens and what to do instead.
   does not prove sustained chaos.
 - **Jump noise from the total a swing** can hide a real step (0.083 AU vs a 0.157 AU threshold); repeated 250-yr
   reversals merge under 2τ = 300 yr into a fake 9.7-kyr drift. These were real strict xfails, not bad tests.
+
+## Classifier policy (W29)
+
+- **A side with no neighbour run is not the record's edge.** `geometry.half_librations` called a half-swing's side
+  "edge" whenever no run followed it in the list, without looking at σ_f between the facing turning point and the
+  window's edge. 42946 43S-6 turned 8.1 revolutions there and still read as cut by the end, so it asked for a futile
+  100-kyr extension (codex S1, W28 review). Measure the travel (`geometry.edge_travel_rev`, ≥ 1 revolution = passage).
+- **A layer that re-reads a finished verdict must re-read only what it owns.** Three W29 integration bugs, each
+  caught by the acceptance invariants, not by the unit tests: (1) the 1:1 legs were read on every leaf, so a leg
+  outvoted an accepted episode next to it (59 co-orbitals read as their legs; 2009 SE, 2015 TL144, 2022 BL5 went from
+  resonant/certain to non_resonant); legs now decide only on G4c and rule C (`policy.LEG_RULES`). (2) The same reading
+  set extend on librators that reach the end through an end-edge leg (624, 643 cycles, certain, got extend). (3) Rule
+  5s marks episodes as forced "by strength" after the verdict; when the minimal policy does not uphold that veto the
+  marks must be dropped, else a transient row counts zero episodes (six three-body rows). Write the invariants first
+  and run them on the whole benchmark before trusting a policy change (`benchmark/tools/w29_acceptance.py`).
+- **An invariant recomputed by the acceptance script must follow every policy change.** Clause C of extend and the
+  alias C5 reading (Q5, Q18 of 2026-11-02) went into `policy.py` first; `w29_acceptance.extend_expected`/`level` then
+  flagged 23 + 28 correct rows until they were updated. Change both in the same step.
 
 ## Process and statistics
 

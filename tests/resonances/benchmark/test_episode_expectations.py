@@ -44,8 +44,8 @@ def test_the_cases_are_well_formed():
     # D6: E86 (2306); D3 moved D01 (88899) to tier B; B6b: E84 (2004 YG1 20 kyr); B6c: E76 (523683 2U-9); B7: C28 (385533)
     # B10a: C38 (37087 slow scale), E94, E95 (37087 x2 K3s), C39 (HW7 slow cause); C3: E68 (2003 YN107), C21 (2026 AC4);
     # C4: E69 (2006 BZ147), E67 (2007 VU6); C8: E70 (2009 BE81 20 kyr, tier C); C6: C25, C26, C40-C53 (tier C, leaf G4c)
-    # C14: C54 (2022 BB2, flag extend_time, tier C)
-    assert len(names) == len(set(names)) == 146
+    # C14: C54 (2022 BB2, flag extend_time, tier C); W29 (2026-11-02 review page): E100-E105 (no episodes / at most one)
+    assert len(names) == len(set(names)) == 152
     assert {case.tier for case in CASES} <= set(ee.TIERS)
     assert {case.scope for case in CASES} <= set(ee.SCOPES)
     for case in CASES:
@@ -56,7 +56,11 @@ def test_the_cases_are_well_formed():
     # E15 passes with the forced (strength) mark of rule 5s (B2, g11-1 A); E67 (2007 VU6): its edge turn swings back
     # 18.8 deg, below MMR_COORBITAL_EDGE_TURN_MIN_DEG (C4, for F9); E43 (2021 XO3) passes as one episode with its
     # amplitude changes as marks (C7, g03-1 A), and E07-E09 are one episode each (g03-9 A)
-    assert sorted(case.case for case in CASES if case.known_fail) == ['E67']
+    # W29 (minimal policy, 2026-11-02): vetoed episodes are candidates (E02, E28, E31, E46, E47, E64), a subresonance
+    # parent's runs are its member's (E21, E77, E79), Q3 (E15), P3 (E60), the next-check cap (E76), ZLK gate flag (D01)
+    assert sorted(case.case for case in CASES if case.known_fail) == sorted(
+        ['E67', 'E02', 'E15', 'E21', 'E28', 'E31', 'E46', 'E47', 'E60', 'E64', 'E76', 'E77', 'E79', 'D01']
+    )
 
 
 def test_every_quote_is_verbatim_at_its_line():

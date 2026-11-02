@@ -21,6 +21,9 @@
                    (5, 7 and 8 read the deciding librating episode's period, `decide.decisive_period_yr`)
     9 columns      a modulated secular angle: the slow line of its centre (`slow.secular_centre_line`); ZLK: the
                    slow line, e-i coupling and attribution (`analysis.zlk`). No status reads them.
+   10 policy       `analyse_secular` / `analyse_zlk` end with the W29 policy layer (`analysis.policy`,
+                   CLASSIFIER_POLICY): under minimal it re-reads steps 4-8 (status from the geometry, the gate as a veto
+                   or a flag, the level from the evidence, one extend rule); `analyse_long_period` itself is v2.
 
 Pure: arrays in (`LongPeriodSeries`), `LongPeriodAnalysis` out.
 """
@@ -33,6 +36,7 @@ from typing import Callable, Optional
 import numpy as np
 
 from resonances.resonance.analysis import confidence as confidence_module, orbit_type as orbit_type_module
+from resonances.resonance.analysis import policy as policy_module
 from resonances.resonance.analysis.confidence import ConfidenceCells
 from resonances.resonance.analysis.geometry import measure_geometry
 from resonances.resonance.analysis.ledger import Ledger
@@ -242,5 +246,6 @@ def _centre_entry(entry):
 
 
 def analyse_secular(series: LongPeriodSeries, settings: AnalysisSettings, cells: Optional[ConfidenceCells] = None) -> LongPeriodAnalysis:
-    """The verdict of a secular angle (module docstring): geometry decides, the e/i response is a column."""
-    return analyse_long_period(series, settings, cells)
+    """The verdict of a secular angle (module docstring): geometry decides, the e/i response is a column; then the
+    policy layer (`policy.apply_long_period`, W29)."""
+    return policy_module.apply_long_period(analyse_long_period(series, settings, cells), settings)

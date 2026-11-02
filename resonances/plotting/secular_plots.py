@@ -9,7 +9,7 @@
     combined — the one-page V1 figure of the verdict (`draw_long_period_combined`, below): time panels, portraits
                and every number of the decision in the shared right column (`combined_numbers`). A ZLK row's ω, i, Ω
                and free elements are those of its analysis, measured from the plane ZLK_ANGLE_FRAME names (the
-               header's record line says which; (a), (a′), (e) and (h) share it).
+               header's record line says which; (a), (a′), (f) and (i) share it).
 
 Nothing here changes a status. Reading guide: docs/plots.md, "Secular diagnostics".
 """
@@ -220,27 +220,36 @@ LONG_PERIOD_PANELS = (
     ('a', 'sigma unwrapped: raw band, sigma_f at the decisive scale, its centre, librating episodes, turning points'),
     ('b', 'sigma mod 360 around the centre: osculating points and sigma_f'),
     ('c', 'sigma_dot_f'),
-    ('d', 'e: raw band and filtered, min-max written'),
-    ('e', 'i: raw band and filtered, min-max written'),
-    ('f', 'secular: e_dot_f against A sin(sigma_f) + B cos(sigma_f) + C (R^2); ZLK: the drift of the free and the osculating omega, turns'),
-    ('g', 'the centre of sigma_f (smoothed over W_c), its turns and largest monotone pass'),
+    ('d', "a: osculating band and a filtered at P_c, min-max; co-orbital: the planet's a and the Hill-zone edges"),
+    ('e', 'e: raw band and filtered, min-max written'),
+    ('f', 'i: raw band and filtered, min-max written'),
+    ('g', 'secular: e_dot_f against A sin(sigma_f) + B cos(sigma_f) + C (R^2); ZLK: the drift of the free and the osculating omega, turns'),
+    ('h', 'the centre of sigma_f (smoothed over W_c), its turns and largest monotone pass'),
 )
 LONG_PERIOD_LEGEND = (
     '(a) grey band: raw σ; black: σ_f at the scale the verdict rests on (P_c, or the centre scale W_c); thin grey: σ_f at '
     'P_c when the centre scale decided; red: centre; ▼▲ turning points; coloured fill #id: librating episodes (to the record edge they '
     'cover, else ± P/4 beyond the turns); grey strip: other runs, letter = reason (T over the top, F too few turning points, C centre moves, '
     'O no closed cycle).',
-    '(b) grey dots: osculating σ; black: σ_f.  (c) dσ_f/dt, red: σ̇ = 0; pale dashed ends of (c), (f): the filter\'s edge '
-    'spread, not analysed.  (d, e) grey band: osculating e, i; black: filtered at P_c, min – max.',
-    '(f) secular: black the rate of the element σ contains (de_f/dt for ϖ, d sin(i_f/2)/dt for Ω; both, i dashed on the '
+    '(b) grey dots: osculating σ; black: σ_f.  (c) dσ_f/dt, red: σ̇ = 0; pale dashed ends of (c), (g): the filter\'s edge '
+    'spread, not analysed.  (d, e, f) grey band: osculating a, e, i; black: filtered at P_c, min – max; (d) a co-orbital: '
+    "dashed the planet's a, dotted the Hill-zone edges (± ZLK_COORBITAL_HILL_FACTOR r_H).",
+    '(g) secular: black the rate of the element σ contains (de_f/dt for ϖ, d sin(i_f/2)/dt for Ω; both, i dashed on the '
     'right axis), blue: A sin σ_f + B cos σ_f + C (R² written; a column, no status). ZLK: the drift of ω from its first '
     'value in turns, grey osculating, blue free (forced terms removed; net turns written): a free ω that winds makes the '
     'libration kinematic.',
-    '(g) grey: σ_f; red: its centre; ▼▲ turns of the centre; shaded: its largest monotone pass, when ≥ 1 rev.',
-    '(h) (e cos σ, e sin σ), (sin(i/2) cos σ, sin(i/2) sin σ) for an angle of Ω alone; colour: time. (i) secular: σ_f '
+    '(h) grey: σ_f; red: its centre; ▼▲ turns of the centre; shaded: its largest monotone pass, when ≥ 1 rev.',
+    '(i) (e cos σ, e sin σ), (sin(i/2) cos σ, sin(i/2) sin σ) for an angle of Ω alone; colour: time. (j) secular: σ_f '
     'against dσ_f/dt; ZLK: the free eccentricity vector.',
 )
-# (a′) of a ZLK row whose libration is induced (`forcing_panel_drawn`), drawn under (a); other rows keep seven panels
+# the line of (a) under the minimal policy (W29 SPEC §7): only the counted episodes are filled, the candidates faint
+LONG_PERIOD_LEGEND_POLICY_A = (
+    '(a) grey band: raw σ; black: σ_f at the scale the verdict rests on (P_c, or the centre scale W_c); thin grey: σ_f at '
+    'P_c when the centre scale decided; red: centre; ▼▲ turning points; coloured fill #id: counted episodes (to the record '
+    'edge they cover, pale in the filter trim, else ± P/4 beyond the turns); faint dashed cand: a candidate, not counted; '
+    'other runs are not drawn (episodes.csv lists them).'
+)
+# (a′) of a ZLK row whose libration is induced (`forcing_panel_drawn`), drawn under (a); other rows keep eight panels
 FORCING_PANEL = ('a′', 'omega_f with the forced direction against the node and the dominant mode\'s longitude against it')
 FORCING_LEGEND = (
     '(a′) ZLK, an induced libration only: grey ω_f; orange arg z_forced − Ω, the direction of the fitted forced '
@@ -265,6 +274,11 @@ LONG_PERIOD_BLOCK_ORDER = (
 ARCSEC_PER_RAD = 206264.80624709636
 KYR = 1e3
 ANGLE_EXTRA_TOP = 0.1  # (a): room above the view of sigma_f and the raw band (the turning points, the episode labels)
+# the letters of the panels after (a)-(c) (W29: (d) is a, author d11): e, i, the physics panel, the centre, the portraits
+AXIS_LETTER, ECC_LETTER, INC_LETTER, PHYSICS_LETTER, CENTRE_LETTER = 'd', 'e', 'f', 'g', 'h'
+PORTRAIT_LETTERS = ('i', 'j')
+PLANET_AXIS_STYLE = {'color': OWNER, 'lw': 1.0, 'ls': '--', 'alpha': 0.85, 'zorder': 5}  # (d): a_P of a co-orbital's planet
+HILL_EDGE_STYLE = {'color': OWNER, 'lw': 0.8, 'ls': ':', 'alpha': 0.85, 'zorder': 5}  # (d): a_P (1 ± k (m_P/3)^(1/3))
 
 
 def long_period_specs(resonance_type: str):
@@ -401,7 +415,8 @@ def _mark_turns(ax, frame, tp, scale=np.degrees, centre: bool = False):
 
 
 def _draw_angle(ax, frame, layout):
-    from resonances.plotting.mmr_combined import _raw, _style_axis, angle_view, episode_spans, outlier_markers, shade_runs
+    from resonances.plotting.mmr_combined import _raw, _style_axis, angle_view, episode_spans, outlier_markers, policy_marks
+    from resonances.plotting.mmr_combined import shade_policy_runs, shade_runs
 
     analysis = frame.analysis
     _raw(ax, frame.x, np.degrees(analysis.series.angle))
@@ -409,8 +424,16 @@ def _draw_angle(ax, frame, layout):
     if geometry is not None:
         librating = sorted(_librating(analysis), key=lambda run: run.t_start_yr)
         colours = {run.episode_id: EPISODE_COLOURS[i % len(EPISODE_COLOURS)] for i, run in enumerate(librating)}
-        spans = episode_spans(geometry.runs, (float(frame.t_yr[0]), float(frame.t_yr[-1])), frame.settings)
-        shade_runs(ax, geometry.runs, set(colours), colours, frame.times, frame.px_per_unit(layout), layout, spans)
+        record = (float(frame.t_yr[0]), float(frame.t_yr[-1]))
+        marks = policy_marks(analysis)
+        if marks is not None:  # the minimal policy (W29 SPEC §7): counted episodes, candidates faint, nothing else
+            window = tuple(angle.window) if angle is not None else record
+            shade_policy_runs(
+                ax, geometry.runs, marks, colours, frame.times, frame.px_per_unit(layout), layout, record, window, frame.settings
+            )
+        else:
+            spans = episode_spans(geometry.runs, record, frame.settings)
+            shade_runs(ax, geometry.runs, set(colours), colours, frame.times, frame.px_per_unit(layout), layout, spans)
     if analysis.fine_geometry is not None and analysis.cutoff is not None:
         fine = _filtered(analysis, analysis.series.angle)
         if fine is not None:
@@ -609,7 +632,7 @@ def _draw_rate(ax, frame, layout):
 
 
 def _draw_element(ax, frame, layout, values, letter, label, fmt):
-    """e or i: the osculating band, the series filtered at P_c, 'min – max' of it (as the MMR panels (f), (g))."""
+    """a, e or i: the osculating band, the series filtered at P_c, 'min – max' of it (as the MMR panels (f), (g))."""
     from resonances.plotting.mmr_combined import _raw, _style_axis, _value_text, _view
 
     values = np.asarray(values, dtype=float)
@@ -624,6 +647,61 @@ def _draw_element(ax, frame, layout, values, letter, label, fmt):
     _style_axis(ax, letter, label, layout)
 
 
+PLANET_ORDER = ('Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune')
+
+
+def hill_half_width(planet: str, hill_factor: float) -> float:
+    """The co-orbital zone's half-width in units of a_P: hill_factor x (m_P / 3 M_sun)^(1/3) (ZLK_COORBITAL_HILL_FACTOR;
+    0.030 for the Earth at the default 3)."""
+    from resonances.data.const import PLANETS_MASS
+
+    return hill_factor * (PLANETS_MASS[planet] / 3.0) ** (1.0 / 3.0)
+
+
+def coorbital_planet_geometric(a_med: float, settings) -> str:
+    """The planet whose co-orbital zone holds the body's median a, |<a>/a_P − 1| < `hill_half_width` (the planets' a and
+    masses of const.py), else ''. For drawing (d) only (W29 SPEC §9): unlike `omega_free_gate.coorbital_planet` it does
+    not ask whether the planet's modes are fitted, so a Jupiter Trojan and a secular row get the line too; it decides
+    nothing."""
+    from resonances.data.const import PLANETS_AXIS
+
+    if a_med is None or not np.isfinite(a_med) or a_med <= 0:
+        return ''
+    factor = settings.zlk_coorbital_hill_factor
+    for planet in PLANET_ORDER:
+        if abs(a_med / PLANETS_AXIS[planet] - 1.0) < hill_half_width(planet, factor):
+            return planet
+    return ''
+
+
+def _draw_axis(ax, frame, layout):
+    """(d): a as (e) and (f) draw e and i (the osculating band, a filtered at P_c, its min – max); for a co-orbital
+    (`coorbital_planet_geometric`) the planet's a dashed and the edges of its co-orbital zone dotted, named at the right."""
+    from resonances.data.const import PLANETS_AXIS
+
+    a = np.asarray(frame.analysis.series.a, dtype=float)
+    _draw_element(ax, frame, layout, a, AXIS_LETTER, 'a, au', '{:.6g}')
+    finite = a[np.isfinite(a)]
+    planet = coorbital_planet_geometric(float(np.median(finite)) if len(finite) else float('nan'), frame.settings)
+    if not planet:
+        return
+    a_p = PLANETS_AXIS[planet]
+    width = hill_half_width(planet, frame.settings.zlk_coorbital_hill_factor) * a_p
+    ax.axhline(a_p, **PLANET_AXIS_STYLE, gid='planet_axis')
+    for level in (a_p - width, a_p + width):
+        ax.axhline(level, **HILL_EDGE_STYLE, gid='hill_edge')
+    ax.text(
+        0.99,
+        0.92,
+        f'{planet}: a_P {a_p:.6g} au (dashed); co-orbital zone ± {width:.3g} au (dotted)',
+        transform=ax.transAxes,
+        ha='right',
+        va='top',
+        fontsize=layout.font_note_pt,
+        color=OWNER,
+    )
+
+
 def _draw_physics(ax, frame, layout, free_elements):
     from resonances.plotting.mmr_combined import _edge_line, _multiplier, _note, _power_of_ten, _style_axis, _view, edge_overflow_markers
 
@@ -636,7 +714,7 @@ def _draw_physics(ax, frame, layout, free_elements):
     fits = {name: _response_fit(analysis, frame, name) for name in names}
     if analysis.angle is None or any(fit is None for fit in fits.values()):
         _note(ax, 'not measured', layout.font_note_pt)
-        _style_axis(ax, 'f', ' and '.join(label for label, _, _ in names.values()) + ', /kyr', layout)
+        _style_axis(ax, PHYSICS_LETTER, ' and '.join(label for label, _, _ in names.values()) + ', /kyr', layout)
         return
     texts = []
     for index, (name, (label, _, r2_of)) in enumerate(names.items()):
@@ -652,26 +730,26 @@ def _draw_physics(ax, frame, layout, free_elements):
         edge_overflow_markers(target, frame, fit.rate * scale, inside=inside)
         ylabel = label + '\n' + _multiplier(power, '/kyr')
         if index == 0:
-            _style_axis(ax, 'f', ylabel, layout)
+            _style_axis(ax, PHYSICS_LETTER, ylabel, layout)
         else:
             target.set_ylabel(ylabel + ' (dashed)', fontsize=layout.font_axis_pt, labelpad=2)
             target.tick_params(labelsize=layout.font_ticks_pt, length=2.5, pad=1.5)
         r2 = r2_of(analysis.response) if analysis.response is not None else float('nan')
         texts.append(f'R² {r2:.3g}' if len(names) == 1 else f'R² {name} {r2:.3g}')
-    if analysis.scale == 'centre':  # the fit of the decisive scale: the centre's cutoff, not P_c of panels (d), (e)
+    if analysis.scale == 'centre':  # the fit of the decisive scale: the centre's cutoff, not P_c of panels (e), (f)
         texts.append(f'at the centre scale {analysis.angle.cutoff_yr / KYR:.4g} kyr')
     ax.text(0.99, 0.92, '   '.join(texts), transform=ax.transAxes, ha='right', va='top', fontsize=layout.font_note_pt, color=MODEL)
 
 
 def _draw_free_omega_drift(ax, frame, layout, free_elements):
-    """ZLK (f): the drift of omega from its first value, in turns (as the standalone free-omega drift figure): grey the
+    """ZLK (g): the drift of omega from its first value, in turns (as the standalone free-omega drift figure): grey the
     osculating omega, blue the free one (forced terms removed); a free omega that winds while the osculating one stays
     within a turn is the kinematic case. The free omega's net turns are written."""
     from resonances.plotting.mmr_combined import _note, _style_axis, _view
 
     if free_elements is None or not len(free_elements.omega_free):
         _note(ax, 'free elements not built', layout.font_note_pt)
-        _style_axis(ax, 'f', 'ω drift, turns', layout)
+        _style_axis(ax, PHYSICS_LETTER, 'ω drift, turns', layout)
         return
     turn = 2 * np.pi
     osculating = np.asarray(frame.analysis.series.angle, dtype=float)
@@ -691,12 +769,12 @@ def _draw_free_omega_drift(ax, frame, layout, free_elements):
         fontsize=layout.font_note_pt,
         color=MODEL,
     )
-    _style_axis(ax, 'f', 'ω drift, turns', layout)
+    _style_axis(ax, PHYSICS_LETTER, 'ω drift, turns', layout)
 
 
 def _response_fit(analysis, frame, name: str):
     """The response fit of `name` ('e' or 'i') exactly as the analysis made it (`secular.response.fit_response`: the
-    decisive angle's cutoff and window, the run's filter order), so the curve of panel (f) is the fit of its R²."""
+    decisive angle's cutoff and window, the run's filter order), so the curve of panel (g) is the fit of its R²."""
     from resonances.resonance.analysis.secular.response import fit_response, response_series
     from resonances.resonance.analysis.settings import AnalysisSettings
 
@@ -706,7 +784,7 @@ def _response_fit(analysis, frame, name: str):
     return fit_response(frame.t_yr, response_series(analysis.series, name), analysis.angle, settings)
 
 
-# The response variables of a secular angle (`secular.response`): label of panel (f), the series, its R² on the Response
+# The response variables of a secular angle (`secular.response`): label of panel (g), the series, its R² on the Response
 RESPONSE_VARIABLES = {
     'e': (r'$\dot e$', lambda series: np.asarray(series.e, dtype=float), lambda response: response.r2_e),
     'i': (r'$d\,\sin(i/2)/dt$', lambda series: np.sin(np.asarray(series.inc, dtype=float) / 2), lambda response: response.r2_i),
@@ -715,14 +793,14 @@ RESPONSE_VARIABLES = {
 
 def response_variables(analysis) -> tuple:
     """The elements the secular angle contains (`Response.variables`: 'e' for a body g-term, 'i' for an s-term), which
-    panel (f) draws; 'e' when the response was not built."""
+    panel (g) draws; 'e' when the response was not built."""
     response = analysis.response
     variables = tuple(name for name in (response.variables if response is not None else ()) if name in RESPONSE_VARIABLES)
     return variables or ('e',)
 
 
 def portrait_radius(analysis):
-    """(r, its label) of the portrait (h) of a secular angle: e when the angle contains ϖ (or for ZLK), sin(i/2) for an
+    """(r, its label) of the portrait (i) of a secular angle: e when the angle contains ϖ (or for ZLK), sin(i/2) for an
     angle of the node alone (an s-term: ν16 = s − s6), the element whose momentum is conjugate to σ."""
     if str(analysis.verdict.resonance_type) == 'secular' and response_variables(analysis) == ('i',):
         return np.sin(np.asarray(analysis.series.inc, dtype=float) / 2), 'sin(i/2)'
@@ -743,7 +821,7 @@ def _draw_centre(ax, frame, layout):
         if centre_pass_matters(centre):  # a pass of a revolution or more: what centre_pass reads
             ax.axvspan(frame.times(centre.max_pass_t0_yr), frame.times(centre.max_pass_t1_yr), color=CENTRE, alpha=0.08, lw=0)
         _view(ax, np.degrees(centre.centre_rad))
-    _style_axis(ax, 'g', 'centre, °', layout)
+    _style_axis(ax, CENTRE_LETTER, 'centre, °', layout)
 
 
 def _draw_portraits(fig, frame, layout, norm, free_elements):
@@ -769,7 +847,7 @@ def _draw_portraits(fig, frame, layout, norm, free_elements):
     ax.set_xlabel(f'{name} cos σ', fontsize=layout.font_axis_pt)
     ax.set_ylabel(f'{name} sin σ', fontsize=layout.font_axis_pt)
     ax.tick_params(labelsize=layout.font_ticks_pt)
-    ax.set_title('(h)', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
+    ax.set_title(f'({PORTRAIT_LETTERS[0]})', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
     ax2 = _rect_axes(fig, layout.bottom[1])
     if str(analysis.verdict.resonance_type) == 'lidov_kozai' and free_elements is not None and len(free_elements.omega_free):
         x, y = free_elements.free_eccentricity_vector()
@@ -796,11 +874,11 @@ def _draw_portraits(fig, frame, layout, norm, free_elements):
         ax2.set_xlabel('σ_f, °', fontsize=layout.font_axis_pt)
         ax2.set_ylabel('dσ_f/dt', fontsize=layout.font_axis_pt)
     ax2.tick_params(labelsize=layout.font_ticks_pt)
-    ax2.set_title('(i)', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
+    ax2.set_title(f'({PORTRAIT_LETTERS[1]})', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
 
 
 def _inclination_label(series) -> str:
-    """The label of (e): the inclination of a ZLK series measured from the invariable plane (ZLK_ANGLE_FRAME) says so."""
+    """The label of (f): the inclination of a ZLK series measured from the invariable plane (ZLK_ANGLE_FRAME) says so."""
     return 'i (invariable), °' if getattr(series, 'frame', '') == 'invariable' else 'i, °'
 
 
@@ -843,9 +921,16 @@ def _draw_header(fig, analysis, layout, stamp):
         )
 
 
-def _draw_legend(fig, layout, forcing: bool = False):
+def long_period_legend(forcing: bool = False, policy: bool = False) -> tuple:
+    """LONG_PERIOD_LEGEND, with the line of (a′) after (a) when `forcing`, and (a)'s line of the minimal policy when
+    `policy` (`mmr_combined.policy_marks`)."""
+    legend = ((LONG_PERIOD_LEGEND_POLICY_A,) if policy else LONG_PERIOD_LEGEND[:1]) + LONG_PERIOD_LEGEND[1:]
+    return legend[:1] + (FORCING_LEGEND,) + legend[1:] if forcing else legend
+
+
+def _draw_legend(fig, layout, forcing: bool = False, policy: bool = False):
     """The legend over the third slot of the bottom row and the legend's own box (`mmr_combined.legend_rect`); with
-    `forcing` the line of (a′)."""
+    `forcing` the line of (a′), with `policy` (a)'s line of the minimal policy."""
     import textwrap
 
     from resonances.plotting.mmr_combined import legend_rect
@@ -855,7 +940,7 @@ def _draw_legend(fig, layout, forcing: bool = False):
     top = y + h
     fig.text(x / width, top / height, 'Legend', fontsize=layout.font_legend_pt + 1.5, fontweight='bold', va='top')
     chars = max(int(w * 72 / (0.56 * layout.font_legend_pt)), 20)
-    legend = LONG_PERIOD_LEGEND[:1] + (FORCING_LEGEND,) + LONG_PERIOD_LEGEND[1:] if forcing else LONG_PERIOD_LEGEND
+    legend = long_period_legend(forcing, policy)
     text = '\n'.join(textwrap.fill(line, chars, subsequent_indent='   ') for line in legend)
     fig.text(x / width, (top - 0.22) / height, text, fontsize=layout.font_legend_pt, va='top', color='#333333', linespacing=1.2)
 
@@ -864,8 +949,8 @@ def draw_long_period_combined(
     analysis, row=None, free_elements=None, stamp: Optional[str] = None, layout=None, options=None, settings=None
 ):
     """The V1 figure of a secular or Lidov-Kozai verdict (`LongPeriodAnalysis` with its arrays); `row` adds columns to
-    the analysis' summary row (the body's free elements, e-i coherence); `free_elements` (ZLK) draws (f) and (i), and
-    (a′) under (a) for an induced libration (`forcing_panel_drawn`; eight time panels then, seven otherwise).
+    the analysis' summary row (the body's free elements, e-i coherence); `free_elements` (ZLK) draws (g) and (j), and
+    (a′) under (a) for an induced libration (`forcing_panel_drawn`; nine time panels then, eight otherwise).
     The right column follows the plot option `combined.numbers` (explained | all); `settings`: the AnalysisSettings the
     explanation compares with (default: from the configuration). Returns the Figure (with `text_stats`)."""
     import dataclasses
@@ -891,18 +976,21 @@ def draw_long_period_combined(
         rest = axes[1 + int(forcing) :]
         _draw_wrapped(rest[0], frame, layout)
         _draw_rate(rest[1], frame, layout)
-        _draw_element(rest[2], frame, layout, analysis.series.e, 'd', 'e', '{:.4g}')
-        _draw_element(rest[3], frame, layout, np.degrees(analysis.series.inc), 'e', _inclination_label(analysis.series), '{:.4g}°')
-        _draw_physics(rest[4], frame, layout, free_elements)
-        _draw_centre(rest[5], frame, layout)
+        _draw_axis(rest[2], frame, layout)
+        _draw_element(rest[3], frame, layout, analysis.series.e, ECC_LETTER, 'e', '{:.4g}')
+        _draw_element(rest[4], frame, layout, np.degrees(analysis.series.inc), INC_LETTER, _inclination_label(analysis.series), '{:.4g}°')
+        _draw_physics(rest[5], frame, layout, free_elements)
+        _draw_centre(rest[6], frame, layout)
         for ax in axes[:-1]:
             ax.tick_params(labelbottom=False)
         axes[-1].set_xlabel(f't, {frame.unit}', fontsize=layout.font_axis_pt, labelpad=1)
         axes[-1].set_xlim(frame.x[0], frame.x[-1])
         norm = Normalize(frame.x[0], frame.x[-1])
         _draw_portraits(fig, frame, layout, norm, free_elements)
-        _colour_bar(fig, norm, layout, frame.unit, label_on_top=True)  # (i)'s y label sits right of it (W23 F4)
-    _draw_legend(fig, layout, forcing)
+        _colour_bar(fig, norm, layout, frame.unit, label_on_top=True)  # (j)'s y label sits right of it (W23 F4)
+    from resonances.plotting.mmr_combined import policy_marks
+
+    _draw_legend(fig, layout, forcing, policy_marks(analysis) is not None)
     fig.add_artist(plt.Line2D([layout.separator_x / width] * 2, [0.3 / height, (height - 0.2) / height], color='#dddddd', lw=0.8))
     if resolve_plot_options(options)['combined']['numbers'] == NumbersMode.ALL:
         constants = [replace(line, block='constants') for line in long_period_frequency_lines(analysis, summary, free_elements)]

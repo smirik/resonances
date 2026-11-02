@@ -160,7 +160,8 @@ class _Facts(SimpleNamespace):
 
 
 def _sentence(row, path=None):
-    return vt._baseline_sentence(_Facts(row=row, path=path or {}, s=S))
+    # v=None: no `policy` field, the v2 wording (the minimal policy's next check follows the action, W29)
+    return vt._baseline_sentence(_Facts(row=row, path=path or {}, s=S, v=None))
 
 
 def test_sentence_names_the_period_and_its_source():

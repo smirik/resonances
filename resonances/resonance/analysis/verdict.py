@@ -265,6 +265,22 @@ class Flag(StrEnum):
     # `Verdict.extend_direction` to `extend_to_years` (an end arc after circulation, one reflection or a clean 1:1 leg
     # or half-libration cut by the edge); changes no status and no level, whatever the action
     EXTEND_TIME = 'extend_time'
+    # W29 minimal policy (`analysis.policy`): marks that change no status and no level by themselves
+    GATE_UNAVAILABLE = 'gate_unavailable'  # ZLK: the free-omega gate gave no verdict; the geometry's status, <= medium
+    GATE_DISABLED = 'gate_disabled'  # ZLK: the gate is switched off; the geometry's status, <= medium
+    ONE_COORBITAL_LEG = 'one_coorbital_leg'  # the status rests on one 1:1 leg (G4c), or a start-edge leg was set aside
+    ONE_HALF_LIBRATION = 'one_half_libration'  # a bounded half-swing between passages (G4h), not counted
+    REJECTED_CANDIDATE = 'rejected_candidate'  # a bounded stretch was read and not counted (drawn faint)
+    MEASURED_OBJECTION = 'measured_objection'  # a measurement objects to the angle's own dynamics: level low
+    STRENGTH_SCALE_IMPLAUSIBLE = 'strength_scale_implausible'  # three-body e^q scale far below the need: level low
+    VETO_THIN = 'veto_thin'  # the veto's deciding comparison lies within CONFIDENCE_THIN_BAND of its threshold
+    VETO_NEEDS_LENGTH = 'veto_needs_length'  # a needed veto was not measured for lack of length (pol_veto_need_yr)
+    POLICY_UNKNOWN_LEAF = 'policy_unknown_leaf'  # a v2 leaf the policy has no mapping for: the geometry's status
+
+
+# CLASSIFIER_POLICY values (`analysis.policy`): the W29 minimal policy layer, or the W28 tree as it was
+POLICY_MINIMAL = 'minimal'
+POLICY_V2 = 'v2'
 
 
 MMR_CHECKS = (
@@ -374,6 +390,26 @@ class Verdict:
     # the named rules (`analysis.rules.Rule`) that acted on this row, also when the verdict stayed the same: merged by
     # the decide steps from the geometry and the result objects, deduplicated, in registry order (column `rules_fired`)
     rules_fired: list[str] = field(default_factory=list)
+    # W29 policy layer (`analysis.policy`, docs/physics/status-tree.md): which policy set the row ('' in older files),
+    # the complete cycles N its level read, the episodes it counts and the candidates it drew faint (';'-joined ids, a
+    # 1:1 leg 'leg', a half-swing 'half'), the measured veto that moved a bounded angle to non_resonant, the evidence
+    # behind the level (`confidence_basis`), the W28 tree's verdict under minimal (status/confidence/reason/action/angle)
+    # and the quantities of the extend predicate (pol_*)
+    policy: str = ''
+    n_cycles: float = math.nan
+    n_counted_episodes: Optional[int] = None
+    counted_episode_ids: str = ''
+    candidate_episode_ids: str = ''
+    veto: str = ''
+    confidence_basis: str = ''
+    v2_verdict: str = ''
+    pol_end_travel_rev: float = math.nan
+    pol_t_last_tp_yr: float = math.nan
+    pol_period_dec_yr: float = math.nan
+    pol_n_last: float = math.nan
+    pol_last_reaches_end: Optional[bool] = None
+    pol_extend_clause: str = ''
+    pol_veto_need_yr: float = math.nan
 
     @property
     def status_code(self) -> int:
@@ -390,7 +426,7 @@ class Verdict:
         """Why the row is in the review queue (column `review_reasons`; empty outside it): `confidence:<level>` for
         medium/low, `action:<action>` for a spot_check/review action at no such level, `origin_unknown` for a bounded
         angle without an established mechanism, then `cap:<cap>` for every cap and `failed:<check>` for every failed
-        support (what lowered the level)."""
+        support (what lowered the level); under the minimal policy `veto_thin` instead of the last two."""
         if not self.review_required:
             return []
         reasons = []
@@ -400,6 +436,10 @@ class Verdict:
             reasons.append(f'action:{self.action}')
         if _origin_unknown(self.libration_origin, self.reason):
             reasons.append(str(Reason.ORIGIN_UNKNOWN))
+        if self.policy == POLICY_MINIMAL:  # no caps, no failed supports: the level is the evidence's (`policy.level`)
+            if str(Flag.VETO_THIN) in self.flags:
+                reasons.append(str(Flag.VETO_THIN))
+            return reasons
         reasons.extend(f'cap:{cap}' for cap in self.caps)
         reasons.extend(f'failed:{check}' for check in self.failed_support)
         return reasons
@@ -449,6 +489,25 @@ class Verdict:
             row[f'mrg_{margin_id}_value'] = margin.value
         row['decision_path'] = join_list(entry.name for entry in self.decision_path)
         row['rules_fired'] = join_list(ordered_rules(self.rules_fired))
+        row.update(
+            {
+                'policy': self.policy,
+                'n_cycles': finite_or_none(self.n_cycles),
+                'n_counted_episodes': self.n_counted_episodes,
+                'counted_episode_ids': self.counted_episode_ids,
+                'candidate_episode_ids': self.candidate_episode_ids,
+                'veto': self.veto,
+                'confidence_basis': self.confidence_basis,
+                'v2_verdict': self.v2_verdict,
+                'pol_end_travel_rev': finite_or_none(self.pol_end_travel_rev),
+                'pol_t_last_tp_yr': finite_or_none(self.pol_t_last_tp_yr),
+                'pol_period_dec_yr': finite_or_none(self.pol_period_dec_yr),
+                'pol_n_last': finite_or_none(self.pol_n_last),
+                'pol_last_reaches_end': self.pol_last_reaches_end,
+                'pol_extend_clause': self.pol_extend_clause,
+                'pol_veto_need_yr': finite_or_none(self.pol_veto_need_yr),
+            }
+        )
         return row
 
     @classmethod
@@ -501,6 +560,21 @@ class Verdict:
             margins=margins,
             decision_path=[LedgerEntry.name_only(name) for name in split_list(row.get('decision_path'))],
             rules_fired=ordered_rules(split_list(row.get('rules_fired'))),
+            policy=cell_text(row.get('policy')),
+            n_cycles=_nan_number(row.get('n_cycles')),
+            n_counted_episodes=_integer(row.get('n_counted_episodes')),
+            counted_episode_ids=cell_text(row.get('counted_episode_ids')),
+            candidate_episode_ids=cell_text(row.get('candidate_episode_ids')),
+            veto=cell_text(row.get('veto')),
+            confidence_basis=cell_text(row.get('confidence_basis')),
+            v2_verdict=cell_text(row.get('v2_verdict')),
+            pol_end_travel_rev=_nan_number(row.get('pol_end_travel_rev')),
+            pol_t_last_tp_yr=_nan_number(row.get('pol_t_last_tp_yr')),
+            pol_period_dec_yr=_nan_number(row.get('pol_period_dec_yr')),
+            pol_n_last=_nan_number(row.get('pol_n_last')),
+            pol_last_reaches_end=_boolean(row.get('pol_last_reaches_end')),
+            pol_extend_clause=cell_text(row.get('pol_extend_clause')),
+            pol_veto_need_yr=_nan_number(row.get('pol_veto_need_yr')),
         )
 
 
@@ -535,6 +609,23 @@ def _number(value: Any) -> Optional[float]:
 def _integer(value: Any) -> Optional[int]:
     number = _number(value)
     return int(number) if number is not None else None
+
+
+def _nan_number(value: Any) -> float:
+    number = _number(value)
+    return number if number is not None else math.nan
+
+
+def _boolean(value: Any) -> Optional[bool]:
+    """A saved True/False cell (pandas reads it as bool or text); None for an empty one."""
+    if isinstance(value, bool):
+        return value
+    text = cell_text(value).lower()
+    if text in ('true', '1', '1.0'):
+        return True
+    if text in ('false', '0', '0.0'):
+        return False
+    return None
 
 
 # angle_status spellings of older files -> the current value (author 2026-10-17: 'transient' -> 'episodic', so that

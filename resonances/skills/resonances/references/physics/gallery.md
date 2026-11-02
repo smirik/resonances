@@ -42,7 +42,7 @@ The same reading for a three-body angle: $\sigma$ librates over the whole record
 
 ### The body of the quick start {#quick-start-463}
 
-The resonance checked in the [Quick start](../quick-start.md). The libration is as clear as above; one margin is thin, so the confidence is high rather than certain.
+The resonance checked in the [Quick start](../quick-start.md). The libration is as clear as above, but the record holds about nine cycles, fewer than the ten that certain needs, so the confidence is high.
 
 **463**, `4J-2S-1+0+0-1`: `resonant` · `libration` · `dynamic_libration` · `high`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
 
@@ -66,9 +66,9 @@ Quasi-satellite motion, then horseshoe motion: two regimes of the same 1:1 reson
 
 ### Libration about a moving centre {#moving-centre}
 
-The centre of libration follows the slowly moving minimum of the averaged potential; the libration is tested in $\psi = \sigma - \sigma_c(t)$. The output step folds short periods, which holds the confidence at medium and asks for a resample.
+The centre of libration follows the slowly moving minimum of the averaged potential; the libration is tested in $\psi = \sigma - \sigma_c(t)$. The output step folds short periods: the flag short_period_aliased warns, but it caps nothing, and 131 cycles give high.
 
-**2013 AS27**, `31E-36+0+5`: `resonant` · `libration` · `dynamic_libration` · `medium`. Record: 20 kyr, step 5 yr, ias15.
+**2013 AS27**, `31E-36+0+5`: `resonant` · `libration` · `dynamic_libration` · `high`. Record: 20 kyr, step 5 yr, ias15.
 
 [![mmr2__2013_AS27__31E-36+0+5](https://smirik.github.io/resonances/img/gallery/mmr2__2013_AS27__31E-36+0+5.png)](https://smirik.github.io/resonances/img/gallery/mmr2__2013_AS27__31E-36+0+5.png)
 
@@ -82,11 +82,19 @@ A high-order resonance with Neptune whose libration period is long: over this re
 
 ### Libration decided by the geometry alone {#geometric-libration}
 
-$\sigma$ librates over the whole record, but neither the force law nor the energy of the pendulum could be measured: only the geometry decided (reason geometric_libration, origin unknown), and the confidence is at most medium.
+$\sigma$ librates over the whole record, but neither the force law nor the energy of the pendulum could be measured: only the geometry decided (reason geometric_libration, origin unknown). Nothing objects, and a missing measurement is a flag (no_full_physics_support), not a cap: 14 clean cycles give certain.
 
-**2348**, `4J-2S-1+0+0-1`: `resonant` · `libration` · `geometric_libration` · `medium`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
+**2348**, `4J-2S-1+0+0-1`: `resonant` · `libration` · `geometric_libration` · `certain`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
 
 [![mmr3__2348__4J-2S-1+0+0-1](https://smirik.github.io/resonances/img/gallery/mmr3__2348__4J-2S-1+0+0-1.png)](https://smirik.github.io/resonances/img/gallery/mmr3__2348__4J-2S-1+0+0-1.png)
+
+### A libration the physics questions {#measured-objection}
+
+$\sigma$ librates about a moving centre over the whole record, but the energy test of the pendulum fails. The objection is measured but does not decide (flag measured_objection): the geometry keeps the status, resonant at low, with action extend. Under `CLASSIFIER_POLICY=v2` the same row is uncertain, origin_unknown.
+
+**2003 TX9**, `3E+2J-10+0+0+5`: `resonant` · `libration` · `geometric_libration` · `low`. Record: 20 kyr, step 5 yr, ias15.
+
+[![mmr3__2003_TX9__3E+2J-10+0+0+5](https://smirik.github.io/resonances/img/gallery/mmr3__2003_TX9__3E+2J-10+0+0+5.png)](https://smirik.github.io/resonances/img/gallery/mmr3__2003_TX9__3E+2J-10+0+0+5.png)
 
 ## Transient
 
@@ -94,9 +102,9 @@ Librating episodes in part of the record, circulation or a drift in the rest.
 
 ### Repeated capture and release {#transient-recurrent}
 
-Librating episodes alternate with circulation (subtype recurrent). The episodes stay close to the separatrix, which caps the confidence.
+Librating episodes alternate with circulation (subtype recurrent). The episodes stay close to the separatrix (flag episodes_in_separatrix_zone); the longest closes 3.5 cycles, so the confidence is high.
 
-**52356**, `5J-2S-2+0+0-1`: `transient` · `episodic` · `dynamic_episode` · `medium`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
+**52356**, `5J-2S-2+0+0-1`: `transient` · `episodic` · `dynamic_episode` · `high`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
 
 [![mmr3__52356__5J-2S-2+0+0-1](https://smirik.github.io/resonances/img/gallery/mmr3__52356__5J-2S-2+0+0-1.png)](https://smirik.github.io/resonances/img/gallery/mmr3__52356__5J-2S-2+0+0-1.png)
 
@@ -110,7 +118,7 @@ The exit is seen in the orbit-averaged angle: after it $\lambda - \lambda_E$ cir
 
 ### An episode, then circulation {#transient-capture-exit}
 
-A libration episode followed by circulation to the end of the record. The episode closes only about one cycle, which caps the confidence.
+A libration episode followed by circulation to the end of the record. The episode closes only about one cycle, fewer than the three that high needs, so the confidence is medium.
 
 **115978**, `11M-19+0+8`: `transient` · `episodic` · `ends: circulation` · `dynamic_episode` · `medium`. Record: 50 kyr, step 0.6 yr, ias15.
 
@@ -118,9 +126,9 @@ A libration episode followed by circulation to the end of the record. The episod
 
 ### An episode ended by a jump of the semi-major axis {#transient-before-jump}
 
-The episode ends where $a$ jumps (a kick, as at a close approach to a planet); after the jump the angle no longer librates. An episode that ends at a jump caps the confidence.
+The episode ends where $a$ jumps (a kick, as at a close approach to a planet); after the jump the angle no longer librates. The jump is a flag (episode_before_jump); the episode closes 87 cycles, so the confidence is high.
 
-**2003 UG22**, `10E-17+0+7`: `transient` · `episodic` · `ends: circulation` · `dynamic_episode` · `medium`. Record: 40 kyr, step 0.25 yr, ias15.
+**2003 UG22**, `10E-17+0+7`: `transient` · `episodic` · `ends: circulation` · `dynamic_episode` · `high`. Record: 40 kyr, step 0.25 yr, ias15.
 
 [![mmr2__2003_UG22__10E-17+0+7__40kyr](https://smirik.github.io/resonances/img/gallery/mmr2__2003_UG22__10E-17+0+7__40kyr.png)](https://smirik.github.io/resonances/img/gallery/mmr2__2003_UG22__10E-17+0+7__40kyr.png)
 
@@ -128,11 +136,11 @@ The episode ends where $a$ jumps (a kick, as at a close approach to a planet); a
 
 The catalogue angle drifts with $\varpi$, but its member $\sigma + 2(\varpi_M - \varpi)$ (13M-24+2+9) librates about a fixed centre: the episodes belong to that member (reason subresonance_librates). The second figure is the member's own verdict.
 
-**82831**, `13M-24+0+11`: `transient` · `episodic` · `ends: circulation` · `subresonance_librates` · `medium`. Record: 100 kyr, step 0.5 yr, SABA(10,6,4).
+**82831**, `13M-24+0+11`: `transient` · `episodic` · `ends: circulation` · `subresonance_librates` · `high`. Record: 100 kyr, step 0.5 yr, SABA(10,6,4).
 
 [![mmr2__82831__13M-24+0+11](https://smirik.github.io/resonances/img/gallery/mmr2__82831__13M-24+0+11.png)](https://smirik.github.io/resonances/img/gallery/mmr2__82831__13M-24+0+11.png)
 
-**82831**, `13M-24+2+9`: `transient` · `episodic` · `ends: circulation` · `dynamic_episode` · `medium`. Record: 100 kyr, step 0.5 yr, SABA(10,6,4).
+**82831**, `13M-24+2+9`: `transient` · `episodic` · `ends: circulation` · `dynamic_episode` · `high`. Record: 100 kyr, step 0.5 yr, SABA(10,6,4).
 
 [![mmr2__82831__13M-24+0+11__13M-24+2+9](https://smirik.github.io/resonances/img/gallery/mmr2__82831__13M-24+0+11__13M-24+2+9.png)](https://smirik.github.io/resonances/img/gallery/mmr2__82831__13M-24+0+11__13M-24+2+9.png)
 
@@ -140,7 +148,7 @@ The catalogue angle drifts with $\varpi$, but its member $\sigma + 2(\varpi_M - 
 
 A librating episode in part of the record; no force could be measured, so the geometry alone decided (reason geometric_episode, origin unknown).
 
-**24820**, `3J-1S-1+0+0-1`: `transient` · `episodic` · `ends: circulation` · `geometric_episode` · `medium`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
+**24820**, `3J-1S-1+0+0-1`: `transient` · `episodic` · `ends: circulation` · `geometric_episode` · `high`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
 
 [![mmr3__24820__3J-1S-1+0+0-1](https://smirik.github.io/resonances/img/gallery/mmr3__24820__3J-1S-1+0+0-1.png)](https://smirik.github.io/resonances/img/gallery/mmr3__24820__3J-1S-1+0+0-1.png)
 
@@ -152,7 +160,7 @@ No closed libration cycle, but the angle stalls at the top of its own well.
 
 No closed libration cycle, but $\sigma$ repeatedly stalls near the top of its own potential well while $a$ responds (pattern B): motion close to the separatrix. This status is rare.
 
-**523899**, `3N-5+0+2`: `near_separatrix` · `near_separatrix` · `separatrix_zone` · `medium`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
+**523899**, `3N-5+0+2`: `near_separatrix` · `near_separatrix` · `separatrix_zone` · `low`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
 
 [![mmr2__523899__3N-5+0+2](https://smirik.github.io/resonances/img/gallery/mmr2__523899__3N-5+0+2.png)](https://smirik.github.io/resonances/img/gallery/mmr2__523899__3N-5+0+2.png)
 
@@ -188,7 +196,7 @@ Sampled finely, the angle circulates fast, as the alias analysis of the coarse r
 
 $\sigma$ librates over the whole record, but $a$ does not follow it: the bound comes from the secular cycle of the elements, not from the resonant force (origin kinematic).
 
-**285637**, `3M+7J-6+0+0-4`: `non_resonant` · `libration` · `kinematic_libration` · `high`. Record: 50 kyr, step 0.6 yr, ias15.
+**285637**, `3M+7J-6+0+0-4`: `non_resonant` · `libration` · `kinematic_libration` · `medium`. Record: 50 kyr, step 0.6 yr, ias15.
 
 [![mmr3__285637__3M+7J-6+0+0-4](https://smirik.github.io/resonances/img/gallery/mmr3__285637__3M+7J-6+0+0-4.png)](https://smirik.github.io/resonances/img/gallery/mmr3__285637__3M+7J-6+0+0-4.png)
 
@@ -220,7 +228,7 @@ Here the owner, the two-body resonance 10E-17+0+7 with Earth, librates itself an
 
 A resonance of order 31 with Saturn: its episodes would need a resonant force many orders of magnitude stronger than the averaged potential provides, so they are not this resonance.
 
-**2897**, `35S-4+0-31`: `non_resonant` · `episodic` · `ends: circulation` · `implausible_strength` · `low`. Record: 50 kyr, step 0.6 yr, ias15.
+**2897**, `35S-4+0-31`: `non_resonant` · `episodic` · `ends: circulation` · `implausible_strength` · `high`. Record: 50 kyr, step 0.6 yr, ias15.
 
 [![mmr2__2897__35S-4+0-31](https://smirik.github.io/resonances/img/gallery/mmr2__2897__35S-4+0-31.png)](https://smirik.github.io/resonances/img/gallery/mmr2__2897__35S-4+0-31.png)
 
@@ -243,14 +251,6 @@ $\sigma$ drifts, and neither a kinematic nor an induced explanation passes: unce
 **142694**, `1V+3S-7+0+0+3`: `uncertain` · `drift` · `drift_mechanism_unknown`. Record: 50 kyr, step 0.6 yr, ias15.
 
 [![mmr3__142694__1V+3S-7+0+0+3](https://smirik.github.io/resonances/img/gallery/mmr3__142694__1V+3S-7+0+0+3.png)](https://smirik.github.io/resonances/img/gallery/mmr3__142694__1V+3S-7+0+0+3.png)
-
-### A libration the physics does not confirm {#uncertain-origin}
-
-$\sigma$ librates about a moving centre, but the energy test of the pendulum fails and no other origin explains the libration: uncertain, origin_unknown. The force law has only one window in this record, so the action is to extend the integration.
-
-**2003 TX9**, `3E+2J-10+0+0+5`: `uncertain` · `libration` · `origin_unknown`. Record: 20 kyr, step 5 yr, ias15.
-
-[![mmr3__2003_TX9__3E+2J-10+0+0+5](https://smirik.github.io/resonances/img/gallery/mmr3__2003_TX9__3E+2J-10+0+0+5.png)](https://smirik.github.io/resonances/img/gallery/mmr3__2003_TX9__3E+2J-10+0+0+5.png)
 
 ## Invalid
 
@@ -278,9 +278,9 @@ The angle of the proper perihelion against the phase of Saturn's g6 mode librate
 
 ### The z1 resonance {#secular-z1-resonant}
 
-A slow libration of g − g6 + s − s6: few cycles fit in the record, so the confidence is high rather than certain.
+A slow libration of g − g6 + s − s6: only about one and a half cycles fit in the record, so the confidence is medium and the action asks for a longer record.
 
-**1020**, `g-g6+s-s6`: `resonant` · `libration` · `dynamic_libration` · `high`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
+**1020**, `g-g6+s-s6`: `resonant` · `libration` · `dynamic_libration` · `medium`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
 
 [![secular__1020__g-g6+s-s6](https://smirik.github.io/resonances/img/gallery/secular__1020__g-g6+s-s6.png)](https://smirik.github.io/resonances/img/gallery/secular__1020__g-g6+s-s6.png)
 
@@ -296,7 +296,7 @@ The centre of the z1 angle moves, then turns back after less than one revolution
 
 The z1 angle circulates slowly over the whole record: the body is close to the resonance but not in it.
 
-**847**, `g-g6+s-s6`: `non_resonant` · `circulation` · `circulation` · `certain`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
+**847**, `g-g6+s-s6`: `non_resonant` · `circulation` · `circulation` · `high`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
 
 [![secular__847__g-g6+s-s6](https://smirik.github.io/resonances/img/gallery/secular__847__g-g6+s-s6.png)](https://smirik.github.io/resonances/img/gallery/secular__847__g-g6+s-s6.png)
 
@@ -324,7 +324,7 @@ $\omega$ librates and its free part does too, so the free-omega gate confirms a 
 
 The osculating $\omega$ librates, but the free $\omega$ (the forced terms removed) winds: the forced eccentricity holds the osculating $\omega$, and the libration is kinematic.
 
-**591986**, `LK`: `non_resonant` · `libration` · `kinematic_libration` · `certain`. Record: 500 kyr, step 100 yr, mercurius.
+**591986**, `LK`: `non_resonant` · `libration` · `kinematic_libration` · `high`. Record: 500 kyr, step 100 yr, mercurius.
 
 [![zlk__591986__LK](https://smirik.github.io/resonances/img/gallery/zlk__591986__LK.png)](https://smirik.github.io/resonances/img/gallery/zlk__591986__LK.png)
 
@@ -338,9 +338,9 @@ Two long episodes of libration of $\omega$, separated by an interval without lib
 
 ### No verdict from the gate {#zlk-gate-unavailable}
 
-$\omega$ librates, but the free-omega gate cannot be evaluated on this record: no verdict (uncertain, gate_unavailable).
+$\omega$ librates, but the free-omega gate cannot be evaluated on this record. The angle decides (resonant), at most medium, with the flag gate_unavailable: the gate gave no verdict, so it cannot veto (minimal policy).
 
-**1981**, `LK`: `uncertain` · `libration` · `gate_unavailable`. Record: 500 kyr, step 10 yr, ias15.
+**1981**, `LK`: `resonant` · `libration` · `geometric_libration` · `medium`. Record: 500 kyr, step 10 yr, ias15.
 
 [![zlk__1981__LK](https://smirik.github.io/resonances/img/gallery/zlk__1981__LK.png)](https://smirik.github.io/resonances/img/gallery/zlk__1981__LK.png)
 

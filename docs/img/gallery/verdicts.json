@@ -96,9 +96,9 @@
   "step_yr": 1.0
  },
  "mmr2__2003_UG22__10E-17+0+7__40kyr": {
-  "action": "spot_check",
+  "action": "none",
   "angle_status": "episodic",
-  "confidence": "medium",
+  "confidence": "high",
   "example_id": "mmr2__2003_UG22__10E-17+0+7__40kyr",
   "final_regime": "circulation",
   "integrator": "ias15",
@@ -112,9 +112,9 @@
   "step_yr": 0.25
  },
  "mmr2__2013_AS27__31E-36+0+5": {
-  "action": "resample",
+  "action": "none",
   "angle_status": "libration",
-  "confidence": "medium",
+  "confidence": "high",
   "example_id": "mmr2__2013_AS27__31E-36+0+5",
   "final_regime": "libration",
   "integrator": "ias15",
@@ -128,9 +128,9 @@
   "step_yr": 5.001222200000484
  },
  "mmr2__2897__35S-4+0-31": {
-  "action": "review",
+  "action": "none",
   "angle_status": "episodic",
-  "confidence": "low",
+  "confidence": "high",
   "example_id": "mmr2__2897__35S-4+0-31",
   "final_regime": "circulation",
   "integrator": "ias15",
@@ -160,7 +160,7 @@
   "step_yr": 1.0
  },
  "mmr2__385458__9N-17+0+8__300kyr": {
-  "action": "none",
+  "action": "extend",
   "angle_status": "libration",
   "confidence": "high",
   "example_id": "mmr2__385458__9N-17+0+8__300kyr",
@@ -192,9 +192,9 @@
   "step_yr": 1.0
  },
  "mmr2__523899__3N-5+0+2": {
-  "action": "spot_check",
+  "action": "review",
   "angle_status": "near_separatrix",
-  "confidence": "medium",
+  "confidence": "low",
   "example_id": "mmr2__523899__3N-5+0+2",
   "final_regime": "",
   "integrator": "SABA(10,6,4)",
@@ -208,9 +208,9 @@
   "step_yr": 1.0
  },
  "mmr2__82831__13M-24+0+11": {
-  "action": "spot_check",
+  "action": "none",
   "angle_status": "episodic",
-  "confidence": "medium",
+  "confidence": "high",
   "example_id": "mmr2__82831__13M-24+0+11",
   "final_regime": "circulation",
   "integrator": "SABA(10,6,4)",
@@ -224,9 +224,9 @@
   "step_yr": 0.5
  },
  "mmr2__82831__13M-24+0+11__13M-24+2+9": {
-  "action": "spot_check",
+  "action": "none",
   "angle_status": "episodic",
-  "confidence": "medium",
+  "confidence": "high",
   "example_id": "mmr2__82831__13M-24+0+11",
   "final_regime": "circulation",
   "integrator": "SABA(10,6,4)",
@@ -322,23 +322,23 @@
  "mmr3__2003_TX9__3E+2J-10+0+0+5": {
   "action": "extend",
   "angle_status": "libration",
-  "confidence": "",
+  "confidence": "low",
   "example_id": "mmr3__2003_TX9__3E+2J-10+0+0+5",
   "final_regime": "libration",
   "integrator": "ias15",
   "libration_origin": "unknown",
   "moon": false,
   "name": "2003 TX9",
-  "reason": "origin_unknown",
+  "reason": "geometric_libration",
   "resonance": "3E+2J-10+0+0+5",
   "span_yr": 19999.8876138,
-  "status": "uncertain",
+  "status": "resonant",
   "step_yr": 5.001222200000484
  },
  "mmr3__2348__4J-2S-1+0+0-1": {
-  "action": "spot_check",
+  "action": "none",
   "angle_status": "libration",
-  "confidence": "medium",
+  "confidence": "certain",
   "example_id": "mmr3__2348__4J-2S-1+0+0-1",
   "final_regime": "libration",
   "integrator": "SABA(10,6,4)",
@@ -352,9 +352,9 @@
   "step_yr": 1.0
  },
  "mmr3__24820__3J-1S-1+0+0-1": {
-  "action": "spot_check",
+  "action": "none",
   "angle_status": "episodic",
-  "confidence": "medium",
+  "confidence": "high",
   "example_id": "mmr3__24820__3J-1S-1+0+0-1",
   "final_regime": "circulation",
   "integrator": "SABA(10,6,4)",
@@ -384,9 +384,9 @@
   "step_yr": 1.0
  },
  "mmr3__285637__3M+7J-6+0+0-4": {
-  "action": "none",
+  "action": "spot_check",
   "angle_status": "libration",
-  "confidence": "high",
+  "confidence": "medium",
   "example_id": "mmr3__285637__3M+7J-6+0+0-4",
   "final_regime": "libration",
   "integrator": "ias15",
@@ -416,9 +416,9 @@
   "step_yr": 1.0
  },
  "mmr3__52356__5J-2S-2+0+0-1": {
-  "action": "spot_check",
+  "action": "none",
   "angle_status": "episodic",
-  "confidence": "medium",
+  "confidence": "high",
   "example_id": "mmr3__52356__5J-2S-2+0+0-1",
   "final_regime": "",
   "integrator": "SABA(10,6,4)",
@@ -448,9 +448,9 @@
   "step_yr": 1.0
  },
  "secular__1020__g-g6+s-s6": {
-  "action": "none",
+  "action": "extend",
   "angle_status": "libration",
-  "confidence": "high",
+  "confidence": "medium",
   "example_id": "secular__1020__g-g6+s-s6",
   "final_regime": "",
   "integrator": "SABA(10,6,4)",
@@ -522,7 +522,7 @@
  "secular__847__g-g6+s-s6": {
   "action": "none",
   "angle_status": "circulation",
-  "confidence": "certain",
+  "confidence": "high",
   "example_id": "secular__847__g-g6+s-s6",
   "final_regime": "",
   "integrator": "SABA(10,6,4)",
@@ -574,17 +574,17 @@
  "zlk__1981__LK": {
   "action": "extend",
   "angle_status": "libration",
-  "confidence": "",
+  "confidence": "medium",
   "example_id": "zlk__1981__LK",
   "final_regime": "",
   "integrator": "ias15",
   "libration_origin": "unknown",
   "moon": false,
   "name": "1981",
-  "reason": "gate_unavailable",
+  "reason": "geometric_libration",
   "resonance": "LK",
   "span_yr": 500000.0,
-  "status": "uncertain",
+  "status": "resonant",
   "step_yr": 10.0
  },
  "zlk__2010_HY22__LK": {
@@ -622,7 +622,7 @@
  "zlk__591986__LK": {
   "action": "none",
   "angle_status": "libration",
-  "confidence": "certain",
+  "confidence": "high",
   "example_id": "zlk__591986__LK",
   "final_regime": "",
   "integrator": "mercurius",

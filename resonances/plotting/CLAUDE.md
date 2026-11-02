@@ -93,13 +93,17 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
 - `plotting/secular_plots.py`: `SecularDiagnostics` + `draw_*` + `SecularPlotter` (secular and ZLK rows): kinds `angle`,
   `rate`, `portrait`, `combined` (the one-page V1 figure, `draw_long_period_combined`). `SecularPlotter` and
   `MMRPlotter` share `DiagnosticPlotter` (`plotting/base.py`); `DataManager.DIAGNOSTIC_PLOTTERS` maps resonance types to them;
-  panel (f) draws the rate of each element in `Response.variables` (d sin(i/2)/dt for an Ω-only angle, with `r2_i`),
-  (h) is sin(i/2) cos/sin σ there. ZLK (f): the drift of the osculating and the free ω from their first values, in
+  W29 (author d11): (d) is a (`_draw_axis`: osculating band, a filtered at P_c, min–max; a_P dashed and the
+  co-orbital zone's edges a_P(1 ± k (m_P/3)^(1/3)) dotted when `coorbital_planet_geometric` names a planet by ⟨a⟩
+  alone, ZLK_COORBITAL_HILL_FACTOR k, for drawing only: Trojans and secular rows too), so e, i, physics, centre,
+  portraits are (e)…(j) (`*_LETTER`, `PORTRAIT_LETTERS`).
+  panel (g) draws the rate of each element in `Response.variables` (d sin(i/2)/dt for an Ω-only angle, with `r2_i`),
+  (i) is sin(i/2) cos/sin σ there. ZLK (g): the drift of the osculating and the free ω from their first values, in
   turns, with a legend (`_draw_free_omega_drift`); the right column's "also measured" lines (e-i coupling, attribution,
   the centre's slow line, the node lock) come from `verdict_text.zlk_column_lines`, measured facts only; the cause of a
   kinematic libration is the third sentence (`verdict_text.zlk_cause`, the same columns; a fact it states leaves the
   grey line). Panel (a′) (`_draw_forcing`, `forcing_panel_drawn`): only for an attributed row or a forced-beat centre,
-  under (a), eight panels then; every other row keeps seven, untouched. ω_f grey, arg z_forced − Ω orange, ϖ_j − Ω
+  under (a), nine panels then; every other row keeps eight, untouched. ω_f grey, arg z_forced − Ω orange, ϖ_j − Ω
   purple dashed, from `FreeElements.forced_vector` and the osculating node; unwrapped within a turn, else modulo 360°
   about the forced direction with ω_f inside the librating episodes only (624).
   Right column (W27, author's request): ORBIT has a (`ctx_a_med_au`/`_min`/`_max`, columns of the long-period row);
@@ -137,7 +141,9 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
 
 - One page per row, layout V1; time series left, all decision numbers right, also in the CSV. Recurrence and cycles
   are not in the combined figure.
-- Plaque `STATUS · angle_status · CONFIDENCE`, "ends: …" last.
+- Plaque `STATUS · angle_status · CONFIDENCE`, then the amber action tag (`verdict_text.action_tag`: `→ extend to 40 kyr`,
+  `→ resample to 0.5 yr`, `→ review`, `→ spot check`; none for action none; the author asked for it on 2026-11-02, Q5),
+  "ends: …" last. A tag that would cross the column's edge drops to a row under the plaque (`TAG_ROW`).
 - σ̇ axis symlog σ̇/2ω₀ for every record, the σ̇ = 0 line highlighted; the osculating a envelope clipped at the axis
   (triangle at the edge).
 - Panel (e): the law that decided on the series it read (`law_series`, `_law_shift`): the windows' sine on ψ = σ − c(t)
@@ -193,6 +199,14 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
   their source; the cause line a driver, a candidate or none. Accepted runs the status does not count are grey strips
   `#id < floor` / `#id centre turns` (g02-9 A, `uncounted_tags`), never episodes.
 - Frozen-potential overlays stay off by default (`dev/rejected.md`).
+- The minimal policy (W29 SPEC §7, PRINCIPLES 6): (a) of both figures shows only what the status counts
+  (`mmr_combined.policy_marks` from `analysis.policy`, else the verdict's id cells; `shade_policy_runs`): counted
+  episodes filled (a covered edge to the record edge, the filter-trim stretch pale, `fill_counted`), a counted 1:1
+  leg 'leg', candidates faint and dashed 'cand' (`fill_candidate`), no grey strip; the legend's (a) line follows
+  (`legend_lines`, `long_period_legend`). Under v2 or without a policy, nothing changes. The explanation opens with
+  four `SLOT_POLICY` bullets (`verdict_text.policy_block`: status · level · reason (origin / owner), `basis:` from
+  `confidence_basis`, `flags:`, `v2:`); every former cap read is `has_mark` (caps or flags). The standalone MMR
+  panels' re-run (`mmr_plots._rerun_analysis`) carries the stored verdict, or re-runs with the scans on.
 
 ## Known defects (open)
 

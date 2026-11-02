@@ -40,7 +40,7 @@ import time  # noqa: E402
 import traceback  # noqa: E402
 import warnings  # noqa: E402
 from concurrent.futures import ProcessPoolExecutor  # noqa: E402
-from dataclasses import dataclass  # noqa: E402
+from dataclasses import dataclass, replace  # noqa: E402
 from multiprocessing import get_context  # noqa: E402
 from pathlib import Path  # noqa: E402
 from typing import Any, Callable, Dict, List, Optional, Tuple  # noqa: E402
@@ -55,12 +55,15 @@ FIGURES_DIR = DOCS / 'img' / 'figures'
 GALLERY_PAGE = DOCS / 'physics' / 'gallery.md'
 VERDICTS = GALLERY_DIR / 'verdicts.json'
 TOOLS = REPO / 'benchmark' / 'tools'
-SAVED_RUNS = {'mmr': 'v2-w25-final', 'long_period': 'v2-w25-final-secular-zlk'}  # under the benchmark data folder
+SAVED_RUNS = {'mmr': 'v2-w29-final', 'long_period': 'v2-w29-final-secular-zlk'}  # under the benchmark data folder
 
 GALLERY_WIDTH_PX = 2000  # the verdict figures are 24 in wide: 83 dpi
 GALLERY_COLOURS = 256  # palette PNG: the figures are flat colours and text
 KIND_WIDTH_PX = 1100  # the standalone kinds of docs/reading-figures.md
 SCHEMATIC_DPI = 150
+# the gallery shows the package's default classifier policy (W29: the minimal policy layer), passed explicitly (never
+# through the environment, SPEC review 2 B1)
+GALLERY_POLICY = 'minimal'
 COMPARED = ('status', 'angle_status', 'final_regime', 'reason', 'confidence', 'libration_origin', 'action')
 
 
@@ -111,8 +114,8 @@ CASES = (
         'mmr3__463__4J-2S-1+0+0-1',
         'resonant',
         'The body of the quick start',
-        'The resonance checked in the [Quick start](../quick-start.md). The libration is as clear as above; one margin is '
-        'thin, so the confidence is high rather than certain.',
+        'The resonance checked in the [Quick start](../quick-start.md). The libration is as clear as above, but the record '
+        'holds about nine cycles, fewer than the ten that certain needs, so the confidence is high.',
     ),
     Case(
         'resonant-coorbital',
@@ -138,7 +141,8 @@ CASES = (
         'resonant',
         'Libration about a moving centre',
         'The centre of libration follows the slowly moving minimum of the averaged potential; the libration is tested in '
-        '$\\psi = \\sigma - \\sigma_c(t)$. The output step folds short periods, which holds the confidence at medium and asks for a resample.',
+        '$\\psi = \\sigma - \\sigma_c(t)$. The output step folds short periods: the flag short_period_aliased warns, but '
+        'it caps nothing, and 131 cycles give high.',
     ),
     Case(
         'centre-scale',
@@ -162,7 +166,17 @@ CASES = (
         'resonant',
         'Libration decided by the geometry alone',
         '$\\sigma$ librates over the whole record, but neither the force law nor the energy of the pendulum could be measured: '
-        'only the geometry decided (reason geometric_libration, origin unknown), and the confidence is at most medium.',
+        'only the geometry decided (reason geometric_libration, origin unknown). Nothing objects, and a missing measurement '
+        'is a flag (no_full_physics_support), not a cap: 14 clean cycles give certain.',
+    ),
+    Case(
+        'measured-objection',
+        'mmr3__2003_TX9__3E+2J-10+0+0+5',
+        'resonant',
+        'A libration the physics questions',
+        '$\\sigma$ librates about a moving centre over the whole record, but the energy test of the pendulum fails. The '
+        'objection is measured but does not decide (flag measured_objection): the geometry keeps the status, resonant at '
+        'low, with action extend. Under `CLASSIFIER_POLICY=v2` the same row is uncertain, origin_unknown.',
     ),
     # transient
     Case(
@@ -170,8 +184,8 @@ CASES = (
         'mmr3__52356__5J-2S-2+0+0-1',
         'transient',
         'Repeated capture and release',
-        'Librating episodes alternate with circulation (subtype recurrent). The episodes stay close to the separatrix, which '
-        'caps the confidence.',
+        'Librating episodes alternate with circulation (subtype recurrent). The episodes stay close to the separatrix (flag '
+        'episodes_in_separatrix_zone); the longest closes 3.5 cycles, so the confidence is high.',
     ),
     Case(
         'transient-exit',
@@ -186,15 +200,15 @@ CASES = (
         'transient',
         'An episode, then circulation',
         'A libration episode followed by circulation to the end of the record. The episode closes only about one cycle, '
-        'which caps the confidence.',
+        'fewer than the three that high needs, so the confidence is medium.',
     ),
     Case(
         'transient-before-jump',
         'mmr2__2003_UG22__10E-17+0+7__40kyr',
         'transient',
         'An episode ended by a jump of the semi-major axis',
-        'The episode ends where $a$ jumps (a kick, as at a close approach to a planet); after the jump the angle no longer librates. An '
-        'episode that ends at a jump caps the confidence.',
+        'The episode ends where $a$ jumps (a kick, as at a close approach to a planet); after the jump the angle no longer librates. The '
+        'jump is a flag (episode_before_jump); the episode closes 87 cycles, so the confidence is high.',
     ),
     Case(
         'transient-subresonance',
@@ -292,15 +306,6 @@ CASES = (
         'An unexplained drift',
         '$\\sigma$ drifts, and neither a kinematic nor an induced explanation passes: uncertain, extend the integration.',
     ),
-    Case(
-        'uncertain-origin',
-        'mmr3__2003_TX9__3E+2J-10+0+0+5',
-        'uncertain',
-        'A libration the physics does not confirm',
-        '$\\sigma$ librates about a moving centre, but the energy test of the pendulum fails and no other origin explains the '
-        'libration: uncertain, origin_unknown. The force law has only one window in this record, so the action is to '
-        'extend the integration.',
-    ),
     # invalid
     Case(
         'invalid-alias',
@@ -323,7 +328,8 @@ CASES = (
         'secular__1020__g-g6+s-s6',
         'secular',
         'The z1 resonance',
-        'A slow libration of g − g6 + s − s6: few cycles fit in the record, so the confidence is high rather than certain.',
+        'A slow libration of g − g6 + s − s6: only about one and a half cycles fit in the record, so the confidence is '
+        'medium and the action asks for a longer record.',
     ),
     Case(
         'secular-z1-unfinished-swing',
@@ -375,7 +381,8 @@ CASES = (
         'zlk__1981__LK',
         'zlk',
         'No verdict from the gate',
-        '$\\omega$ librates, but the free-omega gate cannot be evaluated on this record: no verdict (uncertain, gate_unavailable).',
+        '$\\omega$ librates, but the free-omega gate cannot be evaluated on this record. The angle decides (resonant), at most '
+        'medium, with the flag gate_unavailable: the gate gave no verdict, so it cannot veto (minimal policy).',
     ),
     Case(
         'zlk-circulation',
@@ -488,7 +495,7 @@ def _render_mmr(case: Case) -> Dict[str, Dict[str, Any]]:
     from resonances.resonance.analysis.settings import settings_from_config
 
     series = io.load_series(case.example_id)
-    analysis = analyse_mmr(series, settings_from_config())
+    analysis = analyse_mmr(series, replace(settings_from_config(), classifier_policy=GALLERY_POLICY))
     regime = regime_fields(io.read_meta(io.example_path(case.example_id)), series.t_yr)
     drawn = [(case.example_id, analysis)]
     if case.member:
@@ -515,7 +522,7 @@ def _render_long_period(case: Case) -> Dict[str, Dict[str, Any]]:
     from resonances.plotting.secular_plots import draw_long_period_combined
 
     example = bio.load_example(case.example_id, with_planets=False)
-    sim, body, resonance = rsz.build_simulation(example)
+    sim, body, resonance = rsz.build_simulation(example, policy=GALLERY_POLICY)
     sim.identify_librations()
     row = rsz.summary_row(case.example_id, body, resonance)
     elements = body.free_elements if resonance.type == 'lidov_kozai' else None

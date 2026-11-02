@@ -14,7 +14,7 @@ The outcome is `libration_origin`:
 | `kinematic` | $\sigma$ is bounded by geometry (perihelion term, a secular cycle, a planetary ripple); $a$ does not respond | [kinematic libration](gallery.md#kinematic-libration), [kinematic drift](gallery.md#kinematic-drift) |
 | `induced` | another resonance (the *owner*) drives $a$; $\sigma$ follows by the identity | [forced wave](gallery.md#induced-forced-wave), [owner librates](gallery.md#induced-owner-librates) |
 | `subresonance` | another member of the same multiplet librates about a fixed centre | [82831](gallery.md#transient-subresonance) |
-| `unknown` | bounded, mechanism not established | [2003 TX9](gallery.md#uncertain-origin), [geometric libration](gallery.md#geometric-libration) |
+| `unknown` | bounded, mechanism not established | [2003 TX9](gallery.md#measured-objection), [geometric libration](gallery.md#geometric-libration) |
 
 How the origins combine into a status is on [The status tree](status-tree.md). Every check has four outcomes:
 `pass` supports the resonant reading, `fail` refutes it, `not_measured` means the record could not say, and

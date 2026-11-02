@@ -3431,12 +3431,33 @@ def harmonic_half_test(
     return r2(first), r2(second), bool(acceleration(lo_rad) > 0 and acceleration(hi_rad) < 0)
 
 
+def edge_travel_rev(
+    t_yr: np.ndarray, angle_f: np.ndarray, t_from: float, t_to: float, window: Tuple[float, float], rev: float = TWO_PI
+) -> float:
+    """The travel of the unwrapped sigma_f on [t_from, t_to] clipped to the analysis window, (max - min) / `rev`, in
+    revolutions of the angle (`rev`: 2 pi; pi for a ZLK omega, whose quadrupole Hamiltonian depends on cos 2 omega).
+    >= 1: sigma_f circulates there (W29: a record that ends in circulation; S1, the side of a half-swing without a
+    neighbour run). 0 when fewer than two samples fall inside; nan samples are skipped."""
+    lo, hi = max(float(t_from), float(window[0])), min(float(t_to), float(window[1]))
+    if not hi > lo:
+        return 0.0
+    t = np.asarray(t_yr, dtype=float)
+    i0, i1 = np.searchsorted(t, lo, side='left'), np.searchsorted(t, hi, side='right')
+    values = np.asarray(angle_f, dtype=float)[i0:i1]
+    values = values[np.isfinite(values)]
+    if len(values) < 2:
+        return 0.0
+    return float((values.max() - values.min()) / rev)
+
+
 def half_librations(geometry: 'Geometry', angle: 'FilteredAngle', settings: AnalysisSettings) -> None:
     """Rule single_half_libration, the measurement (W28 C6, q-5 i, the W28 C15 audit): on an MMR angle that is not 1:1
     (`FilteredAngle.identity_coefficient` finite, not `coorbital`) with MMR_SINGLE_HALF_LIBRATION on, every rejected
     run of two turning points below a half-turn whose neighbours are passages or the record's edge (`HalfLibration`),
-    when its period is at least the angle's floor less the thin band (as the near-episode). Stored in
-    `Geometry.half_librations` (none on an angle with an accepted run: its episodes decide)."""
+    when its period is at least the angle's floor less the thin band (as the near-episode). A side without a run is a
+    passage when sigma_f turns >= one revolution from the facing turning point to the window's edge
+    (`edge_travel_rev`, W29 codex S1), the record's edge otherwise. Stored in `Geometry.half_librations` (none on an
+    angle with an accepted run: its episodes decide)."""
     geometry.half_librations = ()
     if angle.coorbital or not settings.mmr_single_half_libration or not np.isfinite(angle.identity_coefficient):
         return
@@ -3456,7 +3477,11 @@ def half_librations(geometry: 'Geometry', angle: 'FilteredAngle', settings: Anal
         sides = []
         for j in (k - 1, k + 1):
             if not 0 <= j < len(runs):
-                sides.append('edge')
+                # no run on this side: a passage when sigma_f turns >= one revolution between the facing turning
+                # point and the window's edge (W29 S1), the record's edge otherwise
+                lo, hi = (angle.window[0], run.t_start_yr) if j < k else (run.t_end_yr, angle.window[1])
+                travel = edge_travel_rev(angle.t_yr, angle.angle_f, lo, hi, angle.window)
+                sides.append('passage' if travel >= 1 else 'edge')
                 continue
             left, right = (runs[j], run) if j < k else (run, runs[j])
             turns = abs(float(right.tp_values_rad[0]) - float(left.tp_values_rad[-1])) / TWO_PI

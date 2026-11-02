@@ -128,11 +128,28 @@ references/output.md; every value: references/physics/overview.md and references
 | `angle_status` | what σ does over the whole record (`libration`, `episodic`, `near_separatrix`, `circulation`, `drift`, `insufficient_time`, `undefined`); not the answer |
 | `final_regime` | how the record ends after librating episodes (`circulation`, `libration` = captured at the end), or `arc`/`stall` when σ slows down after circulating (flag `extend_time`) |
 | `reason`, `libration_origin` | why; `dynamic` = this resonance's force was measured; `kinematic`, `induced`, `subresonance`, `unknown` otherwise |
-| `confidence` | `certain` > `high` > `medium` > `low`: ordinal evidence, not a probability; empty for `uncertain`/`invalid` |
-| `caps`, `flags` | what holds the level down; each cap names another reading of the record (references/physics/confidence.md, "Caps and the other reading") |
+| `confidence` | `certain` > `high` > `medium` > `low`: ordinal evidence, not a probability; empty for `uncertain`/`invalid`. Minimal policy: from the evidence alone (below), `confidence_basis` says on what |
+| `caps`, `flags` | v2: what holds the level down; each cap names another reading of the record (references/physics/confidence.md, "Caps and the other reading"). Minimal policy: `caps` is empty, every former cap is a flag and changes neither status nor level |
+| `policy`, `v2_verdict` | `minimal` (default) or `v2` (`CLASSIFIER_POLICY`); under minimal `v2_verdict` is what the W28 tree said (`status/confidence/reason/action/angle_status`), for comparison only |
+| `veto`, `n_cycles`, `n_counted_episodes`, `counted_episode_ids`, `candidate_episode_ids` | minimal policy: the measured physics that made a bounded angle non_resonant (`owner`, `kinematic`, `forced_wave`, `strength`, `zlk_kinematic`, `zlk_free_e`; '' none), the complete cycles N behind the level, the counted episodes and the candidates (episodes.csv `counted`, `candidate`) |
 | `action` | `none`, `spot_check` (look at the figure), `review`, `extend` (to `extend_to_years`), `resample` (at `resample_step_yr`) |
 | `rules_fired` | the named rules that acted on the row (a cut, a join, a cap, an outcome), even when the status stayed; each has a row id in references/libration-analysis.md (`frame_join` → G2q). A flag list, never a status |
 | `review_required`, `review_reasons` | the review queue: rows a human should look at (medium/low level, a spot_check/review action, origin unknown) and why (`confidence:`, `cap:`, `failed:`, `origin_unknown`); no status reads it |
+
+**The minimal policy** (`CLASSIFIER_POLICY=minimal`, the default; `v2` keeps the W28 tree for comparison;
+references/physics/status-tree.md, references/physics/confidence.md). The status is the geometry of σ_f: bounded over
+the whole record → resonant, bounded stretches between circulation → transient, ambiguous → near_separatrix or
+uncertain, never bounded → non_resonant. A bounded angle becomes non_resonant **only** on a measured contradiction
+(`veto`); a check that was not measured, or is thin, is a flag (`gate_unavailable`, `measured_objection`,
+`veto_needs_length`, `one_coorbital_leg`, …), never a status. The level: `certain` needs N ≥ 10 complete cycles, a clear
+amplitude margin, every needed objection measured and none found, and a filter-stable record; `high` N ≥ 3; `medium`
+1.5 ≤ N < 3 or a needed objection not measured; `low` a measured objection on a libration (`measured_objection`). A
+non_resonant row is `medium` when a candidate episode was rejected (it is plotted in review mode) or the veto was thin
+(`veto_thin`). `extend` only for an unfinished libration at the record's end, a deciding period longer than T/1.5, or a
+needed veto not measured for lack of length (`veto_needs_length`, clause `C`) whose record `pol_veto_need_yr` is within
+`MMR_NEXT_CHECK_SPAN_FACTOR` × T (beyond it: `review`); a record that ends in circulation is decided now. So more rows are resonant/transient at `low`/`medium` than under v2
+(about 31 benchmark rows v2 left uncertain): the `review` and `nonzero` save/plot modes select them, and a
+`medium` row is a "look at the figure" row, not a weak yes.
 
 **What a verdict claims.** It describes the saved interval, at the saved step, in the run's model (planets, integrator,
 initial elements, date). A longer span, a finer step or another epoch can change it; chaotic bodies change verdict
@@ -230,7 +247,13 @@ Distinctions that matter when you report:
 - **`invalid`** says nothing about the resonance: `alias`/`undersampled` → resample at `resample_step_yr`;
   `unphysical` → the orbit left the ellipse (encounter, ejection: check the integrator); `undefined_phase` → ϖ is
   undefined at e ≈ 0. A non_resonant `alias` (one branch, far from a*) is a real circulation seen through the step.
-- **Lidov-Kozai.** A libration of the osculating ω is not enough; the free-ω gate decides. `non_resonant /
+- **Lidov-Kozai, minimal policy.** The gate can only veto: a measured `kinematic` outcome (`veto` `zlk_kinematic`), or
+  free e below forced e (`zlk_free_e`), gives `non_resonant` (code −2, exactly these rows). A gate without a verdict
+  (short window, planetary residual, undefined phase, co-orbital of Mercury to Mars) or a disabled one leaves the
+  geometric status (resonant/transient) at ≤ `medium` with the flag `gate_unavailable` / `gate_disabled`; −9 is then
+  only an `uncertain` row. A confirmed and a geometric ZLK librator share the status code: **split every ZLK statistic
+  by `check_zlk_free_omega`** (`pass` = confirmed, `not_measured` = no verdict). The v2 text below is the `v2` policy.
+- **Lidov-Kozai (v2).** A libration of the osculating ω is not enough; the free-ω gate decides. `non_resonant /
   kinematic_libration` is a **measurement** (the free ω winds: geometry); `uncertain / gate_unavailable` is the
   **absence** of one (`extend_to_years` for a short window or a residual near a planetary rate; `review` for an
   undefined free phase or missing free elements). Never merge them in a statistic (legacy codes −2 and −9). A co-orbital
@@ -304,8 +327,13 @@ driver identified) or `#id ripple`; a grey strip `#id < floor` / `#id centre tur
 does not count (episodes.csv `eligible` False, `ineligible_reason`; text `Not counted: …`). A 1:1 episode in parts
 has brackets per sub-regime and a hatched `inferred` stay: inferred, not measured. `Suspected kinematic: …` is a
 suspicion, not a status. The block `Numbers behind this verdict` frames the DECISIVE comparison, the LIMIT cap, a
-CONFLICT (a failed check the verdict did not read) and UNMEASURED tests; without FAIR (m) a dark-orange line says why. For secular/ZLK rows, (f) is the rate fit (secular) or the drift of the free and the
-osculating ω in turns (ZLK: a free ω that winds makes the libration kinematic); their FREQUENCIES table lists the
+CONFLICT (a failed check the verdict did not read) and UNMEASURED tests; without FAIR (m) a dark-orange line says why.
+Under the minimal policy the explanation opens with four lines (status · confidence · reason (origin / owner);
+`basis:` N, amplitude margin, objections, filter, veto; `flags:`; `v2:` the tree's verdict), the confidence block lists
+no caps, and (a) of both figures fills only the counted episodes (`#id`; a counted 1:1 leg `leg`) and, faint and
+dashed, the candidates `cand`; no grey strips (episodes.csv still lists every run). For secular/ZLK rows (d) is a
+(with the planet's a and the co-orbital zone's edges for a co-orbital), (e), (f) e and i, (g) the rate fit (secular)
+or the drift of the free and the osculating ω in turns (ZLK: a free ω that winds makes the libration kinematic); their FREQUENCIES table lists the
 body's rates, the planetary modes (g5, g6, s6 always) and the beats in ″/yr with their periods, to name a period seen
 on σ(t) (e.g. 591986: g − g5 6.11 kyr, the kinematic ω cycle; g6 − g5 54 kyr). If you can view images, open the figure of every
 `medium`/`low` verdict before reporting it.
@@ -321,8 +349,9 @@ on σ(t) (e.g. 591986: g − g5 6.11 kyr, the kinematic ω cycle; g6 − g5 54 k
 5. Name the origin: `dynamic` vs `unknown` (geometric), `kinematic`, `induced` (with `owner`), `subresonance`.
    `subfloor_pass` in `rules_fired`: a two-body libration faster than the 150-yr floor, accepted because its own
    averaged potential, centre and force law confirm it (G1f; `geo_subfloor_*`).
-6. `certain`/`high`: state it. `medium`: look at the figure and name the cap and its other reading. `low`: review.
-7. ZLK: give the gate's outcome; keep kinematic and gate_unavailable apart.
+6. `certain`/`high`: state it. `medium`: look at the figure and name what limits it (minimal: `confidence_basis`
+   and the flags; v2: the cap and its other reading). `low`: a measured objection: review.
+7. ZLK: give the gate's outcome; keep kinematic and gate_unavailable apart (minimal: split by `check_zlk_free_omega`).
 8. Statistics over many bodies: deduplicate multiplet rows, keep −2/−9 style outcomes apart, do not pool runs with
    different settings (`settings_hash`) or steps.
 9. State what the verdict covers: span, output step, integrator, planets, date and source.

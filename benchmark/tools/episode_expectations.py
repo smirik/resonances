@@ -16,7 +16,9 @@ gate reads tiers A and B only, as KNOWN_DISAGREEMENTS.csv: a case that fails and
 so is a `known_fail` case that passes (resolved: set known_fail = 0) and a case whose record is not in the run
 (missing). Tiers C and D are printed, never gate. `known_reason` is Claude's reading of a failure, not an author label.
 
-The ops (times in yr; 'plain' episodes are the accepted ones not flagged as a forced wave, `count_forced` takes all):
+The ops (times in yr; 'plain' episodes are the accepted ones not flagged as a forced wave, `count_forced` takes all;
+under the minimal policy (W29, summary `policy` = minimal, episodes.csv `counted`) the plain episodes are the counted
+ones: a vetoed or filter-artefact run is accepted but not counted, and the figure does not number it):
 - n_accepted (min, max), single_covers (exactly one, both edge gaps <= 1 P), episode_near / single_episode_near (t0, t1,
   tol, optional min_tp and centre_deg within CENTRE_TOL_DEG), no_episode_in (t0, t1), no_plain_episode, all_forced;
 - union (min) / no_union: geo_union_n_episodes of mmr_numbers.csv;
@@ -77,6 +79,7 @@ SCOPES = ('mmr', 'secular', 'zlk')
 LONG_PERIOD_SCOPES = ('secular', 'zlk')
 CENTRE_TOL_DEG = 30.0  # episode_near: the episode's centre within this of `centre_deg` (an island, not a position)
 NAN_VALUE = float('nan')
+MINIMAL = 'minimal'  # the summary `policy` whose episodes.csv `counted` says which runs are episodes (W29)
 COVER_P = 1.0  # an edge gap of at most one period of the episode covers the edge (DECISIONS: LIBRATION_COVERAGE_PERIODS)
 DECISIVE_PERIOD = 'ep_period_med_yr'  # period_in which='decisive': the period of the episode the verdict rests on
 NUMBER_COLUMNS = ('example_id', 'resonance', 'geo_union_n_episodes', 'exit_observed', 'entry_observed', DECISIVE_PERIOD)
@@ -198,7 +201,8 @@ def _scales(frame: pd.DataFrame) -> pd.Series:
 class Record:
     """One example of a run at one scale: its summary row (None: not in the run), its episode rows of that scale
     (accepted or not) and the numbers the ops read. The plain episodes are the accepted ones without a forced-wave
-    flag. `at_scale` gives the same example at another scale (the summary and the numbers are shared)."""
+    flag; under the minimal policy, with the episodes.csv column `counted`, the accepted counted ones (`counted_only`).
+    `at_scale` gives the same example at another scale (the summary and the numbers are shared)."""
 
     def __init__(self, summary: Optional[Mapping], episodes: pd.DataFrame, numbers: Optional[Mapping] = None, scale: str = MAIN_SCALE):
         self.summary = summary
@@ -216,6 +220,13 @@ class Record:
         forced = self.accepted['forced_wave'].map(_ok) if 'forced_wave' in self.accepted and len(self.accepted) else None
         self.forced = self.accepted[forced] if forced is not None else self.accepted.iloc[0:0]
         self.plain = self.accepted[~forced] if forced is not None else self.accepted
+        if self.counted_only:
+            self.plain = self.accepted[self.accepted['counted'].map(_flag)] if len(self.accepted) else self.accepted
+
+    @property
+    def counted_only(self) -> bool:
+        """The minimal policy's run (W29): the summary says so and episodes.csv has the `counted` column."""
+        return self.summary is not None and str(self.summary.get('policy', '')) == MINIMAL and 'counted' in self.runs
 
     def at_scale(self, scale: str) -> 'Record':
         """The same example with the episode rows of `scale`."""
@@ -278,14 +289,14 @@ def run_folder(run: str | Path) -> Path:
     return path if path.is_dir() else bio.DATA / str(run)
 
 
-def analyse_long_period(example_ids: Sequence[str]) -> RunTables:
+def analyse_long_period(example_ids: Sequence[str], policy: Optional[str] = None) -> RunTables:
     """The secular and Lidov-Kozai examples analysed from their saved series, as reclassify_secular_zlk does (no
-    figures): a `RunTables` with their summary and episode rows."""
+    figures; `policy` minimal | v2, None: the package default): a `RunTables` with their summary and episode rows."""
     import reclassify_secular_zlk as szlk
 
     summaries, episodes = [], []
     for example_id in example_ids:
-        result = szlk.analyse_one(example_id)
+        result = szlk.analyse_one(example_id, False, policy)
         if result['status'] != 'ok':
             raise RuntimeError(f'{example_id}: {result["error"]}\n{result.get("trace", "")}')
         summaries.extend(result['summary'])
@@ -703,18 +714,27 @@ def describe(rec: Optional[Record]) -> str:
     return head + ' | ' + ('; '.join(parts) if parts else 'no accepted episode') + tail
 
 
+def run_policy(tables: RunTables) -> Optional[str]:
+    """The classifier policy of a run: its summary's `policy` column (one value), None for a run before W29."""
+    if 'policy' not in tables.summary:
+        return None
+    values = {str(v) for v in tables.summary['policy'] if str(v) not in ('', 'nan')}
+    return values.pop() if len(values) == 1 else None
+
+
 def evaluate(
     run: str | Path | RunTables,
     cases: Optional[Sequence[Case]] = None,
     long_period: Optional[RunTables] = None,
 ) -> pd.DataFrame:
     """One row per case: result PASS | FAIL | MISSING (the record is not in the run), the notes of every check, the
-    package's reading. MMR cases read `run`; secular/ZLK cases read `long_period`, analysed here when not given."""
+    package's reading. MMR cases read `run`; secular/ZLK cases read `long_period`, analysed here when not given (under
+    the MMR run's policy, `run_policy`)."""
     cases = load_cases() if cases is None else list(cases)
     tables = run if isinstance(run, RunTables) else read_run(run)
     ids = long_period_ids(cases)
     if ids and long_period is None:
-        long_period = analyse_long_period(ids)
+        long_period = analyse_long_period(ids, run_policy(tables))
     rows = []
     for case in cases:
         source = long_period if case.scope in LONG_PERIOD_SCOPES else tables

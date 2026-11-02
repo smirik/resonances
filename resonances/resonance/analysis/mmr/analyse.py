@@ -69,6 +69,7 @@ from typing import List, Optional, Sequence, Tuple
 import numpy as np
 
 from resonances.resonance.analysis import confidence as confidence_module
+from resonances.resonance.analysis import policy as policy_module
 from resonances.resonance.analysis import filtering, geometry as geometry_module, orbit_type as orbit_type_module, pendulum
 from resonances.resonance.analysis.confidence import Cap, ConfidenceCells
 from resonances.resonance.analysis.filtering import is_finite
@@ -863,7 +864,30 @@ def analyse_mmr(
     (G1q, no second level either); `subfloor` the second pass of a two-body angle at the floor of its own averaged
     potential (G1f, `_subfloor_pass`, no second level). The co-orbital tables of the averaged potential are kept for the whole analysis, up
     to mmr_coorbital_record_tables_mb of their arrays (`coorbital.record_tables`), and the filtered series the passes ask
-    for again in the record's memo (`filtering.record_memo`)."""
+    for again in the record's memo (`filtering.record_memo`).
+
+    W29: the outermost call ends with the policy layer (`policy.apply_mmr`: the minimal policy re-reads the finished
+    analysis; under CLASSIFIER_POLICY=v2 it only marks the verdict); a pass inside a record's analysis (a derived row,
+    the centre scale, an owner's identity) returns the raw v2 analysis, which the outermost call's layer reads."""
+    options = (scan_subresonances, scan_owner, parent, centre_scale, quasi_satellite, subfloor)
+    if _ACTION_STEP_CUTS.get() is not None:  # a pass inside a record's analysis: no policy, the outermost call applies it
+        return _analyse_mmr_record(series, settings, cells, *options)
+    return policy_module.apply_mmr(_analyse_mmr_record(series, settings, cells, *options), settings)
+
+
+def _analyse_mmr_record(
+    series: MMRSeries,
+    settings: AnalysisSettings,
+    cells: Optional[ConfidenceCells],
+    scan_subresonances: bool,
+    scan_owner: bool,
+    parent: str,
+    centre_scale: bool,
+    quasi_satellite: Optional[quasi_satellite_module.QuasiSatellite],
+    subfloor: Optional[SubfloorPass],
+) -> MMRAnalysis:
+    """The v2 analysis of one record (`analyse_mmr` without the policy layer), with the G2a guard, which chooses between
+    the cut and the whole record on the raw v2 (status, confidence)."""
     options = (scan_subresonances, scan_owner, parent, centre_scale, quasi_satellite, subfloor)
     with coorbital_module.record_tables(settings.mmr_coorbital_record_tables_mb * BYTES_PER_MB), filtering.record_memo():
         row = _ROW_KEY.set(series.resonance.key)
@@ -880,16 +904,16 @@ def analyse_mmr(
             _ROW_KEY.reset(row)
         if not cuts:
             return analysis
-        whole = analyse_mmr(
+        whole = _analyse_mmr_record(
             series,
             replace(settings, libration_action_step=False),
             cells,
-            scan_subresonances=scan_subresonances,
-            scan_owner=scan_owner,
-            parent=parent,
-            centre_scale=centre_scale,
-            quasi_satellite=quasi_satellite,
-            subfloor=subfloor,
+            scan_subresonances,
+            scan_owner,
+            parent,
+            centre_scale,
+            quasi_satellite,
+            subfloor,
         )
         return _action_step_guard(analysis, whole, cuts, settings)
 

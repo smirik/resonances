@@ -125,6 +125,18 @@ The resonant angle $\sigma$, unwrapped: a circulation runs off upwards or downwa
 
 What to look for: fills that cover the whole record are a libration; fills in part of it are episodes.
 
+**Under the minimal policy** (`CLASSIFIER_POLICY=minimal`, the default) panel (a) shows only what the status counts:
+
+- a solid fill `#id`: a counted episode (the same fill rules as above); where it is filled to a record edge it covers,
+  the stretch the filter's trim hides (outside the analysis window) is pale;
+- a fill labelled `leg`: a counted 1:1 leg (one clean leg of a co-orbital, half a cycle, no episode row);
+- a faint fill with a dashed outline labelled `cand`: a candidate the status did not count (an episode a measured
+  veto rejected, a leg or half-swing that is not counted, a near-episode run), shown so the reader can judge it;
+- nothing else: the other runs (the grey strips **T F C O**, `#0 < floor`) are not drawn; episodes.csv lists them
+  (columns `counted`, `candidate`).
+
+The legend of (a) says which drawing the figure uses.
+
 ??? info "The maths: angle, turning points, episodes"
     $$
     \sigma = k\lambda + \sum_j k_j\lambda_j + p\varpi + \sum_j p_j\varpi_j + v\Omega + \sum_j v_j\Omega_j
@@ -375,13 +387,22 @@ the range of σ again).
 
 The right column says in words what was decided and why. From top to bottom:
 
-1. **The plaque**: `STATUS · angle_status (subtype) · CONFIDENCE`, coloured by the status; a tag `ends: …` beside
-   it when the record ends in another regime (for example a capture, then circulation). The status is printed only
-   here. The line under it gives the reason, the origin of the libration, the role of the other resonance as in the
+1. **The plaque**: `STATUS · angle_status (subtype) · CONFIDENCE`, coloured by the status; then the action in an
+   amber tag (`→ extend to 40 kyr`, `→ resample to 0.5 yr`, `→ review`, `→ spot check`; none for action `none`), read
+   from the `action` column only; then a tag `ends: …` when the record ends in another regime (for example a capture,
+   then circulation). A tag that does not fit beside the plaque goes under it. The status is printed only here.
+   Under the minimal policy the text advises an extension only when the action is `extend`, and only forward: a flag
+   `extend_time` the action does not carry (a half-swing cut by the record's start) is named, not advised. The line under it gives the reason, the origin of the libration, the role of the other resonance as in the
    header (`driver 3N-5+0+2`, `owner …`, `neighbour …`, `resonant argument 9M-16+2+5`, `kinematic −4ϖ`, `also in …`) and the
    deciding rule by its meaning, with its ID in parentheses (`decided: circulation (C)`; every ID and its name:
    [names on the figure](libration-analysis.md#names)).
-2. **The explanation**. On an MMR figure, short lines in a fixed order: the verdict in plain words, in bold
+2. **The explanation**. Under the minimal policy (`CLASSIFIER_POLICY=minimal`) it opens with four lines: the status, the
+   level and the reason with the origin and the owner (`NON-RESONANT · MEDIUM · induced by 5M-2 (origin induced)`);
+   `basis:` what the level rests on, in words: the complete cycles N and where they were counted (an episode, a union,
+   the whole record, a 1:1 leg), the amplitude margin, whether the objections were measured, the filter's stability,
+   the veto (column `confidence_basis`), and the counted episodes; `flags:` every flag (under this policy the former
+   caps are flags, so the confidence block lists no caps); `v2:` what the v2 tree said, for comparison. Then, on an MMR
+   figure, short lines in a fixed order: the verdict in plain words, in bold
    (`NOT THIS RESONANCE: σ librates, but 3J+9S-2 does not make the swing.`); then • bullets: what $\sigma$ does
    (turning points, period, amplitude); the argument that decided, with its rule ID; an objection, a check that
    failed but was not read by this verdict (`Objection, not read by this verdict: …`); the cause; what limits the
@@ -545,37 +566,38 @@ The figure is the same, with these differences:
 
 *(1222) Tina in the ν6 secular resonance ([Gallery](physics/gallery.md#secular-nu6)).*
 
-The page and the right column follow the MMR figure, but the time panels are fewer and **their letters differ**.
+The page and the right column follow the MMR figure, but the time panels are fewer and **their letters differ** (since W29 (d) is $a$, before $e$).
 The header gives the span, step, number of rows, the cutoff $P_c$ and what set it, and the scale the verdict rests
 on (`fine`, or `centre` when the slower centre scale decided). A Lidov-Kozai figure adds the plane $\omega$, $i$ and
-$\Omega$ are measured from (`ω, i, Ω from the invariable plane`, `ZLK_ANGLE_FRAME`): (a), (a′), (e) (labelled
-`i (invariable)`), (f), (h) and (i) all read that frame, the free elements included.
+$\Omega$ are measured from (`ω, i, Ω from the invariable plane`, `ZLK_ANGLE_FRAME`): (a), (a′), (f) (labelled
+`i (invariable)`), (g), (i) and (j) all read that frame, the free elements included.
 
 | panel | what it shows |
 |---|---|
-| (a) | $\sigma$ in degrees: grey the angle the classifier reads (the reduced proper angle by default), black the angle filtered at the scale the verdict rests on, a thin grey line the angle at $P_c$ when the centre scale decided, red the centre, ▼▲ turning points, fills the librating episodes, grey strips with letters the other runs (as in MMR (a)) |
-| (a′) | Lidov-Kozai, an induced libration only (attributed to a forced mode, or a centre whose slow line is a beat of the forced vector): $\omega_f$ with the forced direction against the node and the dominant mode against the node (below); other rows have no (a′) and keep the seven panels in place |
+| (a) | $\sigma$ in degrees: grey the angle the classifier reads (the reduced proper angle by default), black the angle filtered at the scale the verdict rests on, a thin grey line the angle at $P_c$ when the centre scale decided, red the centre, ▼▲ turning points, fills the librating episodes, grey strips with letters the other runs (as in MMR (a); under the minimal policy counted episodes and faint `cand` candidates only) |
+| (a′) | Lidov-Kozai, an induced libration only (attributed to a forced mode, or a centre whose slow line is a beat of the forced vector): $\omega_f$ with the forced direction against the node and the dominant mode against the node (below); other rows have no (a′) and keep the eight panels in place |
 | (b) | $\sigma$ modulo 360° around the centre: grey dots and black $\sigma_f$ |
 | (c) | ${\rm d}\sigma_f/{\rm d}t$, in ″/yr for a secular angle and °/kyr for Lidov-Kozai; red line at 0 |
-| (d), (e) | $e$ and $i$ (degrees): grey osculating, black filtered at $P_c$, with min – max |
-| (f) | secular: the rate of the element the angle contains against a sine of $\sigma_f$ (below); Lidov-Kozai: the drift of the free and the osculating $\omega$ in turns (below) |
-| (g) | the centre of $\sigma_f$, its turns, and its longest one-way run when it reaches a full turn (as MMR (i)) |
-| (h) | the portrait $(e\cos\sigma, e\sin\sigma)$, or $(\sin\frac i2\cos\sigma, \sin\frac i2\sin\sigma)$ for an angle of $\Omega$ alone; colour: time; red + at the origin |
-| (i) | secular: $\sigma_f$ against ${\rm d}\sigma_f/{\rm d}t$; Lidov-Kozai: the free eccentricity vector, or $\sigma_f$ against its rate when the free elements were not built (the axis labels say which) |
+| (d) | $a$ (au): grey osculating, black filtered at $P_c$, with min – max; when the median $a$ lies in a planet's co-orbital zone, $\lvert\langle a\rangle/a_P - 1\rvert < k\,(m_P/3M_\odot)^{1/3}$ (`ZLK_COORBITAL_HILL_FACTOR` $k$), the planet's $a_P$ dashed and the zone's edges dotted, named top right (for drawing only: a Jupiter Trojan gets the lines too) |
+| (e), (f) | $e$ and $i$ (degrees): grey osculating, black filtered at $P_c$, with min – max |
+| (g) | secular: the rate of the element the angle contains against a sine of $\sigma_f$ (below); Lidov-Kozai: the drift of the free and the osculating $\omega$ in turns (below) |
+| (h) | the centre of $\sigma_f$, its turns, and its longest one-way run when it reaches a full turn (as MMR (i)) |
+| (i) | the portrait $(e\cos\sigma, e\sin\sigma)$, or $(\sin\frac i2\cos\sigma, \sin\frac i2\sin\sigma)$ for an angle of $\Omega$ alone; colour: time; red + at the origin |
+| (j) | secular: $\sigma_f$ against ${\rm d}\sigma_f/{\rm d}t$; Lidov-Kozai: the free eccentricity vector, or $\sigma_f$ against its rate when the free elements were not built (the axis labels say which) |
 
 What to look for: in (a) a libration needs at least three turning points, one full cycle
 (`LIBRATION_MIN_TURNING_POINTS`); a drift is a ramp of less than a turn; a single U is half a cycle; circulation is
-a ramp of several turns. In (h) a libration draws loops around the resonance centre: a ring off the origin, or a
+a ramp of several turns. In (i) a libration draws loops around the resonance centre: a ring off the origin, or a
 crescent when the libration is wide and the centre close to the origin. A ring around the origin is circulation.
 
-**(f) for a secular angle.** Black is $\dot e_f$ for an angle with $\varpi$, or ${\rm d}\sin(i_f/2)/{\rm d}t$ for an
+**(g) for a secular angle.** Black is $\dot e_f$ for an angle with $\varpi$, or ${\rm d}\sin(i_f/2)/{\rm d}t$ for an
 angle of $\Omega$ alone (both, $i$ dashed on a right axis, when the angle has both); blue is the fit
 $A\sin\sigma_f + B\cos\sigma_f + C$, with its $R^2$ written in blue. That $R^2$ is a column of the output and changes
 no status. Black, blue and $R^2$ are one fit, the analysis' own: the element and $\sigma_f$ filtered at the decisive
 cutoff, on its window. When the centre scale decided (header `scale centre`) that cutoff is the centre's, longer
-than the $P_c$ of (d) and (e), and the panel says `at the centre scale … kyr` after the $R^2$.
+than the $P_c$ of (e) and (f), and the panel says `at the centre scale … kyr` after the $R^2$.
 
-**(f) for Lidov-Kozai.** The drift of $\omega$ from its first value, in turns (as the standalone
+**(g) for Lidov-Kozai.** The drift of $\omega$ from its first value, in turns (as the standalone
 [free-ω drift](#free_omega-lidov-kozai) figure), with a legend: grey the osculating $\omega$, blue the free $\omega$
 with the forced terms of the planets removed; the free $\omega$'s net turns are written top right (the panel says
 `free elements not built` when there are none). A free $\omega$ that winds through full turns while the osculating
@@ -597,7 +619,8 @@ $\omega$ that follows the orange curve is the forcing's, not the Lidov-Kozai mec
 turn (624 Hektor: $\omega$ circulates between its episodes, the centre $\varpi_5 - \Omega$ turns with the node) the
 panel is drawn modulo 360° about the forced direction, and $\omega_f$ only inside the librating episodes.
 
-**The explanation** of the right column is the MMR figure's bullets in the same slots, in plain physics:
+**The explanation** of the right column is the MMR figure's bullets in the same slots, in plain physics (under the
+minimal policy the four lines described in [the right column](#the-right-column) come first):
 
 - the verdict in words (`UNCERTAIN: ω librates, but the free-ω gate gives no verdict.`);
 - what the angle does. An episodic angle counts its librating episodes only (those not faster than the type's
@@ -755,7 +778,7 @@ runs parallel to it.
 
 **portrait**: $(r\cos\sigma, r\sin\sigma)$; grey from the osculating elements, coloured by time from the classified
 angle; red + at the origin. Here $r$ is $e$ when the angle contains $\varpi$, otherwise $i$ in degrees from the
-invariable plane (the combined figure's (h) uses $\sin\frac i2$ instead). Tina's ring sits off the origin: a
+invariable plane (the combined figure's (i) uses $\sin\frac i2$ instead). Tina's ring sits off the origin: a
 libration.
 
 ### ecc_vector
@@ -858,10 +881,10 @@ for each case below.
   (kinematic) or the owner's purple line is the flat one (induced); the header reads `episodes about X° (not this
   resonance)`.
 - **an alias** ([example](physics/gallery.md#alias)): the red ALIAS note in (b), and the portraits crossed out.
-- **uncertain** ([too short](physics/gallery.md#insufficient-time), [origin unknown](physics/gallery.md#uncertain-origin)):
+- **uncertain** ([too short](physics/gallery.md#insufficient-time), [an unexplained drift](physics/gallery.md#uncertain-drift)):
   the sentences and the action say what is missing (a longer record, a finer step) and how long to integrate.
 - **secular** ([ν6](physics/gallery.md#secular-nu6), [z1](physics/gallery.md#secular-z1-resonant)): read (a) with the
-  turning-point rule above and (h) for a ring off the origin.
+  turning-point rule above and (i) for a ring off the origin.
 - **Lidov-Kozai** ([confirmed](physics/gallery.md#zlk-resonant), [kinematic](physics/gallery.md#zlk-kinematic)): in
-  (f) a free $\omega$ that winds points to kinematic, a confined one supports the libration; the gate's outcome in
+  (g) a free $\omega$ that winds points to kinematic, a confined one supports the libration; the gate's outcome in
   the right column is the verdict. An offset eccentricity-vector cloud alone proves nothing.

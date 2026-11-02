@@ -13,6 +13,46 @@ perihelion term), and only then is its own force law measured.
 This page describes mean-motion resonances (two-body, three-body, retrograde, co-orbital). Secular and Lidov-Kozai
 angles use a shorter tree, given in [Secular and Lidov-Kozai](secular-zlk.md#geometry-and-status).
 
+## Minimal policy (default) {#minimal-policy}
+
+`CLASSIFIER_POLICY=minimal` (W29, agreed with the author 2026-11-02). The tree below runs first and measures
+everything; a policy layer (`resonance/analysis/policy.py`) then re-reads the finished analysis by a few principles:
+
+1. **Status from the geometry of $\sigma_f$.** libration → `resonant`, episodic → `transient`, near_separatrix →
+   `near_separatrix`, circulation → `non_resonant`. A drift whose slow centre passes ≥ one own revolution →
+   `non_resonant`/`modulated_circulation`, less → `uncertain`. insufficient_time → `uncertain`, or
+   `non_resonant`/`circulation` when the record ends in circulation ($\sigma_f$ travels ≥ one own revolution after the
+   last turning point of an accepted or candidate run). One own revolution is $2\pi$, $\pi$ for a ZLK $\omega$.
+2. **Only a measured contradiction vetoes** a bounded angle (column `veto`): an owner that induces the episode (step
+   2), a kinematic origin (step 3, K2, K3s), a two-body strength from the disturbing function far below the need
+   (5s), the ZLK gate measured kinematic on a libration, or the free $e$ below the forced $e$ (`zlk_free_e`). Every
+   other leaf that moved a status (5a, 5b, 5e, 5f, 5g, 5o, 5x, 5n, 5s three-body, 5s*, 2j, a ZLK gate without a
+   verdict) gives the geometry's status back with a flag: `measured_objection` and `strength_scale_implausible` set
+   the level to low, `gate_unavailable`/`gate_disabled` to at most medium. A veto within `CONFIDENCE_THIN_BAND` of
+   its threshold still moves the status, at medium (`veto_thin`).
+3. **The level from the evidence** ([Confidence](confidence.md#minimal-policy)); no caps.
+4. **Everything else is a flag**: every W28 cap, zone, owner, subresonance and edge mark. The alias (C5) and the
+   undersampled step stay.
+5. **Extend** only for an unfinished libration at the record's end (an end-edge 1:1 leg `A1`, an end-edge
+   half-swing `A2`, insufficient_time or a last counted episode at the end with fewer than
+   `CONFIDENCE_HIGH_CYCLES` cycles `A`), a deciding period above $2T/$`LIBRATION_MIN_TURNING_POINTS` (`B`), or a
+   needed veto not measured for lack of length (flag `veto_needs_length`: MMR L4 short of force windows, a ZLK gate
+   `short_window`/`planetary_residual`) whose record `pol_veto_need_yr` is within the next-check budget
+   `MMR_NEXT_CHECK_SPAN_FACTOR`$\,T$ (`C`, extend to that record). Never when the record ends in circulation (column
+   `pol_extend_clause`). A needed veto beyond the budget (1981 Midas: ~70 Myr on 1 Myr) keeps the flag and goes to
+   review.
+6. **Episodes**: the figure and `n_counted_episodes` show only the counted episodes; candidates are drawn faint.
+   One clean 1:1 leg (G4c) is a transient of half a cycle; a half-swing between passages (G4h) is a candidate of a
+   circulation; an end-edge one extends.
+7. **ZLK and secular** follow the same rules; a secular swing below the mode-phase uncertainty stays
+   `uncertain`/`phase_unresolved` (review), never non_resonant.
+
+The W28 verdict of each row stays in `v2_verdict`. `CLASSIFIER_POLICY=v2` restores the tree below as it was.
+
+## Policy v2: the W28 tree
+
+The rest of this page is the tree itself: what `CLASSIFIER_POLICY=v2` reports, and what the minimal policy reads.
+
 ## The tree
 
 ```mermaid
@@ -280,7 +320,7 @@ planet longitudes caps the level (`catalogue_longitudes`). These change the conf
 | `one_coorbital_leg` | uncertain | unknown | 1:1: one swing between passages with one discrepancy (a lap past the planet, the local law or energy, a turn that is a kick) | 2018 KS |
 | `one_half_libration` | uncertain | unknown | not 1:1: one half-swing between passages that follows the resonance's own law | — |
 | `drift_mechanism_unknown` | uncertain | unknown | the angle drifts and no mechanism is identified | [142694](gallery.md#uncertain-drift) |
-| `origin_unknown` | uncertain | unknown | it librates, but a measurement contradicts this resonance's own pendulum | [2003 TX9](gallery.md#uncertain-origin) |
+| `origin_unknown` | uncertain | unknown | it librates, but a measurement contradicts this resonance's own pendulum | 2003 TX9 (minimal: [resonant/low](gallery.md#measured-objection)) |
 | `unphysical` | invalid | — | the orbit left the elliptic domain (or $e > 1.3$ for secular/ZLK) | [2010 HY22](gallery.md#zlk-invalid) |
 | `undefined_phase` | invalid | — | $\varpi$ is undefined at very small $e$ | — |
 | `undersampled` | invalid | — | the output step is too coarse for the filter, $P_c \le 2\Delta t$ | — |

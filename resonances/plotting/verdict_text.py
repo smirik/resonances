@@ -9,7 +9,8 @@ What the text holds (the author's N1–N4 of 2026-10-16 and the fixes of 16b):
 
 - `badge`: STATUS · angle_status (subtype) · CONFIDENCE, all three always (author, 2026-10-17) — the only place the
   status is printed; `ends`: 'ends: <final regime>' when the record ends in another regime than angle_status, drawn
-  as a tag beside the plaque, not inside it;
+  as a tag beside the plaque, not inside it; `action` (W29, the author on q05): the row's action as an amber tag between
+  them ('→ extend to 40 kyr', `action_tag`), read from the action alone;
 - `sentences`: what the angle does, why this status (the rule that decided it, in plain words, with its numbers),
   the confidence (what kept it from the next level, with the numbers), the action. 'Over the whole record' is said
   when the libration covers the record; 'episode' only when there are several;
@@ -134,7 +135,7 @@ from resonances.resonance.analysis.orbit_type import centre_moves
 from resonances.resonance.analysis.rules import Rule
 from resonances.resonance.analysis.secular.decide import librating_episodes as secular_librating_episodes
 from resonances.secular import phase_uncertainty
-from resonances.resonance.analysis.verdict import CONFIDENCE_ORDER, Flag, MarginClass
+from resonances.resonance.analysis.verdict import CONFIDENCE_ORDER, POLICY_MINIMAL, Flag, MarginClass
 
 
 class CheckState(StrEnum):
@@ -217,7 +218,10 @@ SLOT_CAUSE, SLOT_CHANGE, SLOT_ORBIT = 'cause', 'change', 'orbit'
 # secular and ZLK (W28 E9, cards g09-5 C, g10-8): the time scales of the record (1/T, the search window, the periods
 # seen on the angle and what they are); the slot sits after the cause
 SLOT_SCALE = 'scale'
-SLOTS = (SLOT_VERDICT, SLOT_SIGMA, SLOT_DECISIVE, SLOT_OBJECTION, SLOT_CAUSE, SLOT_SCALE, SLOT_CHANGE, SLOT_ORBIT)
+# the minimal policy (W29 SPEC §7): the explanation opens with four lines (`policy_block`): status · confidence · reason
+# (origin / owner); the basis of the level in words; the flags; the v2 tree's verdict
+SLOT_POLICY = 'policy'
+SLOTS = (SLOT_POLICY, SLOT_VERDICT, SLOT_SIGMA, SLOT_DECISIVE, SLOT_OBJECTION, SLOT_CAUSE, SLOT_SCALE, SLOT_CHANGE, SLOT_ORBIT)
 
 
 @dataclass
@@ -356,6 +360,9 @@ class VerdictText:
     bullets: List[Bullet] = field(default_factory=list)
     # MMR (card g10-5, W28 E10): the lines of 'Numbers behind this verdict', in the block's order (`number_emphasis`)
     emphasis: List[Emphasis] = field(default_factory=list)
+    # W29 (the author on q05, 2026-11-02: the action belongs in the column's header): the row's action as the plaque's
+    # tag, '→ extend to 40 kyr' (`action_tag`); '' for action none
+    action: str = ''
 
     @property
     def badge(self) -> str:
@@ -489,6 +496,108 @@ def status_head(status: Any) -> str:
 
 def _plural(n: int, word: str, plural: str = '') -> str:
     return f'{n} {word if n == 1 else (plural or word + "s")}'
+
+
+# ------------------------------------------------------------------------------- the minimal policy (W29 SPEC §2.3, §7)
+
+# the words of the `confidence_basis` grammar 'N=<n>(<source>);M=<m>;V=<v>;S=<s>;veto=<name|->[:thin]'
+BASIS_N_SOURCE = {'episode': 'the episode', 'union': 'the union of episodes', 'cover': 'the whole record', 'leg': 'one 1:1 leg'}
+BASIS_M_WORDS = {
+    'full': 'amplitude clear of the separatrix',
+    'thin': 'amplitude near the separatrix',
+    'not_measured': 'amplitude margin not measured',
+}
+BASIS_V_WORDS = {
+    'clean': 'objections measured, none',
+    'partial': 'objections partly measured',
+    'not_measured': 'a needed objection not measured',
+    'ambiguous': 'a measured objection',
+}
+BASIS_S_WORDS = {'full': 'filter-stable', 'thin': 'filter-sensitive'}
+
+
+def policy_minimal(verdict) -> bool:
+    """The verdict was set by the minimal policy layer (its `policy` field; '' in older files and under v2)."""
+    return str(getattr(verdict, 'policy', '') or '') == POLICY_MINIMAL
+
+
+def policy_ids(text: Any) -> frozenset:
+    """The episode ids of a `;`-joined `counted_episode_ids`/`candidate_episode_ids` cell; 'leg' and 'half' (a 1:1 leg,
+    a half-swing: no episode row) are left out."""
+    out = set()
+    for part in str(text or '').split(';'):
+        try:
+            value = float(part)
+        except ValueError:
+            continue
+        if math.isfinite(value):
+            out.add(int(value))
+    return frozenset(out)
+
+
+def has_mark(verdict, name: str) -> bool:
+    """`name` among the verdict's caps or flags: under the minimal policy every v2 cap is a flag (SPEC §2.3), so the
+    prose that a cap used to trigger (short_period_aliased, the separatrix zone) reads either."""
+    return name in (getattr(verdict, 'caps', ()) or ()) or name in (getattr(verdict, 'flags', ()) or ())
+
+
+def basis_words(basis: Any) -> str:
+    """The `confidence_basis` cell in words: 'N 3.5 cycles (the episode) · amplitude clear of the separatrix · objections
+    measured, none · filter-stable · no veto'; an unknown part is printed as written; '' for an empty cell."""
+    parts = dict(item.split('=', 1) for item in str(basis or '').split(';') if '=' in item)
+    if not parts:
+        return ''
+    out = []
+    match = re.fullmatch(r'([^()]*)\(([^()]*)\)', parts.get('N', ''))
+    if match and finite(_float(match.group(1))):
+        source = BASIS_N_SOURCE.get(match.group(2), match.group(2))
+        out.append(f'N {fmt(_float(match.group(1)))} cycles' + (f' ({source})' if source not in ('', '-') else ''))
+    elif match:  # 'nan(-)': no cycles were counted (a vetoed or circulating row)
+        out.append('no cycles counted')
+    elif 'N' in parts:
+        out.append(f'N {parts["N"]}')
+    for key, words in (('M', BASIS_M_WORDS), ('V', BASIS_V_WORDS), ('S', BASIS_S_WORDS)):
+        if key in parts:
+            out.append(words.get(parts[key], f'{key} {parts[key]}'))
+    veto = parts.get('veto', '')
+    if veto:
+        name, _, thin = veto.partition(':')
+        out.append('no veto' if name in ('', '-') else f'veto {name}' + (' (thin)' if thin else ''))
+    return ' · '.join(out)
+
+
+def policy_reason_words(verdict) -> str:
+    """The reason first (SPEC §7: GK3 reads 'induced by 5M-2' before the angle word), with the origin and the owner in
+    parentheses: 'induced by 5M-2 (origin induced)', 'geometric episode (origin unknown)'."""
+    reason, owner, origin = str(verdict.reason or ''), str(getattr(verdict, 'owner', '') or ''), str(verdict.libration_origin or '')
+    words = reason.replace('_', ' ')
+    if reason == 'induced_libration' and owner:
+        words, owner = f'induced by {owner}', ''
+    extra = ' / '.join(part for part in (f'origin {origin}' if origin else '', f'owner {owner}' if owner else '') if part)
+    return words + (f' ({extra})' if extra else '')
+
+
+def policy_block(verdict) -> List['Bullet']:
+    """The four lines that open the explanation under the minimal policy (W29 SPEC §7): STATUS · CONFIDENCE · the
+    reason (origin / owner); 'basis:' the `confidence_basis` in words (with the counted episodes); 'flags:'; 'v2:' what
+    the v2 tree said (`v2_verdict`). [] for a row not under the policy."""
+    if not policy_minimal(verdict):
+        return []
+    head = ' · '.join(
+        part for part in (status_head(verdict.status).upper(), str(verdict.confidence).upper(), policy_reason_words(verdict)) if part
+    )
+    basis = basis_words(getattr(verdict, 'confidence_basis', ''))
+    counted = getattr(verdict, 'n_counted_episodes', None)
+    if counted is not None and finite(counted):
+        basis = '; '.join(part for part in (basis, _plural(int(counted), 'counted episode')) if part)
+    flags = ', '.join(str(flag) for flag in (verdict.flags or ())) or 'none'
+    v2 = ' · '.join(part for part in str(getattr(verdict, 'v2_verdict', '') or '').split('/') if part) or 'not recorded'
+    return [
+        Bullet(SLOT_POLICY, head),
+        Bullet(SLOT_POLICY, f'basis: {basis or "not recorded"}'),
+        Bullet(SLOT_POLICY, f'flags: {flags}'),
+        Bullet(SLOT_POLICY, f'v2: {v2}'),
+    ]
 
 
 def episode_accepted(row: Mapping[str, Any]) -> bool:
@@ -724,6 +833,8 @@ def confidence_sentence(verdict, checks: Sequence[CheckRow]) -> str:
     """Status → confidence: the level, what capped it, and what kept it from the next level, with the numbers. 'Nothing
     failed' only when no limit failed either (card g03-5); with a limit on record the support margins are said apart
     ('no support test failed')."""
+    if policy_minimal(verdict) and str(verdict.confidence):  # W29: the level is the evidence's, said in `policy_block`
+        return f'{str(verdict.confidence).capitalize()} from the evidence: {basis_words(getattr(verdict, "confidence_basis", ""))}.'
     return ' '.join(part for part in confidence_parts(verdict, checks) if part)
 
 
@@ -737,6 +848,8 @@ def arithmetic_line(verdict, checks: Sequence[CheckRow]) -> str:
     a-wave [O1] (a-wave before/inside 0.865 ≥ 0.5) → LOW'; a limit above the shown level with its ceiling; 'none')."""
     if not str(verdict.confidence):
         return 'No confidence level: uncertain and invalid verdicts carry none.'
+    if policy_minimal(verdict):  # the level is the evidence's (W29 `policy.level`): no support count, no caps
+        return f'Level from the evidence: {basis_words(getattr(verdict, "confidence_basis", "")) or "not recorded"} → {str(verdict.confidence).upper()}'
     margins = [row for row in checks if not row.is_limit]
     failed = sum(1 for row in margins if row.counts == COUNTS_FAILED)
     thin = sum(1 for row in margins if row.counts == COUNTS_THIN)
@@ -772,10 +885,27 @@ def action_sentence(verdict) -> str:
     return {'spot_check': 'Action: glance at the figure.', 'review': 'Action: review the figure and the numbers.'}.get(action, '')
 
 
+ACTION_TAGS = {'spot_check': '→ spot check', 'review': '→ review'}
+
+
+def action_tag(verdict) -> str:
+    """The action as the plaque's tag (W29, the author on q05: TX1's 'extend' was missed in the sentences): '→ extend to
+    40 kyr', '→ resample to 0.5 yr', '→ review', '→ spot check'; '' for action none. Read from the action alone: the
+    flag extend_time and extend_to_years of a row whose action is not extend print nothing here."""
+    action = str(verdict.action)
+    if action == 'extend':
+        to = getattr(verdict, 'extend_to_years', None)
+        return f'→ extend to {years(to)}' if finite(to) else '→ extend'
+    if action == 'resample':
+        step = getattr(verdict, 'resample_step_yr', None)
+        return f'→ resample to {fmt(step)} yr' if finite(step) else '→ resample'
+    return ACTION_TAGS.get(action, '')
+
+
 def _short_period_resample(verdict) -> bool:
     """A resample of a verdict with a level whose cap short_period_aliased holds it down (alias and undersampled are
     invalid and carry no level)."""
-    return bool(str(verdict.confidence)) and 'short_period_aliased' in verdict.caps
+    return bool(str(verdict.confidence)) and has_mark(verdict, 'short_period_aliased')
 
 
 def angle_text(verdict) -> str:
@@ -2061,23 +2191,51 @@ def extend_flag_sentence(f: MMRFacts) -> str:
     """The flag extend_time (C14, card g01-7 A: 'а нет ли возможности дать дополнительный флаг extend_time?'): 'Extend:
     a longer integration forward (next check: 2 kyr) would show how the record ends (σ_f slows to an arc after
     circulating; a clean 1:1 leg is cut by the end).' The next check (extend_to_years, round_up(2T)) is named only when
-    the action is not extend (the action sentence names it then); '' without the flag."""
+    the action is not extend (the action sentence names it then); '' without the flag.
+    Under the minimal policy the sentence reads the action, never the flag alone (P5; W29 S1, 469333 7N-17 advised
+    'backward' at action spot_check): an extension is advised only when the action is extend, and only forward, for the
+    end-edge causes; a cause the action does not carry is named as a flag without advice (`MINIMAL_FLAG_ONLY`)."""
     v = f.v
     direction = _text(getattr(v, 'extend_direction', ''))
     if direction not in EXTEND_DIRECTIONS:
         return ''
-    way, ends = EXTEND_DIRECTIONS[direction]
     final = {'arc': 'an arc', 'stall': 'a stall'}.get(_text(v.final_regime), 'an arc or a stall')
-    causes = []
+    causes = []  # (edge, words)
     for token in _text(f.row.get('geo_extend_time_from')).split(';'):
         first, _, second = token.partition(':')
         edge, kind = (first, second) if first in ('start', 'end') else (second, first)
+        edge = edge or {'forward': 'end', 'backward': 'start'}.get(direction, '')
         words = EXTEND_SOURCE_WORDS.get(kind)
         if words:
-            causes.append(words.format(final=final, edge=edge or 'edge'))
+            causes.append((edge, words.format(final=final, edge=edge or 'edge')))
+    if policy_minimal(v):
+        return _minimal_flag_sentence(str(v.action) == 'extend', causes)
+    causes = [words for _, words in causes]
+    way, ends = EXTEND_DIRECTIONS[direction]
     check = f' (next check: {years(v.extend_to_years)})' if str(v.action) != 'extend' and finite(v.extend_to_years) else ''
     because = f' ({"; ".join(dict.fromkeys(causes))})' if causes else ''
     return f'Extend: a longer integration {way}{check} would show how the record {ends}{because}.'
+
+
+# the flag extend_time under the minimal policy, for causes the action does not carry (a start-edge feature, or any
+# feature of a row whose action is not extend): named, not advised (P5)
+MINIMAL_FLAG_ONLY = (
+    'Flag extend_time ({causes}): no extension; the action extends only an unfinished libration at the record’s end or '
+    'a deciding period too long for the record.'
+)
+
+
+def _minimal_flag_sentence(extend: bool, causes: Sequence[Tuple[str, str]]) -> str:
+    """extend_flag_sentence under the minimal policy: 'Extend: a longer integration forward would show how the record
+    ends (…).' for the end-edge causes of an extend row, then `MINIMAL_FLAG_ONLY` for the others; '' without causes."""
+    advised = list(dict.fromkeys(words for edge, words in causes if extend and edge == 'end'))
+    flagged = list(dict.fromkeys(words for _, words in causes if words not in advised))
+    parts = []
+    if advised:
+        parts.append(f'Extend: a longer integration forward would show how the record ends ({"; ".join(advised)}).')
+    if flagged:
+        parts.append(MINIMAL_FLAG_ONLY.format(causes='; '.join(flagged)))
+    return ' '.join(parts)
 
 
 def profile_floor_clause(f: MMRFacts) -> str:
@@ -3616,7 +3774,7 @@ def _dynamic_sentence(f: MMRFacts) -> str:
         text = f'{status_head(v.status)}: {_dynamic_claims(f)}{_foreign_clauses(f)}'
     if str(v.status) == 'transient':
         text += '. Transient, not resonant, because the libration does not cover the record'
-    elif str(v.reason) == 'separatrix_zone' and 'near_separatrix_without_zone' in v.caps:  # G3 without a measured zone
+    elif str(v.reason) == 'separatrix_zone' and has_mark(v, 'near_separatrix_without_zone'):  # G3 without a measured zone
         text += '. Near the separatrix by the pattern of σ; the separatrix zone is not measured'
     elif str(v.reason) == 'separatrix_zone':
         text += '. Near the separatrix: the cycles lie in the separatrix zone'
@@ -3719,7 +3877,7 @@ def _baseline_sentence(f: MMRFacts) -> str:
             f'that {basis} needs; {BASE_CAUSE_WORDS.get(cause, cause.replace("_", " "))}.'
         )
     check, estimate = f.row.get('extend_to_years'), f.row.get('base_extend_to_years')
-    if not finite(check):
+    if not finite(check) or (policy_minimal(f.v) and str(f.v.action) != 'extend'):  # P5: no next check the action lacks
         return f'Uncertain: the record is too short to decide: about {need} needed ({basis}).'
     budget = f'at most {fmt(f.s.mmr_next_check_span_factor)} × the record; ' if finite(estimate) and check < estimate else ''
     return f'Uncertain: the record is too short to decide; next check: {years(check)} ({budget}about {need} estimated from {basis}).'
@@ -3796,7 +3954,7 @@ def mmr_info(f: MMRFacts, physics: Sequence[PhysicsSection]) -> List[str]:
             + ('; lifts the cap "' + CAP_WORDS[str(Cap.TRANSIENT_UNEXPLAINED)] + '")' if lifted else ')')
         )
     spread = f.entry(SHORT_PERIOD_CAP)
-    if spread is not None and spread.result is False and 'short_period_aliased' not in f.v.caps:
+    if spread is not None and spread.result is False and not has_mark(f.v, 'short_period_aliased'):
         out.append(
             f'the step folds short periods, but no cap: the fast spread of σ_f {_entry_text(f, SHORT_PERIOD_CAP)} and the '
             f'short-period scatter of a {_entry_text(f, SHORT_PERIOD_A)} × the a swing'
@@ -5249,7 +5407,7 @@ def change_line(verdict, checks: Sequence[CheckRow]) -> str:
     """What would change the verdict (the slot 'change'): the level and what limits it (`confidence_parts`; 'Without
     the cap it would be …' is the arithmetic 'Support: …' below, the other reading of the cap is its LIMIT row), the
     calibration cell in a few words and the action."""
-    head = confidence_parts(verdict, checks)[0]
+    head = '' if policy_minimal(verdict) else confidence_parts(verdict, checks)[0]  # W29: the basis line says it
     return ' '.join(part for part in (head, cell_words(verdict), action_sentence(verdict)) if part)
 
 
@@ -5585,6 +5743,7 @@ def explain_mmr(analysis, settings, row: Mapping[str, Any], episodes: Sequence[M
     for row in checks:  # the drawn text has no confidence sentence: each LIMIT row names its other reading (CS11)
         row.said = False
     emphasis = number_emphasis(f, steps, checks, items, physics)
+    bullets = policy_block(v) + bullets  # W29 §7: the minimal policy's four lines first
     return replace(text, decided_at=decided_at(shown_rule(f), v.status, steps), docs=DOCS_MMR, bullets=bullets, emphasis=emphasis)
 
 
@@ -5625,6 +5784,7 @@ def _verdict_text(verdict, subtitle: str, head: Sequence[str], steps, checks, in
         dict(grey or {}),
         final_regime_text(verdict),
         list(physics),
+        action=action_tag(verdict),
     )
 
 
@@ -6245,6 +6405,9 @@ def long_period_verdict_line(analysis) -> str:
             verb = 'librates' if str(v.angle_status) == 'libration' else 'stays bounded'
             return f'UNCERTAIN: ω {verb}, but the free-ω gate gives no verdict.'
         return 'UNCERTAIN: the record does not decide.'
+    if kind == 'lidov_kozai' and status in ('resonant', 'transient') and (has_mark(v, 'gate_unavailable') or has_mark(v, 'gate_disabled')):
+        where = 'over the whole record' if status == 'resonant' else 'in part of the record'
+        return f'{status.upper()}: ω librates {where}; the free-ω gate gives no verdict, so it is not confirmed as Lidov-Kozai.'
     return LONG_VERDICT_LINES.get((kind, status), f'{status_head(status).upper()}: {reason.replace("_", " ")}.')
 
 
@@ -6336,6 +6499,7 @@ def explain_long_period(
     text = _verdict_text(v, subtitle, head, steps, checks, info)
     for check in checks:  # the drawn text has no confidence sentence: each LIMIT row names its other reading (CS11)
         check.said = False
+    bullets = policy_block(v) + bullets  # W29 §7: the minimal policy's four lines first
     return replace(text, decided_at=decided_at('', v.status, steps), docs=DOCS_LONG_PERIOD, bullets=bullets)
 
 

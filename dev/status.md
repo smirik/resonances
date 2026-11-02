@@ -1,49 +1,33 @@
-# Status on 2026-11-01
+# Status on 2026-11-02
 
-Replace this page at each programme step. W28 (the author's card answers of 2026-10-30/31) is implemented, not
-committed (commit only on the author's command). Latest benchmark run: `test-benchmark` (+ `-secular-zlk`) of
-2026-11-01, the frozen W28 code after four post-F7 fixes (the explained run is `v2-w28`; the two differ only in 55390
-1J+3S-1, back to non_resonant/high). Against `v2-w26-final`: 49 status moves (co-orbital 34, mmr2 9, secular 1, ZLK 5),
-29 level-only moves, 7 new L1 records (unlabelled). `KNOWN_DISAGREEMENTS.csv`: 32 rows (open_question 18, old_verdict
-14), all from W28; agreement: status 173/179, angle_status 124/126, confidence 127/133, author_verdict 157/173,
-secular/ZLK status 39/40. Episode gate: 146 cases, A 55/55, B 34 + E67 (known_fail), C 3 failing (not gating).
-Tests on 2026-11-01: test-fast 5212 passed, 5 xfailed (2.5 min); test-slow 406 passed, 1 xfailed (9.5 min);
-test-benchmark 655 passed, 3 xfailed (47 min with the reclassification; 20 min earlier the same day).
-`resonances/data/confidence_cells.json` rebuilt on `v2-w28` + secular/ZLK (387 labelled, 332 counted, 2 errors at
-medium: 2019 DJ1, 2025 YU11; 55 abstentions). The record of W28: `benchmark/DECISIONS.md` (entries 2026-10-31 and the
-two of 2026-11-01), `dev/decisions.md`.
+Replace this page at each programme step. W29 (the minimal physical policy, `CLASSIFIER_POLICY=minimal`, now the
+default; `v2` kept for comparison and pinned in the tests) is implemented and committed (not pushed). Latest benchmark
+runs: `v2-w29-final` (+ `-secular-zlk`), 725 + 89 examples, 0 errors; the comparison runs `v2-w29-v2` and the W28
+baseline `v2-w28-head` (HEAD 0be0ee5). Acceptance (`benchmark/tools/w29_acceptance.py`): 0 invariant violations on
+820 rows, clear sets 100 % with 0 opposite verdicts, 0 hard swaps on the author's certain/high labels, held-out 0 ≤ 0
+(three-class agreement 0.912; v2 0.987). `KNOWN_DISAGREEMENTS.csv`: 109 rows (minimal_policy 100: a label against a
+rule the author accepted by default on 2026-11-02, each with the rule and the question; old_verdict 5; open_question
+4); agreement: status 205/226, angle_status 170/176, confidence 112/160, author_verdict 148/156, secular/ZLK status
+34/42. Episode gate: 152 cases; 14 `known_fail` (E67 and 13 from the minimal policy's counting: vetoed episodes are
+candidates, a subresonance parent's runs are its member's, Q3, P3, the next-check cap, the ZLK gate flag). Tests:
+test-fast 5388 passed, 5 xfailed (1.3 min); test-slow 406 passed, 1 xfailed (7.3 min); test-benchmark
+656 passed, 3 xfailed (19.6 min, with the reclassification under `--policy minimal`). The record: `benchmark/DECISIONS.md` 2026-11-02, `dev/decisions.md`.
 
-## Open for the author (W28 review page; folder `benchmark/data/figures/review-w28`, 366 rows)
+## Open for the author
 
-No fix before he has discussed these (his request).
-
-- Decisions d01–d16: d01 2016 JA confidence (q-2 b against his high; E71); d02 33128 6N-7 confidence (q-2 b);
-  d03 2019 DJ1 transient from the C4 edge turn; d04 2026 AC4 transient or uncertain (q-3 A, force law unmeasured);
-  d05 2007 VU6 edge-turn threshold (E67); d06 the g01-5 rows now uncertain/one_coorbital_leg (C6 against "statuses do
-  not change"); d07 2015 WZ12, 2024 AV2, 2024 XP16, 2022 BB2; d08 2009 BE81 20 kyr medium or low; d09 2023 RS2 ZLK −9
-  or transient (deciding episode 2.4 < 3 periods); d10 1981 ZLK 1 Myr (free node on s6); d11 10563 ZLK 100 kyr (−9
-  review or extend); d12 5026 secular: the mode-phase table (`within_20myr` demotes it, the epoch-anchored one keeps it
-  resonant); d13 2004 TK14 1 yr: the lost resample advice; d14 17346 2J-1 low or medium; d15 2003 ND 40 kyr reads
-  circulation/high; d16 labels Claude wrote under his name (2020 CB, the card-derived 2306 and 5026 rows).
-- Codex visual review (9 serious, 29 minor; the serious ones adjudicated by Claude):
-  - real bugs, not fixed: **S1** 42946 43S-6, G4h's edge test (`geometry.half_librations`) ignores σ_f's turns
-    between the last turning point and the window edge (8.1 turns there), so a half-libration followed by circulation
-    reads as cut by the record end and asks for a futile 100-kyr extend; **S7** 2007 VU6, the fixed 20° edge-turn
-    prominence (`MMR_COORBITAL_EDGE_TURN_MIN_DEG`) rejects an 18.8° turn that closes the 839–994 yr cycle (proposed: a
-    threshold in units of the averaged angle's own noise, all co-orbitals rerun);
-  - text defects (no status): S2 WK15 coverage sentence, S3 2002 BG ripple counted as an episode in the prose, S4
-    RS2 prints the record's e–i instead of the episode's, S5 2001 HW7 150 kyr "both resonances at once?" read over the
-    owner hull that spans ~93 kyr of circulation, S8 XP16/OE5/YU11 support counted from the circulation checks, S9
-    AC4 says "not measured" where the cause is `filter_too_slow`;
-  - physics question: S6 2016 JA after 540 yr (bounded tadpole below the turn prominence: transient or resonant;
-    proposed: extend the record to ~5 kyr).
-- Labels wanted: the 7 L1 records (385533 300 kyr, 1999 GL4 0.25 yr, 2001 HW7 150 kyr ×2, 2003 EH16 30 kyr, 2003 ND
-  40 kyr, 1981 ZLK 1 Myr), 2014 BT8 (one QS loop), 42946 43S-6, the single-leg rows where his two answers disagree.
+- W30 candidates he named: the epoch-anchored mode-phase table for secular rows (Q2; 5026 then resonant), a
+  re-measured three-body strength (Q3: today only the e^q scale, a flag), the author's own wish for 1997 GK3 high (Q7,
+  default medium), 2016 JA extended to ~5 kyr (c6 A), the noise criterion for the co-orbital edge turn (c7 A, VU6),
+  AC4's force law against the filter cutoff (c9 B), "are there captures?" on the d06 single-leg rows (his d06 comment).
+- The episode cases that fail under the minimal counting (E02, E21, E28, E31, E46, E47, E64, E77, E79): the author's
+  episodes are geometric, the minimal figure counts only unvetoed ones. Either the ops read candidates for such cases
+  or the cases are rewritten; a question for him, not a code fix.
+- `pol_veto_need_yr` = inf (no record up to `ZLK_EXTEND_MAX_YR` resolves the gate, 797204 500 kyr) is written blank
+  like "no length named"; the action (review) tells them apart.
 
 ## Next steps (agreed order)
 
-1. The author's W28 review (above); then the fixes he chooses (S1 and S7 first), one test-benchmark, commit on his
-   command.
+1. The deferred studies the author wants to start once the package is in a good state (2026-11-02).
 2. A real co-orbital test.
 
 ## Separate tasks
@@ -76,9 +60,9 @@ No fix before he has discussed these (his request).
 
 ## Deferred episode mechanisms (episode gate `known_fail`)
 
-- Only E67 (2007 VU6, tier B) is `known_fail` (codex S7, d05). E15 (B2's forced (strength) mark), E17 (rewritten,
-  g11-4 A), E21 (rule q), E30 (rule s) and E43 (2021 XO3, one 1:1 episode with marks, C7) pass since W28. Tier C fails,
-  not gating: E71 2016 JA (confidence only), C09 1998 QA62, C10 17346 2J-1.
+- Under the minimal policy (2026-11-02) 14 cases are `known_fail`: E67 (2007 VU6, codex S7, d05) and 13 with a
+  minimal-policy reason in `known_reason` (E02, E15, E21, E28, E31, E46, E47, E60, E64, E76, E77, E79, D01). Under
+  v2, E17, E30 and E43 pass since W28 (E15 and E21 too). E100-E105 (the author's episode notes of 2026-11-02) pass.
 - Episode rule (b) (the claimed regular core must pass by itself) is rejected in its current form (W28 g11-6 B, g08-5
   B; `rejected.md`): on 2003 TX9 3E+2J-10 (5 yr) it gives resonant/low by losing R0's measured objection at the new
   scale, and it shifts 719 55S-8's episode. Return condition: the same candidate's measured objection must survive a

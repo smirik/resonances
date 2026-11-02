@@ -50,7 +50,7 @@ One palette gives a quantity the same colour in every panel of the combined figu
 | cyan | the catalogue resonant axis $a_{\rm res}$ |
 | orange, purple | an accepted subresonance, the owner resonance |
 
-The plaque of the right column is coloured by the status. Every time colour bar uses the same map (viridis without
+The plaque of the right column is coloured by the status; the action (`→ extend to 40 kyr`, …) is the amber tag beside it. Every time colour bar uses the same map (viridis without
 its palest yellow). Wrapped angles are labelled in [0°, 360°). Time is in yr, kyr or Myr, whichever suits the span
 (the `evolution` figure keeps years).
 
@@ -69,7 +69,13 @@ resonance induces are hatched `\\\\` on (a) (`mmr_combined.INDUCED_HATCH`, apart
 a jump) and labelled `induced` on (l); `also in …` names the other resonance of a joint capture. An accepted run the
 status does not count (below the period floor, the centre turns: episodes.csv `eligible` False) is drawn on (a) as a
 grey strip like a rejected run, labelled `#id < floor` or `#id centre turns` in grey (`mmr_combined.uncounted_tags`),
-and the numbers count `N accepted, M counted`. A 1:1 circulation judged on one leg or a non-1:1 half-swing between
+and the numbers count `N accepted, M counted`. Under the minimal policy (`CLASSIFIER_POLICY=minimal`, W29) (a) of both
+the MMR and the secular/ZLK figure draws only the counted episodes (a covered edge filled to the record edge, the
+filter-trim stretch pale; a counted 1:1 leg labelled `leg`) and, faint with a dashed outline, the candidates `cand`;
+no grey strip (`mmr_combined.policy_marks`, `shade_policy_runs`; the ids come from the analysis' `PolicyResult`, or
+from the stored verdict's `counted_episode_ids`/`candidate_episode_ids` when a standalone panel re-runs the analysis
+without the scans). The explanation then opens with four lines: status · confidence · reason, `basis:`, `flags:`,
+`v2:` (`verdict_text.policy_block`). A 1:1 circulation judged on one leg or a non-1:1 half-swing between
 passages (leaves G4c, G4h), the flag `extend_time`, the 1:1 profile floor and a turn read in the edge trim are said in
 the right column ([reading the figures](reading-figures.md#the-right-column)).
 One 1:1 episode in parts: (a) brackets its sub-regimes over the panel, named by their well
@@ -128,9 +134,11 @@ negative times.
 `SecularPlotter` (`resonances.plotting.secular_plots`; kinds `angle`, `rate`, `portrait`, `combined`) draws the
 angle the classifier read (the reduced proper angle by default, see [Secular resonances](secular.md)) next to the
 angle of the osculating elements.
-In the `combined` figure, panel (f) of a secular angle draws the analysis' own response fit (the element and
+In the `combined` figure, panel (d) is the semi-major axis (osculating band, filtered at $P_c$, min – max; for a body
+in a planet's co-orbital zone, by $a$ alone, the planet's $a_P$ dashed and the zone's edges $\pm k\,r_H$ dotted,
+`ZLK_COORBITAL_HILL_FACTOR` $k$; `secular_plots.coorbital_planet_geometric`, for drawing only). Panel (g) of a secular angle draws the analysis' own response fit (the element and
 $\sigma_f$ at the decisive cutoff, the centre's when the centre scale decided), the one whose $R^2$ it prints
-([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)). For a Lidov-Kozai angle panel (f) draws
+([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)). For a Lidov-Kozai angle panel (g) draws
 the drift of the free and the osculating $\omega$ in turns with a legend, as the `free_omega` drift figure; the right
 column explains the verdict in the slotted bullets of the MMR figure plus the time scales (1/T, $|\dot\sigma|/(1/T)$,
 the search window, the period seen on the angle and the FREQUENCIES row it is, or `unidentified`); a ZLK row adds its
@@ -142,9 +150,9 @@ both types include $a$ in ORBIT and a FREQUENCIES table: the body's rates, the p
 the beats, each in ″/yr with its period ([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)). An induced ZLK
 libration (attributed to a forced mode, or a centre at a beat of the forced vector) gets one more time panel, (a′)
 under (a): $\omega_f$ with the forced direction and the dominant mode against the node
-([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)); every other row keeps seven. A ZLK
+([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)); every other row keeps eight. A ZLK
 figure reads $\omega$, $i$, $\Omega$ and the free elements in the plane `ZLK_ANGLE_FRAME` names (the invariable plane
-by default; the header says which, panel (e) is `i (invariable)`).
+by default; the header says which, panel (f) is `i (invariable)`).
 
 ## Eccentricity vector
 

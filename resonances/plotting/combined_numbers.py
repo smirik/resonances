@@ -808,6 +808,10 @@ BADGE_PT = 16.0
 BADGE_PAD = 0.28  # the plaque's box padding, in units of its font size
 ENDS_PT = 12.0  # the tag 'ends: <final regime>' beside the plaque
 ENDS_GAP = 0.12  # inches between the plaque's box and the tag's box
+# W29 (the author on q05, 2026-11-02): the action tag right of the plaque, before 'ends: …' (the author's order: ends
+# last); amber, so the advice reads apart from the verdict and from the note on how the record ends
+ACTION_FILL, ACTION_EDGE, ACTION_INK = '#fff2cc', '#b35806', '#7f3b08'
+TAG_ROW = BADGE_PT * 2.0 / 72  # inches per plaque row: a tag that would pass the column's right edge goes one row down
 SUBTITLE_PT = 9.0
 SENTENCE_PT = 10.5
 BULLET_COMPACT_PT = 9.5  # the slotted explanation when the numbers would not fit otherwise (still above ITEM_PT)
@@ -1025,20 +1029,46 @@ def _checks_column(pen: _Pen, text, x: float, y: float, width: float, draw: bool
     return _na_line(pen, na, x, y, width, draw)
 
 
-def _plaque(pen: _Pen, text, x: float, y: float, colour: str) -> None:
-    """The plaque (status · angle_status · confidence, white on the status colour) and, when the record ends in another
-    regime, the tag 'ends: …' right of it: outlined in the status colour, lighter, so it reads as a note on the verdict,
-    not as a fourth part of it."""
+def plaque_tags(pen: _Pen, text, x: float, right: float) -> List[Tuple[str, str, float, int]]:
+    """(kind, label, x, row) of the tags right of the plaque: the action ('→ extend to 40 kyr', `VerdictText.action`),
+    then 'ends: …'; each where the one before it ends, or, when it would pass the column's right edge `right`, at the
+    plaque's left one row down (row 0 is the plaque's). Empty labels are left out."""
+    pad_badge, pad_tag = BADGE_PAD * BADGE_PT / 72, BADGE_PAD * ENDS_PT / 72
+    end = x + pen.text_width(f' {text.badge} ', BADGE_PT, weight='bold') + pad_badge
+    row, out = 0, []
+    for kind, label in (('action', getattr(text, 'action', '')), ('ends', text.ends)):
+        if not label:
+            continue
+        label = f' {label} '
+        width = pen.text_width(label, ENDS_PT, weight='bold')
+        left = end + ENDS_GAP + pad_tag
+        if left + width + pad_tag > right:
+            row, left = row + 1, x
+        out.append((kind, label, left, row))
+        end = left + width + pad_tag
+    return out
+
+
+def plaque_rows(pen: _Pen, text, x: float, right: float) -> int:
+    """The plaque's rows: 1, plus one per row its tags wrapped to (`plaque_tags`)."""
+    return 1 + max((row for *_, row in plaque_tags(pen, text, x, right)), default=0)
+
+
+def _plaque(pen: _Pen, text, x: float, y: float, colour: str, right: float = math.inf) -> None:
+    """The plaque (status · angle_status · confidence, white on the status colour), then right of it the action tag
+    (amber: the advice, W29) and, when the record ends in another regime, the tag 'ends: …' (outlined in the status
+    colour, lighter, so it reads as a note on the verdict, not as a fourth part of it); a tag that would pass `right`
+    goes one row down (`plaque_tags`)."""
     plaque = f' {text.badge} '
     pen.text(x, y, plaque, BADGE_PT, weight='bold', color='white', bbox={'boxstyle': f'round,pad={BADGE_PAD}', 'fc': colour, 'ec': 'none'})
-    if not text.ends:
-        return
-    pad_in = BADGE_PAD * BADGE_PT / 72
-    right = x + pen.text_width(plaque, BADGE_PT, weight='bold') + pad_in
-    tag_x = right + ENDS_GAP + BADGE_PAD * ENDS_PT / 72
-    tag_y = y - (BADGE_PT - ENDS_PT) / 2 / 72  # the two boxes share their middle line
-    box = {'boxstyle': f'round,pad={BADGE_PAD}', 'fc': 'white', 'ec': colour, 'lw': 1.2}
-    pen.text(tag_x, tag_y, f' {text.ends} ', ENDS_PT, weight='bold', color=colour, bbox=box)
+    for kind, label, left, row in plaque_tags(pen, text, x, right):
+        tag_y = y - (BADGE_PT - ENDS_PT) / 2 / 72 - row * TAG_ROW  # the boxes of a row share their middle line
+        if kind == 'action':
+            box = {'boxstyle': f'round,pad={BADGE_PAD}', 'fc': ACTION_FILL, 'ec': ACTION_EDGE, 'lw': 1.2}
+            pen.text(left, tag_y, label, ENDS_PT, weight='bold', color=ACTION_INK, bbox=box)
+        else:
+            box = {'boxstyle': f'round,pad={BADGE_PAD}', 'fc': 'white', 'ec': colour, 'lw': 1.2}
+            pen.text(left, tag_y, label, ENDS_PT, weight='bold', color=colour, bbox=box)
 
 
 PHYSICS_ICON_COLOURS = {'✓': 'pass', '✗': 'fail', '?': 'missing', '–': 'skipped'}
@@ -1132,8 +1162,8 @@ def _explanation(
     colour = STATUS_COLOURS.get(text.status, '#4d4d4d')
     y = top
     if draw:
-        _plaque(pen, text, x0 + 0.05, y - 0.02, colour)
-    y -= BADGE_PT * 2.0 / 72
+        _plaque(pen, text, x0 + 0.05, y - 0.02, colour, x1)
+    y -= TAG_ROW * plaque_rows(pen, text, x0 + 0.05, x1)
     y = pen.paragraph(x0, y, text.subtitle, SUBTITLE_PT, width, draw, color=KEY_INK) - 0.04
     bullets = getattr(text, 'bullets', None)
     if bullets:

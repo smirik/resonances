@@ -4,6 +4,10 @@
     uv run python benchmark/tools/reclassify.py --only ID,ID --figures
     uv run python benchmark/tools/reclassify.py --rtype mmr3 --workers 8 --out benchmark/data/v2
     uv run python benchmark/tools/reclassify.py --rtype secular,zlk --workers 3 --out benchmark/data/v2-secular-zlk
+    uv run python benchmark/tools/reclassify.py --policy v2 --out benchmark/data/v2-w29-v2   # the W28 tree, for comparison
+
+--policy minimal|v2 sets the setting `classifier_policy` explicitly (W29; never through the environment: the MMR path
+builds its settings from the dataclass defaults, `settings_from_config()`); omitted, the package default applies.
 
 --workers auto (the default) is min(CPUs - 2, available RAM / 3 GB, 8): ~2.6 GB per worker at the peak (v2-w21a); where
 the memory limits it, the workers get the low-memory allocator and 1.6 GB each (LOW_MEMORY_ALLOCATOR, docs/config.md;
@@ -33,6 +37,7 @@ os.environ.setdefault('MPLBACKEND', 'Agg')
 
 import argparse  # noqa: E402
 import csv  # noqa: E402
+import functools  # noqa: E402
 import sys  # noqa: E402
 import time  # noqa: E402
 import traceback  # noqa: E402
@@ -110,8 +115,9 @@ def _draw(example_id: str, analysis, series, index: int) -> Path:
 
 
 def author_labels(bench: Optional[Path] = None) -> pd.DataFrame:
-    """example_id -> status, confidence, angle_status of the author (newest export row, then later decisions).
-    `bench`: the folder with the label files (default: benchmark/)."""
+    """example_id -> status, confidence, angle_status of the author (newest export row, then later decisions; a decision
+    row whose source starts with 'claude' is Claude's reading, never a label). `bench`: the folder with the label files
+    (default: benchmark/)."""
     bench = Path(bench) if bench is not None else bio.BENCH
     rows: Dict[str, Dict[str, str]] = {}
     for path in sorted(bench.glob('author_labels_*.csv')):
@@ -123,6 +129,8 @@ def author_labels(bench: Optional[Path] = None) -> pd.DataFrame:
                 rows[row['example_id']] = {**row, 'label_source': path.name}
     for path in sorted(bench.glob('author_label_decisions_*.csv')):
         for row in pd.read_csv(path, dtype=str).fillna('').to_dict('records'):
+            if row.get('source', '').startswith('claude'):  # a row the author marked as Claude's reading (d16 B): no label
+                continue
             rows[row['example_id']] = {**rows.get(row['example_id'], {}), **row, 'label_source': f'{path.name}: {row["source"]}'}
     frame = pd.DataFrame(rows.values())
     if frame.empty:
@@ -206,17 +214,48 @@ def _write(frame_rows: List[Dict[str, Any]], path: Path) -> pd.DataFrame:
 TASKS_PER_WORKER = 5  # worker recycling: W20 round E, peak RSS per worker on 40 rows with figures (DECISIONS.md)
 
 
-def run(ids: List[str], out: Path, workers: int, figures: bool, tasks_per_worker: int = TASKS_PER_WORKER) -> int:
+POLICIES = ('minimal', 'v2')  # `AnalysisSettings.classifier_policy` (W29)
+
+
+def policy_overrides(policy: Optional[str]) -> Dict[str, Any]:
+    """The settings overrides of `--policy` (none when omitted: the package default)."""
+    if policy is None:
+        return {}
+    if policy not in POLICIES:
+        raise SystemExit(f'--policy must be one of {", ".join(POLICIES)}, not {policy!r}')
+    return {'classifier_policy': policy}
+
+
+def run_record_extra(overrides: Dict[str, Any]) -> Dict[str, Any]:
+    """run.json fields of the settings the run used: its `settings_hash` (with the overrides; it replaces the default
+    one `bench_io.write_run_record` writes) and the effective `classifier_policy`."""
+    from resonances.resonance.analysis.settings import settings_from_config, settings_hash
+
+    settings = settings_from_config(**overrides)
+    return {'settings_hash': settings_hash(settings), 'classifier_policy': getattr(settings, 'classifier_policy', '')}
+
+
+def run(
+    ids: List[str],
+    out: Path,
+    workers: int,
+    figures: bool,
+    tasks_per_worker: int = TASKS_PER_WORKER,
+    settings_overrides: Optional[Dict[str, Any]] = None,
+) -> int:
     """Analyse `ids` into `out`. Each worker process is replaced after `tasks_per_worker` examples (0: never): a process
     keeps the memory its largest record took, so recycling bounds only the growth between rows, not the peak of one
     row. The heavy rows set the peak whatever the recycling (W20 round E, 40 heaviest rows, one worker): 37087
     3J+8S-3 at 1 Myr alone 2.23 GB without a figure (~2.5 GB with it), 285637 at 2 Myr 1.72 GB, 50166 85J-27 1.45 GB;
     with recycling every 5 rows three of eight processes still went above 2 GB. With one worker and recycling the
-    examples run in a pool of one process; `--workers 1 --tasks-per-worker 0` runs them in this process (debugging)."""
+    examples run in a pool of one process; `--workers 1 --tasks-per-worker 0` runs them in this process (debugging).
+    `settings_overrides` reach every example's `settings_from_config` (`--policy`)."""
+    overrides = dict(settings_overrides or {})
     out.mkdir(parents=True, exist_ok=True)
     print(f'{len(ids)} examples, {workers} workers, {tasks_per_worker or "no"} recycling -> {out}')
     in_process = workers <= 1 and tasks_per_worker <= 0
-    ok, errors, wall = bio.run_examples(ids, _job, figures, workers, tasks_per_worker, in_process, runs=[out / 'run.json'])
+    job = functools.partial(_job_with, overrides)  # picklable for the spawn pool
+    ok, errors, wall = bio.run_examples(ids, job, figures, workers, tasks_per_worker, in_process, runs=[out / 'run.json'])
     summary = _write([row for r in ok for row in r['summary']], out / 'summary.csv')
     for name in ('numbers', 'episodes', 'candidates', 'constants'):
         _write([row for r in ok for row in r[name]], out / ('mmr_numbers.csv' if name == 'numbers' else f'{name}.csv'))
@@ -227,7 +266,8 @@ def run(ids: List[str], out: Path, workers: int, figures: bool, tasks_per_worker
         {'example_id': r['example_id'], 'seconds': r['seconds'], 'load': r['seconds_load'], 'analyse': r['seconds_analyse']} for r in ok
     ]
     script = 'benchmark/tools/reclassify.py'
-    bio.write_run_record(out, script, len(ids), ok, errors, wall, workers, figures, timings, tasks_per_worker=tasks_per_worker)
+    extra = run_record_extra(overrides)
+    bio.write_run_record(out, script, len(ids), ok, errors, wall, workers, figures, timings, tasks_per_worker=tasks_per_worker, **extra)
     if len(frame):
         print_report(frame, summary, timings)
     return bio.report_errors(ok, errors, wall)
@@ -235,6 +275,11 @@ def run(ids: List[str], out: Path, workers: int, figures: bool, tasks_per_worker
 
 def _job(args):
     return analyse_one(*args)
+
+
+def _job_with(overrides: Dict[str, Any], args):
+    example_id, figures = args
+    return analyse_one(example_id, figures, overrides)
 
 
 def main() -> int:
@@ -257,7 +302,11 @@ def main() -> int:
         help=f'replace a worker process after this many examples (default {TASKS_PER_WORKER}; 0 = never, and with --workers 1 '
         'run in this process)',
     )
+    ap.add_argument(
+        '--policy', choices=POLICIES, help='classifier_policy: minimal (W29) or v2 (the W28 tree); default: the package default'
+    )
     args = ap.parse_args()
+    overrides = policy_overrides(args.policy)
     args.workers = bio.resolve_workers(args.workers)
     if args.no_column_cache:
         os.environ['BENCHMARK_COLUMN_CACHE'] = '0'  # the spawned workers inherit it
@@ -268,8 +317,8 @@ def main() -> int:
         if rtypes - {'secular', 'zlk'}:
             raise SystemExit('--rtype secular,zlk cannot be mixed with MMR rtypes in one run (their outputs differ)')
         ids = reclassify_secular_zlk.select(args.rtype, args.only)
-        return reclassify_secular_zlk.run(ids, args.out, args.workers, args.figures)
-    return run(select(args), args.out, args.workers, args.figures, args.tasks_per_worker)
+        return reclassify_secular_zlk.run(ids, args.out, args.workers, args.figures, args.policy)
+    return run(select(args), args.out, args.workers, args.figures, args.tasks_per_worker, overrides)
 
 
 if __name__ == '__main__':

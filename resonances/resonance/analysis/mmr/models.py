@@ -1984,6 +1984,8 @@ class MMRAnalysis:
     # A6a (W28): the cheap theory numbers and candidate list of every prograde non-co-orbital row (sub_th_*, sub_cheap_*,
     # sub_diag_*); None for a row without them (retrograde, 1:1, a derived or owner row, a refused record)
     subresonance_cheap: Optional[SubresonanceCheap] = None
+    # W29: what the minimal policy layer counted and drew (`analysis.policy.PolicyResult`); None under policy v2
+    policy: Optional[Any] = None
 
     def _results(self) -> list:
         return [
@@ -2066,7 +2068,7 @@ class MMRAnalysis:
         cutoff = self.prep.cutoff.cutoff_yr if self.prep is not None else None
         window = self.geometry.window
         rows = [_episode_row(self, run, physics.get(run.episode_id), cutoff, window) for run in self.geometry.runs]
-        return [{**row, 'scale': SCALE_MAIN} for row in rows]
+        return [{**row, **policy_episode_columns(self.policy, row['episode_id']), 'scale': SCALE_MAIN} for row in rows]
 
     def slow_episode_rows(self) -> List[dict]:
         """The episodes.csv rows of the slow scale (scale 'slow'): the geometric columns of each run G2c found at the
@@ -2123,6 +2125,14 @@ class MMRAnalysis:
             self.energy.j_avgpot = ()
         for derived in self.derived:
             derived.drop_arrays()
+
+
+def policy_episode_columns(policy, episode_id) -> dict:
+    """episodes.csv `counted` / `candidate` (W29, `analysis.policy.PolicyResult`): the run is one of the episodes the
+    minimal policy counts, or a candidate it drew faint; None (empty cells) without a policy result (v2)."""
+    if policy is None:
+        return {'counted': None, 'candidate': None}
+    return {'counted': episode_id in policy.counted_episode_ids, 'candidate': episode_id in policy.candidate_episode_ids}
 
 
 ADDED_BY_SUBRESONANCE = 'subresonance_check'

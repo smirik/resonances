@@ -6,6 +6,11 @@ import shutil
 import sys
 
 os.environ.setdefault('LOG_LEVEL', 'warning')
+# W29: the suite specifies the W28 tree (CLASSIFIER_POLICY=v2), which the minimal policy reads as its input; set before
+# `import resonances` (the config reads the environment once) and before any AnalysisSettings() is built (the field's
+# default factory reads it). The minimal policy is specified by its own tests (`replace(settings,
+# classifier_policy='minimal')`) and the benchmark tools (`--policy minimal`)
+os.environ.setdefault('CLASSIFIER_POLICY', 'v2')
 
 import pytest  # noqa: E402
 

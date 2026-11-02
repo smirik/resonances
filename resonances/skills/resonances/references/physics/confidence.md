@@ -6,6 +6,38 @@ The status says *what* the record shows; the confidence says *how close the reco
 else*. It is built from the comparisons the analysis made on the way to the status, not from a statistical model of
 asteroid orbits. `uncertain` and `invalid` verdicts have no level: they claim nothing to be confident about.
 
+## Minimal policy (default) {#minimal-policy}
+
+Under `CLASSIFIER_POLICY=minimal` the level is a pure function of four pieces of evidence (`policy.level`, column
+`confidence_basis`):
+
+- **N**, complete libration cycles: $(n_{TP} - 1)/2$ of the decisive episode, plus the gap of each covered edge in
+  periods (a 2-TP run closed by its phase return counts 1, one 1:1 leg 0.5); a resonant row over several episodes
+  sums them, an overlap counted once;
+- **M**, the amplitude margin: L2 full (1:1: the zone known and no cycle in it; long-period: the largest
+  half-amplitude below $(1 -$ `CONFIDENCE_THIN_BAND`$)$ of the run break);
+- **V**, the vetoes: `clean` (the identity passes and the owner search found none, or does not apply; ZLK: the gate
+  confirmed), `partial` (owner search not measured, a probable owner, W or the gate's cycles thin), `not_measured`
+  (the identity or the gate gave no measurement), `ambiguous` (a measured objection, a failed onset, a failed
+  identity that moved nothing, a kinematic gate that pins no episode);
+- **S**, filter stability: L1 full (long-period: F full and no `filter_too_slow`).
+
+| status | level |
+|---|---|
+| resonant, transient | V ambiguous → low; N ≥ `CONFIDENCE_CERTAIN_CYCLES` (10) with M, S and V clean → certain; N ≥ `CONFIDENCE_HIGH_CYCLES` (3) with V clean or partial → high; otherwise medium |
+| near_separatrix | medium (low when V is ambiguous) |
+| non_resonant by a veto | medium when the veto is thin, a second capture is unresolved or a stable vetoed episode is drawn; else high |
+| non_resonant | medium with a candidate (a leg, a half-swing, a near-episode run); certain for a clear circulation (MMR: C1 and C2 full, an alias C5 and C2 full; long-period: P full and no turning point at any cutoff); else high |
+
+The level never falls as N rises. Caps become flags; `confidence_raw` equals `confidence`; the calibration cell is
+not reported. The action: extend by the [extend rule](status-tree.md#minimal-policy), resample when R-ALIAS-A
+withdrew a needed check, review for uncertain or for a needed veto beyond the extend budget, then medium
+spot_check, low review.
+
+## Policy v2: margins and caps
+
+The rest of this page is the W28 confidence (`CLASSIFIER_POLICY=v2`); its margins stay columns under minimal.
+
 ## Margins
 
 Every test that can support or undermine the status is graded as a **margin**:

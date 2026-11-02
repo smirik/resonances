@@ -43,6 +43,9 @@ period is a measured beat of the fitted forced modes, whose forced phase wave ex
 never becomes that period (`diagnostics.forced_beat_centre`); the guard acts only where the gate does (enabled, a split,
 no unfitted co-orbital): a disabled gate keeps the geometric result.
 
+W29: the minimal policy (`analysis.policy`, the last step) reads the gate as a measured veto (kinematic on a libration;
+the free e below the forced e) or a flag (no verdict, disabled: the geometry's status at <= medium, flag
+gate_unavailable / gate_disabled); ZLK_EPISODIC_NO_VERDICT acts under CLASSIFIER_POLICY=v2 only.
 Columns that change no status (`diagnostics`, `secular.slow`): the e-i coupling of the whole record at the decisive
 period for every row (`zlk_ei_*`, `check_zlk_ei`, `confirmed_ei`; the episode's own coupling is the one a status reads),
 the attribution of a kinematic libration to a forced mode (`zlk_forcing_*`), the slow line of the centre
@@ -59,6 +62,7 @@ from typing import Any, Optional
 import numpy as np
 
 from resonances.data.invariable_plane import FRAME_INVARIABLE
+from resonances.resonance.analysis import policy as policy_module
 from resonances.resonance.analysis.confidence import ConfidenceCells
 from resonances.resonance.analysis.rules import Rule, ordered
 from resonances.resonance.analysis.secular import slow
@@ -155,7 +159,7 @@ def analyse_zlk(
     if free_elements is not None and free_elements.resample_remainder:
         # the split this row's gate and columns read was resampled with a polyphase leftover pass (D1, 555527)
         analysis.verdict.rules_fired = ordered(analysis.verdict.rules_fired, [Rule.FREE_RESAMPLE_REMAINDER])
-    return analysis
+    return policy_module.apply_long_period(analysis, settings)  # W29: the policy layer, after the columns
 
 
 def _episode_pinning(free_elements, angle: AngleDecision, geometry, settings: AnalysisSettings) -> dict:

@@ -451,3 +451,15 @@ The exact current behaviour is in the code and in `docs/physics/`; the rule IDs 
   decision (C14 speed, C16 union bound, owner edge cover, figure text). Open for the author: decisions d01–d16 and
   Codex's 9 serious findings (S1 42946 G4h edge and S7 VU6 edge-turn threshold are real bugs, not fixed before he
   discusses them).
+- **Nov 2 (author; log entry by Claude, `benchmark/DECISIONS.md` 2026-11-02).** W29: the minimal physical policy
+  replaces the W28 tree as the default (`CLASSIFIER_POLICY=minimal`; `v2` kept for comparison, pinned in the tests).
+  Status from the geometry of σ_f; physics only vetoes, on a measured contradiction; the level from N cycles, the
+  amplitude margin, the veto and stability, with no caps; everything else is a flag; extend only for an unfinished
+  libration at the end, a deciding period too long for the record, or (Q5) a veto that needs a longer record within
+  `MMR_NEXT_CHECK_SPAN_FACTOR` × T (else review); ZLK without a gate verdict keeps the geometry's status at ≤ medium
+  with `gate_unavailable`. Why: the author found the tree over-complicated and his own labels noisy (09:57); the
+  principles were agreed at 10:17. His answers to the results page: all defaults, plus Q18 (an alias circulation is
+  certain on C5 and C2 full) and Q5 (clause C of extend; the action shown as a tag next to the plaque). The W28 review
+  page answers became 70 label rows (`author:2026-11-02 (W28 review page…)`) and episode cases E100–E105; where a label
+  and an accepted-by-default rule differ, `KNOWN_DISAGREEMENTS.csv` names the rule and the question (category
+  `minimal_policy`, 100 rows).

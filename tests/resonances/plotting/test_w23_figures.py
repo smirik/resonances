@@ -131,15 +131,15 @@ def _s_term_series():
 
 
 def test_an_s_term_figure_draws_the_inclination_response():
-    """127504 s-s6 drew de/dt with 'R² nan': panel (f) now draws d sin(i/2)/dt with the R² the analysis measured for i,
-    and (h) is (sin(i/2) cos σ, sin(i/2) sin σ); the colour bar's label sits above the bar."""
+    """127504 s-s6 drew de/dt with 'R² nan': panel (g) (f before the a panel of W29) now draws d sin(i/2)/dt with the R²
+    the analysis measured for i, and (i) is (sin(i/2) cos σ, sin(i/2) sin σ); the colour bar's label sits above the bar."""
     from resonances.plotting.secular_plots import draw_long_period_combined
 
     analysis = analyse_secular(_s_term_series(), S)
     response = analysis.response
     assert response.variables == ('i',) and response.r2_i > 0.9 and np.isnan(response.r2_e)
     fig = draw_long_period_combined(analysis)
-    panel_f, portrait = fig.axes[5], fig.axes[7]
+    panel_f, portrait = fig.axes[6], fig.axes[8]
     assert 'sin(i/2)' in panel_f.get_ylabel()
     assert f'R² {response.r2_i:.3g}' in [text.get_text() for text in panel_f.texts]
     assert portrait.get_xlabel() == 'sin(i/2) cos σ' and portrait.get_ylabel() == 'sin(i/2) sin σ'

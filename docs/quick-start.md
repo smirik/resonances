@@ -30,8 +30,8 @@ run: 100 kyr, step 1 yr, SABA(10,6,4); not re-run by the script above)
 | `resonant` | `libration` | `dynamic_libration` | `high` | `none` |
 
 The output step matters: without `output_step` the default step of a 100 kyr run is about 15.9 yr, longer than half
-of Lola's 3.7-yr orbit, so the record folds short periods and the confidence is capped at `medium`
-(`short_period_aliased`, [Dry run](dry-run.md)).
+of Lola's 3.7-yr orbit, so the record folds short periods: the flag `short_period_aliased` says so ([Dry run](dry-run.md);
+under `CLASSIFIER_POLICY=v2` it also capped the confidence at `medium`).
 
 The fields:
 

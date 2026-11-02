@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 from dataclasses import MISSING, Field, asdict, dataclass, field, fields
 from typing import Any, Mapping, Optional
 
@@ -27,6 +28,15 @@ KINDS = ('int', 'float', 'bool', 'str', 'floats', 'strs', 'optional_float')
 def _setting(default, env: str, kind: str, meaning: str, *, unit: str = '', convention: bool = False):
     """A dataclass field carrying its .env key, parser kind, unit, meaning and convention flag."""
     return field(default=default, metadata={'env': env, 'kind': kind, 'meaning': meaning, 'unit': unit, 'convention': convention})
+
+
+def _setting_from_env(nominal, env: str, kind: str, meaning: str, *, unit: str = '', convention: bool = False):
+    """A field whose dataclass default is read from the environment variable `env` (else `nominal`) each time a
+    settings object is built without a value for it. The one exception to "the environment does not reach the
+    settings" (CLASSIFIER_POLICY, W29 spec §1): `AnalysisSettings()` and `settings_from_config()` without a source get
+    it, so the test suite can pin v2 (tests/conftest.py) while the package default is `nominal`."""
+    metadata = {'env': env, 'kind': kind, 'meaning': meaning, 'unit': unit, 'convention': convention, 'nominal': nominal}
+    return field(default_factory=lambda: os.environ.get(env, nominal), metadata=metadata)
 
 
 PI = math.pi
@@ -514,7 +524,8 @@ class AnalysisSettings:
         'float',
         'insufficient_time/extend: the next check is round_up(max(f_min T, min(N, this x T))), N the estimate from the '
         'period (base_extend_to_years); a budget, not a sufficiency estimate: the record is analysed again after it (N8); '
-        'also every secular/ZLK extension (`analysis.secular.extend`)',
+        'also every secular/ZLK extension (`analysis.secular.extend`); minimal policy clause C: a needed veto not '
+        'measured for lack of length extends when its record is <= this x T, else review',
         convention=True,
     )
 
@@ -542,7 +553,9 @@ class AnalysisSettings:
         3,
         'LIBRATION_MIN_TURNING_POINTS',
         'int',
-        'turning points of one full cycle: an episode needs this many; a secular moving centre too',
+        'turning points of one full cycle: an episode needs this many; a secular moving centre too. Changing it also '
+        "changes the minimal policy's extend bound 2T / LIBRATION_MIN_TURNING_POINTS (fewer than three half-periods fit "
+        'the record)',
     )
     libration_near_episode_tp_deficit: int = _setting(
         1,
@@ -2311,7 +2324,8 @@ class AnalysisSettings:
         "unavailable without the co-orbital detail): 'ei' = transient only when the deciding episode's own e-i coupling "
         "is zlk (zlk_ei_episode_coupling), else uncertain/gate_unavailable (-9); 'uncertain' = always -9; 'keep' = "
         "transient as the geometry says. A policy: with 'ei' the anticorrelation of e and i at constant H is a status "
-        'condition for such a row',
+        "condition for such a row; CLASSIFIER_POLICY=v2 only: the minimal policy gives such a row the geometry's status "
+        'with the flag gate_unavailable',
         convention=True,
     )
     zlk_centre_model_r_min: float = _setting(
@@ -2366,6 +2380,33 @@ class AnalysisSettings:
     # --- Confidence (shared) -------------------------------------------------------------------
     confidence_thin_band: float = _setting(
         0.1, 'CONFIDENCE_THIN_BAND', 'float', 'margin U: a decision within this relative distance of a convention'
+    )
+    confidence_high_cycles: float = _setting(
+        3.0,
+        'CONFIDENCE_HIGH_CYCLES',
+        'float',
+        'minimal policy: complete libration cycles N a resonant or transient row needs for high (with the vetoes '
+        'measured, clean or partial); fewer is medium. Also the A4 extend clause: a last counted episode that reaches '
+        'the record end with fewer cycles extends',
+        convention=True,
+    )
+    confidence_certain_cycles: float = _setting(
+        10.0,
+        'CONFIDENCE_CERTAIN_CYCLES',
+        'float',
+        'minimal policy: complete libration cycles N for certain, with the amplitude margin full, the filter stable and '
+        'every veto measured clean',
+        convention=True,
+    )
+    # --- Policy ---------------------------------------------------------------------------------
+    classifier_policy: str = _setting_from_env(
+        'minimal',
+        'CLASSIFIER_POLICY',
+        'str',
+        "'minimal' (W29): the status from the geometry of sigma_f, non_resonant only by a measured veto (owner, "
+        'kinematic, forced wave, strength, ZLK kinematic or free e < forced e), the level from the evidence (N cycles, '
+        "amplitude margin, vetoes, filter stability), every other W28 rule a flag; 'v2': the W28 tree as it was, for "
+        'comparison. The one setting the environment reaches without a source (the tests pin v2)',
     )
     confidence_cells: str = _setting(
         '',
@@ -2439,6 +2480,7 @@ CHOICES = {
     'dryrun_fair': ('optional', 'required'),
     'zlk_angle_frame': ('invariable', 'ecliptic'),
     'zlk_episodic_no_verdict': ('ei', 'uncertain', 'keep'),
+    'classifier_policy': ('minimal', 'v2'),
 }
 
 # (smaller, larger): the first must be strictly below the second
@@ -2455,6 +2497,7 @@ ORDERED_PAIRS = (
     ('dryrun_pilot_min_yr', 'dryrun_pilot_max_yr'),
     ('mmr_strength_mp_guard_digits', 'mmr_strength_mp_dps'),
     ('mmr_owner_potential_scale_full', 'mmr_owner_potential_scale_max'),
+    ('confidence_high_cycles', 'confidence_certain_cycles'),
 )
 # (smaller, larger): the first must not exceed the second
 ORDERED_OR_EQUAL = (
@@ -2717,9 +2760,15 @@ def parse_value(f: Field, raw: Any) -> Any:
 
 
 def _default(f: Field) -> Any:
-    if f.default is MISSING:  # pragma: no cover - every setting has a default
+    if f.default is MISSING and f.default_factory is MISSING:  # pragma: no cover - every setting has a default
         raise ValueError(f'{f.name} has no default')
-    return f.default
+    return f.default if f.default is not MISSING else f.default_factory()
+
+
+def nominal_default(f: Field) -> Any:
+    """The default a setting has in `.env.dist` and docs/config.md: the plain default, or for a field read from the
+    environment (`_setting_from_env`) its nominal value, whatever the environment holds now."""
+    return f.metadata['nominal'] if 'nominal' in f.metadata else f.default
 
 
 def format_value(value: Any) -> str:

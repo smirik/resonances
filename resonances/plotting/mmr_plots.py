@@ -215,16 +215,29 @@ class MMRDiagnostics:
 def _rerun_analysis(body, resonance, sim):
     """The MMR analysis re-run on the saved series with the run's settings (same input, same cutoff as the verdict).
 
+    The re-run skips the subresonance and owner scans (the panels here read sigma_f and a_f only). Under the minimal
+    policy (W29 SPEC §7) its status, level and counted/candidate episodes would then miss what the scans feed the
+    policy, so the analysis carries the body's stored `Verdict` instead when there is one (`policy_marks` reads its
+    episode ids), and without one it is re-run with the scans on.
+
     ValueError when it cannot be: no simulation (planets, settings), or an analysis stopped at G0 (no sigma_f)."""
     key = resonance.to_s()
     if sim is None:
         raise ValueError(f'{body.name} {key}: no filtered angle in memory, and no simulation to re-run the analysis')
+    from resonances.plotting.verdict_text import POLICY_MINIMAL, policy_minimal
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr
     from resonances.simulation.mmr_adapter import series_from_body
 
-    analysis = analyse_mmr(series_from_body(body, resonance, sim), sim.config.analysis_settings, scan_subresonances=False, scan_owner=False)
+    settings = sim.config.analysis_settings
+    stored = getattr(body, 'librations', {}).get(key)
+    minimal = str(getattr(settings, 'classifier_policy', '')) == POLICY_MINIMAL
+    scans = minimal and stored is None
+    analysis = analyse_mmr(series_from_body(body, resonance, sim), settings, scan_subresonances=scans, scan_owner=scans)
     if analysis.prep is None:
         raise ValueError(f'{body.name} {key}: the analysis is undefined ({analysis.verdict.reason}), there is no filtered angle')
+    if minimal and stored is not None and policy_minimal(stored):
+        analysis.verdict = stored
+        analysis.policy = None  # the marks come from the stored verdict's episode ids, not from a scan-less re-run
     return analysis
 
 

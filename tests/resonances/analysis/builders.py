@@ -17,8 +17,10 @@ import numpy as np
 
 from resonances.resonance.analysis import geometry as g
 from resonances.resonance.analysis.mmr import models
+from resonances.resonance.analysis.ledger import Ledger
 from resonances.resonance.analysis.pendulum import EnergyAnalysis
-from resonances.resonance.analysis.verdict import CheckValue
+from resonances.resonance.analysis.secular import models as secular_models
+from resonances.resonance.analysis.verdict import AngleStatus, CheckValue, ResonanceType, Status, Verdict
 
 NAN = float('nan')
 
@@ -109,3 +111,36 @@ def make_kinematics(**fields) -> models.Kinematics:
 
 def make_energy(**fields) -> EnergyAnalysis:
     return make(EnergyAnalysis, **fields)
+
+
+def make_verdict(status=Status.NON_RESONANT, angle_status=AngleStatus.CIRCULATION, **fields) -> Verdict:
+    """A verdict of the tree (MMR unless `resonance_type` is given) with `status` and `angle_status`."""
+    fields.setdefault('resonance_type', ResonanceType.MMR)
+    return Verdict(status=Status(status), angle_status=AngleStatus(angle_status), **fields)
+
+
+def make_mmr_analysis(
+    verdict: Verdict, geometry=None, rec_rule: str = '', extra=None, span_yr: float = 1000.0, **fields
+) -> models.MMRAnalysis:
+    """A finished MMR analysis as the policy layer reads it (W29): the tree's `verdict`, its leaf `rec_rule`, the
+    geometry, a sampling of `span_yr` and any other result object given; the rest neutral."""
+    fields.setdefault('sampling', make_sampling(span_yr=span_yr, resample_step_yr=None, fold_free_step_yr=NAN))
+    extra_columns = {'rec_rule': rec_rule, **(extra or {})}
+    return make(models.MMRAnalysis, verdict=verdict, geometry=geometry, extra_columns=extra_columns, **fields)
+
+
+def make_filtered_angle(t_yr, angle_f, window=None, **fields) -> g.FilteredAngle:
+    """sigma_f on `t_yr` (the window the whole grid unless given); the other arrays empty."""
+    t_yr = np.asarray(t_yr, dtype=float)
+    fields.setdefault('run_break_half_amplitude_rad', np.pi)
+    window = window if window is not None else (float(t_yr[0]), float(t_yr[-1]))
+    return make(g.FilteredAngle, t_yr=t_yr, angle_f=np.asarray(angle_f, dtype=float), window=window, **fields)
+
+
+def make_long_period_analysis(
+    verdict: Verdict, geometry=None, gate=None, angle=None, span_yr: float = 1.0e6, **fields
+) -> secular_models.LongPeriodAnalysis:
+    """A finished secular or ZLK analysis (the type of `verdict`) over `span_yr` as the policy layer reads it."""
+    t = np.array([0.0, span_yr])
+    series = secular_models.LongPeriodSeries(verdict.resonance_type, 'K', 'body', t, np.zeros(2), np.ones(2), np.zeros(2), np.zeros(2))
+    return secular_models.LongPeriodAnalysis(series, verdict, Ledger(0.1), geometry=geometry, gate=gate, angle=angle, **fields)

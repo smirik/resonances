@@ -410,7 +410,7 @@ marks it.
 
 2003 TX9 in 3E+2J−10 shows a candidate at 6.96 kyr: the half-amplitude falls from 146° to 12° (separation 8.3, the
 swing of $a$ ÷ 7.1, $\Delta h = -0.54$), so tests 1–6 pass; test 7 fails (the period law of the smaller swings in the
-potential of the larger ones is 1.61), and the record is not cut ([Gallery](gallery.md#uncertain-origin)).
+potential of the larger ones is 1.61), and the record is not cut ([Gallery](gallery.md#measured-objection)).
 
 ## The separatrix zone
 
@@ -583,5 +583,6 @@ none of these holds.
 may keep their loops ([The reported angle word](status-tree.md#the-reported-angle-word)).
 
 So `angle_status` describes what $\sigma$ does, and `status` says whether that is this resonance. A body can be
-`non_resonant` with `angle_status = libration` ([Gallery](gallery.md#kinematic-libration)), or `uncertain` with
-`angle_status = libration` ([Gallery](gallery.md#uncertain-origin)).
+`non_resonant` with `angle_status = libration` ([Gallery](gallery.md#kinematic-libration)), or `resonant` at `low` with
+a measured objection that does not decide ([Gallery](gallery.md#measured-objection); `uncertain` under
+`CLASSIFIER_POLICY=v2`).

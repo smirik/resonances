@@ -3121,5 +3121,89 @@
         "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
       }
     ]
+  },
+  {
+    "case": "E100",
+    "example_id": "mmr2__120348__15N-22+0+7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 20,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "Я не вижу тут эпизодов вообще. non-resonant / circulation / certain или high",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E101",
+    "example_id": "mmr2__138537__13N-25+0+12",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 21,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "Я считаю, тут нету эпизодов. И non-resonant / circulation / certain или high",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E102",
+    "example_id": "mmr2__182259__35S-4+0-31",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 22,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "Мне кажется, тут, скорее, один эпизод или вообще их нет, а не два. Есть небольшой кусок, где резонансный угол не дрифтует, но он один, не два. Статус - non-resonant / circulation / high",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E103",
+    "example_id": "mmr2__2897__35S-4+0-31",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 29,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "Как и в похожем примере ранее, тут либо нет эпизодов (есть просто дрифт резонансного аргумента), либо один эпизод.. И статус: non-resonant / circulation / high ",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E104",
+    "example_id": "mmr3__101703__1V+3S-7+0+0+3",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 36,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "Тут нету эпизодов.",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E105",
+    "example_id": "mmr3__101703__1V+3S-7+0+0+3__200kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 37,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "mmr3__101703__1V+3S-7+0+0+3__200kyr\":{\"verdict\":\"status\",\"episodes_note\":\"Тут нету эпизодов.",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
   }
 ]

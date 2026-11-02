@@ -71,6 +71,7 @@ behind the columns are in the [rule index](libration-analysis.md).
 | checks | `check_mmr_alias`, `_filter`, `_baseline`, `_identity`, `_a_response`, `_potential`, `_a_amplitude`, `_kinematic`, `_subresonances`, `_owner`, `_slow_libration`, `_one_pendulum`, `_onset`, `_exit`, `_separatrix_zone`, `_strength`; `check_secular_e_response`; `check_zlk_free_omega`, `check_zlk_ei` (empty for another type) |
 | confidence | `thin_margins` (a `U:<name>` item there is a decision close to a convention, no `mrg_U` column), `failed_support`, `caps`, `mrg_<id>` and `mrg_<id>_value` for every margin. MMR: L1–L8, O1, Z, R0, S, W, F, C1–C5, K1, K1e, B5, N ([reference](libration-analysis.md#confidence)). Secular and ZLK: N (turning points of the decisive episode), S (centre stationarity), F (the libration period ≥ `FILTER_MIN_LIBRATION_CUTOFFS` × the cutoff $P_c$), P (a circulation's centre pass ≥ 1 turn at every smoothing), and for ZLK G (the free-omega gate) ([details](physics/confidence.md#secular-and-lidov-kozai-margins)); a shared id is read with `resonance_type` |
 | decision | `rules_fired` (the named rules that acted on the row, also when its verdict stayed the same: `;`-separated, in the order of the [rule index](libration-analysis.md); empty when none did; it changes nothing), `decision_path` (the ledger's comparisons in order) and the columns they read (`geo_*`, `smp_*`, `rsp_*`, `sep_*`, `ep_*`, `own_*`, `sub_*`, …; `ep_onset_ratio`: O1's a-wave before / inside the decisive episode) |
+| policy (W29) | `policy` (`minimal` or `v2`, `CLASSIFIER_POLICY`; empty in older files), `n_cycles` (the complete libration cycles N the level read), `n_counted_episodes`, `counted_episode_ids` and `candidate_episode_ids` (`;`-joined episode ids; a counted or candidate 1:1 leg is `leg`, a half-swing `half`), `veto` (the measured veto that made a bounded angle non_resonant: `owner`, `kinematic`, `strength`, `zlk_kinematic`, `zlk_free_e`), `confidence_basis` (`N=6.5(cover);M=full;V=clean;S=full;veto=-`: N and how it was counted, the amplitude margin, the veto state, the filter stability, the veto and `:thin`), `v2_verdict` (the W28 tree's `status/confidence/reason/action/angle_status` under minimal), `pol_end_travel_rev`, `pol_t_last_tp_yr`, `pol_period_dec_yr`, `pol_n_last`, `pol_last_reaches_end`, `pol_extend_clause` (`A1` an end-edge 1:1 leg, `A2` an end-edge half-swing, `A` an unfinished libration at the end, `B` a deciding period above 2T / `LIBRATION_MIN_TURNING_POINTS`, `C` a needed veto that a record within `MMR_NEXT_CHECK_SPAN_FACTOR` x T measures), `pol_veto_need_yr` (the record a needed but unmeasured veto would need; empty also when no record up to `ZLK_EXTEND_MAX_YR` resolves it). Under minimal `caps` is empty (every cap is a flag), `confidence_raw` equals `confidence` and the `cell_*` columns are empty ([the minimal policy](physics/status-tree.md#minimal-policy)) |
 | slow scale (MMR) | `slow_period_yr`, `slow_cause`, `slow_cause_term`, `slow_cause_level` (the slower libration of the centre and its probable cause, `identified`/`possible`/`unknown`; the rest in mmr_numbers.csv `slow_*`) |
 | reproducibility | `settings_hash`, `confidence_cells_sha`, `package_commit` |
 | orbit | `a0`, `e0`, `inc0`, `Omega0`, `omega0`, `M0` (initial elements) |
@@ -80,6 +81,7 @@ behind the columns are in the [rule index](libration-analysis.md).
 
 `status_code` is the integer status of older versions, kept only to compare with old runs; use the string columns.
 The codes are in [the status tree](physics/status-tree.md#legacy-integer-codes) (never merge −2 with −9).
+Under the minimal policy a Lidov-Kozai row whose free-omega gate gave no verdict keeps its geometry's status (code 2 or 1, flag `gate_unavailable`, at most medium): **split every ZLK statistic by `check_zlk_free_omega`** (`pass`: the gate confirmed it; `not_measured`: no verdict or the gate disabled; `fail`: measured kinematic). −2 is exactly `veto` `zlk_kinematic` or `zlk_free_e`, −9 occurs only on uncertain rows.
 
 ### Flags {#flags}
 
@@ -194,6 +196,10 @@ floor).
 W_c that hold the slower libration of the centre (`slow_*` in mmr_numbers.csv; geometric columns only, `cutoff_yr` =
 W_c, no physics); a reader of the decisive episode or of the main scale filters on `main` (older files have no
 column: all main).
+`counted` and `candidate` (W29, every type): the run is one of the episodes the minimal policy counts
+(`n_counted_episodes` in summary.csv, drawn solid in the figure), or a candidate it drew faint and did not count (a
+vetoed episode that keeps its turning points at every cutoff, a near-episode run); empty under the policy `v2`. A
+counted or candidate 1:1 leg or half-swing is no run: it appears only in summary.csv (`leg`, `half`).
 
 ## candidates.csv
 
