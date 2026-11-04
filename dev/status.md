@@ -1,4 +1,4 @@
-# Status on 2026-11-02
+# Status on 2026-11-03
 
 Replace this page at each programme step. W29 (the minimal physical policy, `CLASSIFIER_POLICY=minimal`, now the
 default; `v2` kept for comparison and pinned in the tests) is implemented and committed (not pushed). Latest benchmark
@@ -12,6 +12,105 @@ rule the author accepted by default on 2026-11-02, each with the rule and the qu
 candidates, a subresonance parent's runs are its member's, Q3, P3, the next-check cap, the ZLK gate flag). Tests:
 test-fast 5388 passed, 5 xfailed (1.3 min); test-slow 406 passed, 1 xfailed (7.3 min); test-benchmark
 656 passed, 3 xfailed (19.6 min, with the reclassification under `--policy minimal`). The record: `benchmark/DECISIONS.md` 2026-11-02, `dev/decisions.md`.
+
+## W34 (2026-11-04, uncommitted): the author's answers to the W33 page
+
+Answers verbatim: `tmp/classifier-v2-2026-10-15/w34/answers-w33-page.json`; reviews `tmp/.../w34/codex-force/answer.md`
+and `w34/claude-force/` (L4/R0 on 79653). Labels: 1865, ND, TG2 100 kyr, 23240, VA14 20 kyr
+(`author_label_decisions_2026-11-04.csv`). Done:
+- R0 per episode (`zone.episode_r0`, `SEPARATRIX_R0_EPISODES`): a record-pooled R0 not measured is read inside each
+  accepted episode with >= 2 disjoint cycles (own period, own best frame, thresholds unchanged), lift-only; the x2
+  guard keeps it when it compared another episode (`decide.r0_beside_guard`, `R0_KEPT`); column `sep_R0_episode_id`.
+  79653 → transient/high (label). L4/multiplet halves: a missing half is no half (`a_response_check`,
+  `lower_half_median`; Codex).
+- ZLK gate inside the episodes (`omega_free_gate.episode_confirmation`, `ZLK_GATE_EPISODES`; columns
+  `zlk_gate_rho_episodes_min`, `zlk_gate_free_turns_episodes_max`, detail `episodes`): 88899 500 kyr → transient/low
+  (the e-i integral an objection; against his W32 label: the one open disagreement), 1866 low → medium.
+- TG2's stay named in the text (`Episodes.stay_text`). The slow-swing-as-episode rule (1580) was built and removed
+  after the author's bounds B («может, тогда это вообще излишне?»): it fired on 1580 only.
+- Episode tool: `pool: geometric` (counted + candidates) for the nine cases; D01, E67 rewritten; known_fail 0.
+Runs `v2-w34a` + `v2-w34-secular-zlk`: moved 79653, 88899, 1866 (+ R0 pass on 10 rows already dynamic, levels kept).
+KNOWN 2 rows (88899). Acceptance PASS with the 88899 swap reason (`w34/swap-reasons.csv`). Page:
+https://claude.ai/artifact/9iBbFEh5YTQLPfMyCV2pUG (cards: force A, L4 short route, ZLK, bounds, E02/E28, the rest,
+commit). The old pages (W32, W33) could not be deleted from the session (needs the author's confirmation).
+Tests: fast 5447 passed (5 xfailed), slow 406 (1 xfailed), benchmark 656 + 1 failure fixed (1866 control: gate kinematic -> confirmed by the episode reading; rerun alone, 5 passed). Open (on the page): the L4 short route (Claude >= 2 P, Codex >= 3 P with <= medium), R0's scale (V_F period) check.
+
+## W33 (2026-11-03, uncommitted): the author's answers to the W32 disagreements page
+
+Answers verbatim: `tmp/classifier-v2-2026-10-15/w33/ANSWERS-2026-11-03c.json`; Codex review `tmp/.../w33/codex/`.
+Labels written for every "package" / A answer (+ 555527 high, 1580 transient/low). Two rules:
+- F (`policy.mmr_force_shown`, `CONFIDENCE_GEOMETRY_ONLY_MAX`=low): a resonant/transient MMR row with none of L4, R0,
+  F passing is at most low; the identity is no force (the author: "no resonant/transient by geometry alone"; Codex
+  and Claude keep the status, the angle is bounded). `confidence_basis` ends `;F=shown|none`.
+- Owner short windows (`owner.run_owner` → `search_owner`, `MMR_OWNER_SHORT_WINDOW_CYCLES`=2): the search needs
+  ~9.25 P of record at 3.5-P windows; with too few windows it runs again at 2 P (~7 P), flag `owner_short_windows`.
+  Under v2 it lifts 41588's all_physics_not_measured (medium → high); the v2-pinned text/kinematics tests read 41588
+  without the retry (`BEFORE_W33_OWNER`).
+- Slow-swing extension (the author's W30 epext B, missed in W31): the minimal policy's next check takes the baseline
+  estimate when it is a slow swing seen in part (`mmr.decide.SLOW_SWING_SOURCES`), within 4T: 523683 400 kyr (E76
+  passes), 385458 300, BG/YG1/ET4 50, EQ7/QT9 60 kyr. The W30 card's "cap 2T" was wrong (the cap is 4T).
+- Episode tool: `single_covers` reads each edge as `geometry.covers_edges` (E60 WK15 passes: start gap 1.0000000004 P).
+Run `v2-w33b` (= w33a + the 7 extensions); before it `v2-w33a` (secular/ZLK unchanged `v2-w31b-secular-zlk`): 10 rows moved (385533 300 kyr, 463, 7343 → certain; 1862,
+1865, 79653, TU54, TG2 0.5 yr high → low; ND, VA14 20 kyr medium → low). KNOWN 38 → 6 (1865, 79653, ND: labels from the
+W30 bulk acceptance against F; VA14 20 kyr, TG2 100 kyr, 23240: status, the open "uncertain without force?"). Status
+228/231, confidence 171/174, secular/ZLK all agree. Episode gate: no differences, known_fail 13 → 11. Acceptance PASS
+(0 violations on 820 rows). Tests: fast 5425 passed, slow 406, benchmark 651 + the 5 41588 tests fixed (rerun alone).
+Page for the author: https://claude.ai/artifact/YMFyWbewNTUTyJb1mTBnZ3 (`tmp/.../w33/page`; Codex on episodes:
+`tmp/.../w33/codex-episodes/answer.md`). Not done (questions): Codex's stricter ladder (e^q only <= medium, high needs a full
+force margin: 10 more rows, 33128 certain -> medium); 1580's and TG2's episode bounds (the author: 1580 ~2.5-6 kyr is the
+slow scale's swing, TG2 longer) go to the episode page with the 13 known_fail cases.
+
+## W32 (2026-11-03, uncommitted): the author's answers to the W31 page
+
+Answers verbatim: `tmp/classifier-v2-2026-10-15/w32/ANSWERS-2026-11-03b.json`. He took the secular rows at high, PG14
+33S-2 non_resonant, asked for WK15 high "if cheap", accepted R-PASS/R-WAVE/R-NET/R-HALF on condition of a redundancy
+check (Claude subagent + Codex, `tmp/.../w32/redundancy/`), and read 2002 BG as one unfinished slow libration
+(insufficient_time + extend). Both reviews rejected all four rules (R-PASS is the slow-centre turn and fires on forced
+waves and exits too; R-NET exists as G4b; R-WAVE was measured on the raw angle, the great inequality; R-HALF: one
+cycle fits the sine law for any clean wave). Done instead: B6b takes a ripple whose identity does not pass (fails or
+not measured) → BG, 1992 SZ 1M-10J+1, 2011 ET4 uncertain/insufficient_time extend 40 kyr; an all-forced row whose slow
+centre passes < 1 rev goes to the drift rule; forced runs join the background of the others (DE61 ep 4);
+filter_too_slow below `gain_too_slow` (0.911, the thin band of MMR_L8_GAIN_FULL) → WK15 resonant/high; the x2 guard
+compares shapes only at the full gain. Still disagreeing (listed): 1862 high vs low, 501710/VA14/DE61/1580/TG2/23240
+transient vs uncertain.
+Run `v2-w32b` (secular/ZLK unchanged: `v2-w31b-secular-zlk`): 4 rows moved against `v2-w31b`, KNOWN 43 → 41 (status
+223/231, confidence 151/169), episode gate no differences (E60 passes the level, fails only on its 1.00-P start gap),
+acceptance PASS (0 violations on 820 rows). Tests: fast 5408 passed, slow 406, benchmark 651 + the 5 updated (B6b and
+the thin band in v2-pinned tests: 46596 and TX9 diagnostics read without the ripple rule, TX9 stall mark one step).
+
+## W31 (2026-11-03, uncommitted): the author's answers to the W30 page
+
+Answers verbatim: `tmp/classifier-v2-2026-10-15/w31/ANSWERS-2026-11-03.json`; labels he accepted:
+`benchmark/author_label_decisions_2026-11-03.csv`; research reports (Codex astra on confidence, three Claude agents on
+episodes, disputed three-body rows, a forced-wave criterion): `tmp/.../w31/research/*/`. Done: the ZLK D1-D6 rules
+(e-i integral as objection or veto at rho_max >= `ZLK_RHO_KINEMATIC_EXCLUDED`, no cap with a held integral and small
+forcing, omega's revolution 2 pi, median and undefined-phase vetoes only with a broken integral, geometric origin
+without a confirmed gate); the common confidence ladder (certain N >= 3 with 3 observed cycles in the decisive
+episode, high N >= 2; a measured veto is high); the background forced-wave veto (`mmr/background_wave.py`); the
+strength veto's word from the centre; the zone and floor thin bands; the 1:1 compound-swing join (439908); the
+covered-edge fill; a failed identity under `varpi_fast_low_e` is not measured. Runs `v2-w31b` + `v2-w31a-secular-zlk`:
+KNOWN_DISAGREEMENTS 118 → 43 rows; agreement status 222/231, confidence 151/170. Open for the author: WK15's 150-yr
+floor (a 135-yr floor moves the cutoff of 369 rows), certain for 2.5-cycle secular rows (Codex: no family discount),
+PG14 33S-2 (research disagrees), 1862 (high by the rules), 1580/TG2 (a passage at a*: R-PASS proposed), 501710, VA14,
+DE61 (drift: R-WAVE/R-NET proposed), 79653 (L4 on halves: R-HALF proposed), 2002 BG (background unsteady).
+
+## W30 (2026-11-02 evening, uncommitted)
+
+After two independent reviews of W29 (Fable, Codex astra; `tmp/.../w29/final-review/`) the author asked to fix the
+MMR defects and to have both research the secular and ZLK criteria in the literature (his point: the Kozai constant
+and the quadrupole approximation hold for a limited class only; free-ω looks better). Done in code: the strength
+marks a not-upheld 5s veto counts again are Episode rows for N (`policy._countable`: 2012 KL9 N nan → 3); a
+subresonance parent's N is `N=…(member)`; N < `CONFIDENCE_MEDIUM_CYCLES` (1.5, new) → low (PRINCIPLES §1, AC4, 1580,
+4305, 8089); S needs no `filter_sensitive` (2002 XA certain → high); a non_resonant long-period row with a candidate
+is medium (`policy.py` candidate was always False); the header's orbit type is read again when the policy moves a
+status (KL9 "not this resonance" on a transient); the figure's EPISODES block, panel (l) and the forced-wave labels
+follow the policy's counted/candidate; the ZLK gate is the deciding step only with a verdict (555527); no e-i
+requirement and no 39.2° line under the minimal policy; an unknown mode-phase error is V not_measured; a zero free
+vector has no phase (`free_elements.mask_origin`); the acceptance gate reads the held-out expectation. The criteria
+synthesis and the six disputed decisions (D1 the e-i integral as veto or objection, D2 ρ_max ≫ 1 without a gate
+verdict, D3 π or 2π for ω's circulation, D4 median-based vetoes, D5 a per-order secular period floor, D6 dynamic or
+geometric origin): `tmp/classifier-v2-2026-10-15/w30/criteria/SYNTHESIS.md`; they wait for the author with the MMR
+disagreement page (`tmp/.../w30/disagreements/`).
 
 ## Open for the author
 
@@ -27,8 +126,12 @@ test-fast 5388 passed, 5 xfailed (1.3 min); test-slow 406 passed, 1 xfailed (7.3
 
 ## Next steps (agreed order)
 
-1. The deferred studies the author wants to start once the package is in a good state (2026-11-02).
-2. A real co-orbital test.
+1. The benchmark disagreements (109 KNOWN rows, 14 known_fail episode cases) settled with the author, so the gate
+   checks something again (2026-11-02: "они нам нужны работающими"); studies wait until then.
+2. The deferred studies the author wants to start once the package is in a good state (2026-11-02).
+3. A real co-orbital test.
+4. Before preparing the merge into main: remove everything unused (the author, 2026-11-02). No `CLASSIFIER_POLICY=v2`
+   path if the minimal policy is the one in use, no dead rules, settings or flags, no backward compatibility.
 
 ## Separate tasks
 

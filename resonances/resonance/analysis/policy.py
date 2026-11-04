@@ -8,11 +8,13 @@ analysis and decides again:
                    near_separatrix, circulation -> non_resonant; a drift whose centre passes >= one own revolution ->
                    non_resonant / modulated_circulation, less -> uncertain; insufficient_time -> uncertain, or
                    non_resonant / circulation when the record ends in circulation (sigma_f travels >= one own revolution
-                   after the last turning point of an accepted or candidate run). One own revolution is 2 pi, pi for a
-                   ZLK omega (the quadrupole Hamiltonian depends on cos 2 omega).
+                   after the last turning point of an accepted or candidate run). One own revolution is 2 pi, a ZLK
+                   omega's too (W30 D3: the quadrupole's cos 2 omega symmetry is not general; its runs still break at
+                   half a turn).
     P2 vetoes      a bounded angle becomes non_resonant only on a measured contradiction (`VETO_*`): an owner that
                    induces the episode, a kinematic origin, the strength computed from the disturbing function far
-                   below the need (two-body), the ZLK gate measured kinematic or the free e below the forced e.
+                   below the need (two-body), the ZLK gate measured kinematic or the free e below the forced e over the
+                   record, the ZLK e-i integral broken where the forced terms are small (W30 D1).
                    Every other leaf of the tree that moved a status gives the geometry's status back with a flag.
     P3 level       `level`: from the complete cycles N, the amplitude margin M, the veto state V and the filter
                    stability S; no caps (every v2 cap becomes a flag).
@@ -48,6 +50,7 @@ from resonances.resonance.analysis.geometry import (
     short_runs,
 )
 from resonances.resonance.analysis.ledger import Ledger, LedgerEntry, Margin, Op
+from resonances.resonance.analysis import orbit_type as orbit_type_module
 from resonances.resonance.analysis.mmr import decide as mmr_decide
 from resonances.resonance.analysis.mmr.strength import DIRECT_METHODS
 from resonances.resonance.analysis.pendulum import has_zone_cycle
@@ -55,6 +58,7 @@ from resonances.resonance.analysis.secular import decide as secular_decide
 from resonances.resonance.analysis.secular import extend as secular_extend
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import (
+    CONFIDENCE_ORDER,
     POLICY_MINIMAL,
     POLICY_V2,
     Action,
@@ -78,23 +82,30 @@ logger = logging.getLogger(__name__)
 NAN = float('nan')
 TWO_PI = 2.0 * math.pi
 
-# the veto that moved a bounded angle to non_resonant (column `veto`); forced waves act at geometry level (F6/B6b
-# remove their runs before the tree), so no row carries VETO_FORCED_WAVE: the name is kept for the column's grammar
+# the veto that moved a bounded angle to non_resonant (column `veto`); F6/B6b forced waves act at geometry level (they
+# remove their runs before the tree); VETO_FORCED_WAVE is the W31 background test (`_without_background_waves`)
 VETO_OWNER = 'owner'
 VETO_KINEMATIC = 'kinematic'
 VETO_FORCED_WAVE = 'forced_wave'
+FORCED_WAVE_TERM = 'background_wave'  # `cause_term` of a forced-wave veto: the steady wave of the background, unnamed
 VETO_STRENGTH = 'strength'
 VETO_ZLK_KINEMATIC = 'zlk_kinematic'
 VETO_ZLK_FREE_E = 'zlk_free_e'
-ZLK_VETOES = (VETO_ZLK_KINEMATIC, VETO_ZLK_FREE_E)
+VETO_ZLK_INTEGRAL = 'zlk_integral'  # W30 D1: the e-i exchange breaks sqrt(1-e^2) cos i where the forced terms are small
+ZLK_VETOES = (VETO_ZLK_KINEMATIC, VETO_ZLK_FREE_E, VETO_ZLK_INTEGRAL)
+# the e-i integral in the deciding episode (`EpisodeCoupling.coupling`): held (zlk), failed (measured, not zlk), or ''
+EI_HELD, EI_FAILED = 'held', 'failed'
 
 # V, the state of the vetoes the row needed (`level`): precedence ambiguous > not_measured > partial > clean
 V_CLEAN, V_PARTIAL, V_NOT_MEASURED, V_AMBIGUOUS = 'clean', 'partial', 'not_measured', 'ambiguous'
 V_ORDER = (V_CLEAN, V_PARTIAL, V_NOT_MEASURED, V_AMBIGUOUS)
 # M, the amplitude margin, as `confidence_basis` writes it
 M_FULL, M_THIN, M_NOT_MEASURED = 'full', 'thin', 'not_measured'
-# how N was counted (`confidence_basis`)
-N_EPISODE, N_UNION, N_COVER, N_LEG = 'episode', 'union', 'cover', 'leg'
+# F, whether an MMR row's own force is shown (W33): a pass of one of FORCE_CHECKS, or none
+F_SHOWN, F_NONE = 'shown', 'none'
+FORCE_CHECKS = ('check_mmr_a_response', 'check_mmr_potential', 'check_mmr_strength')
+# how N was counted (`confidence_basis`); 'member': a subresonance parent's N is its member's (no episode of its own)
+N_EPISODE, N_UNION, N_COVER, N_LEG, N_MEMBER = 'episode', 'union', 'cover', 'leg', 'member'
 # `pol_extend_clause`: an end-edge 1:1 leg (A1), an end-edge half-swing (A2), an unfinished libration at the end (A:
 # A3 insufficient_time, A4 the last counted episode reaches the end with fewer than CONFIDENCE_HIGH_CYCLES), the
 # deciding period longer than 2T / LIBRATION_MIN_TURNING_POINTS (B), a needed veto not measured for lack of length that
@@ -195,24 +206,29 @@ class Evidence:
     second_capture: bool = False
     candidate: bool = False
     circulation_clear: bool = False
+    core_cycles: float = NAN  # (n_TP - 1) / 2 observed inside the decisive episode (`core_cycles`): certain reads it
+    force: str = ''  # MMR: F_SHOWN when L4, R0 or F passes, F_NONE when none does (`mmr_force_shown`); '' not read
 
     def basis(self) -> str:
-        """The `confidence_basis` column: N=<float>(<basis>);M=..;V=..;S=..;veto=<name|->[:thin]."""
+        """The `confidence_basis` column: N=<float>(<basis>);M=..;V=..;S=..;veto=<name|->[:thin][;F=shown|none]."""
         n = f'{self.n_cycles:.3g}' if math.isfinite(self.n_cycles) else 'nan'
         veto = (self.veto or '-') + (':thin' if self.veto_thin else '')
         stable = M_FULL if self.stable else M_THIN
-        return f'N={n}({self.n_basis or "-"});M={self.margin};V={self.veto_state};S={stable};veto={veto}'
+        force = f';F={self.force}' if self.force else ''
+        return f'N={n}({self.n_basis or "-"});M={self.margin};V={self.veto_state};S={stable};veto={veto}{force}'
 
 
 def level(status: Status | str, ev: Evidence, settings: AnalysisSettings) -> Confidence:
     """The level of a row from its evidence (PRINCIPLES §3; pure). uncertain and invalid have no level.
 
-    resonant, transient:  V ambiguous -> low; N >= CONFIDENCE_CERTAIN_CYCLES with M full, S and V clean -> certain;
-                          N >= CONFIDENCE_HIGH_CYCLES with V clean or partial -> high; otherwise medium (N < 3, also
-                          N < 1.5, or a needed veto not measured)
+    resonant, transient:  V ambiguous or N < CONFIDENCE_MEDIUM_CYCLES -> low; N >= CONFIDENCE_CERTAIN_CYCLES and the
+                          decisive episode's own cycles >= CONFIDENCE_CERTAIN_CORE_CYCLES, with M full, S and V clean ->
+                          certain; N >= CONFIDENCE_HIGH_CYCLES with V clean or partial -> high; otherwise medium
+                          (too few cycles, or a needed veto not measured). The same counts for every resonance type.
+                          An MMR row whose own force is not shown (F none) is at most CONFIDENCE_GEOMETRY_ONLY_MAX.
     near_separatrix:      medium, low when V is ambiguous
-    non_resonant by veto: medium when the veto is thin, a second capture is unresolved or a stable candidate exists;
-                          else high
+    non_resonant by veto: medium when the veto is thin or a second capture is unresolved; else high (a measured cause:
+                          the author, W30 285637; a stable vetoed episode is still drawn as a candidate)
     non_resonant:         a candidate -> medium; a clear circulation (MMR: C1 and C2 full, an alias C5 and C2 full: C5
                           measures a far from the resonance; long-period: P full and no turning point at any cutoff)
                           -> certain; anything else -> high
@@ -224,18 +240,24 @@ def level(status: Status | str, ev: Evidence, settings: AnalysisSettings) -> Con
         return Confidence.LOW if ev.veto_state == V_AMBIGUOUS else Confidence.MEDIUM
     if status == Status.NON_RESONANT:
         if ev.veto:
-            return Confidence.MEDIUM if (ev.veto_thin or ev.second_capture or ev.candidate) else Confidence.HIGH
+            return Confidence.MEDIUM if (ev.veto_thin or ev.second_capture) else Confidence.HIGH
         if ev.candidate:
             return Confidence.MEDIUM
         return Confidence.CERTAIN if ev.circulation_clear else Confidence.HIGH
     n = ev.n_cycles if math.isfinite(ev.n_cycles) else 0.0
-    if ev.veto_state == V_AMBIGUOUS:
+    if ev.veto_state == V_AMBIGUOUS or n < settings.confidence_medium_cycles:
         return Confidence.LOW
-    if n >= settings.confidence_certain_cycles and ev.margin == M_FULL and ev.stable and ev.veto_state == V_CLEAN:
-        return Confidence.CERTAIN
-    if n >= settings.confidence_high_cycles and ev.veto_state in (V_CLEAN, V_PARTIAL):
-        return Confidence.HIGH
-    return Confidence.MEDIUM
+    core = ev.core_cycles if math.isfinite(ev.core_cycles) else 0.0
+    full = ev.margin == M_FULL and ev.stable and ev.veto_state == V_CLEAN
+    if n >= settings.confidence_certain_cycles and core >= settings.confidence_certain_core_cycles and full:
+        found = Confidence.CERTAIN
+    elif n >= settings.confidence_high_cycles and ev.veto_state in (V_CLEAN, V_PARTIAL):
+        found = Confidence.HIGH
+    else:
+        found = Confidence.MEDIUM
+    if ev.force == F_NONE:
+        return max(found, Confidence(settings.confidence_geometry_only_max), key=CONFIDENCE_ORDER.index)  # the lower
+    return found
 
 
 def worst_veto_state(states: Iterable[str]) -> str:
@@ -488,11 +510,31 @@ def _span_tag(outcome: _Outcome) -> str:
     return HALF_ID if str(Flag.ONE_HALF_LIBRATION) in outcome.flags or outcome.reason == Reason.ONE_HALF_LIBRATION else LEG_ID
 
 
+def core_cycles(geometry: Optional[Geometry], decisive_id) -> float:
+    """(n_TP - 1) / 2 cycles observed inside the decisive episode (a 2-TP run closed by its phase return: 1), no edge
+    coverage added; nan without one."""
+    run = run_of(geometry, decisive_id) if geometry is not None else None
+    if run is None:
+        return NAN
+    return 1.0 if run.n_tp == 2 and run.closed_by_return else max((run.n_tp - 1) / 2.0, 0.0)
+
+
 def _record_level(ev: Evidence, settings: AnalysisSettings, ledger: Ledger) -> None:
     """The level's comparisons on the decision path (N against the cycle counts)."""
     n = ev.n_cycles if math.isfinite(ev.n_cycles) else None
+    ledger.compare_setting('policy:N >= confidence_medium_cycles', n, Op.GE, settings, 'confidence_medium_cycles', 'cycles', 'n_cycles')
     ledger.compare_setting('policy:N >= confidence_high_cycles', n, Op.GE, settings, 'confidence_high_cycles', 'cycles', 'n_cycles')
     ledger.compare_setting('policy:N >= confidence_certain_cycles', n, Op.GE, settings, 'confidence_certain_cycles', 'cycles', 'n_cycles')
+    core = ev.core_cycles if math.isfinite(ev.core_cycles) else None
+    ledger.compare_setting(
+        'policy:decisive episode cycles >= confidence_certain_core_cycles',
+        core,
+        Op.GE,
+        settings,
+        'confidence_certain_core_cycles',
+        'cycles',
+        '',
+    )
 
 
 def _action(
@@ -759,7 +801,7 @@ def _on_member(row: _Row) -> _Outcome:
         return _keep(row.v, candidates=row.ids)
     status = Status.UNCERTAIN if member.status == Status.INVALID else Status(member.status)
     level_ = Confidence(member.confidence) if status not in (Status.UNCERTAIN, Status.INVALID) else Confidence.NONE
-    outcome = _keep(row.v, candidates=row.ids, n_cycles=member.n_cycles, n_basis=N_EPISODE, level=level_)
+    outcome = _keep(row.v, candidates=row.ids, n_cycles=member.n_cycles, n_basis=N_MEMBER, level=level_)
     outcome.status = status
     return outcome
 
@@ -776,7 +818,18 @@ def _on_veto(row: _Row) -> _Outcome:
     ids = row.ids - _strength_marked(row.analysis.geometry)  # an upheld strength veto keeps its marks
     stable = _stable_candidate(row.analysis, row.settings, row.ledger) if ids else False
     second = str(Flag.SECOND_CAPTURE_UNRESOLVED) in v.flags or str(Flag.SECOND_CAPTURE_UNRESOLVED) in v.caps
-    return _keep(v, veto=name, veto_thin=thin, second_capture=second, candidates=ids if stable else frozenset())
+    outcome = _keep(v, veto=name, veto_thin=thin, second_capture=second, candidates=ids if stable else frozenset())
+    if name == VETO_STRENGTH and not stable:
+        # the strength veto says no run is this angle's libration and none is drawn: the angle's word is what is left,
+        # a circulation or a drift (the author, W30: 138537, 182259, 2897 'тут нет эпизодов')
+        outcome.angle_status = _moving_word(row.analysis.geometry)
+    return outcome
+
+
+def _moving_word(geometry: Optional[Geometry]) -> AngleStatus:
+    """circulation when the slow centre passes at least one revolution, else drift."""
+    passed = geometry.centre.max_pass_rad / TWO_PI if geometry is not None and geometry.centre is not None else NAN
+    return AngleStatus.CIRCULATION if math.isfinite(passed) and passed >= 1.0 else AngleStatus.DRIFT
 
 
 def _on_objection(row: _Row) -> _Outcome:
@@ -832,10 +885,61 @@ def _mmr_outcome(
         logger.warning('policy: no mapping for the MMR leaf %r (%s %s): the geometry decides', rule, analysis.series_name, key)
         return _bounded(v, word, end, ids, [Flag.POLICY_UNKNOWN_LEAF], None)
     found = HANDLERS[kind](_Row(analysis, rule, settings, ledger, member, end, legs, held, ids, word))
-    if found is not None:
-        return found
-    # a leaf the table keeps (or a leg/half-swing leaf without a deciding one): the tree's status stays
-    return _keep(v, counted=ids or _decisive(analysis)) if v.status in LIBRATING_STATUSES else _keep(v, candidates=ids)
+    if found is None:
+        # a leaf the table keeps (or a leg/half-swing leaf without a deciding one): the tree's status stays
+        found = _keep(v, counted=ids or _decisive(analysis)) if v.status in LIBRATING_STATUSES else _keep(v, candidates=ids)
+    return _without_background_waves(analysis, found, settings, ledger)
+
+
+def _without_background_waves(analysis, outcome: _Outcome, settings: AnalysisSettings, ledger: Ledger) -> _Outcome:
+    """W31 (the author, three B): the counted episodes that are the forced wave their background carries
+    (`background_wave`, below 45 deg) leave the count as candidates; when they are all of them and the slow centre
+    passes a revolution, veto forced_wave: non_resonant / kinematic_libration, detail forced_wave_background, word
+    circulation; a centre that passes less is read by the drift rule (`_drift`: uncertain, W32 redundancy review)."""
+    if Status(outcome.status) not in LIBRATING_STATUSES or outcome.veto or not outcome.counted or outcome.counted_spans:
+        return outcome
+    waves = {wave.episode_id: wave for wave in analysis.background_waves if wave.forced}
+    forced = frozenset(outcome.counted) & frozenset(waves)
+    ledger.compare(
+        'policy:veto forced_wave: counted episodes the background carries',
+        float(len(forced)),
+        Op.GE,
+        float(len(outcome.counted)),
+        '',
+        'bw_outcome',
+    )
+    if not forced:
+        return outcome
+    if forced == frozenset(outcome.counted):
+        if _moving_word(analysis.geometry) == AngleStatus.DRIFT:
+            # the slow centre passes less than a revolution: without the waves the drift rule decides (P1), not the veto
+            drift = _drift(analysis.verdict, analysis.geometry, TWO_PI, _span(analysis))
+            drift.angle_status, drift.candidates, drift.flags = AngleStatus.DRIFT, forced, list(outcome.flags)
+            return drift
+        thin = any(waves[eid].thin() for eid in forced)
+        return _Outcome(
+            Status.NON_RESONANT,
+            Reason.KINEMATIC_LIBRATION,
+            LibrationOrigin.KINEMATIC,
+            str(OriginDetail.FORCED_WAVE_BACKGROUND),
+            angle_status=_moving_word(analysis.geometry),
+            veto=VETO_FORCED_WAVE,
+            veto_thin=thin,
+            candidates=forced,
+            flags=list(outcome.flags),
+        )
+    outcome.counted = frozenset(outcome.counted) - forced
+    outcome.candidates = frozenset(outcome.candidates) | forced
+    return outcome
+
+
+def _countable(geometry: Optional[Geometry], settings: AnalysisSettings) -> List[Episode]:
+    """The Episode rows a counted id may name: `mmr_librating` and the runs rule 5s marked as forced waves by strength
+    (counted again where the strength veto is not upheld, `_mmr_outcome`; without them N was nan on 2012 KL9)."""
+    if geometry is None:
+        return []
+    marked = _strength_marked(geometry)
+    return mmr_librating(geometry, settings) + [run for run in geometry.runs if run.episode_id in marked]
 
 
 def _strength_marked(geometry: Geometry) -> frozenset:
@@ -907,7 +1011,9 @@ def _mmr_veto_state(analysis, outcome: _Outcome) -> str:
     if 'identity' in withdrawn or identity not in (CheckValue.PASS, CheckValue.FAIL, CheckValue.NOT_APPLICABLE):
         states.append(V_NOT_MEASURED)
     elif identity == CheckValue.FAIL and not outcome.veto:
-        states.append(V_AMBIGUOUS)
+        # at e near 0 the step turns only varpi fast (flag varpi_fast_low_e): the identity's sigma_dot reads that
+        # varpi, so its failure is expected and no objection (W31, 17346 2J-1: e 0.005-0.08)
+        states.append(V_NOT_MEASURED if str(Flag.VARPI_FAST_LOW_E) in v.flags else V_AMBIGUOUS)
     owner = v.checks.get('check_mmr_owner', CheckValue.NOT_MEASURED)
     w = v.margins.get('W')
     if owner not in (CheckValue.PASS, CheckValue.NOT_APPLICABLE) or str(Flag.OWNER_PROBABLE) in v.flags:
@@ -970,7 +1076,7 @@ def _settle_mmr_episodes(analysis, outcome: _Outcome, settings: AnalysisSettings
     """The counted episodes (a librating status without a veto) and the candidates (the vetoed stable episodes, the
     near-episode runs of a row without libration); returns the counted Episode rows."""
     status = Status(outcome.status)
-    episodes = [e for e in mmr_librating(analysis.geometry, settings) if e.episode_id in outcome.counted]
+    episodes = [e for e in _countable(analysis.geometry, settings) if e.episode_id in outcome.counted]
     if status in LIBRATING_STATUSES and not outcome.veto:
         if not outcome.counted_spans:
             outcome.counted = frozenset(e.episode_id for e in episodes) or outcome.counted
@@ -1060,12 +1166,14 @@ def _finish_mmr(analysis, outcome: _Outcome, settings, ledger, end: EndReading, 
         n_basis=basis,
         margin=_mmr_margin(analysis),
         veto_state=_mmr_veto_state(analysis, outcome),
-        stable=_margin_full(v.margins.get('L1')),
+        stable=_mmr_stable(v),
+        core_cycles=core_cycles(geometry, analysis.decisive_episode_id),
         veto=outcome.veto,
         veto_thin=outcome.veto_thin,
         second_capture=outcome.second_capture,
         candidate=bool(outcome.candidates or outcome.candidate_spans),
         circulation_clear=_mmr_circulation_clear(v),
+        force=mmr_force_shown(v) if status in (Status.RESONANT, Status.TRANSIENT) else '',
     )
     _record_level(ev, settings, ledger)
     confidence = _final_level(status, outcome, ev, settings)
@@ -1076,8 +1184,24 @@ def _finish_mmr(analysis, outcome: _Outcome, settings, ledger, end: EndReading, 
         resample = v.resample_step_yr if v.resample_step_yr is not None else resample
     else:
         resample = v.resample_step_yr if status == Status.INVALID else None
+    moved = Status(outcome.status) != v.status
     _write(v, outcome, ev, confidence, action, end, clause, extend_to, resample, veto_need, ledger)
+    if outcome.veto == VETO_FORCED_WAVE:  # the roles (A3a): a kinematic cause, the steady wave of the background
+        v.cause_role, v.cause_term, v.owner = 'kinematic', FORCED_WAVE_TERM, ''
+    if moved:
+        v.orbit_type = _mmr_orbit_type(analysis, settings, outcome.counted)
     analysis.policy = _result(outcome, ev, action, clause)
+
+
+def _mmr_orbit_type(analysis, settings: AnalysisSettings, counted: frozenset = frozenset()) -> str:
+    """The header's orbit type read again for a status the policy moved (2012 KL9: 'episodes about 322° (not this
+    resonance)' on a transient row)."""
+    v = analysis.verdict
+    coorbital_law = analysis.response.coorbital if analysis.response is not None else None
+    not_this = orbit_type_module.not_this_resonance(v.status, v.libration_origin, v.reason, ())
+    return orbit_type_module.mmr_orbit_type(
+        analysis.resonance, analysis.geometry, analysis.decisive_episode_id, coorbital_law, settings, str(v.angle_status), not_this, counted
+    )
 
 
 def _result(outcome: _Outcome, ev: Evidence, action: Action, clause: str) -> PolicyResult:
@@ -1113,6 +1237,19 @@ def _margin_full(margin) -> bool:
     return margin is not None and margin.margin == Margin.FULL
 
 
+def _mmr_stable(v: Verdict) -> bool:
+    """S of an MMR row: the decisive episode keeps its turning points at the cutoffs x0.5, x1, x2 (L1 full) and no
+    decisive number changes at the cutoff x2 (no filter_sensitive: 2002 XA 5J-2 was certain with it)."""
+    return _margin_full(v.margins.get('L1')) and str(Flag.FILTER_SENSITIVE) not in v.flags
+
+
+def mmr_force_shown(v: Verdict) -> str:
+    """F of an MMR row: F_SHOWN when its own force is measured passing (L4 the force law on a, the 1:1 law included;
+    R0 the energy and period law; F the strength), else F_NONE. The a<->sigma identity is no force: it holds for any
+    orbit (W33, the author: no resonant/transient level above low by the geometry alone)."""
+    return F_SHOWN if any(v.checks.get(name) == CheckValue.PASS for name in FORCE_CHECKS) else F_NONE
+
+
 def _mmr_circulation_clear(v: Verdict) -> bool:
     """A clear MMR circulation: C2 full (no turning point at any cutoff) and the circulation measured, C1 full (the
     centre passes whole turns), or for an alias, where C1 is not defined, C5 full (a far from the resonance and the
@@ -1125,8 +1262,10 @@ def _mmr_extend_to(
     analysis, end: EndReading, span: float, settings: AnalysisSettings, veto_need: float = NAN, clause: str = ''
 ) -> Optional[float]:
     """extend_to_years of an MMR row (spec §5): clause C the next check of the veto's need; otherwise the next check of
-    span + max(HIGH - N_last, 1) x P_dec, at least the veto's need when one is named; without a deciding period (an
-    arc, a stall) the tree's baseline estimate (`mmr.decide.extend_years`)."""
+    span + max(HIGH - N_last, 1) x P_dec, at least the veto's need when one is named, and at least the next check of the
+    baseline's estimate when that is a slow swing seen in part (`mmr.decide.SLOW_SWING_SOURCES`: its slow cycles, the
+    author W30 epext B; 523683 2U-9 400 kyr); without a deciding period (an arc, a stall) the tree's baseline estimate
+    (`mmr.decide.extend_years`)."""
     if clause == CLAUSE_VETO:
         return mmr_decide.next_check(veto_need, span, settings)
     n_last = end.n_last if math.isfinite(end.n_last) else 0.0
@@ -1134,6 +1273,9 @@ def _mmr_extend_to(
         estimate = span + max(settings.confidence_high_cycles - n_last, 1.0) * end.period_dec_yr
         if math.isfinite(veto_need):
             estimate = max(estimate, veto_need)
+        base = analysis.baseline
+        if base is not None and base.period_source in mmr_decide.SLOW_SWING_SOURCES and base.extend_to_years is not None:
+            estimate = max(estimate, base.extend_to_years)
         return mmr_decide.next_check(estimate, span, settings)
     if analysis.baseline is not None and math.isfinite(span):
         return mmr_decide.extend_years(Status.UNCERTAIN, AngleStatus.INSUFFICIENT_TIME, analysis.baseline, span, settings)
@@ -1151,7 +1293,7 @@ def apply_long_period(analysis, settings: AnalysisSettings):
         v.policy = POLICY_V2
         return analysis
     zlk = analysis.series.resonance_type == ResonanceType.LIDOV_KOZAI
-    revolution = math.pi if zlk else TWO_PI
+    revolution = TWO_PI  # omega too (W30 D3): the half-turn of the quadrupole's cos 2 omega is no general symmetry
     geometry, angle = analysis.geometry, analysis.angle
     ledger = Ledger.from_settings(settings)
     span = float(analysis.series.span_yr)
@@ -1175,10 +1317,11 @@ def _long_geometric(analysis, end: EndReading, revolution: float, span: float) -
     v = analysis.verdict
     word = v.angle_status
     ids = frozenset(e.episode_id for e in secular_decide.librating_episodes(analysis.geometry))
+    # the geometry alone names no mechanism (W30 D6): geometric, origin unknown; a confirmed ZLK gate makes it dynamic
     if word == AngleStatus.LIBRATION:
-        return _Outcome(Status.RESONANT, Reason.DYNAMIC_LIBRATION, LibrationOrigin.DYNAMIC, counted=ids)
+        return _Outcome(Status.RESONANT, Reason.GEOMETRIC_LIBRATION, LibrationOrigin.UNKNOWN, counted=ids)
     if word == AngleStatus.EPISODIC:
-        return _Outcome(Status.TRANSIENT, Reason.DYNAMIC_EPISODE, LibrationOrigin.DYNAMIC, counted=ids)
+        return _Outcome(Status.TRANSIENT, Reason.GEOMETRIC_EPISODE, LibrationOrigin.UNKNOWN, counted=ids)
     if word == AngleStatus.CIRCULATION:
         return _Outcome(Status.NON_RESONANT, Reason.CIRCULATION, LibrationOrigin.NONE)
     if word == AngleStatus.DRIFT:
@@ -1195,7 +1338,15 @@ def _long_geometric(analysis, end: EndReading, revolution: float, span: float) -
 def _long_outcome(
     analysis, end: EndReading, revolution: float, span: float, settings: AnalysisSettings, ledger: Ledger, zlk: bool
 ) -> _Outcome:
-    """The minimal status of a secular or ZLK row (spec §8): the geometry's; for ZLK with the gate's outcome."""
+    """The minimal status of a secular or ZLK row (spec §8, W30 D1-D6): the geometry's; for ZLK with the gate's
+    outcome and the e-i integral of the deciding episode (`_ei_state`):
+
+        confirmed gate        the geometry's status, dynamic; V clean (partial when G is thin), ambiguous when the
+                              integral failed
+        a measured kinematic  `_zlk_measured` (vetoes and objections)
+        integral failed       veto zlk_integral where the forced terms are small (`_forced_small`), else an objection
+        no verdict            the geometry's status; with the integral held and the forced terms small V clean and
+                              flag kinematic_excluded (D2), else V not measured (<= medium)"""
     geometric = _long_geometric(analysis, end, revolution, span)
     if not zlk:
         return geometric
@@ -1204,40 +1355,116 @@ def _long_outcome(
         return geometric
     gate = analysis.gate
     outcome = gate.outcome if gate is not None else ''
-    if outcome == secular_decide.GATE_CONFIRMED:
-        g = analysis.verdict.margins.get('G')
-        geometric.veto_state = V_PARTIAL if g is not None and g.margin == Margin.THIN else V_CLEAN
-        geometric.check_zlk_free_omega = CheckValue.PASS
-        return geometric
+    ei = _ei_state(gate, ledger)
     if outcome == secular_decide.GATE_DISABLED:
         geometric.flags.append(str(Flag.GATE_DISABLED))
         geometric.veto_state = V_NOT_MEASURED
         geometric.check_zlk_free_omega = CheckValue.NOT_MEASURED
         return geometric
-    measured = _zlk_measured(analysis, geometric, gate, settings, ledger)
-    return measured if measured is not None else _zlk_no_verdict(geometric)
+    if outcome == secular_decide.GATE_CONFIRMED:
+        return _zlk_confirmed(analysis, geometric, ei)
+    measured = _zlk_measured(analysis, geometric, gate, settings, ledger, ei == EI_FAILED)
+    if measured is not None:
+        return measured
+    small = _forced_small(gate, settings, ledger)
+    if ei == EI_FAILED:
+        if small:
+            ledger.compare(
+                'policy:veto zlk_integral: e-i integral broken where the forced terms are small',
+                1.0,
+                Op.EQ,
+                1,
+                '',
+                'zlk_ei_episode_coupling',
+            )
+            ids = frozenset(e.episode_id for e in secular_decide.librating_episodes(analysis.geometry))
+            veto = _zlk_veto(VETO_ZLK_INTEGRAL, _near(gate.episode_ei.eta_h, settings.zlk_ei_h_residual_max, settings), ids)
+            veto.origin_detail = str(OriginDetail.EI_INTEGRAL_NOT_HELD)
+            return veto
+        outcome_ = _zlk_no_verdict(geometric)
+        outcome_.flags.append(str(Flag.EI_INTEGRAL_NOT_HELD))
+        outcome_.veto_state = V_AMBIGUOUS
+        return outcome_
+    outcome_ = _zlk_no_verdict(geometric)
+    if ei == EI_HELD and small:
+        outcome_.flags.append(str(Flag.KINEMATIC_EXCLUDED))
+        outcome_.veto_state = V_CLEAN
+    return outcome_
 
 
-def _zlk_measured(analysis, geometric: _Outcome, gate, settings: AnalysisSettings, ledger: Ledger) -> Optional[_Outcome]:
-    """A kinematic gate (a veto on a libration or where the free e stays below the forced e, else an objection) or an
-    undefined phase with the free circle off the origin (a veto); None for a gate without a verdict."""
+def _zlk_confirmed(analysis, geometric: _Outcome, ei: str) -> _Outcome:
+    """A confirmed gate: the geometry's status, dynamic; V clean (partial when G is thin), ambiguous when the e-i
+    integral failed (an objection, not a veto: the gate measured the free omega librating)."""
+    g = analysis.verdict.margins.get('G')
+    geometric.veto_state = V_PARTIAL if g is not None and g.margin == Margin.THIN else V_CLEAN
+    geometric.check_zlk_free_omega = CheckValue.PASS
+    if geometric.status in (Status.RESONANT, Status.TRANSIENT):
+        geometric.reason = Reason.DYNAMIC_LIBRATION if geometric.status == Status.RESONANT else Reason.DYNAMIC_EPISODE
+        geometric.origin = LibrationOrigin.DYNAMIC
+    if ei == EI_FAILED:
+        geometric.flags.append(str(Flag.EI_INTEGRAL_NOT_HELD))
+        geometric.veto_state = V_AMBIGUOUS
+    return geometric
+
+
+def _ei_state(gate, ledger: Ledger) -> str:
+    """The e-i integral in the deciding librating episode (W30 D1): held (`zlk`: antiphase at constant sqrt(1-e^2)
+    cos i), failed (measured and not zlk), '' (not measured: too few periods, no episode, an orbit flip)."""
+    ei = gate.episode_ei if gate is not None else None
+    if ei is None or ei.coupling == 'not_measured':
+        ledger.compare('policy:zlk e-i integral eta_H', None, Op.LE, NAN, '', 'zlk_ei_episode_eta_h', setting='zlk_ei_h_residual_max')
+        return ''
+    ledger.compare(
+        'policy:zlk e-i integral eta_H', ei.eta_h, Op.LE, ei.h_residual_max, '', 'zlk_ei_episode_eta_h', setting='zlk_ei_h_residual_max'
+    )
+    return EI_HELD if ei.coupling == 'zlk' else EI_FAILED
+
+
+def _forced_small(gate, settings: AnalysisSettings, ledger: Ledger) -> bool:
+    """rho_max >= ZLK_RHO_KINEMATIC_EXCLUDED on a split that fits the forcing (not an unfitted co-orbital): the forced
+    vector is too small to hold the perihelion (W30 D1/D2)."""
+    if gate is None or gate.detail == secular_decide.DETAIL_COORBITAL_UNFITTED:
+        return False
+    entry = ledger.compare_setting(
+        'policy:zlk forced terms small: rho_max', gate.rho_max, Op.GE, settings, 'zlk_rho_kinematic_excluded', '', 'zlk_gate_rho_max'
+    )
+    return bool(entry)
+
+
+def _near(value: float, threshold: float, settings: AnalysisSettings) -> bool:
+    return bool(
+        np.isfinite(value) and np.isfinite(threshold) and threshold > 0 and abs(value / threshold - 1.0) < settings.confidence_thin_band
+    )
+
+
+def _zlk_measured(analysis, geometric: _Outcome, gate, settings: AnalysisSettings, ledger: Ledger, ei_failed: bool) -> Optional[_Outcome]:
+    """A kinematic gate (a veto on a libration or where the free e stays below the forced e over the record, else an
+    objection) or an undefined phase with the free circle off the origin; None for a gate without a verdict. The
+    episode-median pin and the undefined phase veto only with the e-i integral failed too (W30 D4): a median and a
+    missing phase are no pointwise measurement, otherwise they are objections."""
     word = analysis.verdict.angle_status
     ids = frozenset(e.episode_id for e in secular_decide.librating_episodes(analysis.geometry))
     if gate.outcome == secular_decide.GATE_KINEMATIC:
         if word == AngleStatus.LIBRATION:
             ledger.compare('policy:veto zlk_kinematic: gate cycles', gate.n_cycles, Op.GE, gate.min_cycles, 'cycles', 'zlk_gate_n_cycles')
             return _zlk_veto(VETO_ZLK_KINEMATIC, _gate_cycles_thin(gate, settings), ids)
-        free_e = _free_e_pins(gate, word, settings, ledger)
-        if free_e is not None:
-            return _zlk_veto(VETO_ZLK_FREE_E, free_e, ids)
-        geometric.flags.append(str(Flag.MEASURED_OBJECTION))
-        geometric.veto_state = V_AMBIGUOUS
-        geometric.check_zlk_free_omega = CheckValue.FAIL
-        return geometric
+        pinned = _free_e_pins(gate, word, settings, ledger)
+        if pinned is not None and (pinned[0] or ei_failed):
+            return _zlk_veto(VETO_ZLK_FREE_E, pinned[1], ids)
+        return _zlk_objection(geometric)
     if gate.outcome == 'undefined_phase' and np.isfinite(gate.rho_max):
         if ledger.compare('policy:veto zlk_free_e: rho_max < 1', gate.rho_max, Op.LT, 1.0, '', 'zlk_gate_rho_max'):
-            return _zlk_veto(VETO_ZLK_FREE_E, _near_one(gate.rho_max, settings), ids)
+            if ei_failed:
+                return _zlk_veto(VETO_ZLK_FREE_E, _near_one(gate.rho_max, settings), ids)
+            return _zlk_objection(geometric)
     return None
+
+
+def _zlk_objection(geometric: _Outcome) -> _Outcome:
+    geometric.flags.append(str(Flag.MEASURED_OBJECTION))
+    geometric.veto_state = V_AMBIGUOUS
+    geometric.check_zlk_free_omega = CheckValue.FAIL
+    return geometric
 
 
 def _zlk_no_verdict(geometric: _Outcome) -> _Outcome:
@@ -1261,13 +1488,13 @@ def _gate_cycles_thin(gate, settings: AnalysisSettings) -> bool:
     return bool(np.isfinite(cycles) and np.isfinite(gate.min_cycles) and cycles < gate.min_cycles * (1 + settings.confidence_thin_band))
 
 
-def _free_e_pins(gate, word, settings: AnalysisSettings, ledger: Ledger) -> Optional[bool]:
+def _free_e_pins(gate, word, settings: AnalysisSettings, ledger: Ledger) -> Optional[Tuple[bool, bool]]:
     """The zlk_free_e predicate of a kinematic gate on an episodic angle, a drift or too few cycles (spec §4): the free
-    circle never around the origin (rho_max < 1), or inside every librating episode of an episodic angle (rho_episodes
-    < 1 with the free omega turning >= ZLK_EPISODE_FREE_TURNS_PER_CYCLE per cycle). Returns whether the deciding
-    comparison is thin (None: the predicate does not hold)."""
+    circle never around the origin (rho_max < 1, over the record), or inside every librating episode of an episodic
+    angle (rho_episodes < 1 with the free omega turning >= ZLK_EPISODE_FREE_TURNS_PER_CYCLE per cycle). Returns
+    (over the record, the deciding comparison is thin); None when the predicate does not hold."""
     if ledger.compare('policy:veto zlk_free_e: rho_max < 1', gate.rho_max, Op.LT, 1.0, '', 'zlk_gate_rho_max'):
-        return _near_one(gate.rho_max, settings)
+        return True, _near_one(gate.rho_max, settings)
     if word != AngleStatus.EPISODIC:
         return None
     inside = ledger.compare('policy:veto zlk_free_e: rho_episodes < 1', gate.rho_episodes, Op.LT, 1.0, '', 'zlk_gate_rho_episodes')
@@ -1281,7 +1508,7 @@ def _free_e_pins(gate, word, settings: AnalysisSettings, ledger: Ledger) -> Opti
         setting='zlk_episode_free_turns_per_cycle',
     )
     if inside and turns:
-        return _near_one(gate.rho_episodes, settings) or turns.margin == Margin.THIN
+        return False, _near_one(gate.rho_episodes, settings) or turns.margin == Margin.THIN
     return None
 
 
@@ -1305,8 +1532,12 @@ def _long_veto_state(analysis, outcome: _Outcome) -> str:
     if outcome.veto_state is not None:
         return outcome.veto_state
     if analysis.series.resonance_type == ResonanceType.LIDOV_KOZAI:
-        return V_CLEAN if outcome.veto else V_NOT_MEASURED
+        # a measured veto, or no gate needed (ω circulates: 555527 read 'a needed objection not measured')
+        needed = outcome.check_zlk_free_omega != CheckValue.NOT_APPLICABLE
+        return V_CLEAN if outcome.veto or not needed else V_NOT_MEASURED
     delta = analysis.phase_uncertainty_rad
+    if np.isnan(delta) and any(term.index is not None and term.coefficient for term in analysis.series.terms):
+        return V_NOT_MEASURED  # a planetary mode the table lacks: the phase error is unknown, not zero (Codex W30)
     if not (np.isfinite(delta) and delta > 0):
         return V_CLEAN  # every mode of the angle measured (or none in it): nothing to stray
     return V_CLEAN if np.isfinite(analysis.phase_swing_rad) else V_NOT_MEASURED
@@ -1379,7 +1610,8 @@ def _finish_long(analysis, outcome: _Outcome, settings: AnalysisSettings, ledger
     has_tp = geometry is not None and len(geometry.turning_points) > 0
     gate = analysis.gate
     veto_need = NAN
-    if zlk and gate is not None and gate.outcome in ('short_window', 'planetary_residual') and not outcome.veto:
+    excluded = str(Flag.KINEMATIC_EXCLUDED) in outcome.flags  # W30 D2: no length needed to separate a node from s_j
+    if zlk and gate is not None and gate.outcome in ('short_window', 'planetary_residual') and not outcome.veto and not excluded:
         outcome.flags.append(str(Flag.VETO_NEEDS_LENGTH))
         if gate.outcome == 'short_window':
             veto_need = secular_extend.gate_cycles_need(gate, span)
@@ -1404,11 +1636,13 @@ def _finish_long(analysis, outcome: _Outcome, settings: AnalysisSettings, ledger
         margin=_long_margin(analysis, settings),
         veto_state=_long_veto_state(analysis, outcome),
         stable=_margin_full(v.margins.get('F')) and str(Flag.FILTER_TOO_SLOW) not in v.flags,
+        core_cycles=core_cycles(geometry, analysis.decisive_episode_id),
         veto=outcome.veto,
         veto_thin=outcome.veto_thin,
         # a vetoed long-period row draws its episodes without a stability test (spec §4), so they do not lower the
-        # level the way a stable MMR candidate does (591986: the gate measured kinematic over 4.6 cycles, high)
-        candidate=False,
+        # level the way a stable MMR candidate does (591986: the gate measured kinematic over 4.6 cycles, high); an
+        # unvetoed non_resonant row with a candidate is medium as for MMR (88899 at 100 kyr was high)
+        candidate=bool(outcome.candidates) and not outcome.veto,
         circulation_clear=_long_circulation_clear(analysis),
     )
     _record_level(ev, settings, ledger)

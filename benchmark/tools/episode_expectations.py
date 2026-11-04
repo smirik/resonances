@@ -19,7 +19,7 @@ so is a `known_fail` case that passes (resolved: set known_fail = 0) and a case 
 The ops (times in yr; 'plain' episodes are the accepted ones not flagged as a forced wave, `count_forced` takes all;
 under the minimal policy (W29, summary `policy` = minimal, episodes.csv `counted`) the plain episodes are the counted
 ones: a vetoed or filter-artefact run is accepted but not counted, and the figure does not number it):
-- n_accepted (min, max), single_covers (exactly one, both edge gaps <= 1 P), episode_near / single_episode_near (t0, t1,
+- n_accepted (min, max), single_covers (exactly one, both edges covered as last_covers_end reads the end), episode_near / single_episode_near (t0, t1,
   tol, optional min_tp and centre_deg within CENTRE_TOL_DEG), no_episode_in (t0, t1), no_plain_episode, all_forced;
 - union (min) / no_union: geo_union_n_episodes of mmr_numbers.csv;
 - return_cycle (t_a, t_b, tol): an accepted episode closed by its phase return at those crossings;
@@ -52,7 +52,10 @@ ones: a vetoed or filter-artefact run is accepted but not counted, and the figur
 
 Every check may take `scale` (default 'main'): the episode ops then read only the episodes.csv rows of that scale
 (B10a writes scale='slow' rows; a run without the column, or an empty value, is the main scale). The summary ops
-ignore it.
+ignore it. Every check may also take `pool`: 'counted' (default) reads the plain episodes above, 'geometric' the
+counted ones and the candidates (episodes.csv `candidate`: a run a measured veto or the subresonance member took out of
+the count, drawn faint): the author's episodes are geometric, a veto changes the mechanism, not where the angle librates
+(W34, the author's epcount A). Outside the minimal policy both pools are the plain episodes.
 """
 
 from __future__ import annotations
@@ -77,6 +80,8 @@ TIERS = ('A', 'B', 'C', 'D')
 GATING_TIERS = ('A', 'B')
 SCOPES = ('mmr', 'secular', 'zlk')
 LONG_PERIOD_SCOPES = ('secular', 'zlk')
+COUNTED, GEOMETRIC = 'counted', 'geometric'  # the episode pool a check reads (`Record`)
+POOLS = (COUNTED, GEOMETRIC)
 CENTRE_TOL_DEG = 30.0  # episode_near: the episode's centre within this of `centre_deg` (an island, not a position)
 NAN_VALUE = float('nan')
 MINIMAL = 'minimal'  # the summary `policy` whose episodes.csv `counted` says which runs are episodes (W29)
@@ -201,16 +206,25 @@ def _scales(frame: pd.DataFrame) -> pd.Series:
 class Record:
     """One example of a run at one scale: its summary row (None: not in the run), its episode rows of that scale
     (accepted or not) and the numbers the ops read. The plain episodes are the accepted ones without a forced-wave
-    flag; under the minimal policy, with the episodes.csv column `counted`, the accepted counted ones (`counted_only`).
-    `at_scale` gives the same example at another scale (the summary and the numbers are shared)."""
+    flag; under the minimal policy, with the episodes.csv column `counted`, the accepted counted ones (`counted_only`),
+    and with `pool` GEOMETRIC the counted ones and the candidates. `at_scale` gives the same example at another scale or
+    pool (the summary and the numbers are shared)."""
 
-    def __init__(self, summary: Optional[Mapping], episodes: pd.DataFrame, numbers: Optional[Mapping] = None, scale: str = MAIN_SCALE):
+    def __init__(
+        self,
+        summary: Optional[Mapping],
+        episodes: pd.DataFrame,
+        numbers: Optional[Mapping] = None,
+        scale: str = MAIN_SCALE,
+        pool: str = COUNTED,
+    ):
         self.summary = summary
         self.numbers = numbers
         self.scale = scale
+        self.pool = pool
         self.all_episodes = episodes  # every scale
         self.marks_written = 'marks' in episodes
-        self._other_scales: Dict[str, 'Record'] = {}
+        self._other_scales: Dict[Tuple[str, str], 'Record'] = {}
         runs = episodes[(_scales(episodes) == scale).to_numpy()].copy()
         if 't_start_yr' in runs:
             runs = runs.sort_values('t_start_yr', kind='stable')
@@ -220,21 +234,24 @@ class Record:
         forced = self.accepted['forced_wave'].map(_ok) if 'forced_wave' in self.accepted and len(self.accepted) else None
         self.forced = self.accepted[forced] if forced is not None else self.accepted.iloc[0:0]
         self.plain = self.accepted[~forced] if forced is not None else self.accepted
-        if self.counted_only:
-            self.plain = self.accepted[self.accepted['counted'].map(_flag)] if len(self.accepted) else self.accepted
+        if self.counted_only and len(self.accepted):
+            kept = self.accepted['counted'].map(_flag)
+            if pool == GEOMETRIC and 'candidate' in self.accepted:
+                kept = kept | self.accepted['candidate'].map(_flag)
+            self.plain = self.accepted[kept]
 
     @property
     def counted_only(self) -> bool:
         """The minimal policy's run (W29): the summary says so and episodes.csv has the `counted` column."""
         return self.summary is not None and str(self.summary.get('policy', '')) == MINIMAL and 'counted' in self.runs
 
-    def at_scale(self, scale: str) -> 'Record':
-        """The same example with the episode rows of `scale`."""
-        if scale == self.scale:
+    def at_scale(self, scale: str, pool: str = COUNTED) -> 'Record':
+        """The same example with the episode rows of `scale`, its plain episodes read from `pool`."""
+        if (scale, pool) == (self.scale, self.pool):
             return self
-        if scale not in self._other_scales:
-            self._other_scales[scale] = Record(self.summary, self.all_episodes, self.numbers, scale)
-        return self._other_scales[scale]
+        if (scale, pool) not in self._other_scales:
+            self._other_scales[scale, pool] = Record(self.summary, self.all_episodes, self.numbers, scale, pool)
+        return self._other_scales[scale, pool]
 
     def number(self, key: str):
         return None if self.numbers is None else self.numbers.get(key)
@@ -324,9 +341,25 @@ def table_from_tuples(rows: Sequence[tuple], summary: Optional[Mapping] = None, 
 # ------------------------------------------------------------------ the ops
 
 
+def _edge_covered(episode, side: str) -> bool:
+    """One edge ('start' | 'end') covered as the package's `geometry.covers_edges` reads it: the gap <= 1 P, or no
+    turning point missed at the analysis window's edge (window gap <= min(longest TP step, 1 P)) with the filter's trim
+    hiding <= 1 P."""
+    gap, window_gap, hidden = (
+        episode[f'coverage_{side}_gap_P'],
+        episode.get(f'window_{side}_gap_yr'),
+        episode.get(f'window_{side}_hidden_P'),
+    )
+    if _ok(gap) and float(gap) <= COVER_P:
+        return True
+    if not (_ok(window_gap) and _ok(hidden)):
+        return False
+    step = min(float(episode.get('tp_step_max_yr', NAN_VALUE)), COVER_P * float(episode.get('period_med_yr', NAN_VALUE)))
+    return float(window_gap) <= step and float(hidden) <= COVER_P
+
+
 def _covers(episode) -> bool:
-    start, end = episode['coverage_start_gap_P'], episode['coverage_end_gap_P']
-    return _ok(start) and _ok(end) and float(start) <= COVER_P and float(end) <= COVER_P
+    return _edge_covered(episode, 'start') and _edge_covered(episode, 'end')
 
 
 def _near(episode, check) -> bool:
@@ -448,11 +481,7 @@ def op_last_covers_end(rec, c):
     if _flag(last.get('exit_observed')):  # an observed exit is a regime the record shows after the episode
         return False, 'exit observed'
     gap, window_gap, hidden = last['coverage_end_gap_P'], last.get('window_end_gap_yr'), last.get('window_end_hidden_P')
-    if _ok(gap) and float(gap) <= COVER_P:
-        return True, f'end gap {_fmt(gap)} P'
-    step = min(float(last.get('tp_step_max_yr', NAN_VALUE)), COVER_P * float(last['period_med_yr']))
-    covered = _ok(window_gap) and _ok(hidden) and float(window_gap) <= step and float(hidden) <= COVER_P
-    return covered, f'end gap {_fmt(gap)} P; window gap {_fmt(window_gap, 0)} yr vs step {_fmt(step, 0)} yr, hidden {_fmt(hidden)} P'
+    return _edge_covered(last, 'end'), f'end gap {_fmt(gap)} P; window gap {_fmt(window_gap, 0)} yr, hidden {_fmt(hidden)} P'
 
 
 def op_last_ends_before_end(rec, c):
@@ -679,7 +708,9 @@ def check(rec: Record, c: dict) -> Tuple[bool, str]:
     """(passes, note) of one check on a record, at the check's scale (default main)."""
     if missing_keys(c):
         raise ValueError(f'bad check {c}: missing {missing_keys(c)}')
-    good, note = OPS[c['op']][0](rec.at_scale(c.get('scale', MAIN_SCALE)), c)
+    if c.get('pool', COUNTED) not in POOLS:
+        raise ValueError(f'bad check {c}: pool not in {POOLS}')
+    good, note = OPS[c['op']][0](rec.at_scale(c.get('scale', MAIN_SCALE), c.get('pool', COUNTED)), c)
     return bool(good), note
 
 

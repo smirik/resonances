@@ -13,8 +13,8 @@ cutoff that grew with the step (the old 20 dt) removed a 148-yr Trojan libration
 TP prominence, the response scales and the x2 guard by the step instead of by the angle (inv-09, inv-15).
 
 There is no search for forced lines and no separate rate cutoff; sigma_dot is the derivative of the same filtered
-angle. Two guards: a measured libration period whose digital filter gain is below mmr_l8_gain_full sets
-filter_too_slow, and the shape-dependent checks become not_measured; and the decisive numbers (turning points,
+angle. Two guards: a measured libration period whose digital filter gain is below mmr_l8_gain_full (read with the
+thin band, `gain_too_slow`) sets filter_too_slow, and the shape-dependent checks become not_measured; and the decisive numbers (turning points,
 episode boundaries, stalls, energy per cycle, amplitude and centre shift) are measured again at the cutoff x2 on the
 interval both cutoffs see (`filter_sensitivity`, DELTA 13a): on the episode the status reads and its counterpart at
 2 P_c, matched by time overlap (W21 Q9), else on the whole interval. A number that changes beyond its tolerance (or a
@@ -310,10 +310,22 @@ def predicted_ripple(
     return float(amplitude * butterworth_gain(great_inequality.period_yr, cutoff_yr, filter_order, step_yr))
 
 
+def gain_too_slow(settings: AnalysisSettings) -> float:
+    """The gain below which a libration is filter_too_slow: mmr_l8_gain_full read with the thin band of the convention
+    it stands for (W32, the author's WK15 card C). G_full = 0.94 is the analog gain at P_cyc = r P_c (r ~ 2, the
+    filter_min_libration_cutoffs convention); a cycle within confidence_thin_band of that ratio, r' = (1 - band) r, is a
+    thin margin of L8, not a libration the filter damps: G(r') = 1 / (1 + r'^-2N) = 0.911 (as the convention period
+    floor is read at x 0.9 in the eligibility and the libration image; 2001 WK15 32E-39: 143 yr at P_c = 75 yr, G =
+    0.936)."""
+    order = 2 * settings.filter_order
+    ratio = (1.0 / settings.mmr_l8_gain_full - 1.0) ** (-1.0 / order) * (1.0 - settings.confidence_thin_band)
+    return float(1.0 / (1.0 + ratio**-order))
+
+
 def filter_guard(
     period_cycle_yr: float, cutoff_yr: float, settings: AnalysisSettings, step_yr: Optional[float] = None
 ) -> Tuple[bool, float]:
-    """(filter_too_slow = G(P_cyc) < mmr_l8_gain_full, gain G(P_cyc)); (False, nan) without a period. G is the digital
+    """(filter_too_slow = G(P_cyc) < `gain_too_slow`, gain G(P_cyc)); (False, nan) without a period. G is the digital
     gain at the output step `step_yr` (None or not finite = the analog limit dt -> 0; nan at or above Nyquist: too slow).
 
     The gain, not the ratio P_cyc / P_c (inv-15, Codex): at 15.9 yr a 148-yr Trojan cycle is 9 or 10 steps, 143 or
@@ -326,7 +338,7 @@ def filter_guard(
         return False, NAN
     step = step_yr if step_yr is not None and np.isfinite(step_yr) and step_yr > 0 else None  # unknown step: analog
     gain = float(butterworth_gain(period_cycle_yr, cutoff_yr, settings.filter_order, step))
-    return bool(not gain >= settings.mmr_l8_gain_full), gain
+    return bool(not gain >= gain_too_slow(settings)), gain
 
 
 def coorbital_planet(spec: ResonanceSpec) -> Optional[str]:
@@ -824,9 +836,14 @@ def _compare_episodes(first: DecisiveQuantities, second: DecisiveQuantities, set
 def _shape_comparable(
     first: DecisiveQuantities, second: DecisiveQuantities, settings: AnalysisSettings, step_yr: Optional[float] = None
 ) -> bool:
-    """Amplitudes and energies are compared only when 2 P_c itself lets the libration through: the filter_too_slow rule
-    (`filter_guard`) at the doubled cutoff and the output step `step_yr` (None = the analog limit)."""
-    return not filter_guard(first.period_yr, second.cutoff_yr, settings, step_yr)[0]
+    """Amplitudes and energies are compared only when 2 P_c itself lets the libration through: its gain at the doubled
+    cutoff and the output step `step_yr` (None = the analog limit) >= mmr_l8_gain_full, without the thin band of
+    `gain_too_slow` (W32: at G = 0.92 the x2 filter damps a 275-yr libration by 8 %, a change of the filter, not of the
+    libration: 2000 SG8 3J-1 lost certain); without a period, compared."""
+    too_slow, gain = filter_guard(first.period_yr, second.cutoff_yr, settings, step_yr)
+    if not too_slow and not np.isfinite(gain):
+        return True
+    return bool(gain >= settings.mmr_l8_gain_full)
 
 
 def _compare_energy(

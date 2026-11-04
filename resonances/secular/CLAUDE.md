@@ -79,7 +79,12 @@ Lidov's integrals (`lidov-kozai.md`), −2 vs −9 (`physics/status-tree.md`), t
   100 kyr, 0.63 at 500 kyr); an episodic one also when every librating episode is pinned: median instantaneous
   |z_free|/|z_forced| < 1 inside it and the free omega advancing >= `ZLK_EPISODE_FREE_TURNS_PER_CYCLE` turns per whole
   cycle (W26, 624 Hektor; `zlk.analyse._episode_pinning`, `FreeElements.episode_pinning`: nan, so no pin, where the free
-  elements do not measure the episode: outside the baseline, a masked sample, < 2 samples per cycle; Codex W26). The former median ratio (one e_free over the smallest forced radius) is the column
+  elements do not measure the episode: outside the baseline, a masked sample, < 2 samples per cycle; Codex W26). W34
+  (the author on 88899: the free omega winds over the record but stays put inside the episodes): an episodic omega whose
+  record gate is kinematic or a winding planetary_residual is read inside its episodes (`ZLK_GATE_EPISODES`,
+  `omega_free_gate.episode_confirmation`): every episode rho >= 1 and < `ZLK_EPISODE_FREE_TURNS_PER_CYCLE` turns per
+  cycle, b_varpi/b_Omega off the modes -> confirmed, detail `episodes` (88899 500 kyr non_resonant/high -> transient/low,
+  the broken e-i integral an objection; 1866 low -> medium; 373136, 3752, 797204 500 kyr origin dynamic). The former median ratio (one e_free over the smallest forced radius) is the column
   `zlk_gate_rho_global` and `free_rho_max`, descriptive only. Gate **disabled** keeps
   the geometric status with `check_zlk_free_omega` not_measured — not the same as unavailable. −2 and −9 are never
   merged in a statistic.

@@ -42,7 +42,7 @@ The same reading for a three-body angle: $\sigma$ librates over the whole record
 
 The resonance checked in the [Quick start](../quick-start.md). The libration is as clear as above, but the record holds about nine cycles, fewer than the ten that certain needs, so the confidence is high.
 
-**463**, `4J-2S-1+0+0-1`: `resonant` · `libration` · `dynamic_libration` · `high`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
+**463**, `4J-2S-1+0+0-1`: `resonant` · `libration` · `dynamic_libration` · `certain`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
 
 [![mmr3__463__4J-2S-1+0+0-1](../img/gallery/mmr3__463__4J-2S-1+0+0-1.png){ loading=lazy }](../img/gallery/mmr3__463__4J-2S-1+0+0-1.png)
 
@@ -50,7 +50,7 @@ The resonance checked in the [Quick start](../quick-start.md). The libration is 
 
 The angle $\lambda - \lambda_E$ alternates between horseshoe and quasi-satellite motion and never circulates. A 1:1 angle is judged by its own force law, from the averaged direct and indirect potential of the planet.
 
-**2002 AA29**, `1E-1+0+0`: `resonant` · `libration` · `dynamic_libration` · `high`. Record: 1 kyr, step 0.05 yr, ias15 + Moon.
+**2002 AA29**, `1E-1+0+0`: `resonant` · `libration` · `dynamic_libration` · `certain`. Record: 1 kyr, step 0.05 yr, ias15 + Moon.
 
 [![coorbital__2002_AA29__1E-1+0+0](../img/gallery/coorbital__2002_AA29__1E-1+0+0.png){ loading=lazy }](../img/gallery/coorbital__2002_AA29__1E-1+0+0.png)
 
@@ -58,7 +58,7 @@ The angle $\lambda - \lambda_E$ alternates between horseshoe and quasi-satellite
 
 Quasi-satellite motion, then horseshoe motion: two regimes of the same 1:1 resonance follow each other without a circulation in between. A 1:1 episode ends only at a separatrix, so this is one episode with a change of well (the mark well_change in episodes.csv; subtype regime_change). The header names the wells in time order (`orbit: …`) and (a) brackets each sub-regime with its well.
 
-**164207**, `1E-1+0+0`: `resonant` · `libration` · `dynamic_libration` · `high`. Record: 1 kyr, step 0.05 yr, ias15 + Moon.
+**164207**, `1E-1+0+0`: `resonant` · `libration` · `dynamic_libration` · `certain`. Record: 1 kyr, step 0.05 yr, ias15 + Moon.
 
 [![coorbital__164207__1E-1+0+0](../img/gallery/coorbital__164207__1E-1+0+0.png){ loading=lazy }](../img/gallery/coorbital__164207__1E-1+0+0.png)
 
@@ -118,7 +118,7 @@ The exit is seen in the orbit-averaged angle: after it $\lambda - \lambda_E$ cir
 
 A libration episode followed by circulation to the end of the record. The episode closes only about one cycle, fewer than the three that high needs, so the confidence is medium.
 
-**115978**, `11M-19+0+8`: `transient` · `episodic` · `ends: circulation` · `dynamic_episode` · `medium`. Record: 50 kyr, step 0.6 yr, ias15.
+**115978**, `11M-19+0+8`: `transient` · `episodic` · `ends: circulation` · `dynamic_episode` · `low`. Record: 50 kyr, step 0.6 yr, ias15.
 
 [![mmr2__115978__11M-19+0+8](../img/gallery/mmr2__115978__11M-19+0+8.png){ loading=lazy }](../img/gallery/mmr2__115978__11M-19+0+8.png)
 
@@ -194,7 +194,7 @@ Sampled finely, the angle circulates fast, as the alias analysis of the coarse r
 
 $\sigma$ librates over the whole record, but $a$ does not follow it: the bound comes from the secular cycle of the elements, not from the resonant force (origin kinematic).
 
-**285637**, `3M+7J-6+0+0-4`: `non_resonant` · `libration` · `kinematic_libration` · `medium`. Record: 50 kyr, step 0.6 yr, ias15.
+**285637**, `3M+7J-6+0+0-4`: `non_resonant` · `libration` · `kinematic_libration` · `high`. Record: 50 kyr, step 0.6 yr, ias15.
 
 [![mmr3__285637__3M+7J-6+0+0-4](../img/gallery/mmr3__285637__3M+7J-6+0+0-4.png){ loading=lazy }](../img/gallery/mmr3__285637__3M+7J-6+0+0-4.png)
 
@@ -202,7 +202,7 @@ $\sigma$ librates over the whole record, but $a$ does not follow it: the bound c
 
 $\sigma$ drifts slowly with the secular terms of the angle while $a$ does not respond: no resonant force is at work.
 
-**62243**, `1M-4J-1+0+0+4`: `non_resonant` · `drift` · `kinematic_drift` · `medium`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
+**62243**, `1M-4J-1+0+0+4`: `non_resonant` · `drift` · `kinematic_drift` · `high`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
 
 [![mmr3__62243__1M-4J-1+0+0+4](../img/gallery/mmr3__62243__1M-4J-1+0+0+4.png){ loading=lazy }](../img/gallery/mmr3__62243__1M-4J-1+0+0+4.png)
 
@@ -226,7 +226,7 @@ Here the owner, the two-body resonance 10E-17+0+7 with Earth, librates itself an
 
 A resonance of order 31 with Saturn: its episodes would need a resonant force many orders of magnitude stronger than the averaged potential provides, so they are not this resonance.
 
-**2897**, `35S-4+0-31`: `non_resonant` · `episodic` · `ends: circulation` · `implausible_strength` · `high`. Record: 50 kyr, step 0.6 yr, ias15.
+**2897**, `35S-4+0-31`: `non_resonant` · `circulation` · `implausible_strength` · `high`. Record: 50 kyr, step 0.6 yr, ias15.
 
 [![mmr2__2897__35S-4+0-31](../img/gallery/mmr2__2897__35S-4+0-31.png){ loading=lazy }](../img/gallery/mmr2__2897__35S-4+0-31.png)
 
@@ -270,7 +270,7 @@ Angles of the proper perihelion and node against the planets' secular modes.
 
 The angle of the proper perihelion against the phase of Saturn's g6 mode librates over the whole record.
 
-**1222**, `g-g6`: `resonant` · `libration` · `dynamic_libration` · `certain`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
+**1222**, `g-g6`: `resonant` · `libration` · `geometric_libration` · `certain`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
 
 [![secular__1222__g-g6](../img/gallery/secular__1222__g-g6.png){ loading=lazy }](../img/gallery/secular__1222__g-g6.png)
 
@@ -278,7 +278,7 @@ The angle of the proper perihelion against the phase of Saturn's g6 mode librate
 
 A slow libration of g − g6 + s − s6: only about one and a half cycles fit in the record, so the confidence is medium and the action asks for a longer record.
 
-**1020**, `g-g6+s-s6`: `resonant` · `libration` · `dynamic_libration` · `medium`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
+**1020**, `g-g6+s-s6`: `resonant` · `libration` · `geometric_libration` · `medium`. Record: 10 Myr, step 500 yr (one point in 5 of a 100 yr output), SABA(10,6,4).
 
 [![secular__1020__g-g6+s-s6](../img/gallery/secular__1020__g-g6+s-s6.png){ loading=lazy }](../img/gallery/secular__1020__g-g6+s-s6.png)
 
@@ -338,7 +338,7 @@ Two long episodes of libration of $\omega$, separated by an interval without lib
 
 $\omega$ librates, but the free-omega gate cannot be evaluated on this record. The angle decides (resonant), at most medium, with the flag gate_unavailable: the gate gave no verdict, so it cannot veto (minimal policy).
 
-**1981**, `LK`: `resonant` · `libration` · `geometric_libration` · `medium`. Record: 500 kyr, step 10 yr, ias15.
+**1981**, `LK`: `resonant` · `libration` · `geometric_libration` · `certain`. Record: 500 kyr, step 10 yr, ias15.
 
 [![zlk__1981__LK](../img/gallery/zlk__1981__LK.png){ loading=lazy }](../img/gallery/zlk__1981__LK.png)
 

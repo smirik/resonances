@@ -272,11 +272,14 @@ def test_gain_formula_matches_the_filter(period, cutoff, step):
 
 
 def test_filter_too_slow_reads_the_gain_not_the_ratio():
-    # analog limit: G(P) = 1 / (1 + (P_c / P)^4); G(2 P_c) = 16/17 = 0.941 >= 0.94, G(1.9 P_c) = 0.929 < 0.94
+    # analog limit: G(P) = 1 / (1 + (P_c / P)^4); G(2 P_c) = 16/17 = 0.941 >= 0.94; G(1.9 P_c) = 0.929 lies in the
+    # thin band of the 0.94 convention (W32: too slow below 0.911, `preprocess.gain_too_slow`); G(1.7 P_c) = 0.893
     slow, gain = preprocess.filter_guard(2.0 * 75.0, 75.0, SETTINGS)
     assert not slow and gain == pytest.approx(16.0 / 17.0, rel=1e-6)
     slow, gain = preprocess.filter_guard(1.9 * 75.0, 75.0, SETTINGS)
-    assert slow and gain == pytest.approx(1.0 / (1.0 + 1.9**-4), rel=1e-6)
+    assert not slow and gain == pytest.approx(1.0 / (1.0 + 1.9**-4), rel=1e-6)
+    slow, gain = preprocess.filter_guard(1.7 * 75.0, 75.0, SETTINGS)
+    assert slow and gain == pytest.approx(1.0 / (1.0 + 1.7**-4), rel=1e-6)
     # digital: a 143-yr cycle at 15.9 yr against P_c = 73.9 yr. The ratio 143 / 73.9 = 1.93 < 2, but
     # G = 1 / (1 + (tan(pi 15.9/143) / tan(pi 15.9/73.9))^4) = 0.960 (measured above too): not too slow.
     expected = 1.0 / (1.0 + (np.tan(np.pi * 15.9 / 143.0) / np.tan(np.pi * 15.9 / 73.9)) ** 4)

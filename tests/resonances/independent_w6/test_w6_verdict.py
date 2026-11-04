@@ -358,10 +358,12 @@ def _slow_with_wave(slow_amp, slow_period, wave_amp, wave_period):
 
 
 def test_g2c_retry_at_half_the_libration_period():
-    # Slow libration 2 rad, 21.6 kyr (centre range 4 rad > pi: the fine runs' centre moves, no fine libration);
+    # Slow libration 2 rad, 20 kyr (centre range 4 rad > pi: the fine runs' centre moves, no fine libration);
     # waves 0.5 rad, 4.1 kyr dominate the rate, so P_cyc ~ 4.1 kyr and W_c = 3 P_cyc ~ 12.3 kyr. The libration at
-    # W_c has P = 21.6 kyr < 2 W_c: too slow a filter; the retry at P / 2 = 10.8 kyr decides libration again.
-    slow_p, wave_p = 21600.0, 4100.0
+    # W_c has P = 20 kyr < 1.8 W_c: G = 1 / (1 + (12 / 20)^4) = 0.885 < 0.911, too slow a filter; the retry at
+    # P / 2 = 10 kyr decides libration again. (W32: at 21.6 kyr G = 0.913 lies in the thin band of the 0.94
+    # convention, `preprocess.gain_too_slow`, and needs no retry.)
+    slow_p, wave_p = 20000.0, 4100.0
     analysis = analyse_mmr(
         _series_3j1(T_LONG, _slow_with_wave(2.0, slow_p, 0.5, wave_p)),
         SETTINGS,

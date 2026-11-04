@@ -174,6 +174,10 @@ class TestMaskOrigin:
 
         assert mask_origin(z).all()
 
+    def test_a_zero_vector_has_no_argument(self):
+        assert not mask_origin(np.zeros(10, dtype=complex)).any()
+        assert not mask_origin(np.zeros(0, dtype=complex)).any()
+
 
 class TestDecimationSteps:
     def test_a_small_factor_is_applied_in_one_pass(self):

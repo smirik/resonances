@@ -176,6 +176,7 @@ def mmr_orbit_type(
     settings: AnalysisSettings,
     angle_status: str = '',
     not_this: bool = False,
+    counted: frozenset = frozenset(),
 ) -> str:
     """The orbit type of an MMR angle (module docstring); '' without an accepted episode. With `not_this`
     (`not_this_resonance`: the verdict denies or doubts this resonance and names a cause) the episodes are no
@@ -183,9 +184,10 @@ def mmr_orbit_type(
     verdict's word) other than libration or episodic, no libration is named (W20 round C: 'libration about 214°' in the
     header of a circulation, 2897 and 21028 drifts): the side alone. A forced wave of another argument
     (`Geometry.forced_waves`) is described only without a real episode, and as what sigma does there: 'forced wave
-    about 214°' (W20 round D: 385266 16N-27, episodic through its forced waves only)."""
+    about 214°' (W20 round D: 385266 16N-27, episodic through its forced waves only). `counted`: the episodes the
+    minimal policy counts, never a wave (a strength mark it does not uphold: 2012 KL9)."""
     runs = accepted_runs(geometry)
-    waves = geometry.forced_wave_ids if geometry is not None else frozenset()
+    waves = (geometry.forced_wave_ids if geometry is not None else frozenset()) - frozenset(counted)
     episode = described_episode([run for run in runs if run.episode_id not in waves] or runs, decisive_id)
     if episode is None:
         return ''

@@ -8,28 +8,41 @@ asteroid orbits. `uncertain` and `invalid` verdicts have no level: they claim no
 
 ## Minimal policy (default) {#minimal-policy}
 
-Under `CLASSIFIER_POLICY=minimal` the level is a pure function of four pieces of evidence (`policy.level`, column
+Under `CLASSIFIER_POLICY=minimal` the level is a pure function of five pieces of evidence (`policy.level`, column
 `confidence_basis`):
 
 - **N**, complete libration cycles: $(n_{TP} - 1)/2$ of the decisive episode, plus the gap of each covered edge in
   periods (a 2-TP run closed by its phase return counts 1, one 1:1 leg 0.5); a resonant row over several episodes
-  sums them, an overlap counted once;
+  sums them, an overlap counted once; a subresonance parent's N is its member's (`N=…(member)`: no episode of its
+  own);
 - **M**, the amplitude margin: L2 full (1:1: the zone known and no cycle in it; long-period: the largest
   half-amplitude below $(1 -$ `CONFIDENCE_THIN_BAND`$)$ of the run break);
 - **V**, the vetoes: `clean` (the identity passes and the owner search found none, or does not apply; ZLK: the gate
   confirmed), `partial` (owner search not measured, a probable owner, W or the gate's cycles thin), `not_measured`
-  (the identity or the gate gave no measurement), `ambiguous` (a measured objection, a failed onset, a failed
-  identity that moved nothing, a kinematic gate that pins no episode);
-- **S**, filter stability: L1 full (long-period: F full and no `filter_too_slow`).
+  (the identity or the gate gave no measurement; a failed identity on a step that turns only $\varpi$ fast, flag
+  `varpi_fast_low_e`, where $\dot\sigma$ reads that $\varpi$: 17346 2J-1), `ambiguous` (a measured objection, a
+  failed onset, a failed identity that moved nothing, a kinematic gate that pins no episode);
+- **S**, filter stability: L1 full and no decisive number changing at the cutoff ×2 (flag `filter_sensitive`;
+  long-period: F full and no `filter_too_slow`).
+- **F** (MMR, W33), the angle's own force: `shown` when the force law on a (L4, the 1:1 law), the energy and
+  period law (R0) or the strength (F) passes, else `none`. The identity $\dot\sigma = c\,(a - a^*)$ is no force: it
+  holds for any orbit, and below a 45° half-amplitude L4 and R0 cannot tell a force from it. A resonant or
+  transient MMR row with F `none` is at most `CONFIDENCE_GEOMETRY_ONLY_MAX` (low): the angle is bounded, the
+  mechanism is not shown (the author: no resonant/transient by the geometry alone; Gallardo, Coito & Badano 2016,
+  p. 89, show librating angles without a dynamical effect).
 
 | status | level |
 |---|---|
-| resonant, transient | V ambiguous → low; N ≥ `CONFIDENCE_CERTAIN_CYCLES` (10) with M, S and V clean → certain; N ≥ `CONFIDENCE_HIGH_CYCLES` (3) with V clean or partial → high; otherwise medium |
+| resonant, transient | V ambiguous or N < `CONFIDENCE_MEDIUM_CYCLES` (1.5: one closed cycle, a single 1:1 leg) → low; N ≥ `CONFIDENCE_CERTAIN_CYCLES` (3), at least `CONFIDENCE_CERTAIN_CORE_CYCLES` (3) observed cycles $(n_{TP}-1)/2$ inside the decisive episode, with M, S and V clean → certain; N ≥ `CONFIDENCE_HIGH_CYCLES` (2) with V clean or partial → high; otherwise medium; MMR with F none: at most low |
 | near_separatrix | medium (low when V is ambiguous) |
-| non_resonant by a veto | medium when the veto is thin, a second capture is unresolved or a stable vetoed episode is drawn; else high |
+| non_resonant by a veto | medium when the veto is thin or a second capture is unresolved; else high (a stable vetoed episode is still drawn as a candidate) |
 | non_resonant | medium with a candidate (a leg, a half-swing, a near-episode run); certain for a clear circulation (MMR: C1 and C2 full, an alias C5 and C2 full; long-period: P full and no turning point at any cutoff); else high |
 
-The level never falls as N rises. Caps become flags; `confidence_raw` equals `confidence`; the calibration cell is
+The counts are the same for every resonance type: in units of its own period two returns of a 4-Myr secular
+libration carry the same information as two of a 500-yr one, so a long period is no reason for a lower count (W31,
+Codex review); what a long-period row lacks is said by V (a gate, the mode phases), not by N. The literature on
+resonance identification from integrations sets no cycle count (Nesvorný & Morbidelli 1998; Gallardo 2014; Huaman et
+al. 2017; Christou & Asher 2011): the numbers are conventions. The level never falls as N rises. Caps become flags; `confidence_raw` equals `confidence`; the calibration cell is
 not reported. The action: extend by the [extend rule](status-tree.md#minimal-policy), resample when R-ALIAS-A
 withdrew a needed check, review for uncertain or for a needed veto beyond the extend budget, then medium
 spot_check, low review.

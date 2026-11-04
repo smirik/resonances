@@ -269,6 +269,13 @@ Not measured when $V_E$ explains less than `SEPARATRIX_VE_R2_MIN` = 0.7 of $\dot
 filter is too slow for the cycles, and (the part with $a$) below 45° without a slip over the top. For a 1:1 angle the
 energy integral of the co-orbital law replaces this test.
 
+*Per episode* (`SEPARATRIX_R0_EPISODES`). One $V_E$ fitted over every cycle of the record mixes regimes: two episodes
+in different wells and the circulation between them (79653 3M+3J-7: $R^2$ 0.25, not measured). When the record's R0 is
+not measured, each accepted episode with at least two disjoint full cycles is fitted on its own (its period, its best
+frame, the same thresholds); R0 passes when some episode passes and none fails (column `sep_R0_episode_id`), and the
+×2 filter guard, which compared another episode, does not withdraw it. 79653's first episode (4.8–32.5 kyr): $V_E$
+$R^2$ 0.93, period law 0.96, $V_E \approx V_F$ at $r \ge 0.996$.
+
 ??? info "The order of the two parts"
     `zone.r0_checks` decides the part on $\sigma$ alone (R0σ) first. If it fails or is not measured, the part with
     $a$ takes the same value: a failed period law stays an objection even at a small amplitude. Only when R0σ passes is
@@ -411,6 +418,11 @@ reference period of the $\dot a$ oscillation):
 - for the $R^2$-gain and phase routes, the phase $\phi_0$ is fixed (coherence $\ge$ `MMR_OWNER_PHI0_COH_MIN` = 0.8, or
   coherent coefficients of B's multiplet);
 - a circulating owner (a forced wave) turns at a period inside the band of $a$.
+
+The windows are `MMR_FORCE_WINDOW_CYCLES` = 3.5 periods long at a half-window step, and two of them must fit
+between the band-pass edges ($2P$ from either end): about $9.25P$ of record. A shorter record is searched again with
+windows of `MMR_OWNER_SHORT_WINDOW_CYCLES` = 2 periods, about $7P$ of record (flag `owner_short_windows`; a multiplet
+keeps its modulation-period windows; W33: 385533 7N-12 over $8.1P$ finds no owner among 17 candidates).
 
 The potential route keeps the $R^2$, remainder and ripple checks but needs no fixed phase. The identity route has its
 own conditions (in the table).

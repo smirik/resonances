@@ -4,8 +4,9 @@ Before W28 a decimation factor with a prime above 10 skipped the filter: 555527 
 31) kept its 15.9-yr grid, Jupiter's 11.86-yr term folded into the secular band, and the free varpi wound by whole
 turns where that ripple outgrew the free circle (26 turns of excess in one 2-kyr window; 0.37 after the filter). The
 kinematic rows below must not rest on such steps: their gate outcome stays kinematic (the author's labels for 591986
-and 624; 1866's gate is kinematic while its episodic row keeps its transient) and no 2-kyr window of the free varpi
-gains more than 0.75 turn beyond its median rate. Their factors (5 and 10 x 5) never had a leftover, so D1 leaves
+and 624; 1866's record gate is kinematic, and since W34 its episodic omega is read inside its episodes, where the free
+omega stays put: confirmed, `ZLK_GATE_EPISODES`) and no 2-kyr window of the free varpi gains more than 0.75 turn beyond
+its median rate. Their factors (5 and 10 x 5) never had a leftover, so D1 leaves
 them bit for bit; the test guards any later change of the filter. 555527's status itself is left to its own cards
 (D2 measures its omega in the invariable plane); here only its steps are checked.
 
@@ -25,6 +26,7 @@ import bench_io as bio  # noqa: E402
 
 KINEMATIC_CONTROLS = ('zlk__591986__LK', 'zlk__591986__LK__4myr', 'zlk__624__LK', 'zlk__1866__LK')
 WINDOW_YR = 2000.0
+GATE = {'zlk__1866__LK': 'confirmed'}  # W34: confirmed inside its episodes (rho >= 3, 0.04 turns per cycle); else kinematic
 MAX_EXCESS_TURNS = 0.75  # card g09-9: a step is a gain of more than 0.75 turn in 2 kyr beyond the median rate
 
 
@@ -53,7 +55,7 @@ def _largest_window_excess(elements):
 def test_kinematic_controls_keep_their_gate_and_have_no_free_varpi_steps(example_id):
     elements, row = _analysed(example_id)
 
-    assert row['zlk_gate'] == 'kinematic'
+    assert row['zlk_gate'] == GATE.get(example_id, 'kinematic')
     assert not elements.resample_remainder
     assert _largest_window_excess(elements) < MAX_EXCESS_TURNS
 

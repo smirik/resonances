@@ -225,10 +225,13 @@ class GateResult:
     min_distance_arcsec_yr: float = float('nan')
     detail: str = ''  # unavailable: coorbital_unfitted_forcing (a co-orbital of a planet whose modes are not fitted)
     # an episodic omega, over its librating episodes: the largest median of |z_free| / |z_forced| inside one and the
-    # fewest turns of the free omega per whole cycle inside one (`FreeElements.episode_pinning`); nan when not
-    # episodic, without free elements, or where they do not measure an episode
+    # fewest turns of the free omega per whole cycle inside one (`FreeElements.episode_pinning`; the kinematic pin), and
+    # the smallest median and the most turns (the confirmation inside the episodes, `omega_free_gate.episode_confirmation`);
+    # nan when not episodic, without free elements, or where they do not measure an episode
     rho_episodes: float = float('nan')
     free_turns_episodes: float = float('nan')
+    rho_episodes_min: float = float('nan')
+    free_turns_episodes_max: float = float('nan')
     free_turns_min: float = float('nan')  # ZLK_EPISODE_FREE_TURNS_PER_CYCLE [turns per cycle]
     # W28 D10: the e-i coupling inside the deciding librating episode, and ZLK_EPISODIC_NO_VERDICT (ei | uncertain |
     # keep), which `decide_status` applies to an episodic omega without a gate verdict
@@ -249,6 +252,8 @@ class GateResult:
             'zlk_gate_d_min_arcsec_yr': self.min_distance_arcsec_yr,
             'zlk_gate_rho_episodes': self.rho_episodes,
             'zlk_gate_free_turns_episodes': self.free_turns_episodes,
+            'zlk_gate_rho_episodes_min': self.rho_episodes_min,
+            'zlk_gate_free_turns_episodes_max': self.free_turns_episodes_max,
             **self.episode_ei.to_columns(),
         }
 

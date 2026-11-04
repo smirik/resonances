@@ -2,7 +2,7 @@
  "coorbital__164207__1E-1+0+0": {
   "action": "none",
   "angle_status": "libration",
-  "confidence": "high",
+  "confidence": "certain",
   "example_id": "coorbital__164207__1E-1+0+0",
   "final_regime": "libration",
   "integrator": "ias15",
@@ -18,7 +18,7 @@
  "coorbital__2002_AA29__1E-1+0+0": {
   "action": "none",
   "angle_status": "libration",
-  "confidence": "high",
+  "confidence": "certain",
   "example_id": "coorbital__2002_AA29__1E-1+0+0",
   "final_regime": "libration",
   "integrator": "ias15",
@@ -48,9 +48,9 @@
   "step_yr": 0.050001025000028676
  },
  "mmr2__115978__11M-19+0+8": {
-  "action": "spot_check",
+  "action": "review",
   "angle_status": "episodic",
-  "confidence": "medium",
+  "confidence": "low",
   "example_id": "mmr2__115978__11M-19+0+8",
   "final_regime": "circulation",
   "integrator": "ias15",
@@ -129,7 +129,7 @@
  },
  "mmr2__2897__35S-4+0-31": {
   "action": "none",
-  "angle_status": "episodic",
+  "angle_status": "circulation",
   "confidence": "high",
   "example_id": "mmr2__2897__35S-4+0-31",
   "final_regime": "circulation",
@@ -384,9 +384,9 @@
   "step_yr": 1.0
  },
  "mmr3__285637__3M+7J-6+0+0-4": {
-  "action": "spot_check",
+  "action": "none",
   "angle_status": "libration",
-  "confidence": "medium",
+  "confidence": "high",
   "example_id": "mmr3__285637__3M+7J-6+0+0-4",
   "final_regime": "libration",
   "integrator": "ias15",
@@ -402,7 +402,7 @@
  "mmr3__463__4J-2S-1+0+0-1": {
   "action": "none",
   "angle_status": "libration",
-  "confidence": "high",
+  "confidence": "certain",
   "example_id": "mmr3__463__4J-2S-1+0+0-1",
   "final_regime": "libration",
   "integrator": "SABA(10,6,4)",
@@ -432,9 +432,9 @@
   "step_yr": 1.0
  },
  "mmr3__62243__1M-4J-1+0+0+4": {
-  "action": "spot_check",
+  "action": "none",
   "angle_status": "drift",
-  "confidence": "medium",
+  "confidence": "high",
   "example_id": "mmr3__62243__1M-4J-1+0+0+4",
   "final_regime": "",
   "integrator": "SABA(10,6,4)",
@@ -454,11 +454,11 @@
   "example_id": "secular__1020__g-g6+s-s6",
   "final_regime": "",
   "integrator": "SABA(10,6,4)",
-  "libration_origin": "dynamic",
+  "libration_origin": "unknown",
   "moon": false,
   "name": "1020",
   "output_step_yr": 99.99999988572381,
-  "reason": "dynamic_libration",
+  "reason": "geometric_libration",
   "resonance": "g-g6+s-s6",
   "span_yr": 9999999.98857,
   "status": "resonant",
@@ -472,11 +472,11 @@
   "example_id": "secular__1222__g-g6",
   "final_regime": "",
   "integrator": "SABA(10,6,4)",
-  "libration_origin": "dynamic",
+  "libration_origin": "unknown",
   "moon": false,
   "name": "1222",
   "output_step_yr": 99.99999988572381,
-  "reason": "dynamic_libration",
+  "reason": "geometric_libration",
   "resonance": "g-g6",
   "span_yr": 9999999.98857,
   "status": "resonant",
@@ -572,9 +572,9 @@
   "thinning": 5
  },
  "zlk__1981__LK": {
-  "action": "extend",
+  "action": "none",
   "angle_status": "libration",
-  "confidence": "medium",
+  "confidence": "certain",
   "example_id": "zlk__1981__LK",
   "final_regime": "",
   "integrator": "ias15",

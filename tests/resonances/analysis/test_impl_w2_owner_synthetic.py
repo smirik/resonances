@@ -287,6 +287,23 @@ def test_synthetic_owner_angle_has_no_owner():
     assert all(c.spec.key != '11M-20+0+9' for c in result.candidates)
 
 
+def test_too_few_long_windows_fall_back_to_short_ones(induced):
+    # 30 kyr = 15 P; the band-pass edges take 2 P from either end, so 11 P are left: two windows of 8 P at a half-window
+    # step need 12 P (too few), two of 2 P need 3 P. The fallback finds the owner the record is built from.
+    series, prep, context, _ = induced
+    long_windows = replace(S, mmr_force_window_cycles=8.0)
+    off = owner.run_owner(series, prep, context, P_LIB, replace(long_windows, mmr_owner_short_window_cycles=0.0))
+    assert off.check == CheckValue.NOT_MEASURED and owner.FLAG_TOO_FEW_WINDOWS in off.flags
+    short = owner.run_owner(series, prep, context, P_LIB, long_windows)
+    assert short.check == CheckValue.FAIL and short.accepted.spec.key == '11M-20+0+9'
+    assert owner.FLAG_SHORT_WINDOWS in short.flags and owner.FLAG_TOO_FEW_WINDOWS not in short.flags
+
+
+def test_enough_long_windows_never_use_short_ones(induced):
+    *_, result = induced
+    assert owner.FLAG_SHORT_WINDOWS not in result.flags
+
+
 def test_without_longitudes_or_for_a_retrograde_angle(induced):
     series, prep, context, _ = induced
     no_planets = replace(series, planets={})

@@ -65,7 +65,10 @@ def test_the_episode_floor_is_the_angles_own():
     trojan = make_geometry(runs=[episode], period_floor_yr=73.9, period_floor_setting='mmr_coorbital_period_floor_factor')
     assert decide.librating_episodes(trojan, S) == [episode]
     default = make_geometry(runs=[episode], period_floor_yr=float('nan'), period_floor_setting='')
-    assert decide.librating_episodes(default, S) == []  # 147.8 < 150: the convention of non-co-orbitals
+    # W31: the convention of non-co-orbitals (150 yr) is read with its thin band, 135 yr: 147.8 counts, 130 does not
+    assert decide.librating_episodes(default, S) == [episode]
+    fast = make_episode(tp_times_yr=np.array([0.0, 1000.0]), period_med_yr=130.0)
+    assert decide.librating_episodes(make_geometry(runs=[fast], period_floor_yr=float('nan'), period_floor_setting=''), S) == []
 
 
 def trojan_series() -> MMRSeries:

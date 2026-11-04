@@ -316,8 +316,10 @@ EXPECTED_BRANCH = {
     'mmr3__2003_ND__6J-6S-1+0+0+1': (Status.UNCERTAIN, '5n'),
     'mmr3__2013_VA14__2J+6S-1+0+0-7': (Status.UNCERTAIN, '5n'),
     # W21 D (Q2): O1's background no longer lies on episode #0 (no circulation between #0 and #1: one group), O1
-    # 0.705 (fail) -> 0.450 (thin), so 5o no longer decides; 5n (one independent cycle) gives the same status
-    'mmr3__1998_QA62__1V-5M+3+0+0+1': (Status.UNCERTAIN, '5n'),
+    # 0.705 (fail) -> 0.450 (thin), so 5o no longer decides; 5n (one independent cycle) gives the same status.
+    # W31: the 150-yr floor read with its thin band joins #0 and #1 into one 140-yr episode 7.9-10.3 kyr: O1 decides
+    # again (5o), the same uncertain (the minimal policy: transient/low, the label the author accepted 2026-11-03)
+    'mmr3__1998_QA62__1V-5M+3+0+0+1': (Status.UNCERTAIN, '5o'),
 }
 
 
@@ -332,12 +334,20 @@ BEFORE_W20_CUTS = {'mmr3__46596__8J+5S-3+0+0-10', 'mmr3__501710__1E+7S-4+0+0-4__
 BEFORE_W20_K2 = {'mmr3__501710__1E+7S-4+0+0-4__500kyr'}
 
 
+# W32 B6b (2002 BG): a ripple whose identity is not measured is set aside too; in 46596 8J+5S-3 that takes the 1-deg
+# ep 8 (88.2-89.2 kyr, the great inequality by the W31 background test) away from the 5s strength, which then reads
+# another episode (ratio 9.7e5 instead of 4.1e7, the status the same): Codex's envelope is read without the ripple rule.
+BEFORE_W32_RIPPLES = {'mmr3__46596__8J+5S-3+0+0-10'}
+
+
 def _analyse(example):
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 
     settings = replace(S, libration_regime_cuts=False) if example in BEFORE_W20_CUTS else S
+    if example in BEFORE_W32_RIPPLES:
+        settings = replace(settings, mmr_ripple_on_arc=False)
     if example in BEFORE_W20_K2:
         settings = replace(settings, mmr_kin_ripple_share_max=0.0)
     return analyse_mmr(io.load_series(example), settings)

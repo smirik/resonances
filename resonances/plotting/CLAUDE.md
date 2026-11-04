@@ -178,6 +178,8 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
   legend takes the slot under one dark-orange warning line with the reason in words (`fair_warning`,
   `FAIR_REASON_WORDS`; a 1:1 without the planet adds 'for a 1:1 FAIR = (M, σ) repeats (b)'); the header's
   'FAIR no (<reason>)' stays. FAIR is not restored for co-orbitals without saved planets.
+- A covered edge is filled to the record's edge only when the covered gap reaches within a period of it; otherwise to
+  the cut that opened the run's window (`_covered_to`, W31: 439908 was filled across 13.6 kyr of circulation).
 - Panel (l) over the fill interval of (a) (W28 g03-6, answer A): `portrait_span` = `episode_spans` clipped to the
   window of (k), shared by (l) and `episode_rate_limits`; beyond the first/last turning point dashed
   (`portrait_pieces`, `PORTRAIT_EXTENSION_STYLE`). A return-closed episode over the record (2025 RB7) gives (l) = (k).
@@ -202,7 +204,9 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
 - The minimal policy (W29 SPEC §7, PRINCIPLES 6): (a) of both figures shows only what the status counts
   (`mmr_combined.policy_marks` from `analysis.policy`, else the verdict's id cells; `shade_policy_runs`): counted
   episodes filled (a covered edge to the record edge, the filter-trim stretch pale, `fill_counted`), a counted 1:1
-  leg 'leg', candidates faint and dashed 'cand' (`fill_candidate`), no grey strip; the legend's (a) line follows
+  leg 'leg', candidates faint and dashed 'cand' (`fill_candidate`), no grey strip; (l) puts the counted episodes first,
+  solid, the others dashed '#id cand'/'#id not counted' (`_policy_tag`); the EPISODES block counts the policy's
+  `counted` (`mmr_verdict_panel._counted_text`); a counted strength run is no ' forced (strength)'; the legend's (a) line follows
   (`legend_lines`, `long_period_legend`). Under v2 or without a policy, nothing changes. The explanation opens with
   four `SLOT_POLICY` bullets (`verdict_text.policy_block`: status · level · reason (origin / owner), `basis:` from
   `confidence_basis`, `flags:`, `v2:`); every former cap read is `has_mark` (caps or flags). The standalone MMR

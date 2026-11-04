@@ -308,7 +308,8 @@ def test_tx9_keeps_its_status_with_the_word_libration(example):
     # G2a off: these mechanisms are read on the single episode (W24, test_w23_centre_scale.test_tx9_g2a_*)
     w22 = replace(S, libration_centre_scale_tp_at_centre=False, libration_action_step=False)
     # W28 C16 regime_cut_mark (q-5 i): the three W_c pieces share a band and a period, so they are one episode and G2c
-    # keeps it (no union to reject); the W22 union guard is read below with C16 and B1's stall join off
+    # keeps it (no union to reject); the W22 union guard is read below with C16 and B1's stall join off, and without the
+    # W32 ripple rule (B6b with an unmeasured identity sets one of the three W_c runs aside: union 2 of 3)
     joined = _analysis(example, w22)
     assert (str(joined.verdict.status), str(joined.verdict.angle_status)) == ('uncertain', 'libration')
     assert joined.prep.cutoff.binding == 'centre_scale' and joined.extra_columns['geo_union_word_centre_scale'] == 0
@@ -316,7 +317,7 @@ def test_tx9_keeps_its_status_with_the_word_libration(example):
         (pytest.approx(2211, abs=1), pytest.approx(float(TX9_REJECTED[example][2].split('-')[-1]), abs=1))
     ]
     assert str(Rule.REGIME_CUT_MARK) in joined.verdict.rules_fired and not joined.extra_columns['geo_cs_rej_episodes']
-    analysis = _analysis(example, replace(w22, libration_regime_cut_marks=False, libration_stall_join=False))
+    analysis = _analysis(example, replace(w22, libration_regime_cut_marks=False, libration_stall_join=False, mmr_ripple_on_arc=False))
     assert (str(analysis.verdict.status), str(analysis.verdict.angle_status)) == ('uncertain', 'libration')
     assert analysis.extra_columns['geo_union_word_centre_scale'] == 1
     assert analysis.prep.cutoff.binding != 'centre_scale'  # the fine verdict stays
@@ -341,10 +342,12 @@ def test_136108_g2c_comes_before_the_union():
 
 
 @pytest.mark.benchmark
-@pytest.mark.parametrize('example', ['mmr2__2002_XA__5J-2+0-3', 'mmr2__2001_WK15__32E-39+0+7'])
+@pytest.mark.parametrize('example', ['mmr2__2002_XA__5J-2+0-3'])
 def test_xa_and_wk15_gaps_longer_than_the_two_periods_are_bounded(example):
     """Author 2026-10-31 (W28 g06-5 A, cancelling D1b): sigma_f stays inside the band through gaps of 1.05 (XA) and
-    1.5, 1.7 (WK15) x (P_left + P_right), so the episodes join and the dynamic transient becomes resonant (6u)."""
+    1.5, 1.7 (WK15) x (P_left + P_right), so the episodes join and the dynamic transient becomes resonant (6u). W31
+    (the author 2026-11-03: WK15 is one libration over the record): its gaps were turning points the 150-yr floor
+    lost; read with the floor's thin band it has no gap left (`test_wk15_is_one_libration`)."""
     analysis = _analysis(example)
     episodes = sorted(decide.librating_episodes(analysis.geometry, S), key=lambda e: e.t_start_yr)
     pairs = list(zip(episodes, episodes[1:]))
@@ -353,6 +356,15 @@ def test_xa_and_wk15_gaps_longer_than_the_two_periods_are_bounded(example):
     assert all(g.gap_band_overshoot(analysis.geometry, a, b) <= margin for a, b in pairs)
     assert analysis.extra_columns['geo_union_n_episodes'] >= 2
     assert _word(analysis.verdict) == ('resonant', 'libration', 'regime_change', 'medium')
+
+
+@pytest.mark.benchmark
+def test_wk15_is_one_libration():
+    # the author 2026-11-03 (E60): "весь промежуток интегрирования — эпизод"; 252 turning points, 142.9-yr period
+    analysis = _analysis('mmr2__2001_WK15__32E-39+0+7')
+    episodes = decide.librating_episodes(analysis.geometry, S)
+    assert len(episodes) == 1 and episodes[0].n_tp > 200
+    assert (analysis.verdict.status, analysis.verdict.angle_status) == ('resonant', 'libration')
 
 
 @pytest.mark.benchmark

@@ -1,13 +1,16 @@
 """W29 minimal policy on secular and Lidov-Kozai rows (`policy.apply_long_period`, spec §8), built from real result
 objects. The expectations follow PRINCIPLES §7 by hand: the gate's kinematic outcome or a free e below the forced e
 is a measured veto (-2); a gate without a verdict is a flag, the row keeps its geometry at <= medium; a secular swing
-inside the mode-phase uncertainty is uncertain, never non_resonant; a ZLK omega's own revolution is pi."""
+inside the mode-phase uncertainty is uncertain, never non_resonant. W30 (the author's D1-D6, 2026-11-03): a broken
+e-i integral is a veto where rho_max >= ZLK_RHO_KINEMATIC_EXCLUDED, an objection otherwise; a held one with rho_max
+that large lifts the gate's cap; episode-median and undefined-phase vetoes need the integral broken too; omega's
+revolution is 2 pi; the geometry alone gives a geometric reason."""
 
 import numpy as np
 import pytest
 
 from resonances.resonance.analysis import policy
-from resonances.resonance.analysis.secular.models import GateResult
+from resonances.resonance.analysis.secular.models import EpisodeCoupling, GateResult
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import (
     Action,
@@ -124,18 +127,58 @@ def test_an_episode_with_few_free_turns_is_transient_low():
     assert (v.status, v.confidence, v.veto) == (Status.TRANSIENT, Confidence.LOW, '')
 
 
-def test_an_episode_the_forced_vector_pins_is_a_free_e_veto():
-    # 624 Hektor: rho_episodes 0.991 against 1 (within the thin band 0.1): the veto moves, at medium
-    v = zlk(AngleStatus.EPISODIC, 'kinematic', rho_max=1.4, rho_episodes=0.991, free_turns_episodes=0.9, free_turns_min=0.5).verdict
+BROKEN = EpisodeCoupling('none', '', 0, PERIOD, 4.0, 263.0, -0.2, 1.04, h_residual_max=0.5)  # 624, 88899 500 kyr
+HELD = EpisodeCoupling('zlk', '', 0, PERIOD, 4.0, 180.0, -0.99, 0.05, h_residual_max=0.5)  # 1981 Midas
+
+
+def test_an_episode_the_forced_vector_pins_is_a_free_e_veto_only_with_the_integral_broken():
+    # 624 Hektor: rho_episodes 0.991 (a median) and the e-i integral broken (eta_H 1.04): the veto moves, at medium
+    pins = dict(rho_max=1.4, rho_episodes=0.991, free_turns_episodes=0.9, free_turns_min=0.5)
+    v = zlk(AngleStatus.EPISODIC, 'kinematic', episode_ei=BROKEN, **pins).verdict
     assert (v.status, v.veto, v.confidence, v.status_code) == (Status.NON_RESONANT, policy.VETO_ZLK_FREE_E, Confidence.MEDIUM, -2)
     assert str(Flag.VETO_THIN) in v.flags
+    # the median alone is no pointwise measurement (W30 D4): an objection, the geometry stays at low
+    w = zlk(AngleStatus.EPISODIC, 'kinematic', **pins).verdict
+    assert (w.status, w.veto, w.confidence) == (Status.TRANSIENT, '', Confidence.LOW) and str(Flag.MEASURED_OBJECTION) in w.flags
 
 
-def test_an_undefined_phase_with_the_free_circle_off_the_origin_is_a_free_e_veto():
-    v = zlk(outcome='undefined_phase', rho_max=0.5).verdict
+def test_an_undefined_phase_with_the_free_circle_off_the_origin_vetoes_only_with_the_integral_broken():
+    v = zlk(outcome='undefined_phase', rho_max=0.5, episode_ei=BROKEN).verdict
     assert (v.veto, v.status_code) == (policy.VETO_ZLK_FREE_E, -2)
+    u = zlk(outcome='undefined_phase', rho_max=0.5).verdict  # a missing phase is no contradiction (W30 D4)
+    assert (u.status, u.veto, u.confidence) == (Status.RESONANT, '', Confidence.LOW)
     w = zlk(outcome='undefined_phase', rho_max=1.5).verdict
     assert (w.status, w.status_code) == (Status.RESONANT, 2) and str(Flag.GATE_UNAVAILABLE) in w.flags
+
+
+def test_a_broken_integral_is_a_veto_where_the_forced_terms_are_small():
+    # 88899 500 kyr: no gate verdict, rho_max 13 >= 3, eta_H 1.24: non_resonant / kinematic, veto zlk_integral (D1 C)
+    v = zlk(
+        AngleStatus.EPISODIC, 'planetary_residual', rho_max=13.3, episode_ei=BROKEN, min_distance_arcsec_yr=2.0, baseline_yr=SPAN
+    ).verdict
+    assert (v.status, v.veto, v.status_code, v.origin_detail) == (Status.NON_RESONANT, policy.VETO_ZLK_INTEGRAL, -2, 'ei_integral_not_held')
+    # rho_max 2 < 3: the forced terms may break the integral themselves: an objection, low
+    w = zlk(
+        AngleStatus.EPISODIC, 'planetary_residual', rho_max=2.0, episode_ei=BROKEN, min_distance_arcsec_yr=2.0, baseline_yr=SPAN
+    ).verdict
+    assert (w.status, w.veto, w.confidence) == (Status.TRANSIENT, '', Confidence.LOW) and str(Flag.EI_INTEGRAL_NOT_HELD) in w.flags
+
+
+def test_a_held_integral_with_a_small_forced_vector_lifts_the_gate_cap():
+    # 1981 Midas: node near s6 (planetary_residual), rho_max 69, eta_H 0.05: high by cycles, no extension (D2 C)
+    v = zlk(outcome='planetary_residual', rho_max=69.0, episode_ei=HELD, min_distance_arcsec_yr=0.25, baseline_yr=SPAN).verdict
+    assert (v.status, v.confidence, v.action) == (Status.RESONANT, Confidence.HIGH, Action.NONE)
+    assert {str(Flag.GATE_UNAVAILABLE), str(Flag.KINEMATIC_EXCLUDED)} <= set(v.flags) and str(Flag.VETO_NEEDS_LENGTH) not in v.flags
+    # the same with rho_max 2: the gate's abstention keeps the cap
+    w = zlk(outcome='planetary_residual', rho_max=2.0, episode_ei=HELD, min_distance_arcsec_yr=0.25, baseline_yr=SPAN).verdict
+    assert w.confidence == Confidence.MEDIUM and str(Flag.KINEMATIC_EXCLUDED) not in w.flags
+
+
+def test_only_a_confirmed_gate_names_a_dynamic_origin():
+    v = zlk().verdict
+    assert (v.reason, v.libration_origin) == (Reason.DYNAMIC_LIBRATION, 'dynamic')
+    w = zlk(outcome='disabled').verdict
+    assert (w.reason, w.libration_origin) == (Reason.GEOMETRIC_LIBRATION, 'unknown')
 
 
 def test_minus_two_and_gate_unavailable_never_meet():
@@ -179,8 +222,9 @@ def test_too_few_cycles_ending_in_circulation_is_decided_now():
     assert (bounded.status, bounded.action, bounded.pol_extend_clause) == (Status.UNCERTAIN, Action.EXTEND, 'A')
 
 
-def test_zlk_travel_counts_half_turns():
-    # omega runs 0.7 turn (1.4 pi) after its last turning point: one own revolution of a ZLK omega, not of a secular angle
+def test_zlk_travel_counts_whole_turns():
+    # omega runs 0.7 turn after its last turning point: less than one revolution for a ZLK omega too (W30 D3: the
+    # quadrupole's half-turn symmetry is not general; 88899 100 kyr)
     def angle(t):
         return circulating_after(t, turns=0.7)
 
@@ -190,7 +234,7 @@ def test_zlk_travel_counts_half_turns():
         verdict, geometry(2, accepted=False), gate('short_window'), angle=make_filtered_angle(t, angle(t)), span_yr=SPAN
     )
     v = policy.apply_long_period(analysis, MINIMAL).verdict
-    assert v.pol_end_travel_rev == pytest.approx(1.4, rel=1e-3) and v.status == Status.NON_RESONANT
+    assert v.pol_end_travel_rev == pytest.approx(0.7, rel=1e-3) and v.status == Status.UNCERTAIN
     secular = secular_row(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.FEW_CYCLES, angle).verdict
     assert secular.pol_end_travel_rev == pytest.approx(0.7, rel=1e-3) and secular.status == Status.UNCERTAIN
 

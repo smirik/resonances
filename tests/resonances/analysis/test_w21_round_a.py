@@ -709,9 +709,11 @@ def test_q1d_a_forced_wave_circulation_keeps_the_cap():
 
 
 @pytest.mark.benchmark
-def test_q1d_a_kinematic_drift_keeps_the_cap():
+def test_q1d_an_unfinished_slow_swing_keeps_the_cap():
     v = _q1d('mmr3__2002_BG__1E-10S-1+0+0+10').verdict
-    # W28 B6b ripple_on_arc (g08-4 A): the 2.6-deg ep2 (identity fails) is set aside, so K2 loses the ripple it read
-    # and 5s with B2's strength mark decide (was kinematic_drift/medium); still no circulation, so the cap stays
-    assert (str(v.status), str(v.reason), str(v.confidence)) == ('non_resonant', 'implausible_strength', 'low')
-    assert CAP in v.caps
+    # W28 B6b ripple_on_arc (g08-4 A) set the 2.6-deg ep2 (identity fails) aside; since W32 (the author's BG card C) the
+    # one-cycle ep1, whose identity is not measured, too: the record is one unfinished slow swing, uncertain /
+    # insufficient_time, extend 50 kyr (the v2 tree of these tests; the minimal policy asks 40 kyr); still no
+    # circulation, so the cap stays
+    assert (str(v.status), str(v.reason), str(v.angle_status)) == ('uncertain', 'baseline_needed', 'insufficient_time')
+    assert (v.action, v.extend_to_years) == (Action.EXTEND, 50000.0) and CAP in v.caps

@@ -124,7 +124,7 @@ def test_a_zlk_row_gets_its_physics_and_its_period_named(zlk):
     text = _explain(analysis, row, elements)
     assert _bullet(text, vt.SLOT_VERDICT) == 'NOT A LIDOV-KOZAI LIBRATION: ω librates, but the free ω winds.'
     physics = _bullet(text, vt.SLOT_CAUSE, 'Physics:')
-    assert 'i 39–39°' in physics and 'i = 39.2° (Kozai 1962; a reference, not a test): i stays below it' in physics
+    assert 'i 39–39°' in physics and '39.2' not in physics  # no quadrupole reference outside its domain (W30)
     turns = float(re.search(rf'turns {NUMBER} times', physics).group(1))
     assert turns == pytest.approx((222.0 - 4.31) * 5e5 / 1296000, rel=0.01)
     assert 'Induced by the forced eccentricity of mode g5' in _bullet(text, vt.SLOT_CAUSE, 'Induced')
@@ -284,7 +284,7 @@ def _benchmark(example: str):
 def test_555527_reads_its_inclination_and_free_omega_turns():
     analysis, row, text = _benchmark('zlk__555527__LK')
     physics = _bullet(text, vt.SLOT_CAUSE, 'Physics:')
-    assert re.search(r'i [0-9.]+–[0-9.]+°', physics) and 'i stays below it' in physics
+    assert re.search(r'i [0-9.]+–[0-9.]+°', physics) and '39.2' not in physics  # no quadrupole reference (W30)
     turns = float(re.search(rf'turns {NUMBER} times', physics).group(1))
     assert turns == pytest.approx(abs(row['free_b_omega']) * 1e5 / 1296000, rel=0.01) and turns > 5  # D1: about 8
     assert 'beat period mismatch' not in _all(text)

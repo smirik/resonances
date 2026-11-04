@@ -360,7 +360,8 @@ rates.
 
 (k) is the whole record, (l) the accepted episodes (the five longest, each in its episode colour, up to 12 cycles
 each, a dot at its first sample; `#2 induced` in its legend is an episode another resonance induces, `#0 < floor` a
-run the status does not count). (l) draws each episode over the same interval as its fill in (a), cut to the
+run the status does not count; under the minimal policy, title `(l) episodes, counted solid`, the counted episodes
+first and solid, an accepted run it does not count dashed, `#3 cand` or `#3 not counted`). (l) draws each episode over the same interval as its fill in (a), cut to the
 window of (k): solid between its first and last turning point, dashed beyond them. An episode that covers the whole
 record is the whole window, so its (l) holds the same samples as (k). Both show $\sigma_f$ (modulo 360°) against $\dot\sigma$ in rad/kyr, with the same
 scales; colour is time in (k). Red line: $\dot\sigma = 0$; red +: the centre of each accepted episode.
@@ -400,7 +401,8 @@ The right column says in words what was decided and why. From top to bottom:
    level and the reason with the origin and the owner (`NON-RESONANT · MEDIUM · induced by 5M-2 (origin induced)`);
    `basis:` what the level rests on, in words: the complete cycles N and where they were counted (an episode, a union,
    the whole record, a 1:1 leg), the amplitude margin, whether the objections were measured, the filter's stability,
-   the veto (column `confidence_basis`), and the counted episodes; `flags:` every flag (under this policy the former
+   the veto (column `confidence_basis`; `of the subresonance member` when a parent row takes its member's N), and the
+   counted episodes (also in the EPISODES block, `2 accepted, 1 counted`); `flags:` every flag (under this policy the former
    caps are flags, so the confidence block lists no caps); `v2:` what the v2 tree said, for comparison. Then, on an MMR
    figure, short lines in a fixed order: the verdict in plain words, in bold
    (`NOT THIS RESONANCE: σ librates, but 3J+9S-2 does not make the swing.`); then • bullets: what $\sigma$ does
@@ -475,7 +477,8 @@ The right column says in words what was decided and why. From top to bottom:
    its one leg near the planet a capture?` or `G4h · Is its one half-swing the resonance's own?`. On a 1:1 angle step
    0 also names its own period floor (`1:1 floor of #0: … the loop through them takes 119 yr, so its own floor is
    59.4 yr (the tadpole floor 111 yr)`, 2003 YN107) and a turn read in the edge trim (`… it only closes the cycle`). Secular and Lidov-Kozai figures use the same form
-   (the free-ω gate is step 1 of a Lidov-Kozai row). When the column is crowded, the "Why" lines are left out.
+   (the free-ω gate is step 1 of a Lidov-Kozai row; it decides only when it gives a verdict, confirmed or kinematic,
+   otherwise it is a passed step `…: no verdict, the shape decides` and the angle's shape is the leaf, step 2). When the column is crowded, the "Why" lines are left out.
 4. **Confidence: how firm the verdict is**. Every row reads `name [ID]: what was measured`. The limits come first,
    as ▼ `LIMIT: earlier a-wave [O1] → LOW`: a cap, with the failed margin that explains it printed inside it once (a
    failed cap margin is never drawn ✗), what it means, the other reading it leaves open and what on the figure would
@@ -636,8 +639,8 @@ minimal policy the four lines described in [the right column](#the-right-column)
 - `Objection, not deciding the status: …`: $e$ (or $\sin(i/2)$) does not follow the angle; only one independent
   centre estimate; a ZLK libration without the $e$–$i$ exchange at its deciding period. These leave the grey line;
 - for a Lidov-Kozai row, the cause:
-    - its physics: the ranges of $i$ and $e$, where $i$ stands against Kozai's 39.2° (the classical quadrupole ZLK
-      under an outer planet; a literature reference printed for reading, not a test);
+    - its physics: the ranges of $i$ and $e$ (Kozai's 39.2° is not printed: it belongs to the hierarchical quadrupole
+      problem, outside its domain for main-belt and planet-crossing asteroids);
     - how many times the free $\omega$ turns in the record, $|g - s|/(1/T)$ (555527: about 8);
 - the time scales:
     - $1/T$, the record's frequency resolution in ″/yr;

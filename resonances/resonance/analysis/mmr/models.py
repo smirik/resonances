@@ -1976,6 +1976,8 @@ class MMRAnalysis:
     derived_series: Optional[MMRSeries] = None  # a derived row: the series of its own angle (for its figure)
     filter_order: Optional[int] = None  # FILTER_ORDER of the analysis (the figure smooths the member tracks with it)
     # the CSV rows taken just before `drop_arrays` (the rows read prep and the centre track, which it releases)
+    # W31: the forced-wave test of every accepted run below 45 deg against its background (`background_wave`, bw_*)
+    background_waves: Tuple[Any, ...] = ()
     frozen_numbers: Optional[Dict[str, Any]] = None
     frozen_episode_rows: Optional[List[dict]] = None
     frozen_slow_episode_rows: Optional[List[dict]] = None
@@ -2068,7 +2070,16 @@ class MMRAnalysis:
         cutoff = self.prep.cutoff.cutoff_yr if self.prep is not None else None
         window = self.geometry.window
         rows = [_episode_row(self, run, physics.get(run.episode_id), cutoff, window) for run in self.geometry.runs]
-        return [{**row, **policy_episode_columns(self.policy, row['episode_id']), 'scale': SCALE_MAIN} for row in rows]
+        waves = {wave.episode_id: wave for wave in self.background_waves}
+        return [
+            {
+                **row,
+                **policy_episode_columns(self.policy, row['episode_id']),
+                **background_wave_columns(waves.get(row['episode_id'])),
+                'scale': SCALE_MAIN,
+            }
+            for row in rows
+        ]
 
     def slow_episode_rows(self) -> List[dict]:
         """The episodes.csv rows of the slow scale (scale 'slow'): the geometric columns of each run G2c found at the
@@ -2133,6 +2144,21 @@ def policy_episode_columns(policy, episode_id) -> dict:
     if policy is None:
         return {'counted': None, 'candidate': None}
     return {'counted': episode_id in policy.counted_episode_ids, 'candidate': episode_id in policy.candidate_episode_ids}
+
+
+def background_wave_columns(wave) -> dict:
+    """episodes.csv `bw_*` (W31, `background_wave.BackgroundWave`): the forced-wave test against the episode's
+    background; empty cells for an episode it does not judge (above 45 deg, a 1:1 angle, the test off)."""
+    if wave is None:
+        return {'bw_outcome': '', 'bw_reason': '', 'bw_sigma_hi': None, 'bw_sigma_lo': None, 'bw_a_hi': None, 'bw_reference_P': None}
+    return {
+        'bw_outcome': wave.outcome,
+        'bw_reason': wave.reason,
+        'bw_sigma_hi': wave.sigma_hi,
+        'bw_sigma_lo': wave.sigma_lo,
+        'bw_a_hi': wave.a_hi,
+        'bw_reference_P': wave.reference_periods,
+    }
 
 
 ADDED_BY_SUBRESONANCE = 'subresonance_check'

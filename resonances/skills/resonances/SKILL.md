@@ -141,11 +141,13 @@ references/physics/status-tree.md, references/physics/confidence.md). The status
 the whole record → resonant, bounded stretches between circulation → transient, ambiguous → near_separatrix or
 uncertain, never bounded → non_resonant. A bounded angle becomes non_resonant **only** on a measured contradiction
 (`veto`); a check that was not measured, or is thin, is a flag (`gate_unavailable`, `measured_objection`,
-`veto_needs_length`, `one_coorbital_leg`, …), never a status. The level: `certain` needs N ≥ 10 complete cycles, a clear
-amplitude margin, every needed objection measured and none found, and a filter-stable record; `high` N ≥ 3; `medium`
-1.5 ≤ N < 3 or a needed objection not measured; `low` a measured objection on a libration (`measured_objection`). A
-non_resonant row is `medium` when a candidate episode was rejected (it is plotted in review mode) or the veto was thin
-(`veto_thin`). `extend` only for an unfinished libration at the record's end, a deciding period longer than T/1.5, or a
+`veto_needs_length`, `one_coorbital_leg`, …), never a status. The level: `certain` needs N ≥ 3 complete cycles (3 observed inside
+the decisive episode), a clear amplitude margin, every needed objection measured and none found, and a filter-stable
+record; `high` N ≥ 2; `medium` 1.5 ≤ N < 2 or a needed objection not measured; `low` N < 1.5 or a measured objection on
+a libration (`measured_objection`). An MMR libration whose own force is not shown (no force law, energy law or strength
+passes: `F=none` in `confidence_basis`) is at most `low`: the angle is bounded, the mechanism is not shown. A measured
+veto is `high`; a non_resonant row is `medium` when a candidate episode was rejected (it is plotted in review mode) or
+the veto was thin (`veto_thin`). `extend` only for an unfinished libration at the record's end, a deciding period longer than T/1.5, or a
 needed veto not measured for lack of length (`veto_needs_length`, clause `C`) whose record `pol_veto_need_yr` is within
 `MMR_NEXT_CHECK_SPAN_FACTOR` × T (beyond it: `review`); a record that ends in circulation is decided now. So more rows are resonant/transient at `low`/`medium` than under v2
 (about 31 benchmark rows v2 left uncertain): the `review` and `nonzero` save/plot modes select them, and a
@@ -251,8 +253,11 @@ Distinctions that matter when you report:
   free e below forced e (`zlk_free_e`), gives `non_resonant` (code −2, exactly these rows). A gate without a verdict
   (short window, planetary residual, undefined phase, co-orbital of Mercury to Mars) or a disabled one leaves the
   geometric status (resonant/transient) at ≤ `medium` with the flag `gate_unavailable` / `gate_disabled`; −9 is then
-  only an `uncertain` row. A confirmed and a geometric ZLK librator share the status code: **split every ZLK statistic
-  by `check_zlk_free_omega`** (`pass` = confirmed, `not_measured` = no verdict). The v2 text below is the `v2` policy.
+  only an `uncertain` row. An episodic ω is judged inside its librating episodes when its free ω winds over the record
+  (it circulates between them): confirmed there (`zlk_gate_detail` = `episodes`) when the free ω stays put in every
+  episode (`ZLK_GATE_EPISODES`). A confirmed and a geometric ZLK librator share the status code: **split every ZLK
+  statistic by `check_zlk_free_omega`** (`pass` = confirmed, `not_measured` = no verdict). The v2 text below is the
+  `v2` policy.
 - **Lidov-Kozai (v2).** A libration of the osculating ω is not enough; the free-ω gate decides. `non_resonant /
   kinematic_libration` is a **measurement** (the free ω winds: geometry); `uncertain / gate_unavailable` is the
   **absence** of one (`extend_to_years` for a short window or a residual near a planetary rate; `review` for an

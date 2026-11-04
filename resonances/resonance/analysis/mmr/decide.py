@@ -402,6 +402,14 @@ def run_floor_acts(geometry: Geometry, settings: AnalysisSettings) -> bool:
     return False
 
 
+def _eligible_floor(geometry: Geometry, settings: AnalysisSettings, episode) -> float:
+    """The floor an episode's period must reach to count: `period_floor`, less its thin band when it is the
+    convention MMR_LIBRATION_PERIOD_MIN_YR (W31, 2001 WK15: 142.9 yr against 150); a measured floor (a co-orbital's
+    tadpole or loop period) is read as it is (2022 AP1)."""
+    floor, setting = period_floor(geometry, settings, episode)
+    return floor * (1.0 - settings.confidence_thin_band) if setting == 'mmr_libration_period_min_yr' else floor
+
+
 def fastest_episode(geometry: Geometry, settings: AnalysisSettings) -> Optional[Episode]:
     """The accepted episode whose period is the shortest against its own floor (`period_floor`); None without one."""
     return min(geometry.episodes, key=lambda e: e.period_med_yr / period_floor(geometry, settings, e)[0], default=None)
@@ -436,7 +444,7 @@ def episode_eligibility(geometry: Geometry, settings: AnalysisSettings) -> Dict[
     and fires nothing)."""
 
     def compute() -> Dict[int, RejectReason]:
-        reasons = geometry_eligibility(geometry, lambda episode: period_floor(geometry, settings, episode)[0])
+        reasons = geometry_eligibility(geometry, lambda episode: _eligible_floor(geometry, settings, episode))
         if any(reason not in (RejectReason.NONE, RejectReason.BEFORE_LAST_JUMP) for reason in reasons.values()):
             geometry.rules_fired = rules_module.fire(geometry.rules_fired, rules_module.Rule.ELIGIBLE_REASON)
         return reasons
@@ -516,15 +524,18 @@ def ripple_waves(geometry: Optional[Geometry], episode_responses: Sequence, sett
 
     - (i) the half-amplitude stays below MMR_A_RESPONSE_MIN_AMP_DEG (largest half-amplitude): sin sigma ~ sigma, so
       neither the force law L4 nor R0 with a can be measured on it;
-    - (ii) its identity is measured on it and fails (`EpisodeResponse.identity`): sigma_dot does not follow c (a - a*)
-      as this angle's libration must;
+    - (ii) its identity does not pass on it (`EpisodeResponse.identity` fail or not measured): nothing confirms that
+      sigma_dot follows c (a - a*) as this angle's libration must (W32, the author's 2002 BG card C: a one-cycle
+      ripple whose identity cannot be measured is as unconfirmed as one whose identity fails);
     - (iii) the record holds an unfinished slow swing (`unfinished_slow_swing`);
 
     and it is no record-covering episode (`covers_edges` on both edges: then there is no arc beside it, the episode is
     the angle's motion over the record) and the angle is not 1:1 (the co-orbital law is measured at any amplitude).
     2004 YG1 9M-10J-4 over 20 kyr: a 3.1 deg ripple of 5 TPs at 13.5-14.9 kyr, identity fail (slope/c 0.65, corr
-    0.79), at the one turn (13.7 kyr) of a slow centre that sweeps 281 deg. A real small libration keeps its passing
-    identity, so it is never taken. No strength ratio and no global prominence (the card): () with MMR_RIPPLE_ON_ARC
+    0.79), at the one turn (13.7 kyr) of a slow centre that sweeps 281 deg; 2002 BG 1E-10S-1 over 20 kyr: a 2-deg
+    735-yr ripple of 3 TPs (identity not measured) at the one turn of a centre that sweeps 1.68 rad, so the record is
+    one unfinished slow swing (insufficient_time, extend). A real small libration keeps its passing identity, so it is
+    never taken. No strength ratio and no global prominence (the card): () with MMR_RIPPLE_ON_ARC
     off, without a geometry, or when (iii) does not hold. Set before G2 like F6 (`Geometry.forced_waves`, route
     'unconfirmed_ripple'), so G5a/G6 read the slow centre (`_g4_to_g6`)."""
     if not settings.mmr_ripple_on_arc or geometry is None or geometry.coorbital or not unfinished_slow_swing(geometry):
@@ -534,7 +545,7 @@ def ripple_waves(geometry: Optional[Geometry], episode_responses: Sequence, sett
     found = []
     for episode in episode_responses:
         run = run_of(geometry, episode.episode_id) if episode.episode_id is not None else None
-        if run is None or not run.accepted or run.before_last_jump or episode.identity != CheckValue.FAIL:
+        if run is None or not run.accepted or run.before_last_jump or episode.identity == CheckValue.PASS:
             continue
         if not scratch.compare('ripple', run.half_amp_max_rad, Op.LT, limit, 'rad', '') or all(covers_edges(run, settings)):
             continue
@@ -2571,6 +2582,16 @@ def turn_reflects(turn: Optional[LegTurn], settings: AnalysisSettings) -> bool:
     return abs(math.log(turn.out_in)) <= settings.mmr_coorbital_turn_energy_tol and turn.zone <= settings.mmr_coorbital_turn_zone_max
 
 
+def turn_reflects_within_band(turn: Optional[LegTurn], settings: AnalysisSettings) -> bool:
+    """A turn that would reflect but for its zone, which lies within the thin band above MMR_COORBITAL_TURN_ZONE_MAX
+    (zone <= (1 + CONFIDENCE_THIN_BAND) x max): the threshold is a convention, so the turn is neither a reflection nor
+    a kick (the author, W30 zone C: 2020 FN3 1.11, 255071 1.15 against 1.1)."""
+    if turn is None or turn_reflects(turn, settings) or not (is_finite(turn.out_in) and turn.out_in > 0 and is_finite(turn.zone)):
+        return False
+    mirrored = abs(math.log(turn.out_in)) <= settings.mmr_coorbital_turn_energy_tol
+    return bool(mirrored and turn.zone <= settings.mmr_coorbital_turn_zone_max * (1.0 + settings.confidence_thin_band))
+
+
 def leg_law_holds(leg: SingleLeg) -> bool:
     """The local 1:1 law of the leg passes and pushes a the right way (K / K_theory > 0)."""
     return leg.force == CheckValue.PASS and is_finite(leg.force_scale) and leg.force_scale > 0
@@ -2582,7 +2603,8 @@ def leg_outcome(leg: SingleLeg, settings: AnalysisSettings) -> Tuple[str, str]:
     - an edge leg (one turn observed): clean, its turn reflects (with mmr_coorbital_leg_force_gate also its law
       holds on the observed part) -> LEG_EXTEND, the record may hold the rest of the cycle; else '';
     - neither turn reflects (both are kicks, or a level the potential cannot reverse), or with the force gate no 1:1
-      law -> LEG_SCATTER: no capture, but a near miss of one;
+      law -> LEG_SCATTER: no capture, but a near miss of one; a turn whose zone is within the thin band above the
+      threshold (`turn_reflects_within_band`) -> LEG_UNCERTAIN (W30 zone C);
     - clean, the law with K > 0 and the energy integral pass and both turns reflect -> LEG_TRANSIENT;
     - anything else -> LEG_UNCERTAIN, with the first discrepancy (passing, force_law, energy, turn)."""
     gate = settings.mmr_coorbital_leg_force_gate
@@ -2592,6 +2614,9 @@ def leg_outcome(leg: SingleLeg, settings: AnalysisSettings) -> Tuple[str, str]:
         return (LEG_EXTEND, '') if held else ('', '')
     reflects = [turn_reflects(turn, settings) for turn in (leg.entry, leg.exit)]
     if not any(reflects):
+        # a turn whose zone is only within the thin band of the threshold: undecided, not a scatter (W30 zone C)
+        if any(turn_reflects_within_band(turn, settings) for turn in (leg.entry, leg.exit)):
+            return LEG_UNCERTAIN, LEG_TURN
         return LEG_SCATTER, LEG_TURN
     if gate and not leg_law_holds(leg):
         return LEG_SCATTER, LEG_FORCE
@@ -3306,6 +3331,10 @@ def no_turn_stretch_yr(geometry: Geometry) -> float:
         return float('nan')
     edges = np.concatenate(([start], interior_turn_times(geometry), [end]))
     return float(np.max(np.diff(edges)))
+
+
+# the `base_period_source` values of a slow swing seen in part (`slow_timescale`)
+SLOW_SWING_SOURCES = ('arc_slow', 'b5', 'two_omega', 'modulation')
 
 
 def slow_timescale(geometry: Geometry, kinematics: Optional[Kinematics], b5_period_yr: float) -> List[Tuple[float, str]]:
@@ -4192,7 +4221,18 @@ def _filter_check(prep: Preprocessed, settings: Optional[AnalysisSettings]) -> C
     return CheckValue.PASS if holds else CheckValue.FAIL
 
 
-def _unmeasure(checks: Dict[str, CheckValue], margins: Dict[str, MarginValue], quantities) -> None:
+R0_KEPT = ('check_mmr_potential', 'R0')  # what an R0 read beside the guard's episode keeps (`r0_beside_guard`)
+
+
+def r0_beside_guard(energy: Optional[EnergyAnalysis], sensitivity) -> bool:
+    """R0 was read inside another episode than the one the filter guard compared (W34, `zone.episode_r0`): the guard's
+    change at 2 P_c is not that episode's, so it withdraws nothing of R0 (79653: R0 from ep0, the guard on ep1)."""
+    if energy is None or sensitivity is None or energy.r0_episode_id is None or sensitivity.decisive_episode_id is None:
+        return False
+    return energy.r0_episode_id != sensitivity.decisive_episode_id
+
+
+def _unmeasure(checks: Dict[str, CheckValue], margins: Dict[str, MarginValue], quantities, keep=()) -> None:
     """The checks and margins that read `quantities` (`preprocess.SENSITIVE_CHECKS`, `SENSITIVE_MARGINS`) become
     not_measured, keeping their numbers; a not_applicable one stays, and so does a failed margin (emptying it would
     raise the confidence: the guard only ever lowers it; 1221 1V-2E+1, O1 fail)."""
@@ -4203,15 +4243,15 @@ def _unmeasure(checks: Dict[str, CheckValue], margins: Dict[str, MarginValue], q
         names.update(SENSITIVE_CHECKS.get(quantity, ()))
         for margin_id in SENSITIVE_MARGINS.get(quantity, ()):
             margin = margins.get(margin_id)
-            if margin is not None and margin.margin not in (Margin.NOT_APPLICABLE, Margin.FAIL):
+            if margin_id not in keep and margin is not None and margin.margin not in (Margin.NOT_APPLICABLE, Margin.FAIL):
                 margins[margin_id] = MarginValue(Margin.NOT_MEASURED, margin.value, margin.margin_class)
-    for name in names:
+    for name in names - set(keep):
         if name in checks and checks[name] != CheckValue.NOT_APPLICABLE:
             checks[name] = CheckValue.NOT_MEASURED
 
 
 def apply_filter_sensitivity(
-    checks: Dict[str, CheckValue], margins: Dict[str, MarginValue], sensitivity, flags: Optional[List[str]] = None
+    checks: Dict[str, CheckValue], margins: Dict[str, MarginValue], sensitivity, flags: Optional[List[str]] = None, keep=()
 ) -> None:
     """DELTA 13a, in place: when a decisive number changes at the cutoff x2 (`preprocess.filter_sensitivity`),
     check_mmr_filter and the checks and margins that read the changed quantity become not_measured
@@ -4220,7 +4260,8 @@ def apply_filter_sensitivity(
     interval) the filter dependence is not checked: check_mmr_filter is not_measured and L8 at most thin (a far
     circulation's not_applicable L8 as well: only its step part is not graded).
     Here the guard sets how far the verdict can be trusted (confidence); the passed checks the tree itself reads were
-    withdrawn before it ran (`energy_for_tree`, W21 Q9)."""
+    withdrawn before it ran (`energy_for_tree`, W21 Q9). `keep`: checks and margin ids left as they are (`R0_KEPT`
+    when `r0_beside_guard`)."""
     if sensitivity is None:
         return
     if sensitivity.sensitive is None:
@@ -4236,7 +4277,7 @@ def apply_filter_sensitivity(
         flags.append(str(Flag.FILTER_SENSITIVE))
     if 'check_mmr_filter' in checks and checks['check_mmr_filter'] != CheckValue.NOT_APPLICABLE:
         checks['check_mmr_filter'] = CheckValue.NOT_MEASURED
-    _unmeasure(checks, margins, sensitivity.changed)
+    _unmeasure(checks, margins, sensitivity.changed, keep)
 
 
 # the checks the tree reads that the filter guard can withdraw (`preprocess.SENSITIVE_CHECKS`): check -> (the field of
@@ -4254,12 +4295,15 @@ def energy_for_tree(
     quantity it rests on changes at 2 P_c (`sensitivity.changed`) is not available to the tree (not_measured, a
     ledger entry names the guard); a failed one stays an objection: the guard only ever lowers the support. The
     energy itself is not changed (its columns and the margins keep the measured result; `apply_filter_sensitivity`
-    empties the published checks afterwards)."""
+    empties the published checks afterwards). An R0 read inside another episode than the one the guard compared
+    (`EnergyAnalysis.r0_episode_id`, W34) is not withdrawn by it."""
     from resonances.resonance.analysis.mmr.preprocess import SENSITIVE_CHECKS
 
     if energy is None or sensitivity is None or not sensitivity.sensitive:
         return energy, {}
     names = {name for quantity in sensitivity.changed for name in SENSITIVE_CHECKS.get(quantity, ())}
+    if r0_beside_guard(energy, sensitivity):
+        names -= set(R0_KEPT)
     withdrawn = tuple(
         name for name in TREE_ENERGY_CHECKS if name in names and getattr(energy, TREE_ENERGY_CHECKS[name][0]) == CheckValue.PASS
     )

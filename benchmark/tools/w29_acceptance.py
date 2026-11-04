@@ -37,8 +37,8 @@ FAMILIES = ('coorbital', 'mmr2', 'mmr3', 'secular', 'zlk')
 LIBRATING = ('resonant', 'transient', 'near_separatrix')
 LEVELS = ('', 'low', 'medium', 'high', 'certain')  # '' = no level (uncertain, invalid)
 GEOMETRY_NON_RESONANT = ('circulation', 'modulated_circulation', 'alias', 'no_resonant_potential')
-VETOES = ('owner', 'kinematic', 'forced_wave', 'strength', 'zlk_kinematic', 'zlk_free_e')
-ZLK_VETOES = ('zlk_kinematic', 'zlk_free_e')
+VETOES = ('owner', 'kinematic', 'forced_wave', 'strength', 'zlk_kinematic', 'zlk_free_e', 'zlk_integral')
+ZLK_VETOES = ('zlk_kinematic', 'zlk_free_e', 'zlk_integral')
 GATE_FLAGS = ('gate_unavailable', 'gate_disabled')
 POLICY_FLAGS = (
     'gate_unavailable',
@@ -53,7 +53,15 @@ POLICY_FLAGS = (
     'policy_unknown_leaf',
 )
 COMPARED = ('status', 'angle_status', 'confidence', 'reason', 'action', 'flags', 'caps')  # invariant 9
-NUMBER_COLUMNS = ('smp_span_yr', 'geo_n_tp_cut_half', 'geo_n_tp_cut_double', 'jump_times_yr', 'geo_window_t0_yr', 'geo_window_t1_yr')
+NUMBER_COLUMNS = (
+    'smp_span_yr',
+    'geo_n_tp_cut_half',
+    'geo_n_tp_cut_double',
+    'jump_times_yr',
+    'geo_window_t0_yr',
+    'geo_window_t1_yr',
+    'ep_n_tp',
+)
 # §10.7 b: the final runs a pre-label status may come from (plain W runs; never a probe, shadow or partial run)
 WHITELIST = re.compile(r'^v2-w\d+[a-z]?(-final)?(-secular-zlk)?$')
 CLEAR_MIN_CYCLES = 5.0  # §10.3 (a script constant, not a setting)
@@ -149,30 +157,45 @@ def parse_basis(basis: str) -> Dict[str, str]:
 
 # ------------------------------------------------------------------ the spec's tables, written out again
 
+FORCE_CHECKS = ('check_mmr_a_response', 'check_mmr_potential', 'check_mmr_strength')
+
 
 def level(status: str, basis: Dict[str, str], row, settings) -> str:
-    """§6: the level the policy must give `status` with this evidence ('' for uncertain and invalid)."""
+    """§6 with the W31 ladder: the level the policy must give `status` with this evidence ('' for uncertain and
+    invalid). The decisive episode's own cycles (n_TP - 1) / 2 come from `ep_n_tp` (N when it is not in the row)."""
     high, certain = _cycles(settings)
+    medium_n = float(getattr(settings, 'confidence_medium_cycles', 1.5))
+    core_n = float(getattr(settings, 'confidence_certain_core_cycles', certain))
     n, v = number(basis.get('N')), basis.get('V', '')
+    n = n if math.isfinite(n) else 0.0
+    tps = number(row.get('ep_n_tp'))
+    core = (tps - 1.0) / 2.0 if math.isfinite(tps) else n
     flags = set(items(row.get('flags')))
     if status in ('resonant', 'transient'):
-        if v == 'ambiguous':
+        if v == 'ambiguous' or n < medium_n:
             return 'low'
-        if n >= certain and basis.get('M') == 'full' and basis.get('S') == 'full' and v == 'clean':
-            return 'certain'
-        if n >= high and v in ('clean', 'partial'):
-            return 'high'
-        return 'medium'
+        full = basis.get('M') == 'full' and basis.get('S') == 'full' and v == 'clean'
+        if n >= certain and core >= core_n and full:
+            found = 'certain'
+        elif n >= high and v in ('clean', 'partial'):
+            found = 'high'
+        else:
+            found = 'medium'
+        # W33: an MMR row with none of L4, R0, F passing is at most CONFIDENCE_GEOMETRY_ONLY_MAX (read from the checks;
+        # a row without these columns predates W33)
+        recorded = [text(row.get(c)) for c in FORCE_CHECKS if c in row]
+        if text(row.get('resonance_type')) in ('', 'mmr') and recorded and 'pass' not in recorded:
+            limit = str(getattr(settings, 'confidence_geometry_only_max', 'low'))
+            found = min(found, limit, key=LEVELS.index)
+        return found
     if status == 'near_separatrix':
         return 'low' if v == 'ambiguous' else 'medium'
     if status == 'non_resonant':
         candidate = bool(items(row.get('candidate_episode_ids')))
         if text(row.get('veto')):
             thin = 'veto_thin' in flags or basis.get('veto_thin') == 'thin'
-            # W29 integration reading (RESULTS.md): a long-period vetoed episode is drawn as a candidate without the
-            # stability test (§4) and does not lower the level; only a stable MMR candidate does
-            candidate = candidate and family(row.get('example_id')) in ('coorbital', 'mmr2', 'mmr3')
-            return 'medium' if thin or 'second_capture_unresolved' in flags or candidate else 'high'
+            # W31 (the author): a measured veto is high; a drawn candidate no longer lowers it
+            return 'medium' if thin or 'second_capture_unresolved' in flags else 'high'
         if candidate:
             return 'medium'
         if text(row.get('reason')) != 'modulated_circulation':
@@ -229,7 +252,7 @@ def span_yr(row) -> float:
 
 
 def _cycles(settings) -> Tuple[float, float]:
-    return float(getattr(settings, 'confidence_high_cycles', 3)), float(getattr(settings, 'confidence_certain_cycles', 10))
+    return float(getattr(settings, 'confidence_high_cycles', 2)), float(getattr(settings, 'confidence_certain_cycles', 3))
 
 
 # ------------------------------------------------------------------ invariants (§10.2)
@@ -314,8 +337,10 @@ def _member_counts(row, members: Dict[str, float]) -> bool:
 def _zlk(row, flags, veto, status, bad) -> None:
     code = text(row.get('status_code'))
     gate_flag = bool(flags & set(GATE_FLAGS))
-    # the gate's <= medium is for a bounded angle the gate could not judge; a circulating row does not need the gate
-    if gate_flag and ((status in LIBRATING and text(row.get('confidence')) in ('high', 'certain')) or code == '-2'):
+    # the gate's <= medium is for a bounded angle the gate could not judge; a circulating row does not need the gate;
+    # W31 D2: kinematic_excluded (the e-i integral held, rho_max >= ZLK_RHO_KINEMATIC_EXCLUDED) lifts it
+    capped = gate_flag and 'kinematic_excluded' not in flags
+    if capped and ((status in LIBRATING and text(row.get('confidence')) in ('high', 'certain')) or code == '-2'):
         bad('7', f'gate flag with confidence {text(row.get("confidence"))!r}, code {code}')
     if (veto in ZLK_VETOES) != (code == '-2'):
         bad('7', f'veto {veto!r} against status_code {code}')
@@ -722,6 +747,7 @@ def run(args) -> int:
         held_rows.to_csv(out / 'held_out.csv', index=False)
         held = held_out(held_rows)
     gate = found.empty and bool(clear_per['pass'].all()) and bool((swaps['reason'].map(text) != '').all())
+    gate = gate and bool(held.get('expectation_holds', True))  # §10.6: no more held-out hard swaps than v2
     report = [
         '# W29 acceptance',
         '',

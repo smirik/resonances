@@ -55,7 +55,7 @@ FIGURES_DIR = DOCS / 'img' / 'figures'
 GALLERY_PAGE = DOCS / 'physics' / 'gallery.md'
 VERDICTS = GALLERY_DIR / 'verdicts.json'
 TOOLS = REPO / 'benchmark' / 'tools'
-SAVED_RUNS = {'mmr': 'v2-w29-final', 'long_period': 'v2-w29-final-secular-zlk'}  # under the benchmark data folder
+SAVED_RUNS = {'mmr': 'v2-w34a', 'long_period': 'v2-w34-secular-zlk'}  # under the benchmark data folder
 
 GALLERY_WIDTH_PX = 2000  # the verdict figures are 24 in wide: 83 dpi
 GALLERY_COLOURS = 256  # palette PNG: the figures are flat colours and text

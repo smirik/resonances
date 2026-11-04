@@ -229,7 +229,7 @@ prints as `unmapped check`.
 | `F` | strength plausible | required against theoretical strength |
 | `N` | not short of an episode | not one turning point short of an episode |
 | `F6` | forced wave of another angle | an episode removed as a forced wave |
-| `F6r` | unconfirmed ripple | a ripple below 45° whose identity fails, set aside on an unfinished slow swing |
+| `F6r` | unconfirmed ripple | a ripple below 45° whose identity does not pass, set aside on an unfinished slow swing |
 | `F7` | owner covers the episode | the owner's intervals cover the episode |
 | `C1` | centre passes whole revolutions | the largest centre pass |
 | `C2` | no reversals at any cutoff | no turning points at the three cutoffs |

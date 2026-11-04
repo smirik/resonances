@@ -76,7 +76,7 @@ def test_a_consistent_row_has_no_violation():
         (dict(veto='identity'), '3'),
         (dict(reason='modulated_circulation', status='non_resonant', confidence='high', n_cycles='2', geo_centre_max_pass_rev='0.4'), '3'),
         (dict(action='extend'), '4'),
-        (dict(pol_n_last='2.5', confidence_basis='N=2.5(episode);M=full;V=clean;S=full;veto=-', n_cycles='2.5', confidence='medium'), '4'),
+        (dict(pol_n_last='1.6', confidence_basis='N=1.6(episode);M=full;V=clean;S=full;veto=-', n_cycles='1.6', confidence='medium'), '4'),
         (dict(confidence='high'), '5'),
         (dict(caps='no_full_physics_support'), '5'),
         (dict(n_cycles='11'), '5'),
@@ -90,14 +90,14 @@ def test_each_invariant_catches_a_planted_violation(fields, invariant):
 
 
 def test_the_extend_clauses_recomputed_from_the_policy_columns():
-    """§5 by hand: an unfinished libration (N_last 2.5 < 3) at the end extends (A); with 5 cycles it does not; B: P_dec
+    """§5 by hand: an unfinished libration (N_last 1.5 < 2, W31) at the end extends (A); with 5 cycles it does not; B: P_dec
     20 kyr > 2 x 50 kyr / 3 = 33.3 kyr? no -> no extend; 40 kyr > 33.3 kyr -> extend; an end that circulates (1.2 rev)
     never extends; a start-edge feature (A1 with no ':end' leg) does not either."""
-    assert acc.extend_expected(row(pol_n_last='2.5'), S) == (True, 'A')
+    assert acc.extend_expected(row(pol_n_last='1.5'), S) == (True, 'A')
     assert acc.extend_expected(row(pol_n_last='5'), S) == (False, '')
     assert acc.extend_expected(row(pol_last_reaches_end='False', pol_period_dec_yr='20000'), S) == (False, '')
     assert acc.extend_expected(row(pol_last_reaches_end='False', pol_period_dec_yr='40000'), S) == (True, 'B')
-    assert acc.extend_expected(row(pol_n_last='2.5', pol_end_travel_rev='1.2'), S) == (False, '')
+    assert acc.extend_expected(row(pol_n_last='1.5', pol_end_travel_rev='1.2'), S) == (False, '')
     leg = row(pol_last_reaches_end='False', pol_extend_clause='A1', geo_leg_read='839-994:start:1/1:0.8:pass/pass')
     assert acc.extend_expected(leg, S) == (False, '')
     assert acc.extend_expected({**leg, 'geo_leg_read': '839-994:end:1/1:0.8:pass/pass'}, S) == (True, 'A1')
@@ -129,16 +129,21 @@ def test_an_alias_circulation_is_certain_on_c5_and_c2():
     assert acc.level('non_resonant', basis, row(**alias, mrg_C1='full', mrg_C2='full'), S) == 'high'
 
 
+NO_FORCE = {'check_mmr_a_response': 'not_measured', 'check_mmr_potential': 'fail', 'check_mmr_strength': 'not_measured'}
+
+
 @pytest.mark.parametrize(
     'status, basis, extra, level',
     [
         ('resonant', 'N=40(episode);M=full;V=clean;S=full;veto=-', {}, 'certain'),
         ('resonant', 'N=40(episode);M=thin;V=clean;S=full;veto=-', {}, 'high'),
-        ('resonant', 'N=9.5(episode);M=full;V=clean;S=full;veto=-', {}, 'high'),
+        ('resonant', 'N=9.5(episode);M=full;V=clean;S=full;veto=-', {}, 'certain'),  # W31: certain from 3 cycles
+        ('resonant', 'N=9.5(cover);M=full;V=clean;S=full;veto=-', {'ep_n_tp': '5'}, 'high'),  # 2 cycles in the episode
         ('resonant', 'N=3(episode);M=full;V=partial;S=thin;veto=-', {}, 'high'),
         ('resonant', 'N=40(episode);M=full;V=not_measured;S=full;veto=-', {}, 'medium'),
-        ('transient', 'N=2.5(episode);M=full;V=clean;S=full;veto=-', {}, 'medium'),
-        ('transient', 'N=0.5(leg);M=full;V=clean;S=full;veto=-', {}, 'medium'),
+        ('transient', 'N=2.5(episode);M=full;V=clean;S=full;veto=-', {}, 'high'),  # W31: high from 2 cycles
+        ('transient', 'N=1.6(episode);M=full;V=clean;S=full;veto=-', {}, 'medium'),
+        ('transient', 'N=0.5(leg);M=full;V=clean;S=full;veto=-', {}, 'low'),  # W30: below 1.5 cycles
         ('transient', 'N=40(episode);M=full;V=ambiguous;S=full;veto=-', {}, 'low'),
         ('near_separatrix', 'N=5(episode);M=thin;V=clean;S=full;veto=-', {}, 'medium'),
         ('non_resonant', 'N=4(episode);M=full;V=clean;S=full;veto=owner', {'veto': 'owner'}, 'high'),
@@ -147,6 +152,10 @@ def test_an_alias_circulation_is_certain_on_c5_and_c2():
         ('non_resonant', 'N=0(episode);M=not_measured;V=clean;S=full;veto=-', {'mrg_C1': 'full', 'mrg_C2': 'full'}, 'certain'),
         ('non_resonant', 'N=0(episode);M=not_measured;V=clean;S=full;veto=-', {'mrg_C1': 'full', 'mrg_C2': 'thin'}, 'high'),
         ('uncertain', '', {}, ''),
+        # W33 F: no force check passes (the identity is no force) -> at most low; a row without the columns predates it
+        ('resonant', 'N=40(episode);M=full;V=clean;S=full;veto=-', NO_FORCE, 'low'),
+        ('resonant', 'N=40(episode);M=full;V=clean;S=full;veto=-', {**NO_FORCE, 'check_mmr_potential': 'pass'}, 'certain'),
+        ('resonant', 'N=40(episode);M=full;V=clean;S=full;veto=-', {**NO_FORCE, 'resonance_type': 'secular'}, 'certain'),
     ],
 )
 def test_the_level_table(status, basis, extra, level):

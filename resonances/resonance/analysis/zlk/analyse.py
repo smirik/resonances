@@ -24,11 +24,15 @@ kyr, both < 1). The former median e_free / smallest smoothed forced radius stays
 The free elements are fitted over the whole record, so their verdict on a record that changes regime is the
 record's, not the episode's: 3752 (500 kyr) librates in one lobe, crosses to the other at 180 kyr and librates there,
 the gate finds a planetary residual (free omega winds 1.5 turns); 1866 (kinematic, not pinned) keeps its transient
-(2020 PP1 is an unfitted co-orbital, below). An episodic omega without a gate verdict is transient only when e and i
+(2020 PP1 is an unfitted co-orbital, below). W34 (`ZLK_GATE_EPISODES`, `omega_free_gate.episode_confirmation`): an
+episodic omega whose free omega winds over the record is read inside its librating episodes, where it is confirmed when
+the free omega stays put in every one (3752, 373136, 797204 at 500 kyr, 1866, 88899 500 kyr: 0.001-0.04 turns per
+cycle, rho >= 3). An episodic omega without a gate verdict is transient only when e and i
 trade at constant H inside its deciding episode (W28 D10, the author's q-1 E; ZLK_EPISODIC_NO_VERDICT): the gate
 callback measures that coupling (`episode_ei.measure_episode_coupling`, columns zlk_ei_episode_*) and passes it with
 the policy in the GateResult; 3752 (500 kyr: zlk in the 4.6-period episode) stays transient, 88899 (500 kyr: e and i
-in phase, H not conserved) becomes uncertain/gate_unavailable.
+in phase, H not conserved) becomes uncertain/gate_unavailable under v2 (the minimal policy: confirmed inside its
+episodes, the broken integral an objection, transient/low).
 
 Co-orbitals: a body inside the co-orbital region of a planet whose own modes the split does not fit (Mercury to Mars;
 ZLK_COORBITAL_HILL_FACTOR) gets the gate outcome unavailable (coorbital_unfitted_forcing): uncertain/gate_unavailable
@@ -117,6 +121,15 @@ def analyse_zlk(
             return GateResult(str(omega_free_gate.GateOutcome.NOT_APPLICABLE), episodic_policy=settings.zlk_episodic_no_verdict)
         period = decisive_period_yr(geometry, angle.decisive_episode_id)
         verdict = omega_free_gate.evaluate_gate(free_elements, period if np.isfinite(period) else None, config, coorbital)
+        pinning = _episode_pinning(free_elements, angle, geometry, settings)
+        if pinning and settings.zlk_gate_episodes:
+            verdict = omega_free_gate.episode_confirmation(
+                verdict,
+                free_elements,
+                pinning['rho_episodes_min'],
+                pinning['free_turns_episodes_max'],
+                settings.zlk_episode_free_turns_per_cycle,
+            )
         return GateResult(
             outcome=str(verdict.outcome),
             n_cycles=verdict.n_cycles,
@@ -133,7 +146,7 @@ def analyse_zlk(
             # episodic omega without a gate verdict under ZLK_EPISODIC_NO_VERDICT=ei, `decide_status`)
             episode_ei=measure_episode_coupling(series, decisive_librating_episode(geometry, angle.decisive_episode_id), settings),
             episodic_policy=settings.zlk_episodic_no_verdict,
-            **_episode_pinning(free_elements, angle, geometry, settings),
+            **pinning,
         )
 
     def centre_guard(slow_geometry, fine_geometry, ledger) -> str:
@@ -163,10 +176,11 @@ def analyse_zlk(
 
 
 def _episode_pinning(free_elements, angle: AngleDecision, geometry, settings: AnalysisSettings) -> dict:
-    """{rho_episodes, free_turns_episodes} of an episodic omega (`GateResult`): over its librating episodes the
-    largest median of |z_free| / |z_forced| inside one and the fewest turns of the free omega per cycle inside one
-    (`FreeElements.episode_pinning`: nan where the free elements do not measure an episode, which then pins nothing);
-    {} otherwise.
+    """{rho_episodes, free_turns_episodes, rho_episodes_min, free_turns_episodes_max} of an episodic omega
+    (`GateResult`): over its librating episodes the largest median of |z_free| / |z_forced| inside one and the fewest
+    turns of the free omega per cycle inside one (the kinematic pin), and the smallest median and the most turns (the
+    confirmation inside every episode, `omega_free_gate.episode_confirmation`) (`FreeElements.episode_pinning`: nan
+    where the free elements do not measure an episode, which then neither pins nor confirms); {} otherwise.
 
     A librating episode of the osculating omega while the free circle stays off the origin (median ratio < 1) and the
     free vector turns about the forced one once per cycle (a kinematic cycle: P_cyc is their beat; a dynamic one
@@ -190,7 +204,12 @@ def _episode_pinning(free_elements, angle: AngleDecision, geometry, settings: An
         rho, per_cycle = free_elements.episode_pinning(float(tp[0]), float(tp[-1]), float(tp[2 * cycles]), cycles)
         medians.append(rho)
         turns.append(per_cycle)
-    return {'rho_episodes': float(np.max(medians)), 'free_turns_episodes': float(np.min(turns))}
+    return {
+        'rho_episodes': float(np.max(medians)),
+        'free_turns_episodes': float(np.min(turns)),
+        'rho_episodes_min': float(np.min(medians)),
+        'free_turns_episodes_max': float(np.max(turns)),
+    }
 
 
 def _librating_period(geometry) -> float:

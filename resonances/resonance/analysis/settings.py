@@ -1070,6 +1070,14 @@ class AnalysisSettings:
         unit='deg',
         convention=True,
     )
+    separatrix_r0_episodes: bool = _setting(
+        True,
+        'SEPARATRIX_R0_EPISODES',
+        'bool',
+        'R0 not measured over the record (one V_E pooled over every cycle mixes regimes) is read inside each accepted '
+        'episode with two disjoint full cycles, at its own period and frame, thresholds unchanged; lift-only: pass when '
+        'some episode passes and none fails (W34, 79653 3M+3J-7 ep0)',
+    )
     mmr_force_window_cycles: float = _setting(
         3.5, 'MMR_FORCE_WINDOW_CYCLES', 'float', 'force-law fit window in cycles (phase defined, force ~ constant)'
     )
@@ -1318,12 +1326,44 @@ class AnalysisSettings:
         'passing at slope/c 1.00)',
         convention=True,
     )
+    mmr_forced_wave_background: bool = _setting(
+        True,
+        'MMR_FORCED_WAVE_BACKGROUND',
+        'bool',
+        'W31 (the author, three B): an accepted episode below MMR_A_RESPONSE_MIN_AMP_DEG is a forced wave when, at its '
+        'own period, the envelopes of sigma and a inside it stay within the band the same steady wave shows around it '
+        '(`mmr.background_wave`): a libration adds its own swing, a forced wave runs on unchanged. Every counted '
+        'episode forced: veto forced_wave; some: they leave the count. Not for a 1:1 angle',
+    )
+    mmr_forced_wave_reference_periods: float = _setting(
+        12.0,
+        'MMR_FORCED_WAVE_REFERENCE_PERIODS',
+        'float',
+        'the background of the forced-wave test reaches this many of the episode\'s periods on each side (6 also took '
+        '2010 TU54, 30 lost 46596 ep 8 and 719 ep 3: the W31 measurement)',
+        convention=True,
+    )
+    mmr_forced_wave_min_reference_periods: float = _setting(
+        4.0,
+        'MMR_FORCED_WAVE_MIN_REFERENCE_PERIODS',
+        'float',
+        'the background of the forced-wave test must hold at least this many periods outside every accepted run, else ' 'not measured',
+        convention=True,
+    )
+    mmr_forced_wave_envelope_quantile: float = _setting(
+        0.9,
+        'MMR_FORCED_WAVE_ENVELOPE_QUANTILE',
+        'float',
+        'the band of the background wave\'s envelope the episode must stay in: its quantiles 1 - q and q, widened by '
+        'CONFIDENCE_THIN_BAND',
+        convention=True,
+    )
     mmr_ripple_on_arc: bool = _setting(
         True,
         'MMR_RIPPLE_ON_ARC',
         'bool',
         'W28 B6b: an accepted episode with half-amplitude below MMR_A_RESPONSE_MIN_AMP_DEG (L4 and R0 not measurable) '
-        'whose identity is measured and fails, on a record whose slow centre turns back once or twice within one '
+        'whose identity does not pass (fails or not measured), on a record whose slow centre turns back once or twice within one '
         'revolution (an unfinished slow swing), is an unconfirmed ripple, no episode of the angle (episodes.csv '
         'forced_wave unconfirmed_ripple): G5a/G6 read the slow centre (insufficient_time, extend). Never a record-'
         'covering episode nor a 1:1 angle; a real small libration keeps its passing identity (2004 YG1 9M-10J-4)',
@@ -1649,6 +1689,16 @@ class AnalysisSettings:
         'str',
         "owner phase test: 'multiplet' = where the single phi0 drifts, fit phi_o + j (varpi - varpi_P), j from 0 to -p, with "
         "constant coefficients (R^2 >= MMR_OWNER_R2_MIN, coefficient coherence >= MMR_OWNER_PHI0_COH_MIN); 'single' = phi0 only",
+    )
+    mmr_owner_short_window_cycles: float = _setting(
+        2.0,
+        'MMR_OWNER_SHORT_WINDOW_CYCLES',
+        'float',
+        'owner search: when sigma has fewer than MMR_FORCE_MIN_WINDOWS windows of MMR_FORCE_WINDOW_CYCLES x P inside '
+        'the band-pass edges (owner_too_few_windows: ~9.25 P of record), the search is run again with force windows of '
+        'this many cycles (2 x 1.5 + 4 trimmed = 7 P of record), flag owner_short_windows; a multiplet keeps its '
+        'modulation-period windows; 0 = off (W33, the author and Codex: 385533 7N-12 over 8.1 P)',
+        convention=True,
     )
     mmr_owner_cover_min: float = _setting(
         0.5,
@@ -2028,7 +2078,8 @@ class AnalysisSettings:
         0.94,
         'MMR_L8_GAIN_FULL',
         'float',
-        'L8 full: filter gain at the cycle period >= this; below it the libration is filter_too_slow (shape checks not_measured)',
+        'L8 full: filter gain at the cycle period >= this; below it, read with CONFIDENCE_THIN_BAND of its ratio (0.911), the '
+        'libration is filter_too_slow (shape checks not_measured)',
     )
     mmr_l8_gain_fail: float = _setting(0.5, 'MMR_L8_GAIN_FAIL', 'float', 'L8 fails: filter gain at the cycle period below this')
     mmr_c1_rev_full: float = _setting(
@@ -2231,6 +2282,15 @@ class AnalysisSettings:
         'libration cycle, so a free circle that grows in a part of the record is seen',
         convention=True,
     )
+    zlk_rho_kinematic_excluded: float = _setting(
+        3.0,
+        'ZLK_RHO_KINEMATIC_EXCLUDED',
+        'float',
+        'minimal policy (W30, D1/D2): rho_max at or above this excludes the kinematic mechanism (the forced vector '
+        'cannot hold the perihelion: a non-resonant forced e is <= ~0.1, the free one three times larger); there a '
+        'failed e-i integral is a veto and a held one with no gate verdict is full evidence (no cap, no extension)',
+        convention=True,
+    )
     zlk_episode_free_turns_per_cycle: float = _setting(
         0.5,
         'ZLK_EPISODE_FREE_TURNS_PER_CYCLE',
@@ -2240,6 +2300,15 @@ class AnalysisSettings:
         'free vector about the forced one (P_cyc is their beat), a dynamic one leaves the free omega librating (0); '
         'the midpoint (624 Hektor: 0.94-1.0, real ZLK episodes of the benchmark below 0.34 turns in all)',
         convention=True,
+    )
+    zlk_gate_episodes: bool = _setting(
+        True,
+        'ZLK_GATE_EPISODES',
+        'bool',
+        'an episodic omega whose free omega winds over the record (gate kinematic or planetary_residual) is judged inside '
+        'its librating episodes: confirmed when in every one the median local rho is >= 1 and the free omega advances '
+        'fewer than ZLK_EPISODE_FREE_TURNS_PER_CYCLE turns per cycle, with b_varpi and b_Omega off the g and s modes '
+        '(between the episodes the osculating omega circulates, so the record always winds; W34, 88899 500 kyr)',
     )
     zlk_coorbital_hill_factor: float = _setting(
         3.0,
@@ -2381,8 +2450,16 @@ class AnalysisSettings:
     confidence_thin_band: float = _setting(
         0.1, 'CONFIDENCE_THIN_BAND', 'float', 'margin U: a decision within this relative distance of a convention'
     )
+    confidence_medium_cycles: float = _setting(
+        1.5,
+        'CONFIDENCE_MEDIUM_CYCLES',
+        'float',
+        'minimal policy: complete libration cycles N a resonant or transient row needs for medium; fewer (one closed '
+        'cycle, a single 1:1 leg) is low, the angle bounded too briefly to call its libration established',
+        convention=True,
+    )
     confidence_high_cycles: float = _setting(
-        3.0,
+        2.0,
         'CONFIDENCE_HIGH_CYCLES',
         'float',
         'minimal policy: complete libration cycles N a resonant or transient row needs for high (with the vetoes '
@@ -2391,11 +2468,30 @@ class AnalysisSettings:
         convention=True,
     )
     confidence_certain_cycles: float = _setting(
-        10.0,
+        3.0,
         'CONFIDENCE_CERTAIN_CYCLES',
         'float',
         'minimal policy: complete libration cycles N for certain, with the amplitude margin full, the filter stable and '
-        'every veto measured clean',
+        'every veto measured clean (the same for every resonance type: two returns carry the same information at any '
+        'period; W31, Codex review and the author)',
+        convention=True,
+    )
+    confidence_certain_core_cycles: float = _setting(
+        3.0,
+        'CONFIDENCE_CERTAIN_CORE_CYCLES',
+        'float',
+        'minimal policy: certain also needs this many observed cycles (n_TP - 1) / 2 inside the decisive episode itself, '
+        'so that inferred edge coverage or a sum of short episodes alone never gives the top level',
+        convention=True,
+    )
+    confidence_geometry_only_max: str = _setting(
+        'low',
+        'CONFIDENCE_GEOMETRY_ONLY_MAX',
+        'str',
+        "minimal policy: the highest level of a resonant or transient MMR row whose own force is not shown: none of "
+        'the force law on a (L4, the 1:1 law), the energy/period law (R0) and the strength (F) passes. The a<->sigma '
+        'identity holds for any orbit, so the geometry alone shows a bounded angle, not a resonant force (W33, the '
+        "author and Codex); 'certain' = no limit",
         convention=True,
     )
     # --- Policy ---------------------------------------------------------------------------------
@@ -2480,6 +2576,7 @@ CHOICES = {
     'dryrun_fair': ('optional', 'required'),
     'zlk_angle_frame': ('invariable', 'ecliptic'),
     'zlk_episodic_no_verdict': ('ei', 'uncertain', 'keep'),
+    'confidence_geometry_only_max': ('low', 'medium', 'high', 'certain'),
     'classifier_policy': ('minimal', 'v2'),
 }
 
@@ -2497,6 +2594,7 @@ ORDERED_PAIRS = (
     ('dryrun_pilot_min_yr', 'dryrun_pilot_max_yr'),
     ('mmr_strength_mp_guard_digits', 'mmr_strength_mp_dps'),
     ('mmr_owner_potential_scale_full', 'mmr_owner_potential_scale_max'),
+    ('confidence_medium_cycles', 'confidence_high_cycles'),
     ('confidence_high_cycles', 'confidence_certain_cycles'),
 )
 # (smaller, larger): the first must not exceed the second

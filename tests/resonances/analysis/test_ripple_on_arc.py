@@ -110,10 +110,13 @@ def test_a_small_libration_whose_identity_holds_stays():
     assert (decision.angle_status, decision.rule, decision.episode_id) == (AngleStatus.EPISODIC, 'G2', run.episode_id)
 
 
-def test_an_unmeasured_identity_is_no_failure():
+def test_an_unmeasured_identity_confirms_nothing_either():
+    """W32 (the author's 2002 BG card C): a ripple whose identity cannot be measured (one cycle) is as unconfirmed as
+    one whose identity fails; only a passing identity keeps a small run an episode of the angle."""
     angle, geometry = swing_record()
     (run,) = [r for r in geometry.runs if r.accepted]
-    assert set_aside(angle, geometry, [response_of(run, CheckValue.NOT_MEASURED)]) == ()
+    (wave,) = set_aside(angle, geometry, [response_of(run, CheckValue.NOT_MEASURED)])
+    assert wave.ripple and wave.episode_id == run.episode_id
 
 
 def test_at_45_degrees_and_above_a_swing_is_never_a_ripple():

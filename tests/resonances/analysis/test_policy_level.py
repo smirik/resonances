@@ -1,7 +1,9 @@
 """W29 minimal policy: the level from the evidence (`policy.level`) and the cycle count N (`policy.episode_cycles`).
 
-Every expected level is read off the table of the spec (§6) by hand for the defaults CONFIDENCE_HIGH_CYCLES = 3 and
-CONFIDENCE_CERTAIN_CYCLES = 10; every N is counted by hand from the turning points and the edge gaps."""
+Every expected level is read off the table of the spec (§6) by hand for the defaults CONFIDENCE_MEDIUM_CYCLES = 1.5,
+CONFIDENCE_HIGH_CYCLES = 2, CONFIDENCE_CERTAIN_CYCLES = 3 and CONFIDENCE_CERTAIN_CORE_CYCLES = 3 (W31: the Codex
+review's common ladder, the author's 'даже 3-5 циклов достаточно для certain'); every N is counted by hand from the
+turning points and the edge gaps."""
 
 import itertools
 import math
@@ -20,19 +22,20 @@ C, H, M, L = Confidence.CERTAIN, Confidence.HIGH, Confidence.MEDIUM, Confidence.
 
 
 def ev(n, margin=policy.M_FULL, veto_state=policy.V_CLEAN, stable=True, **fields):
+    fields.setdefault('core_cycles', n)  # one decisive episode holds every cycle unless a test says otherwise
     return policy.Evidence(n_cycles=n, margin=margin, veto_state=veto_state, stable=stable, **fields)
 
 
 @pytest.mark.parametrize(
     'n, margin, veto_state, stable, expected',
     [
-        (0.5, policy.M_FULL, policy.V_CLEAN, True, M),  # half a cycle (a 1:1 leg): medium
-        (1.0, policy.M_FULL, policy.V_CLEAN, True, M),
+        (0.5, policy.M_FULL, policy.V_CLEAN, True, L),  # half a cycle (a 1:1 leg): below 1.5, low
+        (1.0, policy.M_FULL, policy.V_CLEAN, True, L),  # one closed cycle: below CONFIDENCE_MEDIUM_CYCLES
         (1.5, policy.M_FULL, policy.V_CLEAN, True, M),
-        (2.5, policy.M_FULL, policy.V_CLEAN, True, M),  # TX1: 2.5 < 3
-        (3.0, policy.M_FULL, policy.V_CLEAN, True, H),  # exactly the high count
-        (9.5, policy.M_FULL, policy.V_CLEAN, True, H),
-        (10.0, policy.M_FULL, policy.V_CLEAN, True, C),  # exactly the certain count, all clean
+        (1.9, policy.M_FULL, policy.V_CLEAN, True, M),
+        (2.0, policy.M_FULL, policy.V_CLEAN, True, H),  # exactly the high count
+        (2.5, policy.M_FULL, policy.V_CLEAN, True, H),  # secular 339 (2.54 cycles over 10 Myr)
+        (3.0, policy.M_FULL, policy.V_CLEAN, True, C),  # exactly the certain count, all clean
         (40.0, policy.M_FULL, policy.V_CLEAN, True, C),
         (40.0, policy.M_THIN, policy.V_CLEAN, True, H),  # no amplitude margin: high, not certain
         (40.0, policy.M_FULL, policy.V_CLEAN, False, H),  # the filter not stable
@@ -48,6 +51,12 @@ def test_librating_levels_follow_the_table(n, margin, veto_state, stable, expect
         assert policy.level(status, ev(n, margin, veto_state, stable), SETTINGS) == expected
 
 
+def test_certain_needs_its_cycles_inside_the_decisive_episode():
+    # secular 518: N 3.09 with the covered edges, but 5 turning points = 2 observed cycles in the episode: high
+    assert policy.level(Status.RESONANT, ev(3.09, core_cycles=2.0), SETTINGS) == H
+    assert policy.level(Status.RESONANT, ev(3.09, core_cycles=3.0), SETTINGS) == C
+
+
 def test_near_separatrix_uncertain_and_invalid():
     assert policy.level(Status.NEAR_SEPARATRIX, ev(40.0), SETTINGS) == M
     assert policy.level(Status.NEAR_SEPARATRIX, ev(40.0, veto_state=policy.V_AMBIGUOUS), SETTINGS) == L
@@ -60,7 +69,7 @@ def test_the_non_resonant_ladder():
     assert policy.level(nr, ev(NAN, veto='owner'), SETTINGS) == H  # a full veto
     assert policy.level(nr, ev(NAN, veto='owner', veto_thin=True), SETTINGS) == M  # 624, GK3
     assert policy.level(nr, ev(NAN, veto='owner', second_capture=True), SETTINGS) == M
-    assert policy.level(nr, ev(NAN, veto='strength', candidate=True), SETTINGS) == M  # a stable candidate drawn
+    assert policy.level(nr, ev(NAN, veto='strength', candidate=True), SETTINGS) == H  # a measured cause (W30: 285637)
     assert policy.level(nr, ev(NAN, candidate=True), SETTINGS) == M  # a leg, a half-swing, a near-episode
     assert policy.level(nr, ev(NAN, circulation_clear=True), SETTINGS) == C  # C1 and C2 full (32929)
     assert policy.level(nr, ev(NAN), SETTINGS) == H  # a drift or any other circulation
@@ -78,7 +87,9 @@ def test_the_level_never_falls_as_n_rises():
 
 
 def test_the_cycle_counts_follow_the_settings():
-    stricter = AnalysisSettings(classifier_policy='minimal', confidence_high_cycles=5.0, confidence_certain_cycles=20.0)
+    stricter = AnalysisSettings(
+        classifier_policy='minimal', confidence_high_cycles=5.0, confidence_certain_cycles=20.0, confidence_certain_core_cycles=20.0
+    )
     assert policy.level(Status.RESONANT, ev(4.0), stricter) == M
     assert policy.level(Status.RESONANT, ev(12.0), stricter) == H
     with pytest.raises(ValueError):

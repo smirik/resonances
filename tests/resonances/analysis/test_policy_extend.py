@@ -46,11 +46,11 @@ def libration_at_end(n_tp, **fields):
 
 
 def test_a_libration_reaching_the_end_with_few_cycles_extends():
-    # 6 TPs: 2.5 cycles + the covered end gap 0.1 = 2.6 < 3
-    v = policy.apply_mmr(libration_at_end(6), MINIMAL).verdict
-    assert v.pol_n_last == pytest.approx(2.6) and v.pol_last_reaches_end is True
+    # 4 TPs: 1.5 cycles + the covered end gap 0.1 = 1.6 < CONFIDENCE_HIGH_CYCLES 2
+    v = policy.apply_mmr(libration_at_end(4), MINIMAL).verdict
+    assert v.pol_n_last == pytest.approx(1.6) and v.pol_last_reaches_end is True
     assert (v.action, v.pol_extend_clause) == (Action.EXTEND, 'A')
-    # next check: span + (3 - 2.6) -> max(.., 1) x P = 4400 yr, at least MMR_EXTEND_MIN_SPAN_FACTOR x T = 8000, rounded
+    # next check: span + (2 - 1.6) -> max(.., 1) x P, at least MMR_EXTEND_MIN_SPAN_FACTOR x T = 8000, rounded
     assert v.extend_to_years is not None and np.isfinite(v.extend_to_years) and v.extend_to_years >= 2 * SPAN
 
 
@@ -171,3 +171,32 @@ def test_the_veto_clause_needs_a_bounded_end_and_a_named_length():
     assert not policy.veto_beyond_budget(16000.0, SPAN, MINIMAL, end)
     assert not policy.veto_beyond_budget(float('nan'), SPAN, MINIMAL, end)
     assert not policy.veto_beyond_budget(1.0e9, SPAN, MINIMAL, circulating)
+
+
+@pytest.mark.parametrize(
+    'source, estimate, expected',
+    [
+        # by hand: span 4000 + max(2 - 1.6, 1) x 400 = 4400 < MMR_EXTEND_MIN_SPAN_FACTOR x T = 8000 -> 8000
+        (None, None, 8000.0),
+        # a slow swing seen in part asks for its own slow cycles (the author, W30 epext B): 12 000 -> round_up 20 000
+        ('arc_slow', 12000.0, 20000.0),
+        ('two_omega', 12000.0, 20000.0),
+        # capped at MMR_NEXT_CHECK_SPAN_FACTOR x T = 16 000, rounded up to 20 000
+        ('arc_slow', 30000.0, 20000.0),
+        # a baseline from the libration's own turning points is no slow swing: the deciding period decides
+        ('tp_spacing', 12000.0, 8000.0),
+    ],
+)
+def test_a_slow_swing_baseline_sets_the_next_check(source, estimate, expected):
+    baseline = None
+    if source is not None:
+        baseline = make(
+            models.Baseline,
+            required_yr=estimate,
+            extend_to_years=estimate,
+            check=CheckValue.FAIL,
+            period_yr=estimate / 3,
+            period_source=source,
+        )
+    v = policy.apply_mmr(libration_at_end(4, baseline=baseline), MINIMAL).verdict
+    assert (v.action, v.extend_to_years) == (Action.EXTEND, expected)

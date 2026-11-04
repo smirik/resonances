@@ -72,6 +72,7 @@ I_MODES = ('s6', 's7', 's8')
 DEFAULT_MIN_CYCLES = 3.0
 MAX_MASKED_FRACTION = 0.5
 COORBITAL_UNFITTED = 'coorbital_unfitted_forcing'
+EPISODES = 'episodes'  # confirmed inside the librating episodes of an episodic omega (`episode_confirmation`)
 PLANET_ORDER = ('Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune')
 
 
@@ -158,6 +159,31 @@ def _modes_fitted(index: int, elements: FreeElements) -> bool:
     covered_i = set(elements.basis_i) | set(elements.dropped_i) | {label for group in elements.clusters_i for label in group}
     s_label = 'const' if index == 5 else f's{index}'
     return f'g{index}' in covered_e and s_label in covered_i
+
+
+def episode_confirmation(
+    verdict: OmegaFreeGate, elements: Optional[FreeElements], rho_min: float, turns_max: float, turns_limit: float
+) -> OmegaFreeGate:
+    """The verdict of an episodic omega read inside its librating episodes (W34, the author on 88899 500 kyr).
+
+    Between its episodes an episodic omega circulates, so its free omega winds over the record whatever happens inside
+    them, and the record's verdict (kinematic or planetary_residual on the winding branch) says nothing about the
+    episodes. Inside them the test is the confirmation branch's: in every librating episode the free vector is the
+    longer one (median local rho_min >= 1, so the osculating omega is the free one's) and the free omega advances fewer
+    than `turns_limit` turns per whole cycle (`FreeElements.episode_pinning`; a forced cycle advances one), and
+    b_varpi, b_Omega stay off the g and s modes -> confirmed, detail `EPISODES`; a residual there -> planetary_residual.
+    nan (an episode the free elements do not measure) keeps the record's verdict."""
+    if elements is None or elements.librates or verdict.outcome not in (GateOutcome.KINEMATIC, GateOutcome.PLANETARY_RESIDUAL):
+        return verdict
+    if not (rho_min >= 1.0 and turns_max < turns_limit):
+        return verdict
+    g_targets, s_targets = _confirmation_targets(elements, elements.frequencies)
+    close = _close('b_varpi', elements.b_varpi, g_targets, elements.resolution) + _close(
+        'b_Omega', elements.b_Omega, s_targets, elements.resolution
+    )
+    if close:
+        return _residual(close, verdict.n_cycles)
+    return OmegaFreeGate(GateOutcome.CONFIRMED, n_cycles=verdict.n_cycles, detail=EPISODES)
 
 
 def coorbital_planet(semi_major_axis: float, elements: Optional[FreeElements], hill_factor: float) -> str:

@@ -262,6 +262,8 @@ class EnergyAnalysis:
     permutation_p: float = float('nan')
     sigma_only: CheckValue = CheckValue.NOT_MEASURED  # R0 sigma-only (geometry)
     with_slow: CheckValue = CheckValue.NOT_MEASURED  # R0 with a (physics: check_mmr_potential)
+    # W34: the accepted episode whose own R0 lifted a record-pooled not_measured (`zone.episode_r0`); None otherwise
+    r0_episode_id: Optional[int] = None
     # the 1:1 law (mmr coorbital.CoorbitalLaw) R0 with a was read from (`response.with_coorbital_potential`); None for
     # the harmonic V_E ~ V_F test. The figure prints R0 from it, so the number shown is the one that decided
     potential_law: Optional[Any] = None
@@ -393,6 +395,7 @@ class EnergyAnalysis:
             'sep_permutation_method': PERMUTATION_METHOD if finite_p else '',
             'sep_R0_sigma_only': str(self.sigma_only),
             'sep_R0_with_a': str(self.with_slow),
+            'sep_R0_episode_id': self.r0_episode_id,
             'sep_flags': join_list(self.flags),
             'sep_modulation_source': self.modulation_source,
             'sep_frame': self.frame,

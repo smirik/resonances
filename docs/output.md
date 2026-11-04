@@ -198,6 +198,10 @@ column: all main).
 (`n_counted_episodes` in summary.csv, drawn solid in the figure), or a candidate it drew faint and did not count (a
 vetoed episode that keeps its turning points at every cutoff, a near-episode run); empty under the policy `v2`. A
 counted or candidate 1:1 leg or half-swing is no run: it appears only in summary.csv (`leg`, `half`).
+`bw_outcome` (`forced`, `own`, `not_measured`), `bw_reason`, `bw_sigma_hi`, `bw_sigma_lo`, `bw_a_hi`, `bw_reference_P`
+(W31, MMR runs below 45°): the forced-wave test against the episode's background, the median envelope inside over
+the outside quantiles; `forced` takes the run out of the count, and when it is every counted run the row is
+non_resonant by the veto `forced_wave`.
 
 ## candidates.csv
 

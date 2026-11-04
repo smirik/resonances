@@ -22,13 +22,26 @@ everything; a policy layer (`resonance/analysis/policy.py`) then re-reads the fi
    `near_separatrix`, circulation → `non_resonant`. A drift whose slow centre passes ≥ one own revolution →
    `non_resonant`/`modulated_circulation`, less → `uncertain`. insufficient_time → `uncertain`, or
    `non_resonant`/`circulation` when the record ends in circulation ($\sigma_f$ travels ≥ one own revolution after the
-   last turning point of an accepted or candidate run). One own revolution is $2\pi$, $\pi$ for a ZLK $\omega$.
+   last turning point of an accepted or candidate run). One own revolution is $2\pi$, for a ZLK $\omega$ too (W30:
+   the half-turn symmetry of the quadrupole's $\cos 2\omega$ is not general; ZLK runs still break at half a turn).
+   The geometry alone names no mechanism: a secular or ZLK libration is `geometric_libration`/`geometric_episode`,
+   origin unknown, unless a confirmed ZLK gate makes it dynamic.
 2. **Only a measured contradiction vetoes** a bounded angle (column `veto`): an owner that induces the episode (step
    2), a kinematic origin (step 3, K2, K3s), a two-body strength from the disturbing function far below the need
-   (5s), the ZLK gate measured kinematic on a libration, or the free $e$ below the forced $e$ (`zlk_free_e`). Every
+   (5s; the angle's word is then circulation or drift: no run is its libration), every counted episode below 45° being
+   the forced wave its background carries (`forced_wave`, W31: at the episode's own period the envelopes of
+   $\sigma$ and $a$ inside stay within the band the same steady wave shows within `MMR_FORCED_WAVE_REFERENCE_PERIODS`
+   periods around it; a libration adds its own swing; some such episodes leave the count; 2012 KL9; runs found forced
+   join the background of the others; when the slow centre passes less than a revolution the drift rule decides
+   instead: `uncertain` / `drift`), the ZLK gate measured kinematic on a libration, the free $e$ below the forced $e$ over the record
+   (`zlk_free_e`; inside every episode or with an undefined free phase only when the $e$–$i$ integral is broken too),
+   or the $e$–$i$ exchange of the deciding ZLK episode breaking $\sqrt{1-e^2}\cos i$ where the forced terms are small,
+   $\rho_{\max} \ge$ `ZLK_RHO_KINEMATIC_EXCLUDED` (`zlk_integral`; with larger forced terms it is an objection,
+   `ei_integral_not_held`; [Secular and ZLK](secular-zlk.md#zlk-free-omega)). Every
    other leaf that moved a status (5a, 5b, 5e, 5f, 5g, 5o, 5x, 5n, 5s three-body, 5s*, 2j, a ZLK gate without a
    verdict) gives the geometry's status back with a flag: `measured_objection` and `strength_scale_implausible` set
-   the level to low, `gate_unavailable`/`gate_disabled` to at most medium. A veto within `CONFIDENCE_THIN_BAND` of
+   the level to low, `gate_unavailable`/`gate_disabled` to at most medium (not when the integral holds and
+   $\rho_{\max} \ge$ `ZLK_RHO_KINEMATIC_EXCLUDED`: flag `kinematic_excluded`, no cap, no extension). A veto within `CONFIDENCE_THIN_BAND` of
    its threshold still moves the status, at medium (`veto_thin`).
 3. **The level from the evidence** ([Confidence](confidence.md#minimal-policy)); no caps.
 4. **Everything else is a flag**: every W28 cap, zone, owner, subresonance and edge mark. The alias (C5) and the
@@ -39,8 +52,10 @@ everything; a policy layer (`resonance/analysis/policy.py`) then re-reads the fi
    needed veto not measured for lack of length (flag `veto_needs_length`: MMR L4 short of force windows, a ZLK gate
    `short_window`/`planetary_residual`) whose record `pol_veto_need_yr` is within the next-check budget
    `MMR_NEXT_CHECK_SPAN_FACTOR`$\,T$ (`C`, extend to that record). Never when the record ends in circulation (column
-   `pol_extend_clause`). A needed veto beyond the budget (1981 Midas: ~70 Myr on 1 Myr) keeps the flag and goes to
-   review.
+   `pol_extend_clause`). A needed veto beyond the budget keeps the flag and goes to review. The length asked for is
+   the next check of the deciding period's missing cycles, at least of the baseline's estimate when that is a slow
+   swing seen in part (`base_period_source` arc_slow, b5, two_omega, modulation: its slow cycles; the author, W30
+   epext B), within `MMR_NEXT_CHECK_SPAN_FACTOR`$\,T$ (523683 2U-9: 400 kyr, three slow cycles of 112 kyr).
 6. **Episodes**: the figure and `n_counted_episodes` show only the counted episodes; candidates are drawn faint.
    One clean 1:1 leg (G4c) is a transient of half a cycle; a half-swing between passages (G4h) is a candidate of a
    circulation; an end-edge one extends.
@@ -111,11 +126,13 @@ when the period that decides already fits the record (`base_cause`): more time w
 *A ripple on an unfinished slow swing* (rule `ripple_on_arc`, `MMR_RIPPLE_ON_ARC`) does not stop G6. An accepted
 episode is set aside before G2, as an *unconfirmed ripple* (`forced_wave` = `unconfirmed_ripple`), when its
 half-amplitude stays below `MMR_A_RESPONSE_MIN_AMP_DEG` = 45° (there neither the force law nor $V_E pprox V_F$ can be
-measured), its identity is measured and fails, and the slow centre turns back once or twice within one revolution
+measured), its identity does not pass (fails, or cannot be measured on so few cycles: nothing confirms it), and the slow centre turns back once or twice within one revolution
 (fewer than three turns: no full slow cycle). A record-covering episode and a 1:1 angle are never set aside; a real small
 libration keeps its passing identity. G6 then counts only the turning points outside the ripples; with none the slow
 centre decides: one turn → the G5a arc, else `arc` or `stall` by its range. 2004 YG1 9M-10J-4 over 20 kyr: a 3° ripple
-at the turn of a 281° slow swing → `uncertain` / `insufficient_time` (`arc`), extend to 50 kyr.
+at the turn of a 281° slow swing → `uncertain` / `insufficient_time` (`arc`), extend to 50 kyr; 2002 BG 1E-10S-1 over
+20 kyr: a 2° 735-yr ripple (identity not measured) at the one turn of a 1.68-rad slow swing → the same, extend to
+50 kyr (the slow swing's baseline, W33) (over 100 kyr its centre drifts 1.6 revolutions: non_resonant).
 
 *A slow swing in the resonance's own well* (rule G5w, `slow_swing_in_well`, `MMR_SLOW_SWING_IN_WELL`).
 A drift needs a centre that keeps going: G5a already reads one slow turn back as an arc. With two turns the record holds
@@ -167,6 +184,8 @@ $T_{0,\text{th}}$ = 112 yr, a 105-yr libration over 20 kyr → `resonant` / `lib
   - a clean leg cut by the record edge whose observed turn reflects → `uncertain / baseline_needed`, angle word
     `insufficient_time`, action `extend`;
   - both turns are kicks → the circulation below, with the cap `near_episode` (1991 VG: out/in 0.61 and 1.59);
+    a turn that would reflect but for a zone within `CONFIDENCE_THIN_BAND` above `MMR_COORBITAL_TURN_ZONE_MAX` is no
+    kick: `uncertain / one_coorbital_leg`, review (W31, the author; 2020 FN3: zones 1.11 and 1.15 against 1.1);
   - no leg at all (one reflection between passages, 2008 EZ84) → the circulation below, unchanged.
 
   The strongest outcome among the legs decides (transient > uncertain > extend > near-episode). The legs of an

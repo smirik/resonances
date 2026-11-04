@@ -57,9 +57,11 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   finished v2 analysis: status from the geometry (`LEAVES`/`HANDLERS` map every `rec_rule` of `mmr.decide`; a new
   leaf needs a mapping, `test_policy_mapping` fails otherwise; the single 1:1 legs are read only on G4c and rule C,
   `LEG_RULES`: beside an accepted episode a leg is no evidence; rule 5s's strength marks count again where the veto is
-  not upheld), non_resonant only by a measured veto (owner, kinematic,
+  not upheld, also as Episode rows for N: `_countable`; a status the policy moves re-reads the header's orbit type), non_resonant only by a measured veto (owner, kinematic,
   strength two-body, ZLK kinematic or free e < forced e; thin -> medium + `veto_thin`), the level `policy.level` from
-  N/M/V/S (no caps: every cap becomes a flag, `confidence_raw = confidence`, `cell_*` blank, `review_reasons` without
+  N/M/V/S/F (N < `CONFIDENCE_MEDIUM_CYCLES` low; W33 F: an MMR row with none of L4, R0, F passing is at most
+  `CONFIDENCE_GEOMETRY_ONLY_MAX`, the identity is no force; S = L1 full and no `filter_sensitive`; a subresonance parent's N is
+  `(member)`; no caps: every cap becomes a flag, `confidence_raw = confidence`, `cell_*` blank, `review_reasons` without
   caps), the action through one extend predicate (`extend_clause`; clause C, author Q5: a `veto_needs_length` row whose
 `pol_veto_need_yr` fits `MMR_NEXT_CHECK_SPAN_FACTOR` x T extends to it, beyond it review; an alias with C5 and C2 full
 is certain, Q18), `PolicyResult` (counted and candidate episodes)
@@ -125,7 +127,8 @@ is certain, Q18), `PolicyResult` (counted and candidate episodes)
   holds a minimum of the run window's averaged potential to within the run's TP prominence (`cycle_wells`; XO3's
   transitional cycles miss by 4-8° at 11°, BB2's drift past L5 by 7-25° at 4°) and its cycle centres stay within one
   turn; two ACCEPTED neighbours join across a half-cycle below pi that does not circulate (`_join_in_wells`; a rejected
-  neighbour never: that is C8's residence, joining it moved TY11/277617/SZ2/PN/BT8/AP1); no regime cut for 1:1 with the
+  neighbour never: that is C8's residence, joining it moved TY11/277617/SZ2/PN/BT8/AP1), or across a swing of one
+  compound well whose facing centres differ by < π (`_compound_swing`, W31: 439908 20 kyr); no regime cut for 1:1 with the
   model. `coorbital_marks` (end of `finish_geometry`, needs the jumps) writes `Episode.wells` ('qs>compound>horseshoe')
   and `Episode.marks` (`well_change@t0:t1`, `amplitude_change@t0:t1`, `kick@t`; episodes.csv); a run of several wells
   gets shape REGIME_CHANGE (a horseshoe band holds a QS band: 164207), `FloorWell.holds` reads any of its cycle centres

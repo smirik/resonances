@@ -225,7 +225,7 @@ It judges every $\omega$ that stays within a turn (`libration`, `episodic`, `dri
 | angle_status | confirmed | kinematic | no verdict |
 |---|---|---|---|
 | libration | resonant / dynamic_libration (check `pass`) | non_resonant / kinematic_libration, origin `kinematic`, detail `free_omega_winds` (check `fail`) | uncertain / gate_unavailable, origin `unknown` |
-| episodic | unchanged | non_resonant / kinematic_libration **only if** $\rho_{\max} < 1$ or every episode pinned (below), else unchanged | transient only if $e$ and $i$ trade at constant $H$ inside the deciding episode, else uncertain / gate_unavailable (below) |
+| episodic | unchanged (also when confirmed inside its episodes, below) | non_resonant / kinematic_libration **only if** $\rho_{\max} < 1$ or every episode pinned (below), else read inside the episodes | transient only if $e$ and $i$ trade at constant $H$ inside the deciding episode, else uncertain / gate_unavailable (below) |
 | drift, insufficient_time | unchanged | non_resonant / kinematic_libration **only if** $\rho_{\max} < 1$, else unchanged | unchanged |
 
 With `FREE_GATE_ENABLED` off the outcome is `disabled` and the geometry's status stands. On a record that does not
@@ -257,6 +257,18 @@ for one to three cycles wherever the free radius dips just below the forced one 
 record; 0.94 turns per cycle at least): non_resonant, episodic, kinematic. The real ZLK transients of the benchmark
 have 3.0–13.7 and at most 0.04.
 
+**The gate inside the episodes** (W34, `ZLK_GATE_EPISODES`). Between its episodes an episodic $\omega$ circulates, so
+its free $\omega$ winds over the record whatever it does inside them, and the record's outcome (`kinematic`, or a
+`planetary_residual` on the winding branch: over 500 kyr some $g_j - s_k$ always lies within a width of $b_\omega$)
+says nothing about the episodes. Such a row is read inside its librating episodes with the confirmation test: in every
+one the free vector is the longer one (median $\rho \ge 1$, column `zlk_gate_rho_episodes_min`) and the free $\omega$
+advances fewer than `ZLK_EPISODE_FREE_TURNS_PER_CYCLE` turns per cycle (`zlk_gate_free_turns_episodes_max`), and
+$b_\varpi$, $b_\Omega$ stay off the $g$ and $s$ modes → `confirmed`, `zlk_gate_detail` = `episodes`; a residual at a
+mode → `planetary_residual`; an episode the free elements do not measure keeps the record's outcome. 88899 over
+500 kyr: 3.0 turns over the record, 0.005 turns per cycle and $\rho \ge 8.2$ inside both episodes → confirmed; its
+$e$–$i$ integral is not held there, an objection (transient/low, flag `ei_integral_not_held`). 1866, 373136, 3752 and
+797204 (500 kyr) are confirmed the same way (origin dynamic).
+
 `kinematic_libration` is a measurement and `gate_unavailable` the absence of one: keep them apart
 ([legacy codes](status-tree.md#legacy-integer-codes)). A co-orbital of a planet whose own modes the split does not
 fit (Mercury to Mars) gets no verdict (`unavailable`, detail `coorbital_unfitted_forcing`): `uncertain` /
@@ -284,6 +296,27 @@ others at least 0.58); `forced_beat` the same in phase with $K$; `none`; `not_me
 373136, 3752 and 797204 over 500 kyr stay transient ($\eta_H$ 0.05–0.23 over 4.6–8 periods); 88899 over 500 kyr
 ($e$ and $i$ out of antiphase, $\eta_H$ 1.2) and 797204 over 100 kyr and 2023 RS2 (deciding episodes of 1.5 and 2.4
 periods) become uncertain. The record's coupling (`zlk_ei_coupling`) stays a column.
+
+**Under the minimal policy** (the default; the table above is the v2 tree's, `CLASSIFIER_POLICY=v2`; W30, the
+author 2026-11-03 after two literature reviews): the quadrupole problem, its integral thresholds ($h^2 < 3/5$, $c_1$,
+Kozai's 39.2°) and its half-turn symmetry hold only for a hierarchical, axisymmetric perturber, outside their domain
+for main-belt and planet-crossing asteroids (Gronchi & Milani 1999; Gallardo et al. 2012); none of them decides. The
+geometry of $\omega$ gives the status (one revolution is $2\pi$), and the physics reads two measurements on the
+deciding episode:
+
+- the **$e$–$i$ integral** above, measured on every bounded $\omega$ (a libration too): broken (measured, not `zlk`)
+  where the forced terms are small, $\rho_{\max} \ge$ `ZLK_RHO_KINEMATIC_EXCLUDED` (3, a convention: a non-resonant
+  forced $e$ is at most ~0.1), is a veto, non_resonant / kinematic_libration, detail `ei_integral_not_held` (88899 over
+  500 kyr, $\eta_H$ 1.24, $\rho_{\max}$ 13); with larger forced terms it is an objection (flag
+  `ei_integral_not_held`, level low), since the forcing itself breaks $\sqrt{1-e^2}\cos i$;
+- the **forced vector**: a gate `kinematic` on a libration, or $\rho_{\max} < 1$ over the record, is a veto
+  (`zlk_kinematic`, `zlk_free_e`); the per-episode pin (a median) and an undefined free phase veto only together with a
+  broken integral (624 Hektor: $\eta_H$ 1.04), otherwise they are objections.
+
+A gate without a verdict keeps the geometry's status with the flag `gate_unavailable` at most medium, except when the
+integral holds and $\rho_{\max} \ge$ `ZLK_RHO_KINEMATIC_EXCLUDED`: the forced vector cannot hold the perihelion, so
+the abstention (1981 Midas: its free node near $s_6$) is no cap and asks no extension (flag `kinematic_excluded`). Only
+a `confirmed` gate names a dynamic origin; otherwise the reason is `geometric_libration`/`geometric_episode`.
 
 **The scale.** The gate's period is that of the deciding librating episode (the covering one, or the one with the most
 turning points; `sec_decisive_period_yr`), and `zlk_gate_n_cycles` = $T/P$ counts cycles of the osculating $\omega$.

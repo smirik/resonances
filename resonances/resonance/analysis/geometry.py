@@ -1719,6 +1719,7 @@ def libration_image(
     period_floor_yr: float,
     floor_prominence_rad: float,
     settings: AnalysisSettings,
+    floor_band: float = 0.0,
 ) -> np.ndarray:
     """lowpass(x, P_c) - lowpass(x, P_floor) on the samples of every libration run, 0 elsewhere [rad, signed]: what
     the run's own oscillation x leaves in `fast_part`.
@@ -1751,7 +1752,9 @@ def libration_image(
     for run in split_runs(turning, settings):
         times = vertices[run]
         periods = times[2:] - times[:-2]
-        if len(run) < settings.libration_min_turning_points or not len(periods) or float(np.median(periods)) < period_floor_yr:
+        # a conventional floor: a run within `floor_band` below it is no faster wave (W31, 2001 WK15: 142.9 yr / 150)
+        floor = period_floor_yr * (1.0 - floor_band)
+        if len(run) < settings.libration_min_turning_points or not len(periods) or float(np.median(periods)) < floor:
             continue
         index = np.asarray(turning.indices, int)[run]
         lo, hi = max(int(index[0]) - margin, 0), min(int(index[-1]) + margin, len(t) - 1)
@@ -3135,10 +3138,11 @@ def _join_in_wells(
     """Rule coorbital_well_cut, joins (W28 C7): two accepted neighbouring runs of a 1:1 angle, the second starting at
     the turning point after the first's last, are one episode when the half-cycle between them crosses no separatrix
     (its half-amplitude stays below `tp.break_half_amplitude_rad` and neither sigma_f nor the orbit-averaged raw angle
-    covers a turn on it, `_half_cycle_circulates`) and the joined run is accepted, by the band test or in the wells
-    (`_accept_in_wells`). `split_runs` breaks a 1:1 run where the next regime is slower (a half-period above
-    libration_episode_gap_factor x the run's: 469219 1E-1, a quasi-satellite of 19-yr half-cycles 24-257 yr, then a
-    horseshoe of 130-yr ones from 426 yr) or where its centre jumps by more than pi; neither is a separatrix. A
+    covers a turn on it, `_half_cycle_circulates`), or it is a swing of one compound well (`_compound_swing`, W31), and
+    the joined run is accepted, by the band test or in the wells (`_accept_in_wells`). `split_runs` breaks a 1:1 run
+    where the next regime is slower (a half-period above libration_episode_gap_factor x the run's: 469219 1E-1, a
+    quasi-satellite of 19-yr half-cycles 24-257 yr, then a horseshoe of 130-yr ones from 426 yr) or where its centre
+    jumps by more than pi; neither is a separatrix. A
     rejected neighbour is never joined (its stretch is no measured libration: C8's residence). Ids are renumbered from
     `first_id` in time order; a join adds COORBITAL_WELL_CUT to `fired`. Unchanged without `coorbital_wells`."""
     accepted = [episode for episode in episodes if episode.accepted]
@@ -3159,8 +3163,10 @@ def _join_in_wells(
             if (
                 i is not None
                 and j == i + 1
-                and abs(values[j] - values[i]) / 2 < limit
-                and not _half_cycle_circulates(angle, times[i], times[j], averaged)
+                and (
+                    (abs(values[j] - values[i]) / 2 < limit and not _half_cycle_circulates(angle, times[i], times[j], averaged))
+                    or _compound_swing(values, i, j)
+                )
             ):
                 run = np.arange(index[float(left.tp_times_yr[0])], index[float(episode.tp_times_yr[-1])] + 1)
                 candidate = _classify_run(left.episode_id, tp, run, record, settings, window)
@@ -3176,6 +3182,19 @@ def _join_in_wells(
     if fired is not None:
         fired.add(rules.Rule.COORBITAL_WELL_CUT)
     return [replace(episode, episode_id=first_id + k) for k, episode in enumerate(out)]
+
+
+def _compound_swing(values: np.ndarray, i: int, j: int) -> bool:
+    """W31 (the author, 439908 1M-1 20 kyr): the large half-cycle between turning points i and i + 1 of a 1:1 angle is
+    a swing of one compound well (horseshoe <-> quasi-satellite), not a passage, when the centres of the half-cycles
+    facing it (the mean of turning points i - 1, i and of i + 1, i + 2, unwrapped) differ by less than pi: a passage
+    to the next well or a circulation moves the centre by a turn or by the L4-L5 separation (268-719 deg on the 14 other
+    joined co-orbital pairs; 42 deg on 439908)."""
+    if i < 1 or j + 1 >= len(values):
+        return False
+    left = (values[i - 1] + values[i]) / 2.0
+    right = (values[j] + values[j + 1]) / 2.0
+    return bool(abs(right - left) < np.pi)
 
 
 def amplitude_changes(

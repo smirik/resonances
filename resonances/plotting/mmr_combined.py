@@ -619,10 +619,23 @@ def episode_spans(runs, record: Tuple[float, float], settings=None) -> Dict[int,
         reach = 0.25 * run.period_med_yr if is_finite(getattr(run, 'period_med_yr', None)) else 0.0
         low = 0.5 * (ordered[i - 1].t_end_yr + run.t_start_yr) if i > 0 else record[0]
         high = 0.5 * (run.t_end_yr + ordered[i + 1].t_start_yr) if i + 1 < len(ordered) else record[1]
-        start = record[0] if start_edge else run.t_start_yr - reach
-        end = record[1] if end_edge else run.t_end_yr + reach
+        start = _covered_to(run, record, -1) if start_edge else run.t_start_yr - reach
+        end = _covered_to(run, record, +1) if end_edge else run.t_end_yr + reach
         spans[run.episode_id] = (max(start, low, record[0]), min(end, high, record[1]))
     return spans
+
+
+def _covered_to(run, record: Tuple[float, float], side: int) -> float:
+    """How far a covered edge is filled: to the record's edge, unless the covered gap (in the run's periods) ends more
+    than a period before it, at the cut that opened the run's window (a confirmed jump of a: 439908 1M-1 20 kyr was
+    filled across 13.6 kyr of circulation before its capture)."""
+    period = getattr(run, 'period_med_yr', NAN)
+    gap = getattr(run, 'coverage_start_gap_p' if side < 0 else 'coverage_end_gap_p', NAN)
+    edge = record[0] if side < 0 else record[1]
+    if not (is_finite(period) and is_finite(gap)):
+        return edge
+    reached = run.t_start_yr - gap * period if side < 0 else run.t_end_yr + gap * period
+    return edge if abs(reached - edge) <= period else reached
 
 
 def induced_episode_ids(analysis: MMRAnalysis) -> frozenset:
@@ -818,9 +831,9 @@ def shade_policy_runs(
     """(a) under the minimal policy (W29 SPEC §7): the counted runs filled and labelled '#id' (with `labels`, e.g.
     ' wave'; '/' before the last jump of a, '\\' induced) over their `episode_spans` among the drawn runs (`record`,
     `window` in yr: the fill reaches a covered record edge, `fill_counted`), a counted leg (`marks.counted_spans`)
-    labelled 'leg'; candidates (`marks.candidates` over their turning points, `marks.candidate_spans`) faint and
-    dashed, labelled 'cand' and not numbered; nothing for any other run. A counted run in `labelled` gets no '#id'
-    here (`draw_run_labels` writes it). Returns the fill spans [yr] of the counted runs."""
+    labelled 'leg'; candidates (`marks.candidates` over their
+    turning points, `marks.candidate_spans`) faint and dashed, labelled 'cand' and not numbered; nothing for any other
+    run. A counted run in `labelled` gets no '#id' here (`draw_run_labels` writes it). Returns the fill spans [yr] of the counted runs."""
     labels = labels or {}
     drawn = [run for run in runs if run.episode_id in marks.counted or run.episode_id in marks.candidates]
     spans = episode_spans(drawn, record, settings)
@@ -1191,7 +1204,8 @@ def _shade_policy_episodes(ax, frame: _Frame, layout: VerdictFigureLayout, marks
     geometry = frame.analysis.geometry
     record = (float(frame.t[0]), float(frame.t[-1]))
     counted = [run for run in geometry.runs if run.episode_id in marks.counted]
-    forced = wave_labels(geometry)
+    # a strength mark the policy does not uphold is the angle's episode again (2012 KL9): no ' forced (strength)'
+    forced = {eid: words for eid, words in wave_labels(geometry).items() if not (eid in marks.counted and words == STRENGTH_WAVE_LABEL)}
     bracketed = [run for run in counted if len(getattr(run, 'subregimes', ())) >= 2]
     probe = episode_spans([run for run in geometry.runs if run.episode_id in marks.counted | marks.candidates], record, frame.settings)
     pieces = residence_pieces(counted, probe, record)
@@ -3252,10 +3266,19 @@ def _episodes_window_low(geometry, runs, t, angle) -> float:
     return _circular_mean(values) - np.pi
 
 
-def _portrait_episodes(accepted) -> list:
-    """The PORTRAIT_MAX_EPISODES longest accepted runs, in time order (the episodes of (l))."""
-    longest = sorted(accepted, key=lambda run: run.t_start_yr - run.t_end_yr)[:PORTRAIT_MAX_EPISODES]
-    return sorted(longest, key=lambda run: run.t_start_yr)
+def _portrait_episodes(accepted, counted: Optional[frozenset] = None) -> list:
+    """The PORTRAIT_MAX_EPISODES longest accepted runs, in time order (the episodes of (l)); with the minimal
+    policy's `counted` ids its counted episodes first."""
+    counted = counted or frozenset()
+    longest = sorted(accepted, key=lambda run: (run.episode_id not in counted, run.t_start_yr - run.t_end_yr))
+    return sorted(longest[:PORTRAIT_MAX_EPISODES], key=lambda run: run.t_start_yr)
+
+
+def _policy_tag(episode_id, marks: PolicyMarks) -> str:
+    """' cand' / ' not counted' for an accepted run the minimal policy does not count, '' for a counted one."""
+    if episode_id in marks.counted:
+        return ''
+    return ' cand' if episode_id in marks.candidates else ' not counted'
 
 
 def portrait_window_low(analysis: MMRAnalysis) -> Optional[float]:
@@ -3268,7 +3291,8 @@ def portrait_window_low(analysis: MMRAnalysis) -> Optional[float]:
     accepted = accepted_runs(geometry)
     if accepted:
         t, angle = np.asarray(prep.t_yr, dtype=float), np.asarray(prep.angle_f, dtype=float)
-        return _episodes_window_low(geometry, _portrait_episodes(accepted), t, angle)
+        marks = policy_marks(analysis)
+        return _episodes_window_low(geometry, _portrait_episodes(accepted, marks.counted if marks is not None else None), t, angle)
     t = np.asarray(prep.t_yr, dtype=float)
     mask = (t >= prep.window[0]) & (t <= prep.window[1])
     return _window_low(geometry.centre.centre_rad if geometry is not None else np.asarray(prep.angle_f)[mask])
@@ -3344,8 +3368,10 @@ def draw_episode_portrait(
     turning point dashed; one colour per episode (the colours of (a)); a forced wave is labelled '#id wave', a run the
     status does not count '#id < floor', as on (a); the label's times are the turning points'. `low`: the lower edge of the 360-degree window [rad]
     (`portrait_window_low`, shared with (k)); default: around the episodes. `settings`/`record`: as for
-    `episode_spans` (the figure passes its own)."""
-    _bottom_title(ax, '(l) accepted episodes', layout)
+    `episode_spans` (the figure passes its own). Under the minimal policy (`policy_marks`) the counted episodes come
+    first and solid; an accepted run it does not count is dashed, '#id cand' or '#id not counted' (138537)."""
+    marks = policy_marks(analysis)
+    _bottom_title(ax, '(l) accepted episodes' if marks is None else '(l) episodes, counted solid', layout)
     prep, geometry = analysis.prep, analysis.geometry
     if _aliased(analysis):
         _empty(ax, _alias_reason(analysis), layout, crossed=True)
@@ -3358,7 +3384,7 @@ def draw_episode_portrait(
         _empty(ax, 'no accepted episode', layout)
         return
     colours = episode_colours(geometry.runs)
-    chosen = _portrait_episodes(accepted)
+    chosen = _portrait_episodes(accepted, marks.counted if marks is not None else None)
     waves = wave_labels(geometry)  # '#id wave', 'forced (strength)', 'ripple', as on (a): no episode of the angle
     induced = induced_episode_ids(analysis)  # '#id induced', hatched on (a)
     uncounted = uncounted_tags(geometry)  # '#id < floor', grey on (a): the status does not count it (W28 C11)
@@ -3371,9 +3397,13 @@ def draw_episode_portrait(
     shown = []
     for run in chosen:
         colour = colours.get(run.episode_id, EPISODE_COLOURS[0])
-        label = f'#{run.episode_id}' + waves.get(run.episode_id, '')
+        counted = marks is not None and run.episode_id in marks.counted
+        label = f'#{run.episode_id}' + ('' if counted else waves.get(run.episode_id, ''))
         label += INDUCED_LABEL if run.episode_id in induced else ''
-        label += uncounted.get(run.episode_id, '')
+        if marks is None:
+            label += uncounted.get(run.episode_id, '')
+        elif counted or run.episode_id not in waves:  # a wave's label already says it is not the angle's
+            label += _policy_tag(run.episode_id, marks)
         label += f' {run.t_start_yr / divisor:.4g}–{run.t_end_yr / divisor:.4g} {unit}'
         label += ' (before jump)' if run.before_last_jump else ''
         pieces = portrait_pieces(run, portrait_span(run, spans, prep.window), tp.times_yr, tp.kinds)
@@ -3383,7 +3413,8 @@ def draw_episode_portrait(
             x = np.degrees(_wrap_window(angle[mask], low))
             y = rate[mask].copy()
             y[1:][np.abs(np.diff(x)) > 180] = np.nan
-            look = PORTRAIT_EXTENSION_STYLE if extended else PORTRAIT_CORE_STYLE
+            faint = marks is not None and run.episode_id not in marks.counted
+            look = PORTRAIT_EXTENSION_STYLE if extended or faint else PORTRAIT_CORE_STYLE
             ax.plot(x, y, color=colour, label=label if n == labelled else None, rasterized=True, **look)
             if n == 0 and len(x):
                 ax.plot(x[:1], y[:1], 'o', ms=3, color=colour)

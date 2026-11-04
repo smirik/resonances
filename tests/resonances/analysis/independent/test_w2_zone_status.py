@@ -158,12 +158,25 @@ def test_filter_guard_without_a_period():
 
 
 def test_filter_guard_follows_the_setting():
-    # the guard is G(P_cyc) < MMR_L8_GAIN_FULL: with 0.99, G(3000; 1000) = 1 / (1 + 3^-4) = 0.9878 is too slow,
-    # G(4000; 1000) = 1 / (1 + 4^-4) = 0.9961 is not; at the default 0.94 neither is
+    # the guard is MMR_L8_GAIN_FULL read with the 10 % thin band of its ratio (W32): with 0.99 the full ratio is
+    # (1/0.99 - 1)^-1/4 = 3.1543, the thin one 2.8389, G = 1 / (1 + 2.8389^-4) = 0.98484; G(2700; 1000) =
+    # 1 / (1 + 2.7^-4) = 0.98153 is too slow, G(3000; 1000) = 1 / (1 + 3^-4) = 0.98780 is not; at the default 0.94
+    # neither is
     s = settings_from_config(mmr_l8_gain_full=0.99)
-    assert preprocess.filter_guard(3000.0, 1000.0, s)[0]
-    assert not preprocess.filter_guard(4000.0, 1000.0, s)[0]
-    assert not preprocess.filter_guard(3000.0, 1000.0, SETTINGS)[0]
+    assert preprocess.gain_too_slow(s) == pytest.approx(0.98484, abs=1e-5)
+    assert preprocess.filter_guard(2700.0, 1000.0, s)[0]
+    assert not preprocess.filter_guard(3000.0, 1000.0, s)[0]
+    assert not preprocess.filter_guard(2700.0, 1000.0, SETTINGS)[0]
+
+
+def test_filter_guard_reads_a_thin_margin_of_the_convention_as_kept():
+    # default 0.94 -> ratio (1/0.94 - 1)^-1/4 = 1.9895, x 0.9 = 1.7905, G = 1 / (1 + 1.7905^-4) = 0.91134; a 143-yr
+    # libration at P_c = 75 yr (2001 WK15 32E-39) keeps G = 1 / (1 + (75/143)^4) = 0.92966 >= 0.912: not too slow,
+    # though below 0.94; at 130 yr G = 1 / (1 + (75/130)^4) = 0.90024 is
+    assert preprocess.gain_too_slow(SETTINGS) == pytest.approx(0.91134, abs=1e-5)
+    flag, gain = preprocess.filter_guard(143.0, 75.0, SETTINGS)
+    assert not flag and gain == pytest.approx(0.92966, abs=1e-5)
+    assert preprocess.filter_guard(130.0, 75.0, SETTINGS)[0]
 
 
 @pytest.mark.parametrize('period_over_cutoff', [1.5, 2.0, 4.0])

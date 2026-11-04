@@ -11,9 +11,11 @@ import pytest
 
 from resonances.data.const import PLANETARY_FREQUENCIES
 from resonances.resonance.omega_free_gate import (
+    EPISODES,
     SUMMARY_COLUMNS,
     GateOutcome,
     _confirmation_targets,
+    episode_confirmation,
     evaluate_gate,
     summary_fields,
 )
@@ -134,6 +136,80 @@ class TestDemotion:
         assert elements.b_Omega == pytest.approx(abs(PLANETARY_FREQUENCIES['s7']), rel=0.05)
         assert not any('b_Omega~s7' in match for match in gate.matches)
         assert gate.outcome is GateOutcome.KINEMATIC
+
+
+class TestEpisodes:
+    """An episodic omega circulates between its episodes, so its free omega winds over the record whatever it does
+    inside them (W34, 88899 500 kyr: 3 turns over the record, 0.005 turns per cycle inside both episodes). Inside the
+    episodes the confirmation branch's test applies: the free vector the longer one, the free omega not advancing a
+    turn per cycle, b_varpi and b_Omega off the g and s modes."""
+
+    LIMIT = 0.5  # ZLK_EPISODE_FREE_TURNS_PER_CYCLE
+
+    def _winding_at_a_combination(self, times):
+        # the record's free omega winds at g6 - s6 (a planetary_residual on the winding branch, as 88899's b_omega
+        # matches g5 - s7 ...), while b_varpi = g6 - s6 - 20 and b_Omega = -20 arcsec/yr match no g or s mode
+        combination = PLANETARY_FREQUENCIES['g6'] - PLANETARY_FREQUENCIES['s6']
+        z_e = _wave(times, 0.03, PLANETARY_FREQUENCIES['g5']) + _wave(times, 0.20, combination - 20.0)
+        z_i = _wave(times, 0.02, PLANETARY_FREQUENCIES['s6']) + _wave(times, 0.30, -20.0)
+        return _decompose(z_e, z_i, times)
+
+    def test_a_winding_record_pinned_inside_every_episode_is_confirmed(self, times, config):
+        elements = self._winding_at_a_combination(times)
+        record = evaluate_gate(elements, P_LIB, config)
+        assert record.outcome is GateOutcome.PLANETARY_RESIDUAL
+
+        gate = episode_confirmation(record, elements, rho_min=8.2, turns_max=0.005, turns_limit=self.LIMIT)
+
+        assert gate.outcome is GateOutcome.CONFIRMED
+        assert gate.detail == EPISODES
+        assert gate.n_cycles == record.n_cycles
+
+    def test_a_kinematic_record_pinned_inside_every_episode_is_confirmed(self, times, config):
+        z_e = _wave(times, 0.03, PLANETARY_FREQUENCIES['g5']) + _wave(times, 0.20, 130.0)
+        z_i = _wave(times, 0.02, PLANETARY_FREQUENCIES['s6']) + _wave(times, 0.30, -20.0)
+        elements = _decompose(z_e, z_i, times)
+        record = evaluate_gate(elements, P_LIB, config)
+        assert record.outcome is GateOutcome.KINEMATIC
+
+        assert episode_confirmation(record, elements, 3.0, 0.04, self.LIMIT).outcome is GateOutcome.CONFIRMED
+
+    @pytest.mark.parametrize(
+        'rho_min, turns_max',
+        [
+            (8.2, 0.94),  # the free omega advances about a turn per cycle in one episode (624 Hektor: 0.94-1.0)
+            (0.9, 0.005),  # in one episode the forced vector is the longer one: the osculating omega is not the free one's
+            (float('nan'), 0.005),  # an episode the free elements do not measure confirms nothing
+        ],
+    )
+    def test_the_record_verdict_stays_unless_every_episode_is_pinned(self, times, config, rho_min, turns_max):
+        elements = self._winding_at_a_combination(times)
+        record = evaluate_gate(elements, P_LIB, config)
+
+        assert episode_confirmation(record, elements, rho_min, turns_max, self.LIMIT) is record
+
+    def test_a_residual_at_a_mode_still_withholds_the_episodes(self, times, config):
+        # b_varpi at g8: what is confined inside the episodes could be the unsubtracted g8 line
+        z_e = _wave(times, 0.03, PLANETARY_FREQUENCIES['g5']) + _wave(times, 0.20, PLANETARY_FREQUENCIES['g8'])
+        z_i = _wave(times, 0.02, PLANETARY_FREQUENCIES['s6']) + _wave(times, 0.30, 130.0)
+        elements = _decompose(z_e, z_i, times)
+        record = evaluate_gate(elements, P_LIB, config)
+        assert not elements.librates
+
+        gate = episode_confirmation(record, elements, 5.0, 0.01, self.LIMIT)
+
+        assert gate.outcome is GateOutcome.PLANETARY_RESIDUAL
+        assert any('b_varpi~g8' in match for match in gate.matches)
+
+    def test_a_record_that_confirms_or_withholds_for_other_reasons_is_left_alone(self, times, config):
+        elements = _decompose(*_librator(times), times)
+        record = evaluate_gate(elements, P_LIB, config)
+        assert record.outcome is GateOutcome.CONFIRMED
+
+        assert episode_confirmation(record, elements, 5.0, 0.01, self.LIMIT) is record
+        short = evaluate_gate(elements, BASELINE, config)
+        assert short.outcome is GateOutcome.SHORT_WINDOW
+        assert episode_confirmation(short, elements, 5.0, 0.01, self.LIMIT) is short
 
 
 class TestPreconditions:

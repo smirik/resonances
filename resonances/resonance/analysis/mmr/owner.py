@@ -254,6 +254,7 @@ REASON_POTENTIAL_UNCONFIRMED = 'potential_unconfirmed'  # mmr_owner_potential_co
 FLAG_NO_LONGITUDES = 'owner_no_longitudes'
 FLAG_NO_PERIOD = 'owner_no_period'
 FLAG_TOO_FEW_WINDOWS = 'owner_too_few_windows'
+FLAG_SHORT_WINDOWS = 'owner_short_windows'  # measured on mmr_owner_short_window_cycles windows (W33)
 FLAG_UNWRAP_FAILED = 'owner_unwrap_failed'
 FLAG_SEARCH_OFF = 'owner_search_off'
 FLAG_RETROGRADE = 'owner_retrograde'
@@ -1750,6 +1751,22 @@ def _not_searched(series: MMRSeries, settings: AnalysisSettings) -> Optional[Own
 
 
 def run_owner(
+    series: MMRSeries, prep: Preprocessed, context: Context, period_cycle_yr: float, settings: AnalysisSettings, **where
+) -> OwnerResult:
+    """The owner search (`search_owner`); when sigma has too few force windows of mmr_force_window_cycles x P
+    (owner_too_few_windows), the search again with windows of mmr_owner_short_window_cycles x P, flag
+    owner_short_windows (W33, 385533 7N-12 over 8.1 P). Only the owner's windows change: the response, the geometry and
+    a multiplet's modulation-period windows keep theirs."""
+    found = search_owner(series, prep, context, period_cycle_yr, settings, **where)
+    short = settings.mmr_owner_short_window_cycles
+    if FLAG_TOO_FEW_WINDOWS not in found.flags or not 0 < short < settings.mmr_force_window_cycles:
+        return found
+    found = search_owner(series, prep, context, period_cycle_yr, replace(settings, mmr_force_window_cycles=short), **where)
+    found.flags.append(FLAG_SHORT_WINDOWS)
+    return found
+
+
+def search_owner(
     series: MMRSeries,
     prep: Preprocessed,
     context: Context,

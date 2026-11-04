@@ -76,6 +76,7 @@ from resonances.resonance.analysis.filtering import is_finite
 from resonances.resonance.analysis.geometry import Geometry
 from resonances.resonance.analysis.ledger import Ledger, Margin, Op
 from resonances.resonance.analysis.rules import Rule, fire
+from resonances.resonance.analysis.mmr import background_wave as background_wave_module
 from resonances.resonance.analysis.mmr import centre_track as centre_track_module
 from resonances.resonance.analysis.mmr import context as context_module, coorbital as coorbital_module, coorbital_geometry
 from resonances.resonance.analysis.mmr import decide, kinematics as kinematics_module, owner as owner_module
@@ -199,6 +200,11 @@ def fast_part(prep: Preprocessed, settings: AnalysisSettings) -> Optional[np.nda
     return np.abs(np.asarray(prep.angle_f, float) - slow - libration_image(prep, period, settings))
 
 
+# the period floor that is a convention (MMR_LIBRATION_PERIOD_MIN_YR, 150 yr) and so read with its thin band (W31); a
+# co-orbital's floor is its planet's tadpole period, a measurement
+CONVENTION_FLOOR = 'mmr_libration_period_min_yr'
+
+
 def libration_image(prep: Preprocessed, period_floor_yr: float, settings: AnalysisSettings) -> np.ndarray:
     """`geometry.libration_image` of sigma_f with the turning points at mmr_tp_prominence_floor_deg (the shared rule,
     also the secular/ZLK prominence's)."""
@@ -210,6 +216,7 @@ def libration_image(prep: Preprocessed, period_floor_yr: float, settings: Analys
         period_floor_yr,
         math.radians(settings.mmr_tp_prominence_floor_deg),
         settings,
+        floor_band=settings.confidence_thin_band if prep.period_floor_basis == CONVENTION_FLOOR else 0.0,
     )
 
 
@@ -1152,7 +1159,8 @@ def _analyse_mmr(
         settings,
     )
     _not_run_steps(checks, subresonances, owner, settings)
-    decide.apply_filter_sensitivity(checks, margins, sensitivity)  # DELTA 13a: before the caps and the level read them
+    kept = decide.R0_KEPT if decide.r0_beside_guard(energy, sensitivity) else ()
+    decide.apply_filter_sensitivity(checks, margins, sensitivity, keep=kept)  # DELTA 13a: before the caps and the level read them
     decide.apply_filter_too_slow(checks, margins, prep.filter_too_slow)  # DELTA item 1: the shape is not measured
     caps = decide.collect_caps(
         view,
@@ -1263,6 +1271,15 @@ def _analyse_mmr(
     prep.angle_response, prep.rate_response, _, prep.adot_response, prep.response_cutoff_yr = response_module.response_series(
         prep, period, settings
     )
+    waves = background_wave_module.background_waves(
+        prep.t_yr,
+        prep.angle_clean,
+        prep.a_f,
+        geometry.runs if geometry is not None else (),
+        prep.window,
+        settings,
+        coorbital=geometry is not None and geometry.coorbital,
+    )
     analysis = MMRAnalysis(
         series_name=series.name,
         resonance=series.resonance,
@@ -1284,6 +1301,7 @@ def _analyse_mmr(
         confidence_cells_sha=cells.sha,
         parent=parent,
         decisive_episode_id=decisive_id,
+        background_waves=waves,
         extra_columns={
             **_extra_columns(
                 geometry, read, counts, sensitivity, decision, prep, fast, settings, view.angle, member, kinematics, decisive_half

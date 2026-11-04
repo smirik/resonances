@@ -1,0 +1,11 @@
+example_id,status,confidence,angle_status,source
+mmr3__1865__5E+4M-8+0+0-1,transient,low,episodic,"author:2026-11-04 (W33 page, row 1865: package (card flow A: accept low); the package value of v2-w33b)"
+mmr3__2003_ND__6J-6S-1+0+0+1,resonant,low,libration,"author:2026-11-04 (W33 page, row 2003 ND: package (card flow A: accept low); the package value of v2-w33b)"
+mmr3__2003_TG2__4E-1M-3+0+0+0__100kyr,transient,low,episodic,"author:2026-11-04 (W33 page, card fstatus A: keep transient/low under rule F; the package value of v2-w33b)"
+mmr3__23240__1M+3J-3+0+0-1,transient,low,episodic,"author:2026-11-04 (W33 page, card fstatus A: keep transient/low under rule F; the package value of v2-w33b)"
+mmr3__2013_VA14__2J+6S-1+0+0-7,transient,low,episodic,"author:2026-11-04 (W33 page, card fstatus A: keep transient/low under rule F; the package value of v2-w33b)"
+zlk__88899__LK__500kyr,transient,low,episodic,"author:2026-11-04 (W34 page, row 88899: package («Согласен; отсутствие анти-корреляций подозрительно, поэтому low»), card zlk A; the package value of v2-w34-secular-zlk)"
+zlk__373136__LK__500kyr,transient,certain,episodic,"author:2026-11-04 (W34 page, row 373136 500 kyr: package, card zlk A; the package value of v2-w34-secular-zlk)"
+zlk__797204__LK__500kyr,transient,certain,episodic,"author:2026-11-04 (W34 page, row 797204 500 kyr: package, card zlk A; the package value of v2-w34-secular-zlk)"
+zlk__3752__LK__500kyr,transient,certain,episodic,"author:2026-11-04 (W34 page, row 3752 500 kyr: package, card zlk A; the package value of v2-w34-secular-zlk)"
+zlk__1866__LK,transient,medium,episodic,"author:2026-11-04 (W34 page, row 1866: package, card zlk A; the package value of v2-w34-secular-zlk)"

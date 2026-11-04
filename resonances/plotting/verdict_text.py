@@ -500,8 +500,14 @@ def _plural(n: int, word: str, plural: str = '') -> str:
 
 # ------------------------------------------------------------------------------- the minimal policy (W29 SPEC §2.3, §7)
 
-# the words of the `confidence_basis` grammar 'N=<n>(<source>);M=<m>;V=<v>;S=<s>;veto=<name|->[:thin]'
-BASIS_N_SOURCE = {'episode': 'the episode', 'union': 'the union of episodes', 'cover': 'the whole record', 'leg': 'one 1:1 leg'}
+# the words of the `confidence_basis` grammar 'N=<n>(<source>);M=<m>;V=<v>;S=<s>;veto=<name|->[:thin][;F=shown|none]'
+BASIS_N_SOURCE = {
+    'episode': 'the episode',
+    'union': 'the union of episodes',
+    'cover': 'the whole record',
+    'leg': 'one 1:1 leg',
+    'member': 'of the subresonance member, not this angle',
+}
 BASIS_M_WORDS = {
     'full': 'amplitude clear of the separatrix',
     'thin': 'amplitude near the separatrix',
@@ -514,11 +520,51 @@ BASIS_V_WORDS = {
     'ambiguous': 'a measured objection',
 }
 BASIS_S_WORDS = {'full': 'filter-stable', 'thin': 'filter-sensitive'}
+BASIS_F_WORDS = {'shown': 'own force measured', 'none': 'own force not shown (geometry only)'}
 
 
 def policy_minimal(verdict) -> bool:
     """The verdict was set by the minimal policy layer (its `policy` field; '' in older files and under v2)."""
     return str(getattr(verdict, 'policy', '') or '') == POLICY_MINIMAL
+
+
+def tree_status(verdict) -> str:
+    """The status the status tree's leaf gave: under the minimal policy the v2 verdict's (`v2_verdict`, first field),
+    which the policy may move; the verdict's own status otherwise. The steps describe the tree, so their leaf outcomes
+    print this one, and `decided_at` adds the policy's move (2024 JR16: 'force law fails → resonant' read as if a
+    failed law made it resonant)."""
+    first = str(getattr(verdict, 'v2_verdict', '') or '').split('/')[0] if policy_minimal(verdict) else ''
+    return first or str(verdict.status)
+
+
+# why the minimal policy moved a status away from the tree's leaf, by the flag it set (first match wins)
+POLICY_MOVE_WORDS = (
+    ('strength_scale_implausible', 'three-body strength only a scale, no veto'),
+    ('measured_objection', 'measured objection, no veto'),
+    ('gate_unavailable', 'gate without a verdict, no veto'),
+    ('gate_disabled', 'gate off, no veto'),
+)
+
+
+def policy_move(verdict) -> str:
+    """'minimal policy: measured objection, no veto' when the policy moved the status away from the tree's leaf
+    (`tree_status`; without a known flag 'minimal policy: the shape decides'), else ''."""
+    if not policy_minimal(verdict) or tree_status(verdict) == str(verdict.status):
+        return ''
+    marks = set(getattr(verdict, 'flags', ()) or ())
+    why = next((words for flag, words in POLICY_MOVE_WORDS if flag in marks), '')
+    return f'minimal policy: {why or "the shape decides"}'
+
+
+def few_cycles_clause(verdict) -> str:
+    """' (N 1 < 1.5: too few cycles for medium)' when the policy's comparison N >= confidence_medium_cycles failed on a
+    low row (2026 AC4: the level fell for this, not for the unmeasured objection beside it); '' otherwise."""
+    if str(verdict.confidence) != 'low':
+        return ''
+    entry = next((e for e in verdict.decision_path or () if e.name == 'policy:N >= confidence_medium_cycles'), None)
+    if entry is None or entry.result is not False or entry.value is None:
+        return ''
+    return f' (N {fmt(entry.value)} < {fmt(entry.threshold)}: too few cycles for medium)'
 
 
 def policy_ids(text: Any) -> frozenset:
@@ -551,7 +597,8 @@ def basis_words(basis: Any) -> str:
     match = re.fullmatch(r'([^()]*)\(([^()]*)\)', parts.get('N', ''))
     if match and finite(_float(match.group(1))):
         source = BASIS_N_SOURCE.get(match.group(2), match.group(2))
-        out.append(f'N {fmt(_float(match.group(1)))} cycles' + (f' ({source})' if source not in ('', '-') else ''))
+        n = _float(match.group(1))
+        out.append(f'N {fmt(n)} cycle{"" if n == 1 else "s"}' + (f' ({source})' if source not in ('', '-') else ''))
     elif match:  # 'nan(-)': no cycles were counted (a vetoed or circulating row)
         out.append('no cycles counted')
     elif 'N' in parts:
@@ -563,6 +610,8 @@ def basis_words(basis: Any) -> str:
     if veto:
         name, _, thin = veto.partition(':')
         out.append('no veto' if name in ('', '-') else f'veto {name}' + (' (thin)' if thin else ''))
+    if 'F' in parts:
+        out.append(BASIS_F_WORDS.get(parts['F'], f'F {parts["F"]}'))
     return ' · '.join(out)
 
 
@@ -849,7 +898,8 @@ def arithmetic_line(verdict, checks: Sequence[CheckRow]) -> str:
     if not str(verdict.confidence):
         return 'No confidence level: uncertain and invalid verdicts carry none.'
     if policy_minimal(verdict):  # the level is the evidence's (W29 `policy.level`): no support count, no caps
-        return f'Level from the evidence: {basis_words(getattr(verdict, "confidence_basis", "")) or "not recorded"} → {str(verdict.confidence).upper()}'
+        words = basis_words(getattr(verdict, 'confidence_basis', '')) or 'not recorded'
+        return f'Level from the evidence: {words}{few_cycles_clause(verdict)} → {str(verdict.confidence).upper()}'
     margins = [row for row in checks if not row.is_limit]
     failed = sum(1 for row in margins if row.counts == COUNTS_FAILED)
     thin = sum(1 for row in margins if row.counts == COUNTS_THIN)
@@ -923,6 +973,9 @@ def final_regime_text(verdict) -> str:
 # --------------------------------------------------------------------------------------------- episodes
 
 
+STAY_MIN_TP = 7  # a rejected run named as a stay in the text: at least three cycles of its ripple (W34)
+
+
 @dataclass
 class Episodes:
     """The runs of turning points of one record (episodes.csv rows) and the record's span."""
@@ -967,7 +1020,27 @@ class Episodes:
         if not runs:
             return ''
         reasons = sorted({_text(row.get('reject_reason')).replace('_', ' ') for row in runs} - {''})
-        return f'{_plural(len(runs), "run")} of turning points not accepted' + (f' ({", ".join(reasons)})' if reasons else '')
+        text = f'{_plural(len(runs), "run")} of turning points not accepted' + (f' ({", ".join(reasons)})' if reasons else '')
+        return text + self.stay_text()
+
+    def stay_text(self) -> str:
+        """The longest rejected run whose centre moves, as a stay (W34, the author on 2003 TG2 100 kyr: shown apart
+        from the episode, not as one): '; the longest, 14.1–25 kyr (38 turning points), is a stay: a ±2° ripple whose
+        centre moves 152°, not a libration'; '' without such a run of STAY_MIN_TP turning points."""
+        stays = [
+            row
+            for row in self.rejected
+            if _text(row.get('reject_reason')) == 'centre_moves' and finite(row.get('n_tp')) and float(row['n_tp']) >= STAY_MIN_TP
+        ]
+        if not stays:
+            return ''
+        row = max(stays, key=_duration)
+        shift = row.get('centre_shift_deg')
+        moves = f' whose centre moves {fmt(abs(float(shift)))}°' if finite(shift) else ' whose centre moves'
+        return (
+            f'; the longest, {years(row.get("t_start_yr"))}–{years(row.get("t_end_yr"))} ({fmt(row.get("n_tp"))} turning points), '
+            f'is a stay: a ±{fmt(row.get("half_amp_med_deg"))}° ripple{moves}, not a libration'
+        )
 
 
 def libration_numbers(row: Mapping[str, Any], centre: bool = True) -> str:
@@ -2183,7 +2256,7 @@ def _single_swing_steps(f: MMRFacts) -> List[Step]:
     circulation = _circulation_shape_step(f, '')
     judged = 'its best single leg' if f.rule == 'G4c' else 'its one half-swing between passages'
     text = circulation.outcome.replace('→ circulation', f'→ a circulation judged on {judged} → {f.v.angle_status}')
-    leaf = Step('single', rule_name(f.rule), StepState.LEAF, f'{single_swing_clause(f)} → {f.v.status}')
+    leaf = Step('single', rule_name(f.rule), StepState.LEAF, f'{single_swing_clause(f)} → {tree_status(f.v)}')
     return [replace(circulation, outcome=text), leaf]
 
 
@@ -2694,17 +2767,17 @@ def _circulation_steps(f: MMRFacts) -> List[Step]:
         branch = _held(f, C5_BRANCH)
         text = (
             f'{"one branch" if branch else "several branches"} of ν·Δt over the a range; '
-            f'⟨a⟩ {compare(far.value if far else None, ">=", s.mmr_c5_far_ratio_min)} a-ranges from a* → {v.status}'
+            f'⟨a⟩ {compare(far.value if far else None, ">=", s.mmr_c5_far_ratio_min)} a-ranges from a* → {tree_status(v)}'
         )
         return [Step('alias', 'alias (C5)', StepState.LEAF, text)]
     if f.rule == 'R0':
-        text = f'σ turns back at times, but the energy does not fit a potential from a → {v.status}'
+        text = f'σ turns back at times, but the energy does not fit a potential from a → {tree_status(v)}'
         return [Step('potential', 'potential (R0)', StepState.LEAF, text)]
     source = v.owner or v.resonant_argument  # A3a: a neighbour makes no wave of this angle
     owner = f' (its wave comes from {source})' if source else ''
     leg = leg_clause(f)  # W28 C6: a 1:1 leg whose turns both scatter is a near miss of a capture (near-episode)
     scatter = f'; {leg}' if leg.startswith('its best 1:1 leg') else ''
-    return [Step('circ', 'circulation', StepState.LEAF, f'circulation → {v.status}{owner}{scatter}')]
+    return [Step('circ', 'circulation', StepState.LEAF, f'circulation → {tree_status(v)}{owner}{scatter}')]
 
 
 def _subresonance_step(f: MMRFacts) -> Step:
@@ -2714,7 +2787,7 @@ def _subresonance_step(f: MMRFacts) -> Step:
         return Step('sub', title, StepState.NOT_RUN, 'not run: a derived row' if f.derived else _not_triggered(f))
     if sub.accepted is not None:
         coherence = compare(sub.accepted.phi0_coherence, '>=', s.mmr_subresonance_phi0_coh_min)
-        text = f'{sub.accepted.spec.key} keeps a fixed centre (φ0 coherence {coherence}) → {v.status}, origin subresonance'
+        text = f'{sub.accepted.spec.key} keeps a fixed centre (φ0 coherence {coherence}) → {tree_status(v)}, origin subresonance'
         return Step('sub', title, StepState.LEAF, text)
     if str(sub.check) in ('pass', 'fail'):
         best = _best_candidate(sub.candidates)
@@ -2750,7 +2823,7 @@ def _owner_step(f: MMRFacts) -> Step:
             drives = f'driver {key} {circulates} and its forced wave drives a ({r2})'
         else:
             drives = f'owner {key} librates in σ’s episode and drives a ({r2})'
-        return Step('owner', title, StepState.LEAF, f'{drives} → {v.status}, induced')
+        return Step('owner', title, StepState.LEAF, f'{drives} → {tree_status(v)}, induced')
     if str(owner.check) in ('pass', 'fail'):
         best = _best_candidate(owner.candidates)
         text = f'{_plural(owner.n_candidates, "candidate")}, none drives a'
@@ -2765,13 +2838,13 @@ def _kinematic_step(f: MMRFacts) -> Step:
     kin = f.entry(KIN_VARPI)
     title = '3. kinematic'
     if f.rule == '3k2':
-        return Step('kin', title, StepState.LEAF, f'{_k2_clause(f)} → {f.v.status}')
+        return Step('kin', title, StepState.LEAF, f'{_k2_clause(f)} → {tree_status(f.v)}')
     if f.rule in ('3', '3b5'):
         if b1 is not None and b1.result is False:
             text = f'a does not carry the swing: B1 {compare(b1.value, ">=", b1.threshold)}'
         else:
             text = f'slow σ follows p ϖ (corr {fmt(kin.value if kin else None)}) with a flat a'
-        return Step('kin', title, StepState.LEAF, f'{text} → {f.v.status}')
+        return Step('kin', title, StepState.LEAF, f'{text} → {tree_status(f.v)}')
     text = f'a carries the swing: B1 {compare(b1.value, ">=", b1.threshold)}' if b1 is not None and finite(b1.value) else 'B1 not measured'
     if kin is None and str(f.v.angle_status) in ('libration', 'episodic'):
         text += '; the ϖ-test does not judge a libration'
@@ -2783,18 +2856,18 @@ def _drift_step(f: MMRFacts) -> Step:
     if angle != 'drift':
         return Step('drift', '4. drift', StepState.NOT_APPLICABLE, f'n/a: the centre does not drift ({angle})')
     if f.rule == '4':
-        return Step('drift', '4. drift', StepState.LEAF, f'no mechanism explains the drift → {f.v.status}')
+        return Step('drift', '4. drift', StepState.LEAF, f'no mechanism explains the drift → {tree_status(f.v)}')
     return Step('drift', '4. drift', StepState.PASSED)
 
 
 def _force_step(f: MMRFacts) -> Step:
     rule, title = f.rule, '5. force law + potential'
     if rule.startswith('5a') or rule in ('5b', '5e', '5f', '5g'):
-        return Step('force', title, StepState.LEAF, origin_unknown_clauses(f) + f' → {f.v.status}')
+        return Step('force', title, StepState.LEAF, origin_unknown_clauses(f) + f' → {tree_status(f.v)}')
     if strength_first(f):
-        return Step('force', title, StepState.LEAF, f'read first, whatever L4 and R0 say: {branch_clause(f)} → {f.v.status}')
+        return Step('force', title, StepState.LEAF, f'read first, whatever L4 and R0 say: {branch_clause(f)} → {tree_status(f.v)}')
     if rule in BRANCH_LEAVES:
-        return Step('force', title, StepState.LEAF, f'both not measured; {branch_clause(f)} → {f.v.status}')
+        return Step('force', title, StepState.LEAF, f'both not measured; {branch_clause(f)} → {tree_status(f.v)}')
     if not rule.startswith('5'):
         return Step('force', title, StepState.NOT_REACHED)
     if rule == '5u/6':
@@ -2857,7 +2930,7 @@ def _zone_step(f: MMRFacts) -> Step:
     if kind == 'promoted':  # rule 6u: the episodic reading reached a dynamic transient
         outcome = 'episodic → transient; the union covers the record → resonant (6u)'
     else:  # a union the status kept reads as episodic there
-        outcome = f'{"episodic" if kind == "kept" else f.v.angle_status} → {f.v.status}'
+        outcome = f'{"episodic" if kind == "kept" else f.v.angle_status} → {tree_status(f.v)}'
     return Step('zone', '6. dynamic leaf', StepState.LEAF, f'{outcome}{note}')
 
 
@@ -3053,11 +3126,15 @@ def mmr_steps(f: MMRFacts) -> List[Step]:
     return collapse_after_leaf([_ask(f, step) for step in steps])
 
 
-def decided_at(rule: str, status: Any, steps: Sequence[Step]) -> str:
+def decided_at(rule: str, status: Any, steps: Sequence[Step], tree: Any = '', move: str = '') -> str:
     """The header of the steps: 'Decided at 5d → 6: force measured, then judged by behaviour → TRANSIENT' (rec_rule and
     its short names, `verdict_vocab.rule_name`); without a rule (secular, ZLK), the leaf step's number and label:
-    'Decided at 1: free-ω gate → NON-RESONANT'."""
+    'Decided at 1: free-ω gate → NON-RESONANT'. When the minimal policy moved the tree's status (`tree` differs from
+    `status`, `move` its words, `policy_move`): 'Decided at 5a: force law fails → UNCERTAIN; minimal policy: measured
+    objection, no veto → RESONANT'."""
     head = status_head(status).upper()
+    if tree and str(tree) != str(status):
+        head = f'{status_head(tree).upper()}; {move or "minimal policy"} → {head}'
     rule = str(rule or '')
     if rule:
         names = [rule_name(part, leaf=True) or 'unmapped rule' for part in rule.split('/')]
@@ -3626,15 +3703,19 @@ def _branch_sentence(f: MMRFacts) -> str:
         head = f'{status_head(f.v.status)}: {branch_clause(f)}'
         return head + ': no libration of this angle’s own force, whatever the force law and the potential with a say.'
     text = f'{status_head(f.v.status)}: the force law and the potential with a are not measured; {branch_clause(f)}'
+    if policy_move(f.v):  # the tree's veto is not upheld (a scale, an objection): its episodes are counted
+        return text + f'; {policy_move(f.v)}, so the shape of the angle decides.'
     if f.rule == '5s':
         return text + ': no libration of this angle’s own force.' + strength_mark_sentence(f)
     return text + '.'
 
 
 def strength_marked(f: MMRFacts) -> list:
-    """The accepted runs a 5s row marks forced (strength) (W28 B2, `ForcedWave.by_strength`)."""
+    """The accepted runs a 5s row marks forced (strength) (W28 B2, `ForcedWave.by_strength`); under the minimal policy
+    not the ones it counts again (the strength veto not upheld: 2012 KL9)."""
     g = f.a.geometry
-    return [wave for wave in g.forced_waves if wave.by_strength] if g is not None else []
+    counted = policy_ids(getattr(f.v, 'counted_episode_ids', '')) if policy_minimal(f.v) else frozenset()
+    return [wave for wave in g.forced_waves if wave.by_strength and wave.episode_id not in counted] if g is not None else []
 
 
 def strength_mark_sentence(f: MMRFacts) -> str:
@@ -5722,7 +5803,7 @@ def explain_mmr(analysis, settings, row: Mapping[str, Any], episodes: Sequence[M
             f'reason {v.reason}',
             f'origin {v.libration_origin}' if str(v.libration_origin) else '',
             subtitle_role(f),  # A3b: the role words (driver, owner, neighbour, resonant argument, kinematic term)
-            decided(shown_rule(f)),
+            decided(shown_rule(f)) + (' → minimal policy' if policy_move(v) else ''),  # the tree's leaf, then the move
         )
         if part
     )
@@ -5744,7 +5825,13 @@ def explain_mmr(analysis, settings, row: Mapping[str, Any], episodes: Sequence[M
         row.said = False
     emphasis = number_emphasis(f, steps, checks, items, physics)
     bullets = policy_block(v) + bullets  # W29 §7: the minimal policy's four lines first
-    return replace(text, decided_at=decided_at(shown_rule(f), v.status, steps), docs=DOCS_MMR, bullets=bullets, emphasis=emphasis)
+    return replace(
+        text,
+        decided_at=decided_at(shown_rule(f), v.status, steps, tree_status(v), policy_move(v)),
+        docs=DOCS_MMR,
+        bullets=bullets,
+        emphasis=emphasis,
+    )
 
 
 def shown_rule(f: MMRFacts) -> str:
@@ -6032,7 +6119,6 @@ TURN_ARCSEC = 1296000.0  # arcsec in one turn: a rate of f arcsec/yr turns once 
 # Kozai's critical inclination arccos sqrt(3/5) = 39.23 deg: the quadrupole ZLK of a body under an outer perturber on a
 # circular orbit makes omega librate only above it (Kozai 1962). A literature reference printed in the text, never a
 # test: no status reads it (inner perturbers and crossing orbits move the domain, Michel & Thomas 1996).
-ZLK_CRITICAL_INC_DEG = math.degrees(math.acos(math.sqrt(0.6)))
 PRECESSION_SENTENCE = 'Planetary periods are precession times; they are not the period of a libration.'  # card g09-5 C
 TEXT_POINTER = '↑ in the text'  # what the numbers table prints for a number a bullet prints (W20 CS11)
 # the deciding episode's numbers as `libration_numbers` prints them
@@ -6163,6 +6249,12 @@ def _no_verdict_ei_sentence(analysis, row: Mapping[str, Any]) -> str:
     (rule zlk_gate_unconfirmed): the class found and the status it gave."""
     coupling = _text(row.get('zlk_ei_coupling'))
     found = EI_WORDS.get(coupling, coupling.replace('_', ' ') or 'not measured')
+    if policy_minimal(analysis.verdict):  # W29 P7: no e-i requirement, the shape keeps its status (flag gate_unavailable)
+        return (
+            f'The free-ω gate gives no verdict, so the angle’s shape keeps its status '
+            f'({status_head(analysis.verdict.status).lower()}, flag gate_unavailable); the e-i exchange at the deciding '
+            f'period: {found} (a column only).'
+        )
     return (
         f'The free-ω gate gives no verdict, so an episodic ω needs the ZLK exchange of e and i at the deciding period: '
         f'{found} → {status_head(analysis.verdict.status).lower()}.'
@@ -6276,21 +6368,18 @@ def long_period_objections(analysis, row: Mapping[str, Any]) -> str:
 
 
 def zlk_physics_line(analysis, row: Mapping[str, Any]) -> Tuple[str, Tuple[str, ...]]:
-    """The physics of a Lidov-Kozai row (card g10-8): the ranges of i and e, where i stands against Kozai's 39.2°
-    (`ZLK_CRITICAL_INC_DEG`, a reference, not a test) and how many times the free ω (g − s, free_b_omega) turns over
-    the record, |g − s| / (1/T). '' for a secular row."""
+    """The physics of a Lidov-Kozai row (card g10-8): the ranges of i and e and how many times the free ω (g − s,
+    free_b_omega) turns over the record, |g − s| / (1/T). '' for a secular row. Kozai's 39.2° is not printed: it
+    belongs to the hierarchical quadrupole problem, outside its domain for main-belt and planet-crossing asteroids
+    (W30, the author; Gronchi & Milani 1999)."""
     if str(analysis.verdict.resonance_type) != 'lidov_kozai':
         return '', ()
     lo, hi = _row_float(row, 'ctx_inc_min_deg'), _row_float(row, 'ctx_inc_max_deg')
     e_lo, e_hi = _row_float(row, 'ctx_e_min'), _row_float(row, 'ctx_e_max')
     parts, columns = [], []
     if finite(lo) and finite(hi):
-        side = 'stays below it' if hi < ZLK_CRITICAL_INC_DEG else ('stays above it' if lo > ZLK_CRITICAL_INC_DEG else 'crosses it')
         ranges = f'i {fmt(lo)}–{fmt(hi)}°' + (f', e {fmt(e_lo)}–{fmt(e_hi)}' if finite(e_lo) and finite(e_hi) else '')
-        parts.append(
-            f'Physics: {ranges} in the record; the classical ZLK (the quadrupole of an outer planet) makes ω librate only above '
-            f'i = {ZLK_CRITICAL_INC_DEG:.1f}° (Kozai 1962; a reference, not a test): i {side}.'
-        )
+        parts.append(f'Physics: {ranges} in the record.')
         columns += ['ctx_inc_min_deg', 'ctx_inc_max_deg'] + (['ctx_e_min', 'ctx_e_max'] if finite(e_lo) and finite(e_hi) else [])
     rate = _row_float(row, 'free_b_omega')
     span = record_span_yr(analysis)
@@ -6477,11 +6566,14 @@ def explain_long_period(
         shape = 'the angle librates over the whole record'
     steps.append(replace(_shape(f'{shape} → {v.angle_status}'), number='0', question='Angle shape'))
     gate = getattr(analysis, 'gate', None)
-    if gate is not None and _text(gate.outcome):
-        steps.append(Step('gate', 'free-ω gate', StepState.LEAF, f'{gate.outcome} → {v.status}', '1', *GATE_STEP))
+    if gate is not None and _text(gate.outcome) in GATE_VERDICTS:
+        steps.append(Step('gate', 'free-ω gate', StepState.LEAF, f'{gate.outcome} → {tree_status(v)}', '1', *GATE_STEP))
     else:
-        outcome = f'{v.angle_status} → {v.status} (the shape of the angle decides)'
-        steps.append(Step('leaf', 'the angle’s shape', StepState.LEAF, outcome, '1', *SHAPE_LEAF_STEP))
+        if gate is not None and _text(gate.outcome):  # the gate ran without a verdict, or does not apply: the shape decides
+            words = f'{gate.outcome.replace("_", " ")}: no verdict, the shape decides'
+            steps.append(Step('gate', 'free-ω gate', StepState.PASSED, words, '1', *GATE_STEP))
+        outcome = f'{v.angle_status} → {tree_status(v)} (the shape of the angle decides)'
+        steps.append(Step('leaf', 'the angle’s shape', StepState.LEAF, outcome, str(len(steps)), *SHAPE_LEAF_STEP))
     bullets = long_period_bullets(analysis, settings, episodes, row, checks, frequencies)
     info = []
     value = str(v.checks.get('check_secular_e_response', ''))
@@ -6500,10 +6592,13 @@ def explain_long_period(
     for check in checks:  # the drawn text has no confidence sentence: each LIMIT row names its other reading (CS11)
         check.said = False
     bullets = policy_block(v) + bullets  # W29 §7: the minimal policy's four lines first
-    return replace(text, decided_at=decided_at('', v.status, steps), docs=DOCS_LONG_PERIOD, bullets=bullets)
+    return replace(text, decided_at=decided_at('', v.status, steps, tree_status(v), policy_move(v)), docs=DOCS_LONG_PERIOD, bullets=bullets)
 
 
 # (question, why, ids) of the leaf of a secular or Lidov-Kozai row: the free-ω gate (ZLK), else the angle's shape
+# the gate outcomes that decide a ZLK row's status (`secular.decide`); any other one leaves it to the angle's shape (555527:
+# not_applicable was printed as 'Decided at 1: free-ω gate')
+GATE_VERDICTS = ('confirmed', 'kinematic')
 GATE_STEP = (
     'Does the free ω librate too?',
     'an osculating ω also librates with a forced eccentricity; only a librating free ω is the ZLK libration.',

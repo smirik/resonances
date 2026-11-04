@@ -120,7 +120,9 @@ guards) → io.
   β moves 63° < the half-amplitude 94°, step 1 keeps no member. Traps: "theory travel > half-amplitude" as the
   composite test flags clean 3J-2/3J-1 librations (1162: 66° over 100 kyr against 51°); "flattest ≥ ½ range(β)" flags
   2003 SL215 8J-3 (61° against 162° for the next): a dominant member is told by its neighbours, not by its own drift.
-- `owner`: catalogue longitudes when a planet's λ is not saved (confidence ≤ medium); `owner_potential`: the owner's
+- `owner`: catalogue longitudes when a planet's λ is not saved (confidence ≤ medium); `run_owner` = `search_owner`,
+  again on `MMR_OWNER_SHORT_WINDOW_CYCLES` windows when σ has too few 3.5-P windows (W33, flag `owner_short_windows`;
+  owner-local settings, the response keeps its windows; 385533 300 kyr, 463, 7343 → certain); `owner_potential`: the owner's
   averaged force predicts ȧ (the potential route); `owner_identity` (route 'identity', W22): a three-body σ needing
   ≥ 10³ × μμe^q follows a two-body φ that librates over its episode with a passing direct strength; not run without
   saved longitudes. A candidate owner is tested by the multiplet law (coherent coefficients), never by a bare frequency
@@ -134,6 +136,26 @@ guards) → io.
   status; `StatusDecision.owner` keeps the raw key (decision tests read it).
 
 ## Rule glossary (`resonance/analysis/mmr/decide.py` unless stated)
+
+- **W31 background forced wave** (`background_wave.py`, the author's three B 2026-11-03, `MMR_FORCED_WAVE_BACKGROUND`,
+  `..._REFERENCE_PERIODS`, `..._MIN_REFERENCE_PERIODS`, `..._ENVELOPE_QUANTILE`): every accepted run below 45° of a
+  non-1:1 angle is compared with its background at its own period (σ and a band-passed at [P/f, fP], f
+  `MMR_OWNER_BAND_FACTOR`; the steadiness is the median R² of a sinusoid in 3-period windows, a drifting phase is no
+  unsteadiness); inside within the background's envelope band → forced. Stored on `MMRAnalysis.background_waves`,
+  episodes.csv `bw_*`; the policy takes forced runs out of the count and vetoes (`forced_wave`, kinematic_libration,
+  detail `forced_wave_background`) when they are all of them and the slow centre passes a revolution (less: the drift
+  rule, uncertain; W32). Runs found forced join the reference of the others until none is added (W32: DE61 ep 4).
+  Moves: KL9, SR158, TK84, 8306 → non_resonant; 46596 ep 8, DE61 ep 0/2/3/4/5, 67495 ripples, 501710 ep 10 leave the
+  count. 2002 BG: its background σ is unsteady; B6b sets its one-cycle ripple aside (identity not measured, W32).
+- **W34 stays** (`verdict_text.Episodes.stay_text`, the author's bounds on 2003 TG2 100 kyr): the text names the longest
+  rejected centre-moves run as a stay (14.1-25 kyr: a ±2° ripple whose centre moves 65°). A rule that counted a slow
+  swing instead of a ripple riding on it (1580) was built and removed the same day: it fired on 1580 only (the
+  author, W34 bounds B: «может, тогда это вообще излишне?»).
+- **W31 floor thin band** (`_eligible_floor`, `analyse.CONVENTION_FLOOR`): the conventional floor
+  `MMR_LIBRATION_PERIOD_MIN_YR` is read less `CONFIDENCE_THIN_BAND` in the eligibility and the libration image; a
+  measured floor (a co-orbital's tadpole or loop period) as it is (2022 AP1). 2001 WK15 (142.9 yr) → one libration.
+- **W31 zone thin band** (`turn_reflects_within_band`): a 1:1 turn that would reflect but for a zone within the thin
+  band above `MMR_COORBITAL_TURN_ZONE_MAX` makes the leg LEG_UNCERTAIN, not a scatter (2020 FN3 → uncertain).
 
 - **F6** `forced_wave_episodes`: an accepted run on a lattice line with a failed identity (or a wrong-sign identity)
   is a forced wave, no episode for the status (`Geometry.forced_waves`, edges re-read by `geometry.refresh_edges`); the
@@ -209,7 +231,7 @@ guards) → io.
   the VA14 60 kyr and TG2 100 kyr labels. Trap: 17346 (coherent, in phase, own law 0.69 of 0.79) loses the cap, against
   the s-1 control label (in KNOWN_DISAGREEMENTS).
 - **W28 B6b ripple on an arc** (`decide.ripple_waves`, `_g6_ripple`, card g08-4 A, rule `ripple_on_arc`,
-  `MMR_RIPPLE_ON_ARC`): before G2 an accepted run < 45° whose own identity is measured and fails, on a slow centre that
+  `MMR_RIPPLE_ON_ARC`): before G2 an accepted run < 45° whose own identity does not pass (fails or not measured, W32: 2002 BG), on a slow centre that
   turns back 1–2 times within a turn (`unfinished_slow_swing`), goes to `Geometry.forced_waves` (route
   `unconfirmed_ripple`; not F6: `_f6_waves` and the word skip it); G6 counts the TPs outside it, none → G5a/G6 on the
   slow centre. Never a record-covering run or 1:1. Trap: "≥ 1 turn" alone would take 2003 UC22 16M-27 (43-TP 35°
@@ -346,6 +368,10 @@ guards) → io.
 
 - The a↔σ identity makes "σ and a share a period" automatic; V_E ≈ V_F is necessary, not sufficient; the period law
   (R0) separates real pendulums (T_obs/T_pend ≈ 1) from kinematic swings (0.61).
+- W34 R0 per episode (`zone.episode_r0`, `SEPARATRIX_R0_EPISODES`; Codex + Claude review of 79653): a record-pooled
+  R0 not measured is read in each accepted episode with >= 2 disjoint cycles, lift-only; the x2 guard keeps it when it
+  compared another episode (`decide.r0_beside_guard`). L4 still needs 2 windows of 3.5 P (a short route was proposed,
+  not adopted). A missing half of the L4 windows is no half (`a_response_check`, `lower_half_median`).
 - Below a 45° half-amplitude, L4 and R0 with a are not_measured (sin σ ≈ σ: indistinguishable from the identity).
   R0 with a applies it per window too (W28 B3, g08-1; `zone.window_eligible`: a window counts with a half-swing ≥ 45°
   or a turn) and compares V_E and V_F on the visited arc (`zone._window_correlation`, `SEPARATRIX_VEVF_ARC`); rules

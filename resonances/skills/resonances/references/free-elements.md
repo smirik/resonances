@@ -193,6 +193,12 @@ co-orbital, and 10563 over 500 kyr; rule `zlk_coorbital_episodic`): no record le
 split fit, so the action is `review`. Never `not_applicable`, which would keep the geometric
 status of a libration.
 
+An episodic $\omega$ circulates between its episodes, so its free $\omega$ winds over the record;
+where the record's outcome is `kinematic` or a winding `planetary_residual`, the gate reads the
+librating episodes instead (`ZLK_GATE_EPISODES`): `confirmed` (detail `episodes`) when in every one
+the free vector is the longer and the free $\omega$ advances less than half a turn per cycle, with
+$b_\varpi$, $b_\Omega$ off the modes ([the gate inside the episodes](physics/secular-zlk.md)).
+
 Any other episodic row without a verdict (a planetary residual, a short window, an undefined
 phase) is `transient` only when $e$ and $i$ trade at constant $\sqrt{1-e^2}\cos i$ inside its
 deciding episode (`zlk_ei_episode_coupling` = `zlk`, `ZLK_EPISODIC_NO_VERDICT`), else `uncertain` /

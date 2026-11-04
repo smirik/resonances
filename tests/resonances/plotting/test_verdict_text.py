@@ -27,6 +27,15 @@ from resonances.resonance.analysis.mmr import io  # noqa: E402
 from resonances.resonance.analysis.settings import settings_from_config  # noqa: E402
 
 S = settings_from_config()
+# 41588 3J+9S-2 is these tests' record of an owner search that could not run (too few force windows) and its cap
+# all_physics_not_measured; since W33 the search runs again on short windows (MMR_OWNER_SHORT_WINDOW_CYCLES) and passes,
+# so the record is read here without that retry
+BEFORE_W33_OWNER = {'mmr3__41588__3J+9S-2+0+0-10'}
+
+
+def settings_of(example: str):
+    return replace(S, mmr_owner_short_window_cycles=0.0) if example in BEFORE_W33_OWNER else S
+
 
 # --------------------------------------------------------------------------------------------- helpers
 
@@ -691,16 +700,17 @@ def test_regime_change_reads_the_episodes_and_their_marks(rows, decisive, words)
 @pytest.mark.benchmark
 def test_tx9_one_joined_episode_is_not_a_union():
     """2003 TX9 on the W22 path (without the centre-scale TP rule and G2a) with C16 on: the three W_c pieces are one
-    episode 2.21–17.5 kyr with the mark stall@7997.0:14563.6 (test_w22_union), subtype regime_change. The sentence
+    episode 2.21–17.5 kyr with the mark stall@7992.0:14563.6 (test_w22_union; 7997.0 before W32: one output step,
+    the W_c pieces read with the thin band of filter_too_slow), subtype regime_change. The sentence
     said 'through episodes without a circulation between them about 255°' (a plural for one episode, no comma)."""
     w22 = replace(S, libration_centre_scale_tp_at_centre=False, libration_action_step=False)
     analysis, text = _explained('mmr3__2003_TX9__3E+2J-10+0+0+5', w22)
     assert str(analysis.verdict.angle_subtype) == 'regime_change'
     (episode,) = [row for row in analysis.episode_rows() if vt.episode_accepted(row)]
-    assert episode['marks'] == 'stall@7997.0:14563.6'
+    assert episode['marks'] == 'stall@7992.0:14563.6'
     angle = text.sentences[0]
     assert angle.startswith(
-        'σ librates over the whole record in one episode through a stall of its centre (8 kyr–14.6 kyr), without a '
+        'σ librates over the whole record in one episode through a stall of its centre (7.99 kyr–14.6 kyr), without a '
         'circulation, about 255°: 15 turning points'
     )
     assert 'between them' not in angle
@@ -1099,6 +1109,27 @@ def test_decided_at(rule, status, expected):
     assert vt.decided_at(rule, status, []) == expected
 
 
+def test_decided_at_names_the_policy_move():
+    """2024 JR16 1E-1 (2026-11-02): the tree's leaf 5a (force law fails) gave uncertain, the minimal policy resonant; the
+    header said 'force law fails → RESONANT', read as if the failed law made the row resonant."""
+    from resonances.resonance.analysis.verdict import POLICY_MINIMAL, AngleStatus, ResonanceType, Status, Verdict
+
+    mmr, libration = ResonanceType.MMR, AngleStatus.LIBRATION
+
+    v = Verdict(mmr, Status.RESONANT, libration, policy=POLICY_MINIMAL, v2_verdict='uncertain//origin_unknown/review/libration')
+    v.flags = ('zone_eq_only', 'measured_objection')
+    assert vt.tree_status(v) == 'uncertain'
+    assert vt.policy_move(v) == 'minimal policy: measured objection, no veto'
+    assert vt.decided_at('5a', v.status, [], vt.tree_status(v), vt.policy_move(v)) == (
+        'Decided at 5a: force law fails → UNCERTAIN; minimal policy: measured objection, no veto → RESONANT'
+    )
+    unmoved = Verdict(mmr, Status.RESONANT, libration, policy=POLICY_MINIMAL, v2_verdict='resonant/high/geometric_libration//libration')
+    assert vt.tree_status(unmoved) == 'resonant' and vt.policy_move(unmoved) == ''
+    assert vt.decided_at('5c', unmoved.status, [], vt.tree_status(unmoved), '') == 'Decided at 5c: potential supports → RESONANT'
+    v2 = Verdict(mmr, Status.UNCERTAIN, libration, v2_verdict='')  # the v2 policy: the tree's status is the verdict's
+    assert vt.tree_status(v2) == 'uncertain' and vt.policy_move(v2) == ''
+
+
 def test_decided_at_without_a_rule_names_the_leaf_step():
     """Secular and ZLK rows have no rec_rule: the header names the leaf step."""
     steps = [
@@ -1189,7 +1220,7 @@ def test_the_steps_of_41588_and_2020_cb(example):
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 
     series = io.load_series(example)
-    analysis = analyse_mmr(series, S)
+    analysis = analyse_mmr(series, settings_of(example))
     row = {**analysis.numbers_row(), **analysis.summary_row()}
     text = vt.explain_mmr(analysis, S, row, analysis.episode_rows())
     expected = E3_RECORDS[example]
@@ -1345,7 +1376,7 @@ def test_the_confidence_blocks_of_cb_41588_and_285637():
     texts = {}
     for example in E4_RECORDS:
         series = io.load_series(example)
-        analysis = analyse_mmr(series, S)
+        analysis = analyse_mmr(series, settings_of(example))
         row = {**analysis.numbers_row(), **analysis.summary_row()}
         texts[example] = vt.explain_mmr(analysis, S, row, analysis.episode_rows())
         fig = mc.draw_combined(analysis, series, settings=S)
@@ -1652,7 +1683,7 @@ def test_the_slotted_explanation_on_the_benchmark():
     texts, rows = {}, {}
     for example in E8_RECORDS:
         series = io.load_series(example)
-        analysis = analyse_mmr(series, S)
+        analysis = analyse_mmr(series, settings_of(example))
         rows[example] = {**analysis.numbers_row(), **analysis.summary_row()}
         texts[example] = vt.explain_mmr(analysis, S, rows[example], analysis.episode_rows())
         fig = mc.draw_combined(analysis, series, settings=S)
@@ -1848,7 +1879,7 @@ def test_numbers_behind_the_verdicts_of_41588_cb_and_285637():
     texts = {}
     for example in E10_RECORDS:
         series = io.load_series(example)
-        analysis = analyse_mmr(series, S)
+        analysis = analyse_mmr(series, settings_of(example))
         row = {**analysis.numbers_row(), **analysis.summary_row()}
         text = texts[example] = vt.explain_mmr(analysis, S, row, analysis.episode_rows())
         assert_comparisons_hold(text)
@@ -2005,3 +2036,36 @@ def test_c13_the_episode_lines_list_the_stay_and_the_marks():
     assert under(XO3_ROW) == ['  stay start–end (inferred)', '  amplitude 326–446 yr · amplitude 708–809 yr']
     many = {**JA_ROW, 'marks': 'well_change@100;well_change@200;well_change@300;well_change@400'}
     assert under(many)[1] == '  well 100 yr · well 200 yr · well 300 yr · …'
+
+
+def test_the_longest_rejected_stay_is_named_apart_from_the_episode():
+    # 2003 TG2 100 kyr (W34, the author's bounds A): a 38-TP ripple of +-2 deg whose centre moves 65 deg before the
+    # counted 5-TP episode; a stay, not a libration; a 3-TP centre-moves run is too short to name
+    rows = [
+        {
+            'episode_id': 0,
+            'accepted': False,
+            'reject_reason': 'centre_moves',
+            't_start_yr': 14086.4,
+            't_end_yr': 25049.6,
+            'n_tp': 38,
+            'half_amp_med_deg': 1.99,
+            'centre_shift_deg': -65.1,
+        },
+        {'episode_id': 1, 'accepted': True, 't_start_yr': 29873.6, 't_end_yr': 30567.8, 'n_tp': 5},
+        {
+            'episode_id': 2,
+            'accepted': False,
+            'reject_reason': 'centre_moves',
+            't_start_yr': 40000.0,
+            't_end_yr': 52000.0,
+            'n_tp': 3,
+            'half_amp_med_deg': 3.0,
+            'centre_shift_deg': 10.0,
+        },
+    ]
+    text = vt.Episodes(rows, 100_000.0, 1).rejected_text()
+    assert text.endswith(
+        '; the longest, 14.1 kyr–25 kyr (38 turning points), is a stay: a ±1.99° ripple whose centre moves 65.1°, not a libration'
+    )
+    assert vt.Episodes(rows[1:], 100_000.0, 1).stay_text() == ''

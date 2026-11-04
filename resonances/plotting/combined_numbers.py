@@ -1002,7 +1002,14 @@ def _checks_column(pen: _Pen, text, x: float, y: float, width: float, draw: bool
         pen.text(x, y, 'Confidence: how firm the verdict is', SECTION_PT + 0.5, weight='bold', color=KEY_INK)
     y -= SECTION_PT * 1.6 / 72
     if not text.checks:
-        return pen.paragraph(x, y, 'uncertain and invalid verdicts carry no level', ITEM_PT, width, draw, color=GREY_INK)
+        # under the minimal policy a row the tree left uncertain can carry a level: it comes from the evidence line
+        no_level = str(text.confidence) in ('', 'none')
+        words = (
+            'uncertain and invalid verdicts carry no level'
+            if no_level
+            else 'no support margins read: the level comes from the evidence (the line ‘Level from the evidence’)'
+        )
+        return pen.paragraph(x, y, words, ITEM_PT, width, draw, color=GREY_INK)
     limits = [row for row in text.checks if row.is_limit]
     na = [row for row in text.checks if not row.is_limit and row.kind == KIND_NA]
     passed = [row for row in text.checks if not row.is_limit and row.kind != KIND_NA and str(row.state) == 'pass']

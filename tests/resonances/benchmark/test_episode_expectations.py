@@ -45,7 +45,7 @@ def test_the_cases_are_well_formed():
     # B10a: C38 (37087 slow scale), E94, E95 (37087 x2 K3s), C39 (HW7 slow cause); C3: E68 (2003 YN107), C21 (2026 AC4);
     # C4: E69 (2006 BZ147), E67 (2007 VU6); C8: E70 (2009 BE81 20 kyr, tier C); C6: C25, C26, C40-C53 (tier C, leaf G4c)
     # C14: C54 (2022 BB2, flag extend_time, tier C); W29 (2026-11-02 review page): E100-E105 (no episodes / at most one)
-    assert len(names) == len(set(names)) == 152
+    assert len(names) == len(set(names)) == 153
     assert {case.tier for case in CASES} <= set(ee.TIERS)
     assert {case.scope for case in CASES} <= set(ee.SCOPES)
     for case in CASES:
@@ -57,10 +57,11 @@ def test_the_cases_are_well_formed():
     # 18.8 deg, below MMR_COORBITAL_EDGE_TURN_MIN_DEG (C4, for F9); E43 (2021 XO3) passes as one episode with its
     # amplitude changes as marks (C7, g03-1 A), and E07-E09 are one episode each (g03-9 A)
     # W29 (minimal policy, 2026-11-02): vetoed episodes are candidates (E02, E28, E31, E46, E47, E64), a subresonance
-    # parent's runs are its member's (E21, E77, E79), Q3 (E15), P3 (E60), the next-check cap (E76), ZLK gate flag (D01)
-    assert sorted(case.case for case in CASES if case.known_fail) == sorted(
-        ['E67', 'E02', 'E15', 'E21', 'E28', 'E31', 'E46', 'E47', 'E60', 'E64', 'E76', 'E77', 'E79', 'D01']
-    )
+    # parent's runs are its member's (E21, E77, E79), ZLK gate flag (D01); W33: E60 (WK15) passes, single_covers reads
+    # each edge as geometry.covers_edges does; E76 (523683) passes, a slow swing's baseline sets the extension
+    # W34 (the author's epcount A): the nine cases read the geometric pool (counted + candidates) and pass; D01 (the
+    # gate reads 88899's episodes) and E67 (uncertain + extend, his e67 A) rewritten: no known failure left
+    assert sorted(case.case for case in CASES if case.known_fail) == []
 
 
 def test_every_quote_is_verbatim_at_its_line():
@@ -412,3 +413,28 @@ def test_the_cover_threshold_is_one_period():
     assert ee.run_check(ee.table_from_tuples([(0, 1, 2, 1, 1.0, 1.0, None)]), {'op': 'single_covers'})
     assert not ee.run_check(ee.table_from_tuples([(0, 1, 2, 1, 1.0, 1.0 + 1e-9, None)]), {'op': 'single_covers'})
     assert math.isclose(ee.CENTRE_TOL_DEG, 30.0)
+
+
+@pytest.mark.parametrize('hidden, covered', [(0.52, True), (1.2, False)])
+def test_single_covers_reads_an_edge_as_the_package_does(hidden, covered):
+    # 2001 WK15 (E60): the start gap is 1.0000000004 P, but no turning point is missed at the window's start (70 yr <
+    # min(longest TP step 180 yr, P 145 yr)) and the filter trim hides 0.52 P: covered (geometry.covers_edges)
+    frame = ee.table_from_tuples([(145.0, 19920.0, 274, 145.0, 1.0000000004, 0.55, None)]).all_episodes
+    frame = frame.assign(window_start_gap_yr=70.0, window_start_hidden_P=hidden, tp_step_max_yr=180.0)
+    assert ee.run_check(ee.Record({}, frame), {'op': 'single_covers'}) == covered
+
+
+def test_the_geometric_pool_reads_the_candidates_too():
+    # 433 Eros 1R-5V+7 (E46, the author's epcount A): two episodes the owner veto made candidates; the counted pool is
+    # empty under the minimal policy, the geometric one holds both
+    frame = ee.table_from_tuples([(3520.0, 6620.0, 7, 1000.0, 3.5, 4.0, None), (7620.0, 10620.0, 7, 1000.0, 7.6, 1.0, None)]).all_episodes
+    frame = frame.assign(counted=False, candidate=True)
+    record = ee.Record({'policy': 'minimal'}, frame)
+    two = {'op': 'n_accepted', 'min': 2, 'max': 2}
+    assert not ee.run_check(record, two)
+    assert ee.run_check(record, {**two, 'pool': 'geometric'})
+    # a run neither counted nor a candidate (an accepted run below the floor) is in neither pool
+    record = ee.Record({'policy': 'minimal'}, frame.assign(candidate=[True, False]))
+    assert ee.run_check(record, {'op': 'n_accepted', 'min': 1, 'max': 1, 'pool': 'geometric'})
+    with pytest.raises(ValueError):
+        ee.run_check(record, {**two, 'pool': 'all'})

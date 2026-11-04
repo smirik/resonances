@@ -31,6 +31,7 @@ from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import (
     AngleStatus,
     AngleSubtype,
+    CheckValue,
     Confidence,
     LibrationOrigin,
     MarginClass,
@@ -301,9 +302,23 @@ def test_481085_is_a_kinematic_libration_at_high():
 
 
 @pytest.mark.benchmark
-def test_41588_stays_medium_its_a_answers_too_much():
-    # B1 0.095 > MMR_KIN_B1_CLEAR: K1e is not measured, all_physics_not_measured holds
+def test_41588_with_its_owner_measured_on_short_windows_is_high():
+    # W33: 3.5-P windows do not fit the record; on 2-P windows the owner search runs and finds none: check pass, the cap
+    # all_physics_not_measured goes (high, as under the minimal policy and the author's label of 2026-11-03)
     analysis = analyse_example('mmr3__41588__3J+9S-2+0+0-10')
+    assert analysis.verdict.confidence == Confidence.HIGH and analysis.verdict.checks['check_mmr_owner'] == CheckValue.PASS
+    assert 'owner_short_windows' in analysis.owner.flags
+
+
+@pytest.mark.benchmark
+def test_41588_stays_medium_its_a_answers_too_much():
+    # B1 0.095 > MMR_KIN_B1_CLEAR: K1e is not measured; read without the W33 owner retry on short windows, which measures
+    # the owner (none) and so lifts all_physics_not_measured (high, as the minimal policy and the author's label)
+    from dataclasses import replace
+
+    from resonances.resonance.analysis.mmr import io
+
+    analysis = analyse_mmr(io.load_series('mmr3__41588__3J+9S-2+0+0-10'), replace(S, mmr_owner_short_window_cycles=0.0))
     verdict = analysis.verdict
     assert verdict.reason == Reason.KINEMATIC_LIBRATION and verdict.confidence == Confidence.MEDIUM
     assert verdict.margins['K1e'].margin == Margin.NOT_MEASURED

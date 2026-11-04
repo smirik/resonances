@@ -1217,21 +1217,14 @@
   {
     "case": "E60",
     "example_id": "mmr2__2001_WK15__32E-39+0+7",
-    "tier": "B",
+    "tier": "A",
     "quotes": [
       {
-        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
-        "line": 692,
-        "who": "author (chosen option; the option's wording is the card's)",
-        "text": "**ответ автора: A** — Да: критерий «ограниченного промежутка»: WK15 и XA → resonant/libration/medium. Отменяет D1b; E59/E60 переписываются на склейку и resonant. По геометрической проверке на 56 строках других склеек нет; подтвердить полным прогоном и проверить TK14/TX9.",
-        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g06-5)"
-      },
-      {
-        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
-        "line": 1196,
-        "who": "author (chosen option; the option's wording is the card's)",
-        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
-        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+        "file": "tmp/classifier-v2-2026-10-15/w31/ANSWERS-2026-11-03.json",
+        "line": 72,
+        "who": "author",
+        "text": "По сути, весь промежуток интегрирования — эпизод.",
+        "transcript": "W30 page answers 2026-11-03"
       }
     ]
   },
@@ -3203,6 +3196,20 @@
         "who": "author (episodes note on the W28 review page, verbatim)",
         "text": "mmr3__101703__1V+3S-7+0+0+3__200kyr\":{\"verdict\":\"status\",\"episodes_note\":\"Тут нету эпизодов.",
         "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E106",
+    "example_id": "coorbital__439908__1M-1+0+0__20kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w31/ANSWERS-2026-11-03.json",
+        "line": 46,
+        "who": "author",
+        "text": "До 13 kyr идёт циркуляция. ТАМ НЕ ДОЛЖНО БЫТЬ ЭПИЗОДА.",
+        "transcript": "W30 page answers 2026-11-03"
       }
     ]
   }

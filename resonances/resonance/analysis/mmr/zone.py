@@ -828,6 +828,65 @@ def r0_with_a(sigma_only: CheckValue, comparisons: Sequence[WindowComparison], s
     return final, fired
 
 
+def episode_r0(
+    t: np.ndarray,
+    prep: Preprocessed,
+    geometry: Geometry,
+    modulation: Modulation,
+    context: Context,
+    settings: AnalysisSettings,
+    well: Optional[centre_track_module.WellAlongRecord] = None,
+) -> Optional[Tuple[CheckValue, CheckValue, int]]:
+    """(R0 sigma-only, R0 with a, episode id) read inside the accepted episodes, when the record's pooled R0 is not
+    measured (W34, SEPARATRIX_R0_EPISODES; the author on 79653 3M+3J-7, checked by Claude and Codex). One V_E pooled
+    over every cycle of the record mixes regimes (79653: two episodes in different wells and a circulation, V_E R^2
+    0.25); each accepted episode with at least two disjoint full cycles gets its own: the series at
+    separatrix_cutoff_cycles x its own period, the frame that explains its cycles best, its period law and well
+    coherence, V_E ~ V_F on its eligible cycles, the thresholds unchanged (`r0_checks`, `r0_with_a`). Lift-only:
+    pass when some episode passes and none fails, else None (79653 ep0: V_E R^2 0.93, law 0.96, r >= 0.996)."""
+    nm = CheckValue.NOT_MEASURED
+    labelled = [(start, end) for start, end, rotation, kind in labelled_cycle_bounds(geometry) if kind == CYCLE_EPISODE and not rotation]
+    found = []
+    for run in geometry.runs:
+        windows = [(start, end) for start, end in labelled if run.t_start_yr <= start and end <= run.t_end_yr]
+        if not run.accepted or len(windows) < 2 or not np.isfinite(run.period_med_yr):
+            continue
+        angle, rate, _, adot, _ = separatrix_series(prep, run.period_med_yr, settings)
+        _, frame, v_e, per_window = best_frame(t, angle, rate, windows, candidate_frames(t, modulation, geometry), settings)
+        if v_e is None:
+            continue
+        cycles = pendulum.cycle_energies(t, angle, rate, [(start, end, False) for start, end in windows], v_e, frame=frame)
+        laws, _, _ = full_well_laws(well, cycles, geometry, [c.period_law_ratio for c in cycles])
+        period_law = float(np.nanmedian(laws)) if np.any(np.isfinite(laws)) else NAN
+        moving = frame is not None and bool(np.any(frame.well_shift_rad != 0))
+        coherence = pendulum.well_coherence(per_window)
+        sigma_only, with_slow = r0_checks(v_e, period_law, coherence, len(per_window), None, geometry, prep, settings, moving)
+        if with_slow is None:
+            frame_term = None if settings.separatrix_vf_free_constant else pendulum.frame_acceleration(frame, t)
+            comparisons = [
+                _window_correlation(
+                    t,
+                    angle,
+                    rate,
+                    adot,
+                    window,
+                    frame,
+                    context.identity_coefficient,
+                    settings,
+                    window_eligible(geometry, window, False, settings),
+                    frame_term,
+                )
+                for window in windows
+            ]
+            with_slow, _ = r0_with_a(sigma_only, comparisons, settings)
+        if with_slow != nm:
+            found.append((run.episode_id, sigma_only, with_slow))
+    if not found or any(with_slow == CheckValue.FAIL for _, _, with_slow in found):
+        return None
+    passing = [item for item in found if item[2] == CheckValue.PASS]
+    return (passing[0][1], passing[0][2], passing[0][0]) if passing else None
+
+
 def energy_rules(energy: Optional[EnergyAnalysis]) -> frozenset:
     """The rules R0 with a fired (`EnergyAnalysis.rules_fired`), for `Verdict.rules_fired`; none without an energy
     analysis or when R0 with a was read from the 1:1 law (`potential_law`), which replaced the harmonic comparison."""
@@ -904,7 +963,8 @@ def analyse_separatrix(
     averaged well when `well` exists (a two-body angle with its planet saved: `full_well_laws`) and the swing librates
     in it, else in the fitted V_E; a turn keeps V_E's. R0 with a: sigma-only passes and V_E ~ V_F cycle by
     cycle on the visited arc, counted over the eligible cycles only (`_window_correlation`, `window_eligible`,
-    `r0_with_a`; `r0_checks` says when they are not measured). Both not_measured under
+    `r0_with_a`; `r0_checks` says when they are not measured). Not measured over the record, it is read inside the
+    accepted episodes (`episode_r0`, W34; lift-only, column sep_R0_episode_id). Both not_measured under
     filter_too_slow (shape-dependent, DELTA item 1). The flags: zone_eq_only (no members: e^q or no modulation),
     zone_numeric_mismatch, zone_edge_cycle, episodes_in_separatrix_zone."""
     t = np.asarray(prep.t_yr, float)
@@ -964,6 +1024,11 @@ def analyse_separatrix(
             for start, end, rotation in bounds
         ]
         with_slow, fired = r0_with_a(sigma_only, comparisons, settings)
+    r0_episode = None
+    if settings.separatrix_r0_episodes and with_slow == CheckValue.NOT_MEASURED and sigma_only != CheckValue.FAIL:
+        local = episode_r0(t, prep, geometry, modulation, context, settings, well)
+        if local is not None:
+            sigma_only, with_slow, r0_episode = local
     eligible = [c.eligible for c in comparisons]
     arcs = [c.arc_rad for c in comparisons if c.eligible and np.isfinite(c.arc_rad)]
 
@@ -1042,6 +1107,7 @@ def analyse_separatrix(
         permutation_p=permutation_p,
         sigma_only=sigma_only,
         with_slow=with_slow,
+        r0_episode_id=r0_episode,
         flags=flags,
         modulation_source=modulation.source,
         frame=frame_name or '',

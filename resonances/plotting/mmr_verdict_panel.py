@@ -34,7 +34,7 @@ font reduced (down to `VerdictFigureLayout.text_min_font_pt`). Nothing is cut.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Mapping, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from resonances.resonance.analysis.ledger import LedgerEntry
 from resonances.resonance.analysis.verdict import MMR_CHECKS
@@ -447,8 +447,10 @@ _EPISODE_IDENTITY = (
 
 def _forced_wave(episode: Mapping[str, Any]) -> bool:
     """An accepted run judged a forced wave of another argument (F6, episodes.csv `forced_wave`: its route, '' for any
-    other run): no episode of the angle."""
+    other run): no episode of the angle; one the minimal policy counts is the angle's (a strength mark not upheld)."""
     value = episode.get('forced_wave')
+    if _policy_flag(episode, 'counted'):
+        return False
     return not missing(value) and str(value).strip().lower() not in ('', 'false', '0', 'none')
 
 
@@ -466,15 +468,35 @@ def _forced_words(episode: Mapping[str, Any]) -> str:
 UNCOUNTED_WORDS = {'below_period_floor': 'not counted: below the period floor', 'centre_turns': 'not counted: the centre turns'}
 
 
+def _policy_flag(episode: Mapping[str, Any], column: str) -> Optional[bool]:
+    """episodes.csv `counted`/`candidate` of the minimal policy (W29 P6): None for a row not under it."""
+    value = episode.get(column)
+    if value is None or missing(value) or str(value).strip() == '':
+        return None
+    return str(value).strip().lower() in ('true', '1', 'yes')
+
+
 def _uncounted(episode: Mapping[str, Any]) -> str:
-    """'not counted: below the period floor' for an accepted run the status does not count (C11), else ''."""
-    return UNCOUNTED_WORDS.get(str(episode.get('ineligible_reason') or ''), '') if episode_accepted(episode) else ''
+    """'not counted: below the period floor' for an accepted run the status does not count (C11), else ''. Under the
+    minimal policy its `counted` decides: an accepted run it does not count is 'candidate, not counted' or 'not
+    counted' (138537: a vetoed row's runs were printed as episodes)."""
+    if not episode_accepted(episode):
+        return ''
+    words = UNCOUNTED_WORDS.get(str(episode.get('ineligible_reason') or ''), '')
+    counted = _policy_flag(episode, 'counted')
+    if counted is None or counted:
+        return words if counted is None else ''
+    if _policy_flag(episode, 'candidate'):
+        return 'candidate, not counted'
+    return words or 'not counted'
 
 
 def _counted_text(episodes: Sequence[Mapping[str, Any]]) -> str:
-    """', 0 counted' (W28 C11): the accepted runs the status counts (episodes.csv eligible not False); '' when the
-    rows have no eligibility."""
+    """', 0 counted' (W28 C11): the accepted runs the status counts: the minimal policy's `counted`, else episodes.csv
+    eligible not False; '' when the rows have neither."""
     accepted = [episode for episode in episodes if episode_accepted(episode)]
+    if any(_policy_flag(episode, 'counted') is not None for episode in accepted):
+        return f', {sum(bool(_policy_flag(episode, "counted")) for episode in accepted)} counted'
     if not any('eligible' in episode for episode in accepted):
         return ''
     counted = [episode for episode in accepted if str(episode.get('eligible')).strip().lower() not in ('false', '0')]
@@ -831,7 +853,7 @@ def _float(value: Any) -> float:
 def explained_episode_lines(episodes: Sequence[Mapping[str, Any]], decisive_id: Any = None) -> List[NumberLine]:
     """EPISODES: every accepted run (* = the deciding one; 'N accepted, M counted': the runs the status counts, W28 C11;
     a run it does not count grey, 'not counted: below the period floor') and the longest rejected runs with their
-    reason."""
+    reason (centre moves: how far the centre travels against the ripple, a stay rather than a libration: 2003 TG2)."""
     accepted = [episode for episode in episodes if episode_accepted(episode)]
     rejected = [episode for episode in episodes if not episode_accepted(episode)]
     kinds: Dict[str, int] = {}
@@ -858,6 +880,9 @@ def explained_episode_lines(episodes: Sequence[Mapping[str, Any]], decisive_id: 
     rejected.sort(key=lambda episode: -_float(episode.get('n_tp')))
     for episode in rejected[:REJECTED_ROWS_MAX]:
         reason = str(episode.get('reject_reason') or '').replace('_', ' ')
+        if str(episode.get('reject_reason')) == 'centre_moves' and not missing(episode.get('centre_shift_deg')):
+            # a stay (W34, the author on 2003 TG2 100 kyr): a ripple whose centre travels; how far against how wide
+            reason += f" {fmt(abs(_float(episode.get('centre_shift_deg'))))}° (ripple ±{fmt(episode.get('half_amp_med_deg'))}°)"
         text = f"✗ {years(episode.get('t_start_yr'))}–{years(episode.get('t_end_yr'))} {fmt(episode.get('n_tp'))} TP: {reason}"
         lines.append(NumberLine('numbers', '', text, group=group, style='grey'))
     if len(rejected) > REJECTED_ROWS_MAX:

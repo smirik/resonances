@@ -130,6 +130,10 @@ class OriginDetail(StrEnum):
     FIXED_SUBRESONANCE = 'fixed_subresonance'  # subresonance: one member has a fixed centre (Rouche holds)
     COMPOSITE_MULTIPLET = 'composite_multiplet'  # subresonance: composite regime, no single member dominates
     FREE_OMEGA_WINDS = 'free_omega_winds'  # kinematic (ZLK): the free omega winds, the forced e holds the osculating one
+    # kinematic (MMR, W31): every counted episode is the forced wave its background carries (`mmr.background_wave`)
+    FORCED_WAVE_BACKGROUND = 'forced_wave_background'
+    # forced (ZLK, W30 D1): the bounded omega's e-i exchange breaks sqrt(1-e^2) cos i where the forced terms are small
+    EI_INTEGRAL_NOT_HELD = 'ei_integral_not_held'
     # joint: x = Psi / u closes cycles of its own well (energy integral, x_ddot on sin x, a period no secular one)
     JOINT_CAPTURE = 'joint_capture'
     NONE = ''
@@ -267,6 +271,12 @@ class Flag(StrEnum):
     EXTEND_TIME = 'extend_time'
     # W29 minimal policy (`analysis.policy`): marks that change no status and no level by themselves
     GATE_UNAVAILABLE = 'gate_unavailable'  # ZLK: the free-omega gate gave no verdict; the geometry's status, <= medium
+    # ZLK (W30 D2): no gate verdict, but rho_max >= ZLK_RHO_KINEMATIC_EXCLUDED and the e-i integral held in the deciding
+    # episode: the forced vector cannot hold the perihelion, so the gate's abstention is no cap and asks no extension
+    KINEMATIC_EXCLUDED = 'kinematic_excluded'
+    # ZLK (W30 D1): inside the deciding episode e and i do not trade at constant sqrt(1-e^2) cos i (eta_H above
+    # ZLK_EI_H_RESIDUAL_MAX, or not in antiphase): a measured objection (low), a veto where the forced terms are small
+    EI_INTEGRAL_NOT_HELD = 'ei_integral_not_held'
     GATE_DISABLED = 'gate_disabled'  # ZLK: the gate is switched off; the geometry's status, <= medium
     ONE_COORBITAL_LEG = 'one_coorbital_leg'  # the status rests on one 1:1 leg (G4c), or a start-edge leg was set aside
     ONE_HALF_LIBRATION = 'one_half_libration'  # a bounded half-swing between passages (G4h), not counted

@@ -124,7 +124,7 @@ def test_5s_two_body_is_a_strength_veto():
     assert analysis.policy.candidate_episode_ids == frozenset()
 
 
-def test_a_stable_vetoed_episode_is_a_candidate_at_medium():
+def test_a_stable_vetoed_episode_is_a_candidate_at_high():
     analysis = bounded(
         '5s',
         status=Status.NON_RESONANT,
@@ -133,7 +133,9 @@ def test_a_stable_vetoed_episode_is_a_candidate_at_medium():
         extra={'ep_n_tp_cut_half': 5, 'ep_n_tp_cut_double': 7},
     )
     v = policy.apply_mmr(analysis, MINIMAL).verdict
-    assert (v.veto, v.confidence, v.candidate_episode_ids) == (policy.VETO_STRENGTH, Confidence.MEDIUM, '0')
+    # drawn faint as a candidate; the measured veto keeps high (the author, W30: 285637, 481085)
+    assert (v.veto, v.confidence, v.candidate_episode_ids) == (policy.VETO_STRENGTH, Confidence.HIGH, '0')
+    assert v.angle_status == AngleStatus.LIBRATION  # a stable candidate is drawn: the geometry's word stays
 
 
 def test_5s_three_body_is_an_objection():
@@ -264,7 +266,7 @@ def leg_analysis(rule, legs, status=Status.UNCERTAIN, reason=Reason.ONE_COORBITA
 def test_one_clean_interior_leg_is_a_transient_counted_as_half_a_cycle():
     analysis = policy.apply_mmr(leg_analysis('G4c', [leg(300.0, 450.0)], Status.TRANSIENT, Reason.DYNAMIC_EPISODE), MINIMAL)
     v = analysis.verdict
-    assert (v.status, v.confidence, v.n_cycles, v.counted_episode_ids) == (Status.TRANSIENT, Confidence.MEDIUM, 0.5, 'leg')
+    assert (v.status, v.confidence, v.n_cycles, v.counted_episode_ids) == (Status.TRANSIENT, Confidence.LOW, 0.5, 'leg')
     assert analysis.policy.counted_spans_yr == ((300.0, 450.0),) and v.n_counted_episodes == 1
     assert str(Flag.ONE_COORBITAL_LEG) in v.flags
 
@@ -346,13 +348,46 @@ def test_a_dynamic_libration_of_many_cycles_is_certain():
     analysis = bounded('5d/6', status=Status.RESONANT, reason=Reason.DYNAMIC_LIBRATION, geometry=episode_geometry(23, period=160.0))
     full = MarginValue(margin='full', value=1.0)
     analysis.verdict.margins = {'L1': full, 'L2': full}
-    analysis.verdict.checks = {'check_mmr_identity': CheckValue.PASS, 'check_mmr_owner': CheckValue.PASS}
+    analysis.verdict.checks = {
+        'check_mmr_identity': CheckValue.PASS,
+        'check_mmr_owner': CheckValue.PASS,
+        'check_mmr_a_response': CheckValue.PASS,
+    }
     analysis.verdict.caps = ['no_full_physics_support']
     v = policy.apply_mmr(analysis, MINIMAL).verdict
     assert (v.status, v.confidence, v.n_cycles) == (Status.RESONANT, Confidence.CERTAIN, pytest.approx(11.4))
     assert v.caps == [] and 'no_full_physics_support' in v.flags and v.confidence_raw == v.confidence
-    assert v.confidence_basis == 'N=11.4(cover);M=full;V=clean;S=full;veto=-'
+    assert v.confidence_basis == 'N=11.4(cover);M=full;V=clean;S=full;veto=-;F=shown'
     assert any(entry.name == 'policy:N >= confidence_certain_cycles' for entry in v.decision_path)
+
+
+@pytest.mark.parametrize(
+    'checks, expected',
+    [
+        # the identity alone is no force (it holds for any orbit): the geometry alone is at most low (W33)
+        ({}, Confidence.LOW),
+        ({'check_mmr_a_response': CheckValue.FAIL, 'check_mmr_potential': CheckValue.NOT_MEASURED}, Confidence.LOW),
+        ({'check_mmr_potential': CheckValue.PASS}, Confidence.CERTAIN),
+        ({'check_mmr_strength': CheckValue.PASS}, Confidence.CERTAIN),
+    ],
+)
+def test_a_libration_without_its_own_force_is_at_most_low(checks, expected):
+    analysis = bounded('5d/6', status=Status.RESONANT, reason=Reason.DYNAMIC_LIBRATION, geometry=episode_geometry(23, period=160.0))
+    full = MarginValue(margin='full', value=1.0)
+    analysis.verdict.margins = {'L1': full, 'L2': full}
+    analysis.verdict.checks = {'check_mmr_identity': CheckValue.PASS, 'check_mmr_owner': CheckValue.PASS, **checks}
+    v = policy.apply_mmr(analysis, MINIMAL).verdict
+    assert (v.status, v.confidence) == (Status.RESONANT, expected)
+    assert v.confidence_basis.endswith('F=none' if expected == Confidence.LOW else 'F=shown')
+
+
+def test_the_geometry_only_limit_is_a_setting():
+    analysis = bounded('5d/6', status=Status.RESONANT, reason=Reason.DYNAMIC_LIBRATION, geometry=episode_geometry(23, period=160.0))
+    full = MarginValue(margin='full', value=1.0)
+    analysis.verdict.margins = {'L1': full, 'L2': full}
+    analysis.verdict.checks = {'check_mmr_identity': CheckValue.PASS, 'check_mmr_owner': CheckValue.PASS}
+    v = policy.apply_mmr(analysis, replace(MINIMAL, confidence_geometry_only_max='certain')).verdict
+    assert v.confidence == Confidence.CERTAIN
 
 
 def test_policy_v2_only_marks_the_row():
@@ -374,7 +409,7 @@ def test_episode_rows_carry_counted_and_candidate():
 
 def test_the_policy_ledger_names_its_comparisons():
     ledger = Ledger.from_settings(MINIMAL)
-    end = policy.EndReading(0.0, 0.2, 800.0, 2.0, True)
+    end = policy.EndReading(0.0, 0.2, 800.0, 1.5, True)  # 1.5 < CONFIDENCE_HIGH_CYCLES 2
     assert policy.extend_clause(Status.RESONANT, end, 1000.0, MINIMAL, ledger=ledger) == 'A'
     assert [entry.name for entry in ledger][0].startswith('policy:A4')
     assert policy.extend_clause(Status.RESONANT, replace(end, n_last=5.0, period_dec_yr=100.0), 1000.0, MINIMAL, ledger=ledger) == ''
@@ -401,3 +436,32 @@ def test_a_measured_alias_circulation_is_certain():
     verdict.margins = {'C5': full, 'C2': full}
     analysis = make_mmr_analysis(verdict, make_geometry(window=(0.0, 2000.0)), 'C', span_yr=2000.0)
     assert policy.apply_mmr(analysis, MINIMAL).verdict.confidence == Confidence.HIGH
+
+
+def forced_wave_row(pass_rev):
+    """A transient row (leaf 5n) whose one counted episode (28.6 deg, below 45 deg) the background test found forced,
+    on a slow centre that passes `pass_rev` revolutions."""
+    from resonances.resonance.analysis.mmr.background_wave import FORCED, BackgroundWave
+
+    geometry = episode_geometry(centre=make_centre(max_pass_rad=pass_rev * 2 * np.pi))
+    analysis = bounded('5n', word=AngleStatus.EPISODIC, status=Status.TRANSIENT, reason=Reason.GEOMETRIC_EPISODE, geometry=geometry)
+    analysis.background_waves = (BackgroundWave(0, FORCED, '', 1.0, 1.0, 1.0, 20.0, 0.9),)
+    return policy.apply_mmr(analysis, MINIMAL).verdict
+
+
+def test_every_counted_episode_forced_on_a_circulating_centre_is_the_forced_wave_veto():
+    v = forced_wave_row(1.3)
+    assert (v.status, v.reason, v.veto, v.angle_status) == (
+        Status.NON_RESONANT,
+        Reason.KINEMATIC_LIBRATION,
+        policy.VETO_FORCED_WAVE,
+        AngleStatus.CIRCULATION,
+    )
+
+
+def test_every_counted_episode_forced_on_a_centre_short_of_a_revolution_is_a_drift():
+    # W32: without its forced waves the row is its slow centre: 0.5 rev over the 1000-yr span (`make_mmr_analysis`),
+    # the drift rule (P1), no veto; P_dec = span / pass
+    v = forced_wave_row(0.5)
+    assert (v.status, v.reason, v.veto, v.angle_status) == (Status.UNCERTAIN, Reason.DRIFT_MECHANISM_UNKNOWN, '', AngleStatus.DRIFT)
+    assert v.pol_period_dec_yr == pytest.approx(1000 / 0.5)

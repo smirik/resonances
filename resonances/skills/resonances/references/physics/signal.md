@@ -189,7 +189,8 @@ $\Delta t \ge 37.5$ yr; for a Jupiter Trojan at $\Delta t \ge 18.5$ yr.
 ### Is the libration itself shaped by the filter?
 
 **Question: does the filter keep the observed libration?** If the gain at the measured libration period is below
-`MMR_L8_GAIN_FULL` = 0.94 (roughly $P_\text{cyc} < 2P_c$), the shape of the libration (its amplitude, centre and
+`MMR_L8_GAIN_FULL` = 0.94 read with the thin band `CONFIDENCE_THIN_BAND` of its ratio (0.911: roughly
+$P_\text{cyc} < 1.8P_c$, as the period floor is read at × 0.9; 2001 WK15 32E-39, 143 yr at $P_c$ = 75 yr), the shape of the libration (its amplitude, centre and
 energy) is partly the filter's. The flag `filter_too_slow` is set and the checks that read the shape are
 `not_measured`: the identity L3, the force law L4 and the amplitude check B1 of the response, both potential checks R0,
 one pendulum, and the margins L2 (separatrix distance), L5 and L6 (centre shift). A margin that already failed or does

@@ -665,8 +665,8 @@ def a_response_check(
         return CheckValue.NOT_APPLICABLE, False, ''
     if amplitude_max_rad < np.radians(settings.mmr_a_response_min_amp_deg) or len(windows) < settings.mmr_force_min_windows:
         return CheckValue.NOT_MEASURED, False, ''
-    halves = [x for x in _halves(windows) if np.isfinite(x)]
-    single_r2 = min(halves) if halves else NAN
+    halves = _halves(windows)
+    single_r2 = min(halves) if all(np.isfinite(halves)) else NAN  # a half without a measurement is no half (W34, Codex)
     multi_r2 = multiplet.r2 if multiplet is not None else NAN
     take_multiplet = np.isfinite(multi_r2) and np.isfinite(single_r2) and multi_r2 - single_r2 >= settings.mmr_force_multi_gain
     law, r2, stable = LAW_SINGLE, single_r2, True
@@ -750,15 +750,15 @@ def harmonic_fits(
 
 def lower_half_median(starts: Sequence[float], r2: np.ndarray) -> float:
     """The single law's statistic on (window start, R^2): the smaller of the medians of the two halves of the windows
-    in time order (`_halves`); nan when neither half has a finite value."""
+    in time order (`_halves`); nan when either half has no finite value (W34, Codex: one half is no two halves)."""
     values = np.asarray(r2, dtype=float)[np.argsort(np.asarray(starts, dtype=float))]
     if not len(values):
         return NAN
     first, second = np.array_split(values, 2)
     first = first if len(first) else second
     second = second if len(second) else first
-    medians = [m for m in (finite_median(first), finite_median(second)) if np.isfinite(m)]
-    return float(min(medians)) if medians else NAN
+    medians = (finite_median(first), finite_median(second))
+    return float(min(medians)) if all(np.isfinite(medians)) else NAN
 
 
 def shifted_rates(t_yr: np.ndarray, adot: np.ndarray, period_yr: float, n_shifts: int):

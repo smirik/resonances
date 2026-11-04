@@ -154,11 +154,12 @@ def remove_forced(z: np.ndarray, times: np.ndarray, frequencies: Dict[str, float
 
 
 def mask_origin(z_free: np.ndarray, quantile: float = DEFAULT_MASK_QUANTILE) -> np.ndarray:
-    """Which samples have a well-defined argument: those far enough from the origin."""
+    """Which samples have a well-defined argument: those far enough from the origin. A vector that is zero (median
+    amplitude 0) has no argument anywhere: no sample."""
     amplitude = np.abs(z_free)
-    median = float(np.median(amplitude))
-    if median <= 0:
-        return np.ones(amplitude.shape, dtype=bool)
+    median = float(np.median(amplitude)) if amplitude.size else 0.0
+    if not median > 0:
+        return np.zeros(amplitude.shape, dtype=bool)
     return amplitude >= quantile * median
 
 
