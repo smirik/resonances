@@ -132,6 +132,14 @@ def test_no_representative_choice_turns_a_non_librator_into_a_libration(name):
     clusters = fe.cluster(fe.candidate_frequencies('e'), BASELINE) + fe.cluster(fe.candidate_frequencies('i'), BASELINE)
     for choice in product(*clusters):
         elements = _elements(series, data, config, representatives=choice)
-        status = analyse_zlk(series, settings, free_elements=elements, gate_config=config).verdict.status
+        analysis = analyse_zlk(series, settings, free_elements=elements, gate_config=config)
+        status = analysis.verdict.v2_verdict.split('/')[0]  # the W28 tree's status: the gate decides there
 
         assert status in (expected, Status.UNCERTAIN), f'{name} fitted {choice} -> {status}'
+        # W34, the minimal policy: no choice confirms the gate where the baseline does not; a gate without a verdict
+        # gives the geometry's status back with the flag gate_unavailable at most medium (591986 with g7 for g5:
+        # planetary_residual -> resonant/low), never a confirmed libration
+        if name == '591986':
+            assert analysis.gate.outcome != GateOutcome.CONFIRMED, f'{name} fitted {choice} confirms the gate'
+            if analysis.verdict.status == Status.RESONANT:
+                assert 'gate_unavailable' in analysis.verdict.flags and str(analysis.verdict.confidence) in ('medium', 'low')

@@ -851,14 +851,12 @@ class TestCalibrationInTheVerdict:
         cell = next(
             c for c in raw['cells'] if (c['status'], c['angle_status'], c['reason']) == ('resonant', 'libration', 'dynamic_libration')
         )
-        assert row['cell_n_examples'] == cell['n_examples']
-        assert row['cell_n_errors'] == cell['n_errors']
-        low, high = wilson(cell['n_examples'] - cell['n_errors'], cell['n_examples'])
-        assert row['cell_accuracy_low_95'] == pytest.approx(low, abs=6e-4)
-        assert row['cell_accuracy_high_95'] == pytest.approx(high, abs=6e-4)
-        text = ' '.join(vt.sentences)
-        assert f"{cell['n_examples']} author-labelled verdicts, {cell['n_errors']} wrong" in text
-        assert f'{round(100 * low)}%–{round(100 * high)}%' in text
+        assert cell['n_examples'] > 0  # the tree's cell holds author labels
+        assert an.verdict.v2_verdict.startswith('resonant/') and '/dynamic_libration/' in an.verdict.v2_verdict
+        # W34: the minimal policy blanks the cell columns (the level is its own, not the tree's calibrated one;
+        # docs/output.md, the policy columns) and the text cites no cell; was the cell's n, errors and Wilson interval
+        assert [row[k] for k in ('cell_n_examples', 'cell_n_errors', 'cell_accuracy_low_95', 'cell_accuracy_high_95')] == [None] * 4
+        assert 'author-labelled' not in all_text(vt)
 
     @pytest.mark.parametrize('kind', ['uncertain', 'invalid'])
     def test_no_cell_without_a_level(self, settings, kind):

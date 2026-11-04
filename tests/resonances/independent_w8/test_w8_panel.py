@@ -503,7 +503,10 @@ EXPECTED_STATUS = {
     # cycle seen through two turning points, closed by its return: episodes, so the record is transient, not pattern A
     'near_separatrix': 'transient',
     'pendulum_episodes': 'transient',
-    'too_short': 'uncertain',
+    # W34: the minimal policy takes the status from the geometry (σ librates, 1.7 cycles): resonant at low, action
+    # extend (clause A, the last counted episode reaches the end with fewer than CONFIDENCE_HIGH_CYCLES cycles); the
+    # W28 tree's uncertain/origin_unknown (5n, L4 and R0 not measured) is a flag, kept in v2_verdict
+    'too_short': 'resonant',
     'drift': 'uncertain',
     'unphysical': 'invalid',
 }
@@ -605,7 +608,10 @@ def test_single_episode_not_covering(explained):
     row = rows[0]
     t0, t1, period = float(row['t_start_yr']), float(row['t_end_yr']), float(row['period_med_yr'])
     sentence = text.sentences[0]
-    assert 'only' in sentence and 'episode' not in '\n'.join(text.sentences).lower()
+    # W34: the minimal policy's level sentence names where N was counted, '(the episode)' (docs/reading-figures.md,
+    # the explanation's basis); the description of σ itself still says 'only', not 'episode'
+    described = [s for s in text.sentences if 'from the evidence' not in s]
+    assert 'only' in sentence and 'episode' not in '\n'.join(described).lower()
     assert f'({round(100 * (t1 - t0) / SPAN)}% of the record)' in sentence
     # edge gaps in libration periods: start t0/P, end (span − t1)/P
     assert f'misses the start by {t0 / period:.2g} and the end by {(SPAN - t1) / period:.2g}' in sentence
@@ -680,12 +686,11 @@ def test_synthetic_no_episode_no_orbit_type(explained):
 def test_summary_cell_columns_match_cells_file(explained):
     analysis, _, _ = explained['libration']
     row = analysis.summary_row()
-    record = load_cells().records.get((row['status'], row['angle_status'], row['reason']))
     for column in ('cell_n_examples', 'cell_n_errors', 'cell_accuracy_low_95', 'cell_accuracy_high_95'):
         assert column in row
-    if record is not None:
-        assert int(row['cell_n_examples']) == record.n_examples
-        assert int(row['cell_n_errors']) == record.n_errors
+        # W34: under the minimal policy the cell_* columns are empty (docs/output.md, the policy row): the calibration
+        # cells belong to the W28 tree's (status, angle_status, reason), which the final row no longer carries
+        assert row[column] in (None, '')
 
 
 # ------------------------------------------------------------------------- secular (explain_long_period)

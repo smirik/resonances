@@ -13,6 +13,7 @@ from resonances.resonance.analysis.mmr import io
 from resonances.resonance.analysis.pendulum import EPISODES_IN_SEPARATRIX_ZONE
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, CheckValue, Confidence, Status
+from tests.resonances.analysis.builders import tree_and_final
 
 # rtol 1e-6: the zone agrees with the default 1e-9 within one grid step, at half the cost
 S = settings_from_config(mmr_zone_rtol=1e-6)
@@ -28,10 +29,14 @@ def analysed(example):
 
 @pytest.mark.benchmark
 def test_52356_is_a_transient_inside_the_chaotic_layer():
-    analysis = analysed('mmr3__52356__5J-2S-2+0+0-1')
+    if not io.example_path('mmr3__52356__5J-2S-2+0+0-1').exists():
+        pytest.skip('benchmark data not available')
+    analysis, final = tree_and_final(io.load_series('mmr3__52356__5J-2S-2+0+0-1'), S)
     verdict, energy = analysis.verdict, analysis.energy
+    # the W28 tree's verdict and cap (W34: the minimal policy keeps the transient; the cap is a flag)
     assert (verdict.status, verdict.angle_status, verdict.confidence) == (Status.TRANSIENT, AngleStatus.EPISODIC, Confidence.MEDIUM)
     assert EPISODES_IN_SEPARATRIX_ZONE in verdict.flags and 'episodes_in_separatrix_zone' in verdict.caps
+    assert final.verdict.status == Status.TRANSIENT and 'episodes_in_separatrix_zone' in final.verdict.flags
     # the members' fit resolves the pulsation (SEPARATRIX §5: eps 0.54, Omega/<Omega> 0.65-1.25, lambda 0.52)
     assert energy.modulation_source == 'members' and energy.eps[0] == pytest.approx(0.54, abs=0.08)
     assert energy.omega_min_rel == pytest.approx(0.68, abs=0.08) and energy.omega_max_rel == pytest.approx(1.25, abs=0.08)

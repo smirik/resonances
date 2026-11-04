@@ -127,7 +127,7 @@ The resonant angle $\sigma$, unwrapped: a circulation runs off upwards or downwa
 
 What to look for: fills that cover the whole record are a libration; fills in part of it are episodes.
 
-**Under the minimal policy** (`CLASSIFIER_POLICY=minimal`, the default) panel (a) shows only what the status counts:
+**Under the minimal policy** (W29) panel (a) shows only what the status counts:
 
 - a solid fill `#id`: a counted episode (the same fill rules as above); where it is filled to a record edge it covers,
   the stretch the filter's trim hides (outside the analysis window) is pale;
@@ -399,7 +399,7 @@ The right column says in words what was decided and why. From top to bottom:
    header (`driver 3N-5+0+2`, `owner …`, `neighbour …`, `resonant argument 9M-16+2+5`, `kinematic −4ϖ`, `also in …`) and the
    deciding rule by its meaning, with its ID in parentheses (`decided: circulation (C)`; every ID and its name:
    [names on the figure](libration-analysis.md#names)).
-2. **The explanation**. Under the minimal policy (`CLASSIFIER_POLICY=minimal`) it opens with four lines: the status, the
+2. **The explanation**. Under the minimal policy it opens with four lines: the status, the
    level and the reason with the origin and the owner (`NON-RESONANT · MEDIUM · induced by 5M-2 (origin induced)`);
    `basis:` what the level rests on, in words: the complete cycles N and where they were counted (an episode, a union,
    the whole record, a 1:1 leg), the amplitude margin, whether the objections were measured, the filter's stability,
@@ -504,7 +504,10 @@ The right column says in words what was decided and why. From top to bottom:
    `Limits: earlier a-wave [O1] (a-wave before/inside 0.865 ≥ 0.5) → LOW`. The first gives the raw level from the
    support margins: two or more failed give low, one gives medium, any thin or unmeasured one high, all full certain.
    The second lists the limits, which can only lower it, and gives the shown level
-   ([from margins to a level](physics/confidence.md#from-margins-to-a-level)).
+   ([from margins to a level](physics/confidence.md#from-margins-to-a-level)). Under the minimal policy it is one line,
+   `Level from the evidence: N 9.5 cycles (the episode) · amplitude clear of the separatrix · … → CERTAIN`: the level
+   from N, M, V, S and F alone ([the minimal policy](physics/confidence.md#minimal-policy)); the former limits are
+   flags and lower nothing.
    "Also measured, not read by this verdict" lists the numbers that exist but did not count. Under the legend, one
    line names the docs pages that hold the steps, the rules, the margins and the names.
 7. **Numbers behind this verdict** (MMR), a short block over the numbers: one framed line per number that matters for

@@ -25,7 +25,7 @@ from resonances.resonance.analysis.mmr import strength as st
 from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.mmr.coorbital import Orbit
 from resonances.resonance.analysis.settings import AnalysisSettings, settings_from_config
-from tests.resonances.analysis.builders import make_episode
+from tests.resonances.analysis.builders import make_episode, tree_verdict
 
 sys.path.insert(0, str(Path(__file__).parent))
 import test_w20_undefined_phase as undefined_phase  # noqa: E402
@@ -168,7 +168,8 @@ def test_258640_loses_the_suspect_step_flag():
         pytest.skip('benchmark data not available')
     result = analyse_mmr(io.load_series(example), S)
     v = result.verdict
-    assert (str(v.status), str(v.angle_status), str(v.confidence)) == ('non_resonant', 'circulation', 'medium')
+    # the level is the W28 tree's (W34: the minimal policy reads its own, high; the cap jitter_low_e is a flag)
+    assert (str(v.status), str(v.angle_status), tree_verdict(v).confidence) == ('non_resonant', 'circulation', 'medium')
     assert 'unwrap_step_suspect' not in v.flags and result.sampling.suspect_times_yr == ()
 
 

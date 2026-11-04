@@ -16,7 +16,7 @@ from resonances.resonance.analysis.mmr import decide
 from resonances.resonance.analysis.settings import AnalysisSettings
 from tests.resonances.analysis.builders import make_episode, make_geometry
 
-SETTINGS = AnalysisSettings(classifier_policy='minimal')
+SETTINGS = AnalysisSettings()
 PERIOD = 200.0
 STEP = 2.0
 T = np.arange(0.0, 20000.0, STEP)

@@ -25,7 +25,7 @@ from resonances.resonance.analysis.mmr import decide, io
 from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype
-from tests.resonances.analysis.builders import make_sampling
+from tests.resonances.analysis.builders import make_sampling, tree_verdict
 
 S = settings_from_config()
 ONE_DEG = math.radians(1.0)
@@ -236,7 +236,8 @@ def test_benchmark_regime_rows(example, expected):
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
     v = analyse_mmr(io.load_series(example), S).verdict
-    assert (str(v.status), str(v.angle_status), str(v.angle_subtype), str(v.confidence)) == expected
+    # the level is the W28 tree's (W34: the minimal policy reads its own; 524522 is certain there)
+    assert (str(v.status), str(v.angle_status), str(v.angle_subtype), tree_verdict(v).confidence) == expected
 
 
 @pytest.mark.benchmark

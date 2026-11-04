@@ -16,7 +16,7 @@ from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import CONFIDENCE_ORDER, Confidence, Status
 from tests.resonances.analysis.builders import make_episode
 
-SETTINGS = AnalysisSettings(classifier_policy='minimal')
+SETTINGS = AnalysisSettings()
 NAN = math.nan
 C, H, M, L = Confidence.CERTAIN, Confidence.HIGH, Confidence.MEDIUM, Confidence.LOW
 
@@ -87,9 +87,7 @@ def test_the_level_never_falls_as_n_rises():
 
 
 def test_the_cycle_counts_follow_the_settings():
-    stricter = AnalysisSettings(
-        classifier_policy='minimal', confidence_high_cycles=5.0, confidence_certain_cycles=20.0, confidence_certain_core_cycles=20.0
-    )
+    stricter = AnalysisSettings(confidence_high_cycles=5.0, confidence_certain_cycles=20.0, confidence_certain_core_cycles=20.0)
     assert policy.level(Status.RESONANT, ev(4.0), stricter) == M
     assert policy.level(Status.RESONANT, ev(12.0), stricter) == H
     with pytest.raises(ValueError):

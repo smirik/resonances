@@ -701,7 +701,7 @@ def run(args) -> int:
     import reclassify
     from resonances.resonance.analysis.settings import settings_from_config
 
-    settings = settings_from_config(classifier_policy='minimal')
+    settings = settings_from_config()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     minimal, episodes = read_family_run(args.minimal, args.minimal_szlk)

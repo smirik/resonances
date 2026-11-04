@@ -360,18 +360,23 @@ def _classified(path, **config):
 
 
 def test_save_release_and_plot_select_the_same_rows(tmp_path):
-    """The circulator's CIRC row is non_resonant at medium (no planets saved: cap catalogue_longitudes): review keeps its
-    arrays after the release and selects it for saving and plotting; a high copy of the same row is released."""
+    """The circulator's CIRC row is a clear circulation, non_resonant/certain (W34, the minimal policy; under the W28
+    tree it was medium by the cap catalogue_longitudes, no planets saved, now a flag). A medium copy of the same row:
+    review keeps its arrays after the release and selects it for saving and plotting; a high copy is released."""
     sim = _classified(tmp_path, save='review', plot='all')
     circulator = sim.bodies[1]
     resonance = circulator.resonances()[0]
     key = resonance.to_s()
     verdict, analysis = circulator.librations[key], circulator.mmr_analyses[key]
-    assert (str(verdict.status), str(verdict.confidence), str(verdict.libration_origin)) == ('non_resonant', 'medium', '')
+    # W34: the minimal policy reads a clear circulation (C1, C2 full) as certain; the cap is a flag
+    assert (str(verdict.status), str(verdict.confidence), str(verdict.libration_origin)) == ('non_resonant', 'certain', '')
+    assert 'catalogue_longitudes' in verdict.flags and verdict.v2_verdict.split('/')[:2] == ['non_resonant', 'medium']
     assert not DataManager._arrays_dropped(analysis)
 
     sim.config.plot = SavePlotMode.REVIEW
     manager = sim.data_manager
+    assert not manager.should_save_body(circulator, resonance) and not manager.should_plot_body(circulator, resonance)
+    sim._finalise_verdict(circulator, key, dataclasses.replace(verdict, confidence=Confidence.MEDIUM, action=Action.SPOT_CHECK))
     assert manager.should_save_body(circulator, resonance) and manager.should_plot_body(circulator, resonance)
     sim._release_unplotted(circulator, resonance, analysis)
     assert not DataManager._arrays_dropped(analysis)
@@ -388,14 +393,17 @@ def test_save_release_and_plot_select_the_same_rows(tmp_path):
             assert manager.should_save_body(body, res) == manager.should_plot_body(body, res)
 
 
-@pytest.mark.parametrize('mode, saved', [('review', {'librator', 'circulator'}), ('nonzero', {'librator'})])
-def test_review_saves_the_medium_circulator_and_restores_its_queue(tmp_path, mode, saved):
+# W34: the circulator's row is non_resonant/certain under the minimal policy (a clear circulation; the W28 tree's
+# medium by the cap catalogue_longitudes is a flag now), so review saves what nonzero saves; was {'librator', 'circulator'}
+@pytest.mark.parametrize('mode, saved', [('review', {'librator'}), ('nonzero', {'librator'})])
+def test_review_saves_the_queue_and_restores_it(tmp_path, mode, saved):
     sim = _saved_run(tmp_path, save=mode)
     assert {p.name for p in (tmp_path / 'data').glob('data-*.csv') if 'periodogram' not in p.name} == {f'data-{n}.csv' for n in saved}
 
     summary = pd.read_csv(tmp_path / 'summary.csv', dtype=str, keep_default_na=False)
     queue = {(r['name'], r['resonance']): (r['review_required'], r['review_reasons']) for _, r in summary.iterrows()}
-    assert queue[('circulator', CIRC)] == ('True', 'confidence:medium;cap:catalogue_longitudes')
+    assert queue[('circulator', CIRC)] == ('False', '')  # W34: was ('True', 'confidence:medium;cap:catalogue_longitudes')
+    assert queue[('librator', LIB)] == ('True', 'origin_unknown')  # a geometric libration: no mechanism shown
     restored = SimulationSerializer.restore(str(tmp_path / 'simulation.json'))
     for body in restored.bodies:
         for key, verdict in body.librations.items():
@@ -409,6 +417,18 @@ def test_the_log_counts_the_cells_and_the_queue(tmp_path, caplog):
     with caplog.at_level('INFO'):
         sim.data_manager.log_selection(sim.bodies)
     text = caplog.text
-    assert 'Verdicts by status/confidence (3 rows): resonant/medium 1; non_resonant/medium 2' in text
-    assert 'Review queue (summary.csv review_required): 3 of 3 rows; SAVE=review selects 3 rows, PLOT=review selects 3' in text
-    assert 'SAVE=review keeps the series of 2 rows more than SAVE=nonzero would (3 rather than 1)' in text
+    # W34: the minimal policy reads the libration certain and the two clear circulations certain (the W28 tree's caps,
+    # catalogue_longitudes among them, are flags): was resonant/medium 1; non_resonant/medium 2 and a queue of 3
+    assert 'Verdicts by status/confidence (3 rows): resonant/certain 1; non_resonant/certain 2' in text
+    assert 'Review queue (summary.csv review_required): 1 of 3 rows; SAVE=review selects 1 rows, PLOT=review selects 1' in text
+    assert 'SAVE=review keeps the series' not in text
+    # the warning on a doubtful negative: the circulator's row at medium
+    circulator = sim.bodies[1]
+    key = circulator.resonances()[0].to_s()
+    medium = dataclasses.replace(circulator.librations[key], confidence=Confidence.MEDIUM, action=Action.SPOT_CHECK)
+    sim._finalise_verdict(circulator, key, medium)
+    caplog.clear()
+    with caplog.at_level('INFO'):
+        sim.data_manager.log_selection(sim.bodies)
+    assert 'Verdicts by status/confidence (3 rows): resonant/certain 1; non_resonant/certain 1; non_resonant/medium 1' in caplog.text
+    assert 'SAVE=review keeps the series of 1 rows more than SAVE=nonzero would (2 rather than 1)' in caplog.text

@@ -17,7 +17,7 @@ angles use a shorter tree, given in [Secular and Lidov-Kozai](secular-zlk.md#geo
 
 ## Minimal policy (default) {#minimal-policy}
 
-`CLASSIFIER_POLICY=minimal` (W29, agreed with the author 2026-11-02). The tree below runs first and measures
+W29, agreed with the author 2026-11-02. The tree below runs first and measures
 everything; a policy layer (`resonance/analysis/policy.py`) then re-reads the finished analysis by a few principles:
 
 1. **Status from the geometry of $\sigma_f$.** libration → `resonant`, episodic → `transient`, near_separatrix →
@@ -64,11 +64,11 @@ everything; a policy layer (`resonance/analysis/policy.py`) then re-reads the fi
 7. **ZLK and secular** follow the same rules; a secular swing below the mode-phase uncertainty stays
    `uncertain`/`phase_unresolved` (review), never non_resonant.
 
-The W28 verdict of each row stays in `v2_verdict`. `CLASSIFIER_POLICY=v2` restores the tree below as it was.
+The W28 verdict of each row stays in `v2_verdict` (`status/confidence/reason/action/angle_status`).
 
 ## Policy v2: the W28 tree
 
-The rest of this page is the tree itself: what `CLASSIFIER_POLICY=v2` reports, and what the minimal policy reads.
+The rest of this page is the tree itself: what `v2_verdict` reports, and what the minimal policy reads.
 
 ## The tree
 

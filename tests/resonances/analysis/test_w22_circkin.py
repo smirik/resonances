@@ -32,7 +32,7 @@ from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, CheckValue, LibrationOrigin, Reason, Status
 from resonances.plotting import verdict_text
 from tests.resonances.analysis.impl_response_pendulum_synthetic import make, pendulum_record
-from tests.resonances.analysis.builders import make_centre, make_geometry, make_response, make_sampling
+from tests.resonances.analysis.builders import make_centre, make_geometry, make_response, make_sampling, tree_verdict
 
 S = settings_from_config()
 NAN = float('nan')
@@ -294,7 +294,8 @@ def test_62243_kinematic_libration_with_a_moving_centre_is_a_drift():
     analysis = _verdict('mmr3__62243__1M-4J-1+0+0+4')
     verdict = analysis.verdict
     assert (str(verdict.status), str(verdict.angle_status), str(verdict.reason)) == ('non_resonant', 'drift', 'kinematic_drift')
-    assert str(verdict.confidence) == 'medium'  # the author's label of 2026-10-24
+    # the W28 tree's level, the author's label of 2026-10-24 (W34: the minimal policy's measured veto reads high)
+    assert tree_verdict(verdict).confidence == 'medium'
     shape = next(step for step in _explained(analysis).steps if step.key == 'shape')
     assert 'moves 1.82 > 1 × its amplitude' in shape.outcome
 
@@ -303,7 +304,8 @@ def test_62243_kinematic_libration_with_a_moving_centre_is_a_drift():
 def test_142694_staircase_over_200_kyr_circulates():
     analysis = _verdict('mmr3__142694__1V+3S-7+0+0+3__200kyr')
     verdict = analysis.verdict
-    assert (str(verdict.status), str(verdict.angle_status), str(verdict.confidence)) == ('non_resonant', 'circulation', 'medium')
+    # the level is the W28 tree's (W34: the minimal policy reads its own, high)
+    assert (str(verdict.status), str(verdict.angle_status), tree_verdict(verdict).confidence) == ('non_resonant', 'circulation', 'medium')
     assert analysis.geometry.centre.max_pass_rev < 1 and abs(analysis.geometry.centre.net_rev) == pytest.approx(2.75, abs=0.01)
     assert 'advances 2.75 ≥ 2 revolutions net' in _explained(analysis).sentences[0]
 

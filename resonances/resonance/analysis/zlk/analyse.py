@@ -49,7 +49,7 @@ no unfitted co-orbital): a disabled gate keeps the geometric result.
 
 W29: the minimal policy (`analysis.policy`, the last step) reads the gate as a measured veto (kinematic on a libration;
 the free e below the forced e) or a flag (no verdict, disabled: the geometry's status at <= medium, flag
-gate_unavailable / gate_disabled); ZLK_EPISODIC_NO_VERDICT acts under CLASSIFIER_POLICY=v2 only.
+gate_unavailable / gate_disabled); ZLK_EPISODIC_NO_VERDICT acts on the W28 tree only (`v2_verdict`).
 Columns that change no status (`diagnostics`, `secular.slow`): the e-i coupling of the whole record at the decisive
 period for every row (`zlk_ei_*`, `check_zlk_ei`, `confirmed_ei`; the episode's own coupling is the one a status reads),
 the attribution of a kinematic libration to a forced mode (`zlk_forcing_*`), the slow line of the centre

@@ -32,6 +32,7 @@ from resonances.resonance.analysis.mmr.sampling import analyse_sampling
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import CheckValue, Confidence
 from resonances.simulation import mmr_adapter
+from tests.resonances.analysis.builders import tree_verdict
 
 S = settings_from_config()
 TWO_PI = 2 * np.pi
@@ -424,7 +425,8 @@ def test_hw7_reads_the_linked_planets_and_the_catalogue_finds_the_same_owner():
     assert approx.owner.accepted.r2_median == pytest.approx(real.owner.accepted.r2_median, abs=0.005)
     assert approx.owner.accepted.phi0_coherence == pytest.approx(real.owner.accepted.phi0_coherence, abs=0.005)
     assert owner.FLAG_CATALOGUE in approx.owner.flags
-    assert str(approx.verdict.confidence) == 'medium' and 'catalogue_longitudes' in str(approx.verdict.caps)
+    # the W28 tree's level under the cap (W34: the minimal policy moves the cap into the flags)
+    assert tree_verdict(approx.verdict).confidence == 'medium' and 'catalogue_longitudes' in str(approx.verdict.flags)
 
 
 @pytest.mark.benchmark

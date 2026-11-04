@@ -32,6 +32,7 @@ from resonances.resonance.analysis.confidence import CAP_CEILING, Cap  # noqa: E
 from resonances.resonance.analysis.ledger import LedgerEntry, Op  # noqa: E402
 from resonances.resonance.analysis.mmr import io  # noqa: E402
 from resonances.resonance.analysis.settings import settings_from_config  # noqa: E402
+from tests.resonances.analysis.builders import tree_and_final  # noqa: E402
 
 S = settings_from_config()
 
@@ -209,19 +210,26 @@ PHYSICS_RECORDS = (
     'mmr3__237743__5J-2S-2+0+0-1',  # three-body owner: no direct theory
 )
 _CACHE = {}
+TREE_TEXT_CACHE = {}
 
 
 def _analysis(example):
+    """(series, final analysis, its row, its text); the W28 tree's text of the same analysis goes to `_tree_text`."""
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
     if example not in _CACHE:
-        from resonances.resonance.analysis.mmr.analyse import analyse_mmr
-
         series = io.load_series(example)
-        analysis = analyse_mmr(series, S)
+        tree, analysis = tree_and_final(series, S)
+        TREE_TEXT_CACHE[example] = vt.explain_mmr(tree, S, {**tree.numbers_row(), **tree.summary_row()}, tree.episode_rows())
         row = {**analysis.numbers_row(), **analysis.summary_row()}
         _CACHE[example] = (series, analysis, row, vt.explain_mmr(analysis, S, row, analysis.episode_rows()))
     return _CACHE[example]
+
+
+def _tree_text(example):
+    """The text of the W28 tree's verdict (W34: its caps, which the minimal policy turns into flags, and their words)."""
+    _analysis(example)
+    return TREE_TEXT_CACHE[example]
 
 
 def _parse(text: str) -> float:
@@ -329,12 +337,14 @@ def test_rows_say_why_when_not_measured():
 @pytest.mark.benchmark
 def test_hw7_second_capture_and_its_cap():
     """2001 HW7 5J+6S-2 (R5: x sweep 46°, energy R² 0.04–0.06 → unresolved): the block says unresolved with the
-    comparisons, and the medium cap names the other reading."""
-    *_, row, text = _analysis('mmr3__2001_HW7__5J+6S-2+0+0-9')
+    comparisons, and the medium cap names the other reading. W34: the cap is the W28 tree's (its text); under the
+    minimal policy it is the flag second_capture_unresolved and the level is the evidence's."""
+    *_, analysis, row, text = _analysis('mmr3__2001_HW7__5J+6S-2+0+0-9')
     capture = _rows(text)[('What', 'capture')]
     assert capture.icon == '?' and capture.text.endswith('→ not ruled out') and capture.label == 'both resonances at once?'
     assert f'x moved {vt.fmt(row["own_psi_sweep_deg"])}° < 180°' in capture.text
-    assert 'The other reading: two resonances at once' in text.sentences[2]
+    assert 'second_capture_unresolved' in analysis.verdict.flags and text.sentences[2].startswith('Medium from the evidence: ')
+    assert 'The other reading: two resonances at once' in _tree_text('mmr3__2001_HW7__5J+6S-2+0+0-9').sentences[2]
 
 
 W20_WORDING = {
@@ -343,8 +353,9 @@ W20_WORDING = {
     # W28 C5 (g01-2): the stay needs one loop through its own turns (69.8 yr), no longer 1.5 small-amplitude P_QS,max
     'coorbital__164207__1E-1+0+0': ('steps', 'θ stays in the quasi-satellite well for 566 yr ≥ 69.8 yr'),
     'mmr2__33128__6N-7+0+1': ('sentences', 'the force law beats a shifted in time (null test): R² gain 0.264 ≥ 0.2'),
-    # W20 round D: no lift by the record; the cap names the scatter of a (0.597 of the a swing, MEASURE: 0.60)
-    'mmr3__2001_HW7__5J+6S-2+0+0-9': ('cap', 'short-period scatter of a 0.597 > 0.5 × the a swing'),
+    # W20 round D: no lift by the record; the cap names the scatter of a (0.597 of the a swing, MEASURE: 0.60); W34: the
+    # W28 tree's cap ('tree cap'), a flag under the minimal policy
+    'mmr3__2001_HW7__5J+6S-2+0+0-9': ('tree cap', 'short-period scatter of a 0.597 > 0.5 × the a swing'),
 }
 
 
@@ -355,6 +366,8 @@ def test_w20_rules_in_words(example):
     UM52 arc 1.97 rev, 164207 visit 566 yr against 145 yr, 69.8 yr since W28 C5, 33128 null gain 0.264, HW7 scatter of a 0.597)."""
     *_, text = _analysis(example)
     where, words = W20_WORDING[example]
+    if where == 'tree cap':
+        where, text = 'cap', _tree_text(example)
     parts = {
         'steps': [step.outcome for step in text.steps],
         'cap': [row.detail for row in text.checks if row.is_cap],
@@ -392,11 +405,14 @@ def test_block_is_drawn_and_nothing_overflows(example):
 @pytest.mark.benchmark
 def test_ca138_return_times_are_printed_once():
     """2016 CA138: the return 79 -> 453 yr is said in the angle-shape step; the cap one_return_cycle names the cycle's
-    length (453 - 79 = 374 yr) and points there instead of printing the times again."""
-    *_, text = _analysis('coorbital__2016_CA138__1E-1+0+0')
-    everything = [step.outcome for step in text.steps] + [row.detail for row in text.checks] + text.info
-    assert sum('crosses it back at' in part for part in everything) == 1
-    (cap,) = [row for row in text.checks if row.key == 'cap:one_return_cycle']
+    length (453 - 79 = 374 yr) and points there instead of printing the times again. W34: the cap is the W28 tree's
+    (its text); under the minimal policy it is a flag and the final text has no cap row."""
+    *_, analysis, _, text = _analysis('coorbital__2016_CA138__1E-1+0+0')
+    for shown in (text, _tree_text('coorbital__2016_CA138__1E-1+0+0')):
+        everything = [step.outcome for step in shown.steps] + [row.detail for row in shown.checks] + shown.info
+        assert sum('crosses it back at' in part for part in everything) == 1
+    assert 'one_return_cycle' in analysis.verdict.flags and not any(row.is_cap for row in text.checks)
+    (cap,) = [row for row in _tree_text('coorbital__2016_CA138__1E-1+0+0').checks if row.key == 'cap:one_return_cycle']
     assert cap.detail.startswith('one cycle of 37') and 'angle-shape step' in cap.detail
 
 

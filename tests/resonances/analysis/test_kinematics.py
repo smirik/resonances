@@ -40,7 +40,7 @@ from resonances.resonance.analysis.verdict import (
     Reason,
     Status,
 )
-from tests.resonances.analysis.builders import make, make_geometry, make_kinematics, make_response
+from tests.resonances.analysis.builders import make, make_geometry, make_kinematics, make_response, tree_and_final
 
 S = settings_from_config()
 TWO_PI = 2 * math.pi
@@ -262,14 +262,25 @@ def test_a_kinematic_libration_with_a_flat_a_reaches_high():
 
 
 def test_the_same_record_off_the_secular_period_stays_medium():
-    # a period tolerance below the record's 1 % offset from pi / |omega_dot|: K1e is not measured, the cap holds
+    # a period tolerance below the record's 1 % offset from pi / |omega_dot|: K1e is not measured, the cap holds (the
+    # W28 tree's level, W34)
     series, _ = _series('3M+7J-6+0+0-4', 0.25)
-    analysis = analyse_mmr(series, settings_from_config(mmr_kin_period_tol=0.001))
+    analysis, final = tree_and_final(series, settings_from_config(mmr_kin_period_tol=0.001))
     verdict = analysis.verdict
     assert verdict.reason == Reason.KINEMATIC_LIBRATION and verdict.margins['K1e'].margin == Margin.NOT_MEASURED
     assert str(Cap.ALL_PHYSICS_NOT_MEASURED) in verdict.caps and verdict.confidence == Confidence.MEDIUM
     assert str(Rule.KINEMATIC_HIGH) not in verdict.rules_fired
     assert analysis.kinematics.k1_episode == pytest.approx(1.0, abs=1e-6)
+    # W34, the minimal policy: non_resonant by the measured kinematic veto, not thin and no second capture -> high; the
+    # cap is a flag
+    verdict = final.verdict
+    assert (verdict.status, verdict.reason, verdict.veto, verdict.confidence) == (
+        Status.NON_RESONANT,
+        Reason.KINEMATIC_LIBRATION,
+        'kinematic',
+        Confidence.HIGH,
+    )
+    assert str(Cap.ALL_PHYSICS_NOT_MEASURED) in verdict.flags and verdict.caps == []
 
 
 # --------------------------------------------------------------------------------------------- benchmark rows
@@ -318,7 +329,8 @@ def test_41588_stays_medium_its_a_answers_too_much():
 
     from resonances.resonance.analysis.mmr import io
 
-    analysis = analyse_mmr(io.load_series('mmr3__41588__3J+9S-2+0+0-10'), replace(S, mmr_owner_short_window_cycles=0.0))
+    # the W28 tree's level (W34: the minimal policy's level reads the evidence, not the cap)
+    analysis, _ = tree_and_final(io.load_series('mmr3__41588__3J+9S-2+0+0-10'), replace(S, mmr_owner_short_window_cycles=0.0))
     verdict = analysis.verdict
     assert verdict.reason == Reason.KINEMATIC_LIBRATION and verdict.confidence == Confidence.MEDIUM
     assert verdict.margins['K1e'].margin == Margin.NOT_MEASURED

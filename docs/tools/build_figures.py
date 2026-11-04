@@ -40,7 +40,7 @@ import time  # noqa: E402
 import traceback  # noqa: E402
 import warnings  # noqa: E402
 from concurrent.futures import ProcessPoolExecutor  # noqa: E402
-from dataclasses import dataclass, replace  # noqa: E402
+from dataclasses import dataclass  # noqa: E402
 from multiprocessing import get_context  # noqa: E402
 from pathlib import Path  # noqa: E402
 from typing import Any, Callable, Dict, List, Optional, Tuple  # noqa: E402
@@ -61,9 +61,6 @@ GALLERY_WIDTH_PX = 2000  # the verdict figures are 24 in wide: 83 dpi
 GALLERY_COLOURS = 256  # palette PNG: the figures are flat colours and text
 KIND_WIDTH_PX = 1100  # the standalone kinds of docs/reading-figures.md
 SCHEMATIC_DPI = 150
-# the gallery shows the package's default classifier policy (W29: the minimal policy layer), passed explicitly (never
-# through the environment, SPEC review 2 B1)
-GALLERY_POLICY = 'minimal'
 COMPARED = ('status', 'angle_status', 'final_regime', 'reason', 'confidence', 'libration_origin', 'action')
 
 
@@ -176,7 +173,7 @@ CASES = (
         'A libration the physics questions',
         '$\\sigma$ librates about a moving centre over the whole record, but the energy test of the pendulum fails. The '
         'objection is measured but does not decide (flag measured_objection): the geometry keeps the status, resonant at '
-        'low, with action extend. Under `CLASSIFIER_POLICY=v2` the same row is uncertain, origin_unknown.',
+        'low, with action extend.',
     ),
     # transient
     Case(
@@ -495,7 +492,7 @@ def _render_mmr(case: Case) -> Dict[str, Dict[str, Any]]:
     from resonances.resonance.analysis.settings import settings_from_config
 
     series = io.load_series(case.example_id)
-    analysis = analyse_mmr(series, replace(settings_from_config(), classifier_policy=GALLERY_POLICY))
+    analysis = analyse_mmr(series, settings_from_config())
     regime = regime_fields(io.read_meta(io.example_path(case.example_id)), series.t_yr)
     drawn = [(case.example_id, analysis)]
     if case.member:
@@ -522,7 +519,7 @@ def _render_long_period(case: Case) -> Dict[str, Dict[str, Any]]:
     from resonances.plotting.secular_plots import draw_long_period_combined
 
     example = bio.load_example(case.example_id, with_planets=False)
-    sim, body, resonance = rsz.build_simulation(example, policy=GALLERY_POLICY)
+    sim, body, resonance = rsz.build_simulation(example)
     sim.identify_librations()
     row = rsz.summary_row(case.example_id, body, resonance)
     elements = body.free_elements if resonance.type == 'lidov_kozai' else None

@@ -28,6 +28,7 @@ from resonances.resonance.analysis import geometry as geo
 from resonances.resonance.analysis.mmr import analyse as analyse_module, decide, io
 from resonances.resonance.analysis.mmr.models import MMRSeries, Regime, ResonanceSpec
 from resonances.resonance.analysis.settings import settings_from_config
+from tests.resonances.analysis.builders import tree_and_final, tree_verdict
 
 S = settings_from_config()
 OFF = replace(S, libration_centre_scale_tp_at_centre=False)
@@ -44,7 +45,8 @@ def _load(example):
 
 
 def _analysis(example, settings=S):
-    return analyse_module.analyse_mmr(_load(example), settings)
+    """The W28 tree's analysis (G2c is a rule of the tree; W34: the minimal policy re-reads it afterwards)."""
+    return tree_and_final(_load(example), settings)[0]
 
 
 def _accepted(analysis):
@@ -60,7 +62,7 @@ def test_the_setting_is_on_by_default():
 @pytest.mark.parametrize('example', [TX9, TX9_HALF])
 def test_tx9_one_slow_libration_at_the_scale_of_the_centre(example):
     series = _load(example)
-    analysis = analyse_module.analyse_mmr(series, S0)
+    analysis = tree_and_final(series, S0)[0]
     ((start, end, n_tp),) = _accepted(analysis)
     assert start == pytest.approx(2.21, abs=0.1) and end == pytest.approx(17.49, abs=0.1) and n_tp == 11
     (episode,) = [run for run in analysis.geometry.runs if run.accepted]
@@ -139,14 +141,15 @@ def test_tx9_at_a_fixed_centre_scale_any_centre_prominence_finds_the_same_episod
     analysis there finds the precheck's episode (11 TP up to 13 deg, 9 from 16), 2.21-17.49 kyr. Below 8 deg the
     precheck's own run fails centre_moves, above 18 deg it no longer covers the record (scratchpad w23/impl/s4)."""
     series = _load(example)
-    analysis = analyse_module.analyse_mmr(series, S0)
+    analysis = tree_and_final(series, S0)[0]
     coarse = geo.angle_at_centre_window(centre_angle['angle'], analysis.extra_columns['geo_centre_scale_cutoff_yr'], S0)
     for p_c, n_tp in ((8.0, 11), (10.0, 11), (13.0, 11), (16.0, 9), (18.0, 9)):
         precheck = decide.decisive_episode(geo.measure_geometry(coarse, math.radians(p_c), S0), S0)
         _, at_scale = analyse_module._decide_at_scale(series, coarse, math.radians(p_c), S0, None, False, False, '')
         ((start, end, n),) = _accepted(at_scale)
         assert (start, end) == pytest.approx((2.21, 17.49), abs=0.02) and n == n_tp == precheck.n_tp, p_c
-        assert str(at_scale.verdict.status) == 'uncertain'
+        # called on its own, the pass ends with the policy layer (W34): the tree's status is kept in v2_verdict
+        assert tree_verdict(at_scale.verdict).status == 'uncertain'
 
 
 @pytest.mark.benchmark

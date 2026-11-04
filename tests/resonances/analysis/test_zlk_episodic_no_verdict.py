@@ -19,7 +19,7 @@ from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, CheckValue, Reason, ResonanceType, Status, status_code
 from resonances.resonance.analysis.zlk import analyse_zlk
 from resonances.resonance.analysis.zlk.episode_ei import measure_episode_coupling
-from tests.resonances.analysis.builders import make_episode
+from tests.resonances.analysis.builders import make_episode, tree_verdict
 from tests.resonances.analysis.test_zlk_double_scale import G5, G6, RAD, zlk_series
 
 SETTINGS = settings_from_config()
@@ -237,9 +237,22 @@ def test_end_to_end_the_episode_coupling_decides_a_row_without_a_gate_verdict():
         assert row['zlk_ei_episode_coupling'] == gate.episode_ei.coupling
         if gate.outcome not in decide.GATE_NO_VERDICT:
             pytest.skip(f'the synthetic gate gives a verdict ({gate.outcome}); the decision tests cover the branch')
+        # W34: ZLK_EPISODIC_NO_VERDICT acts on the W28 tree (`v2_verdict`)
+        tree = tree_verdict(verdict)
         expected = (Status.TRANSIENT, 1) if trade else (Status.UNCERTAIN, -9)
-        assert (verdict.status, verdict.status_code) == expected, (trade, gate.episode_ei)
+        tree_code = status_code(LK, Status(tree.status), AngleStatus(tree.angle_status), tree.reason)
+        assert (tree.status, tree_code) == expected, (trade, gate.episode_ei)
         assert gate.episode_ei.coupling == ('zlk' if trade else 'none')
         assert 'zlk_gate_unconfirmed' in verdict.rules_fired
         keep = analyse_zlk(series, settings_from_config(zlk_episodic_no_verdict='keep'), free_elements=elements).verdict
-        assert keep.status == Status.TRANSIENT and 'zlk_gate_unconfirmed' not in keep.rules_fired
+        assert tree_verdict(keep).status == Status.TRANSIENT and 'zlk_gate_unconfirmed' not in keep.rules_fired
+        # W34, the minimal policy: e and i trading at constant H with rho_max >= ZLK_RHO_KINEMATIC_EXCLUDED keep the
+        # transient (flag kinematic_excluded, no cap); i frozen breaks the integral where the forced terms are small:
+        # the measured veto zlk_integral, non_resonant -2 (a measurement, never -9), whatever the tree's setting
+        assert gate.rho_max >= SETTINGS.zlk_rho_kinematic_excluded
+        if trade:
+            assert (verdict.status, verdict.status_code, verdict.veto) == (Status.TRANSIENT, 1, '')
+            assert {'gate_unavailable', 'kinematic_excluded'} <= set(verdict.flags)
+        else:
+            for row in (verdict, keep):
+                assert (row.status, row.status_code, row.veto) == (Status.NON_RESONANT, -2, 'zlk_integral')

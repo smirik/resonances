@@ -122,6 +122,13 @@ def _row(analysis):
     return analysis.numbers_row()
 
 
+def _tree(verdict):
+    """The W28 tree's (status, confidence, reason, action, angle_status). W34: every analysis ends with the minimal
+    policy, which keeps the tree's verdict in `v2_verdict` and moves every cap into `flags`; these tests specify the
+    tree's leaves (5s, 5s*, 5n, 5u, 5o), so they read it there."""
+    return tuple(verdict.v2_verdict.split('/'))
+
+
 # --------------------------------------------------------------------------------------------------------------------
 # both physics checks are out by design
 
@@ -153,10 +160,14 @@ def test_kl9_like_implausible_three_body_is_non_resonant():
     assert row['str_ratio'] == pytest.approx(ratio, rel=0.03)
     assert row['str_divisor_B'] == pytest.approx(b, rel=0.01)
     verdict = analysis.verdict
-    assert (str(verdict.status), str(verdict.reason), str(verdict.libration_origin)) == ('non_resonant', 'implausible_strength', 'unknown')
-    assert 'implausible_strength' in verdict.caps
-    assert str(verdict.confidence) == 'low'
-    assert str(verdict.angle_status) == 'libration'  # the geometry is not denied, only its origin
+    status, confidence, reason, _, angle_status = _tree(verdict)
+    assert (status, reason, str(verdict.libration_origin)) == ('non_resonant', 'implausible_strength', 'unknown')
+    assert row['rec_rule'] == '5s' and 'implausible_strength' in verdict.flags  # the cap of 5s, a flag under the policy
+    assert confidence == 'low'
+    assert angle_status == 'libration'  # the geometry is not denied, only its origin
+    # W34: the minimal policy gives a three-body 5s the geometry's status back at low (flag strength_scale_implausible)
+    assert (str(verdict.status), str(verdict.confidence)) == ('resonant', 'low')
+    assert 'strength_scale_implausible' in verdict.flags
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -173,8 +184,8 @@ def test_same_resonance_rescuable_by_the_nearest_divisor_is_uncertain():
     assert ratio >= 100 * SETTINGS.mmr_strength_implausible_ratio
     assert ratio / b**2 < SETTINGS.mmr_strength_implausible_ratio / 3
     verdict = analysis.verdict
-    assert (str(verdict.status), str(verdict.reason)) == ('uncertain', 'origin_unknown')
-    assert 'implausible_strength' not in verdict.caps
+    assert (_tree(verdict)[0], _tree(verdict)[2]) == ('uncertain', 'origin_unknown')
+    assert _row(analysis)['rec_rule'] == '5s*'  # not 5s: no implausible_strength cap (5s* sets only the flag)
 
 
 def test_a_range_across_a_two_body_commensurability_gives_no_bound():
@@ -199,7 +210,7 @@ def test_a_range_across_a_two_body_commensurability_gives_no_bound():
     assert row['str_divisor_B'] == pytest.approx(n * 300.0 / (2 * np.pi), rel=0.02)
     assert row['str_divisor_residual'] < SETTINGS.mmr_strength_implausible_ratio
     verdict = analysis.verdict
-    assert (str(verdict.status), str(verdict.reason)) == ('uncertain', 'origin_unknown')
+    assert (_tree(verdict)[0], _tree(verdict)[2]) == ('uncertain', 'origin_unknown')
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -220,7 +231,7 @@ def test_one_cycle_with_a_plausible_strength_is_uncertain():
     verdict = analysis.verdict
     assert str(verdict.checks['check_mmr_strength']) == 'pass'
     assert str(verdict.checks['check_mmr_onset']) != 'fail'
-    assert (str(verdict.status), str(verdict.reason), str(verdict.libration_origin)) == ('uncertain', 'origin_unknown', 'unknown')
+    assert (_tree(verdict)[0], _tree(verdict)[2], str(verdict.libration_origin)) == ('uncertain', 'origin_unknown', 'unknown')
 
 
 def test_many_cycles_with_nothing_measured_but_the_scale_keep_the_geometry_at_medium():
@@ -233,10 +244,10 @@ def test_many_cycles_with_nothing_measured_but_the_scale_keep_the_geometry_at_me
     ratio = _reference_ratio(series, 8000.0, 0.2)
     assert 1 / SETTINGS.mmr_strength_check_ratio <= ratio <= SETTINGS.mmr_strength_check_ratio
     verdict = analysis.verdict
-    assert str(verdict.status) == 'resonant'
+    assert _tree(verdict)[0] == 'resonant'
     assert str(verdict.libration_origin) == 'unknown'
-    assert 'strength_scale_only' in verdict.caps and 'geometry_only' not in verdict.caps
-    assert str(verdict.confidence) == 'medium'
+    assert 'strength_scale_only' in verdict.flags and 'geometry_only' not in verdict.flags  # the tree's caps, flags under the policy
+    assert _tree(verdict)[1] == 'medium'
 
 
 def test_ratio_between_ten_and_a_thousand_is_a_measured_objection():
@@ -247,5 +258,5 @@ def test_ratio_between_ten_and_a_thousand_is_a_measured_objection():
     assert SETTINGS.mmr_strength_check_ratio < ratio < SETTINGS.mmr_strength_implausible_ratio
     verdict = analysis.verdict
     assert str(verdict.checks['check_mmr_strength']) == 'fail'
-    assert (str(verdict.status), str(verdict.reason)) == ('uncertain', 'origin_unknown')
-    assert 'implausible_strength' not in verdict.caps and 'geometry_only' not in verdict.caps
+    assert (_tree(verdict)[0], _tree(verdict)[2]) == ('uncertain', 'origin_unknown')
+    assert 'implausible_strength' not in verdict.flags and 'geometry_only' not in verdict.flags  # caps are flags under the policy

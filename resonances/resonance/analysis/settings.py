@@ -18,7 +18,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import os
 from dataclasses import MISSING, Field, asdict, dataclass, field, fields
 from typing import Any, Mapping, Optional
 
@@ -28,15 +27,6 @@ KINDS = ('int', 'float', 'bool', 'str', 'floats', 'strs', 'optional_float')
 def _setting(default, env: str, kind: str, meaning: str, *, unit: str = '', convention: bool = False):
     """A dataclass field carrying its .env key, parser kind, unit, meaning and convention flag."""
     return field(default=default, metadata={'env': env, 'kind': kind, 'meaning': meaning, 'unit': unit, 'convention': convention})
-
-
-def _setting_from_env(nominal, env: str, kind: str, meaning: str, *, unit: str = '', convention: bool = False):
-    """A field whose dataclass default is read from the environment variable `env` (else `nominal`) each time a
-    settings object is built without a value for it. The one exception to "the environment does not reach the
-    settings" (CLASSIFIER_POLICY, W29 spec §1): `AnalysisSettings()` and `settings_from_config()` without a source get
-    it, so the test suite can pin v2 (tests/conftest.py) while the package default is `nominal`."""
-    metadata = {'env': env, 'kind': kind, 'meaning': meaning, 'unit': unit, 'convention': convention, 'nominal': nominal}
-    return field(default_factory=lambda: os.environ.get(env, nominal), metadata=metadata)
 
 
 PI = math.pi
@@ -2393,8 +2383,8 @@ class AnalysisSettings:
         "unavailable without the co-orbital detail): 'ei' = transient only when the deciding episode's own e-i coupling "
         "is zlk (zlk_ei_episode_coupling), else uncertain/gate_unavailable (-9); 'uncertain' = always -9; 'keep' = "
         "transient as the geometry says. A policy: with 'ei' the anticorrelation of e and i at constant H is a status "
-        "condition for such a row; CLASSIFIER_POLICY=v2 only: the minimal policy gives such a row the geometry's status "
-        'with the flag gate_unavailable',
+        "condition for such a row; the W28 tree only (v2_verdict): the minimal policy gives such a row the geometry's "
+        'status with the flag gate_unavailable',
         convention=True,
     )
     zlk_centre_model_r_min: float = _setting(
@@ -2494,16 +2484,6 @@ class AnalysisSettings:
         "author and Codex); 'certain' = no limit",
         convention=True,
     )
-    # --- Policy ---------------------------------------------------------------------------------
-    classifier_policy: str = _setting_from_env(
-        'minimal',
-        'CLASSIFIER_POLICY',
-        'str',
-        "'minimal' (W29): the status from the geometry of sigma_f, non_resonant only by a measured veto (owner, "
-        'kinematic, forced wave, strength, ZLK kinematic or free e < forced e), the level from the evidence (N cycles, '
-        "amplitude margin, vetoes, filter stability), every other W28 rule a flag; 'v2': the W28 tree as it was, for "
-        'comparison. The one setting the environment reaches without a source (the tests pin v2)',
-    )
     confidence_cells: str = _setting(
         '',
         'CONFIDENCE_CELLS',
@@ -2577,7 +2557,6 @@ CHOICES = {
     'zlk_angle_frame': ('invariable', 'ecliptic'),
     'zlk_episodic_no_verdict': ('ei', 'uncertain', 'keep'),
     'confidence_geometry_only_max': ('low', 'medium', 'high', 'certain'),
-    'classifier_policy': ('minimal', 'v2'),
 }
 
 # (smaller, larger): the first must be strictly below the second
@@ -2864,9 +2843,8 @@ def _default(f: Field) -> Any:
 
 
 def nominal_default(f: Field) -> Any:
-    """The default a setting has in `.env.dist` and docs/config.md: the plain default, or for a field read from the
-    environment (`_setting_from_env`) its nominal value, whatever the environment holds now."""
-    return f.metadata['nominal'] if 'nominal' in f.metadata else f.default
+    """The default a setting has in `.env.dist` and docs/config.md."""
+    return f.default
 
 
 def format_value(value: Any) -> str:

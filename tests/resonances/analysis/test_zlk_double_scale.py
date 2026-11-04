@@ -25,6 +25,7 @@ from resonances.resonance.analysis.verdict import AngleStatus, CheckValue, Reaso
 from resonances.resonance.analysis.zlk import analyse_zlk, diagnostics
 from resonances.secular import free_elements as fe
 from resonances.simulation.config import SimulationConfig
+from tests.resonances.analysis.builders import tree_verdict
 from tests.resonances.local_data import free_omega_fixture
 
 SETTINGS = settings_from_config()
@@ -112,7 +113,12 @@ def test_an_earth_coorbital_libration_has_no_gate_verdict():
     series, elements = genuine_librator(a=1.0)
     analysis = analyse_zlk(series, SETTINGS, free_elements=elements)
     assert analysis.gate.outcome == 'unavailable' and analysis.gate.detail == omega_free_gate.COORBITAL_UNFITTED
-    assert (analysis.verdict.status, analysis.verdict.reason) == (Status.UNCERTAIN, Reason.GATE_UNAVAILABLE)
+    tree = tree_verdict(analysis.verdict)
+    assert (tree.status, tree.reason) == (Status.UNCERTAIN, Reason.GATE_UNAVAILABLE)
+    # W34: the minimal policy gives a gate without a verdict the geometry's status back, flagged, at most medium
+    verdict = analysis.verdict
+    assert (verdict.status, verdict.reason) == (Status.RESONANT, Reason.GEOMETRIC_LIBRATION)
+    assert 'gate_unavailable' in verdict.flags and str(verdict.confidence) in ('medium', 'low')
     # the same orbit away from any planet: a confirmed libration
     series, elements = genuine_librator(a=2.5)
     assert analyse_zlk(series, SETTINGS, free_elements=elements).verdict.status == Status.RESONANT
@@ -438,7 +444,9 @@ def test_a_coorbital_with_unfitted_forcing_has_no_centre_guard():
     series, elements = double_scale(a=1.0, late_free=0.001)
     analysis = analyse_zlk(series, SETTINGS, free_elements=elements)
     assert analysis.gate.detail == omega_free_gate.COORBITAL_UNFITTED and analysis.centre_rejected == ''
-    assert analysis.scale == 'centre' and analysis.verdict.reason == Reason.GATE_UNAVAILABLE
+    assert analysis.scale == 'centre' and tree_verdict(analysis.verdict).reason == Reason.GATE_UNAVAILABLE
+    # W34: the minimal policy keeps the geometry's libration, the missing gate verdict a flag
+    assert analysis.verdict.reason == Reason.GEOMETRIC_LIBRATION and 'gate_unavailable' in analysis.verdict.flags
 
 
 def _with_forcing(free_radius, amplitudes):

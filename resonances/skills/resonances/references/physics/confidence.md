@@ -8,7 +8,7 @@ asteroid orbits. `uncertain` and `invalid` verdicts have no level: they claim no
 
 ## Minimal policy (default) {#minimal-policy}
 
-Under `CLASSIFIER_POLICY=minimal` the level is a pure function of five pieces of evidence (`policy.level`, column
+The minimal policy's level is a pure function of five pieces of evidence (`policy.level`, column
 `confidence_basis`):
 
 - **N**, complete libration cycles: $(n_{TP} - 1)/2$ of the decisive episode, plus the gap of each covered edge in
@@ -49,7 +49,7 @@ spot_check, low review.
 
 ## Policy v2: margins and caps
 
-The rest of this page is the W28 confidence (`CLASSIFIER_POLICY=v2`); its margins stay columns under minimal.
+The rest of this page is the W28 confidence (the tree's level, in `v2_verdict`); its margins stay columns.
 
 ## Margins
 

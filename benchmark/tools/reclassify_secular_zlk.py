@@ -2,10 +2,7 @@
 
     uv run python benchmark/tools/reclassify.py --rtype secular,zlk --workers 3 --out benchmark/data/v2-w4-secular_zlk
     uv run python benchmark/tools/reclassify_secular_zlk.py --only zlk__591986__LK --figures
-    uv run python benchmark/tools/reclassify_secular_zlk.py --policy minimal --out benchmark/data/v2-w29-secular-zlk
-
---policy minimal|v2 passes `classifier_policy` to each example's Simulation as a keyword (W29), over the example's
-saved classifier_config and the environment; omitted, the package default applies.
+    uv run python benchmark/tools/reclassify_secular_zlk.py --out benchmark/data/v2-w34-secular-zlk
 
 Each example becomes a `Simulation` holding one body rebuilt from series.csv.gz (`bench_io.to_body`: the angle the
 package classifies, the elements, the source run's settings) and `Simulation.identify_librations` gives the verdict
@@ -27,7 +24,6 @@ for _var in ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS', 'VECL
 os.environ.setdefault('MPLBACKEND', 'Agg')
 
 import argparse  # noqa: E402
-import functools  # noqa: E402
 import sys  # noqa: E402
 import time  # noqa: E402
 import traceback  # noqa: E402
@@ -70,17 +66,13 @@ AUTHOR_HINTS = {'zlk__1373__LK': ('resonant', 'c0730 on 500 kyr; this record is 
 # ------------------------------------------------------------------ one example
 
 
-def build_simulation(example: 'bio.Example', policy: Optional[str] = None):
-    """A `Simulation` with the example's body, its times and the source run's settings (`bio.make_config`);
-    `policy` (minimal | v2) sets `classifier_policy` over them."""
+def build_simulation(example: 'bio.Example'):
+    """A `Simulation` with the example's body, its times and the source run's settings (`bio.make_config`)."""
     from resonances.simulation.simulation import Simulation
 
     config = bio.make_config(example.meta, example.series, has_planets=False)
     body, resonance, _ = bio.to_body(example, config=config)
-    kwargs = _config_kwargs(example)
-    if policy is not None:
-        kwargs['classifier_policy'] = policy
-    sim = Simulation(**kwargs)
+    sim = Simulation(**_config_kwargs(example))
     sim.times = body.times
     sim.body_manager.bodies.append(body)
     return sim, body, resonance
@@ -117,13 +109,13 @@ def summary_row(example_id: str, body, resonance) -> Dict[str, Any]:
     return row
 
 
-def analyse_one(example_id: str, figure: bool = False, policy: Optional[str] = None) -> Dict[str, Any]:
+def analyse_one(example_id: str, figure: bool = False) -> Dict[str, Any]:
     """Analyse one example; never raises (errors come back in the result)."""
     warnings.simplefilter('ignore')
     start = time.perf_counter()
     try:
         example = bio.load_example(example_id, with_planets=False)
-        sim, body, resonance = build_simulation(example, policy)
+        sim, body, resonance = build_simulation(example)
         loaded = time.perf_counter()
         sim.identify_librations()
         analysed = time.perf_counter()
@@ -226,22 +218,15 @@ def _job(args):
     return analyse_one(*args)
 
 
-def _job_with(policy: Optional[str], args):
-    example_id, figures = args
-    return analyse_one(example_id, figures, policy)
-
-
 TASKS_PER_WORKER = 20  # worker recycling of the secular/ZLK runs
 
 
-def run(ids: List[str], out: Path, workers: int, figures: bool, policy: Optional[str] = None) -> int:
+def run(ids: List[str], out: Path, workers: int, figures: bool) -> int:
     import reclassify
 
-    overrides = reclassify.policy_overrides(policy)
     out.mkdir(parents=True, exist_ok=True)
     print(f'{len(ids)} secular/ZLK examples, {workers} workers -> {out}')
-    job = functools.partial(_job_with, policy)  # picklable for the spawn pool
-    ok, errors, wall = bio.run_examples(ids, job, figures, workers, TASKS_PER_WORKER, workers <= 1, runs=[out / 'run.json'])
+    ok, errors, wall = bio.run_examples(ids, _job, figures, workers, TASKS_PER_WORKER, workers <= 1, runs=[out / 'run.json'])
     summary = pd.DataFrame([row for r in ok for row in r['summary']])
     summary.to_csv(out / 'summary.csv', index=False)
     pd.DataFrame([row for r in ok for row in r['episodes']]).to_csv(out / 'episodes.csv', index=False)
@@ -249,7 +234,7 @@ def run(ids: List[str], out: Path, workers: int, figures: bool, policy: Optional
     if len(frame):
         frame.to_csv(out / 'agreement.csv', index=False)
     timings = [{'example_id': r['example_id'], 'seconds': r['seconds']} for r in ok]
-    extra = reclassify.run_record_extra(overrides)
+    extra = reclassify.run_record_extra({})
     bio.write_run_record(out, 'benchmark/tools/reclassify_secular_zlk.py', len(ids), ok, errors, wall, workers, figures, timings, **extra)
     if len(frame):
         print_report(frame, timings)
@@ -263,9 +248,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument('--out', type=Path, default=bio.DATA / 'v2-secular-zlk', help='output folder')
     ap.add_argument('--workers', type=int, default=3, help='worker processes (3 at most next to other runs)')
     ap.add_argument('--figures', action='store_true', help='also draw combined_v2.png into each example folder')
-    ap.add_argument('--policy', choices=('minimal', 'v2'), help='classifier_policy (W29); default: the package default')
     args = ap.parse_args(argv)
-    return run(select(args.rtype, args.only), args.out, args.workers, args.figures, args.policy)
+    return run(select(args.rtype, args.only), args.out, args.workers, args.figures)
 
 
 if __name__ == '__main__':

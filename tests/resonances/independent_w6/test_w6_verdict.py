@@ -193,6 +193,13 @@ def _analyse(rate, t=T):
     return analyse_mmr(_series_3j1(t, rate), SETTINGS, scan_subresonances=False, scan_owner=False)
 
 
+def _tree(verdict):
+    """(status, reason) of the W28 tree: every analysis ends with the minimal policy, which keeps the tree's verdict
+    in `v2_verdict` (status/confidence/reason/action/angle_status; W34)."""
+    status, _, reason, _, _ = verdict.v2_verdict.split('/')
+    return Status(status), Reason(reason)
+
+
 def _zeros(rate_fn, t0, t1, dt=1.0):
     """Zeros of the analytic rate (the turning points of sigma), by sign change and Brent's method."""
     grid = np.arange(t0, t1 + dt, dt)
@@ -245,7 +252,7 @@ def test_g1c_one_episode_then_circulation_is_transient_ending_in_circulation():
     # W28 B3 reads R0 on the arc each window visits: 13 of 22 windows agree (0.59, was 0.68 on the full circle), so R0
     # fails next to a passing force law (leaf 5b) - this libration is harmonic, not a pendulum, and its circulation
     # feels no force; the G1c words above are what this test checks
-    assert v.status == Status.UNCERTAIN and v.reason == Reason.ORIGIN_UNKNOWN
+    assert _tree(v) == (Status.UNCERTAIN, Reason.ORIGIN_UNKNOWN)
     assert 'force_law_disagrees' in {str(f) for f in v.flags}
 
 
@@ -305,7 +312,9 @@ def test_g1e_libration_then_jump_of_a_into_circulation():
     assert t_jump <= v.final_regime_start_yr <= t_jump + tau / 2.0 + (tau - p_c) / 2.0
     # the episode librates about pi, outside the well of the directly averaged potential (centre_outside_well): with
     # L4 and R0 not measured a failed strength check is a measured objection (rule 5o, W18)
-    assert (v.status, v.reason) == (Status.UNCERTAIN, Reason.ORIGIN_UNKNOWN)
+    assert _tree(v) == (Status.UNCERTAIN, Reason.ORIGIN_UNKNOWN)
+    # W34: the minimal policy gives an objection the geometry's status back at low (flag measured_objection)
+    assert (v.status, str(v.confidence)) == (Status.TRANSIENT, 'low') and 'measured_objection' in v.flags
 
 
 def test_final_regime_columns_round_trip_and_order():

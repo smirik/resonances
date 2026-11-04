@@ -33,7 +33,7 @@ from tests.resonances.analysis.builders import (
     make_verdict,
 )
 
-MINIMAL = AnalysisSettings(classifier_policy='minimal')
+MINIMAL = AnalysisSettings()
 ZLK, SECULAR = ResonanceType.LIDOV_KOZAI, ResonanceType.SECULAR
 SPAN = 1.0e6
 PERIOD = 5.0e4
@@ -249,12 +249,3 @@ def test_a_clear_circulation_is_certain():
     verdict = make_verdict(Status.NON_RESONANT, AngleStatus.CIRCULATION, resonance_type=SECULAR, reason=Reason.CIRCULATION)
     verdict.margins = {'P': MarginValue(margin='full', value=3.0)}
     assert policy.apply_long_period(make_long_period_analysis(verdict, geo, span_yr=SPAN), MINIMAL).verdict.confidence == Confidence.HIGH
-
-
-def test_policy_v2_only_marks_the_row():
-    verdict = make_verdict(Status.RESONANT, AngleStatus.LIBRATION, resonance_type=ZLK)
-    analysis = make_long_period_analysis(verdict, geometry(), gate('planetary_residual'), span_yr=SPAN)
-    before = verdict.to_flat_dict()
-    after = policy.apply_long_period(analysis, AnalysisSettings(classifier_policy='v2')).verdict.to_flat_dict()
-    assert after.pop('policy') == 'v2' and before.pop('policy') == ''
-    assert before == after and analysis.policy is None

@@ -17,7 +17,7 @@ from resonances.simulation import SimulationSerializer
 from resonances.simulation.config import status_selected
 from tests.resonances.simulation.test_restore_and_resume import CIRC, LIB, _saved_run
 
-MINIMAL = AnalysisSettings(classifier_policy='minimal')
+MINIMAL = AnalysisSettings()
 N = 12001
 T = np.arange(N, dtype=float)
 W = 2 * np.pi / 1000.0
@@ -61,7 +61,7 @@ def test_a_pendulum_then_circulation_is_one_counted_episode():
 
 
 def test_the_policy_survives_the_simulation_path(tmp_path):
-    sim = _saved_run(tmp_path, classifier_policy='minimal')
+    sim = _saved_run(tmp_path)
     librator = next(body for body in sim.bodies if body.name == 'librator')
     verdict = librator.librations[LIB]
     assert verdict.policy == 'minimal' and librator.statuses[LIB] == str(verdict.status) == 'resonant'

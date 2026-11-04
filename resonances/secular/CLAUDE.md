@@ -59,8 +59,9 @@ Lidov's integrals (`lidov-kozai.md`), −2 vs −9 (`physics/status-tree.md`), t
   (`experiments/2026-10-planetary-frequencies`), not taken from the literature: the model has no GR, so g1, g2, s1, s2
   differ from La90 by 0.1–0.3″/yr.
 - **The cluster representative** (`PRIORITY_E`, `PRIORITY_I`) is a modelling assumption, not a free convention: a
-  different member changes the verdict on 3752 and 591986. What must stay true, and is tested: no choice ever turns a
-  non-librator into a libration.
+  different member changes the verdict on 3752 and 591986. What must stay true, and is tested: no choice ever makes the
+  gate confirm a non-librator (under the minimal policy a choice that leaves the gate without a verdict gives the
+  geometry's status back at <= medium, flag gate_unavailable: 591986 with g7 for g5; W34, `test_omega_free_gate_reference`).
 - **Free elements do not apply to co-orbitals of a planet whose modes are not in the fitted basis** (Mercury to Mars:
   g1-g4, s1-s4 are not candidates): their forced term is the planet's own vector; a confident-looking straight line
   there is not a measurement. Guard (`omega_free_gate.coorbital_planet`, author's variant (a), 2026-10-28):

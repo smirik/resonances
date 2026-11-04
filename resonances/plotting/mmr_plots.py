@@ -224,18 +224,17 @@ def _rerun_analysis(body, resonance, sim):
     key = resonance.to_s()
     if sim is None:
         raise ValueError(f'{body.name} {key}: no filtered angle in memory, and no simulation to re-run the analysis')
-    from resonances.plotting.verdict_text import POLICY_MINIMAL, policy_minimal
+    from resonances.plotting.verdict_text import policy_minimal
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr
     from resonances.simulation.mmr_adapter import series_from_body
 
     settings = sim.config.analysis_settings
     stored = getattr(body, 'librations', {}).get(key)
-    minimal = str(getattr(settings, 'classifier_policy', '')) == POLICY_MINIMAL
-    scans = minimal and stored is None
+    scans = stored is None
     analysis = analyse_mmr(series_from_body(body, resonance, sim), settings, scan_subresonances=scans, scan_owner=scans)
     if analysis.prep is None:
         raise ValueError(f'{body.name} {key}: the analysis is undefined ({analysis.verdict.reason}), there is no filtered angle')
-    if minimal and stored is not None and policy_minimal(stored):
+    if stored is not None and policy_minimal(stored):
         analysis.verdict = stored
         analysis.policy = None  # the marks come from the stored verdict's episode ids, not from a scan-less re-run
     return analysis

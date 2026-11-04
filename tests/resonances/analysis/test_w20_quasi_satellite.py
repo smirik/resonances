@@ -22,7 +22,7 @@ from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import Action, AngleSubtype, Status
 
-from tests.resonances.analysis.builders import make_geometry
+from tests.resonances.analysis.builders import make_geometry, tree_verdict
 from tests.resonances.analysis.test_impl_w3_guards_ledger_columns import missing_numbers
 
 S = settings_from_config()
@@ -181,7 +181,7 @@ def test_469219_quasi_satellite_then_horseshoe():
         'libration',
         'regime_change',
     )
-    assert analysis.verdict.confidence == 'high'
+    assert tree_verdict(analysis.verdict).confidence == 'high'  # the W28 tree's level (W34: the minimal policy's certain)
     (episode,) = decide.librating_episodes(analysis.geometry, S)
     assert episode.wells.startswith('qs>') and episode.wells.endswith('>horseshoe')
     assert analysis.geometry.floor_well.holds(episode)  # its floor is the quasi-satellite's
@@ -213,7 +213,9 @@ def test_2021_ed2_is_not_high():
     analysis = analyse_mmr(needs('coorbital__2021_ED2__1E-1+0+0'), S)
     assert analysis.extra_columns['geo_qs_pass'] == 'rejected'
     assert analysis.extra_columns['geo_qs_visit_yr'] >= analysis.extra_columns['geo_qs_visit_needed_yr']
-    assert (analysis.verdict.status, analysis.verdict.angle_status, analysis.verdict.confidence) == ('transient', 'episodic', 'medium')
+    # the W28 tree's level (W34: the minimal policy keeps the transient at its own level, low)
+    tree = tree_verdict(analysis.verdict)
+    assert (analysis.verdict.status, analysis.verdict.angle_status, tree.confidence) == ('transient', 'episodic', 'medium')
 
 
 @pytest.mark.benchmark

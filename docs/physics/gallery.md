@@ -88,7 +88,7 @@ $\sigma$ librates over the whole record, but neither the force law nor the energ
 
 ### A libration the physics questions {#measured-objection}
 
-$\sigma$ librates about a moving centre over the whole record, but the energy test of the pendulum fails. The objection is measured but does not decide (flag measured_objection): the geometry keeps the status, resonant at low, with action extend. Under `CLASSIFIER_POLICY=v2` the same row is uncertain, origin_unknown.
+$\sigma$ librates about a moving centre over the whole record, but the energy test of the pendulum fails. The objection is measured but does not decide (flag measured_objection): the geometry keeps the status, resonant at low, with action extend.
 
 **2003 TX9**, `3E+2J-10+0+0+5`: `resonant` · `libration` · `geometric_libration` · `low`. Record: 20 kyr, step 5 yr, ias15.
 

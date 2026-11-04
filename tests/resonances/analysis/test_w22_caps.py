@@ -24,7 +24,7 @@ from resonances.resonance.analysis.mmr.decide import AngleDecision, StatusDecisi
 from resonances.resonance.analysis.mmr.models import Strength
 from resonances.resonance.analysis.mmr.owner import INTERVAL_FORCED, INTERVAL_LIBRATION
 from resonances.resonance.analysis.settings import settings_from_config
-from tests.resonances.analysis.builders import make_episode, make_geometry
+from tests.resonances.analysis.builders import make_episode, make_geometry, tree_and_final
 from resonances.resonance.analysis.verdict import (
     AngleStatus,
     AngleSubtype,
@@ -207,10 +207,11 @@ def test_o1_still_applies_without_an_owner_libration():
 def test_benchmark_records_reach_the_authors_medium(example, cap):
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
-
-    verdict = analyse_mmr(io.load_series(example), S).verdict
+    # the W28 tree's level and caps (W34: the minimal policy reads its own level, the caps are flags)
+    tree, final = tree_and_final(io.load_series(example), S)
+    verdict = tree.verdict
     assert str(verdict.confidence) == 'medium'  # the author's label of 2026-10-24
+    assert final.verdict.caps == [] and (cap is None or cap in final.verdict.flags)
     if cap is not None:
         assert cap in verdict.caps and GEOMETRY_ONLY not in verdict.caps
     else:

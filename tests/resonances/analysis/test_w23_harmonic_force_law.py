@@ -24,7 +24,7 @@ from resonances.resonance.analysis.mmr.models import HarmonicLaw, MultipletFit, 
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.ledger import Margin
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, CheckValue, LibrationOrigin, Reason, Status
-from tests.resonances.analysis.builders import make, make_geometry, make_response
+from tests.resonances.analysis.builders import make, make_geometry, make_response, tree_verdict
 
 S = settings_from_config()
 T = np.arange(0.0, 20000.0, 5.0)
@@ -262,7 +262,8 @@ def _numbers(example):
 @pytest.mark.benchmark
 def test_nd13_libration_in_a_two_lobed_well_is_a_dynamic_episode():
     columns, verdict = _numbers(ND13)
-    assert (str(verdict.status), str(verdict.angle_status), str(verdict.confidence)) == ('transient', 'episodic', 'medium')
+    # the level is the W28 tree's (W34: the minimal policy reads its own, high)
+    assert (str(verdict.status), str(verdict.angle_status), tree_verdict(verdict).confidence) == ('transient', 'episodic', 'medium')
     assert (str(verdict.reason), str(verdict.libration_origin)) == ('dynamic_episode', 'dynamic')
     assert columns['rsp_force_law'] == R.LAW_HARMONIC and columns['rsp_force_harm_N'] == 2
     assert columns['rsp_force_harm_R2'] == pytest.approx(0.646, abs=0.02)
@@ -277,9 +278,10 @@ def test_33128_is_refused_on_independent_halves():
     assert columns['rsp_force_harm_reason'] == R.HARMONIC_HALVES
     assert columns['rsp_force_harm_oos'] == pytest.approx(0.26, abs=0.02)
     assert columns['rsp_force_law'] != R.LAW_HARMONIC
-    # W28 B4 (q-2 b): high needs a physical support with its full margin; L4 is thin, R0 not measured -> medium
-    assert (str(verdict.status), str(verdict.confidence)) == ('transient', 'medium')
-    assert 'no_full_physics_support' in verdict.caps
+    # W28 B4 (q-2 b): high needs a physical support with its full margin; L4 is thin, R0 not measured -> medium (the
+    # W28 tree's level; W34: the minimal policy reads its own and moves the cap into the flags)
+    assert (str(verdict.status), tree_verdict(verdict).confidence) == ('transient', 'medium')
+    assert 'no_full_physics_support' in verdict.flags and verdict.caps == []
 
 
 @pytest.mark.benchmark

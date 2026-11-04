@@ -208,14 +208,13 @@ def test_a_counted_episode_to_a_covered_edge_is_pale_in_the_filter_trim():
         plt.close(fig)
 
 
-def test_policy_marks_from_a_stored_verdict_and_under_v2():
+def test_policy_marks_from_a_stored_verdict_and_without_a_policy():
     """The figure re-run path (§7): without a PolicyResult the marks come from the verdict's id cells; 'leg' and 'half'
-    have no episode row. Under v2 (or a verdict without the field) there are no marks: (a) is drawn as before."""
+    have no episode row. A verdict without the field (a file written before W29) has no marks: (a) is drawn as before."""
     analysis = _zlk(2.5)
-    assert mc.policy_marks(analysis) is None
-    analysis.policy = _policy(policy='v2')
-    assert mc.policy_marks(analysis) is None
     analysis.policy = None
+    analysis.verdict.policy = ''
+    assert mc.policy_marks(analysis) is None
     analysis.verdict.policy = 'minimal'
     analysis.verdict.counted_episode_ids = '3;leg'
     analysis.verdict.candidate_episode_ids = '1;half;7'
@@ -275,8 +274,8 @@ def test_the_explanation_opens_with_the_policy_block():
     )
     assert head[2] == 'flags: gate_disabled'
     assert head[3] == 'v2: resonant · medium · geometric_libration · spot_check · libration'
-    # under v2 the block is not there
-    analysis.verdict.policy = 'v2'
+    # a verdict without a policy (a file written before W29) has no block
+    analysis.verdict.policy = ''
     assert vt.SLOT_POLICY not in [bullet.slot for bullet in vt.explain_long_period(analysis, SETTINGS, analysis.episode_rows()).bullets]
 
 

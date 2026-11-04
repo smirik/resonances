@@ -730,7 +730,9 @@ def test_a_two_turning_point_capture_that_returns_is_one_cycle():
     assert _n_turning_points(sigma) == 2
     v = result.verdict
     assert _s(v.status) == 'transient' and _s(v.angle_status) == 'episodic'
-    assert 'near_episode' not in v.flags and 'one_return_cycle' in v.caps
+    # W34: the minimal policy keeps the tree's caps as flags (one_return_cycle is a cap only) and its level in v2_verdict
+    assert 'near_episode' not in v.flags and 'one_return_cycle' in v.flags
+    assert v.v2_verdict.split('/')[1] in ('medium', 'low')
     assert _confidence_at_most_medium(v)
     (episode,) = [run for run in result.geometry.runs if run.accepted]
     assert episode.closed_by_return

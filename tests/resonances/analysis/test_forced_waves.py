@@ -30,7 +30,7 @@ from resonances.resonance.analysis.mmr.strength import METHOD_DIRECT
 from resonances.resonance.analysis.rules import Rule
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, LibrationOrigin, Reason, Status
-from tests.resonances.analysis.builders import make, make_episode, make_geometry
+from tests.resonances.analysis.builders import make, make_episode, make_geometry, tree_verdict
 
 S = settings_from_config()
 NAN = float('nan')
@@ -150,7 +150,16 @@ def test_kl9_verdict_is_the_same_and_its_two_runs_are_marked():
     assert str(Rule.FORCED_STRENGTH_MARK) in flat_on.pop('rules_fired')
     assert str(Rule.FORCED_STRENGTH_MARK) not in flat_off.pop('rules_fired')
     assert {k: str(v) for k, v in flat_on.items()} == {k: str(v) for k, v in flat_off.items()}
-    assert (on.verdict.status, on.verdict.reason) == (Status.NON_RESONANT, Reason.IMPLAUSIBLE_STRENGTH)
+    # the W28 tree's leaf 5s; W34: the minimal policy's veto is the W31 background wave (status-tree.md#minimal-policy,
+    # step 2, 2012 KL9): non_resonant / kinematic_libration, word circulation
+    tree = tree_verdict(on.verdict)
+    assert (tree.status, tree.reason) == (Status.NON_RESONANT, Reason.IMPLAUSIBLE_STRENGTH)
+    assert (on.verdict.status, on.verdict.reason, on.verdict.veto, on.verdict.angle_status) == (
+        Status.NON_RESONANT,
+        Reason.KINEMATIC_LIBRATION,
+        'forced_wave',
+        'circulation',
+    )
     rows_on, rows_off = pd.DataFrame(on.episode_rows()), pd.DataFrame(off.episode_rows())
     accepted = rows_on[rows_on['accepted']]
     spans = [t / 1e3 for span in sorted(zip(accepted['t_start_yr'], accepted['t_end_yr'])) for t in span]

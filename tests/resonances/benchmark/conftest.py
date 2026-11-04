@@ -3,9 +3,7 @@
 (`benchmark/tools/reclassify_secular_zlk.py` into benchmark/data/test-benchmark-secular-zlk, a few seconds) per session,
 read by the disagreement gate (test_classify_benchmark.py) and the episode gate (test_episode_expectations.py). Skipped
 without the saved series in benchmark/data or $RESONANCES_BENCHMARK_DATA. Under pytest-xdist the first worker that
-needs a run writes it and the others wait for it (a file lock): one reclassification per session, not per worker.
-The gates run the minimal policy (W29), passed to the tools explicitly (`--policy`): the subprocess inherits the
-CLASSIFIER_POLICY=v2 that `tests/conftest.py` pins for the rest of the suite."""
+needs a run writes it and the others wait for it (a file lock): one reclassification per session, not per worker."""
 
 import fcntl
 import os
@@ -23,7 +21,6 @@ import bench_io as bio  # noqa: E402
 
 RUN = 'test-benchmark'
 SECULAR_ZLK_RUN = 'test-benchmark-secular-zlk'
-POLICY = 'minimal'  # the classifier policy the gates check (W29: the package default)
 
 
 def _reclassify(script: str, run: str) -> Path:
@@ -55,12 +52,12 @@ def _run_tool(script: str, out: Path) -> Path:
         workers = min(workers, 4)
     start = time.perf_counter()
     subprocess.run(
-        [sys.executable, str(TOOLS / script), '--workers', str(workers), '--out', str(out), '--policy', POLICY],
+        [sys.executable, str(TOOLS / script), '--workers', str(workers), '--out', str(out)],
         check=True,
         cwd=TOOLS.parents[1],
         env={**os.environ, 'PYTHONUNBUFFERED': '1'},
     )
-    print(f'\n{script} --policy {POLICY}: {workers} workers, {time.perf_counter() - start:.0f} s')
+    print(f'\n{script}: {workers} workers, {time.perf_counter() - start:.0f} s')
     return out
 
 

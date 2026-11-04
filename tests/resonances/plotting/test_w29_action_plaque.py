@@ -193,18 +193,6 @@ def test_minimal_extend_advises_forward_for_the_end_causes_only():
     assert vt.extend_flag_sentence(_minimal({}, action=Action.SPOT_CHECK)) == ''
 
 
-def test_under_v2_the_flag_keeps_its_advice():
-    """CLASSIFIER_POLICY=v2 keeps W28 C14 (card g01-7 A): the flag advises with its next check whatever the action."""
-    f = _facts(
-        row={'geo_extend_time_from': 'start:half'},
-        verdict={'action': Action.SPOT_CHECK, 'extend_to_years': 2.0e5, 'extend_direction': 'backward'},
-    )
-    assert vt.extend_flag_sentence(f) == (
-        'Extend: a longer integration backward (next check: 200 kyr) would show how the record starts (a half-swing that '
-        'follows the law is cut by the start).'
-    )
-
-
 def test_minimal_baseline_names_a_next_check_only_with_action_extend():
     """baseline_needed: P = 12.5 kyr asks for about 50 kyr (base_required_kyr); the next check 40 kyr is the row's
     extend_to_years and is named only when the action is extend."""
@@ -215,6 +203,7 @@ def test_minimal_baseline_names_a_next_check_only_with_action_extend():
     assert vt._baseline_sentence(extend) == (
         'Uncertain: the record is too short to decide; next check: 40 kyr (about 50 kyr estimated from P = 12.5 kyr).'
     )
-    v2 = _facts(row=row, verdict={'status': 'uncertain', 'reason': 'baseline_needed', 'action': Action.REVIEW})
-    assert 'next check: 40 kyr' in vt._baseline_sentence(v2)
+    # a file written before W29 (no policy) names the next check whatever the action
+    old = _facts(row=row, verdict={'status': 'uncertain', 'reason': 'baseline_needed', 'action': Action.REVIEW, 'policy': ''})
+    assert 'next check: 40 kyr' in vt._baseline_sentence(old)
     assert math.isfinite(row['extend_to_years'])

@@ -14,6 +14,7 @@ import numpy as np
 import pytest
 
 from resonances.resonance.analysis.secular import LongPeriodSeries, analyse_secular
+from resonances.resonance.analysis.secular.analyse import analyse_long_period
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, Reason, ResonanceType, Status
 from resonances.resonance.analysis.zlk import analyse_zlk
@@ -137,10 +138,14 @@ def test_a_slow_libration_with_five_turning_points_is_resonant():
 
 def test_a_cycle_and_a_half_is_the_least_a_libration_needs():
     # period 6.67 Myr: extrema at 1.67, 5.0, 8.33 Myr (1020 Arcadia in z1: 1.3, 4.6, 8.0 Myr)
-    analysis = secular(np.radians(80.0 * np.sin(2 * np.pi * T_SECULAR / (1e7 / 1.5))))
+    angle = np.radians(80.0 * np.sin(2 * np.pi * T_SECULAR / (1e7 / 1.5)))
+    analysis = secular(angle)
     assert analysis.verdict.status == Status.RESONANT
     assert len(analysis.geometry.turning_points) == SETTINGS.libration_min_turning_points == 3
-    assert 'three_tp_episode' in analysis.verdict.caps
+    # the cap is the W28 tree's: W34 every analysis ends with the minimal policy, which turns caps into flags, so the
+    # tree (`analyse_long_period`, `analyse_secular` without the policy layer) is read for it
+    assert 'three_tp_episode' in analyse_long_period(series(ResonanceType.SECULAR, T_SECULAR, angle), SETTINGS).verdict.caps
+    assert 'three_tp_episode' in analysis.verdict.flags
 
 
 def test_one_cycle_is_too_few():

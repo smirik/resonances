@@ -221,7 +221,8 @@ def test_objections_leave_the_grey_line(secular):
 def test_the_bullets_follow_the_slots(secular, zlk):
     for analysis, row, *rest in (secular, zlk):
         slots = [b.slot for b in _explain(analysis, row, *rest).bullets]
-        assert slots[0] == vt.SLOT_VERDICT and slots[-1] == vt.SLOT_ORBIT and vt.SLOT_SCALE in slots
+        # W34: the minimal policy opens the explanation with its four bullets, the verdict line follows
+        assert slots[:5] == [vt.SLOT_POLICY] * 4 + [vt.SLOT_VERDICT] and slots[-1] == vt.SLOT_ORBIT and vt.SLOT_SCALE in slots
         assert [vt.SLOTS.index(slot) for slot in slots] == sorted(vt.SLOTS.index(slot) for slot in slots)
 
 

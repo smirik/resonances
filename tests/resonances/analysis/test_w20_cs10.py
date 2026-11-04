@@ -22,6 +22,7 @@ from resonances.resonance.analysis.mmr import decide, io
 from resonances.resonance.analysis.mmr.preprocess import GuardOutcome, _compare_energy
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, LibrationOrigin, MarginClass, Reason, Status
+from tests.resonances.analysis.builders import tree_verdict
 from tests.resonances.analysis.test_impl_w3_guards_filter import quantities
 
 S = settings_from_config()
@@ -178,4 +179,5 @@ def test_author_rows_are_certain(example_id):
 @pytest.mark.parametrize('example_id', STAY_HIGH)
 def test_near_or_narrow_branch_rows_stay_high(example_id):
     v = _verdict(example_id).verdict
-    assert (str(v.status), str(v.confidence)) == ('non_resonant', 'high')
+    # the W28 tree's level (W34: the minimal policy reads its own, certain for 88710_c4)
+    assert (str(v.status), tree_verdict(v).confidence) == ('non_resonant', 'high')

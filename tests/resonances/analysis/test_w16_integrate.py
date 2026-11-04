@@ -17,7 +17,7 @@ from resonances.resonance.analysis.mmr import io
 from resonances.resonance.analysis.mmr import subresonances as sr
 from resonances.resonance.analysis.mmr.models import ResonanceSpec
 from resonances.resonance.analysis.settings import AnalysisSettings
-from tests.resonances.analysis.builders import make_geometry, make_turning_points
+from tests.resonances.analysis.builders import make_geometry, make_turning_points, tree_and_final
 
 S = AnalysisSettings()
 T = np.arange(0.0, 20000.5, 1.0)
@@ -92,9 +92,13 @@ def test_increment_stretches_take_the_dominant_run_or_the_whole_group():
 S_DOUBLE_ONLY = replace(S, mmr_strength_mp='off', mmr_kin_ripple_share_max=0.0)  # and without K2 (W20 CS7), which decides first
 
 
-def _analysed(example, settings=S):
+def _analysed_needs(example):
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
+
+
+def _analysed(example, settings=S):
+    _analysed_needs(example)
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 
     return analyse_mmr(io.load_series(example), settings)
@@ -102,7 +106,11 @@ def _analysed(example, settings=S):
 
 @pytest.mark.benchmark
 def test_2897_a_failed_identity_without_force_law_and_potential_is_no_dynamic_libration():
-    analysis = _analysed('mmr2__2897__35S-4+0-31', S_DOUBLE_ONLY)
+    _analysed_needs('mmr2__2897__35S-4+0-31')
+    # rule 5g is the W28 tree's leaf (W34: the minimal policy gives no status to the objection; here its veto is the
+    # W31 background wave, non_resonant / kinematic_libration, status-tree.md#minimal-policy step 2)
+    analysis, final = tree_and_final(io.load_series('mmr2__2897__35S-4+0-31'), S_DOUBLE_ONLY)
+    assert (str(final.verdict.status), final.verdict.veto) == ('non_resonant', 'forced_wave')
     verdict = analysis.verdict
     assert verdict.checks['check_mmr_a_response'] == 'not_measured'
     assert verdict.checks['check_mmr_potential'] != 'pass'

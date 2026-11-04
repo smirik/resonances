@@ -17,6 +17,7 @@ from resonances.resonance.analysis.mmr import io, owner, owner_potential
 from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.mmr.models import ResonanceSpec
 from resonances.resonance.analysis.settings import settings_from_config
+from tests.resonances.analysis.builders import tree_and_final, tree_verdict
 
 S = settings_from_config()
 
@@ -112,7 +113,10 @@ def test_2003_tg2_owner_acts_outside_the_episode():
     v, result = analysis.verdict, analysis.owner
     assert result.accepted.spec.key == '27V-40+0+13' and result.cover < S.mmr_owner_cover_min
     assert all(b <= 30e3 or a >= 31e3 for a, b, _ in result.intervals)
-    assert (str(v.status), str(v.libration_origin)) == ('uncertain', 'unknown')
+    # the W28 tree's status; W34: the minimal policy gives the geometry's transient back (rule F, the author's
+    # transient/low of 2026-11-04), the owner outside the episode is no veto
+    assert (tree_verdict(v).status, str(v.libration_origin)) == ('uncertain', 'unknown')
+    assert (str(v.status), str(v.confidence), v.veto) == ('transient', 'low', '')
     # W28 A3a (card g06-3 A): a resonance outside the episode is a neighbour, after it here, not the owner
     assert v.owner == '' and v.neighbours.startswith('27V-40+0+13 ') and v.neighbours.endswith(' after')
     assert 'owner_outside_episode' in v.flags and v.checks['check_mmr_owner'] == 'pass'
@@ -129,7 +133,12 @@ def test_2001_pg14_step_quarter_year_reads_its_own_libration():
 
 @pytest.mark.benchmark
 def test_2001_hw7_second_capture_is_unresolved():
-    _, analysis = _analysis('mmr3__2001_HW7__5J+6S-2+0+0-9')
+    if not (io.example_path('mmr3__2001_HW7__5J+6S-2+0+0-9') / 'series.csv.gz').exists():
+        pytest.skip('benchmark data not available')
+    # the W28 tree's verdict carries the cap (W34: the minimal policy keeps the owner's veto, the cap is a flag)
+    analysis, final = tree_and_final(io.load_series('mmr3__2001_HW7__5J+6S-2+0+0-9'), S)
+    assert (str(final.verdict.status), final.verdict.veto) == ('non_resonant', 'owner')
+    assert 'second_capture_unresolved' in final.verdict.flags
     v, result = analysis.verdict, analysis.owner
     assert (str(v.status), str(v.reason), v.owner) == ('non_resonant', 'induced_libration', '5E-16+0+11')
     # x = Psi / 8 sweeps ~45 deg (R5: 46): a second capture cannot be excluded

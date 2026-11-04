@@ -44,7 +44,7 @@ from resonances.resonance.analysis.verdict import (
     Status,
     Verdict,
 )
-from tests.resonances.analysis.builders import make_episode, make_geometry, make_response, make_sampling
+from tests.resonances.analysis.builders import make_episode, make_geometry, make_response, make_sampling, tree_and_final
 
 S = settings_from_config()
 LIMIT = S.mmr_strength_implausible_ratio  # 1000
@@ -341,16 +341,16 @@ BEFORE_W32_RIPPLES = {'mmr3__46596__8J+5S-3+0+0-10'}
 
 
 def _analyse(example):
+    """The W28 tree's analysis (the branch, its caps and the exit/capture lift are the tree's; W34: the minimal policy
+    re-reads it afterwards)."""
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
-
     settings = replace(S, libration_regime_cuts=False) if example in BEFORE_W20_CUTS else S
     if example in BEFORE_W32_RIPPLES:
         settings = replace(settings, mmr_ripple_on_arc=False)
     if example in BEFORE_W20_K2:
         settings = replace(settings, mmr_kin_ripple_share_max=0.0)
-    return analyse_mmr(io.load_series(example), settings)
+    return tree_and_final(io.load_series(example), settings)[0]
 
 
 @pytest.mark.benchmark
@@ -513,21 +513,17 @@ def test_33128_exits_and_captures_as_in_the_q12_report():
     assert analysis.verdict.caps == ['no_full_physics_support']
     assert (str(analysis.verdict.status), str(analysis.verdict.confidence)) == ('transient', 'medium')
     assert analysis.extra_columns['sep_unexplained_lifted'] == 1.0
-    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
-
-    no_ceiling = analyse_mmr(io.load_series('mmr2__33128__6N-7+0+1'), replace(S, mmr_high_needs_full_support=False))
+    no_ceiling = tree_and_final(io.load_series('mmr2__33128__6N-7+0+1'), replace(S, mmr_high_needs_full_support=False))[0]
     assert (str(no_ceiling.verdict.status), str(no_ceiling.verdict.confidence)) == ('transient', 'high')
 
 
 @pytest.mark.benchmark
 def test_33128_keeps_the_cap_with_the_convention_off():
-    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
-
     if not io.example_path('mmr2__33128__6N-7+0+1').exists():
         pytest.skip('benchmark data not available')
     # the q-2 b ceiling (W28 B4) off, so that transient_unexplained is the only cap the convention leaves
     off = settings_from_config(None, mmr_exit_and_capture_lifts_unexplained=False, mmr_high_needs_full_support=False)
-    analysis = analyse_mmr(io.load_series('mmr2__33128__6N-7+0+1'), off)
+    analysis = tree_and_final(io.load_series('mmr2__33128__6N-7+0+1'), off)[0]  # the tree's caps (W34)
     assert str(Flag.EXIT_AND_CAPTURE) in analysis.verdict.flags  # the mark itself does not depend on the convention
     assert analysis.verdict.caps == [str(conf.Cap.TRANSIENT_UNEXPLAINED)]
     assert (str(analysis.verdict.status), str(analysis.verdict.confidence)) == ('transient', 'medium')

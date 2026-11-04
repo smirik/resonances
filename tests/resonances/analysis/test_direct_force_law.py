@@ -23,7 +23,7 @@ from resonances.resonance.analysis.mmr import decide, response as R, strength as
 from resonances.resonance.analysis.mmr.models import DirectForceLaw, ResonanceSpec, Strength
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import CheckValue, LibrationOrigin, Status
-from tests.resonances.analysis.builders import make, make_response
+from tests.resonances.analysis.builders import make, make_response, tree_verdict
 
 S = settings_from_config()
 STEP = 5.0
@@ -223,8 +223,11 @@ def _analysis(example):
 def test_59358_is_a_transient_whose_own_force_drives_a():
     analysis = _analysis('mmr2__59358__8N-13+0+5')
     verdict, columns = analysis.verdict, analysis.response.to_columns()
-    assert (str(verdict.status), str(verdict.angle_status), str(verdict.confidence)) == ('transient', 'episodic', 'medium')
-    assert str(Cap.FORCE_LAW_THEORY_ONLY) in verdict.caps and 'direct_force_law' in verdict.rules_fired
+    # the W28 tree's verdict and cap (W34: the minimal policy keeps transient, the cap is a flag, the level its own)
+    tree = tree_verdict(verdict)
+    assert (tree.status, tree.angle_status, tree.confidence) == ('transient', 'episodic', 'medium')
+    assert str(Cap.FORCE_LAW_THEORY_ONLY) in verdict.flags and 'direct_force_law' in verdict.rules_fired
+    assert str(verdict.status) == 'transient' and verdict.caps == []
     assert columns['rsp_dforce_reason'] == 'taken' and columns['rsp_dforce_R2'] >= S.mmr_force_r2_full
     assert 1.0 < columns['rsp_dforce_scale_min'] and columns['rsp_dforce_scale_max'] < 1.4
     assert columns['geo_period_large_yr'] == pytest.approx(8700, rel=0.05)
@@ -234,6 +237,10 @@ def test_59358_is_a_transient_whose_own_force_drives_a():
 @pytest.mark.benchmark
 def test_gq107_stays_uncertain():
     analysis = _analysis('mmr2__2005_GQ107__40M-57+0+17')
-    assert str(analysis.verdict.status) == 'uncertain'
+    # the W28 tree's leaf 5g/origin_unknown; W34: the minimal policy gives the geometry's transient back with the
+    # objection as a flag (measured_objection, low; the author's label of 2026-11-03)
+    assert tree_verdict(analysis.verdict).status == 'uncertain'
+    assert (str(analysis.verdict.status), str(analysis.verdict.confidence)) == ('transient', 'low')
+    assert 'measured_objection' in analysis.verdict.flags
     e01 = next(e for e in analysis.response.episode_responses if e.episode_id is not None and 31000 < e.t_start_yr < 32500)
     assert e01.force_direct.reason == R.DIRECT_NOT_INDEPENDENT and e01.a_response == CheckValue.FAIL

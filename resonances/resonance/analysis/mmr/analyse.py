@@ -874,7 +874,7 @@ def analyse_mmr(
     for again in the record's memo (`filtering.record_memo`).
 
     W29: the outermost call ends with the policy layer (`policy.apply_mmr`: the minimal policy re-reads the finished
-    analysis; under CLASSIFIER_POLICY=v2 it only marks the verdict); a pass inside a record's analysis (a derived row,
+    analysis); a pass inside a record's analysis (a derived row,
     the centre scale, an owner's identity) returns the raw v2 analysis, which the outermost call's layer reads."""
     options = (scan_subresonances, scan_owner, parent, centre_scale, quasi_satellite, subfloor)
     if _ACTION_STEP_CUTS.get() is not None:  # a pass inside a record's analysis: no policy, the outermost call applies it

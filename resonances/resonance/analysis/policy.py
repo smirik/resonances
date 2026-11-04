@@ -25,8 +25,7 @@ analysis and decides again:
     P6 episodes    the counted episodes and the candidates (drawn faint, not counted) go to `PolicyResult`, the
                    verdict's columns and episodes.csv (`counted`, `candidate`).
 
-Under CLASSIFIER_POLICY=v2 (`settings.classifier_policy`) the layer only marks the verdict's `policy` and returns. It
-runs once per record, after every v2 pass (`mmr.analyse.analyse_mmr`, `secular.analyse.analyse_secular`,
+It runs once per record, after every v2 pass (`mmr.analyse.analyse_mmr`, `secular.analyse.analyse_secular`,
 `zlk.analyse.analyse_zlk`); every comparison it makes goes to the decision path as `policy:*`.
 """
 
@@ -60,7 +59,6 @@ from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import (
     CONFIDENCE_ORDER,
     POLICY_MINIMAL,
-    POLICY_V2,
     Action,
     AngleStatus,
     AngleSubtype,
@@ -503,6 +501,7 @@ def _write(
     v.pol_end_travel_rev, v.pol_t_last_tp_yr, v.pol_period_dec_yr = end.end_travel_rev, end.t_last_yr, end.period_dec_yr
     v.pol_n_last, v.pol_last_reaches_end, v.pol_extend_clause = end.n_last, end.last_reaches_end, clause
     v.pol_veto_need_yr = veto_need
+    v.pol_core_cycles = ev.core_cycles
     v.decision_path = list(v.decision_path) + list(ledger)
 
 
@@ -533,7 +532,7 @@ def _record_level(ev: Evidence, settings: AnalysisSettings, ledger: Ledger) -> N
         settings,
         'confidence_certain_core_cycles',
         'cycles',
-        '',
+        'pol_core_cycles',
     )
 
 
@@ -565,11 +564,7 @@ def _thin_entries(entries: Iterable[LedgerEntry], prefixes: Tuple[str, ...]) -> 
 def apply_mmr(analysis, settings: AnalysisSettings):
     """The policy on a finished MMR analysis (`mmr.analyse.analyse_mmr`, outermost call only): every derived row first,
     then the catalogue row (a subresonance parent takes its member's minimal status, level and N), then the multiplet
-    status again. Under v2 only `Verdict.policy` is set. Returns the analysis (changed in place)."""
-    if settings.classifier_policy != POLICY_MINIMAL:
-        for row in [analysis] + list(analysis.derived):
-            row.verdict.policy = POLICY_V2
-        return analysis
+    status again. Returns the analysis (changed in place)."""
     for row in analysis.derived:
         _apply_mmr_row(row, settings, None)
     member = analysis.derived[0].verdict if analysis.derived else None
@@ -1286,12 +1281,9 @@ def _mmr_extend_to(
 
 
 def apply_long_period(analysis, settings: AnalysisSettings):
-    """The policy on a finished secular or ZLK analysis (`analyse_secular`, `analyse_zlk` after its columns); under v2
-    only `Verdict.policy` is set. Returns the analysis (changed in place)."""
+    """The policy on a finished secular or ZLK analysis (`analyse_secular`, `analyse_zlk` after its columns).
+    Returns the analysis (changed in place)."""
     v = analysis.verdict
-    if settings.classifier_policy != POLICY_MINIMAL:
-        v.policy = POLICY_V2
-        return analysis
     zlk = analysis.series.resonance_type == ResonanceType.LIDOV_KOZAI
     revolution = TWO_PI  # omega too (W30 D3): the half-turn of the quadrupole's cos 2 omega is no general symmetry
     geometry, angle = analysis.geometry, analysis.angle
@@ -1513,7 +1505,10 @@ def _free_e_pins(gate, word, settings: AnalysisSettings, ledger: Ledger) -> Opti
 
 
 def _zlk_veto(name: str, thin: bool, ids: frozenset) -> _Outcome:
-    """A ZLK veto: non_resonant / kinematic_libration (code -2), the free omega winds; its episodes are candidates."""
+    """A ZLK veto: non_resonant / kinematic_libration (code -2); its episodes are candidates. check_zlk_free_omega
+    fails only on the free omega's own vetoes (zlk_kinematic, zlk_free_e); the e-i integral (zlk_integral) is no
+    free-omega measurement, so the gate's check stays not_measured there (W34: a short_window gate is no kinematic)."""
+    free_omega = name != VETO_ZLK_INTEGRAL
     return _Outcome(
         Status.NON_RESONANT,
         Reason.KINEMATIC_LIBRATION,
@@ -1522,7 +1517,7 @@ def _zlk_veto(name: str, thin: bool, ids: frozenset) -> _Outcome:
         veto=name,
         veto_thin=thin,
         candidates=ids,
-        check_zlk_free_omega=CheckValue.FAIL,
+        check_zlk_free_omega=CheckValue.FAIL if free_omega else CheckValue.NOT_MEASURED,
     )
 
 

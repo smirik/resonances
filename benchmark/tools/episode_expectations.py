@@ -306,14 +306,14 @@ def run_folder(run: str | Path) -> Path:
     return path if path.is_dir() else bio.DATA / str(run)
 
 
-def analyse_long_period(example_ids: Sequence[str], policy: Optional[str] = None) -> RunTables:
+def analyse_long_period(example_ids: Sequence[str]) -> RunTables:
     """The secular and Lidov-Kozai examples analysed from their saved series, as reclassify_secular_zlk does (no
-    figures; `policy` minimal | v2, None: the package default): a `RunTables` with their summary and episode rows."""
+    figures): a `RunTables` with their summary and episode rows."""
     import reclassify_secular_zlk as szlk
 
     summaries, episodes = [], []
     for example_id in example_ids:
-        result = szlk.analyse_one(example_id, False, policy)
+        result = szlk.analyse_one(example_id, False)
         if result['status'] != 'ok':
             raise RuntimeError(f'{example_id}: {result["error"]}\n{result.get("trace", "")}')
         summaries.extend(result['summary'])
@@ -745,14 +745,6 @@ def describe(rec: Optional[Record]) -> str:
     return head + ' | ' + ('; '.join(parts) if parts else 'no accepted episode') + tail
 
 
-def run_policy(tables: RunTables) -> Optional[str]:
-    """The classifier policy of a run: its summary's `policy` column (one value), None for a run before W29."""
-    if 'policy' not in tables.summary:
-        return None
-    values = {str(v) for v in tables.summary['policy'] if str(v) not in ('', 'nan')}
-    return values.pop() if len(values) == 1 else None
-
-
 def evaluate(
     run: str | Path | RunTables,
     cases: Optional[Sequence[Case]] = None,
@@ -760,12 +752,12 @@ def evaluate(
 ) -> pd.DataFrame:
     """One row per case: result PASS | FAIL | MISSING (the record is not in the run), the notes of every check, the
     package's reading. MMR cases read `run`; secular/ZLK cases read `long_period`, analysed here when not given (under
-    the MMR run's policy, `run_policy`)."""
+    the package's settings)."""
     cases = load_cases() if cases is None else list(cases)
     tables = run if isinstance(run, RunTables) else read_run(run)
     ids = long_period_ids(cases)
     if ids and long_period is None:
-        long_period = analyse_long_period(ids, run_policy(tables))
+        long_period = analyse_long_period(ids)
     rows = []
     for case in cases:
         source = long_period if case.scope in LONG_PERIOD_SCOPES else tables

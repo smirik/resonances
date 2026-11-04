@@ -28,7 +28,7 @@ from resonances.resonance.analysis.verdict import (
     Status,
     Verdict,
 )
-from tests.resonances.analysis.builders import make, make_episode, make_geometry, make_turning_points
+from tests.resonances.analysis.builders import make, make_episode, make_geometry, make_turning_points, tree_and_final
 
 S = settings_from_config()
 P_SLOW, W_C, P_C = 45_000.0, 22_500.0, 600.0
@@ -209,10 +209,14 @@ def _analysed(example):
 
 @pytest.mark.benchmark
 def test_385533_is_read_at_the_ladder_cutoff_and_capped_at_medium():
-    analysis = _analysed('mmr2__385533__7N-12+0+5')
+    if not io.example_path('mmr2__385533__7N-12+0+5').exists():
+        pytest.skip('benchmark data not available')
+    # the W28 tree's level and cap (W34: the minimal policy keeps resonant/medium, the cap is a flag)
+    analysis, final = tree_and_final(io.load_series('mmr2__385533__7N-12+0+5'), S)
     verdict, numbers = analysis.verdict, analysis.numbers_row()
     assert (verdict.status, verdict.angle_status, verdict.confidence) == (Status.RESONANT, AngleStatus.LIBRATION, Confidence.MEDIUM)
     assert str(Cap.SLOW_SCALE_PROVISIONAL) in verdict.caps and 'scale_ladder' in verdict.rules_fired
+    assert final.verdict.status == Status.RESONANT and str(Cap.SLOW_SCALE_PROVISIONAL) in final.verdict.flags
     # W_c 22 744 yr (two extrema) -> 0.35 x 22 717 = 7951 yr above 3 x 1950 yr (four extrema, 19.5-89.5 kyr)
     assert numbers['geo_scale_ladder_above_yr'] == pytest.approx(22_744.25, rel=1e-3)
     assert numbers['geo_scale_ladder_cutoff_yr'] == pytest.approx(7951.0, rel=1e-3)

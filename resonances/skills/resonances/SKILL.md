@@ -129,14 +129,14 @@ references/output.md; every value: references/physics/overview.md and references
 | `final_regime` | how the record ends after librating episodes (`circulation`, `libration` = captured at the end), or `arc`/`stall` when σ slows down after circulating (flag `extend_time`) |
 | `reason`, `libration_origin` | why; `dynamic` = this resonance's force was measured; `kinematic`, `induced`, `subresonance`, `unknown` otherwise |
 | `confidence` | `certain` > `high` > `medium` > `low`: ordinal evidence, not a probability; empty for `uncertain`/`invalid`. Minimal policy: from the evidence alone (below), `confidence_basis` says on what |
-| `caps`, `flags` | v2: what holds the level down; each cap names another reading of the record (references/physics/confidence.md, "Caps and the other reading"). Minimal policy: `caps` is empty, every former cap is a flag and changes neither status nor level |
-| `policy`, `v2_verdict` | `minimal` (default) or `v2` (`CLASSIFIER_POLICY`); under minimal `v2_verdict` is what the W28 tree said (`status/confidence/reason/action/angle_status`), for comparison only |
+| `caps`, `flags` | `caps` is empty: every cap of the W28 tree is a flag and changes neither status nor level (references/physics/confidence.md) |
+| `policy`, `v2_verdict` | `minimal`; `v2_verdict` is what the W28 tree (the policy's input) said (`status/confidence/reason/action/angle_status`), for comparison only |
 | `veto`, `n_cycles`, `n_counted_episodes`, `counted_episode_ids`, `candidate_episode_ids` | minimal policy: the measured physics that made a bounded angle non_resonant (`owner`, `kinematic`, `forced_wave`, `strength`, `zlk_kinematic`, `zlk_free_e`; '' none), the complete cycles N behind the level, the counted episodes and the candidates (episodes.csv `counted`, `candidate`) |
 | `action` | `none`, `spot_check` (look at the figure), `review`, `extend` (to `extend_to_years`), `resample` (at `resample_step_yr`) |
 | `rules_fired` | the named rules that acted on the row (a cut, a join, a cap, an outcome), even when the status stayed; each has a row id in references/libration-analysis.md (`frame_join` → G2q). A flag list, never a status |
 | `review_required`, `review_reasons` | the review queue: rows a human should look at (medium/low level, a spot_check/review action, origin unknown) and why (`confidence:`, `cap:`, `failed:`, `origin_unknown`); no status reads it |
 
-**The minimal policy** (`CLASSIFIER_POLICY=minimal`, the default; `v2` keeps the W28 tree for comparison;
+**The minimal policy** (the W28 tree's verdict is kept in `v2_verdict`;
 references/physics/status-tree.md, references/physics/confidence.md). The status is the geometry of σ_f: bounded over
 the whole record → resonant, bounded stretches between circulation → transient, ambiguous → near_separatrix or
 uncertain, never bounded → non_resonant. A bounded angle becomes non_resonant **only** on a measured contradiction
@@ -256,9 +256,9 @@ Distinctions that matter when you report:
   only an `uncertain` row. An episodic ω is judged inside its librating episodes when its free ω winds over the record
   (it circulates between them): confirmed there (`zlk_gate_detail` = `episodes`) when the free ω stays put in every
   episode (`ZLK_GATE_EPISODES`). A confirmed and a geometric ZLK librator share the status code: **split every ZLK
-  statistic by `check_zlk_free_omega`** (`pass` = confirmed, `not_measured` = no verdict). The v2 text below is the
-  `v2` policy.
-- **Lidov-Kozai (v2).** A libration of the osculating ω is not enough; the free-ω gate decides. `non_resonant /
+  statistic by `check_zlk_free_omega`** (`pass` = confirmed, `not_measured` = no verdict). The text below is the W28
+  tree (`v2_verdict`).
+- **Lidov-Kozai (the W28 tree, `v2_verdict`).** A libration of the osculating ω is not enough; the free-ω gate decides. `non_resonant /
   kinematic_libration` is a **measurement** (the free ω winds: geometry); `uncertain / gate_unavailable` is the
   **absence** of one (`extend_to_years` for a short window or a residual near a planetary rate; `review` for an
   undefined free phase or missing free elements). Never merge them in a statistic (legacy codes −2 and −9). A co-orbital

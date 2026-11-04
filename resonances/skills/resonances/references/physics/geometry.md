@@ -584,5 +584,5 @@ may keep their loops ([The reported angle word](status-tree.md#the-reported-angl
 
 So `angle_status` describes what $\sigma$ does, and `status` says whether that is this resonance. A body can be
 `non_resonant` with `angle_status = libration` ([Gallery](gallery.md#kinematic-libration)), or `resonant` at `low` with
-a measured objection that does not decide ([Gallery](gallery.md#measured-objection); `uncertain` under
-`CLASSIFIER_POLICY=v2`).
+a measured objection that does not decide ([Gallery](gallery.md#measured-objection); `uncertain` in the W28 tree,
+`v2_verdict`).

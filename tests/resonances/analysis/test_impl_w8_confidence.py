@@ -15,7 +15,7 @@ from resonances.resonance.analysis.mmr import coorbital, subresonances as sr
 from resonances.resonance.analysis.mmr.models import ResonanceSpec
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, ResonanceType, Status, Verdict
-from tests.resonances.analysis.builders import make_episode, make_geometry
+from tests.resonances.analysis.builders import make_episode, make_geometry, tree_and_final
 
 S = settings_from_config()
 
@@ -208,10 +208,11 @@ def test_the_24820_member_is_scanned_by_the_decision():
 )
 def test_real_coorbitals(example_id, expected):
     from resonances.resonance.analysis.mmr import io
-    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 
-    analysis = analyse_mmr(io.load_series(example_id), S)
+    tree, analysis = tree_and_final(io.load_series(example_id), S)
     assert analysis.verdict.orbit_type == expected
     assert analysis.summary_row()['orbit_type'] == expected
-    # the cell of resonant/libration/dynamic_libration is reported from the package file
-    assert analysis.verdict.cell_n_examples is not None and analysis.verdict.cell_n_examples > 0
+    # the cell of resonant/libration/dynamic_libration is reported from the package file: by the W28 tree (W34: the
+    # minimal policy reports no cell, cell_* blank)
+    assert tree.verdict.cell_n_examples is not None and tree.verdict.cell_n_examples > 0
+    assert analysis.verdict.cell_n_examples is None

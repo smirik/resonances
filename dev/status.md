@@ -13,7 +13,20 @@ candidates, a subresonance parent's runs are its member's, Q3, P3, the next-chec
 test-fast 5388 passed, 5 xfailed (1.3 min); test-slow 406 passed, 1 xfailed (7.3 min); test-benchmark
 656 passed, 3 xfailed (19.6 min, with the reclassification under `--policy minimal`). The record: `benchmark/DECISIONS.md` 2026-11-02, `dev/decisions.md`.
 
-## W34 (2026-11-04, uncommitted): the author's answers to the W33 page
+## Cleanup after W34 (2026-11-04)
+
+The v2 policy path is gone (`classifier_policy`, `_setting_from_env`, the conftest pin, `--policy` in the tools);
+`v2_verdict` keeps the W28 tree's verdict. Tests migrated by four agents (reports `tmp/.../w34/cleanup/report-*.md`):
+tree tests read `v2_verdict` / `builders.tree_and_final`; end-to-end ones take the minimal values. Fixed: zlk_integral
+veto no longer fails `check_zlk_free_omega`; `pol_core_cycles` column. Open (author): the 591986 g7 representative
+gives resonant/low + gate_unavailable (the minimal rule); the minimal figure shows former caps only as flag codes.
+Untracked deletion candidates (await the author): `tmp/.../w34/cleanup/delete-benchmark-runs.txt` (86 run folders,
+1.2 GB), `delete-tmp-binaries.txt` (599 npz/pkl/pickle/npy files, 5.9 GB). Still before main: back-compat readers
+(old summary files: `verdict_from_status_code`, `angle_status_from_text`, `reason_from_text`, the pre-W29 figure path),
+dead columns under the policy (`caps` always empty, `confidence_raw` = `confidence`, `cell_*` blank, the calibration
+cells), `ZLK_EPISODIC_NO_VERDICT` (tree only), and the deferred list of the W34 page.
+
+## W34 (2026-11-04, committed ab39e1f): the author's answers to the W33 page
 
 Answers verbatim: `tmp/classifier-v2-2026-10-15/w34/answers-w33-page.json`; reviews `tmp/.../w34/codex-force/answer.md`
 and `w34/claude-force/` (L4/R0 on 79653). Labels: 1865, ND, TG2 100 kyr, 23240, VA14 20 kyr

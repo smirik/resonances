@@ -24,7 +24,7 @@ from tests.resonances.analysis.builders import (
     make_verdict,
 )
 
-MINIMAL = AnalysisSettings(classifier_policy='minimal')
+MINIMAL = AnalysisSettings()
 SPAN, PERIOD = 4000.0, 400.0
 T = np.linspace(0.0, SPAN, 4001)
 
@@ -89,7 +89,7 @@ def test_the_period_clause():
     # the record ends in circulation: nothing extends
     assert policy.extend_clause(Status.RESONANT, policy.EndReading(0.0, 1.2, 2700.0, 0.0, False), SPAN, MINIMAL, leg_end=True) == ''
     assert policy.extend_clause(Status.INVALID, end, SPAN, MINIMAL) == ''
-    stricter = AnalysisSettings(classifier_policy='minimal', libration_min_turning_points=4, mmr_l1_tp_full=5)
+    stricter = AnalysisSettings(libration_min_turning_points=4, mmr_l1_tp_full=5)
     assert policy.extend_clause(Status.RESONANT, policy.EndReading(0.0, 0.1, 2100.0, 0.0, False), SPAN, stricter) == 'B'  # 2T/4 = 2000
 
 
@@ -148,11 +148,11 @@ def test_a_veto_short_of_length_within_the_budget_extends():
 def test_a_veto_short_of_length_beyond_the_budget_goes_to_review():
     # six force windows: 1960 + 6 x 3.5 x 400 = 10360 -> 20000 yr > 4 T = 16000 yr: no extend, review (1981 Midas: a
     # gate that needs ~70 Myr on a 1-Myr record); with the budget 6 T = 24000 yr the same need extends to 20000 yr
-    wide = AnalysisSettings(classifier_policy='minimal', mmr_extend_force_windows=6.0)
+    wide = AnalysisSettings(mmr_extend_force_windows=6.0)
     v = policy.apply_mmr(libration_at_end(11, response=short_of_force_windows()), wide).verdict
     assert v.pol_veto_need_yr == pytest.approx(20000.0)
     assert (v.action, v.pol_extend_clause, v.extend_to_years) == (Action.REVIEW, '', None)
-    wider = AnalysisSettings(classifier_policy='minimal', mmr_extend_force_windows=6.0, mmr_next_check_span_factor=6.0)
+    wider = AnalysisSettings(mmr_extend_force_windows=6.0, mmr_next_check_span_factor=6.0)
     v = policy.apply_mmr(libration_at_end(11, response=short_of_force_windows()), wider).verdict
     assert (v.action, v.pol_extend_clause, v.extend_to_years) == (Action.EXTEND, 'C', 20000.0)
 

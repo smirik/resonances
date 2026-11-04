@@ -144,3 +144,42 @@ def make_long_period_analysis(
     t = np.array([0.0, span_yr])
     series = secular_models.LongPeriodSeries(verdict.resonance_type, 'K', 'body', t, np.zeros(2), np.ones(2), np.zeros(2), np.zeros(2))
     return secular_models.LongPeriodAnalysis(series, verdict, Ledger(0.1), geometry=geometry, gate=gate, angle=angle, **fields)
+
+
+# --------------------------------------------------------------------------------------------- the W28 tree (W34)
+
+
+class TreeVerdict(typing.NamedTuple):
+    """The W28 tree's verdict that the minimal policy keeps on the final one (`Verdict.v2_verdict`)."""
+
+    status: str
+    confidence: str
+    reason: str
+    action: str
+    angle_status: str
+
+
+def tree_verdict(verdict: Verdict) -> TreeVerdict:
+    """`verdict.v2_verdict` ('status/confidence/reason/action/angle_status') as fields; '' where the tree gave none."""
+    parts = str(verdict.v2_verdict).split('/')
+    assert len(parts) == len(TreeVerdict._fields), f'no tree verdict recorded: {verdict.v2_verdict!r}'
+    return TreeVerdict(*parts)
+
+
+def tree_path(verdict: Verdict) -> list:
+    """The tree's decision path: the ledger without the policy's own `policy:*` comparisons."""
+    return [entry for entry in verdict.decision_path if not entry.name.startswith('policy:')]
+
+
+def tree_and_final(series, settings, **options) -> tuple:
+    """(the W28 tree's MMR analysis, the final one) of one record from a single analysis: `analyse_mmr` is the policy
+    layer on `_analyse_mmr_record`; the tree's copy keeps its caps, `confidence_raw`, action and resample step."""
+    import copy
+
+    from resonances.resonance.analysis import policy
+    from resonances.resonance.analysis.mmr.analyse import _analyse_mmr_record
+
+    defaults = dict(scan_subresonances=True, scan_owner=True, parent='', centre_scale=True, quasi_satellite=None, subfloor=None)
+    defaults.update(options)
+    tree = _analyse_mmr_record(series, settings, None, *defaults.values())
+    return tree, policy.apply_mmr(copy.deepcopy(tree), settings)

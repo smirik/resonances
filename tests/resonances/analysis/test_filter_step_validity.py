@@ -24,6 +24,7 @@ from resonances.resonance.analysis.mmr.preprocess import DecisiveQuantities
 from resonances.resonance.analysis.mmr.sampling import short_period_step
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import Action, CheckValue, Confidence, Flag, Reason, Status, default_action
+from tests.resonances.analysis.builders import tree_and_final
 
 S = settings_from_config()
 GAUSS_YEAR_DAYS = 365.2569
@@ -75,9 +76,10 @@ def test_a_trojan_step_above_half_the_cutoff_is_undersampled():
 @pytest.mark.slow
 @pytest.mark.parametrize('step, flagged', [(1.0, False), (5.0, False), (15.92, True), (18.0, True)])
 def test_a_trojan_below_the_limit_keeps_its_libration(step, flagged):
-    analysis = analyse(trojan(step))
+    # W34: the cap is the W28 tree's (under the minimal policy every cap is a flag): read it from the tree's verdict
+    tree, analysis = tree_and_final(trojan(step), S, scan_owner=False, scan_subresonances=False)
     verdict = analysis.verdict
-    assert verdict.status == Status.RESONANT
+    assert verdict.status == Status.RESONANT and tree.verdict.status == Status.RESONANT
     assert analysis.prep.cutoff.binding == 'floor' and analysis.prep.cutoff.cutoff_yr == pytest.approx(TADPOLE_YR / 4, rel=2e-3)
     assert not analysis.prep.filter_too_slow
     assert (str(Flag.SHORT_PERIOD_ALIASED) in verdict.flags) is flagged  # P_orb / 2 = 5.93 yr
@@ -85,7 +87,7 @@ def test_a_trojan_below_the_limit_keeps_its_libration(step, flagged):
     # clean (the fast residual is not even compared). The folded lines of P_orb = 11.862 yr up to the second harmonic:
     # at 15.92 yr |1/11.862 - 1/15.92|^-1 = 46.5 yr and |2/11.862 - 3/15.92|^-1 = 50.5 yr; at 18 yr the harmonic folds
     # to |2/11.862 - 3/18|^-1 = 507 yr
-    assert (str(Cap.SHORT_PERIOD_ALIASED) in verdict.caps) is flagged
+    assert (str(Cap.SHORT_PERIOD_ALIASED) in tree.verdict.caps) is flagged
     if flagged:
         expected = max(1 / abs(m / 11.862 - round(m * step / 11.862) / step) for m in (1, 2))
         assert analysis.sampling.folded_slowest_yr == pytest.approx(expected, rel=0.01)
@@ -99,13 +101,14 @@ def test_the_short_period_cap_with_the_opt_in_lift(step, flagged):
     # MMR_SHORT_PERIOD_CAP_RATIO = 0.1 (the W20 F5 lift, opt-in since round D): the clean tadpole's fast residual is far
     # below 0.1 of its 2.86-deg half-amplitude, so the cap depends on the scatter of a against its swing only; default:
     # medium at most when flagged
+    # W34: the cap and the level it holds down are the W28 tree's (under the minimal policy every cap is a flag)
     lift = settings_from_config(mmr_short_period_cap_ratio=0.1)
-    analysis = analyse_mmr(trojan(step), lift, scan_owner=False, scan_subresonances=False)
-    verdict = analysis.verdict
-    assert verdict.status == Status.RESONANT
-    ratio = analysis.numbers_row()['smp_da_sp_over_a_excursion']
+    tree, analysis = tree_and_final(trojan(step), lift, scan_owner=False, scan_subresonances=False)
+    verdict = tree.verdict
+    assert verdict.status == Status.RESONANT and analysis.verdict.status == Status.RESONANT
+    ratio = tree.numbers_row()['smp_da_sp_over_a_excursion']
     assert (str(Cap.SHORT_PERIOD_ALIASED) in verdict.caps) is (flagged and not ratio <= lift.mmr_short_period_a_ratio)
-    default = analyse_mmr(trojan(step), S, scan_owner=False, scan_subresonances=False).verdict
+    default = tree_and_final(trojan(step), S, scan_owner=False, scan_subresonances=False)[0].verdict
     assert (str(Cap.SHORT_PERIOD_ALIASED) in default.caps) is flagged
     if flagged:
         assert default.confidence in (Confidence.MEDIUM, Confidence.LOW)

@@ -25,6 +25,7 @@ from resonances.plotting import verdict_text as vt  # noqa: E402
 from resonances.resonance.analysis.ledger import Margin  # noqa: E402
 from resonances.resonance.analysis.mmr import io  # noqa: E402
 from resonances.resonance.analysis.settings import settings_from_config  # noqa: E402
+from tests.resonances.analysis.builders import tree_and_final  # noqa: E402
 
 S = settings_from_config()
 # 41588 3J+9S-2 is these tests' record of an owner search that could not run (too few force windows) and its cap
@@ -128,18 +129,27 @@ def _all_text(text: vt.VerdictText) -> str:
     return ' | '.join(parts + [text.arithmetic])
 
 
+def _explain(analysis, settings=S) -> vt.VerdictText:
+    return vt.explain_mmr(analysis, settings, {**analysis.numbers_row(), **analysis.summary_row()}, analysis.episode_rows())
+
+
+class Record(tuple):
+    """(example, analysis, episodes, text) of the final verdict; `tree` = (analysis, text) of the W28 tree's verdict from
+    the same analysis (W34: the minimal policy re-reads it; a figure explains a tree verdict as it did before W29)."""
+
+    tree = None
+
+
 @pytest.fixture(scope='module', params=RECORDS)
 def record(request):
-    """(analysis, text) of one benchmark record; the analysis keeps only what the checks below read."""
+    """(analysis, text) of one benchmark record, the final one and the tree's (`Record.tree`)."""
     example = request.param
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
-
-    analysis = analyse_mmr(io.load_series(example), S)
-    row = {**analysis.numbers_row(), **analysis.summary_row()}
-    episodes = analysis.episode_rows()
-    return example, analysis, episodes, vt.explain_mmr(analysis, S, row, episodes)
+    tree, analysis = tree_and_final(io.load_series(example), S)
+    out = Record((example, analysis, analysis.episode_rows(), _explain(analysis)))
+    out.tree = (tree, _explain(tree))
+    return out
 
 
 def assert_comparisons_hold(text: vt.VerdictText) -> None:
@@ -223,12 +233,34 @@ def test_coverage_wording(record):
         assert int(covered.group(1) or covered.group(2)) == round(expected)
 
 
+def _status_head(v) -> str:
+    return {'non_resonant': 'Non-resonant', 'near_separatrix': 'Near-separatrix'}.get(str(v.status), str(v.status).capitalize())
+
+
 @pytest.mark.benchmark
 def test_status_and_confidence_sentences(record):
+    """The final text (W34, docs/physics/status-tree.md#minimal-policy, 'The level from the evidence; no caps'): the
+    status sentence opens with the final status, the confidence sentence and the arithmetic give the level from the
+    evidence (`confidence_basis` in words), never capped; the tree's own text keeps the support and limits lines."""
     _, analysis, _, text = record
     v = analysis.verdict
-    head = {'non_resonant': 'Non-resonant', 'near_separatrix': 'Near-separatrix'}.get(str(v.status), str(v.status).capitalize())
-    assert text.sentences[1].startswith(head)
+    assert text.sentences[1].startswith(_status_head(v))
+    if str(v.confidence):
+        basis = vt.basis_words(v.confidence_basis)
+        assert str(v.confidence_raw) == str(v.confidence) and not v.caps
+        assert text.sentences[2] == f'{str(v.confidence).capitalize()} from the evidence: {basis}.' and 'capped' not in text.sentences[2]
+        assert text.arithmetic.startswith(f'Level from the evidence: {basis}') and '\n' not in text.arithmetic
+        assert text.arithmetic.endswith(f'→ {str(v.confidence).upper()}')
+    else:
+        assert 'No confidence level' in text.arithmetic
+    _assert_tree_sentences(*record.tree)
+
+
+def _assert_tree_sentences(analysis, text):
+    """The W28 tree's status and confidence sentences: the level, the cap that set it and the raw level, in two
+    arithmetic lines (W28 E4)."""
+    v = analysis.verdict
+    assert text.sentences[1].startswith(_status_head(v))
     if not str(v.confidence):
         assert not text.checks and 'No confidence level' in text.arithmetic
         return
@@ -280,8 +312,9 @@ LEVELS = ('certain', 'high', 'medium', 'low')
 @pytest.mark.benchmark
 def test_arithmetic_agrees_with_the_raw_level(record):
     """The printed count of failed tests never allows less than the raw level printed next to it (433 47M-44 at 5 yr
-    printed '2 failed (≥ 2 failed → low) = high' before W22's fix)."""
-    _, analysis, _, text = record
+    printed '2 failed (≥ 2 failed → low) = high' before W22's fix). W34: the W28 tree's text (`Record.tree`); the final
+    one has no support count (`test_status_and_confidence_sentences`)."""
+    analysis, text = record.tree
     v = analysis.verdict
     if not str(v.confidence):
         return
@@ -348,7 +381,10 @@ def test_secular_record_over_the_whole_record():
     fig = draw_long_period_combined(analysis)
     assert fig.text_stats['overflow'] == 0
     texts = [artist.get_text() for artist in fig.texts]
-    assert sum(1 for t in texts if 'RESONANT ·' in t or 'resonant ·' in t) == 1  # the status once, in the plaque
+    # the status once in the plaque; W34: and in the minimal policy's first line and its 'v2:' line (the tree's verdict)
+    policy = [bullet.text for bullet in text.bullets if bullet.slot == vt.SLOT_POLICY]
+    assert policy[0].startswith('RESONANT · ') and policy[3].startswith('v2: resonant · ')
+    assert sum(1 for t in texts if ('RESONANT ·' in t or 'resonant ·' in t) and t not in (policy[0], policy[3])) == 1
     # the FREQUENCIES table (W27): the mode g6 and the forced wave g - g6 of the angle's own modes
     assert any(t.startswith('g6') for t in texts) and any(t.startswith('g − g6') and 'forced' in t for t in texts)
     plt.close(fig)
@@ -474,8 +510,10 @@ def test_numbers_fit_by_layout_before_the_explanation_turns_compact(n_lines, n_c
 @pytest.mark.benchmark
 def test_branch_and_mark_wording(record):
     """The leaves of the branch where L4 and R0 are not measured name their rule's numbers; the mark
-    exit_and_capture is listed with its counts."""
-    example, analysis, _, text = record
+    exit_and_capture is listed with its counts. W34: the leaves are the W28 tree's (`Record.tree`); the minimal policy
+    moves 5s, 5n and their kin to the geometry's status with a flag (docs/physics/status-tree.md#minimal-policy)."""
+    example = record[0]
+    analysis, text = record.tree
     rule = analysis.extra_columns['rec_rule']
     status = text.sentences[1]
     if rule == '5s':
@@ -556,6 +594,16 @@ def _explained(example, settings=S):
     return analysis, vt.explain_mmr(analysis, settings, row, analysis.episode_rows())
 
 
+def _tree_explained(example, settings=S, text_settings=None):
+    """(tree analysis, its text, final analysis, its text) of one record from a single analysis (W34: the W28 tree's
+    verdict and the minimal policy's; `tree_and_final`); the texts read `text_settings` (default `settings`)."""
+    if not io.example_path(example).exists():
+        pytest.skip('benchmark data not available')
+    tree, final = tree_and_final(io.load_series(example), settings)
+    text_settings = text_settings or settings
+    return tree, _explain(tree, text_settings), final, _explain(final, text_settings)
+
+
 # R-ALIAS-A records at 5 yr (the W22 R-ALIAS-A impact run, merged-scat+margins): both a-based checks fail as measured
 # and are read as not measured; the scatter of a over the a swing 0.73 (TK14) and 0.79 (433) > 0.5
 ALIAS_RECORDS = {'mmr2__2004_TK14__31M-34+0+3': 0.73, 'mmr2__433__47M-44+0-3': 0.79}
@@ -564,7 +612,10 @@ ALIAS_RECORDS = {'mmr2__2004_TK14__31M-34+0+3': 0.73, 'mmr2__433__47M-44+0-3': 0
 @pytest.mark.benchmark
 @pytest.mark.parametrize('example', sorted(ALIAS_RECORDS))
 def test_alias_text_names_the_rule_that_decided(example):
-    analysis, text = _explained(example)
+    """W34: the confidence part is the W28 tree's (the raw level, its support count); the final status sentence keeps
+    the alias rule (the minimal policy keeps the tree's transient/resonant and gives the level from the evidence)."""
+    analysis, text, final, final_text = _tree_explained(example)
+    assert final.verdict.status == analysis.verdict.status and 'R-ALIAS-A' in final_text.sentences[1]
     v = analysis.verdict
     assert analysis.extra_columns['rsp_short_period_unmeasured'] == 'a_response;identity'
     assert v.margins['L4'].margin == Margin.FAIL and v.margins['L3'].margin == Margin.FAIL  # the column keeps the fail
@@ -591,10 +642,16 @@ def test_alias_text_names_the_rule_that_decided(example):
 def test_a_fail_the_rule_did_not_touch_stays_failed():
     """2001 ND13 1V-3: the scatter 0.09 < 0.5 keeps its failed force law (R-ALIAS-A does not apply). With one harmonic
     only (W23 CS12 off): the two-harmonic law lifts its L4 (`test_nd13_harmonic_force_law_sentence`)."""
-    analysis, text = _explained('mmr2__2001_ND13__1V-3+0+2', replace(S, mmr_force_harmonics_max=1))
+    analysis, text, final, final_text = _tree_explained('mmr2__2001_ND13__1V-3+0+2', replace(S, mmr_force_harmonics_max=1))
     assert not analysis.extra_columns['rsp_short_period_unmeasured']
     assert str(analysis.verdict.status) == 'uncertain' and 'ȧ does not follow the force law' in text.sentences[1]
     assert 'R-ALIAS-A' not in ' '.join(text.sentences + [step.outcome for step in text.steps])
+    # W34: the minimal policy gives the tree's 5a* the geometry's transient back with the flag measured_objection at
+    # low (docs/physics/status-tree.md#minimal-policy); the failed law is still said, still without R-ALIAS-A
+    v = final.verdict
+    assert (str(v.status), str(v.confidence)) == ('transient', 'low') and 'measured_objection' in v.flags
+    assert 'the force law fails' in final_text.sentences[1]
+    assert 'R-ALIAS-A' not in ' '.join(final_text.sentences + [step.outcome for step in final_text.steps])
 
 
 @pytest.mark.benchmark
@@ -1367,21 +1424,27 @@ E4_RECORDS = ('coorbital__2020_CB__1E-1+0+0', 'mmr3__41588__3J+9S-2+0+0-10', 'mm
 def test_the_confidence_blocks_of_cb_41588_and_285637():
     """Card g10-4b on the benchmark: 2020 CB prints O1 once (since W28 B4 a support row; its limit is the q-2 b
     ceiling) and the arithmetic; 41588's limit is the cap own force unmeasured, first; 285637's K1 says why it has no
-    value; no figure overflows."""
+    value; no figure overflows. W34: the limits are the W28 tree's (its text); under the minimal policy both caps are
+    flags and the final block has no LIMIT row (docs/reading-figures.md: 'the confidence block lists no caps')."""
     from resonances.plotting import mmr_combined as mc
-    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 
     if not all(io.example_path(example).exists() for example in E4_RECORDS):
         pytest.skip('benchmark data not available')
-    texts = {}
+    texts, finals = {}, {}
     for example in E4_RECORDS:
         series = io.load_series(example)
-        analysis = analyse_mmr(series, settings_of(example))
-        row = {**analysis.numbers_row(), **analysis.summary_row()}
-        texts[example] = vt.explain_mmr(analysis, S, row, analysis.episode_rows())
+        tree, analysis = tree_and_final(series, settings_of(example))
+        texts[example], finals[example] = _explain(tree), (analysis, _explain(analysis))
         fig = mc.draw_combined(analysis, series, settings=S)
         assert fig.text_stats['overflow'] == 0, example
         plt.close(fig)
+    for example, cap in (
+        ('coorbital__2020_CB__1E-1+0+0', 'no_full_physics_support'),
+        ('mmr3__41588__3J+9S-2+0+0-10', 'all_physics_not_measured'),
+    ):
+        analysis, text = finals[example]
+        assert cap in analysis.verdict.flags and not analysis.verdict.caps and not any(row.is_limit for row in text.checks)
+        assert text.arithmetic.startswith('Level from the evidence: ')
     cb, k41588, k285637 = (texts[example] for example in E4_RECORDS)
     o1 = [row for row in cb.checks if 'O1' in (row.key, row.merged)]
     # W28 B4 (g03-4 A): CB's background is no foreign wave (coherence 0.02), so O1 is no limit and is printed once as a
@@ -1398,9 +1461,10 @@ def test_the_confidence_blocks_of_cb_41588_and_285637():
         first.is_limit
         and vt.limit_heading(first, k41588.confidence) == 'LIMIT: own force unmeasured [cap:all_physics_not_measured] → MEDIUM'
     )
-    (k1,) = [row for row in k285637.checks if row.key == 'K1']
-    assert k1.state == vt.CheckState.MISSING and k1.note.startswith('no value — the record holds fewer than')
-    for text in texts.values():
+    for k285637_text in (k285637, finals['mmr3__285637__3M+7J-6+0+0-4'][1]):
+        (k1,) = [row for row in k285637_text.checks if row.key == 'K1']
+        assert k1.state == vt.CheckState.MISSING and k1.note.startswith('no value — the record holds fewer than')
+    for text in list(texts.values()) + [text for _, text in finals.values()]:
         assert all(row.printed_id in vt.RULE_NAMES for row in text.checks)
 
 
@@ -1512,11 +1576,18 @@ def test_kinematic_leaf_bullets():
     says 'other resonances not tested'), and the radial overlap."""
     analysis, row, text = _kinematic_with_w()
     slots = [bullet.slot for bullet in text.bullets]
-    assert slots[:3] == [vt.SLOT_VERDICT, vt.SLOT_SIGMA, vt.SLOT_DECISIVE] and slots[-2:] == [vt.SLOT_CHANGE, vt.SLOT_ORBIT]
+    # W34: the minimal policy opens the explanation with its four bullets (status · level · reason, basis, flags, v2);
+    # the kinematic origin is a veto (status-tree.md#minimal-policy, step 2): non_resonant as the tree said
+    assert slots[:7] == [vt.SLOT_POLICY] * 4 + [vt.SLOT_VERDICT, vt.SLOT_SIGMA, vt.SLOT_DECISIVE]
+    # W34: no 'change' line: its level and limits are the policy's basis line (`change_line`), no calibration cell, no
+    # action (none) under the minimal policy
+    assert slots[-1] == vt.SLOT_ORBIT and vt.SLOT_CHANGE not in slots
     assert [vt.SLOTS.index(slot) for slot in slots] == sorted(vt.SLOTS.index(slot) for slot in slots)
     by_slot = {}
     for bullet in text.bullets:
         by_slot.setdefault(bullet.slot, []).append(bullet.text)
+    assert by_slot[vt.SLOT_POLICY][0].startswith('NON-RESONANT · ') and 'kinematic libration' in by_slot[vt.SLOT_POLICY][0]
+    assert by_slot[vt.SLOT_POLICY][3].startswith('v2: non_resonant · ')
     assert by_slot[vt.SLOT_VERDICT] == ['NOT THIS RESONANCE: σ librates, but 2J-1 does not make the swing.']
     decisive = by_slot[vt.SLOT_DECISIVE][0]
     assert decisive.startswith('a resonance reverses σ through a, so a must oscillate with σ') and '(B1 ' in decisive
@@ -1703,7 +1774,10 @@ def test_the_slotted_explanation_on_the_benchmark():
     pieces = [b.text for b in sf8.bullets] + [s.outcome for s in sf8.steps] + [f'{r.name} {r.detail}' for r in sf8.checks]
     assert all('candidate' in piece for piece in pieces if 'drives a' in piece and 'no other resonance' not in piece)
     assert any(piece.startswith('Candidate driver: 17E-36+0+19') for piece in pieces)
-    assert k719.bullets[0].text.startswith('Driven by 11J-4+0-7 [driver: ')
+    # W34: the minimal policy opens the explanation with its four SLOT_POLICY lines; the driver stands first after them
+    assert [b.slot for b in k719.bullets[:4]] == [vt.SLOT_POLICY] * 4
+    assert k719.bullets[0].text == 'NON-RESONANT · MEDIUM · induced by 11J-4+0-7 (origin induced)'
+    assert k719.bullets[4].text.startswith('Driven by 11J-4+0-7 [driver: ')
     assert any(b.text.startswith('σ = φ/8 + Ψ/8: ') for b in hw7.bullets)
 
 
@@ -1868,20 +1942,21 @@ def test_numbers_behind_the_verdicts_of_41588_cb_and_285637():
     """Card g10-5 on its records: 41588 frames B1 (rsp_b1_ratio) and tags the cap own force unmeasured LIMIT; 2020 CB
     tags the caps that set its level LIMIT (O1 on ep_onset_ratio when O1 is one); 285637 frames B1; each emphasised
     column is printed once as a value (the block), its table line is a pointer; every printed comparison holds; no
-    figure overflows."""
+    figure overflows. W34: the LIMIT lines are the W28 tree's caps (its text); under the minimal policy the caps are
+    flags, so the final block holds no LIMIT line (docs/reading-figures.md, 'the confidence block lists no caps')."""
     from resonances.plotting import combined_numbers as numbers
     from resonances.plotting import mmr_combined as mc
     from resonances.plotting import mmr_verdict_panel as panel
-    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 
     if not all(io.example_path(example).exists() for example in E10_RECORDS):
         pytest.skip('benchmark data not available')
-    texts = {}
+    texts, trees = {}, {}
     for example in E10_RECORDS:
         series = io.load_series(example)
-        analysis = analyse_mmr(series, settings_of(example))
-        row = {**analysis.numbers_row(), **analysis.summary_row()}
-        text = texts[example] = vt.explain_mmr(analysis, S, row, analysis.episode_rows())
+        tree, analysis = tree_and_final(series, settings_of(example))
+        trees[example] = _explain(tree)
+        text = texts[example] = _explain(analysis)
+        assert not [item for item in text.emphasis if item.kind == 'limit'], example
         assert_comparisons_hold(text)
         explained = panel.explained_lines(analysis.summary_row(), analysis.numbers_row(), analysis.episode_rows(), [], text)
         block = [line for line in explained if line.emphasis]
@@ -1894,7 +1969,8 @@ def test_numbers_behind_the_verdicts_of_41588_cb_and_285637():
         drawn = [artist.get_text() for artist in fig.texts]
         assert fig.text_stats['overflow'] == 0 and 'Numbers behind this verdict' in drawn, example
         plt.close(fig)
-    k41588, cb, k285637 = (texts[example] for example in E10_RECORDS)
+    assert [(item.kind, item.rule_id) for item in texts['mmr3__41588__3J+9S-2+0+0-10'].emphasis] == [('decisive', 'B1')]
+    k41588, cb, k285637 = (trees[example] for example in E10_RECORDS)
     kinds = {(item.kind, item.rule_id): item for item in k41588.emphasis}
     assert kinds[('decisive', 'B1')].columns == ('rsp_b1_ratio',) and ('limit', 'cap:all_physics_not_measured') in kinds
     # 2020 CB: the LIMIT lines are the caps that set its level (O1 at the card's time, on ep_onset_ratio; since B4/q-2
@@ -1903,7 +1979,8 @@ def test_numbers_behind_the_verdicts_of_41588_cb_and_285637():
     limits = [item for item in cb.emphasis if item.kind == 'limit']
     assert [item.rule_id for item in limits] == binding and binding
     assert all(item.columns == ('ep_onset_ratio',) for item in limits if item.rule_id == 'O1')
-    assert [(item.kind, item.rule_id, item.columns) for item in k285637.emphasis][0] == ('decisive', 'B1', ('rsp_b1_ratio',))
+    for text in (k285637, texts['mmr3__285637__3M+7J-6+0+0-4']):
+        assert [(item.kind, item.rule_id, item.columns) for item in text.emphasis][0] == ('decisive', 'B1', ('rsp_b1_ratio',))
 
 
 # --------------------------------------------------------------------------------------------- W28 C13: 1:1 parts in words

@@ -30,6 +30,7 @@ from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.pendulum import CycleClass, CycleEnergy, Zone, ZoneMethod
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import CheckValue
+from tests.resonances.analysis.builders import tree_and_final
 
 S = settings_from_config()
 PERIOD = 600.0
@@ -228,15 +229,22 @@ def test_turning_point_energies_do_not_bridge_a_failed_profile(monkeypatch):
 # --------------------------------------------------------------------------------------------- benchmark
 
 
-def _analysis(example):
+def _analysis_needs(example):
     if not (io.example_path(example) / 'series.csv.gz').exists():
         pytest.skip('benchmark data not available')
+
+
+def _analysis(example):
+    _analysis_needs(example)
     return analyse_mmr(io.load_series(example), S)
 
 
 @pytest.mark.benchmark
 def test_tk14_energy_in_the_averaged_well():
-    analysis = _analysis('mmr2__2004_TK14__31M-34+0+3')
+    _analysis_needs('mmr2__2004_TK14__31M-34+0+3')
+    # the W28 tree's analysis carries the cap (W34: the minimal policy moves it into the flags)
+    analysis, final = tree_and_final(io.load_series('mmr2__2004_TK14__31M-34+0+3'), S)
+    assert str(Cap.SHORT_PERIOD_ALIASED) in final.verdict.flags
     row = analysis.numbers_row()
     assert row['sep_zone_source'] == 'averaged_potential'
     assert row['sep_h_avgpot_med'] == pytest.approx(0.07, abs=0.05) and row['sep_h_avgpot_max'] <= 0.6

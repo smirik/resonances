@@ -14,6 +14,7 @@ from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.mmr.models import MMRSeries, PlanetSeries, Regime, ResonanceSpec
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import MMR_CHECKS, Action, CheckValue, Reason, Status
+from tests.resonances.analysis.builders import tree_path
 
 S = settings_from_config()
 N = 2001
@@ -67,7 +68,8 @@ def test_a_record_outside_the_model_is_invalid_with_its_reason(series, problem, 
     numbers, summary = analysis.numbers_row(), analysis.summary_row()
     assert problem in numbers['rec_input_problems'].split(';')
     assert summary['status'] == 'invalid' and summary['status_code'] == -99
-    assert [entry.column for entry in verdict.decision_path] == ['rec_body_coefficient', 'rec_unphysical']
+    # W34: the tree's G0 path; the minimal policy appends its own `policy:*` level comparisons after it
+    assert [entry.column for entry in tree_path(verdict)] == ['rec_body_coefficient', 'rec_unphysical']
     analysis.drop_arrays()  # no sampling to release: must not fail
 
 
@@ -105,7 +107,8 @@ def test_a_hyperbolic_orbit_is_refused_before_g0():
     assert series.domain_problems() == ['e>=1']
     verdict = analyse_mmr(series, S).verdict
     assert (verdict.status, verdict.reason) == (Status.INVALID, Reason.UNPHYSICAL)
-    assert [entry.column for entry in verdict.decision_path] == ['rec_body_coefficient', 'rec_unphysical']
+    # W34: the tree's G0 path; the minimal policy appends its own `policy:*` level comparisons after it
+    assert [entry.column for entry in tree_path(verdict)] == ['rec_body_coefficient', 'rec_unphysical']
 
 
 def test_every_problem_is_listed():

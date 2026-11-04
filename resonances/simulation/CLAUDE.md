@@ -8,7 +8,7 @@ User docs: `docs/output.md`, `docs/dry-run.md`, `docs/serialization.md`, `docs/c
   `build_periodograms` → save/plot. `identify_librations` is the only hook on every path (single run, batch workers,
   `SimulationSerializer.restore(recompute_librations=True)`); `Simulation._finalise_verdict` is the only writer of
   `body.librations[key]` (a `Verdict`) and `body.statuses[key]` (its status string). No hook after the analysis: the
-  W29 policy layer (`analysis.policy`, `CLASSIFIER_POLICY` of the config) is the analysis' own last step, so every
+  W29 policy layer (`analysis.policy`) is the analysis' own last step, so every
   path, restore with recompute included, gets it with the run's saved settings.
 - `restore` reads the statuses from summary.csv by default; with `recompute_librations=True` it classifies only the
   saved series and rebuilds their periodograms; it writes no table, except for ensembles' nominals (clones.csv and

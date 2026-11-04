@@ -37,6 +37,7 @@ from resonances.resonance.analysis.verdict import (
     Reason,
     Status,
 )
+from tests.resonances.analysis.builders import tree_verdict
 
 S = settings_from_config()
 NAN = float('nan')
@@ -293,6 +294,9 @@ def test_without_the_body_longitude_the_route_does_not_run():
     assert not oi.longitudes_saved(series, S)
     analysis = analyse_mmr(series, S)
     v = analysis.verdict
-    assert (v.status, v.angle_status) == (Status.UNCERTAIN, AngleStatus.EPISODIC)
+    # the W28 tree's verdict; W34: the minimal policy gives the geometry's transient back, the objection a flag (low)
+    tree = tree_verdict(v)
+    assert (tree.status, tree.angle_status) == (Status.UNCERTAIN, AngleStatus.EPISODIC)
+    assert (v.status, v.confidence, v.veto) == (Status.TRANSIENT, Confidence.LOW, '') and 'measured_objection' in v.flags
     assert 'owner_no_longitudes' in analysis.owner.flags and analysis.numbers_row()['own_route'] != 'identity'
     assert not v.owner

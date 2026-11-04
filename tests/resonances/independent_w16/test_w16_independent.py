@@ -21,6 +21,7 @@ from scipy.integrate import solve_ivp
 from resonances.resonance.analysis import filtering, geometry
 from resonances.resonance.analysis.ledger import Ledger
 from resonances.resonance.analysis.mmr import preprocess, response, subresonances, zone
+from resonances.resonance.analysis.mmr import analyse as analyse_module
 from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.mmr.context import table_mean_motion
 from resonances.resonance.analysis.mmr.models import MMRSeries, PlanetSeries, Regime, ResonanceSpec
@@ -95,6 +96,13 @@ def _series(t, sigma, sigma_dot, key, planet_wave_deg=0.0, body_follows_planet=F
     )
 
 
+def _tree(series, settings):
+    """The W28 tree's analysis (`analyse_mmr` without the policy layer, as the outermost call computes it before the
+    policy). W34: every analysis ends with the minimal policy, which turns every cap into a flag; a test of a cap reads
+    the tree."""
+    return analyse_module._analyse_mmr_record(series, settings, None, False, False, '', True, None, None)
+
+
 @functools.lru_cache(maxsize=None)
 def _three_one(step_yr, span_yr=20000.0, planet_wave_deg=0.0):
     """3J-1 pendulum, small period 400 yr, half-amplitude 50 deg: period 400 x 2K(sin 25 deg)/pi = 419.7 yr."""
@@ -159,14 +167,17 @@ def test_short_period_flag_follows_the_orbital_period():
     # residual. At 8 yr P_orb = 3.953 yr folds to |1/3.953 - 2/8|^-1 = 336 yr (its harmonic to 168 yr, P_syn to 22.9
     # and 26.5 yr)
     row = coarse.numbers_row()
-    assert row['smp_fast_over_half_amp'] < 0.1 and 'short_period_aliased' in coarse.verdict.caps
-    assert str(coarse.verdict.confidence) in ('medium', 'low')
+    t = np.arange(0.0, 20000.0 + 4.0, 8.0)
+    series = _series(t, *_pendulum(t, 400.0, 50.0), '3J-1')
+    tree = _tree(series, SETTINGS).verdict
+    assert tree.v2_verdict == '' and coarse.verdict.v2_verdict.split('/')[1] == str(tree.confidence)  # the same tree
+    assert row['smp_fast_over_half_amp'] < 0.1 and 'short_period_aliased' in tree.caps
+    assert str(tree.confidence) in ('medium', 'low')
     # P_orb from the record's mean a (3.9538 yr against 3.9528 at 2.5 au): a fold this close to 2/dt amplifies it
     assert row['smp_folded_slowest_yr'] == pytest.approx(1 / abs(1 / 2.5**1.5 - 2 / 8.0), rel=0.03)
     # the opt-in lift (MMR_SHORT_PERIOD_CAP_RATIO = 0.1, the W20 F5 rule) needs the scatter of a below 0.5 of its swing
     lift = dataclasses.replace(SETTINGS, mmr_short_period_cap_ratio=0.1)
-    t = np.arange(0.0, 20000.0 + 4.0, 8.0)
-    lifted = analyse_mmr(_series(t, *_pendulum(t, 400.0, 50.0), '3J-1'), lift, scan_subresonances=False, scan_owner=False)
+    lifted = _tree(series, lift)
     ratio = lifted.numbers_row()['smp_da_sp_over_a_excursion']
     assert ('short_period_aliased' in lifted.verdict.caps) is (not ratio <= lift.mmr_short_period_a_ratio)
 

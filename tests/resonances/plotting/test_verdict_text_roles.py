@@ -377,8 +377,13 @@ def test_roles_on_the_benchmark(example):
         if example.startswith('mmr2__719'):
             induced = mc.induced_episode_ids(analysis)
             assert induced and all(run.episode_id in induced for run in analysis.geometry.runs if run.accepted)
-            hatched = [p for ax in fig.axes for p in ax.patches if p.get_hatch() == mc.INDUCED_HATCH]
-            assert len(hatched) >= len(induced)
+            # W34: the minimal policy's owner veto leaves the induced episodes candidates: faint and dashed on (a), with
+            # no hatch (the '\\' induced hatch marks a counted fill only, docs/reading-figures.md)
+            marks = mc.policy_marks(analysis)
+            assert not marks.counted and marks.candidates == induced
+            candidates = [p for ax in fig.axes for p in ax.patches if p.get_gid() == mc.CANDIDATE_GID]
+            assert len(candidates) >= len(induced)
+            assert not [p for ax in fig.axes for p in ax.patches if p.get_hatch() == mc.INDUCED_HATCH]
             labels = [t.get_text() for ax in fig.axes if ax.get_legend() for t in ax.get_legend().get_texts()]
             assert any(mc.INDUCED_LABEL in label for label in labels)
     finally:

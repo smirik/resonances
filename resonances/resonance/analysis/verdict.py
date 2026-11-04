@@ -288,9 +288,8 @@ class Flag(StrEnum):
     POLICY_UNKNOWN_LEAF = 'policy_unknown_leaf'  # a v2 leaf the policy has no mapping for: the geometry's status
 
 
-# CLASSIFIER_POLICY values (`analysis.policy`): the W29 minimal policy layer, or the W28 tree as it was
+# the `policy` column of a verdict the W29 minimal policy layer wrote (`analysis.policy`); empty in older files
 POLICY_MINIMAL = 'minimal'
-POLICY_V2 = 'v2'
 
 
 MMR_CHECKS = (
@@ -420,6 +419,7 @@ class Verdict:
     pol_last_reaches_end: Optional[bool] = None
     pol_extend_clause: str = ''
     pol_veto_need_yr: float = math.nan
+    pol_core_cycles: float = math.nan  # (n_TP - 1) / 2 of the decisive episode: the observed cycles certain needs
 
     @property
     def status_code(self) -> int:
@@ -516,6 +516,7 @@ class Verdict:
                 'pol_last_reaches_end': self.pol_last_reaches_end,
                 'pol_extend_clause': self.pol_extend_clause,
                 'pol_veto_need_yr': finite_or_none(self.pol_veto_need_yr),
+                'pol_core_cycles': finite_or_none(self.pol_core_cycles),
             }
         )
         return row
@@ -585,6 +586,7 @@ class Verdict:
             pol_last_reaches_end=_boolean(row.get('pol_last_reaches_end')),
             pol_extend_clause=cell_text(row.get('pol_extend_clause')),
             pol_veto_need_yr=_nan_number(row.get('pol_veto_need_yr')),
+            pol_core_cycles=_nan_number(row.get('pol_core_cycles')),
         )
 
 

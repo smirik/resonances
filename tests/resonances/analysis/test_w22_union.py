@@ -38,7 +38,7 @@ from resonances.resonance.analysis.mmr.decide import AngleDecision, StatusDecisi
 from resonances.resonance.analysis.rules import Rule
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, CheckValue, Flag, LibrationOrigin, Margin, Reason, Status
-from tests.resonances.analysis.builders import make_response, make_sampling
+from tests.resonances.analysis.builders import make_response, make_sampling, tree_and_final
 
 S = settings_from_config()
 ONE_DEG = math.radians(1.0)
@@ -253,11 +253,10 @@ def test_the_word_of_a_union_at_the_centre_scale():
 
 
 def _analysis(example, settings=S, **options):
+    """The W28 tree's analysis (the union is a rule of the tree; W34: the minimal policy re-reads it afterwards)."""
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
-
-    return analyse_mmr(io.load_series(example), settings, **options)
+    return tree_and_final(io.load_series(example), settings, **options)[0]
 
 
 def _word(verdict):

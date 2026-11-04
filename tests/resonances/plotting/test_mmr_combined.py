@@ -158,6 +158,12 @@ def _synthetic():
     return _CACHE['built']
 
 
+def _counted(analysis):
+    """The synthetic with its run 0 counted by the minimal policy: the parts of (a) are drawn for a counted run only
+    (`_shade_policy_episodes`, W28 C13); the synthetic itself is vetoed kinematic, its run 0 a candidate."""
+    return replace(analysis, policy=replace(analysis.policy, counted_episode_ids=frozenset({0}), candidate_episode_ids=frozenset()))
+
+
 def _with_parts():
     """The synthetic with its accepted run cut to 9 TPs, its exit seen, a residence to the end, three sub-regimes and a
     kick (module doc), its orbit type a sequence of wells."""
@@ -181,7 +187,7 @@ def _with_parts():
     runs = [cut if r is run else r for r in analysis.geometry.runs]
     geometry = replace(analysis.geometry, runs=runs)
     verdict = replace(analysis.verdict, orbit_type='compound: horseshoe → tadpole L4')
-    return replace(analysis, geometry=geometry, verdict=verdict), series, cut
+    return _counted(replace(analysis, geometry=geometry, verdict=verdict)), series, cut
 
 
 def test_the_figure_draws_residence_brackets_kicks_and_the_orbit_sequence():
@@ -208,12 +214,17 @@ def test_the_figure_draws_residence_brackets_kicks_and_the_orbit_sequence():
 def test_a_run_without_parts_keeps_its_plain_label():
     """Without a residence beyond the fill or sub-regimes: '#0' as before, nothing hatched, no bracket, no kick."""
     analysis, series = _synthetic()
-    fig = mc.draw_combined(analysis, series, settings=S)
+    fig = mc.draw_combined(_counted(analysis), series, settings=S)
     angle, axis_panel = fig.axes[0], fig.axes[3]
     assert '#0' in [text.get_text() for text in angle.texts]
     assert not [p for p in angle.patches if p.get_gid() == mc.RESIDENCE_GID]
     assert not [line for line in angle.lines if line.get_gid() == mc.BRACKET_GID]
     assert not [line for line in axis_panel.lines if line.get_gid() == mc.KICK_GID]
+    # W34: as analysed, the minimal policy vetoes the kinematic synthetic (veto kinematic, 0 counted): (a) draws its run
+    # faint and dashed as a candidate, 'cand' and not numbered (status-tree.md#minimal-policy, step 6)
+    assert analysis.verdict.veto == 'kinematic' and analysis.policy.candidate_episode_ids == {0}
+    names = [text.get_text() for text in mc.draw_combined(analysis, series, settings=S).axes[0].texts]
+    assert mc.CANDIDATE_LABEL in names and '#0' not in names
 
 
 def test_names_wider_than_the_fill_leave_the_brackets_unnamed():

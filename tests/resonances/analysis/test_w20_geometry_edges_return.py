@@ -31,7 +31,7 @@ from resonances.resonance.analysis.mmr.models import MMRSeries, Regime, Resonanc
 from resonances.resonance.analysis.pendulum import SeparatrixMechanism
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype
-from tests.resonances.analysis.builders import make_episode, make_geometry
+from tests.resonances.analysis.builders import make_episode, make_geometry, tree_and_final
 
 S = settings_from_config()
 N_JUPITER = 2 * np.pi / 11.862615
@@ -108,13 +108,20 @@ def test_an_exit_whose_raw_arc_exceeds_a_turn_is_observed(observed_exit):
 
 def test_an_exit_of_less_than_a_turn_stays_suspected():
     t, sigma, sigma_dot = libration_then_exit(0.75)
-    result = analysed(mmr_series(t, sigma, sigma_dot, 'exit-suspected'))
+    # the cap is the W28 tree's (W34)
+    result, final = tree_and_final(mmr_series(t, sigma, sigma_dot, 'exit-suspected'), S, scan_owner=False, scan_subresonances=False)
     exit_event = result.geometry.exit
     assert exit_event is not None and not exit_event.observed and exit_event.suspected
     assert exit_event.raw_arc_rad == pytest.approx(1.5 * np.pi, rel=0.05)
     v = result.verdict
     assert (str(v.status), str(v.angle_status)) == ('resonant', 'libration')
     assert 'exit_suspected' in v.caps and str(v.confidence) in ('medium', 'low')
+    # W34, the minimal policy: the edge mark is a flag, not a cap; the level from the evidence (N 9.5 cycles, M, S, V
+    # clean, the force shown) is certain; no extend, the last episode reaches the end with more than
+    # CONFIDENCE_HIGH_CYCLES and sigma_f travels less than a revolution after the last turning point
+    v = final.verdict
+    assert (str(v.status), str(v.angle_status), str(v.confidence), v.caps) == ('resonant', 'libration', 'certain', [])
+    assert 'exit_suspected' in v.flags and v.pol_extend_clause == '' and v.pol_end_travel_rev < 1.0
 
 
 def test_an_entry_whose_raw_arc_exceeds_a_turn_is_observed():
@@ -362,7 +369,7 @@ def test_benchmark_cycles_closed_by_return(example, expected):
     each, capped at medium (one_return_cycle; author 2026-10-19 q5)."""
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    result = analyse_mmr(io.load_series(example), S)
+    result = tree_and_final(io.load_series(example), S)[0]  # the cap one_return_cycle is the W28 tree's (W34)
     v = result.verdict
     assert (str(v.status), str(v.angle_status), str(v.confidence)) == expected
     assert 'one_return_cycle' in v.caps
@@ -400,7 +407,7 @@ def test_benchmark_transient_unexplained_only_off_the_one_to_one(example, expect
     """R2 (author 2026-10-19): 2013 BS45 was medium by transient_unexplained alone; the non-1:1 rows keep theirs."""
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    v = analyse_mmr(io.load_series(example), S).verdict
+    v = tree_and_final(io.load_series(example), S)[0].verdict  # R2 is a rule of the W28 tree's caps (W34)
     assert (str(v.status), str(v.confidence)) == expected
     assert ('transient_unexplained' in v.caps) == unexplained
 

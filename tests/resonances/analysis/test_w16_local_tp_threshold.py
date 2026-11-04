@@ -20,6 +20,7 @@ from resonances.resonance.analysis.mmr import io
 from resonances.resonance.analysis.mmr import models as m
 from resonances.resonance.analysis.mmr.analyse import regime_prominence
 from resonances.resonance.analysis.settings import settings_from_config
+from tests.resonances.analysis.builders import tree_verdict
 from tests.resonances.analysis.impl_response_pendulum_synthetic import make
 
 S = settings_from_config()
@@ -162,7 +163,8 @@ def test_pg14_the_episode_runs_to_the_escape(pg14):
     assert episode.period_med_yr == pytest.approx(187.5, rel=0.05)
     # selected at a prominence well below the record's, which dropped the 19.6-20.1 deg half-cycles
     assert np.degrees(episode.tp_prominence_rad) < 15.0
-    assert pg14.verdict.angle_status == 'episodic'
+    # the W28 tree's word (W34: the minimal policy reads the strength veto: no run is a libration, circulation)
+    assert tree_verdict(pg14.verdict).angle_status == 'episodic'
 
 
 def test_l1_recounts_an_episode_spanning_two_stretches_at_its_own_profile():

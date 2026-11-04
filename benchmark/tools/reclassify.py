@@ -4,10 +4,6 @@
     uv run python benchmark/tools/reclassify.py --only ID,ID --figures
     uv run python benchmark/tools/reclassify.py --rtype mmr3 --workers 8 --out benchmark/data/v2
     uv run python benchmark/tools/reclassify.py --rtype secular,zlk --workers 3 --out benchmark/data/v2-secular-zlk
-    uv run python benchmark/tools/reclassify.py --policy v2 --out benchmark/data/v2-w29-v2   # the W28 tree, for comparison
-
---policy minimal|v2 sets the setting `classifier_policy` explicitly (W29; never through the environment: the MMR path
-builds its settings from the dataclass defaults, `settings_from_config()`); omitted, the package default applies.
 
 --workers auto (the default) is min(CPUs - 2, available RAM / 3 GB, 8): ~2.6 GB per worker at the peak (v2-w21a); where
 the memory limits it, the workers get the low-memory allocator and 1.6 GB each (LOW_MEMORY_ALLOCATOR, docs/config.md;
@@ -214,25 +210,13 @@ def _write(frame_rows: List[Dict[str, Any]], path: Path) -> pd.DataFrame:
 TASKS_PER_WORKER = 5  # worker recycling: W20 round E, peak RSS per worker on 40 rows with figures (DECISIONS.md)
 
 
-POLICIES = ('minimal', 'v2')  # `AnalysisSettings.classifier_policy` (W29)
-
-
-def policy_overrides(policy: Optional[str]) -> Dict[str, Any]:
-    """The settings overrides of `--policy` (none when omitted: the package default)."""
-    if policy is None:
-        return {}
-    if policy not in POLICIES:
-        raise SystemExit(f'--policy must be one of {", ".join(POLICIES)}, not {policy!r}')
-    return {'classifier_policy': policy}
-
-
 def run_record_extra(overrides: Dict[str, Any]) -> Dict[str, Any]:
     """run.json fields of the settings the run used: its `settings_hash` (with the overrides; it replaces the default
-    one `bench_io.write_run_record` writes) and the effective `classifier_policy`."""
+    one `bench_io.write_run_record` writes)."""
     from resonances.resonance.analysis.settings import settings_from_config, settings_hash
 
     settings = settings_from_config(**overrides)
-    return {'settings_hash': settings_hash(settings), 'classifier_policy': getattr(settings, 'classifier_policy', '')}
+    return {'settings_hash': settings_hash(settings)}
 
 
 def run(
@@ -249,7 +233,7 @@ def run(
     3J+8S-3 at 1 Myr alone 2.23 GB without a figure (~2.5 GB with it), 285637 at 2 Myr 1.72 GB, 50166 85J-27 1.45 GB;
     with recycling every 5 rows three of eight processes still went above 2 GB. With one worker and recycling the
     examples run in a pool of one process; `--workers 1 --tasks-per-worker 0` runs them in this process (debugging).
-    `settings_overrides` reach every example's `settings_from_config` (`--policy`)."""
+    `settings_overrides` reach every example's `settings_from_config`."""
     overrides = dict(settings_overrides or {})
     out.mkdir(parents=True, exist_ok=True)
     print(f'{len(ids)} examples, {workers} workers, {tasks_per_worker or "no"} recycling -> {out}')
@@ -302,11 +286,7 @@ def main() -> int:
         help=f'replace a worker process after this many examples (default {TASKS_PER_WORKER}; 0 = never, and with --workers 1 '
         'run in this process)',
     )
-    ap.add_argument(
-        '--policy', choices=POLICIES, help='classifier_policy: minimal (W29) or v2 (the W28 tree); default: the package default'
-    )
     args = ap.parse_args()
-    overrides = policy_overrides(args.policy)
     args.workers = bio.resolve_workers(args.workers)
     if args.no_column_cache:
         os.environ['BENCHMARK_COLUMN_CACHE'] = '0'  # the spawned workers inherit it
@@ -317,8 +297,8 @@ def main() -> int:
         if rtypes - {'secular', 'zlk'}:
             raise SystemExit('--rtype secular,zlk cannot be mixed with MMR rtypes in one run (their outputs differ)')
         ids = reclassify_secular_zlk.select(args.rtype, args.only)
-        return reclassify_secular_zlk.run(ids, args.out, args.workers, args.figures, args.policy)
-    return run(select(args), args.out, args.workers, args.figures, args.tasks_per_worker, overrides)
+        return reclassify_secular_zlk.run(ids, args.out, args.workers, args.figures)
+    return run(select(args), args.out, args.workers, args.figures, args.tasks_per_worker)
 
 
 if __name__ == '__main__':

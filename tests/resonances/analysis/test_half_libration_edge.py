@@ -134,11 +134,11 @@ def test_42946_43s6_half_swing_is_between_passages_and_asks_no_extend():
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
     series = io.load_series(example)
-    v2 = analyse_mmr(series, replace(S, classifier_policy='v2'))
-    row = v2.summary_row()
+    analysis = analyse_mmr(series, S)
+    row = analysis.summary_row()
     assert row['geo_half_libration_read'].startswith('28476.1-32285.5:')
     assert ':end' not in row['geo_half_libration_read']
-    assert (row['status'], row['reason'], row['action']) == ('uncertain', 'one_half_libration', 'review')
-    minimal = analyse_mmr(series, replace(S, classifier_policy='minimal')).verdict
+    assert analysis.verdict.v2_verdict.split('/')[0] == 'uncertain' and '/one_half_libration/review/' in analysis.verdict.v2_verdict
+    minimal = analysis.verdict
     assert (str(minimal.status), str(minimal.reason)) == ('non_resonant', 'circulation')
     assert str(minimal.action) != 'extend'

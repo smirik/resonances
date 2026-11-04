@@ -37,7 +37,7 @@ from resonances.resonance.analysis.pendulum import EnergyAnalysis
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import Flag
 from resonances.simulation import dry_run as dr
-from tests.resonances.analysis.builders import make, make_episode, make_geometry
+from tests.resonances.analysis.builders import make, make_episode, make_geometry, tree_and_final
 
 S = settings_from_config()
 FLAGGED = str(Flag.SHORT_PERIOD_ALIASED)
@@ -164,9 +164,10 @@ def _pendulum_2j1(step_yr, span_yr=8000.0):
 
 def test_the_harmonic_trigger_reaches_the_verdict_end_to_end():
     """Review D #6: a full analyse_mmr below the Nyquist step (dt = 0.995 P_orb / 2) flags short_period_aliased by the
-    folded harmonic, caps the level at medium and writes the flag into summary.csv's row."""
+    folded harmonic, caps the level at medium (the W28 tree's cap; W34: under the minimal policy a flag) and writes the
+    flag into summary.csv's row."""
     step = 0.995 * (math.pi / N_J) / 2
-    result = analyse_mmr(_pendulum_2j1(step), S)
+    result, final = tree_and_final(_pendulum_2j1(step), S)
     smp = result.sampling
     assert step < smp.short_period_step_yr  # below min(P_orb, P_syn) / 2
     orbit = 2 * smp.short_period_step_yr  # the record's own P_orb (P_syn,J = 2 P_orb is longer)
@@ -175,6 +176,7 @@ def test_the_harmonic_trigger_reaches_the_verdict_end_to_end():
     v = result.verdict
     assert FLAGGED in v.flags and FLAGGED in v.caps and str(v.confidence) in ('medium', 'low')
     assert FLAGGED in str(result.summary_row()['flags']).split(';')
+    assert FLAGGED in str(final.summary_row()['flags']).split(';')
     (entry,) = [e for e in v.decision_path if e.name.startswith('short_period_aliased: a harmonic')]
     assert entry.result is True and entry.threshold == pytest.approx(S.mmr_libration_period_min_yr)
 

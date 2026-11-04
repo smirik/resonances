@@ -98,9 +98,11 @@ def test_near_separatrix_without_zone_is_capped_at_medium(h):
         'pattern_b',
     )
     assert str(verdict.checks['check_mmr_separatrix_zone']) != 'pass'
-    assert 'near_separatrix_without_zone' in verdict.caps
-    assert str(verdict.confidence_raw) in ('high', 'certain')
-    assert str(verdict.confidence) == 'medium'
+    # W34: the minimal policy keeps the W28 tree's verdict in `v2_verdict` and its caps in `flags`; the tree's raw
+    # level is the one of its margins (`confidence.raw_level`; the U items of the ledger only turn certain into high)
+    assert 'near_separatrix_without_zone' in verdict.flags
+    assert str(confidence.raw_level(verdict.margins, ())[0]) in ('high', 'certain')
+    assert verdict.v2_verdict.split('/')[1] == 'medium'
 
 
 def test_libration_of_the_same_pendulum_takes_no_near_separatrix_cap():
@@ -108,7 +110,7 @@ def test_libration_of_the_same_pendulum_takes_no_near_separatrix_cap():
     G3 only."""
     verdict = _free_pendulum(0.5).verdict
     assert str(verdict.status) == 'resonant'
-    assert 'near_separatrix_without_zone' not in verdict.caps
+    assert 'near_separatrix_without_zone' not in verdict.flags  # W34: the tree's caps are flags under the policy
 
 
 @pytest.mark.parametrize('level, expected', [('certain', 'medium'), ('high', 'medium'), ('medium', 'medium'), ('low', 'low')])
@@ -196,7 +198,7 @@ def test_exit_and_capture_marks_the_slip_record():
     assert str(verdict.angle_status) == 'episodic'
     assert str(verdict.checks['check_mmr_a_response']) == 'pass'
     assert 'exit_and_capture' in verdict.flags
-    assert 'exit_and_capture' not in verdict.caps  # a mark: no ceiling of its own
+    assert 'exit_and_capture' not in [str(cap) for cap in confidence.Cap]  # a mark: no ceiling of its own (W34: caps are flags)
 
 
 @pytest.mark.slow

@@ -407,4 +407,7 @@ def test_523683_and_82831_words():
     assert text.decided_at.startswith('Decided at G5w') and 'orbital period' in text.steps[0].outcome
     analysis, _ = _bench('mmr2__82831__13M-24+0+11')
     text = vt.explain_mmr(analysis, S, {**analysis.numbers_row(), **analysis.summary_row()}, analysis.episode_rows())
-    assert not any('captur' in bullet.text for bullet in text.bullets)
+    # W34: the policy's 'flags:' bullet lists the tree's former cap exit_and_capture by its code (a flag, not a claim
+    # of capture); the prose bullets still never call the early episode a capture
+    assert any('exit_and_capture' in bullet.text for bullet in text.bullets if bullet.slot == vt.SLOT_POLICY)
+    assert not any('captur' in bullet.text for bullet in text.bullets if bullet.slot != vt.SLOT_POLICY)

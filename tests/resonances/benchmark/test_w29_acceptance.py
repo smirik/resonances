@@ -277,13 +277,6 @@ def test_parse_basis():
 # --- the W29 parts of the other tools -----------------------------------------------------------------------------------
 
 
-def test_the_policy_option_of_the_reclassify_tools():
-    assert reclassify.policy_overrides(None) == {}
-    assert reclassify.policy_overrides('v2') == {'classifier_policy': 'v2'}
-    with pytest.raises(SystemExit):
-        reclassify.policy_overrides('w28')
-
-
 def test_the_episode_gate_counts_only_counted_episodes_under_minimal():
     """Two accepted runs, one counted (the other vetoed): under minimal the plain episodes are the counted one; a v2
     run (no `policy`) keeps both."""
@@ -297,8 +290,6 @@ def test_the_episode_gate_counts_only_counted_episodes_under_minimal():
     assert minimal.counted_only and len(minimal.plain) == 1 and len(minimal.accepted) == 2
     v2 = ee.Record({'policy': ''}, episodes)
     assert not v2.counted_only and len(v2.plain) == 2
-    assert ee.run_policy(ee.RunTables(pd.DataFrame({'policy': ['minimal', 'minimal']}), pd.DataFrame())) == 'minimal'
-    assert ee.run_policy(ee.RunTables(pd.DataFrame({'status': ['x']}), pd.DataFrame())) is None
 
 
 def test_the_integration_readings_of_the_invariants():

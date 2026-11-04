@@ -28,6 +28,7 @@ from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.mmr.models import MMRSeries, Regime, ResonanceSpec
 from resonances.resonance.analysis.ledger import Ledger
 from resonances.resonance.analysis.settings import settings_from_config
+from tests.resonances.analysis.builders import tree_and_final
 
 DEG = math.pi / 180
 N_JUPITER = const.PLANET_N_DEG_PER_GAUSS_YR['Jupiter'] * DEG
@@ -119,7 +120,7 @@ def _path(analysis):
 
 
 def test_decision_path_explains_the_phase_when_jitter_low_e():
-    defined = analyse_mmr(_wobbling(), S, scan_owner=False, scan_subresonances=False)
+    defined, _ = tree_and_final(_wobbling(), S, scan_owner=False, scan_subresonances=False)  # G0 and the cap: the W28 tree
     path = _path(defined)
     assert str(defined.verdict.angle_status) != 'undefined'
     assert path['G0 angle jitter'].result is False and path['G0 angle jitter'].value == pytest.approx(1.061, rel=0.02)
@@ -149,10 +150,11 @@ def test_258640_46J_19_is_a_circulation():
     jitter 1.03, full-angle p99 101 deg. Author and Codex: non_resonant; the cap jitter_low_e keeps it at medium."""
     if not io.example_path(EXAMPLE_258640).exists():
         pytest.skip('benchmark data not available')
-    analysis = analyse_mmr(io.load_series(EXAMPLE_258640), S)
+    # the W28 tree's level and cap (W34: the minimal policy keeps the circulation, the cap is a flag, the level high)
+    analysis, final = tree_and_final(io.load_series(EXAMPLE_258640), S)
     v = analysis.verdict
     assert (str(v.status), str(v.angle_status), str(v.confidence)) == ('non_resonant', 'circulation', 'medium')
-    assert 'jitter_low_e' in v.caps
+    assert 'jitter_low_e' in v.caps and str(final.verdict.status) == 'non_resonant' and 'jitter_low_e' in final.verdict.flags
     assert analysis.sampling.jitter_low_e and analysis.sampling.varpi_undefined_fraction == 0.0
 
 
@@ -170,7 +172,12 @@ def test_the_figure_says_why_the_phase_is_undefined():
     # not measured (Jupiter of the varpi_J term not saved): the old wording, no share
     _, text = _explained(_wobbling('46J-19-1-26'))
     assert text.steps[-1].outcome == 'ϖ undefined at small e (e down to 0.0425; its own scatter not measured)'  # 0.045 - r
-    # the wobble: no leaf on the phase, the cap is named
+    # the wobble: no leaf on the phase, the cap is named. W34: under the minimal policy the cap is a flag the figure's
+    # 'flags:' line names, and the level comes from the evidence: medium -> high (non_resonant, no veto, no candidate,
+    # C1 thin so not a clear circulation); the tree's medium stays in the 'v2:' line
     analysis, text = _explained(_wobbling())
-    assert str(analysis.verdict.confidence) == 'medium'
-    assert any('the p·ϖ term wobbles by more than 45° at short periods (osculating)' in s for s in text.sentences)
+    assert str(analysis.verdict.confidence) == 'high' and 'jitter_low_e' in analysis.verdict.flags
+    assert analysis.verdict.v2_verdict.startswith('non_resonant/medium/')
+    lines = [bullet.text for bullet in text.bullets]
+    assert any(line.startswith('flags: ') and 'jitter_low_e' in line for line in lines)
+    assert 'v2: non_resonant · medium · circulation · spot_check · circulation' in lines

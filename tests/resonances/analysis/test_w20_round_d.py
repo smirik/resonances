@@ -37,7 +37,7 @@ from resonances.resonance.analysis.verdict import Flag
 sys.path.insert(0, str(Path(__file__).parent))
 from test_w20_fix2 import C, ONE_DEG, filtered  # noqa: E402
 
-from tests.resonances.analysis.builders import make_sampling  # noqa: E402
+from tests.resonances.analysis.builders import make_sampling, tree_and_final  # noqa: E402
 
 S = settings_from_config()
 LIFT = replace(S, mmr_short_period_cap_ratio=0.1)  # the W20 F5 lift, now opt-in
@@ -52,9 +52,13 @@ def _sampling(flags=(), folded=float('nan'), da=float('nan'), excursion=float('n
     return sampling
 
 
-def _analysis(example):
+def _analysis_needs(example):
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
+
+
+def _analysis(example):
+    _analysis_needs(example)
     return analyse_mmr(io.load_series(example), S)
 
 
@@ -132,9 +136,11 @@ def test_the_scatter_warning_on_a_flagged_record():
 )
 def test_benchmark_rows_keep_the_cap_and_warn_by_their_measured_scatter(example, warned, level):
     """GB2 (scatter 0.05 of the a swing) and AS27 (1.21) keep the cap (medium); only AS27 carries the warning."""
-    result = _analysis(example)
+    _analysis_needs(example)
+    # the W28 tree's cap and level (W34: the minimal policy moves the cap into the flags and reads its own level)
+    result, final = tree_and_final(io.load_series(example), S)
     v = result.verdict
-    assert CAP in v.caps and str(v.confidence) == level
+    assert CAP in v.caps and str(v.confidence) == level and CAP in final.verdict.flags
     assert (str(Flag.A_SHORT_PERIOD_SCATTER) in v.flags) is warned
     ratio = result.numbers_row()['smp_da_sp_over_a_excursion']
     assert (ratio > S.mmr_short_period_a_ratio) is warned
@@ -213,9 +219,12 @@ def test_129772_keeps_its_word_and_385266_its_calibration_cell():
     G6); review C #9: the confidence reads the tree's word, so 385266's cell is the circulation's, not blank."""
     v = _analysis('mmr2__129772__4N-7+0+3').verdict
     assert (str(v.angle_status), str(v.angle_subtype), str(v.reason)) == ('insufficient_time', 'arc', 'baseline_needed')
-    w = _analysis('mmr2__385266__16N-27+0+11').verdict
+    _analysis_needs('mmr2__385266__16N-27+0+11')
+    tree, final = tree_and_final(io.load_series('mmr2__385266__16N-27+0+11'), S)
+    w = final.verdict
     assert str(w.angle_status) == 'episodic' and str(w.reason) == 'circulation'
-    assert w.cell_n_examples is not None and w.cell_n_examples > 0
+    # the cell is the W28 tree's (W34: the minimal policy reports none)
+    assert tree.verdict.cell_n_examples is not None and tree.verdict.cell_n_examples > 0
     assert 'forced wave about' in w.orbit_type and 'libration' not in w.orbit_type
 
 

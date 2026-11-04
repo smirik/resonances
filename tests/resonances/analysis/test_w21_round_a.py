@@ -31,6 +31,7 @@ from resonances.resonance.analysis.mmr import io, sampling
 from resonances.resonance.analysis.mmr.analyse import analyse_mmr, short_period_resample
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import Action, Flag
+from tests.resonances.analysis.builders import tree_and_final
 from tests.resonances.analysis.test_w20_round_e import N_J, _pendulum_2j1
 
 S = settings_from_config()
@@ -122,21 +123,28 @@ def test_short_period_resample_keeps_other_actions():
 
 def test_the_2j1_record_asks_for_its_fold_free_step():
     """Round E's 2J-1 pendulum below the Nyquist step: medium (raw high) only by short_period_aliased -> resample at
-    2.5 yr, where the second harmonic folds to 15.9 yr; status and level unchanged."""
-    result = analyse_mmr(_pendulum_2j1(STEP_2J1), S)
-    v, smp = result.verdict, result.sampling
+    2.5 yr, where the second harmonic folds to 15.9 yr; status and level unchanged. The W28 tree's (W34): under the
+    minimal policy the cap is a flag, the level comes from the evidence and the step stays a column."""
+    tree, result = tree_and_final(_pendulum_2j1(STEP_2J1), S)
+    v, smp = tree.verdict, tree.sampling
     assert (str(v.status), str(v.confidence), str(v.confidence_raw), list(v.caps)) == ('resonant', 'medium', 'high', [CAP])
     assert smp.fold_free_step_yr == 2.5
     assert (v.action, v.resample_step_yr) == (Action.RESAMPLE, 2.5)
+    assert tree.numbers_row()['smp_fold_free_step_yr'] == 2.5
+    assert tree.summary_row()['resample_step_yr'] == 2.5
+    # W34, end to end: resample only when R-ALIAS-A withdrew a needed check, which it did not here; high from the
+    # evidence (N 11.3 cycles, V partial), so no action; the cap is a flag and the fold-free step is still in the CSV
+    final = result.verdict
+    assert (str(final.status), str(final.confidence), list(final.caps), final.action) == ('resonant', 'high', [], Action.NONE)
+    assert CAP in final.flags and final.v2_verdict.startswith('resonant/medium/')
     assert result.numbers_row()['smp_fold_free_step_yr'] == 2.5
-    assert result.summary_row()['resample_step_yr'] == 2.5
 
 
 def test_no_free_grid_step_keeps_the_spot_check():
     settings = settings_from_config(mmr_resample_steps_yr=(5.0, 10.0))  # nothing below the record's step
-    result = analyse_mmr(_pendulum_2j1(STEP_2J1), settings)
-    v = result.verdict
-    assert math.isnan(result.sampling.fold_free_step_yr) and str(v.confidence) == 'medium'
+    tree, _ = tree_and_final(_pendulum_2j1(STEP_2J1), settings)  # the W28 tree's cap and action (W34)
+    v = tree.verdict
+    assert math.isnan(tree.sampling.fold_free_step_yr) and str(v.confidence) == 'medium'
     assert (v.action, v.resample_step_yr) == (Action.SPOT_CHECK, None)
 
 
@@ -162,7 +170,7 @@ BENCHMARK = [
 def test_benchmark_rows_held_by_the_cap(example, status, confidence, raw, step):
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    result = analyse_mmr(io.load_series(example), S)
+    result = tree_and_final(io.load_series(example), S)[0]  # the W28 tree's cap, action and its text (W34)
     v = result.verdict
     assert (str(v.status), str(v.confidence), str(v.confidence_raw), list(v.caps)) == (status, confidence, raw, [CAP])
     assert (v.action, v.resample_step_yr) == (Action.RESAMPLE, step)
@@ -191,7 +199,7 @@ def test_benchmark_row_with_a_second_cap_keeps_the_spot_check():
     example = 'mmr2__1221__3E-8+0+5'
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    result = analyse_mmr(io.load_series(example), S)
+    result = tree_and_final(io.load_series(example), S)[0]  # the W28 tree's caps and action (W34)
     v = result.verdict
     assert set(v.caps) == {CAP, 'transient_unexplained'} and str(v.confidence) == 'medium'
     assert (v.action, v.resample_step_yr) == (Action.SPOT_CHECK, None)
@@ -371,7 +379,7 @@ def test_b_117306_the_guard_compares_the_cycle_with_itself():
     40 kyr; both reviews: medium for one cycle at the separatrix)."""
     if not io.example_path(BENCH_117306).exists():
         pytest.skip('benchmark data not available')
-    analysis = analyse_mmr(io.load_series(BENCH_117306), S)
+    analysis = tree_and_final(io.load_series(BENCH_117306), S)[0]  # the guard feeds the W28 tree (W34)
     verdict, numbers = analysis.verdict, analysis.numbers_row()
     assert (str(verdict.status), str(verdict.angle_status), str(verdict.confidence)) == ('transient', 'episodic', 'medium')
     assert numbers['flt_filter_sensitive'] is False and numbers['flt_withdrawn_before_tree'] == ''
@@ -391,7 +399,7 @@ def test_b_471155_a_withdrawn_r0_is_not_measured_for_the_tree():
     example = 'mmr2__471155__6N-7+0+1'
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    analysis = analyse_mmr(io.load_series(example), S)
+    analysis = tree_and_final(io.load_series(example), S)[0]  # the guard feeds the W28 tree (W34)
     verdict, numbers = analysis.verdict, analysis.numbers_row()
     assert numbers['flt_withdrawn_before_tree'] == 'check_mmr_potential' and 'energy' in numbers['flt_sensitive_quantities']
     assert numbers['flt_x1_h_med'] > 1 > numbers['flt_x2_h_med']
@@ -480,7 +488,7 @@ def test_c_levels_by_hand():
 def test_c_benchmark_onset_cap(example, expected, onset, o1_margin):
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    verdict = analyse_mmr(io.load_series(example), S).verdict
+    verdict = tree_and_final(io.load_series(example), S)[0].verdict  # the W28 tree's caps and margins (W34)
     got = (str(verdict.status), str(verdict.angle_status), str(verdict.confidence), str(verdict.reason))
     assert got == expected
     assert (str(Cap.ONSET_FAILED) in verdict.caps) is onset
@@ -597,7 +605,7 @@ def test_d_gap_circulates_by_hand():
 def _bench(example):
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    analysis = analyse_mmr(io.load_series(example), S)
+    analysis = tree_and_final(io.load_series(example), S)[0]  # O1 and its cap are the W28 tree's (W34)
     episode = next(p for p in analysis.episode_physics if p.episode_id == analysis.decisive_episode_id)
     return analysis, episode
 
@@ -670,9 +678,10 @@ Q1D = [
 
 
 def _q1d(example, settings=S):
+    """The W28 tree's analysis (the exemption is a rule of the tree's caps; W34: the minimal policy re-reads it)."""
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    return analyse_mmr(io.load_series(example), settings)
+    return tree_and_final(io.load_series(example), settings)[0]
 
 
 def _word(v):

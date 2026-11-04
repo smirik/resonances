@@ -26,6 +26,7 @@ from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.mmr.decide import StatusDecision
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import LibrationOrigin, OriginDetail, Reason, Status
+from tests.resonances.analysis.builders import tree_verdict
 
 S = settings_from_config()
 MID_ONLY = replace(S, libration_return_levels=0)
@@ -248,6 +249,7 @@ def test_benchmark_returns_at_their_levels(example, expected, fraction):
         pytest.skip('benchmark data not available')
     result = analyse_mmr(io.load_series(example), S)
     v = result.verdict
-    assert (str(v.status), str(v.angle_status), str(v.confidence)) == expected
+    # the level is the W28 tree's (W34: the minimal policy reads its own: 164207 certain, CA138 low)
+    assert (str(v.status), str(v.angle_status), tree_verdict(v).confidence) == expected
     returned = [run for run in result.geometry.runs if run.closed_by_return and run.accepted]
     assert [run.return_level_fraction for run in returned] == ([] if fraction is None else [pytest.approx(fraction)])

@@ -105,7 +105,11 @@ def test_k3s_driver_line_is_measured_only_at_the_identified_level(level, word):
     expected = f'Driven by: secular cycle −4ϖ (the e cycle 2π/|g − g5|, P 5.7 kyr) [{word}].'
     assert vt.secular_driver_line(f) == (expected, ('K3s',))
     text = vt.explain_mmr(analysis, S, row, analysis.episode_rows())
-    assert text.bullets[0].text == expected  # first under the plaque, where a confirmed owner would be
+    # W34: the minimal policy opens the explanation with its four SLOT_POLICY bullets; the driver line is the first after
+    # them, where a confirmed owner would be
+    body = [bullet for bullet in text.bullets if bullet.slot != vt.SLOT_POLICY]
+    assert [bullet.slot for bullet in text.bullets[:4]] == [vt.SLOT_POLICY] * 4
+    assert body[0].text == expected
     assert vt.slow_scale_line(f) == ''  # the cause line says it
 
 

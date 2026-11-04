@@ -261,7 +261,9 @@ def test_secular_stationary_libration_is_resonant():
     v = res.verdict
     assert v.status == Status.RESONANT
     assert v.angle_status == AngleStatus.LIBRATION
-    assert str(v.reason) == 'dynamic_libration'
+    assert _tree(v)[2] == 'dynamic_libration'  # the W28 tree's reason
+    # W34: the minimal policy names no mechanism by the geometry alone (status-tree.md#minimal-policy, principle 1)
+    assert (str(v.reason), str(v.libration_origin)) == ('geometric_libration', 'unknown')
     assert v.status_code == 2
     assert res.libration_period_yr == pytest.approx(1.0e6, rel=0.05)
     # every margin full and no cap: certain, shown without a label minimum since W8 (author's decision 7, 2026-10-16)
@@ -338,7 +340,9 @@ def test_secular_libration_then_circulation_is_transient():
     v = analyse_secular(_secular(angle, T_GRID), SETTINGS).verdict
     assert v.status == Status.TRANSIENT
     assert v.angle_status == AngleStatus.EPISODIC
-    assert str(v.reason) == 'dynamic_episode'
+    assert _tree(v)[2] == 'dynamic_episode'  # the W28 tree's reason
+    # W34: the minimal policy names no mechanism by the geometry alone (status-tree.md#minimal-policy, principle 1)
+    assert (str(v.reason), str(v.libration_origin)) == ('geometric_episode', 'unknown')
     assert v.status_code == 1
 
 
@@ -360,6 +364,12 @@ def test_secular_nan_angle_is_unusable():
     assert v.angle_status == AngleStatus.UNDEFINED
     assert str(v.reason) == 'unusable_series'
     assert v.status_code == -9
+
+
+def _tree(verdict):
+    """The W28 tree's (status, confidence, reason, action, angle_status): every analysis ends with the minimal policy,
+    which keeps the tree's verdict in `v2_verdict` (W34)."""
+    return tuple(verdict.v2_verdict.split('/'))
 
 
 def _integrate(rate, t):
@@ -451,9 +461,14 @@ def test_zlk_without_free_elements_is_minus_nine_not_minus_two():
     # The same kinematic omega without free elements: no verdict is possible -> uncertain, gate_unavailable (-9),
     # never merged with the kinematic -2 (CLAUDE.md).
     v = _zlk(*_kinematic_vectors(), with_free=False).verdict
-    assert v.status == Status.UNCERTAIN
-    assert str(v.reason) == 'gate_unavailable'
-    assert v.status_code == -9
+    tree_status, _, tree_reason, _, tree_angle = _tree(v)  # the W28 tree's verdict
+    assert tree_status == Status.UNCERTAIN
+    assert tree_reason == 'gate_unavailable'
+    assert status_code(v.resonance_type, Status(tree_status), AngleStatus(tree_angle), tree_reason, v.flags) == -9
+    # W34: the minimal policy gives a gate without a verdict the geometry's status back, flag gate_unavailable, at most
+    # medium (status-tree.md#minimal-policy, principle 2); never -2
+    assert (v.status, v.status_code) == (Status.RESONANT, 2)
+    assert 'gate_unavailable' in v.flags and v.confidence in (Confidence.LOW, Confidence.MEDIUM)
 
 
 def test_zlk_gate_disabled_keeps_the_geometric_libration():

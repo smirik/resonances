@@ -258,9 +258,18 @@ class TestFreeOmegaGateInPipeline:
         sim.identify_librations()
 
         key = resonance.to_s()
-        assert body.statuses[key] == 'uncertain' and body.librations[key].status_code == -9
+        verdict = body.librations[key]
         assert body.free_gates[key].outcome is GateOutcome.SHORT_WINDOW
-        assert body.librations[key].checks['check_zlk_free_omega'] == 'not_measured'
+        # the W28 tree: uncertain / gate_unavailable (-9)
+        assert verdict.v2_verdict.split('/')[0::2] == ['uncertain', 'gate_unavailable', 'libration']
+        # W34: with the gate withheld the minimal policy reads the deciding episode's e-i integral; this synthetic e and i
+        # break sqrt(1-e^2) cos i where the forced terms are small: the veto zlk_integral (status-tree.md#minimal-policy,
+        # principle 2), non_resonant -2; was uncertain -9 (with the gate confirmed the same break is only an objection)
+        assert body.statuses[key] == 'non_resonant' and verdict.status_code == -2
+        assert verdict.veto == 'zlk_integral' and str(verdict.reason) == 'kinematic_libration'
+        # the gate measured nothing (docs/output.md: not_measured = no verdict, fail = measured kinematic); W34: the
+        # policy's zlk_integral veto writes fail here (`policy._zlk_veto`), reported as a disagreement, not migrated
+        assert verdict.checks['check_zlk_free_omega'] == 'not_measured'
 
 
 class TestSummaryAndCoherenceCsv:

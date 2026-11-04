@@ -91,7 +91,10 @@ def test_c6_the_leg_outcomes_the_strings_assume():
 def test_c6_a_clean_conservative_leg_is_one_horseshoe_leg_with_force_and_energy_conserved():
     """g02-5 B / g02-6 B (2023 OE5): the leaf G4c says the leg, its law, energy and turns; step 0 the circulation it
     judged; the leaf step is G4c; the verdict line names one leg and no closed cycle."""
-    f = _coorbital(OE5, 'G4c', {'status': 'transient', 'reason': 'dynamic_episode', 'angle_status': 'episodic'})
+    # W34: the leaf steps print the tree's status (`tree_status`: `v2_verdict` under the minimal policy), so the tree's
+    # verdict is set there too
+    tree = {'status': 'transient', 'reason': 'dynamic_episode', 'angle_status': 'episodic'}
+    f = _coorbital(OE5, 'G4c', {**tree, 'v2_verdict': 'transient/medium/dynamic_episode/none/episodic'})
     clause = (
         'one horseshoe leg 586–665 yr, force and energy conserved: its local 1:1 law holds (K/K_theory 1.24), its energy '
         'integral passes and both turns reflect (out/in 0.836 and 1.2; |ln out/in| ≤ 0.34); half a cycle, no closed one'
@@ -175,24 +178,35 @@ def test_c6_an_edge_leg_and_an_edge_half_swing_ask_for_the_rest_of_the_cycle():
 def test_c14_the_flag_extend_time_says_where_and_why_with_the_next_check():
     """g01-7 A (2022 BB2: end slowdown and an end leg; 2008 EZ84: one reflection at the start; 42946: action extend,
     the action sentence names the next check)."""
-    bb2 = _facts(
-        row={'geo_extend_time_from': 'end:slowdown;leg:end'},
-        verdict={
-            'extend_direction': 'forward',
-            'extend_to_years': 2000.0,
-            'action': 'review',
-            'final_regime': 'arc',
-            'final_regime_start_yr': 361.0,
-        },
-    )
+    bb2_verdict = {
+        'extend_direction': 'forward',
+        'extend_to_years': 2000.0,
+        'action': 'review',
+        'final_regime': 'arc',
+        'final_regime_start_yr': 361.0,
+    }
+    bb2_row = {'geo_extend_time_from': 'end:slowdown;leg:end'}
+    # a file written before W29 (no policy) keeps the advice with its next check
+    bb2 = _facts(row=bb2_row, verdict={**bb2_verdict, 'policy': ''})
     assert vt.extend_flag_sentence(bb2) == (
         'Extend: a longer integration forward (next check: 2 kyr) would show how the record ends (σ_f slows to an arc '
         'after circulating; a clean 1:1 leg is cut by the end).'
     )
     assert vt._end_clause(bb2) == '; from 361 yr to the end σ_f slows to an arc (less than one revolution)'
-    ez84 = _facts(row={'geo_extend_time_from': 'start:reflection'}, verdict={'extend_direction': 'backward', 'extend_to_years': 2000.0})
+    # W34: under the minimal policy the sentence reads the action (status-tree.md#minimal-policy, step 5): action review
+    # extends nothing, so the causes are named as a flag without advice
+    assert vt.extend_flag_sentence(_facts(row=bb2_row, verdict=bb2_verdict)) == (
+        'Flag extend_time (σ_f slows to an arc after circulating; a clean 1:1 leg is cut by the end): no extension; the '
+        'action extends only an unfinished libration at the record’s end or a deciding period too long for the record.'
+    )
+    ez84_verdict = {'extend_direction': 'backward', 'extend_to_years': 2000.0}
+    ez84 = _facts(row={'geo_extend_time_from': 'start:reflection'}, verdict={**ez84_verdict, 'policy': ''})
     assert vt.extend_flag_sentence(ez84) == (
         'Extend: a longer integration backward (next check: 2 kyr) would show how the record starts (σ turns back once at the start).'
+    )
+    # W34: the minimal policy never extends backward (step 5: only the record's end)
+    assert vt.extend_flag_sentence(_facts(row={'geo_extend_time_from': 'start:reflection'}, verdict=ez84_verdict)).startswith(
+        'Flag extend_time (σ turns back once at the start): no extension'
     )
     extend = _facts(
         row={'geo_extend_time_from': 'half:end'}, verdict={'extend_direction': 'forward', 'extend_to_years': 1e5, 'action': 'extend'}

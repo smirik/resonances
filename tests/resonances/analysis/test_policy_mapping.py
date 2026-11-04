@@ -39,8 +39,7 @@ from tests.resonances.analysis.builders import (
     make_verdict,
 )
 
-MINIMAL = AnalysisSettings(classifier_policy='minimal')
-V2 = AnalysisSettings(classifier_policy='v2')
+MINIMAL = AnalysisSettings()
 DECIDE = Path(decide.__file__)
 
 
@@ -390,21 +389,11 @@ def test_the_geometry_only_limit_is_a_setting():
     assert v.confidence == Confidence.CERTAIN
 
 
-def test_policy_v2_only_marks_the_row():
-    analysis = bounded('5g')
-    before = analysis.verdict.to_flat_dict()
-    after = policy.apply_mmr(analysis, V2).verdict.to_flat_dict()
-    new = {'policy'}
-    assert after['policy'] == 'v2' and analysis.policy is None
-    assert {k: v for k, v in before.items() if k not in new} == {k: v for k, v in after.items() if k not in new}
-
-
 def test_episode_rows_carry_counted_and_candidate():
     spec = make(models.ResonanceSpec, key='5J-2+0-3')
     analysis = policy.apply_mmr(bounded('5g', resonance=spec), MINIMAL)
     rows = analysis.episode_rows()
     assert [(row['episode_id'], row['counted'], row['candidate']) for row in rows] == [(0, True, False)]
-    assert policy.apply_mmr(bounded('5g', resonance=spec), V2).episode_rows()[0]['counted'] is None
 
 
 def test_the_policy_ledger_names_its_comparisons():

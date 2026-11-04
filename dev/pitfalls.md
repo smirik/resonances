@@ -8,9 +8,7 @@ Things that cost a session hours. Each says what happens and what to do instead.
   `benchmark/data/examples/<id>/` even with `--out`. Trial renders go elsewhere, or back up and restore.
 - **Environment variables do not reach the benchmark's settings.** `settings_from_config()` without a source returns
   the dataclass defaults, so an env-var experiment through `reclassify.py` is a no-op. Pass overrides explicitly and
-  check `settings_hash` in `run.json` before reading a run. The one exception (W29) is `CLASSIFIER_POLICY`: its
-  default factory reads the environment, so an exported `CLASSIFIER_POLICY=v2` silently changes every
-  `AnalysisSettings()`. The tests pin v2 in `tests/conftest.py`; the benchmark tools take `--policy` explicitly.
+  check `settings_hash` in `run.json` before reading a run.
 - **Spawned workers import the current working tree.** Editing code during a paired run mixes versions (the W11/W12
   base and fix runs were contaminated this way; the first W23 baseline was discarded). Freeze a copy of the code and
   load it through `PYTHONPATH`; compare frozen trees and settings hashes, not run-folder names.

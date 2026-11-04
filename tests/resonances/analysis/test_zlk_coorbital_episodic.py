@@ -28,7 +28,7 @@ from resonances.resonance.analysis.verdict import (
     status_code,
 )
 from resonances.resonance.analysis.zlk import analyse_zlk, diagnostics
-from tests.resonances.analysis.builders import make_episode, make_geometry
+from tests.resonances.analysis.builders import make_episode, make_geometry, tree_verdict
 from tests.resonances.analysis.test_zlk_double_scale import AS, G5, G6, RAD, zlk_series
 
 SETTINGS = settings_from_config()
@@ -117,9 +117,15 @@ def test_an_episodic_earth_coorbital_is_uncertain_end_to_end():
     analysis = analyse_zlk(series, SETTINGS, free_elements=elements)
     verdict = analysis.verdict
     assert verdict.angle_status == AngleStatus.EPISODIC
-    assert (verdict.status, verdict.reason) == (Status.UNCERTAIN, Reason.GATE_UNAVAILABLE)
+    # W34: the co-orbital rule is the W28 tree's (`v2_verdict`)
+    tree = tree_verdict(verdict)
+    assert (tree.status, tree.reason) == (Status.UNCERTAIN, Reason.GATE_UNAVAILABLE)
     assert analysis.gate.detail == COORBITAL and 'zlk_coorbital_episodic' in verdict.rules_fired
-    assert verdict.status_code == -9
+    assert status_code(LK, Status(tree.status), AngleStatus(tree.angle_status), tree.reason) == -9
+    # the minimal policy: a gate without a verdict gives the geometry's transient back (code 1, flagged, at most
+    # medium; low here, V ambiguous by the e-i objection); no veto: an unfitted co-orbital's rho_max measures nothing
+    assert (verdict.status, verdict.reason, verdict.status_code, verdict.veto) == (Status.TRANSIENT, Reason.GEOMETRIC_EPISODE, 1, '')
+    assert 'gate_unavailable' in verdict.flags and str(verdict.confidence) in ('medium', 'low')
     # the episode's own cycle, 40 kyr within a grid step per turning point, is what the gate and the e-i coupling read
     assert analysis.gate.libration_period_yr == pytest.approx(40_000.0, abs=400.0)
     assert analysis.zlk.ei.period_yr == analysis.gate.libration_period_yr
@@ -129,7 +135,10 @@ def test_an_episodic_earth_coorbital_is_uncertain_end_to_end():
     series, elements = _episodic_librator(a=2.5)
     far = analyse_zlk(series, SETTINGS, free_elements=elements).verdict
     assert far.angle_status == AngleStatus.EPISODIC and 'zlk_coorbital_episodic' not in far.rules_fired
-    assert far.status == Status.UNCERTAIN and 'zlk_gate_unconfirmed' in far.rules_fired
+    assert tree_verdict(far).status == Status.UNCERTAIN and 'zlk_gate_unconfirmed' in far.rules_fired
+    # W34, the minimal policy: away from a planet the frozen i breaks the e-i integral where the forced terms are small,
+    # a measured veto (non_resonant -2)
+    assert (far.status, far.status_code, far.veto) == (Status.NON_RESONANT, -2, 'zlk_integral')
 
 
 # ------------------------------------------------------------------- part 2: the deciding episode's period

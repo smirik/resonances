@@ -299,7 +299,7 @@ others at least 0.58); `forced_beat` the same in phase with $K$; `none`; `not_me
 ($e$ and $i$ out of antiphase, $\eta_H$ 1.2) and 797204 over 100 kyr and 2023 RS2 (deciding episodes of 1.5 and 2.4
 periods) become uncertain. The record's coupling (`zlk_ei_coupling`) stays a column.
 
-**Under the minimal policy** (the default; the table above is the v2 tree's, `CLASSIFIER_POLICY=v2`; W30, the
+**Under the minimal policy** (the table above is the W28 tree's, kept in `v2_verdict`; W30, the
 author 2026-11-03 after two literature reviews): the quadrupole problem, its integral thresholds ($h^2 < 3/5$, $c_1$,
 Kozai's 39.2°) and its half-turn symmetry hold only for a hierarchical, axisymmetric perturber, outside their domain
 for main-belt and planet-crossing asteroids (Gronchi & Milani 1999; Gallardo et al. 2012); none of them decides. The

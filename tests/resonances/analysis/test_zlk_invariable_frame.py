@@ -32,6 +32,7 @@ from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, Status
 from resonances.resonance.analysis.zlk import analyse_zlk, diagnostics
 from resonances.simulation.simulation import _store_zlk_angle, long_period_series
+from tests.resonances.analysis.builders import tree_verdict
 
 SETTINGS = settings_from_config()
 NO_GATE = type('NoGate', (), {'free_gate_enabled': False, 'free_gate_min_cycles': 3.0})()
@@ -241,7 +242,10 @@ def test_555527_circulates_from_the_invariable_plane(example_id):
     body, resonance, analysis, _ = _classified(example_id, FRAME_INVARIABLE)
     verdict = body.librations[resonance.to_s()]
     assert (str(verdict.status), str(verdict.angle_status), str(verdict.reason)) == ('non_resonant', 'circulation', 'circulation')
-    assert str(verdict.confidence) == 'certain'
+    assert tree_verdict(verdict).confidence == 'certain'  # the W28 tree's level
+    # W34: the minimal policy's certain needs P full and no turning point at any cutoff (confidence.md#minimal-policy);
+    # omega turns 4 (18 at 500 kyr) times at every cutoff: high
+    assert str(verdict.confidence) == 'high' and len(analysis.geometry.turning_points) > 0
     assert Rule.ZLK_INVARIABLE_FRAME in verdict.rules_fired and analysis.series.frame_shift_turns >= 1.0
 
 

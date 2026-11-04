@@ -30,7 +30,7 @@ from resonances.resonance.analysis.mmr.decide import AngleDecision
 from resonances.resonance.analysis.mmr.models import Strength
 from resonances.resonance.analysis.settings import AnalysisSettings, validate_settings
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, CheckValue, Reason, Status
-from tests.resonances.analysis.builders import make_response
+from tests.resonances.analysis.builders import make_response, tree_verdict
 
 S = AnalysisSettings()
 S_NO_K2 = replace(S, mmr_kin_ripple_share_max=0.0)  # no episode swing is below 0 x the centre range: K2 never fires
@@ -300,7 +300,9 @@ def test_high_order_rows_need_an_implausible_strength(example, lower):
 def test_sr158_three_body_is_decided_by_5s_before_its_failed_identity():
     _, analysis = _analysed('mmr3__2011_SR158__1V-4S-5+0+0+8')
     verdict = analysis.verdict
-    assert (str(verdict.status), str(verdict.reason)) == ('non_resonant', 'implausible_strength')
+    # the W28 tree's leaf 5s (W34: the minimal policy vetoes on its forced waves, reason kinematic_libration)
+    tree = tree_verdict(verdict)
+    assert (tree.status, tree.reason) == ('non_resonant', 'implausible_strength')
     entry = next(e for e in verdict.decision_path if e.name.startswith(f'{decide.STRENGTH_FIRST} small divisors'))
     assert entry.value >= 1e6  # residual 5.1e6 (W17 Q3)
 

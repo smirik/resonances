@@ -300,4 +300,7 @@ def test_t8_diagnostic_changes_no_verdict(example_id, monkeypatch):
     without = _analyse(example_id)
     a, b = analysis.verdict.to_flat_dict(), without.verdict.to_flat_dict()
     assert {k: v for k, v in a.items() if k != 'rules_fired'} == {k: v for k, v in b.items() if k != 'rules_fired'}
-    assert a['status'] == 'uncertain'
+    # the W28 tree's uncertain (origin_unknown); W34: the minimal policy gives the geometry's resonant back at low (rule
+    # F, geometry only; the author's resonant/low of 2026-11-03/04)
+    assert builders.tree_verdict(analysis.verdict).status == 'uncertain'
+    assert (a['status'], a['confidence']) == ('resonant', 'low')

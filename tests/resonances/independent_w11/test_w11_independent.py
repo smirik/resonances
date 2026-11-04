@@ -34,6 +34,7 @@ from resonances.resonance.analysis.mmr.models import EpisodeResponse, MMRSeries,
 from resonances.resonance.analysis.mmr.models import ResponseSource
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import CheckValue
+from tests.resonances.analysis.builders import tree_and_final
 
 SETTINGS = AnalysisSettings()
 PASS, FAIL, NM, NA = CheckValue.PASS, CheckValue.FAIL, CheckValue.NOT_MEASURED, CheckValue.NOT_APPLICABLE
@@ -351,19 +352,24 @@ def test_pure_libration_verdict_does_not_depend_on_a_resolving_step(steps):
     At or above half the orbital period P_J / 2 / 2 = 2.97 yr the flag short_period_aliased is set (the record cannot
     know that it holds no short-period terms), and since W20 round D its cap (medium) with it: the record never lifts
     it, only a finer step measures what the folded lines do (MMR_SHORT_PERIOD_CAP_RATIO = 0). Status, word and reason
-    do not depend on the step; the confidence does only through that cap."""
-    first, second = (analysed(None, step) for step in steps)
-    assert _verdict_key(first)[:3] == _verdict_key(second)[:3]
-    assert str(first.verdict.status) == 'resonant' and str(first.verdict.angle_status) == 'libration'
+    do not depend on the step; the confidence does only through that cap.
+
+    W34: the cap and the level it holds down are the W28 tree's (under the minimal policy every cap is a flag): they
+    are read from the tree's analysis; status, word and reason from both."""
+    (first_tree, first), (second_tree, second) = (tree_and_final(make_series(None, step), SETTINGS) for step in steps)
+    for a, b in ((first, second), (first_tree, second_tree)):
+        assert _verdict_key(a)[:3] == _verdict_key(b)[:3]
+        assert str(a.verdict.status) == 'resonant' and str(a.verdict.angle_status) == 'libration'
     nyquist = 2 * np.pi / (2 * N_J) / 2
     capped = []
-    for analysis in (first, second):
+    for tree, analysis in ((first_tree, first), (second_tree, second)):
         flagged = analysis.sampling.step_yr >= nyquist
         assert ('short_period_aliased' in analysis.verdict.flags) is flagged
-        assert ('short_period_aliased' in analysis.verdict.caps) is flagged
+        assert ('short_period_aliased' in tree.verdict.caps) is flagged
         capped.append(flagged)
     assert capped == [steps[0] >= 2.97, steps[1] >= 2.97]
     if not any(capped):
+        assert _verdict_key(first_tree) == _verdict_key(second_tree)
         assert _verdict_key(first) == _verdict_key(second)
 
 

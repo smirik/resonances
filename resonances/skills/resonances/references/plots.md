@@ -75,7 +75,7 @@ resonance induces are hatched `\\\\` on (a) (`mmr_combined.INDUCED_HATCH`, apart
 a jump) and labelled `induced` on (l); `also in …` names the other resonance of a joint capture. An accepted run the
 status does not count (below the period floor, the centre turns: episodes.csv `eligible` False) is drawn on (a) as a
 grey strip like a rejected run, labelled `#id < floor` or `#id centre turns` in grey (`mmr_combined.uncounted_tags`),
-and the numbers count `N accepted, M counted`. Under the minimal policy (`CLASSIFIER_POLICY=minimal`, W29) (a) of both
+and the numbers count `N accepted, M counted`. Under the minimal policy (W29) (a) of both
 the MMR and the secular/ZLK figure draws only the counted episodes (a covered edge filled to the record edge, the
 filter-trim stretch pale; a counted 1:1 leg labelled `leg`) and, faint with a dashed outline, the candidates `cand`;
 no grey strip (`mmr_combined.policy_marks`, `shade_policy_runs`; the ids come from the analysis' `PolicyResult`, or

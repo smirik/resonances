@@ -47,7 +47,7 @@ from resonances.simulation import dry_run as dr  # noqa: E402
 sys.path.insert(0, str(Path(__file__).parent))
 from test_w20_round_e import S, _one_to_one_series, _pendulum_2j1, _run  # noqa: E402
 
-from tests.resonances.analysis.builders import make_geometry  # noqa: E402
+from tests.resonances.analysis.builders import make_geometry, tree_and_final  # noqa: E402
 
 FLAGGED = str(Flag.SHORT_PERIOD_ALIASED)
 
@@ -152,15 +152,18 @@ def test_the_pilot_note_names_the_fold_free_step():
 def test_the_harmonic_flag_survives_the_g0_early_return():
     """Review E #3: with MMR_FILTER_CUTOFF_YR = 10 yr the record stops at G0 (invalid / undersampled), and now keeps
     the flag the dry-run predicts; no cap (the cap stays with the measurements). Without the setting: uncertain,
-    flagged and capped, as before."""
-    stopped = analyse_mmr(_one_to_one_series(5.999), replace(S, mmr_filter_cutoff_yr=10.0))
+    flagged and capped, as before. The caps are the W28 tree's (W34: under the minimal policy every cap is a flag)."""
+    stopped, final = tree_and_final(_one_to_one_series(5.999), replace(S, mmr_filter_cutoff_yr=10.0))
     v = stopped.verdict
     assert (str(v.status), str(v.reason)) == ('invalid', 'undersampled')
     assert stopped.sampling.folded_slowest_yr == pytest.approx(35994.0, rel=1e-6)
     assert FLAGGED in v.flags and v.caps == []
-    measured = analyse_mmr(_one_to_one_series(5.999), S).verdict
+    assert (str(final.verdict.status), str(final.verdict.reason)) == ('invalid', 'undersampled') and FLAGGED in final.verdict.flags
+    measured, final = tree_and_final(_one_to_one_series(5.999), S)
+    measured = measured.verdict
     assert FLAGGED in measured.flags and FLAGGED in measured.caps
     assert measured.flags.count(FLAGGED) == 1
+    assert final.verdict.flags.count(FLAGGED) == 1 and final.verdict.caps == []  # the cap joins the flag once
 
 
 def test_the_early_flag_keeps_the_harmonic_ledger_entry():

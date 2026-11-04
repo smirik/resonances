@@ -21,7 +21,7 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   new threshold is a field + an `.env.dist` key with a comment (a convention says so, with its physical meaning) + a
   `docs/config.md` line. `settings_hash` goes into simulation.json and summary.csv. Trap: `settings_from_config()`
   without a source returns the dataclass defaults, so environment variables do not reach the MMR reclassification
-  (`benchmark/tools/reclassify.py`; the one exception is `classifier_policy`, see `policy`); the secular/ZLK one builds a `Simulation` and does read the configuration.
+  (`benchmark/tools/reclassify.py`); the secular/ZLK one builds a `Simulation` and does read the configuration.
 - `filtering` (`resonance/analysis/filtering.py`): Butterworth in second-order sections, forward-backward (never (b, a) form). W23 memo: `record_memo` /
   `memoised` memoise `band_pass` and `response.smoothed_series` per `analyse_mmr` record (2 entries, keyed by object
   identity plus scalars, read-only arrays; never unscoped: a session-wide memo raised one worker from 1280 to 2084 MB).
@@ -51,7 +51,7 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   its N by held-out prediction (`fit_window_potential`, `SEPARATRIX_HOLDOUT_GAIN`; σ-only R0 keeps the in-sample
   gain); `with_slow_check`/`agree_fraction` count eligible windows only (none: not_measured). A free constant on the
   visited arc is worse than either alone (BG41 0.25, many passing rows fail): never combine them.
-- `policy` (W29, `CLASSIFIER_POLICY`, default `minimal`; docs/physics/status-tree.md#minimal-policy): the last step
+- `policy` (W29; docs/physics/status-tree.md#minimal-policy; the `v2` switch was removed in W34): the last step
   of `analyse_mmr` (outermost call only: an inner pass returns the raw v2 analysis; derived rows first, then the
   catalogue row, then the multiplet status), `analyse_secular` and `analyse_zlk` (after its columns). It re-reads the
   finished v2 analysis: status from the geometry (`LEAVES`/`HANDLERS` map every `rec_rule` of `mmr.decide`; a new
@@ -66,12 +66,9 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
 `pol_veto_need_yr` fits `MMR_NEXT_CHECK_SPAN_FACTOR` x T extends to it, beyond it review; an alias with C5 and C2 full
 is certain, Q18), `PolicyResult` (counted and candidate episodes)
   on `MMRAnalysis.policy`/`LongPeriodAnalysis.policy` and episodes.csv `counted`/`candidate`; its comparisons go to
-  the decision path as `policy:*`; the W28 verdict stays in `v2_verdict`. Under `v2` it only sets `Verdict.policy`.
+  the decision path as `policy:*`; the W28 verdict stays in `v2_verdict`.
   The G2a guard (`_analyse_mmr_record`) still chooses between cut and whole on the raw v2 (status, confidence).
-  Trap: `classifier_policy` is the one setting the environment reaches without a source (`_setting_from_env`, its
-  default factory reads CLASSIFIER_POLICY; `nominal_default` is what .env.dist and docs/config.md show); the tools pass
-  `--policy` explicitly, never through the environment.
-- `confidence` (policy v2; under minimal its result is the input the policy overrides): the level from margins and caps; `certain` is shown. certain needs every applicable margin full; high
+- `confidence` (the W28 tree's level, in `v2_verdict`; the policy overrides it): the level from margins and caps; `certain` is shown. certain needs every applicable margin full; high
   allows thin or unmeasured evidence but no failed support, and (W28 q-2 b, MMR own dynamics) at least one physical
   support passing with its full margin (else cap `no_full_physics_support`); one failed support → medium, two → low; nothing physical
   measured and explicit caps limit it; uncertain/invalid have no level. The calibration cell's author-label counts are

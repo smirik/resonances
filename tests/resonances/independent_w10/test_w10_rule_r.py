@@ -43,6 +43,7 @@ from resonances.resonance.analysis.mmr.models import (
 )
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import CONFIDENCE_ORDER, CheckValue, Confidence, Reason, Status
+from tests.resonances.analysis.builders import tree_verdict
 
 SETTINGS = AnalysisSettings()
 N_J = math.radians(const.PLANET_N_DEG_PER_GAUSS_YR["Jupiter"])
@@ -364,6 +365,12 @@ def _rank(level):
     return CONFIDENCE_ORDER.index(Confidence(level))
 
 
+def _tree_confidence(verdict):
+    """The W28 tree's level: every analysis ends with the minimal policy, which keeps the tree's verdict in
+    `v2_verdict` (status/confidence/reason/action/angle_status) and its caps as flags, and sets no caps (W34)."""
+    return verdict.v2_verdict.split('/')[1]
+
+
 def test_hilbert_shuffled_piece_fails_the_force_law_and_genuine_piece_is_a_witness():
     """measure_pieces on two pieces of one record: R^2 ~ 1 on the genuine half, ~ cos^2(90 deg) = 0 on the other."""
     series = build_record([(0, 10000, 'lib', 90, False), (10000, 20001, 'lib', 90, True)])
@@ -427,8 +434,8 @@ def test_witness_and_conflict_cap_medium_on_a_genuine_and_a_shuffled_episode():
     # W28 A7: the rest at the centre between the episodes is a bounded gap, so the two join (union) -> resonant
     assert v.status == Status.RESONANT and v.reason == Reason.DYNAMIC_LIBRATION
     assert v.checks['check_mmr_a_response'] == PASS
-    assert MIXED in _strs(v.flags) and MIXED in _strs(v.caps)
-    assert _rank(v.confidence) >= _rank(Confidence.MEDIUM)
+    assert MIXED in _strs(v.flags)  # the flag and (W34: as a flag) the tree's cap
+    assert _rank(_tree_confidence(v)) >= _rank(Confidence.MEDIUM)
     # episodes.csv: the checks of each episode, which one is the witness the status read
     rows = {row['episode_id']: row for row in analysis.episode_rows()}
     assert rows[genuine.episode_id]['witness'] and rows[genuine.episode_id]['deciding_witness']
@@ -445,7 +452,7 @@ def test_control_without_the_shuffle_has_no_conflict_cap():
     v = control.verdict
     assert v.status == Status.RESONANT  # W28 A7: bounded gap at the centre -> one union, as in the mixed record
     assert MIXED not in _strs(v.flags) and MIXED not in _strs(v.caps)
-    assert _rank(v.confidence) < _rank(Confidence.MEDIUM)  # the medium of the mixed record comes from the cap
+    assert _rank(_tree_confidence(v)) < _rank(Confidence.MEDIUM)  # the medium of the mixed record comes from the cap
 
 
 def test_shuffled_episode_with_more_turning_points_never_becomes_the_witness():
@@ -470,8 +477,8 @@ def test_g1e_witness_before_the_jump_with_conflict():
     assert cols['rsp_force_source'] == 'witness' and cols['rsp_witness_episode_id'] == responses[0].episode_id
     v = analysis.verdict
     assert v.status == Status.TRANSIENT
-    assert {MIXED, 'episode_before_jump'} <= _strs(v.caps)
-    assert _rank(v.confidence) >= _rank(Confidence.MEDIUM)
+    assert {MIXED, 'episode_before_jump'} <= _strs(v.flags)  # W34: the tree's caps are flags under the policy
+    assert _rank(_tree_confidence(v)) >= _rank(Confidence.MEDIUM)
     assert v.checks['check_mmr_potential'] == NM  # the energy is not measured per episode
 
 
@@ -490,8 +497,11 @@ def test_g1e_without_witness_reads_the_pool_before_the_jump_functionally():
     cols = d.to_columns()
     assert cols['rsp_n_witnesses'] == 0 and cols['rsp_n_episode_force_fail'] == 2
     v = analysis.verdict
-    # L4 fails and R0 is not measured under G1e: step 5a
-    assert v.status == Status.UNCERTAIN and v.reason == Reason.ORIGIN_UNKNOWN
+    # L4 fails and R0 is not measured under G1e: step 5a (W34: the W28 tree's leaf, read from v2_verdict)
+    tree = tree_verdict(v)
+    assert (tree.status, tree.reason) == (str(Status.UNCERTAIN), str(Reason.ORIGIN_UNKNOWN))
+    # the minimal policy gives the geometry's episode back with the objection as a flag at low (status-tree.md)
+    assert (v.status, v.confidence) == (Status.TRANSIENT, Confidence.LOW) and 'measured_objection' in _strs(v.flags)
     assert v.checks['check_mmr_a_response'] == FAIL
     assert v.checks['check_mmr_slow_libration'] in (NM, NA)
     assert MIXED not in _strs(v.flags)

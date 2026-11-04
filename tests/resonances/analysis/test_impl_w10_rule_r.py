@@ -20,6 +20,7 @@ from resonances.resonance.analysis.mmr import response as r
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, CheckValue, Flag
 
+from tests.resonances.analysis.builders import tree_and_final
 from tests.resonances.analysis.impl_response_pendulum_synthetic import episode_from, make, pendulum_record
 
 S = settings_from_config()
@@ -226,11 +227,10 @@ def _facts(analysis, settings=S):
 
 
 def _analyse(example, settings=S):
+    """The W28 tree's analysis (rule R is a rule of the tree; W34: the minimal policy re-reads it afterwards)."""
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
-    from resonances.resonance.analysis.mmr.analyse import analyse_mmr
-
-    return analyse_mmr(io.load_series(example), settings)
+    return tree_and_final(io.load_series(example), settings)[0]
 
 
 @pytest.mark.benchmark

@@ -23,7 +23,7 @@ from resonances.resonance.analysis.pendulum import EnergyAnalysis
 from resonances.resonance.analysis.rules import Rule
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, CheckValue, Flag, LibrationOrigin, Reason, Status
-from tests.resonances.analysis.builders import make, make_episode, make_geometry, make_response, make_sampling
+from tests.resonances.analysis.builders import make, make_episode, make_geometry, make_response, make_sampling, tree_verdict
 
 S = settings_from_config()
 NAN = float('nan')
@@ -389,7 +389,8 @@ def test_benchmark_owner_per_episode(example, expected, cover):
         pytest.skip('benchmark data not available')
     analysis = analyse_mmr(io.load_series(example), S)
     v, numbers = analysis.verdict, analysis.numbers_row()
-    assert (str(v.status), str(v.angle_status), str(v.confidence), str(v.libration_origin)) == expected
+    # the level is the W28 tree's (W34: the minimal policy reads its own; SF8 is high there)
+    assert (str(v.status), str(v.angle_status), tree_verdict(v).confidence, str(v.libration_origin)) == expected
     assert numbers['own_cover'] == pytest.approx(cover, abs=0.02)
     assert ':slip' not in numbers['own_intervals']
     if expected[3] == '':

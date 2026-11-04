@@ -22,10 +22,9 @@ the detail. Benchmark gates: `benchmark/CLAUDE.md`.
   `benchmark/data/fixtures/` (the free-omega series, ~147 KB each, moved there on 2026-10-29).
 - `tests/resonances/independent_wN/`: tests written by a context-free subagent for wave N. When one fails, check the
   code first (on 2026-10-15, 6 of 9 failures were the code's fault); record a dispute with its reason.
-- `tests/conftest.py` pins `CLASSIFIER_POLICY=v2` before `import resonances` (W29): every `AnalysisSettings()` and
-  every `SimulationConfig` of the suite is the W28 tree (a local `.env` with CLASSIFIER_POLICY overrides it). The
-  minimal policy is tested with `AnalysisSettings(classifier_policy='minimal')` / `Simulation(classifier_policy=...)`
-  (`analysis/test_policy_*.py`) and by the benchmark tools' explicit `--policy minimal`.
+- Every analysis ends with the minimal policy (W29; the `CLASSIFIER_POLICY=v2` switch and its pin in
+  `tests/conftest.py` were removed in W34). A test of the W28 tree reads it from `verdict.v2_verdict`
+  (`status/confidence/reason/action/angle_status`) or the tree's checks, margins and ledger, which the policy keeps.
 - Decision tests build real result objects (`tests/resonances/analysis/builders.py`: `make_geometry`,
   `make_episode`, `make_response`, `make_sampling`, ...), not `SimpleNamespace` stubs: the decision reads dataclass
   fields directly, without `getattr` defaults.

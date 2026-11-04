@@ -21,8 +21,8 @@
                    (5, 7 and 8 read the deciding librating episode's period, `decide.decisive_period_yr`)
     9 columns      a modulated secular angle: the slow line of its centre (`slow.secular_centre_line`); ZLK: the
                    slow line, e-i coupling and attribution (`analysis.zlk`). No status reads them.
-   10 policy       `analyse_secular` / `analyse_zlk` end with the W29 policy layer (`analysis.policy`,
-                   CLASSIFIER_POLICY): under minimal it re-reads steps 4-8 (status from the geometry, the gate as a veto
+   10 policy       `analyse_secular` / `analyse_zlk` end with the W29 policy layer (`analysis.policy`): it
+                   re-reads steps 4-8 (status from the geometry, the gate as a veto
                    or a flag, the level from the evidence, one extend rule); `analyse_long_period` itself is v2.
 
 Pure: arrays in (`LongPeriodSeries`), `LongPeriodAnalysis` out.
