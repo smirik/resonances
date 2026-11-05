@@ -56,6 +56,7 @@ from resonances.resonance.analysis.geometry import (
 )
 from resonances.resonance.analysis.mmr import centre_track as centre_track_module
 from resonances.resonance.analysis.mmr.models import Context, MMRSeries, Preprocessed, Response, SlowComponents
+from resonances.resonance.analysis.mmr.preprocess import law_planet
 from resonances.resonance.analysis.mmr.response import members_fit, multiplet_harmonics, smoothed_series
 from resonances.resonance.analysis.pendulum import (
     CycleClass,
@@ -581,12 +582,14 @@ def build_zone(
 class WindowComparison:
     """V_E ~ V_F in one window of R0 with a (W28 B3): the correlation that counts, whether the window counts, the arc of
     phi it visits, and the pre-W28 correlation (a free constant in V_F, dropped; the full circle; N by the in-sample
-    gain), kept only to tell whether the new comparison changed the check (rule potential_on_arc)."""
+    gain), kept only to tell whether the new comparison changed the check (rule potential_on_arc); `vf_law` is
+    T_obs/T_pred of the window's cycle in V_F (`vf_cycle_law`, nan when V_F's loop does not match it)."""
 
     r: float
     eligible: bool
     arc_rad: float = NAN
     r_reference: float = NAN
+    vf_law: float = NAN
 
 
 def window_eligible(geometry: Geometry, window: Tuple[float, float], rotation: bool, settings: AnalysisSettings) -> bool:
@@ -637,8 +640,12 @@ def _window_correlation(
     settings: AnalysisSettings,
     eligible: bool = True,
     frame_term: Optional[np.ndarray] = None,
+    rotation: bool = False,
+    vf_law: bool = True,
 ) -> WindowComparison:
-    """V_E ~ V_F in one window (both in the frame): corr(V_E, V_F) on a grid of the visited arc of phi.
+    """V_E ~ V_F in one window (both in the frame): corr(V_E, V_F) on a grid of the visited arc of phi, and the
+    period law of the window's cycle (a turn when `rotation`) in V_F (`vf_cycle_law`; nan without `vf_law`, the
+    callers' `vf_check`: where the 1:1 energy integral replaces the comparison, nothing reads it).
 
     V_E: `pendulum.fit_window_potential` (N by held-out prediction). V_F: c a_dot - s''(t) = -m V'(phi) with the
     same N and no free constant (`pendulum.fit_potential_from_force`; `frame_term` is s'' of the frame on `t`, None in
@@ -652,13 +659,14 @@ def _window_correlation(
     phi, _, strength = pendulum.in_frame(t[inside], angle[inside], rate[inside], frame)
     term = frame_term[inside] if frame_term is not None else None
     v_e = pendulum.fit_window_potential(t, angle, rate, window, settings, frame)
-    r, arc = NAN, NAN
+    r, arc, law = NAN, NAN, NAN
     if v_e is not None:
         v_f = pendulum.fit_potential_from_force(
             phi, adot[inside], identity_coefficient, v_e.n_harmonics, strength, term, settings.separatrix_vf_free_constant
         )
         grid, arc = _visited_grid(phi, 2 * v_e.n_harmonics * settings.mmr_zone_phases, settings)
         r = _correlation(v_e.value(grid), v_f.value(grid)) if v_f is not None else NAN
+        law = vf_cycle_law(t, angle, rate, (start, end, rotation), v_f, frame) if v_f is not None and vf_law else NAN
     # the pre-W28 comparison: V_E by the in-sample gain, V_F with a free constant (dropped), the full circle
     reference_e, _ = pendulum.fit_potential_from_rate(t, angle, rate, [window], settings, frame=frame, with_windows=False)
     reference = NAN
@@ -668,7 +676,41 @@ def _window_correlation(
         )
         circle = np.linspace(0, TWO_PI, 2 * reference_e.n_harmonics * settings.mmr_zone_phases, endpoint=False)
         reference = _correlation(reference_e.value(circle), reference_f.value(circle)) if reference_f is not None else NAN
-    return WindowComparison(r, eligible, arc, reference)
+    return WindowComparison(r, eligible, arc, reference, law)
+
+
+def vf_cycle_law(
+    t: np.ndarray,
+    angle: np.ndarray,
+    rate: np.ndarray,
+    bound: Tuple[float, float, bool],
+    v_f: pendulum.Potential,
+    frame: Optional[ModulatedFrame],
+) -> float:
+    """T_obs / T_pred of one cycle (`bound`: start, end, rotation) in V_F: its energy recomputed in V_F from the observed
+    phi and phi_dot (`pendulum.cycle_energies`, the frame's m(t) and the cycle's mean strength as for V_E), the period
+    that of V_F's loop at that energy. nan when V_F's loop does not match the observed cycle: a libration needs a finite
+    librating loop (single_well or merged_wells), a turn an energy above V_F's top (h > 1); below it cycle_energies would
+    give a turn the libration period (and above it a libration the rotation period).
+
+    Why: corr(V_E, V_F) is blind to a positive factor between them; V_F = k V_E correlates 1.00 for every k > 0, but
+    the period of the observed swing in k V_E is wrong (one harmonic at 90 deg: law 1.48 for k = 2, 0.62 for k = 1/2)."""
+    cycles = pendulum.cycle_energies(t, angle, rate, [bound], v_f, frame=frame)
+    if not cycles:
+        return NAN
+    cycle = cycles[0]
+    if bound[2]:
+        matched = bool(np.isfinite(cycle.h) and cycle.h > 1)
+    else:
+        matched = cycle.topology in (pendulum.TOPOLOGY_SINGLE_WELL, pendulum.TOPOLOGY_MERGED_WELLS)
+    return cycle.period_law_ratio if matched and np.isfinite(cycle.period_law_ratio) else NAN
+
+
+def vf_period_law(comparisons: Sequence[WindowComparison]) -> Tuple[float, int]:
+    """(median T_obs/T_pred(V_F), count) over the comparisons R0 with a counts (eligible, finite correlation) whose V_F
+    law is finite; (nan, 0) without one."""
+    laws = [c.vf_law for c in comparisons if c.eligible and np.isfinite(c.r) and np.isfinite(c.vf_law)]
+    return (float(np.median(laws)), len(laws)) if laws else (NAN, 0)
 
 
 def _percentile(values: Sequence[float], q: float) -> float:
@@ -806,12 +848,19 @@ def r0_checks(
     return sigma_only, pendulum.with_slow_check(sigma_only, correlations, settings)
 
 
-def r0_with_a(sigma_only: CheckValue, comparisons: Sequence[WindowComparison], settings: AnalysisSettings) -> Tuple[CheckValue, frozenset]:
+def r0_with_a(
+    sigma_only: CheckValue, comparisons: Sequence[WindowComparison], settings: AnalysisSettings, vf_check: bool = True
+) -> Tuple[CheckValue, frozenset]:
     """(R0 with a, rules fired) from the windows' V_E ~ V_F comparisons: `pendulum.with_slow_check` over the eligible
     windows (none eligible: not_measured). A rule fires when it changes the check with the other part held either way
     (2004 BG41 needs both: pre-W28 on every window fails, either part alone passes): r0_windows when counting every
     window instead of the eligible ones changes it, potential_on_arc when the pre-W28 correlations
-    (`WindowComparison.r_reference`) instead of the new ones do."""
+    (`WindowComparison.r_reference`) instead of the new ones do.
+
+    A pass must then carry the observed period in V_F (`vf_check` and separatrix_vf_period_law; author 2026-11-04,
+    D10 A): the median of `vf_period_law` within separatrix_period_tol of 1, else fail; no finite law: not_measured.
+    The correlation sees the shape of V_F, not its scale. Only a pass is read again: a failure or a missing comparison
+    stays as it is. `vf_check` is False where the 1:1 energy integral replaces this comparison."""
     new = [c.r for c in comparisons]
     old = [c.r_reference for c in comparisons]
     eligible = [c.eligible for c in comparisons]
@@ -825,6 +874,12 @@ def r0_with_a(sigma_only: CheckValue, comparisons: Sequence[WindowComparison], s
         fired = rules_module.fire(fired, Rule.R0_WINDOWS)
     if check(old, True) != final or check(new, False) != old_all:
         fired = rules_module.fire(fired, Rule.POTENTIAL_ON_ARC)
+    if final == CheckValue.PASS and vf_check and settings.separatrix_vf_period_law:
+        law, _ = vf_period_law(comparisons)
+        if not np.isfinite(law):
+            final = CheckValue.NOT_MEASURED
+        elif abs(law - 1) > settings.separatrix_period_tol:
+            final = CheckValue.FAIL
     return final, fired
 
 
@@ -836,9 +891,11 @@ def episode_r0(
     context: Context,
     settings: AnalysisSettings,
     well: Optional[centre_track_module.WellAlongRecord] = None,
-) -> Optional[Tuple[CheckValue, CheckValue, int]]:
-    """(R0 sigma-only, R0 with a, episode id) read inside the accepted episodes, when the record's pooled R0 is not
-    measured (W34, SEPARATRIX_R0_EPISODES; the author on 79653 3M+3J-7, checked by Claude and Codex). One V_E pooled
+    vf_check: bool = True,
+) -> Optional[Tuple[CheckValue, CheckValue, int, Tuple[float, int]]]:
+    """(R0 sigma-only, R0 with a, episode id, its `vf_period_law`) read inside the accepted episodes, when the record's
+    pooled R0 is not measured (W34, SEPARATRIX_R0_EPISODES; the author on 79653 3M+3J-7, checked by Claude and Codex;
+    `vf_check` as in `r0_with_a`). One V_E pooled
     over every cycle of the record mixes regimes (79653: two episodes in different wells and a circulation, V_E R^2
     0.25); each accepted episode with at least two disjoint full cycles gets its own: the series at
     separatrix_cutoff_cycles x its own period, the frame that explains its cycles best, its period law and well
@@ -861,6 +918,7 @@ def episode_r0(
         moving = frame is not None and bool(np.any(frame.well_shift_rad != 0))
         coherence = pendulum.well_coherence(per_window)
         sigma_only, with_slow = r0_checks(v_e, period_law, coherence, len(per_window), None, geometry, prep, settings, moving)
+        vf_law = (NAN, 0)
         if with_slow is None:
             frame_term = None if settings.separatrix_vf_free_constant else pendulum.frame_acceleration(frame, t)
             comparisons = [
@@ -875,16 +933,26 @@ def episode_r0(
                     settings,
                     window_eligible(geometry, window, False, settings),
                     frame_term,
+                    vf_law=vf_check,
                 )
                 for window in windows
             ]
-            with_slow, _ = r0_with_a(sigma_only, comparisons, settings)
+            with_slow, _ = r0_with_a(sigma_only, comparisons, settings, vf_check)
+            vf_law = vf_period_law(comparisons) if vf_check else vf_law
         if with_slow != nm:
-            found.append((run.episode_id, sigma_only, with_slow))
-    if not found or any(with_slow == CheckValue.FAIL for _, _, with_slow in found):
+            found.append((run.episode_id, sigma_only, with_slow, vf_law))
+    if not found or any(item[2] == CheckValue.FAIL for item in found):
         return None
     passing = [item for item in found if item[2] == CheckValue.PASS]
-    return (passing[0][1], passing[0][2], passing[0][0]) if passing else None
+    return (passing[0][1], passing[0][2], passing[0][0], passing[0][3]) if passing else None
+
+
+def coorbital_law_replaces(series: MMRSeries, prep: Preprocessed, geometry: Geometry) -> bool:
+    """R0 with a of this record will be read from the 1:1 energy integral (`response.with_coorbital_potential`: a 1:1
+    angle with accepted episodes, the shape measured), so the harmonic comparison does not decide it and its V_F period
+    law is not applied (a few harmonics of sigma do not hold the 1:1 potential). A 1:1 circulation keeps the harmonic
+    R0 and the law. When the deciding response then has no 1:1 law, the harmonic R0 stays without the V_F period law."""
+    return law_planet(series.resonance) is not None and bool(geometry.episodes) and not prep.filter_too_slow
 
 
 def energy_rules(energy: Optional[EnergyAnalysis]) -> frozenset:
@@ -963,7 +1031,9 @@ def analyse_separatrix(
     averaged well when `well` exists (a two-body angle with its planet saved: `full_well_laws`) and the swing librates
     in it, else in the fitted V_E; a turn keeps V_E's. R0 with a: sigma-only passes and V_E ~ V_F cycle by
     cycle on the visited arc, counted over the eligible cycles only (`_window_correlation`, `window_eligible`,
-    `r0_with_a`; `r0_checks` says when they are not measured). Not measured over the record, it is read inside the
+    `r0_with_a`; `r0_checks` says when they are not measured), and V_F carries the observed period (median
+    T_obs/T_pred(V_F), `vf_cycle_law`; not where the 1:1 energy integral replaces the comparison,
+    `coorbital_law_replaces`). Not measured over the record, it is read inside the
     accepted episodes (`episode_r0`, W34; lift-only, column sep_R0_episode_id). Both not_measured under
     filter_too_slow (shape-dependent, DELTA item 1). The flags: zone_eq_only (no members: e^q or no modulation),
     zone_numeric_mismatch, zone_edge_cycle, episodes_in_separatrix_zone."""
@@ -1007,6 +1077,8 @@ def analyse_separatrix(
     sigma_only, with_slow = r0_checks(v_e, period_law, coherence, len(per_window), None, geometry, prep, settings, moving)
     comparisons: List[WindowComparison] = []
     fired = frozenset()
+    vf_check = not coorbital_law_replaces(series, prep, geometry)
+    vf_law = (NAN, 0)
     if with_slow is None:
         comparisons = [
             _window_correlation(
@@ -1020,15 +1092,18 @@ def analyse_separatrix(
                 settings,
                 window_eligible(geometry, (start, end), rotation, settings),
                 frame_term,
+                rotation,
+                vf_law=vf_check,
             )
             for start, end, rotation in bounds
         ]
-        with_slow, fired = r0_with_a(sigma_only, comparisons, settings)
+        with_slow, fired = r0_with_a(sigma_only, comparisons, settings, vf_check)
+        vf_law = vf_period_law(comparisons) if vf_check else vf_law
     r0_episode = None
     if settings.separatrix_r0_episodes and with_slow == CheckValue.NOT_MEASURED and sigma_only != CheckValue.FAIL:
-        local = episode_r0(t, prep, geometry, modulation, context, settings, well)
+        local = episode_r0(t, prep, geometry, modulation, context, settings, well, vf_check)
         if local is not None:
-            sigma_only, with_slow, r0_episode = local
+            sigma_only, with_slow, r0_episode, vf_law = local
     eligible = [c.eligible for c in comparisons]
     arcs = [c.arc_rad for c in comparisons if c.eligible and np.isfinite(c.arc_rad)]
 
@@ -1079,6 +1154,8 @@ def analyse_separatrix(
         ve_vf_n_windows=len(comparisons),
         ve_vf_n_eligible=sum(eligible),
         ve_vf_arc_rad=float(np.median(arcs)) if arcs else NAN,
+        vf_period_law_med=vf_law[0],
+        vf_period_law_n=vf_law[1],
         rules_fired=fired,
         well_coherence=coherence,
         cycles=cycles,

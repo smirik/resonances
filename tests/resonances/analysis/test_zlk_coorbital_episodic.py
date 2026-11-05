@@ -84,18 +84,18 @@ def test_a_kinematic_episodic_row_stays_non_resonant_and_apart_from_minus_nine()
 @pytest.mark.parametrize(
     'gate',
     [
-        GateResult('planetary_residual', n_cycles=15.0, min_cycles=3.0, rho_max=13.0, episodic_policy='keep'),  # 88899
-        GateResult('unavailable', min_cycles=3.0, episodic_policy='keep'),  # no free elements: not the co-orbital detail
-        GateResult('short_window', n_cycles=2.0, min_cycles=3.0, episodic_policy='keep'),
+        GateResult('planetary_residual', n_cycles=15.0, min_cycles=3.0, rho_max=13.0),  # 88899
+        GateResult('unavailable', min_cycles=3.0),  # no free elements: not the co-orbital detail
+        GateResult('short_window', n_cycles=2.0, min_cycles=3.0),
     ],
 )
 def test_other_unverdicted_outcomes_are_not_the_coorbital_rule(gate):
-    # with ZLK_EPISODIC_NO_VERDICT=keep the geometric status stands; the default (ei) is D10's
-    # (test_zlk_episodic_no_verdict)
+    # the tree reads the episode's e-i coupling there (D10, `decide.episodic_without_verdict`): not measured here, so
+    # uncertain by D10's rule, never by the co-orbital one
     decision = _status(AngleStatus.EPISODIC, gate)
-    assert (decision.status, decision.reason) == (Status.TRANSIENT, Reason.DYNAMIC_EPISODE)
+    assert (decision.status, decision.reason) == (Status.UNCERTAIN, Reason.GATE_UNAVAILABLE)
     assert decision.checks['check_zlk_free_omega'] == CheckValue.NOT_MEASURED
-    assert Rule.ZLK_COORBITAL_EPISODIC not in decision.rules_fired
+    assert Rule.ZLK_COORBITAL_EPISODIC not in decision.rules_fired and Rule.ZLK_GATE_UNCONFIRMED in decision.rules_fired
 
 
 def _episodic_librator(a):

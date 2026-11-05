@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pytest  # noqa: E402
 
+from resonances.plotting import verdict_column as vc  # noqa: E402
 from resonances.plotting import verdict_text as vt  # noqa: E402
 from resonances.resonance.analysis.ledger import Margin  # noqa: E402
 from resonances.resonance.analysis.mmr import io  # noqa: E402
@@ -381,12 +382,13 @@ def test_secular_record_over_the_whole_record():
     fig = draw_long_period_combined(analysis)
     assert fig.text_stats['overflow'] == 0
     texts = [artist.get_text() for artist in fig.texts]
-    # the status once in the plaque; W34: and in the minimal policy's first line and its 'v2:' line (the tree's verdict)
-    policy = [bullet.text for bullet in text.bullets if bullet.slot == vt.SLOT_POLICY]
-    assert policy[0].startswith('RESONANT · ') and policy[3].startswith('v2: resonant · ')
-    assert sum(1 for t in texts if ('RESONANT ·' in t or 'resonant ·' in t) and t not in (policy[0], policy[3])) == 1
-    # the FREQUENCIES table (W27): the mode g6 and the forced wave g - g6 of the angle's own modes
-    assert any(t.startswith('g6') for t in texts) and any(t.startswith('g − g6') and 'forced' in t for t in texts)
+    # the status once, the header's word (the right column, 2026-11-04); the W28 tree's verdict only in the footer (D2)
+    assert texts.count('RESONANT') == 1 and 'W28 tree: resonant/' in ' '.join(texts).replace('\xa0', ' ')
+    # the FREQUENCIES table (W27): the mode g6 and the forced wave g - g6 of the angle's own modes, one drawn row each
+    (table,) = [group for group in fig.text_stats['column'].numbers.groups if group.table]
+    names = [cells[0] for cells in table.cells]
+    assert any(name.startswith('g6') for name in names) and any(name.startswith('g − g6') for name in names)
+    assert any(t.startswith('g6') for t in texts) and any(t.startswith('g − g6') for t in texts)
     plt.close(fig)
 
 
@@ -527,7 +529,7 @@ def test_branch_and_mark_wording(record):
         assert 'cannot rule out the gap closing' in status
         assert 'leave only' not in status
     elif rule == '5n':
-        assert 'one centre only (independent cycles 1 < 2)' in status
+        assert 'one center only (independent cycles 1 < 2)' in status
     elif rule == '5u/6':
         assert ': by the geometry alone,' in status and 'origin stays unknown' in status
         scale = str(analysis.strength.check) == 'pass' if analysis.strength is not None else False
@@ -567,8 +569,8 @@ def test_force_law_after_the_jump_names_the_regime():
     response = analysis.response
     found = witnesses(response)
     witness = next(e for e in found if e.episode_id == response.witness_episode_id)
-    where = f'measured on witness #{witness.episode_id} ({vt.years(witness.t_start_yr)}–{vt.years(witness.t_end_yr)}'
-    assert vt.measured_on(facts).startswith(where) and f'the one of {len(found)} witnesses with most' in vt.measured_on(facts)
+    where = f'measured on episode #{witness.episode_id} ({vt.interval(witness.t_start_yr, witness.t_end_yr)}'
+    assert vt.measured_on(facts).startswith(where) and f'of {len(found)} eligible episodes the one with most' in vt.measured_on(facts)
     assert vt._force_detail(facts)[0].endswith(vt.measured_on(facts)) and vt.earlier_regime_text(facts) == ''
 
     analysis.response = replace(response, force_source=ResponseSource.RECORD)  # nothing measured before the jump
@@ -690,8 +692,8 @@ def test_promoted_union_reads_episodic_then_resonant():
 @pytest.mark.benchmark
 @pytest.mark.parametrize('example', ['mmr3__2003_TX9__3E+2J-10+0+0+5', 'mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr'])
 def test_centre_scale_union_does_not_lend_the_fine_episode(example):
-    """2003 TX9 without the W23 centre-scale TP rule (with it G2c keeps the slow libration): the union was found at the
-    scale of the centre only; the fine deciding episode ends before 14 kyr of a 20 kyr record, so its numbers are not
+    """2003 TX9 without the W23 center-scale TP rule (with it G2c keeps the slow libration): the union was found at the
+    scale of the center only; the fine deciding episode ends before 14 kyr of a 20 kyr record, so its numbers are not
     printed as the whole record's libration."""
     # G2a off: it cuts this record at the Mars kick (W24, `test_tx9_names_the_action_step_and_its_one_potential`)
     w22 = replace(S, libration_centre_scale_tp_at_centre=False, libration_action_step=False)
@@ -705,10 +707,10 @@ def test_centre_scale_union_does_not_lend_the_fine_episode(example):
     decisive = next(r for r in analysis.episode_rows() if r['episode_id'] == analysis.decisive_episode_id)
     assert decisive['t_end_yr'] < 14000.0
     angle = text.sentences[0]
-    assert angle.startswith('σ librates over the whole record at the scale of the centre')
+    assert angle.startswith('σ librates over the whole record at the scale of the center')
     assert f'at the fine scale the deciding episode runs {vt.years(decisive["t_start_yr"])}–{vt.years(decisive["t_end_yr"])}' in angle
     shape = next(step for step in text.steps if step.key == 'shape')
-    assert 'at the scale of the centre' in shape.outcome
+    assert 'at the scale of the center' in shape.outcome
 
 
 def _episode(episode_id, t0, t1, accepted=True, marks='', ineligible=''):
@@ -735,7 +737,7 @@ def _episode(episode_id, t0, t1, accepted=True, marks='', ineligible=''):
         (
             [_episode(0, 3653.0, 13403.0, marks='centre_step@4449.6:4597.8;stall@11942.9:13403.3')],
             0,
-            ' in one episode through a step of its centre (4.45 kyr–4.6 kyr) and a stall of its centre (11.9 kyr–13.4 kyr),'
+            ' in one episode through a step of its center (4.45 kyr–4.6 kyr) and a stall of its center (11.9 kyr–13.4 kyr),'
             ' without a circulation,',
         ),
         # one counted episode (the other below its period floor), no C16 mark; a 1:1 mark is no centre step
@@ -748,7 +750,7 @@ def _episode(episode_id, t0, t1, accepted=True, marks='', ineligible=''):
 )
 def test_regime_change_reads_the_episodes_and_their_marks(rows, decisive, words):
     """FIX-plot (tfix-bench B): the subtype regime_change of an angle that is not 1:1 is not only the W22 union of
-    episodes; since C16 it is also ONE episode joined across a step or a stall of its centre. The clause says which, by
+    episodes; since C16 it is also ONE episode joined across a step or a stall of its center. The clause says which, by
     the counted episodes and the episode's marks, and ends with the comma before 'about …°'."""
     facts = SimpleNamespace(episodes=vt.Episodes(rows, 20000.0, decisive))
     assert vt.regime_change_clause(facts) == words
@@ -756,7 +758,7 @@ def test_regime_change_reads_the_episodes_and_their_marks(rows, decisive, words)
 
 @pytest.mark.benchmark
 def test_tx9_one_joined_episode_is_not_a_union():
-    """2003 TX9 on the W22 path (without the centre-scale TP rule and G2a) with C16 on: the three W_c pieces are one
+    """2003 TX9 on the W22 path (without the center-scale TP rule and G2a) with C16 on: the three W_c pieces are one
     episode 2.21–17.5 kyr with the mark stall@7992.0:14563.6 (test_w22_union; 7997.0 before W32: one output step,
     the W_c pieces read with the thin band of filter_too_slow), subtype regime_change. The sentence
     said 'through episodes without a circulation between them about 255°' (a plural for one episode, no comma)."""
@@ -767,7 +769,7 @@ def test_tx9_one_joined_episode_is_not_a_union():
     assert episode['marks'] == 'stall@7992.0:14563.6'
     angle = text.sentences[0]
     assert angle.startswith(
-        'σ librates over the whole record in one episode through a stall of its centre (7.99 kyr–14.6 kyr), without a '
+        'σ librates over the whole record in one episode through a stall of its center (7.99 kyr–14.6 kyr), without a '
         'circulation, about 255°: 15 turning points'
     )
     assert 'between them' not in angle
@@ -778,40 +780,42 @@ def test_tx9_one_joined_episode_is_not_a_union():
 
 @pytest.mark.benchmark
 def test_header_and_sentence_read_one_centre_test(record):
-    """F5: the header's ', moving centre' and the words 'σ librates ... with a fixed centre' / 'the centre is
-    stationary' come from one test (`orbit_type.centre_moves`): no figure says both of σ's own centre (a subresonance
-    member's 'fixed centre', 82831, is another angle's)."""
+    """F5: the header's ', moving center' and the words 'σ librates ... with a fixed center' / 'the center is
+    stationary' come from one test (`orbit_type.centre_moves`): no figure says both of σ's own center (a subresonance
+    member's 'fixed center', 82831, is another angle's)."""
     _, analysis, _, text = record
     words = ' '.join(text.sentences + [step.outcome for step in text.steps])
-    if 'moving centre' in str(analysis.verdict.orbit_type):
-        assert 'the whole record with a fixed centre' not in words and 'the centre is stationary' not in words
+    if 'moving center' in str(analysis.verdict.orbit_type):
+        assert 'the whole record with a fixed center' not in words and 'the center is stationary' not in words
 
 
 @pytest.mark.benchmark
 @pytest.mark.parametrize('example', ['mmr3__2003_TX9__3E+2J-10+0+0+5', 'mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr'])
 def test_tx9_names_its_moving_centre_and_the_scale_of_the_centre(example):
-    """2003 TX9 3E+2J-10 after W23 rule (a): one episode at the scale of the centre whose cycles' bands overlap (subtype
-    stationary) while its centre shifts by 1.45 (5 yr) of the mean amplitude, above MMR_L6_SHIFT_FULL 0.5: the header
-    says 'moving centre', so the sentence must not say 'fixed centre' (F5). The shape step names the scale of the
-    centre and the turning-point prominence it used (F6)."""
+    """2003 TX9 3E+2J-10 after W23 rule (a): one episode at the scale of the center whose cycles' bands overlap (subtype
+    stationary) while its center shifts by 1.45 (5 yr) of the mean amplitude, above MMR_L6_SHIFT_FULL 0.5: the header
+    says 'moving center', so the sentence must not say 'fixed center' (F5). The shape step names the scale of the
+    center and the turning-point prominence it used (F6)."""
     analysis, text = _explained(example)
     v = analysis.verdict
     decisive = next(r for r in analysis.episode_rows() if r['episode_id'] == analysis.decisive_episode_id)
     shift = decisive['centre_shift_over_amp']
-    assert str(v.angle_subtype) == 'stationary' and shift > S.mmr_l6_shift_full and v.orbit_type.endswith(', moving centre')
+    assert str(v.angle_subtype) == 'stationary' and shift > S.mmr_l6_shift_full and v.orbit_type.endswith(', moving center')
     angle = text.sentences[0]
-    assert f'with a moving centre (shift / mean amplitude {vt.compare(shift, ">", S.mmr_l6_shift_full)}; every cycle' in angle
-    assert 'fixed centre' not in angle
+    assert f'with a moving center (shift / mean amplitude {vt.compare(shift, ">", S.mmr_l6_shift_full)}; every cycle' in angle
+    assert 'fixed center' not in angle
     steps = {step.key: step.outcome for step in text.steps}
     assert steps['sub'] == 'not triggered: the cycles’ bands overlap (no trigger fired)'
     row = {**analysis.numbers_row(), **analysis.summary_row()}
     window, fine, prominence = row['geo_centre_scale_cutoff_yr'], row['geo_fine_cutoff_yr'], row['geo_tp_prominence_deg']
     assert window > fine and prominence >= S.mmr_tp_prominence_floor_deg
-    assert f'at the scale of the centre: σ filtered at W_c {vt.compare(window, ">", fine, " yr")}' in steps['shape']
-    assert f'its turning points are turns of the centre (prominence ≥ {vt.fmt(prominence)}°)' in steps['shape']
+    assert (
+        f'at the scale of the center: σ smoothed at W_c {vt.years(window)}, longer than the fine cutoff {vt.years(fine)}' in steps['shape']
+    )
+    assert f'its turning points are turns of the center that stand out by ≥ {vt.fmt(prominence)}°' in steps['shape']
     assert_comparisons_hold(text)
     _, without = _explained(example, replace(S, libration_centre_scale_tp_at_centre=False))
-    assert 'turns of the centre' not in ' '.join(step.outcome for step in without.steps)
+    assert 'turns of the center' not in ' '.join(step.outcome for step in without.steps)
 
 
 @pytest.mark.benchmark
@@ -819,7 +823,7 @@ def test_tx9_names_its_moving_centre_and_the_scale_of_the_centre(example):
 def test_tx9_names_the_action_step_it_did_not_cut_and_why(example):
     """W24 G2a after the review: the step at the Mars kick passes tests 1-6 but not 7 (one potential does not hold the
     late cycles): the angle sentence names the step, the sub-test that failed with its cutoff and the worst laws, from
-    the geo_action_step_* columns; the badge says what the header says (moving centre); with the rule off the text says
+    the geo_action_step_* columns; the badge says what the header says (moving center); with the rule off the text says
     nothing of G2a."""
     analysis, text = _explained(example)
     row = analysis.numbers_row()
@@ -828,7 +832,7 @@ def test_tx9_names_the_action_step_it_did_not_cut_and_why(example):
     assert "and did not cut: one potential does not hold both regimes (a cycle's period is not the loop's" in angle
     laws = f'worst-cycle T_obs/T_pred {vt.fmt(row["geo_action_step_law_before"])} before, {vt.fmt(row["geo_action_step_law_after"])} after'
     assert laws in angle and 'librates over the whole record' in angle
-    assert analysis.verdict.orbit_type.endswith(', moving centre') and text.angle == 'libration (stationary bands, moving centre)'
+    assert analysis.verdict.orbit_type.endswith(', moving center') and text.angle == 'libration (stationary bands, moving center)'
     assert_comparisons_hold(text)
     _, without = _explained(example, replace(S, libration_action_step=False))
     assert 'G2a' not in ' '.join(without.sentences)
@@ -957,6 +961,7 @@ def test_short_names_do_not_collide():
     from resonances.plotting import verdict_vocab as vv
 
     printed = list(vv.RULE_NAMES.values()) + list(vv.LEAF_NAMES.values())
+    printed += [name for names in vv.ANGLE_SUBTYPE_NAMES.values() for name in names.values()]
     lowered = [name.lower() for name in printed]
     assert len(set(lowered)) == len(lowered), sorted({n for n in lowered if lowered.count(n) > 1})
     assert all(0 < len(name) <= vv.NAME_MAX for name in printed)
@@ -988,9 +993,9 @@ def test_named(rule_id, expected):
         ('C', 'decided: circulation (C)'),
         ('R0', 'decided: no resonant potential (R0)'),
         ('C5', 'decided: aliased circulation (C5)'),
-        ('5d/6', 'decided: force measured → judged by behaviour (5d/6)'),
+        ('5d/6', 'decided: force measured → judged by behavior (5d/6)'),
         ('5c/6u', 'decided: potential supports → union covers the record (5c/6u)'),
-        ('3k2', 'decided: kinematic drift of the centre (3k2)'),
+        ('3k2', 'decided: kinematic drift of the center (3k2)'),
         ('', ''),
     ],
 )
@@ -1056,6 +1061,9 @@ def test_the_docs_table_lists_every_name():
         assert rows.get(rule_id) == name, rule_id
     for rule_id, name in vv.LEAF_NAMES.items():
         assert rows.get(f'{rule_id} (leaf)') == name, rule_id
+    for rule_id, names in vv.ANGLE_SUBTYPE_NAMES.items():
+        for subtype, name in names.items():
+            assert rows.get(f'{rule_id} ({subtype})') == name, (rule_id, subtype)
 
 
 # --------------------------------------------------------------------------------------------- W28 E3: the steps as questions
@@ -1063,7 +1071,7 @@ def test_the_docs_table_lists_every_name():
 
 def _kinematic(owner=None):
     """A record whose σ = 2λ_J − λ − ϖ librates only through ϖ (ϖ swings ±0.9 rad in 400 yr), with a flat a (a swing
-    of 1e-6 au) at the exact 2:1 mean motion plus a centre rate of one turn in 60 kyr (so that an exact commensurability
+    of 1e-6 au) at the exact 2:1 mean motion plus a center rate of one turn in 60 kyr (so that an exact commensurability
     is excluded, rule 3 and not 3b5): a carries none of the swing σ needs, B1 ≈ 0 < 0.1, non_resonant /
     kinematic_libration (41588 3J+9S-2 in miniature). `owner` replaces the owner search (not run in the synthetic)."""
     from scipy.optimize import brentq
@@ -1119,7 +1127,7 @@ def test_kinematic_leaf_needs_no_owner():
     assert steps['owner'].heading == '2 · Does another resonance drive a? [W]' and steps['owner'].why == ''
     assert not any('could not run' in step.outcome or 'not run:' in step.outcome for step in text.steps)
     leaf = steps['kin']
-    assert leaf.state == vt.StepState.LEAF and leaf.heading == '3 · Does a swing with σ? [B1]'
+    assert leaf.state == vt.StepState.LEAF and leaf.heading == '3 · Does a (semi-major axis) swing with σ? [B1]'
     assert leaf.why.startswith('a resonance turns σ back through a') and leaf.outcome.endswith('→ non_resonant')
     assert text.decided_at == 'Decided at 3: kinematic libration → NON-RESONANT'
     (cycles,) = [section for section in text.physics if section.title == 'What makes the cycles?']  # the same predicate
@@ -1130,14 +1138,14 @@ def test_kinematic_leaf_needs_no_owner():
 
 
 def test_nothing_is_said_after_the_leaf():
-    """The steps after the leaf are one pale line without an answer: '4–6 · drift, own force, behaviour: not reached'."""
+    """The steps after the leaf are one pale line without an answer: '4–6 · drift, own force, behavior: not reached'."""
     *_, text = _kinematic()
     keys = [step.key for step in text.steps]
     assert keys == ['shape', 'sub', 'owner', 'kin', 'rest']
     rest = text.steps[-1]
     assert rest.state == vt.StepState.NOT_REACHED and rest.outcome == '' and rest.why == ''
-    assert rest.heading == '4–6 · drift, own force, behaviour: not reached'
-    assert text.steps[0].heading == '0 · Angle shape [G2]'
+    assert rest.heading == '4–6 · drift, own force, behavior: not reached'
+    assert text.steps[0].heading == '0 · Does σ librate? [G2]'
 
 
 def test_coorbital_owner_wording():
@@ -1154,12 +1162,12 @@ def test_coorbital_owner_wording():
 @pytest.mark.parametrize(
     'rule, status, expected',
     [
-        ('5d/6', 'transient', 'Decided at 5d → 6: force measured, then judged by behaviour → TRANSIENT'),
+        ('5d/6', 'transient', 'Decided at 5d → 6: force measured, then judged by behavior → TRANSIENT'),
         ('5c/6u', 'resonant', 'Decided at 5c → 6u: potential supports, then union covers the record → RESONANT'),
         ('3', 'non_resonant', 'Decided at 3: kinematic libration → NON-RESONANT'),
         ('R0', 'non_resonant', 'Decided at R0: no resonant potential → NON-RESONANT'),
         ('C', 'non_resonant', 'Decided at C: circulation → NON-RESONANT'),
-        ('G6', 'uncertain', 'Decided at G6: too few cycles → UNCERTAIN'),
+        ('G6', 'uncertain', 'Decided at G6: too short to decide → UNCERTAIN'),  # the leaf, not the angle rule's name
     ],
 )
 def test_decided_at(rule, status, expected):
@@ -1203,9 +1211,9 @@ def test_collapse_after_leaf():
     ]
     out = vt.collapse_after_leaf(steps)
     assert [step.key for step in out] == ['shape', 'sub', 'rest']
-    assert out[-1].heading == '2–6 · another resonance, a swings, drift, own force, behaviour: not reached'
+    assert out[-1].heading == '2–6 · another resonance, a swings, drift, own force, behavior: not reached'
     last = [replace(step, state=vt.StepState.PASSED) for step in steps[:-2]] + [replace(steps[-2], state=vt.StepState.LEAF), steps[-1]]
-    assert vt.collapse_after_leaf(last)[-1].heading == '6 · behaviour: not reached'
+    assert vt.collapse_after_leaf(last)[-1].heading == '6 · behavior: not reached'
     assert vt.collapse_after_leaf(steps[:2]) == steps[:2]  # nothing after the leaf
 
 
@@ -1214,7 +1222,7 @@ def test_circulation_steps_and_every_step_id_has_a_name():
     from resonances.plotting.verdict_vocab import RULE_NAMES
 
     _, circulating = _circulating('2J-1+0-1', 3.35)
-    assert [step.heading for step in circulating.steps] == ['0 · Angle shape [G4]', 'C · Circulation']
+    assert [step.heading for step in circulating.steps] == ['0 · Does σ librate? [G4]', 'C · Circulation']
     assert circulating.decided_at == 'Decided at C: circulation → NON-RESONANT'
     *_, kinematic = _kinematic()
     for text in (circulating, kinematic):
@@ -1243,7 +1251,13 @@ def test_the_steps_are_drawn_with_header_questions_and_footer():
     drawn = ' '.join(artist.get_text() for artist in fig.texts)
     plt.close(fig)
     assert stats['overflow'] == 0 and not stats['compact']
-    for words in ('Decided at 3:', '3 · Does a swing with σ? [B1]', 'Why: a resonance turns', 'not needed: step 3', 'Docs: steps'):
+    for words in (
+        'Decided at 3:',
+        '3 · Does a (semi-major axis) swing with σ? [B1]',
+        'Why: a resonance turns',
+        'not needed: step 3',
+        'Docs: steps',
+    ):
         assert words in drawn, words
     assert '○ not needed' in numbers.LEGEND_TEXT
 
@@ -1252,15 +1266,15 @@ def test_the_steps_are_drawn_with_header_questions_and_footer():
 E3_RECORDS = {
     'mmr3__41588__3J+9S-2+0+0-10': {
         'decided_at': 'Decided at 3: kinematic libration → NON-RESONANT',
-        'headings': ['0 · Angle shape [G2]', '1 · Does a sibling angle hold the centre? [S]', '2 · Does another resonance drive a? [W]',
-                     '3 · Does a swing with σ? [B1]', '4–6 · drift, own force, behaviour: not reached'],
+        'headings': ['0 · Does σ librate? [G2]', '1 · Does a sibling angle hold the center? [S]', '2 · Does another resonance drive a? [W]',
+                     '3 · Does a (semi-major axis) swing with σ? [B1]', '4–6 · drift, own force, behavior: not reached'],
         'owner': (vt.StepState.NOT_NEEDED, 'n/a: no force on a; not needed: step 3 decides without it'),
     },
     'coorbital__2020_CB__1E-1+0+0': {
-        'decided_at': 'Decided at 5d → 6: force measured, then judged by behaviour → TRANSIENT',
-        'headings': ['0 · Angle shape [G1q, G2]', '1 · Does a sibling angle hold the centre? [S]', '2 · Does another resonance drive a? [W]',
-                     '3 · Does a swing with σ? [B1]', '4 · Does the centre drift without a cause?', '5d · Is it σ’s own force? [L4, R0]',
-                     '6 · How does σ behave? [Z]'],
+        'decided_at': 'Decided at 5d → 6: force measured, then judged by behavior → TRANSIENT',
+        'headings': ['0 · Does σ librate? [G1q, G2]', '1 · Does a sibling angle hold the center? [S]', '2 · Does another resonance drive a? [W]',
+                     '3 · Does a (semi-major axis) swing with σ? [B1]', '4 · Does the center drift without a cause?',
+                     '5d · Is it σ’s own force? [L4, R0]', '6 · How does σ behave? [Z]'],
         'owner': (vt.StepState.NOT_APPLICABLE, 'n/a: the owner search is not applied to a 1:1'),
     },
 }  # fmt: skip
@@ -1287,9 +1301,12 @@ def test_the_steps_of_41588_and_2020_cb(example):
     assert (owner.state, owner.outcome) == expected['owner']
     assert not any('could not run' in step.outcome for step in text.steps)
     fig = mc.draw_combined(analysis, series, settings=S)
-    assert fig.text_stats['overflow'] == 0 and fig.text_stats['wide'] == []
+    # the right column (2026-11-04): one ◆ step, its rule named in the footer too; the docs pages in the footer
+    column = fig.text_stats['column']
+    assert fig.text_stats['overflow'] == 0 and vc.problems(column) == []
     texts = ' '.join(artist.get_text() for artist in fig.texts)
-    assert expected['decided_at'].split(':')[0] in texts and 'Docs: steps' in texts
+    decides = next(line for line in column.checks if line.decides)
+    assert vc.plain(decides.question) in texts and 'physics/status-tree.md' in texts
     plt.close(fig)
 
 
@@ -1380,7 +1397,7 @@ def test_the_arithmetic_of_failures_and_a_cap_above_the_level():
 
 def test_the_limit_is_drawn_first_and_never_as_failed():
     """The drawn block: header, 'LIMIT: earlier a-wave [O1] → LOW' once and before the support rows, no ✗ glyph, one
-    'full:' line, one grey n/a line, the two arithmetic lines; nothing overflows."""
+    'full:' line, one gray n/a line, the two arithmetic lines; nothing overflows."""
     from resonances.plotting import combined_numbers as numbers
 
     verdict, checks = _cb_like()
@@ -1400,7 +1417,7 @@ def test_the_limit_is_drawn_first_and_never_as_failed():
 @pytest.mark.parametrize(
     'code, expected',
     [
-        ('too_few_points', 'no value — the record holds fewer than {n} independent centre windows; compare σ and p·ϖ in (j)'),
+        ('too_few_points', 'no value — the record holds fewer than {n} independent center windows; compare σ and p·ϖ in (j)'),
         ('no_body_varpi_term', 'no value — σ has no ϖ term of the body (p = 0); compare σ and p·ϖ in (j)'),
         ('', 'not measured'),
     ],
@@ -1527,7 +1544,7 @@ def test_long_pendulum_labels_do_not_overflow():
 
 @pytest.mark.benchmark
 def test_137295_pendulum_numbers_say_their_source():
-    """137295 1N-2 (card g10-7): T0 20.7–21.1 kyr is labelled 'from observed cycles'; block A compares the theory period
+    """137295 1N-2 (card g10-7): T0 20.7–21.1 kyr is labeled 'from observed cycles'; block A compares the theory period
     T0_th (str_P_lib_theory, 18–18.2 kyr) with T0 from the observed cycles (str_T_obs 20.8 kyr), and nothing prints
     'T0 theory'."""
     from resonances.plotting import mmr_combined as mc
@@ -1545,7 +1562,8 @@ def test_137295_pendulum_numbers_say_their_source():
     assert overflow == 0
     assert 'T0 theory' not in drawn and '(theory)' not in drawn
     assert re.search(r'small-swing period T0 \(from observed cycles\) 2\d\.\d+–2\d\.\d+ kyr', drawn)
-    assert re.search(r'T0_th 18(\.0)?–18\.2 kyr .* against T0 20\.8 kyr from the observed cycles', drawn)
+    # the right column prints the theory period in symbols (2026-11-04 redesign: 'T₀ theory', never the ASCII T0_th)
+    assert re.search(r'T₀ theory 18(\.0)?–18\.2 kyr .*?against T₀ 20\.8 kyr from the observed cycles', drawn)
 
 
 # --------------------------------------------------------------------------------------------- W28 E8 slotted explanation
@@ -1649,10 +1667,10 @@ def test_an_affirmative_cause_needs_the_owner_on_the_episode():
     0.3, 3 revolutions per cycle or an F7 refusal on record give 'Candidate driver', never 'drives a'."""
     assert S.mmr_owner_cover_min == 0.5 and S.mmr_owner_psi_turns_per_cycle_max == 1.0
     line, confirmed = vt.driver_line(_with_owner(0.8))
-    assert confirmed and line == 'Driven by 5E-16+0+11 [owner: 1 kyr–2 kyr (libration)].'
+    assert confirmed and line == 'Driven by 5E-16+0+11 [owner: 1 kyr–2 kyr (librating)].'
     line, confirmed = vt.driver_line(_with_owner(0.3))
     assert not confirmed and line == (
-        'Candidate driver: 5E-16+0+11 (1 kyr–2 kyr (libration); it covers 0.3 < 0.5 of σ’s decisive episode): '
+        'Candidate driver: 5E-16+0+11 (1 kyr–2 kyr (librating); it covers 0.3 < 0.5 of σ’s decisive episode): '
         'not shown to make these cycles.'
     )
     line, confirmed = vt.driver_line(_with_owner(0.8, psi_turns=3.0))
@@ -1692,9 +1710,9 @@ def test_identity_line(psi_def, expected):
 @pytest.mark.parametrize(
     'overlap, source, expected',
     [
-        ('Venus;Earth', 'J2000', 'Radial overlap with Venus, Earth (planet bands at J2000).'),
+        ('Venus;Earth', 'J2000', 'Radial overlap with Venus, Earth (planets taken at their J2000 orbits).'),
         ('Mars', 'saved', 'Radial overlap with Mars.'),
-        ('none', 'saved:Mercury+Venus+Earth+Mars+Jupiter+Saturn', 'Radial overlap: none (bands of Uranus, Neptune at J2000).'),
+        ('none', 'saved:Mercury+Venus+Earth+Mars+Jupiter+Saturn', 'Radial overlap: none (Uranus, Neptune taken at their J2000 orbits).'),
         (None, None, 'Radial overlap: no data.'),
     ],
 )
@@ -1704,7 +1722,7 @@ def test_orbit_line(overlap, source, expected):
 
 
 def test_an_objection_that_did_not_decide_leaves_the_grey_line():
-    """Card g10-8: a failed check the verdict did not read is an objection bullet, not grey 'also measured'."""
+    """Card g10-8: a failed check the verdict did not read is an objection bullet, not gray 'also measured'."""
     items = [('fail', 'identity fail'), ('', 'B5 ratio 0.21 (read only for drift and kinematic verdicts)')]
     assert vt.objection_line(items) == 'Objection, not read by this verdict: identity fail.'
     assert vt.objection_line(items[1:]) == ''
@@ -1787,11 +1805,11 @@ def test_the_slotted_explanation_on_the_benchmark():
 @pytest.mark.parametrize(
     'name, rule_id',
     [  # names as the benchmark's decision paths print them (v2-w26-final summary.csv)
-        ('G4 largest centre pass', 'G4'),
-        ('G1c centre turns after the last turning point', 'G1c'),
+        ('G4 largest center pass', 'G4'),
+        ('G1c center turns after the last turning point', 'G1c'),
         ('C5 alias: far from the resonance', 'C5'),
         ('3 B1 a carries the amplitude', 'B1'),
-        ('3 K2b kinematic libration whose centre moves more than its amplitude (L6)', 'K2b'),
+        ('3 K2b kinematic libration whose center moves more than its amplitude (L6)', 'K2b'),
         ('3 kinematic (episode): identity correlation', 'K1'),
         ('5 L4 force law R2 (half 1)', 'L4'),
         ('5 R0 V_E ~ V_F windows', 'R0'),
@@ -1800,7 +1818,7 @@ def test_the_slotted_explanation_on_the_benchmark():
         ('5d (i) F by direct averaging: required / theory <= x', 'F'),
         ('5u/6 F on the order-of-magnitude scale: required / theory <= x', 'F'),
         ('5s required / directly averaged strength (two-body)', 'F'),
-        ('5n independent cycles (centre estimates) of the decisive episode', '5n'),
+        ('5n independent cycles (center estimates) of the decisive episode', '5n'),
         ('1 subresonance phi0 coherence', 'S'),
         ('2 owner R2', 'W'),
         ('2 second capture: x sweep', 'capture'),
@@ -1967,7 +1985,9 @@ def test_numbers_behind_the_verdicts_of_41588_cb_and_285637():
             assert all(line.value.startswith('↑ ') for line in holders if not line.emphasis), (example, column)
         fig = mc.draw_combined(analysis, series, settings=S)
         drawn = [artist.get_text() for artist in fig.texts]
-        assert fig.text_stats['overflow'] == 0 and 'Numbers behind this verdict' in drawn, example
+        # the right column (2026-11-04): DECISIVE lines framed first in Numbers, no '↑' pointer (D1)
+        assert fig.text_stats['overflow'] == 0 and 'DECISIVE' in ' '.join(drawn) and not any('↑' in t for t in drawn), example
+        assert fig.text_stats['column'].numbers.decisive, example
         plt.close(fig)
     assert [(item.kind, item.rule_id) for item in texts['mmr3__41588__3J+9S-2+0+0-10'].emphasis] == [('decisive', 'B1')]
     k41588, cb, k285637 = (trees[example] for example in E10_RECORDS)
@@ -2143,6 +2163,6 @@ def test_the_longest_rejected_stay_is_named_apart_from_the_episode():
     ]
     text = vt.Episodes(rows, 100_000.0, 1).rejected_text()
     assert text.endswith(
-        '; the longest, 14.1 kyr–25 kyr (38 turning points), is a stay: a ±1.99° ripple whose centre moves 65.1°, not a libration'
+        '; the longest, 14.1 kyr–25 kyr (38 turning points), is a stay: a ±1.99° ripple whose center moves 65.1°, not a libration'
     )
     assert vt.Episodes(rows[1:], 100_000.0, 1).stay_text() == ''

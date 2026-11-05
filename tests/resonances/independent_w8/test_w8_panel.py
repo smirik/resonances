@@ -294,7 +294,7 @@ LIBRATION_CASES = {
     'plutino': ('2N-3+0+1', [(205.0, 0.0)], None, 'exterior, symmetric libration about 180°'),
     'asymmetric': ('1N-2+0+1', [(215.0, 0.0)], None, 'exterior, asymmetric libration about 215°'),
     'asymmetric_mirror': ('1N-2+0+1', [(72.0, 0.0), (288.0, 0.0)], 0, 'exterior, asymmetric libration about 72° and 288°'),
-    'moving_centre': ('3J-2+0-1', [(0.0, 0.8)], None, 'interior, symmetric libration about 0°, moving centre'),
+    'moving_centre': ('3J-2+0-1', [(0.0, 0.8)], None, 'interior, symmetric libration about 0°, moving center'),
     'three_body_no_side': ('5J-2S-2+0+0-1', [(180.0, 0.0)], None, 'symmetric libration about 180°'),
     # retrograde 1/-3: n/n_J = 1/3 -> outside
     'retrograde': ('1J-3r0', [(180.0, 0.0)], None, 'retrograde, exterior, symmetric libration about 180°'),
@@ -635,7 +635,7 @@ def test_two_episodes_are_counted(explained):
 
 def cycle_claims(text):
     """(duration_yr, cycles, P_cyc_yr) of every 'lasts X = N cycles … (cycles of P_cyc Y' in the text."""
-    pattern = r'lasts ([\d.]+) (yr|kyr) = ([\d.]+) cycles .*?cycles of P_cyc ([\d.]+) (yr|kyr)'
+    pattern = r'lasts ([\d.]+) (yr|kyr) = ([\d.]+) cycles? .*?cycle period P_cyc ([\d.]+) (yr|kyr)'
     out = []
     for m in re.finditer(pattern, '\n'.join(text.sentences)):
         scale = {'yr': 1.0, 'kyr': 1000.0}

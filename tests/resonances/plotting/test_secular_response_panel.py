@@ -1,8 +1,8 @@
 """Panel (f) of the secular figure draws the fit whose R² it prints (docs/reading-figures.md, secular panel (f)).
 
-The case: a 518 z1-like libration (3.3 Myr, 80°) carrying 12° waves of 430 kyr, so the centre scale decides
+The case: a 518 z1-like libration (3.3 Myr, 80°) carrying 12° waves of 430 kyr, so the center scale decides
 (`analyse_secular`, step 4), and an e that answers sin σ (Lagrange: e_dot ~ sin σ) plus its own 430-kyr wave. At the
-centre's cutoff the wave is filtered out of e; at the fine P_c (100 kyr) it stays and the refit the panel used to draw
+center's cutoff the wave is filtered out of e; at the fine P_c (100 kyr) it stays and the refit the panel used to draw
 had another R². The test reads the drawn arrays back from the figure and computes R² by hand.
 """
 
@@ -58,7 +58,7 @@ def test_the_drawn_curve_is_the_fit_of_the_printed_r2(analysis):
     drawn = _r2(rate[both], model[both])
     assert drawn == pytest.approx(analysis.response.r2_e, abs=1e-9)
     assert float(re.search(r'R² ([0-9.]+)', printed).group(1)) == pytest.approx(analysis.response.r2_e, abs=5e-3)
-    assert 'centre scale' in printed
+    assert 'center scale' in printed
 
     # the refit the panel drew before (e filtered at the fine P_c) is another fit: its R² differs
     fine = time_derivative(T, lowpass(T, analysis.series.e, analysis.cutoff.cutoff_yr, SETTINGS.filter_order))

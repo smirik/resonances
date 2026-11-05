@@ -1,5 +1,5 @@
 """The two display fixes of W4: a 1:1 angle's panel (e) shows its own law, not the harmonic windows, and the secular/ZLK
-panel (b) labels its right-angle ticks in (-180, 180] (its window starts wherever the centre puts it, often below 0)."""
+panel (b) labels its right-angle ticks in (-180, 180] (its window starts wherever the center puts it, often below 0)."""
 
 import math
 from types import SimpleNamespace

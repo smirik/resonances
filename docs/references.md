@@ -14,7 +14,7 @@ The physics pages cite these works. Page and equation numbers refer to the print
   and modulated resonances (§9.4, pp. 224–226).
 - Gallardo, T. (2006). Atlas of the mean motion resonances in the Solar System. *Icarus*, 184, 29–38.
   doi:[10.1016/j.icarus.2006.04.001](https://doi.org/10.1016/j.icarus.2006.04.001). Used: the averaged disturbing
-  function at fixed $\sigma$ (eqs. 1–6, p. 30) and the stable centres (§3).
+  function at fixed $\sigma$ (eqs. 1–6, p. 30) and the stable centers (§3).
 - Nesvorný, D., & Morbidelli, A. (1998). Three-body mean motion resonances and the chaotic structure of the
   asteroid belt. *Astronomical Journal*, 116, 3029–3037. doi:[10.1086/300632](https://doi.org/10.1086/300632).
   Used: three-body angles (eqs. 1–2, p. 3029), filtering before decimation (§2, p. 3030), membership judged by

@@ -24,7 +24,7 @@ $$
 The forced part is removed by a **complex least-squares fit at the known planetary
 frequencies** from `resonances/data/const.py`. Fitting known frequencies rather than
 searching for them is deliberate: a frequency analysis (NAFF/FMFT) of a real integration
-splits the free mode into five or six neighbouring terms — on 4257 the spread is ±0.5 ″/yr
+splits the free mode into five or six neighboring terms — on 4257 the spread is ±0.5 ″/yr
 against a Rayleigh resolution of 0.13 — and any of those splinters can be mistaken for a
 planetary line and subtracted by accident.
 
@@ -46,7 +46,7 @@ are grouped by single linkage at twice that width, $2/T$ (two relative turns ove
 group is fitted. The gate's tolerance (below) is one width.
 
 At 500 kyr the two widths are 2.592 and 5.184 ″/yr; the grouping threshold 5.18 ″/yr and the candidate rates 0, 0.67, 3.09, 4.26, 28.25
-have neighbour gaps 0.67, 2.42, 1.17, 23.99 — the first three chain together, the last one
+have neighbor gaps 0.67, 2.42, 1.17, 23.99 — the first three chain together, the last one
 breaks:
 
 | baseline | z_e basis | z_i basis |
@@ -55,7 +55,7 @@ breaks:
 | 300 kyr – 1 Myr | g5, g6 | const, s6 |
 | 10 Myr | full | full |
 
-### The representative is a modelling assumption
+### The representative is a modeling assumption
 
 Which member of a cluster gets fitted is fixed by a documented priority — `g5 > g6 > g7 >
 g8 > const` for the eccentricity vector, `const > s6 > s7 > s8` for the inclination one.
@@ -114,7 +114,7 @@ vector shows up in $\omega$ at such a frequency even when neither `b_varpi` nor 
 
 $R$ is the span of $\omega_{\rm free}$ trimmed by half a percent at each end (a span is an extreme statistic, and one
 surviving glitch ruins a strict maximum). The 360° threshold is topological and **must not be tightened**: inside a
-mean-motion resonance the Lidov-Kozai cycle is asymmetric and its centre shifts away from 90°/270°, to 0°/180° for
+mean-motion resonance the Lidov-Kozai cycle is asymmetric and its center shifts away from 90°/270°, to 0°/180° for
 Hildas and by ±60° for Trojans (Vinogradova 2024).
 
 The status decision (`analysis.secular.decide.decide_status`) turns the outcome into the status: on a librating ω,
@@ -168,7 +168,7 @@ forcing. That floor cannot be measured: estimating how much forcing sits at a fr
 baseline cannot resolve requires resolving it. Measured on the reference set, a ridge
 prefit of the candidate amplitudes returned |ĉ| of order `e_free` rather than `e_forced` —
 two orders of magnitude too large — because the near-degenerate slow cluster amplifies the
-projection of the un-modelled free signal. The floor then scaled with the very quantity it
+projection of the un-modeled free signal. The floor then scaled with the very quantity it
 was being compared against, and demoted 3040, 162474 and 3752 outright.
 
 Frequency is the direct observable instead: unsubtracted forcing lives, by construction,
@@ -180,9 +180,9 @@ For a **co-orbital** the forced term is the perturber's own eccentricity vector 
 a planetary fundamental. For a Jupiter Trojan that vector is Jupiter's, g5 + g6, rotated by
 ±60° for L4/L5 (Milani 1993; Vinogradova 2015), and the split fits it: on 591986 the fitted
 g5 amplitude is 1.02 × Jupiter's own g5 term (g6: 1.12 ×) and the forced direction swings ±arcsin(|c₆|/|c₅|)
-= ±22.8° at the g6 − g5 beat, which is the slow wave of the osculating ω's centre. So the
+= ±22.8° at the g6 − g5 beat, which is the slow wave of the osculating ω's center. So the
 kinematic outcome stands (Vinogradova 2024 finds no Trojan with a librating ω); the tadpole
-sidebands are not modelled, and the free rates there are not proper elements.
+sidebands are not modeled, and the free rates there are not proper elements.
 
 A co-orbital of **Mercury to Mars** is different: those planets' own modes (g1–g4, s1–s4)
 are not candidates of the split, so its forced term is simply not subtracted. Such a body
@@ -200,9 +200,10 @@ the free vector is the longer and the free $\omega$ advances less than half a tu
 $b_\varpi$, $b_\Omega$ off the modes ([the gate inside the episodes](physics/secular-zlk.md)).
 
 Any other episodic row without a verdict (a planetary residual, a short window, an undefined
-phase) is `transient` only when $e$ and $i$ trade at constant $\sqrt{1-e^2}\cos i$ inside its
-deciding episode (`zlk_ei_episode_coupling` = `zlk`, `ZLK_EPISODIC_NO_VERDICT`), else `uncertain` /
-`gate_unavailable`: [From the outcome to the status](physics/secular-zlk.md).
+phase) keeps the geometry's status under the minimal policy (flag `gate_unavailable`, at most
+medium); the W28 tree (`v2_verdict`) made it `transient` only when $e$ and $i$ trade at constant
+$\sqrt{1-e^2}\cos i$ inside its deciding episode (`zlk_ei_episode_coupling` = `zlk`), else
+`uncertain` / `gate_unavailable`: [From the outcome to the status](physics/secular-zlk.md).
 
 ## Beyond the gate
 
@@ -239,7 +240,7 @@ Columns of a ZLK row that change no status (`analysis.zlk.diagnostics`, `analysi
   not attributed" with the condition that failed. An episodic $\omega$ that the gate demoted inside its episodes
   (median local $\rho < 1$ in each, the free $\omega$ turning with each cycle) is attributed with
   `zlk_attribution_scope` `episodes`: the node need not follow the mode there (624 Hektor: node − g5 =
-  −17.2″/yr, 6.6 turns of the centre $\varpi_5 - \Omega$, which keeps the librations apart). The per-mode amplitudes
+  −17.2″/yr, 6.6 turns of the center $\varpi_5 - \Omega$, which keeps the librations apart). The per-mode amplitudes
   are persisted in `{body}-omega-free.csv`; a file written before them restores no attribution.
 - **Node lock** (`zlk_node_lock`, a flag no status reads): the osculating node against the longitude of the fitted
   mode with the nearest rate, $\varpi_j(t) = g_j t + \arg c_j$. Locked when $|b_\Omega - g_j| < 1296000/T$ (one
@@ -250,21 +251,21 @@ Columns of a ZLK row that change no status (`analysis.zlk.diagnostics`, `analysi
   no cycle closes: `unresolved` (one period of 1.4 Myr does not fit). Columns: the mode, the reason when none
   (`rate_mismatch`, `unbounded`, `unresolved`, …), the candidate, $b_\Omega - g_j$ and the resolution, the range,
   the period and the cycles.
-- **The slow line of the centre** of a libration or a drift (`zlk_centre_*`): the strongest
-  sinusoid of the centre between its smoothing $W_c$ and half the record, and its origin:
+- **The slow line of the center** of a libration or a drift (`zlk_centre_*`): the strongest
+  sinusoid of the center between its smoothing $W_c$ and half the record, and its origin:
   `forced_beat:<gk>-<gj>` when its period is a beat $2\pi/|g_k - g_j|$ of two fitted forced modes
   with nonzero amplitudes within a Rayleigh width and the phase wave of the fitted forced vector,
-  smoothed like the centre, explains it in shape ($r \ge$ `ZLK_CENTRE_MODEL_R_MIN`) and in size
-  (`zlk_centre_model_gain`, its swing over the centre's, within a factor
+  smoothed like the center, explains it in shape ($r \ge$ `ZLK_CENTRE_MODEL_R_MIN`) and in size
+  (`zlk_centre_model_gain`, its swing over the center's, within a factor
   `ZLK_CENTRE_MODEL_AMP_FACTOR`: correlation alone is blind to size), `node` when the node's own
-  wave does, `forced_direction` when $\arg z_{\rm forced} - \Omega$ does (the centre of $\omega$ itself when the
+  wave does, `forced_direction` when $\arg z_{\rm forced} - \Omega$ does (the center of $\omega$ itself when the
   forced vector holds $\varpi$: 591986 over 4 Myr, a 1.43-Myr wave of the node locked to g5 plus the g6−g5 beat,
   $r = 0.998$; the node alone gives 0.82), else `unexplained`. No per-mode amplitudes (an old file): no forced beat.
   591986: 53.8 kyr, ±21.6°, `forced_beat:g6-g5`, $r = 0.991$, gain 1.00, model ±22.8°. A modulated secular
   angle gets the same line (`sec_centre_*`), named `forced_wave:<mode>` after a forced wave of its
   own modes.
-- **The scale guard**: a libration at the centre scale whose period is such a forced beat, whose
-  forced phase wave explains the centre (as above), while $\rho_{\max} < 1$ never becomes the
+- **The scale guard**: a libration at the center scale whose period is such a forced beat, whose
+  forced phase wave explains the center (as above), while $\rho_{\max} < 1$ never becomes the
   decisive libration (`sec_centre_rejected`); the gate's period stays the fast one (a clean synthetic
   591986 otherwise decided at 54 kyr instead of 5.95 kyr). It acts only where the gate does: a
   disabled gate, no split, or a co-orbital with unfitted forcing keeps the geometric scale.

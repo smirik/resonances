@@ -192,7 +192,7 @@ def owner_potential(
     fit_index = np.flatnonzero(frame.fit_mask)
     t_fit = t[fit_index]
     factor, order = settings.mmr_owner_band_factor, settings.filter_order
-    pad = settings.filter_edge_trim_cutoffs * factor * frame.period_yr
+    pad = settings.mmr_owner_band_edge_trim * factor * frame.period_yr
     k, k_p = spec.body_coefficient, spec.planet_coefficients[0]
     windows: List[PotentialWindow] = []
     for start in chosen_starts(starts, settings.mmr_owner_potential_snapshots):

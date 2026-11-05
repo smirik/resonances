@@ -3,9 +3,9 @@ Free argument of pericentre, in three figures.
 
     drift    — ω accumulated over the baseline, free against osculating. A confined band
                is libration, a ramp is circulation at g - s.
-    portrait — the Kozai diagram in free variables: free e against free ω, coloured by
+    portrait — the Kozai diagram in free variables: free e against free ω, colored by
                time. A librator draws a closed loop; a circulator draws a wave that runs
-               through every ω. The centre is not always 90/270 degrees — inside a
+               through every ω. The center is not always 90/270 degrees — inside a
                mean-motion resonance it shifts (Vinogradova 2024).
     vector   — the free eccentricity vector, drawn on exactly the same axes as the
                osculating `EccentricityVectorPlotter` figure of the same body. Side by
@@ -65,7 +65,7 @@ class FreeOmegaPlotter(BasePlotter):
         """Create a plotter from a `secular.free_elements.FreeElements`.
 
         `omega_osculating` is the raw unwrapped argument of pericentre on the *same*
-        grid as `elements.times`; it only adds the grey comparison curve.
+        grid as `elements.times`; it only adds the gray comparison curve.
         """
         plotter = cls()
         plotter._elements = elements

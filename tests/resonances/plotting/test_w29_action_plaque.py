@@ -21,6 +21,7 @@ import pytest  # noqa: E402
 
 from resonances.plotting import combined_numbers as cn  # noqa: E402
 from resonances.plotting import secular_plots as sp  # noqa: E402
+from resonances.plotting import verdict_column as vc  # noqa: E402
 from resonances.plotting import verdict_text as vt  # noqa: E402
 from resonances.plotting.style import LAYOUT_V1  # noqa: E402
 from resonances.resonance.analysis.verdict import POLICY_MINIMAL, Action  # noqa: E402
@@ -135,20 +136,20 @@ def test_a_wrapped_tag_moves_the_explanation_down_by_one_row():
 
 
 def test_the_long_period_figure_draws_the_action_in_its_plaque():
-    """The secular/ZLK figure shares the plaque (`draw_explained`): the tag is drawn on the plaque's line, right of it,
-    and the numbers still fit."""
+    """The secular/ZLK figure draws the action as the header's one chip (`verdict_column`, 2026-11-04): 'extend to
+    200 kyr' (2.0e5 yr), right of the status word on the plaque's line, and the column fits without growing."""
     analysis = _zlk(2.5)
     analysis = replace(analysis, verdict=replace(analysis.verdict, action=Action.EXTEND, extend_to_years=2.0e5))
     fig = sp.draw_long_period_combined(analysis)
     try:
-        texts = {t.get_text(): t for t in fig.texts}
-        tag = texts[' → extend to 200 kyr ']
-        badge = next(t for label, t in texts.items() if label.strip().startswith(vt.status_head(analysis.verdict.status).upper()))
+        texts = {t.get_text(): t for t in fig.texts if t.get_gid() == 'verdict_column'}
+        column = fig.text_stats['column']
+        assert column.header.chip.kind == 'extend' and column.header.chip.text == 'extend to 200 kyr'
+        assert vc.problems(column) == []  # the action once: the chip, never repeated in the text
+        tag, badge = texts['extend to 200 kyr'], texts[column.header.word]
         assert tag.get_position()[0] > badge.get_position()[0]
-        badge_mid = badge.get_position()[1] - cn.BADGE_PT / 2 / 72 / 13.5
-        tag_mid = tag.get_position()[1] - cn.ENDS_PT / 2 / 72 / 13.5
-        assert tag_mid == pytest.approx(badge_mid, abs=1e-9)
-        assert fig.text_stats['overflow'] == 0
+        assert tag.get_position()[1] == pytest.approx(badge.get_position()[1], abs=0.1)  # one line (inches)
+        assert fig.text_stats['overflow'] == 0 and fig.text_stats['grown_in'] == 0
     finally:
         plt.close(fig)
 

@@ -202,11 +202,11 @@ def test_a_centre_that_turned_back_is_not_a_drift(secular):
     analysis, row = secular
     verdict = replace(analysis.verdict, rules_fired=['centre_turned_insufficient'])
     decisive = _bullet(_explain(replace(analysis, verdict=verdict), row), vt.SLOT_DECISIVE)
-    assert decisive.startswith('The centre turned back within less than one revolution') and 'not a drift' in decisive
+    assert decisive.startswith('The center turned back within less than one revolution') and 'not a drift' in decisive
 
 
 def test_objections_leave_the_grey_line(secular):
-    """A failed response and a single centre estimate are objections (card g10-8), not grey 'fail' lines."""
+    """A failed response and a single center estimate are objections (card g10-8), not gray 'fail' lines."""
     analysis, row = secular
     verdict = replace(
         analysis.verdict, angle_status=AngleStatus.LIBRATION, checks={**analysis.verdict.checks, 'check_secular_e_response': 'fail'}
@@ -214,7 +214,7 @@ def test_objections_leave_the_grey_line(secular):
     text = _explain(replace(analysis, verdict=verdict), {**row, 'ep_centre_estimates': 1})
     objection = _bullet(text, vt.SLOT_OBJECTION)
     assert objection.startswith(vt.OBJECTION_HEAD) and 'do not follow the angle' in objection  # e and sin(i/2)
-    assert 'only one independent centre estimate' in objection
+    assert 'only one independent center estimate' in objection
     assert not any('fail' in line for line in text.info)
 
 
@@ -245,15 +245,22 @@ def test_a_number_of_the_text_points_up_in_the_table():
     assert out[3] == lines[3]
 
 
-def test_the_figure_draws_the_bullets(zlk):
+def test_the_figure_draws_the_column(zlk):
+    """The figure draws the ten-block column (`verdict_column`, 2026-11-04) that the package export builds
+    (`verdict_column_long.figure_column`): the same column, its status word and Why drawn, no '↑' pointer (D1)."""
+    from resonances.plotting import verdict_column as vc
+    from resonances.plotting.verdict_column_long import figure_column
+
     analysis, row, elements = zlk
     extra = {key: value for key, value in row.items() if key.startswith('free_')}
     fig = draw_long_period_combined(analysis, row=extra, free_elements=elements, settings=SETTINGS)
     try:
-        texts = [artist.get_text() for artist in fig.texts]
-        assert fig.text_stats['overflow'] == 0
-        assert fig.text_stats['text'].bullets and 'precession times' in ' '.join(texts)
-        assert any(t == vt.TEXT_POINTER or t.endswith(vt.TEXT_POINTER) for t in texts)
+        column = fig.text_stats['column']
+        assert column == figure_column(analysis, extra, elements, SETTINGS) and vc.problems(column) == []
+        assert fig.text_stats['overflow'] == 0 and fig.text_stats['text'].bullets  # the VerdictText it was built from
+        drawn = ' '.join(t.get_text() for t in fig.texts if t.get_gid() == 'verdict_column')
+        assert column.header.word in drawn and vc.plain(column.why.sentences[0]).split()[0] in drawn
+        assert vt.TEXT_POINTER not in drawn and '↑' not in drawn
     finally:
         plt.close(fig)
 
@@ -262,7 +269,7 @@ def test_the_figure_draws_the_bullets(zlk):
 
 
 def _benchmark(example: str):
-    """(analysis, text) of a secular/ZLK benchmark record, analysed as `reclassify_secular_zlk` does."""
+    """(analysis, text) of a secular/ZLK benchmark record, analyzed as `reclassify_secular_zlk` does."""
     tools = Path(__file__).resolve().parents[3] / 'benchmark' / 'tools'
     sys.path.insert(0, str(tools))
     try:
@@ -296,7 +303,7 @@ def test_5026_is_below_the_resolution_with_one_centre():
     analysis, row, text = _benchmark('secular__5026__g+g2-g4-g6')
     ratio = float(re.search(rf'\|σ̇\|/\(1/T\) = {NUMBER}', _bullet(text, vt.SLOT_SCALE)).group(1))
     assert ratio == pytest.approx(0.0063 / 0.1296, abs=0.01)  # card g09-3: divisor 0.0063″/yr, 1/T 0.13″/yr
-    assert 'only one independent centre' in _bullet(text, vt.SLOT_OBJECTION)
+    assert 'only one independent center' in _bullet(text, vt.SLOT_OBJECTION)
     assert 'mostly g4' in _bullet(text, vt.SLOT_DECISIVE)
 
 
@@ -326,3 +333,29 @@ def test_1981_names_s6_the_distance_and_the_resolution():
     decisive = _bullet(text, vt.SLOT_DECISIVE)
     assert 'not yet separated from s6' in decisive and '1.85″/yr < 2.59″/yr' in decisive and 'resolution' in decisive
     assert 'too few cycles' not in _all(text)
+
+
+@pytest.mark.benchmark
+def test_88899_500kyr_objection_reads_the_deciding_episode():
+    """W34 (the W28 defect S4): the level LOW comes from the deciding episode's e-i integral (flag
+    ei_integral_not_held), not from the record's coupling; the objection prints the episode's numbers."""
+    analysis, row, text = _benchmark('zlk__88899__LK__500kyr')
+    objection = _bullet(text, vt.SLOT_OBJECTION)
+    assert 'not held in the deciding episode #1' in objection and 'η_H 1.24 > 0.5' in objection
+    assert 'so the level is low' in objection and 'the e-i line below)' not in objection
+    eta = float(row['zlk_ei_episode_eta_h'])
+    assert f'η_H {vt.fmt(eta)} > {vt.fmt(SETTINGS.zlk_ei_h_residual_max)}' in objection
+
+
+@pytest.mark.benchmark
+def test_1981_says_why_the_level_is_certain():
+    analysis, row, text = _benchmark('zlk__1981__LK')
+    line = _bullet(text, vt.SLOT_DECISIVE, 'Why no cap')
+    assert f'ρ_max {vt.fmt(float(row["zlk_gate_rho_max"]))} ≥ 3' in line and 'kinematic_excluded' in line and 'CERTAIN' in line
+
+
+@pytest.mark.benchmark
+def test_2010_hy22_says_why_it_is_invalid():
+    analysis, row, text = _benchmark('zlk__2010_HY22__LK')
+    assert _bullet(text, vt.SLOT_VERDICT) == 'INVALID: the orbit is unphysical: e reaches 2.11 > 1 (hyperbolic); no angle is read.'
+    assert 'turns' not in _all(text).split('SENTENCES')[0] and not _bullet(text, vt.SLOT_SCALE)

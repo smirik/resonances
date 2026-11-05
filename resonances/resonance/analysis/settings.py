@@ -98,10 +98,10 @@ class AnalysisSettings:
         'MMR_SUBFLOOR_PASS',
         'bool',
         'rule G1f (card g08-2 B): a two-body angle that is not 1:1 and has no libration over the record at its floor is '
-        'analysed again at the floor max(T0_th / sqrt(MMR_STRENGTH_CHECK_RATIO), 2 dt FILTER_MIN_LIBRATION_CUTOFFS), '
+        'analyzed again at the floor max(T0_th / sqrt(MMR_STRENGTH_CHECK_RATIO), 2 dt FILTER_MIN_LIBRATION_CUTOFFS), '
         'T0_th the shortest small-amplitude period of its directly averaged potential at snapshots consistent with '
         "sigma's swings; kept only when its decisive cycle is faster than the floor, F passes by direct averaging, the "
-        'theoretical centre lies inside every observed swing and L4 passes (2001 VC2 16E-17: 105 yr against T0_th 112 '
+        'theoretical center lies inside every observed swing and L4 passes (2001 VC2 16E-17: 105 yr against T0_th 112 '
         'yr); the floor, short_period_aliased and three-body angles are unchanged (no new threshold: it reuses '
         'MMR_STRENGTH_CHECK_RATIO)',
     )
@@ -159,7 +159,7 @@ class AnalysisSettings:
         'MMR_COORBITAL_EDGE_TURN_ORBITS',
         'float',
         "rule coorbital_edge_turn: the raw angle and a are averaged over this many of the body's orbital periods (a "
-        'centred running mean, shorter at the record ends) before the edge reversal is read; the W28 C1 study\'s '
+        'centered running mean, shorter at the record ends) before the edge reversal is read; the W28 C1 study\'s '
         'average of a 1:1 leg (it drops the ripple of one orbit and its harmonics)',
         convention=True,
     )
@@ -262,9 +262,9 @@ class AnalysisSettings:
         'rule end_arc_extend (W28 C14, card g01-7 A): read how sigma_f meets the record edges after circulation. At '
         'the end, a pass of >= one revolution whose stretch after its last completed revolution lasts longer than '
         'MMR_END_ARC_SLOWDOWN_FACTOR x the longest revolution of the pass and, doubled, MMR_END_ARC_MIN_FLOOR_PERIODS x '
-        'the floor, with no turn of the slow centre and no librating episode in it: final_regime arc (range >= pi) or stall, flag extend_time '
+        'the floor, with no turn of the slow center and no librating episode in it: final_regime arc (range >= pi) or stall, flag extend_time '
         '(forward), and a non_resonant circulation is capped at medium (record_ends_unresolved). At the start the '
-        'mirror, and one reflection of the slow centre an edge cuts (< one revolution between the turn and the edge, '
+        'mirror, and one reflection of the slow center an edge cuts (< one revolution between the turn and the edge, '
         '>= one beyond it), give the flag only (backward at the start, forward at the end); so do the clean 1:1 edge '
         'legs of leaf G4c and the edge half-librations of G4h (False = none of this)',
     )
@@ -296,8 +296,8 @@ class AnalysisSettings:
         'rule coorbital_well_cut (W28 C7, cards g03-1 A, g03-9 A): a prograde 1:1 episode ends only where sigma crosses '
         'a separatrix (a revolution of sigma_f or of the orbit-averaged raw angle). A run whose cycle bands do not '
         'overlap is accepted when every full cycle holds a minimum of the averaged potential (to within the run\'s '
-        'turning-point prominence) and its centres stay within one turn; neighbouring accepted runs join across a '
-        'half-cycle that does not circulate; no regime cut (centre step, stall) applies. Changes of well and of '
+        'turning-point prominence) and its centers stay within one turn; neighboring accepted runs join across a '
+        'half-cycle that does not circulate; no regime cut (center step, stall) applies. Changes of well and of '
         'amplitude are annotations (episodes.csv marks). False = the band test, the regime cuts and the union of '
         'regimes as before',
     )
@@ -318,8 +318,8 @@ class AnalysisSettings:
         'bool',
         'rule G1q: a prograde 1:1 angle whose orbit-averaged angle turns inside the quasi-satellite well of the averaged '
         'potential during a stay of >= MMR_COORBITAL_QS_TRIGGER_PERIODS loops through its turns, and that has '
-        'no libration over the record, is analysed again with the floor MMR_COORBITAL_PERIOD_FLOOR_FACTOR x P_QS (episodes '
-        'centred outside the well keep the tadpole floor); kept when that pass finds a libration in the well (2010 CG236: '
+        'no libration over the record, is analyzed again with the floor MMR_COORBITAL_PERIOD_FLOOR_FACTOR x P_QS (episodes '
+        'centered outside the well keep the tadpole floor); kept when that pass finds a libration in the well (2010 CG236: '
         '8 yr)',
         convention=True,
     )
@@ -339,7 +339,7 @@ class AnalysisSettings:
         0.5,
         'MMR_COORBITAL_QS_WELL_SHARE',
         'float',
-        'rule G1q: an episode counts as centred in the quasi-satellite well (and takes its floor) only where the averaged '
+        'rule G1q: an episode counts as centered in the quasi-satellite well (and takes its floor) only where the averaged '
         "potential has that well on at least this share of the episode's samples; otherwise it keeps the tadpole floor",
         convention=True,
     )
@@ -513,7 +513,7 @@ class AnalysisSettings:
         'MMR_NEXT_CHECK_SPAN_FACTOR',
         'float',
         'insufficient_time/extend: the next check is round_up(max(f_min T, min(N, this x T))), N the estimate from the '
-        'period (base_extend_to_years); a budget, not a sufficiency estimate: the record is analysed again after it (N8); '
+        'period (base_extend_to_years); a budget, not a sufficiency estimate: the record is analyzed again after it (N8); '
         'also every secular/ZLK extension (`analysis.secular.extend`); minimal policy clause C: a needed veto not '
         'measured for lack of length extends when its record is <= this x T, else review',
         convention=True,
@@ -543,7 +543,7 @@ class AnalysisSettings:
         3,
         'LIBRATION_MIN_TURNING_POINTS',
         'int',
-        'turning points of one full cycle: an episode needs this many; a secular moving centre too. Changing it also '
+        'turning points of one full cycle: an episode needs this many; a secular moving center too. Changing it also '
         "changes the minimal policy's extend bound 2T / LIBRATION_MIN_TURNING_POINTS (fewer than three half-periods fit "
         'the record)',
     )
@@ -551,7 +551,7 @@ class AnalysisSettings:
         1,
         'LIBRATION_NEAR_EPISODE_TP_DEFICIT',
         'int',
-        'a run that would be a librating episode but for its count (half-cycles below pi, no over-the-top neighbour, '
+        'a run that would be a librating episode but for its count (half-cycles below pi, no over-the-top neighbor, '
         'period not below the shortest libration) and lacks at most this many turning points is a near-episode: a '
         'verdict without libration gets flag near_episode, confidence <= medium; 0 = off',
     )
@@ -569,8 +569,8 @@ class AnalysisSettings:
         'float',
         'MMR: two consecutive librating episodes join into one libration over the record (G2, `covering_union`) only '
         'when the gap between them is bounded: every sample of sigma_f there lies within this margin of the band of one '
-        'of the two (its centre at the facing full cycle +- its half_amp_max) or of the band carried linearly between '
-        'those centres (+- the larger half_amp_max), however long the gap (W28 g06-5: 2001 WK15 32E-39, 2002 XA 5J-2)',
+        'of the two (its center at the facing full cycle +- its half_amp_max) or of the band carried linearly between '
+        'those centers (+- the larger half_amp_max), however long the gap (W28 g06-5: 2001 WK15 32E-39, 2002 XA 5J-2)',
         unit='deg',
         convention=True,
     )
@@ -581,7 +581,7 @@ class AnalysisSettings:
         2.0,
         'LIBRATION_REGULAR_PERIOD_RATIO',
         'float',
-        'a run whose centre moves is judged again on its longest stretch of full periods <= this x their median (a slow '
+        'a run whose center moves is judged again on its longest stretch of full periods <= this x their median (a slow '
         'edge cycle is a change of regime, not part of the stationary libration), and may drop one edge half-cycle '
         'slower than this x the median half-period',
     )
@@ -590,7 +590,7 @@ class AnalysisSettings:
         'LIBRATION_EDGE_ARC_REV',
         'float',
         'MMR: an exit (entry) is observed, not suspected, when the orbit-averaged raw angle runs at least this many turns '
-        'away from the centre from the last turning point of the last episode to the record end (from the record start '
+        'away from the center from the last turning point of the last episode to the record end (from the record start '
         'to the first one) and moves monotonically there; that edge is then not covered (an arc > 2 pi is not a piece of '
         'libration)',
         unit='rev',
@@ -647,9 +647,9 @@ class AnalysisSettings:
         'LIBRATION_RETURN_MID_BAND_LEVELS',
         'int',
         'MMR: the mid-level closes a cycle by its phase return inside at least this many consecutive closing levels of '
-        'LIBRATION_RETURN_LEVELS (2: one closing neighbour), counted over the observable levels only: a level whose '
+        'LIBRATION_RETURN_LEVELS (2: one closing neighbor), counted over the observable levels only: a level whose '
         'crossing may lie beyond the record neither closes nor breaks the band, so a mid-level without an observable '
-        'neighbour closes alone (a 400-yr cosine on -104..304 yr); 1 = the mid-level alone',
+        'neighbor closes alone (a 400-yr cosine on -104..304 yr); 1 = the mid-level alone',
         convention=True,
     )
     libration_return_cycle_caps_medium: bool = _setting(
@@ -664,15 +664,15 @@ class AnalysisSettings:
         True,
         'LIBRATION_REGIME_CUTS',
         'bool',
-        'MMR: a run whose centre moves is cut at a centre step between two measured regimes or at a stall of its slow '
-        'centre (524522 1V-1, 385266 16N-27); off: such a run stays one rejected run',
+        'MMR: a run whose center moves is cut at a center step between two measured regimes or at a stall of its slow '
+        'center (524522 1V-1, 385266 16N-27); off: such a run stays one rejected run',
         convention=True,
     )
     libration_stall_min_cycles: int = _setting(
         3,
         'LIBRATION_STALL_MIN_CYCLES',
         'int',
-        'MMR: a run whose centre moves is cut at a stall of its slow centre: at least this many independent full cycles '
+        'MMR: a run whose center moves is cut at a stall of its slow center: at least this many independent full cycles '
         'whose midpoints move less per period than the cycles swing (385266 16N-27, 55-95 kyr); a steady drift has none',
         convention=True,
     )
@@ -698,7 +698,7 @@ class AnalysisSettings:
         True,
         'LIBRATION_REGIME_CUT_MARKS',
         'bool',
-        'MMR (rule regime_cut_mark, W28 C16, q-5 i): two neighbouring accepted pieces of a centre-step or stall cut are '
+        'MMR (rule regime_cut_mark, W28 C16, q-5 i): two neighboring accepted pieces of a center-step or stall cut are '
         'one episode when the last full cycle before the cut and the first after it share a band (m +- A overlap > 0) '
         'and a period (ratio <= LIBRATION_REGULAR_PERIOD_RATIO): sigma stays in one libration region, and the cut '
         'becomes a mark (episodes.csv marks centre_step@t0:t1, stall@t0:t1); disjoint bands stay cut (2013 VA14 60 '
@@ -706,33 +706,33 @@ class AnalysisSettings:
         convention=True,
     )
     libration_centre_cycles: float = _setting(
-        3.0, 'LIBRATION_CENTRE_CYCLES', 'float', 'the centre is the angle smoothed over this many cycles'
+        3.0, 'LIBRATION_CENTRE_CYCLES', 'float', 'the center is the angle smoothed over this many cycles'
     )
     libration_centre_tp_prominence_deg: float = _setting(
         10.0,
         'LIBRATION_CENTRE_TP_PROMINENCE_DEG',
         'float',
-        'floor of the prominence of a centre turn (4x the centre noise A/82)',
+        'floor of the prominence of a center turn (4x the center noise A/82)',
         unit='deg',
     )
     libration_centre_tp_factor: float = _setting(
-        2.0, 'LIBRATION_CENTRE_TP_FACTOR', 'float', 'a centre turn also needs this x the turning-point prominence'
+        2.0, 'LIBRATION_CENTRE_TP_FACTOR', 'float', 'a center turn also needs this x the turning-point prominence'
     )
     libration_centre_scale_tp_at_centre: bool = _setting(
         True,
         'LIBRATION_CENTRE_SCALE_TP_AT_CENTRE',
         'bool',
-        'MMR G2c: the analysis at the scale of the centre takes its turning points at the centre-turn prominence p_c '
+        'MMR G2c: the analysis at the scale of the center takes its turning points at the center-turn prominence p_c '
         '(MMR_TP_PROMINENCE_FLOOR_DEG raised to p_c there): the turns the precheck that qualified the scale reads: a swing '
-        'below p_c is no turn of the centre there (residue of the fast component W_c attenuates, or a libration too small '
+        'below p_c is no turn of the center there (residue of the fast component W_c attenuates, or a libration too small '
         'for this scale, which the fine scale judges) (2003 TX9 3E+2J-10); off: the floor of the fine scale',
     )
     mmr_scale_ladder: tuple = _setting(
         (0.71, 0.5, 0.35, 0.25, 0.18, 0.125),
         'MMR_SCALE_LADDER',
         'floats',
-        'W28 B7 (card g07-4 A), G2c scale ladder: the shorter cutoffs tried below a slow libration found at the centre '
-        'scale W_c, as fractions of P_slow / FILTER_MIN_LIBRATION_CUTOFFS (steps of sqrt 2, so neighbouring rungs are '
+        'W28 B7 (card g07-4 A), G2c scale ladder: the shorter cutoffs tried below a slow libration found at the center '
+        'scale W_c, as fractions of P_slow / FILTER_MIN_LIBRATION_CUTOFFS (steps of sqrt 2, so neighboring rungs are '
         'close enough to compare); a rung is kept only above LIBRATION_CENTRE_CYCLES x P_fast (P_fast: the shortest '
         'full period of the fine turning points) and only when the W_c window holds fewer than '
         'LIBRATION_CENTRE_MIN_ESTIMATES slow periods; empty = off (385533 7N-12: 22.7 kyr -> 7.95 kyr)',
@@ -742,24 +742,24 @@ class AnalysisSettings:
         0.1,
         'MMR_SCALE_TP_TIME_TOL',
         'float',
-        'W28 B7, G2c scale ladder: a rung keeps the slow extrema of W_c and of the neighbouring rung when, in their common '
-        'window, the turning points at the centre prominence agree in number and kind and each moves by at most this x '
+        'W28 B7, G2c scale ladder: a rung keeps the slow extrema of W_c and of the neighboring rung when, in their common '
+        'window, the turning points at the center prominence agree in number and kind and each moves by at most this x '
         'P_slow (the 21 G2c rows of the benchmark: the largest shift on a rung that keeps the count is 0.022; a fast '
         'wave that reaches p_c adds turning points instead)',
         convention=True,
     )
     libration_centre_returns_modulated: int = _setting(
-        3, 'LIBRATION_CENTRE_RETURNS_MODULATED', 'int', 'a bounded centre turning back this many times is modulated, not drift'
+        3, 'LIBRATION_CENTRE_RETURNS_MODULATED', 'int', 'a bounded center turning back this many times is modulated, not drift'
     )
     libration_centre_min_estimates: int = _setting(
         2,
         'LIBRATION_CENTRE_MIN_ESTIMATES',
         'int',
-        'a stationary centre needs this many independent full cycles (no shared half-cycle; every band overlapping); '
-        'with fewer (3 TPs = one cycle, one centre) the episode is accepted but its centre is not measured (L6 thin)',
+        'a stationary center needs this many independent full cycles (no shared half-cycle; every band overlapping); '
+        'with fewer (3 TPs = one cycle, one center) the episode is accepted but its center is not measured (L6 thin)',
     )
     libration_modulated_range_max_rad: float = _setting(
-        PI, 'LIBRATION_MODULATED_RANGE_MAX_RAD', 'float', 'modulated: range of the centre below this', unit='rad'
+        PI, 'LIBRATION_MODULATED_RANGE_MAX_RAD', 'float', 'modulated: range of the center below this', unit='rad'
     )
     libration_slip_tolerance: float = _setting(
         0.2, 'LIBRATION_SLIP_TOLERANCE', 'float', 'a slip is a step of 2 pi (1 +- this) of the oscillation midpoint', convention=True
@@ -799,7 +799,7 @@ class AnalysisSettings:
         2.0,
         'LIBRATION_CIRCULATION_NET_REV',
         'float',
-        'G4b: the angle circulates when the slow centre advances by at least this many revolutions net over the window '
+        'G4b: the angle circulates when the slow center advances by at least this many revolutions net over the window '
         '(|c(t1) - c(t0)| / 2pi), even when its largest monotone pass stays below one (a staircase with small step-backs); '
         'also in the angle word of K2 (142694 1V+3S-7 200 kyr, 2.75 rev: a circulation; '
         '21028 7E-10M-6, 1.81 rev: a drift)',
@@ -953,6 +953,16 @@ class AnalysisSettings:
         "constant (a periodic V has no mean force over a closed cycle; on a ~100-deg arc the constant is nearly collinear "
         "with the harmonics and moved 137295 1N-2's V_F well 279 -> 338 deg), and a moving frame subtracts its own "
         "acceleration s'' from c a_dot instead",
+    )
+    separatrix_vf_period_law: bool = _setting(
+        True,
+        'SEPARATRIX_VF_PERIOD_LAW',
+        'bool',
+        'R0 with a (the V_E ~ V_F correlation route, not the 1:1 energy integral): V_F must also carry the observed period, '
+        'the median T_obs/T_pred(V_F) over the eligible compared cycles within SEPARATRIX_PERIOD_TOL of 1 (T_pred at the '
+        "cycle's energy recomputed in V_F; a correlation does not see a scale factor between V_E and V_F: a force 10x too "
+        'strong correlates 1.00 and gives a period law 3.4); no finite law: not_measured. Off: the correlation alone, for '
+        'comparison',
     )
     separatrix_vevf_arc: bool = _setting(
         True,
@@ -1353,16 +1363,16 @@ class AnalysisSettings:
         'MMR_RIPPLE_ON_ARC',
         'bool',
         'W28 B6b: an accepted episode with half-amplitude below MMR_A_RESPONSE_MIN_AMP_DEG (L4 and R0 not measurable) '
-        'whose identity does not pass (fails or not measured), on a record whose slow centre turns back once or twice within one '
+        'whose identity does not pass (fails or not measured), on a record whose slow center turns back once or twice within one '
         'revolution (an unfinished slow swing), is an unconfirmed ripple, no episode of the angle (episodes.csv '
-        'forced_wave unconfirmed_ripple): G5a/G6 read the slow centre (insufficient_time, extend). Never a record-'
+        'forced_wave unconfirmed_ripple): G5a/G6 read the slow center (insufficient_time, extend). Never a record-'
         'covering episode nor a 1:1 angle; a real small libration keeps its passing identity (2004 YG1 9M-10J-4)',
     )
     mmr_slow_swing_in_well: bool = _setting(
         True,
         'MMR_SLOW_SWING_IN_WELL',
         'bool',
-        'W28 B6c, G5w: a slow centre that turns back twice within one revolution, whose half-swing between the turns '
+        'W28 B6c, G5w: a slow center that turns back twice within one revolution, whose half-swing between the turns '
         'passes the slow identity and whose a swing and period 2 (t2 - t1) agree with the directly averaged pendulum at'
         ' its amplitude within sqrt(MMR_STRENGTH_CHECK_RATIO), is an unfinished slow libration: insufficient_time/arc, '
         'not drift nor few_cycles (523683 2U-9); unmeasured (one turn, three-body, 1:1) keeps the old reading (the '
@@ -1372,8 +1382,8 @@ class AnalysisSettings:
         True,
         'MMR_SLOW_SCALE_REPORT',
         'bool',
-        'W28 B10a (cards g08-7, g05-2): store the slower libration of the centre at its own scale: the runs G2c finds at '
-        'the centre scale W_c (covering the record or not; episodes.csv scale=slow), else the turns of the slow centre '
+        'W28 B10a (cards g08-7, g05-2): store the slower libration of the center at its own scale: the runs G2c finds at '
+        'the center scale W_c (covering the record or not; episodes.csv scale=slow), else the turns of the slow center '
         'of a librating angle; its period, cycles, identity, B1, nearest secular period and cause with a level '
         '(identified / possible / unknown; columns slow_*). A description: only K3s reads it',
     )
@@ -1414,7 +1424,7 @@ class AnalysisSettings:
         0.2, 'MMR_KIN_SLOW_R2_MAX', 'float', 'kinematic: slow a_dot answers sin sigma_slow with R^2 <= this', convention=True
     )
     mmr_kin_min_points: int = _setting(
-        3, 'MMR_KIN_MIN_POINTS', 'int', 'independent points (length / centre window) needed for the kinematic correlation'
+        3, 'MMR_KIN_MIN_POINTS', 'int', 'independent points (length / center window) needed for the kinematic correlation'
     )
     mmr_kin_period_tol: float = _setting(
         0.1,
@@ -1426,8 +1436,8 @@ class AnalysisSettings:
         0.5,
         'MMR_KIN_RIPPLE_SHARE_MAX',
         'float',
-        'kinematic drift of the slow centre (K2): the largest swing of a librating episode (2 x its largest half-amplitude) '
-        'stays below this x the range of the slow centre, so the episodes are a ripple on the drift, not the libration '
+        'kinematic drift of the slow center (K2): the largest swing of a librating episode (2 x its largest half-amplitude) '
+        'stays below this x the range of the slow center, so the episodes are a ripple on the drift, not the libration '
         '(21028 7E-10M-6: 117 deg against 741 deg, 0.16; the Hilda 153 3J-2: 0.95)',
         convention=True,
     )
@@ -1435,8 +1445,8 @@ class AnalysisSettings:
         True,
         'MMR_KINEMATIC_DRIFT_WORD',
         'bool',
-        'a verdict non_resonant/kinematic_drift of K2 reports the angle word of its slow centre, not of the ripple the '
-        'geometry reads as episodes: drift, or circulation when the centre passes a revolution in one direction (G4) '
+        'a verdict non_resonant/kinematic_drift of K2 reports the angle word of its slow center, not of the ripple the '
+        'geometry reads as episodes: drift, or circulation when the center passes a revolution in one direction (G4) '
         '(21028 7E-10M-6: a drift; 2897 35S-4: 10.8 rev, a circulation); off: the geometry word (episodic) stays',
         convention=True,
     )
@@ -1444,8 +1454,8 @@ class AnalysisSettings:
         1.0,
         'MMR_KIN_DRIFT_SHIFT_RATIO',
         'float',
-        'a kinematic libration (step 3, B1 or the kinematic cycle) whose decisive episode moves its centre by more than '
-        'this x its mean amplitude (L6) is decided as K2: non_resonant/kinematic_drift with the slow centre\'s word, drift '
+        'a kinematic libration (step 3, B1 or the kinematic cycle) whose decisive episode moves its center by more than '
+        'this x its mean amplitude (L6) is decided as K2: non_resonant/kinematic_drift with the slow center\'s word, drift '
         'or circulation (62243 1M-4J-1, L6 1.82: a drift)',
         convention=True,
     )
@@ -1461,7 +1471,7 @@ class AnalysisSettings:
         convention=True,
     )
     mmr_b5_ratio_full: float = _setting(
-        2.0, 'MMR_B5_RATIO_FULL', 'float', 'slow libration excluded with a full margin: centre rate >= this x the bound'
+        2.0, 'MMR_B5_RATIO_FULL', 'float', 'slow libration excluded with a full margin: center rate >= this x the bound'
     )
     mmr_b5_exact_sigma: float = _setting(2.0, 'MMR_B5_EXACT_SIGMA', 'float', 'exact commensurability: |nu_c| < this x its error')
     mmr_c4_ratio_full: float = _setting(1.5, 'MMR_C4_RATIO_FULL', 'float', 'C4 full: <|sigma_dot|> / (2 omega0_K) >= this')
@@ -1483,22 +1493,22 @@ class AnalysisSettings:
         unit='deg',
     )
     mmr_subresonance_range_ratio: float = _setting(
-        0.5, 'MMR_SUBRESONANCE_RANGE_RATIO', 'float', 'candidate: its centre range <= this x the range of the catalogue angle centre'
+        0.5, 'MMR_SUBRESONANCE_RANGE_RATIO', 'float', 'candidate: its center range <= this x the range of the catalog angle center'
     )
     mmr_subresonance_rate_floor_rad_kyr: float = _setting(
-        0.02, 'MMR_SUBRESONANCE_RATE_FLOOR_RAD_KYR', 'float', 'candidate: |centre rate| <= max(2 sigma_rate, this)', unit='rad/kyr'
+        0.02, 'MMR_SUBRESONANCE_RATE_FLOOR_RAD_KYR', 'float', 'candidate: |center rate| <= max(2 sigma_rate, this)', unit='rad/kyr'
     )
     mmr_subresonance_pass_max_rad: float = _setting(
-        PI, 'MMR_SUBRESONANCE_PASS_MAX_RAD', 'float', 'candidate: largest monotone centre pass below this', unit='rad'
+        PI, 'MMR_SUBRESONANCE_PASS_MAX_RAD', 'float', 'candidate: largest monotone center pass below this', unit='rad'
     )
     mmr_subresonance_phi0_coh_min: float = _setting(
         0.8, 'MMR_SUBRESONANCE_PHI0_COH_MIN', 'float', 'test A: phi0 coherence of the force law relative to the subresonance'
     )
     mmr_subresonance_phi0_coh_gain: float = _setting(
-        0.2, 'MMR_SUBRESONANCE_PHI0_COH_GAIN', 'float', 'test A: and higher than for the catalogue angle by this'
+        0.2, 'MMR_SUBRESONANCE_PHI0_COH_GAIN', 'float', 'test A: and higher than for the catalog angle by this'
     )
     mmr_subresonance_centre_tol_deg: float = _setting(
-        30.0, 'MMR_SUBRESONANCE_CENTRE_TOL_DEG', 'float', 'test B: mean centre within this of 0 or pi', unit='deg'
+        30.0, 'MMR_SUBRESONANCE_CENTRE_TOL_DEG', 'float', 'test B: mean center within this of 0 or pi', unit='deg'
     )
     mmr_subresonance_centre_e_max: float = _setting(
         0.3, 'MMR_SUBRESONANCE_CENTRE_E_MAX', 'float', 'test B is skipped above this eccentricity'
@@ -1510,7 +1520,7 @@ class AnalysisSettings:
         0.2,
         'MMR_SUBRESONANCE_TIE_FRACTION',
         'float',
-        'test C: centre ranges within this fraction tie; also the tie band of the theory choice (A6b: theoretical centre ranges within it, W decides)',
+        'test C: center ranges within this fraction tie; also the tie band of the theory choice (A6b: theoretical center ranges within it, W decides)',
     )
     mmr_subresonance_theory: bool = _setting(
         True,
@@ -1522,7 +1532,7 @@ class AnalysisSettings:
         20.0,
         'MMR_SUBRESONANCE_THEORY_RMS_DEG',
         'float',
-        'test D: RMS of the centre about pi - arg P(beta); the theory chooses the member (A6b) only when the measured centre follows it this closely',
+        'test D: RMS of the center about pi - arg P(beta); the theory chooses the member (A6b) only when the measured center follows it this closely',
         unit='deg',
     )
     mmr_subresonance_theory_single_ratio: float = _setting(
@@ -1561,7 +1571,7 @@ class AnalysisSettings:
         'MMR_SUBRESONANCE_CYCLE_PERIOD_RATIO',
         'float',
         'the scan window is the longest stretch of the run whose full periods stay <= this x their median (the slow cycles '
-        'at the run edges are near the separatrix of the modulated pendulum, where no centre is stationary)',
+        'at the run edges are near the separatrix of the modulated pendulum, where no center is stationary)',
     )
     mmr_subresonance_omega_harmonics: int = _setting(
         2,
@@ -1591,24 +1601,24 @@ class AnalysisSettings:
         1.0,
         'MMR_SUBRESONANCE_CENTRE_MOVE_RATIO',
         'float',
-        'a centre moves over an accepted episode when its travel exceeds this x the episode median half-amplitude: '
-        "trigger T7 (the multiplet theory's centre of the catalogue member, two-body), the geometric part of the "
-        'diagnostic trigger T8 (the observed centre shift while the bands overlap; 2003 ND 61 against 55 deg) and the '
-        "composite reading of A6b (no planar member's theoretical centre stands)",
+        'a center moves over an accepted episode when its travel exceeds this x the episode median half-amplitude: '
+        "trigger T7 (the multiplet theory's center of the catalog member, two-body), the geometric part of the "
+        'diagnostic trigger T8 (the observed center shift while the bands overlap; 2003 ND 61 against 55 deg) and the '
+        "composite reading of A6b (no planar member's theoretical center stands)",
         convention=True,
     )
     matrix_2body_order_max: int = _setting(
         10,
         'MATRIX_2BODY_ORDER_MAX',
         'int',
-        'largest order of the two-body catalogue; also the largest degree (sum of |slow coefficients|) of the '
+        'largest order of the two-body catalog; also the largest degree (sum of |slow coefficients|) of the '
         'subresonances scanned and listed (members of degree |q| always)',
     )
     matrix_3body_order_max: int = _setting(
         6,
         'MATRIX_3BODY_ORDER_MAX',
         'int',
-        'largest order of the three-body catalogue; also the largest degree (sum of |slow coefficients|) of the '
+        'largest order of the three-body catalog; also the largest degree (sum of |slow coefficients|) of the '
         'subresonances scanned and listed (members of degree |q| always)',
     )
     mmr_owner_search: str = _setting(
@@ -1653,7 +1663,34 @@ class AnalysisSettings:
         'MMR_OWNER_BAND_FACTOR',
         'float',
         'owner test: a_dot band [P/f, f P] around the a-wave period P; P is searched within a factor f of P_cyc; '
-        'force-law windows keep f P (x filter_edge_trim_cutoffs) from the record ends',
+        'force-law windows keep MMR_OWNER_BAND_EDGE_TRIM x f P from the record ends',
+    )
+    mmr_owner_band_edge_trim: float = _setting(
+        1.0,
+        'MMR_OWNER_BAND_EDGE_TRIM',
+        'float',
+        "owner test: the force-law windows keep this x f P (the band's longest period) from either end of the record "
+        '(2 P at f = 2; conservative, the trim before 2026-11-05); stage 3 of the search uses MMR_OWNER_FITTED_EDGE_TRIM',
+        convention=True,
+    )
+    mmr_owner_fitted_edge_trim: float = _setting(
+        0.375,
+        'MMR_OWNER_FITTED_EDGE_TRIM',
+        'float',
+        "owner search, stage 3 (too few windows at MMR_OWNER_SHORT_WINDOW_CYCLES): the trim x f P. Measured "
+        '(2026-11-05, filtering.band_pass, order 2, f = 2): the band-pass edge error falls to its interior level (0.14 '
+        'of the wave) at 0.75 P = 0.375 f P from an end',
+    )
+    mmr_owner_fitted_min_cycles: float = _setting(
+        1.5,
+        'MMR_OWNER_FITTED_MIN_CYCLES',
+        'float',
+        'owner search, stage 3: MMR_FORCE_MIN_WINDOWS windows (step MMR_FORCE_WINDOW_STEP) are fitted to the span left '
+        'by MMR_OWNER_FITTED_EDGE_TRIM, each at most MMR_OWNER_SHORT_WINDOW_CYCLES and at least this many periods long '
+        '(1.5 x 1.5 + 1.5 trimmed = 3.75 P of record); flag owner_fitted_windows; the sine fit (sin, cos, 1) separates '
+        'from one cycle of sigma, half a cycle of margin; 0 = stage 3 off (the author 2026-11-05: 385458 9N-17, 4.6 '
+        'cycles, is enough to test the alternatives)',
+        convention=True,
     )
     mmr_owner_ripple_factor: float = _setting(
         2.0,
@@ -1867,7 +1904,7 @@ class AnalysisSettings:
         'MMR_OWNER_IDENTITY_SPAN_MAX_DEG',
         'float',
         "owner route 'identity' (cost pre-filter): only a candidate whose low-passed phi_f spans less than this on sigma's "
-        'decisive window is analysed in full (a phi running a full turn there does not librate about a fixed centre)',
+        'decisive window is analyzed in full (a phi running a full turn there does not librate about a fixed center)',
         unit='deg',
     )
     mmr_owner_identity_top_n: int = _setting(
@@ -1910,7 +1947,7 @@ class AnalysisSettings:
         'implausible_strength: required/theory >= this or <= 1/this (two-body direct averaging; with the e^q scale of '
         'three-body terms, whose f(alpha) reaches ~1e2 (2003 EH16 1M-3J-1: 254), the lower side only with legal e^q); '
         'rule 5s: a librating angle for which neither L4 nor R0 passes (a measured failure included) and whose period '
-        'needs >= this x a computed strength is non_resonant (two-body direct averaging or the harmonic, a centre '
+        'needs >= this x a computed strength is non_resonant (two-body direct averaging or the harmonic, a center '
         'outside the well excluded unless MMR_STRENGTH_FIRST_OUTSIDE_WELL; three-body only with legal e^q and when '
         'required / (mu e^q B^2) of the small-divisor envelope stays >= this too)',
     )
@@ -1948,7 +1985,7 @@ class AnalysisSettings:
         2.0,
         'MMR_STRENGTH_FIT_HALF_WIDTH_DEG',
         'float',
-        'two-body strength: the curvature at the centre is the quadratic fit over +- this (the 1:1 tadpole 9/4 is 0.08 % off '
+        'two-body strength: the curvature at the center is the quadratic fit over +- this (the 1:1 tadpole 9/4 is 0.08 % off '
         'at 2 deg, 0.5 % at 5 deg)',
         unit='deg',
     )
@@ -1962,14 +1999,14 @@ class AnalysisSettings:
         3.0,
         'MMR_STRENGTH_MIN_DISTANCE_HILL',
         'float',
-        'two-body strength: at the centre the body must stay this many Hill radii a_P (mu/3)^(1/3) from the planet along the '
+        'two-body strength: at the center the body must stay this many Hill radii a_P (mu/3)^(1/3) from the planet along the '
         'average, else the averaged problem does not hold there (an encounter) and the strength is not measured',
     )
     mmr_strength_mp: str = _setting(
         'auto',
         'MMR_STRENGTH_MP',
         'str',
-        "two-body strength where double precision cannot resolve the well (no stable centre, no converged curvature, or a "
+        "two-body strength where double precision cannot resolve the well (no stable center, no converged curvature, or a "
         "curvature below MMR_STRENGTH_DOUBLE_FLOOR x |D0|): 'auto' = mu_P a 2|C| of the resonant harmonic C in extended "
         "precision (mpmath; method direct_harmonic); 'off' = not measured, as before",
     )
@@ -2029,7 +2066,7 @@ class AnalysisSettings:
         400,
         'MMR_CENTRE_TRACK_NODES',
         'int',
-        'moving centre: the most nodes of the track c(t) of the averaged-potential minimum along a record; the node step '
+        'moving center: the most nodes of the track c(t) of the averaged-potential minimum along a record; the node step '
         'is max(P_c, span / this). Numerical resolution, not a threshold: the well moves on secular time scales (2013 '
         'AS27 31E-36: 56 deg in 20 kyr, 0.2 deg per node), c(t) is interpolated linearly between nodes',
     )
@@ -2054,7 +2091,7 @@ class AnalysisSettings:
     )
     mmr_l5_ratio_fail: float = _setting(2.0, 'MMR_L5_RATIO_FAIL', 'float', 'L5 fails beyond this x the full threshold')
     mmr_l5_e_caveat: float = _setting(0.2, 'MMR_L5_E_CAVEAT', 'float', 'above this e the period-amplitude law may fail: L5 at most thin')
-    mmr_l6_shift_full: float = _setting(0.5, 'MMR_L6_SHIFT_FULL', 'float', 'L6 full: centre shift <= this x the mean amplitude')
+    mmr_l6_shift_full: float = _setting(0.5, 'MMR_L6_SHIFT_FULL', 'float', 'L6 full: center shift <= this x the mean amplitude')
     mmr_l7_gap_full: float = _setting(0.7, 'MMR_L7_GAP_FULL', 'float', 'L7 full: coverage gaps <= this x the period')
     mmr_l8_step_full_deg: float = _setting(
         10.0,
@@ -2073,7 +2110,7 @@ class AnalysisSettings:
     )
     mmr_l8_gain_fail: float = _setting(0.5, 'MMR_L8_GAIN_FAIL', 'float', 'L8 fails: filter gain at the cycle period below this')
     mmr_c1_rev_full: float = _setting(
-        10.0, 'MMR_C1_REV_FULL', 'float', 'C1 full: largest centre pass of a circulation in revolutions', unit='rev'
+        10.0, 'MMR_C1_REV_FULL', 'float', 'C1 full: largest center pass of a circulation in revolutions', unit='rev'
     )
     mmr_c3_modulation_max: float = _setting(
         0.3, 'MMR_C3_MODULATION_MAX', 'float', 'C3: rate modulation below this fraction of the mean rate'
@@ -2144,7 +2181,7 @@ class AnalysisSettings:
         0.8,
         'MMR_S_CLOSE_RATIO',
         'float',
-        "S full (none accepted): the closest member's centre range > this x that of sigma0 in the same scan window",
+        "S full (none accepted): the closest member's center range > this x that of sigma0 in the same scan window",
     )
 
     # --- Secular and Lidov-Kozai angles (analysis/secular, analysis/zlk) --------------------------
@@ -2240,7 +2277,7 @@ class AnalysisSettings:
         90.0,
         'ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG',
         'float',
-        'a run of omega breaks where a half-cycle swings this or more, or its centre jumps by more (MMR and secular '
+        'a run of omega breaks where a half-cycle swings this or more, or its center jumps by more (MMR and secular '
         'angles: 180): the averaged Lidov-Kozai Hamiltonian depends on 2 omega, so an island (omega about 90 or 270 deg) '
         'is at most half a turn wide; physical, not a convention',
         unit='deg',
@@ -2375,33 +2412,21 @@ class AnalysisSettings:
         'on large cycles and stays a column',
         convention=True,
     )
-    zlk_episodic_no_verdict: str = _setting(
-        'ei',
-        'ZLK_EPISODIC_NO_VERDICT',
-        'str',
-        "an episodic ZLK omega whose free-omega gate gives no verdict (planetary_residual, short_window, undefined_phase, "
-        "unavailable without the co-orbital detail): 'ei' = transient only when the deciding episode's own e-i coupling "
-        "is zlk (zlk_ei_episode_coupling), else uncertain/gate_unavailable (-9); 'uncertain' = always -9; 'keep' = "
-        "transient as the geometry says. A policy: with 'ei' the anticorrelation of e and i at constant H is a status "
-        "condition for such a row; the W28 tree only (v2_verdict): the minimal policy gives such a row the geometry's "
-        'status with the flag gate_unavailable',
-        convention=True,
-    )
     zlk_centre_model_r_min: float = _setting(
         0.9,
         'ZLK_CENTRE_MODEL_R_MIN',
         'float',
-        'zlk_centre_origin: the slow line of the centre of omega is named after a model (the phase wave of the fitted '
-        'forced eccentricity vector, forced_beat; the node, node) when the model, smoothed like the centre, correlates '
-        'with it at least this (591986: 0.99 for g6-g5); the centre-scale guard (sec_centre_rejected) reads the same test',
+        'zlk_centre_origin: the slow line of the center of omega is named after a model (the phase wave of the fitted '
+        'forced eccentricity vector, forced_beat; the node, node) when the model, smoothed like the center, correlates '
+        'with it at least this (591986: 0.99 for g6-g5); the center-scale guard (sec_centre_rejected) reads the same test',
         convention=True,
     )
     zlk_centre_model_amp_factor: float = _setting(
         2.0,
         'ZLK_CENTRE_MODEL_AMP_FACTOR',
         'float',
-        'a model explains the slow wave of the centre of omega (zlk_centre_origin, and the centre-scale guard '
-        'sec_centre_rejected) only when its swing, smoothed like the centre, is within [1/x, x] of the centre\'s '
+        'a model explains the slow wave of the center of omega (zlk_centre_origin, and the center-scale guard '
+        'sec_centre_rejected) only when its swing, smoothed like the center, is within [1/x, x] of the center\'s '
         '(zlk_centre_model_gain; 591986 g6-g5: about 1): correlation alone is blind to size, a forced term of zero '
         'amplitude must not explain a real wave',
         convention=True,
@@ -2410,8 +2435,8 @@ class AnalysisSettings:
         2.0,
         'ZLK_CENTRE_MIN_CYCLES',
         'float',
-        'the slow line of the centre (zlk_centre_*, secular modulated: sec_centre_*) is searched between the centre '
-        'smoothing W_c and the centre track span / this: a period is measured only when the track holds this many of it; '
+        'the slow line of the center (zlk_centre_*, secular modulated: sec_centre_*) is searched between the center '
+        'smoothing W_c and the center track span / this: a period is measured only when the track holds this many of it; '
         'a column only',
         convention=True,
     )
@@ -2555,7 +2580,6 @@ CHOICES = {
     'mmr_force_contamination': ('lattice', 'off'),
     'dryrun_fair': ('optional', 'required'),
     'zlk_angle_frame': ('invariable', 'ecliptic'),
-    'zlk_episodic_no_verdict': ('ei', 'uncertain', 'keep'),
     'confidence_geometry_only_max': ('low', 'medium', 'high', 'certain'),
 }
 
@@ -2658,6 +2682,8 @@ POSITIVE = (
     'libration_return_period_tol',
     'libration_stall_min_cycles',
     'mmr_owner_band_factor',
+    'mmr_owner_band_edge_trim',
+    'mmr_owner_fitted_edge_trim',
     'mmr_owner_ripple_factor',
     'mmr_subresonance_cycle_period_ratio',
     'mmr_subresonance_centre_move_ratio',

@@ -7,21 +7,21 @@ reason given. Sources in `tmp/` are local and git-ignored.
 
 | Approach | Why rejected | When | Source |
 |---|---|---|---|
-| Episode-based rewrite (raw angle, coverage-gap episodes, σ–a confirmation) | Lost obvious transients; recall on transients matters more | Jul | programme history |
+| Episode-based rewrite (raw angle, coverage-gap episodes, σ–a confirmation) | Lost obvious transients; recall on transients matters more | Jul | program history |
 | Separate portrait classifier (rules or CNN/ViT on phase portraits) | The portrait is a function of σ(t) by the a↔σ identity: no independent evidence. ML at most ranks a review queue; transient recall dropped from 0.85 to 0.6 | Oct 13 | `tmp/status-design-2026-10-13/CHECKS-RESEARCH.md` §0 |
 | "σ and a share a period", σ–a ellipses, secular portraits as proof of resonance | Automatic by the identity σ̇ = Σk n + k n(a) + p ϖ̇; σ was reconstructed from a within 1–2 % in all 121 atlas cases, forced ripples included | Sep 25 | atlas; `PROPOSAL.md` |
 | Turning-point counts ("7 TP") to separate transient from near_separatrix | Not physical; residence times in a chaotic layer are heavy-tailed | Oct 15 | `research/SEPARATRIX.md` §2.6 |
 | Fixed 10 % windows, early circulation exits of the old TTO classifier as a fallback | Historical failure modes; the TTO classifier was deleted rather than kept in parallel | Oct 13–16 | review |
 | Analytic union of sudden-energy and adiabatic-action separatrix zones as "conservative" | Over-zones at λ ≪ 1, misses the reach near λ = 0.5; the e^q half-range had also been doubled (52356: 0.609 → 0.304) | Oct 15 | `reviews/PHYSICS.md` B1 |
 | Minimum label counts per calibration cell as a cap on the shown level (≥ 100 labels) | The author dropped it: show the physically earned level; calibration is reported only | Oct 16 | W8/W9 |
-| Rule A "every maximum of σ above every minimum" | Rejects the real moving-centre 2013 AS27 and the capture of 277617; at most diagnostic | Oct 17 | `impl/w17/q3-centre-rule/REPORT-fixed.md` |
+| Rule A "every maximum of σ above every minimum" | Rejects the real moving-center 2013 AS27 and the capture of 277617; at most diagnostic | Oct 17 | `impl/w17/q3-centre-rule/REPORT-fixed.md` |
 | T_obs < T0(K_max) as an argument against resonance | External driving can sustain motion in a well at a faster period | Oct 17 | `impl/w17/q3-23240/REPORT-fixed.md` |
 | A fitted pure 2(ϖ − ϖ_J) term in ȧ | A λ-free secular term cannot change a | Oct 17 | same |
 | Frozen-potential portrait overlays on by default | Near-separatrix period agreement proves nothing; h errors 0.1–0.2 at low e; (σ, a) stretches the e origin into a line | Oct 17 | `impl/w17/q15-frozen-portrait/REPORT-fixed.md` |
 | `island_switch` flag for ZLK | Not robust; 162474 over 1.5 Myr is simply transient | Oct 17 | W16 |
 | Gap length (gap ≤ k × (P_l + P_r), D1b) as the criterion for joining episodes | The length of a gap says nothing about an exit: 2001 WK15 (1.5, 1.7) and 2002 XA (1.05) stay inside the band; replaced by the bounded gap | Oct 31 | W28 g06-5, A7 |
-| The low-pass centre track as the band's centre in a gap | It is σ_f's own running mean: it follows any excursion slower than W_c = 3 P (π + 200° over 2 P overshoots it by 31°); the gap is read against the neighbours' own bands and the band carried linearly between their centres instead | Oct 31 | A7 (`tests/…/test_episode_detection.py` (x)) |
-| The episode's mean centre, or its first/last full cycle's midpoint (v₀ + 2v₁ + v₂)/4, as c of the MMR exit/entry test | Both mix the edge swing with the regime after it: 2016 JA 1E−1 (a horseshoe half-swing about 182°, then tadpole cycles about 282°) has its first turning point 206° from the mean and 190° from the full-cycle midpoint, so either reading saw an entry at that turning point (entry_suspected, medium); the edge half-cycle's midpoint holds it at the half-amplitude, < π (C9) | Oct 31 | `w28/scratch/impl-C9/` |
+| The low-pass center track as the band's center in a gap | It is σ_f's own running mean: it follows any excursion slower than W_c = 3 P (π + 200° over 2 P overshoots it by 31°); the gap is read against the neighbors' own bands and the band carried linearly between their centers instead | Oct 31 | A7 (`tests/…/test_episode_detection.py` (x)) |
+| The episode's mean center, or its first/last full cycle's midpoint (v₀ + 2v₁ + v₂)/4, as c of the MMR exit/entry test | Both mix the edge swing with the regime after it: 2016 JA 1E−1 (a horseshoe half-swing about 182°, then tadpole cycles about 282°) has its first turning point 206° from the mean and 190° from the full-cycle midpoint, so either reading saw an entry at that turning point (entry_suspected, medium); the edge half-cycle's midpoint holds it at the half-amplitude, < π (C9) | Oct 31 | `w28/scratch/impl-C9/` |
 | Episode rules (b) "the claimed regular core must pass by itself" and (c) "carry a fine-scale force failure into the coarse verdict" | (c) fires on a pass that found no libration; (b) deferred | Oct 25 | `w23-work/design/spec/SPEC.md` §1 |
 | Rule (b) in its current form ("the claimed regular core must pass by itself": `_find_episodes` requires `split[regular].accepted`) | Measured on 2003 TX9 3E+2J-10 at 5 yr: it turns the author's uncertain into resonant/low, because the measured objection (R0's failure) of the candidate is lost when the scale changes; it also shifts 719 55S-8's episode. Return condition: the measured objection of the same candidate must not be lost at another scale (strength and energy re-checked on every allowed scale; a conflict = uncertain with a scale-sensitivity mark). Rule (c) stays rejected | Oct 31 | W28 g11-6 B, g08-5 B |
 
@@ -30,12 +30,13 @@ reason given. Sources in `tmp/` are local and git-ignored.
 | Approach | Why rejected | When | Source |
 |---|---|---|---|
 | μe^q or products of masses as upper bounds (hard rejection or owner acceptance) | Order estimates only; the coefficient reaches ~10². 17886's e^25 ratio 1.6e19 became 1.05–1.30 by direct averaging | Oct 16 | `impl/W3-FIXES.md`, W6 |
-| Gallardo's strength for statuses (Gallardo 2014 ρ(σ)) | Reproduced exactly (his Table 1 within 0.3 %), but it is not the resonant coefficient and its normalisation is arbitrary; μ_req/μ_Gallardo varies 7× between resonances (4J-2S-1 1.0–1.1, 5J-2S-2 2.3–2.8, 3J-1S-1 1.7–2.4, 1M+1J-2 0.4–0.6), more than the e^q scale (4×) | Oct 13, measured Oct 26 | `w24-work/gallardo/REPORT.md` |
+| Gallardo's strength for statuses (Gallardo 2014 ρ(σ)) | Reproduced exactly (his Table 1 within 0.3 %), but it is not the resonant coefficient and its normalization is arbitrary; μ_req/μ_Gallardo varies 7× between resonances (4J-2S-1 1.0–1.1, 5J-2S-2 2.3–2.8, 3J-1S-1 1.7–2.4, 1M+1J-2 0.4–0.6), more than the e^q scale (4×) | Oct 13, measured Oct 26 | `w24-work/gallardo/REPORT.md` |
 | "Force law in a clean model" (Sun + four giants) as the three-body theory | A tautology: for a pendulum with σ̇ = c(a − a*), ȧ = −(ω₀²/c) sin σ, so K = ω₀²/c is fixed by the period at any amplitude; any integration where the body librates returns μ_req | Oct 27 | `tasks/three-body-strength/TASK.md` |
+| An off-resonance probe as the package's three-body strength (clones shifted in a beyond the separatrix, σ circulates, K from the forced wave of a(σ)) | Works as a check (4J-2S-1 μ_req/μ_probe 0.99–1.01, 5J-2S-2 1.0–1.1 after removing the 2:1 term; refuses the two-well 3J-1S-1), but costs 15–30 s of integration per three-body row: too expensive for runs of thousands of objects (the author) | Nov 5 | `three-body-strength-2026-11-05/REPORT.md` |
 | Per-cycle period ∝ e^(−q/2) as a force test | Measured slopes −0.11…−0.27 against −0.5; fixed-slope R² negative in 5/6 rows (osculating e varies through forcing) | Oct 25 | `w23-work/design/2348/REPORT.md` |
 | A per-resonance coefficient calibrated on benchmark siblings, or cycle counts, to lift `strength_scale_only` | The verdict would depend on which bodies are in the benchmark; the coefficient must come from theory | Oct 25 | same |
 | Tightening co-orbital K/K_th to 0.75–1.25 | Removes real resonances (2016 HF2, WQ3, 2019 YB4, 614689 at 1.29–1.45), keeps the false 2024 WJ at 1.18 | Oct 16 | `impl/W4-REPORT.md` |
-| Deleting small turning-point pairs before estimating P_cyc | Selects the slow libration itself, so W_c = 3 P_cyc erases it (2011 KT19: 40 kyr → 120 kyr smoothing); the second centre-turn scale is used instead | Oct 16 | `impl/W5-Q12.md` |
+| Deleting small turning-point pairs before estimating P_cyc | Selects the slow libration itself, so W_c = 3 P_cyc erases it (2011 KT19: 40 kyr → 120 kyr smoothing); the second center-turn scale is used instead | Oct 16 | `impl/W5-Q12.md` |
 | Owner-grid frequency-coincidence veto | Fires on about half the sample by chance, real 1162/1362 included | Oct 17 | `impl/W12-REPORT.md` |
 | A failed order-of-magnitude strength (eq_scale, μ_iμ_j e^q) as a measured objection (leaf 5o) | The scale is known to a factor 1–100 (the coefficient): outside [1/x, x] it is a diagnostic. Leaf 5x keeps such a row uncertain/origin_unknown ('origin not established', 79653 3M+3J-7 at 39.5 ×) without calling the strength measured; 5o keeps O1 and the directly averaged F | Oct 31 | W28 g08-6 A, B9 |
 | Lifting caps for an implausible strength (R-IS, R-SP-IS) | The author changed the 2001 PG14 label; dropped | Oct 24 | DECISIONS D2 |
@@ -49,7 +50,7 @@ reason given. Sources in `tmp/` are local and git-ignored.
 | Approach | Why rejected | When | Source |
 |---|---|---|---|
 | Jump candidates from cycle-energy changes, merging by peak distance, timing by the steepest a | False jumps (2003 UG22 at 1.87 kyr; 3.5 kyr early; the 2021 BA horseshoe's own turn) | Oct 17 | `impl/W16-REPORT.md` |
-| The libration-image TP threshold patch alone | Lost UG22's early episode; accepted only with moving-centre geometry | Oct 18 | `impl/W18-REPORT.md` |
+| The libration-image TP threshold patch alone | Lost UG22's early episode; accepted only with moving-center geometry | Oct 18 | `impl/W18-REPORT.md` |
 | A universal 1-yr default output step | Still aliases 38/215 angles, too coarse for FAIR at P < 4.2 yr, ~70 GB/body for 10-Myr secular runs; `OUTPUT_STEP=auto` instead | Oct 15 | `research/SAMPLING.md` §9 |
 | Lifting `short_period_aliased` by the a-scatter ratio (variant b) | Kept conservative: always capped; (b) only as an opt-in setting | Oct 20–23 | DECISIONS round D, Q1 |
 | A turning point continued beyond the data, or read on the raw angle in the edge trim for any resonance and any run (W28 C4, g02-2) | The trim hides the turn because the filtered angle is not valid there; extrapolating the curve invents it. Only a 1:1 reversal read on the orbit-averaged raw angle is added, only to close a cycle of a run that was no episode, with its site, the crossing of a_P and the mirror of \|a − a_P\| tested (`coorbital_edge_turn`): it never extends an accepted episode (that would move its coverage) and no other resonance has a test of a single turn | Nov 1 | `w28/scratch/impl-C4/` |
@@ -61,14 +62,14 @@ reason given. Sources in `tmp/` are local and git-ignored.
 |---|---|---|---|
 | Amplitude floor in the free-omega gate | Unfixable: the prefit estimates e_free, not e_forced (off by ~100×); do not reintroduce an amplitude criterion | Aug | gate v4 decisions |
 | tol = 2/T and unsigned rate matching in the gate | Covers everything at 500 kyr; flips signs (591986). Signed rates, strict tolerance | Aug | same |
-| Ridge prefit, amplitude-selected representatives, measured/catalogue hybrid and mandatory FMFT in the gate | Nonlinear free ZLK motion leaks into near-degenerate fitted modes and corrupts the contamination estimate | Aug | same |
-| "The cluster representative is a free convention" | False: 3752 and 591986 change verdict; it is a modelling assumption | Aug | `secular/free_elements.py` |
+| Ridge prefit, amplitude-selected representatives, measured/catalog hybrid and mandatory FMFT in the gate | Nonlinear free ZLK motion leaks into near-degenerate fitted modes and corrupts the contamination estimate | Aug | same |
+| "The cluster representative is a free convention" | False: 3752 and 591986 change verdict; it is a modeling assumption | Aug | `secular/free_elements.py` |
 | e–i coherence as the ZLK decision | Its validity band T/(5 n_seg) (25 kyr at 500 kyr) is below the real ZLK periods (27–58 kyr) | Aug 16 | coherence notes |
 | Reading the (k, h) eccentricity-vector plot as a ZLK verdict | Does not discriminate | Aug | same |
 | Secular non-resonance from the free divisor alone ("−2 if \|divisor\| > 2/T") | 1222 Tina (the ν6 reference) has the same 2.18″/yr signature as 19289 | Oct 13 | pairs run notes |
 | Broad order-≤4 secular combination scans for status | The hits were near-commensurabilities with g1/g2/s1/s2, which the model gets wrong without GR | Oct 13 | literature list |
 | Planets' osculating ϖ and Ω in secular angles | Wrong for every s_j term (see [physics-notes.md](physics-notes.md)) | Oct 12 | the Oct 12 fix |
-| ZLK centre comparison modulo 180° and keeping 162474 resonant across its island switch | The accepted reading is transient over the whole record | Oct 17 | W16 |
+| ZLK center comparison modulo 180° and keeping 162474 resonant across its island switch | The accepted reading is transient over the whole record | Oct 17 | W16 |
 
 ## Performance and engineering
 

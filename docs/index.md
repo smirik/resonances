@@ -10,7 +10,7 @@ numerical integration, whether they really are in them. It handles
 For each body and resonance the package integrates the orbit with the planets
 ([REBOUND](https://rebound.readthedocs.io)), builds the resonant angle, and gives it a verdict: a status, the
 geometry of the angle, the physical origin of a libration, a confidence level and the next action. The data
-come from NASA Horizons, AstDyS or the Minor Planet Center (MPCORB). The finders, catalogues and simulation workflow
+come from NASA Horizons, AstDyS or the Minor Planet Center (MPCORB). The finders, catalogs and simulation workflow
 target the Solar System.
 
 ## The statuses
@@ -32,7 +32,7 @@ each.
 
 - [Installation](install.md) and the [Quick start](quick-start.md): check one asteroid in three lines.
 - [Simulations, bodies, resonances](core.md) and [Examples](examples.md): the main objects and practical
-  recipes (catalogues, clones, many bodies, restore).
+  recipes (catalogs, clones, many bodies, restore).
 - [Configuration](config.md): every option; [Output data](output.md): every column.
 - [How to read the figures](reading-figures.md): every panel of the verdict figures.
 - [Rule index](libration-analysis.md): every rule of the classifier, with its settings.

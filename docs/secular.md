@@ -12,7 +12,7 @@ status of a secular angle is decided: [Secular and Lidov-Kozai](physics/secular-
 
 Aliases: `nu1`…`nu8` are `g-g1`…`g-g8`, `nu11`…`nu18` are `s-s1`…`s-s8` (no `nu15`: `s5` is
 identically zero), `z1`…`z4`, `2nu6-nu5`, `3nu6-2nu5`. A formula needs at least one term of the body
-(`g` or `s`); planet indices run from 1 to 8. A string is recognised as secular by
+(`g` or `s`); planet indices run from 1 to 8. A string is recognized as secular by
 `detect_resonance_type` if it is an alias (any case) or its only letters are a lowercase `g` and `s`.
 Capital letters are MMR notation, so `2S-1` and `4J-2S-1` are MMRs with Saturn.
 
@@ -47,7 +47,7 @@ linear resonance removes the resonance itself.
 
 The angle from the osculating elements (same mode longitudes, nothing removed) is saved as
 `<resonance>_angle_osculating`; `secular_angle_mode='osculating'` classifies the integration's angle
-instead. The analysis of the angle (cutoff, centre scale, turning points: a libration needs
+instead. The analysis of the angle (cutoff, center scale, turning points: a libration needs
 `LIBRATION_MIN_TURNING_POINTS` = 3 turning points, one full cycle) is described in
 [Secular and Lidov-Kozai](physics/secular-zlk.md).
 
@@ -63,7 +63,7 @@ of Carruba & Morbidelli (2011). The two cannot be told apart by this number alon
 
 `g5…g8`, `s6…s8` are the AstDyS values (Knežević & Milani 2000). `g1…g4`, `s1…s4` and all the phases
 are measured on the package's own model (Sun, eight planets, Pluto, Newtonian, Earth = Earth–Moon
-barycentre) by a frequency analysis of a 10-Myr integration.
+barycenter) by a frequency analysis of a 10-Myr integration.
 Against Laskar (1990, Icarus 88, 266, Tables II–III) the outer planets agree to 0.01–0.02″/yr and
 1–2° in phase, `g3, g4, s3, s4` to 0.01–0.06″/yr; `g1` is lower by 0.38″/yr, `g2` by 0.12, `s1` higher
 by 0.11 — the model has no general relativity. The inner frequencies drift by ~0.01″/yr over 10 Myr,
@@ -96,7 +96,7 @@ files are local).
 
 ## Which resonances to check
 
-`SECULAR_FORMULAS` is the catalogue: the linear `ν_j`, `ν_1j` of all planets, the classical degree-4
+`SECULAR_FORMULAS` is the catalog: the linear `ν_j`, `ν_1j` of all planets, the classical degree-4
 set, `z1…z4` and the g-type terms (75 distinct angles). For a complete search around one body use
 `resonances.secular.combinations.near_resonant(g, s, max_order=6, thresholds={2: 5.0, 4: 2.0, 6: 1.0}, modes=...)`
 (g, s and the windows in ″/yr; pass `modes` by name). For
@@ -108,7 +108,7 @@ records (`formula`, `order`, `divisor`, `key`); `resonances.create_secular_reson
 into a resonance. Order 6 with all fifteen planetary modes gives ~900 angles within 1″/yr of a main-belt
 body — the window and the modes have to be chosen physically.
 
-The catalogue is wider than what the literature reports. Librations are shown for ν5, ν6, ν16, ν4
+The catalog is wider than what the literature reports. Librations are shown for ν5, ν6, ν16, ν4
 (one Hungaria), z1, z2, g+g5−2g6, g+2g5−3g6, 2g−3g5+g6, g−g5+s−s7, 2g−g5−g6+s−s6 and, among the
 Hungarias, g−s−g5+s6; s−g5+g8−s6, s+g5−g8−s3, 2s−s4−s6 and 2g−g5−g6 are located there but shown only as
 temporary interactions (Warner et al. 2009; Milani et al. 2010; Knežević 2022). Nothing is reported for
@@ -117,7 +117,7 @@ their divisors in this model are also off by 0.1–0.3″/yr (no general relativ
 (half-width ~0.3″/yr) librates in ~9 Myr, a degree-6 one (~0.1″/yr) in ~26 Myr. To plan the baseline, use the
 rule $T_{\rm req}$ of [Confidence](physics/confidence.md#actions) (one and a half periods plus the two filter edges).
 
-`SecularResonanceFinder` evaluates the catalogue's divisors on AstDyS synthetic proper elements
+`SecularResonanceFinder` evaluates the catalog's divisors on AstDyS synthetic proper elements
 (`resonances secular-candidates` on the command line).
 
 ## Example: (1020) Arcadia in z1

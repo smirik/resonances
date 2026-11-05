@@ -92,7 +92,7 @@ def _with_owner(key: str, role: CauseRole, cover: float, detail: str = '', inter
 
 
 def _with_neighbour(neighbours: str, intervals, flags=('owner_outside_episode',)):
-    """The synthetic with an owner F7 refused (A1/A3a): verdict role neighbour with `neighbours`, cover 0."""
+    """The synthetic with an owner F7 refused (A1/A3a): verdict role neighbor with `neighbors`, cover 0."""
     analysis, base = _kinematic()
     key = neighbours.split(' ')[0]
     accepted = make(OwnerCandidate, spec=ResonanceSpec.from_key(key), r2_median=0.99, accepted=True)
@@ -165,12 +165,12 @@ def test_a_librating_owner_and_an_unconfirmed_one():
 def test_the_1862_control_names_a_neighbour_with_its_interval():
     """Card g04-4/g04-6 (1862 2M-6J-1, the F7 control): 6E-11+0+5 librates at 13 733–17 914 yr, after σ's episode
     (11.2–11.7 kyr), cover 0: the header says it librates after the episode with that interval, outside it; the step
-    calls it a neighbour, not the cause, and never 'owner:' or 'drives a'."""
+    calls it a neighbor, not the cause, and never 'owner:' or 'drives a'."""
     f = _with_neighbour('6E-11+0+5 13733–17914 after', [(13733.0, 17914.0, 'libration')])
     role, text = vt.cause_line(f.v, f)
     assert (role, text) == ('neighbour', '6E-11+0+5 librates after the episode (13.7 kyr–17.9 kyr), outside it')
     step = vt._owner_step(f)
-    assert step.state == vt.StepState.PASSED and step.outcome.startswith('neighbour 6E-11+0+5 (R² 0.99) librates after')
+    assert step.state == vt.StepState.PASSED and step.outcome.startswith('neighbor 6E-11+0+5 (R² 0.99) librates after')
     assert step.outcome.endswith('not the cause, the tree goes on') and 'covers 0 < 0.5' in step.outcome
     words = ' '.join((text, step.outcome, vt.driver_line(f)[0]))
     assert 'owner:' not in words and 'drives a' not in words
@@ -226,7 +226,7 @@ def test_rule_c_names_the_resonant_argument():
     assert vt.subtitle_role(f) == 'resonant argument 9M-16+2+5'
     assert vt.argument_line(f) == (
         'Resonant argument: 9M-16+2+5, one resonance 9M-16 with this angle; the two differ by −2ϖ + 2ϖ_M, so this '
-        'angle’s centre turns with that term.'
+        'angle’s center turns with that term.'
     )
 
 
@@ -238,7 +238,7 @@ def test_a_weak_member_is_a_frame_not_a_force():
     other = make(SubresonanceCandidate, spec=ResonanceSpec.from_key('10E-17+1+6'), reason='E_strength', coefficient_rel=3e-4)
     sub = make(SubresonanceResult, candidates=[other, weak], check=CheckValue.PASS)
     text = vt.frame_line(_facts(replace(analysis, subresonances=sub), row))
-    assert text.startswith('A steadier centre of a member such as 10E-17+6+1 would be a frame, not a force: its term is 1e-9')
+    assert text.startswith('A steadier center of a member such as 10E-17+6+1 would be a frame, not a force: its term is 1e-9')
     assert 'own e, i, ω' in text
     assert vt.frame_line(_facts(replace(analysis, subresonances=replace(sub, candidates=[])), row)) == ''
 
@@ -263,7 +263,7 @@ def test_both_resonances_at_once_not_ruled_out():
     (row,) = vt._capture_rows(f, vt._Printer(f.row))
     assert row.label == 'both resonances at once?' and row.icon == '?'
     assert row.text == (
-        'x = Ψ/u, Ψ = 8*sigma-1*phi, on 630 yr–19 kyr; x moved 43.5° < 180°; energy fit R² 0.251 < 0.7; ẍ follows the '
+        'x = Ψ/8 with Ψ = 8*sigma-1*phi, tested over 630 yr–19 kyr; x moved 43.5° < 180°; energy fit R² 0.251 < 0.7; ẍ follows the '
         'secular harmonics (R² 0.883 ≥ 0.7), but also a well of its own (R² on sin x 0.629 ≥ 0.2) → not ruled out'
     )
     assert 'capture' not in row.text and 'captures' not in row.label
@@ -287,11 +287,15 @@ def test_hw7_identity_and_the_slow_swing():
     )
     assert vt.identity_line(f).startswith('σ = φ/8 + Ψ/8: what φ (5E-16+0+11) does shows in σ scaled by 1/8;')
     assert vt.identity_line(f).endswith('(both resonances at once?: not ruled out).')
-    head = 'σ’s centre swings against the owner with period 6.6 kyr (±11.5°)'
+    head = 'σ’s center swings against the owner with period 6.6 kyr (±11.5°)'
     f.row['own_x_cause_level'] = 'identified'
-    assert vt.slow_x_line(f) == f'{head}: the 2ω cycle π/|ω̇| = 7.11 kyr.'
+    # the secular period is the one measured on the tested window (own_x_secular_period_yr), not the record's
+    assert vt.slow_x_line(f) == f'{head}: the 2ω cycle π/|ω̇| = 7.11 kyr on the tested window.'
     f.row['own_x_cause_level'] = 'possible'
-    assert vt.slow_x_line(f) == f'{head}: probably the 2ω cycle π/|ω̇| (7.11 kyr); a slow libration of another resonance is not excluded.'
+    assert (
+        vt.slow_x_line(f)
+        == f'{head}: probably the 2ω cycle π/|ω̇| (7.11 kyr on the tested window); a slow libration of another resonance is not excluded.'
+    )
     f.row['own_x_cause_level'] = ''
     assert vt.slow_x_line(f) == f'{head}: cause not identified; a slow libration of another resonance is not excluded.'
 
@@ -325,7 +329,7 @@ def test_induced_episode_ids_read_the_origin_the_analysis_wrote():
 
 
 def test_the_role_line_fits_the_header():
-    """The header's second line holds the role; a long three-body neighbour stays inside the header's width and the
+    """The header's second line holds the role; a long three-body neighbor stays inside the header's width and the
     record line moves under it."""
     analysis, _ = _kinematic()
     role = (
@@ -357,7 +361,7 @@ ROLE_RECORDS = {
 def test_roles_on_the_benchmark(example):
     """Card g04-6 on 719 and 385266 (the driver, card g04-5: 3N-5+0+2 circulates with P 4.5 kyr), g04-7 on 41588
     (−10ϖ, its 10.5-kyr period matching the 2ω cycle 11.3 kyr): the role on the header's second line and in the
-    subtitle, no 'owner:' for a driver; the induced episodes of 719 hatched on (a) and labelled on (l); overflow 0."""
+    subtitle, no 'owner:' for a driver; the induced episodes of 719 hatched on (a) and labeled on (l); overflow 0."""
     from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 
     if not io.example_path(example).exists():

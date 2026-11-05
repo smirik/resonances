@@ -515,8 +515,12 @@ class TestFigure:
         x, y, w, h = mc.LAYOUT_V1.panels
         n = mc.LAYOUT_V1.n_panels
         gap = mc.LAYOUT_V1.panel_gap
-        step = (h - (n - 1) * gap) / n  # ten panels with a gap between neighbours
-        expected = [(x / width, (y + h - (i + 1) * step - i * gap) / height, w / width, step / height) for i in range(n)]
+        label_gap = mc.LAYOUT_V1.time_label_gap  # under (b): its time axis is labelled (2026-11-05)
+        step = (h - (n - 1) * gap - label_gap) / n  # ten panels with a gap between neighbours
+        expected = [
+            (x / width, (y + h - (i + 1) * step - i * gap - (label_gap if i >= 2 else 0)) / height, w / width, step / height)
+            for i in range(n)
+        ]
         for fig in figures:
             assert tuple(fig.get_size_inches()) == (width, height)
             panels = [tuple(ax.get_position().bounds) for ax in fig.axes[:n]]
@@ -534,10 +538,10 @@ class TestFigure:
         texts = _texts(fig)
         for entry in analysis.verdict.decision_path:
             assert entry.describe() in texts
-        # the status is printed once, in the plaque of the right column (author, 2026-10-16b)
+        # the status is printed once, in the plaque of the right column (author, 2026-10-16b; the column's header since
+        # 2026-11-04: the status word, then the level)
         _, fig = _draw(libration_case)
-        plaques = [text for text in _texts(fig) if 'RESONANT · libration' in text]
-        assert len(plaques) == 1 and 'MEDIUM' in plaques[0]
+        assert [text for text in _texts(fig) if 'RESONANT' in text] == ['RESONANT'] and 'medium' in _texts(fig)
 
     def test_reasons_for_what_did_not_run(self):
         _, fig = _draw(circulation_case, ALL_NUMBERS)
@@ -579,28 +583,25 @@ class TestFigure:
         assert (tmp_path / 'v1.png').stat().st_size > 0
 
     def test_plaque_and_final_regime_tag(self):
-        """status · angle_status · confidence in the plaque (author, 2026-10-17); a record that ends in another regime
-        gets the tag 'ends: …' right of the plaque, in the status colour, on the plaque's middle line."""
+        """The status word on a plaque in the status colour (the right column's header, 2026-11-04, decision D4), the
+        level beside it; a record that ends in another regime says so in the column (σ's key fact, 'ends in
+        circulation'), no longer as a tag on the plaque."""
+        from resonances.plotting import verdict_column as vc
         from resonances.plotting.style import STATUS_COLOURS
 
         analysis, series = libration_case()
         fig = mc.draw_combined(analysis, series, rows=rows_of(analysis))
-        assert ' RESONANT · libration (stationary) · MEDIUM ' in _texts(fig)
-        assert not any('ends:' in text for text in _texts(fig))
+        column = fig.text_stats['column']
+        assert (column.header.status, column.header.level) == ('resonant', 'medium') and vc.problems(column) == []
+        assert 'RESONANT' in _texts(fig) and not any('ends in' in text for text in _texts(fig))
+        plaques = [a for a in fig.artists if a.get_gid() == 'verdict_column' and hasattr(a, 'get_facecolor')]
+        assert matplotlib.colors.to_hex(plaques[0].get_facecolor()) == STATUS_COLOURS['resonant']
         plt.close(fig)
 
         analysis.verdict.final_regime = 'circulation'
         fig = mc.draw_combined(analysis, series, rows=rows_of(analysis))
-        fig.canvas.draw()  # places the boxes
-        renderer = fig.canvas.get_renderer()
-        artists = {text.get_text(): text for text in fig.texts}
-        plaque, tag = artists[' RESONANT · libration (stationary) · MEDIUM '], artists[' ends: circulation ']
-        box_p, box_t = plaque.get_bbox_patch().get_window_extent(renderer), tag.get_bbox_patch().get_window_extent(renderer)
-        assert box_t.x0 > box_p.x1  # beside the plaque, not over it
-        assert abs((box_t.y0 + box_t.y1) / 2 - (box_p.y0 + box_p.y1) / 2) < 0.15 * box_p.height
-        colour = STATUS_COLOURS['resonant']
-        assert matplotlib.colors.to_hex(tag.get_color()) == colour
-        assert matplotlib.colors.to_hex(tag.get_bbox_patch().get_edgecolor()) == colour
+        facts = ' '.join(vc.plain(fact.value) for fact in fig.text_stats['column'].key_facts)
+        assert 'ends in circulation' in facts and 'ends in circulation' in ' '.join(_texts(fig))
 
     def test_rate_zero_and_portrait_centres(self):
         """(c) and both portraits draw dsigma/dt = 0 in the style RATE_ZERO; the portraits mark the accepted episode's

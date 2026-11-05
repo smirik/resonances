@@ -254,7 +254,7 @@ def test_33128_6n7_a_thin_witness_makes_the_transient():
     assert not rows[1]['deciding_witness']
     facts = _facts(analysis)  # the right column names the episode the force law and the identity were read on
     where = vt.measured_on(facts)
-    assert where.startswith('measured on witness #0 (') and vt._force_detail(facts)[0].endswith(where)
+    assert where.startswith('measured on episode #0 (') and vt._force_detail(facts)[0].endswith(where)
     assert vt._detail_l3(facts, None)[0].endswith(vt.measured_on(facts, 'identity_source'))
 
 

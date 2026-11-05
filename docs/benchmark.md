@@ -2,7 +2,7 @@
 
 The thresholds of the analysis are conventions. They are chosen and tested on a benchmark of real integrations whose
 verdicts the author of the package gave by eye, from the one-page figures. The benchmark lives in `benchmark/`
-(tracked: the catalogue, the labels, the tools); the series and figures are outside git, in `benchmark/data/`
+(tracked: the catalog, the labels, the tools); the series and figures are outside git, in `benchmark/data/`
 (`RESONANCES_BENCHMARK_DATA` overrides the folder).
 
 ## What it holds
@@ -18,7 +18,7 @@ saved, the planets. Nothing is integrated to classify it again.
 | secular | 52 |
 | Lidov-Kozai (`zlk`) | 35 |
 
-`benchmark/candidates.csv` is the working catalogue (the author's verdict where he gave one, the sources),
+`benchmark/candidates.csv` is the working catalog (the author's verdict where he gave one, the sources),
 `benchmark/labels.csv` the labels, `benchmark/DECISIONS.md` the author's decisions on disputed cases. Labels written
 by Claude or by an automatic judge are marked as such and never count as the author's. The examples of every status
 shown in the [Gallery](physics/gallery.md) are benchmark examples.
@@ -59,7 +59,7 @@ figures are drawn elsewhere by `make docs-figures` (see [Gallery](physics/galler
 Run `v2-w24-tx9b` (MMR and co-orbital, 2026-10-27) with `v2-w23-secular-zlk` (secular and ZLK, 2026-10-26), checked by
 `known_disagreements.py` against the labels of 2026-10-27:
 
-| field | agree / labelled |
+| field | agree / labeled |
 |---|---|
 | status (author's labels) | 104 / 104 |
 | angle_status | 88 / 88 |
@@ -67,12 +67,12 @@ Run `v2-w24-tx9b` (MMR and co-orbital, 2026-10-27) with `v2-w23-secular-zlk` (se
 | the author's verdicts in candidates.csv | 202 / 202 |
 | secular and ZLK: status / verdicts | 1 / 1, 13 / 13 |
 
-No disagreement is listed. Labelled examples are a minority of the benchmark, and the labels are themselves revised when a figure is read again; the numbers say that the rules
+No disagreement is listed. Labeled examples are a minority of the benchmark, and the labels are themselves revised when a figure is read again; the numbers say that the rules
 reproduce today's labels, not that they are right on unlabelled bodies.
 
 ## Calibration of the confidence
 
-The same labels give, for every cell (status, angle_status, reason) of the verdicts, how many labelled verdicts at
+The same labels give, for every cell (status, angle_status, reason) of the verdicts, how many labeled verdicts at
 `high` or `certain` exist and how many of them were wrong, with the Wilson 95 % interval of the accuracy
 (`benchmark/tools/calibrate.py` → `resonances/data/confidence_cells.json`). summary.csv reports the cell of every verdict
 (`cell_n_examples`, `cell_n_errors`, `cell_accuracy_low_95`, `cell_accuracy_high_95`). The counts never change a level

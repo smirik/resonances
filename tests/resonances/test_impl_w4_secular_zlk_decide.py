@@ -104,7 +104,7 @@ def test_without_a_libration_only_a_pinned_kinematic_omega_changes_the_status(an
     assert zlk_status(angle_status, gate('kinematic', rho_max=0.6)).status == Status.NON_RESONANT  # 555527
     assert zlk_status(angle_status, gate('kinematic', rho_max=3.4)).status == geometry_only  # 1866: varpi turns freely
     # 3752: a lobe switch. W28 D10 (q-1 E): an episodic omega without a gate verdict keeps its transient only with the
-    # deciding episode's e-i coupling zlk; here it is not measured, so uncertain (test_zlk_episodic_no_verdict)
+    # deciding episode's e-i coupling zlk; here it is not measured, so uncertain (`decide.episodic_without_verdict`)
     residual = zlk_status(angle_status, gate('planetary_residual')).status
     assert residual == (Status.UNCERTAIN if angle_status == AngleStatus.EPISODIC else geometry_only)
     assert zlk_status(angle_status, gate('confirmed')).status == geometry_only

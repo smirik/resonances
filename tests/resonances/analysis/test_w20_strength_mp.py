@@ -317,7 +317,7 @@ def test_the_figure_text_names_the_harmonic_strength():
     step = vt._force_step(facts)
     # L4 and R0 are both not measured on 2897: the branch's wording, with the harmonic's ratio
     assert facts.rule == '5s' and not vt.strength_first(facts) and step.state == vt.StepState.LEAF
-    assert step.outcome.startswith('both not measured') and 'resonant harmonic' in step.outcome
+    assert step.outcome.startswith('neither the force law nor the potential is measured') and 'resonant harmonic' in step.outcome
     assert step.outcome.endswith('→ non_resonant')
 
 

@@ -37,7 +37,7 @@ status:
     co-orbital of a planet whose modes the split does not fit (outcome unavailable, detail coorbital_unfitted_forcing:
     the free-element model does not apply) is uncertain, gate_unavailable whatever bounded angle it has, as a
     libration is (2020 PP1, W28 g09-6 B; rule zlk_coorbital_episodic). Any other unverdicted outcome of an episodic
-    angle goes by ZLK_EPISODIC_NO_VERDICT (`episodic_without_verdict`, W28 D10, the author's q-1 E): transient only
+    angle goes by its episode's e-i coupling (`episodic_without_verdict`, W28 D10, the author's q-1 E): transient only
     when e and i trade at constant H inside the deciding episode (`zlk.episode_ei`, coupling zlk), else uncertain,
     gate_unavailable (88899 over 500 kyr: none; 797204 over 100 kyr and 2023 RS2: episodes too short to measure); rule
     zlk_gate_unconfirmed. A drift or too few cycles keeps baseline_needed. The two lower outcomes are different
@@ -99,10 +99,6 @@ GATE_NO_VERDICT = ('short_window', 'undefined_phase', 'planetary_residual', GATE
 # GateResult.detail of an unavailable outcome: a co-orbital of a planet whose own modes the split does not fit
 # (`omega_free_gate.COORBITAL_UNFITTED`, kept as a string here: the decision does not import the gate)
 DETAIL_COORBITAL_UNFITTED = 'coorbital_unfitted_forcing'
-# ZLK_EPISODIC_NO_VERDICT values (`episodic_without_verdict`) and the coupling class it reads (`EpisodeCoupling`)
-EPISODIC_EI = 'ei'
-EPISODIC_UNCERTAIN = 'uncertain'
-EPISODIC_KEEP = 'keep'
 COUPLING_ZLK = 'zlk'
 # ZLK angle statuses the gate judges: every omega that stays within a turn (the TTO classifier's LIBRATION, which the
 # gate judged, is any of them in the shared geometry; `decide_status` says how much each takes from it)
@@ -316,26 +312,17 @@ def decide_status(resonance_type: ResonanceType, angle: AngleDecision, gate: Opt
 
 
 def episodic_without_verdict(status: StatusDecision, gate: GateResult, ledger: Ledger) -> StatusDecision:
-    """The status of an episodic ZLK omega whose gate gives no verdict (not an unfitted co-orbital), by
-    ZLK_EPISODIC_NO_VERDICT (`gate.episodic_policy`; the author's answer q-1 E, 2026-10-31):
-
-        ei         transient (dynamic_episode) when e and i trade at constant H inside the deciding episode
-                   (`gate.episode_ei.coupling` zlk, `zlk.episode_ei`); otherwise (none, forced_beat, not measured)
-                   uncertain / gate_unavailable (-9): no physical measurement stands behind the episode;
-        uncertain  always uncertain / gate_unavailable;
-        keep       the geometric status (transient), as before W28.
-
-    Under ei and uncertain the rule zlk_gate_unconfirmed fires (it decided the status, also when it kept it). The -9
-    is the absence of a measurement; a kinematic -2 never comes from here."""
-    policy = gate.episodic_policy
-    if policy == EPISODIC_KEEP:
-        return status
+    """The W28 tree's status of an episodic ZLK omega whose gate gives no verdict (not an unfitted co-orbital; the
+    author's answer q-1 E, 2026-10-31): transient (dynamic_episode) when e and i trade at constant H inside the
+    deciding episode (`gate.episode_ei.coupling` zlk, `zlk.episode_ei`); otherwise (none, forced_beat, not measured)
+    uncertain / gate_unavailable (-9): no physical measurement stands behind the episode. The rule
+    zlk_gate_unconfirmed fires either way (it decided the status, also when it kept it). The -9 is the absence of a
+    measurement; a kinematic -2 never comes from here. The minimal policy reads the gate itself (`policy`)."""
     fired = rules_module.fire(status.rules_fired, rules_module.Rule.ZLK_GATE_UNCONFIRMED)
-    if policy == EPISODIC_EI:
-        _record_episode_coupling(gate.episode_ei, ledger)
-        if gate.episode_ei.coupling == COUPLING_ZLK:
-            status.rules_fired = fired
-            return status
+    _record_episode_coupling(gate.episode_ei, ledger)
+    if gate.episode_ei.coupling == COUPLING_ZLK:
+        status.rules_fired = fired
+        return status
     return StatusDecision(Status.UNCERTAIN, Reason.GATE_UNAVAILABLE, LibrationOrigin.UNKNOWN, '', dict(status.checks), rules_fired=fired)
 
 

@@ -1,9 +1,10 @@
 """The right-hand side of the combined v2 MMR figure, in two forms (`combined_numbers`, plot option
 `combined.numbers`).
 
-Explained (default, layout A′): `draw_explained` = the explanation of `verdict_text.explain_mmr` and the numbers of
-`explained_lines` ('Numbers behind this verdict' from `VerdictText.emphasis`, then the episodes, `EXPLAINED_GROUPS`
-most important first, the characteristic periods of `period_lines`; a number of the block is a pointer in the table).
+Explained (default): the ten blocks of `verdict_column` (built by `verdict_column_mmr`, drawn by
+`verdict_column_draw.draw_prepared` from `mmr_combined.draw_right_column`; the redesign of 2026-11-04).
+`explained_lines` (the older 'Numbers behind this verdict' and table, drawn by `combined_numbers.draw_explained`) is
+no longer drawn; kept until the cleanup.
 
 All: every number of the decision as text, below. The engine (cells, units, block assembly, column placement,
 drawing) is shared with the secular/ZLK figure in `combined_numbers`; this module holds the MMR blocks and tables.
@@ -66,7 +67,8 @@ from .combined_numbers import (  # noqa: F401  (re-exported: the API of this mod
     unit_of,
 )
 from .style import VerdictFigureLayout
-from .verdict_text import episode_accepted, episode_marks, explain_mmr, fmt, interval, physics_columns, residence_sides, years
+from .verdict_vocab import snake_words
+from .verdict_text import episode_accepted, episode_marks, fmt, interval, physics_columns, residence_sides, years
 
 NOT_RUN_NO_TRIGGER = 'not run: no trigger'
 NOT_RUN_NO_DATA = 'not run: data missing'
@@ -147,7 +149,7 @@ BLOCKS: Dict[str, BlockSpec] = {
             ('scan', ('sub_triggers', 'sub_support', 'sub_n_*', 'sub_window*', 'sub_flags')),
             ('accepted', ('sub_accepted*',)),
             ('best candidate', ('sub_best*',)),
-            ('centre of sigma0', ('sub_centre0*', 'sub_sigma0*')),
+            ('center of sigma0', ('sub_centre0*', 'sub_sigma0*')),
             ('multiplet theory', ('sub_*',)),
         ),
     ),
@@ -260,7 +262,7 @@ BLOCKS: Dict[str, BlockSpec] = {
         groups=(
             ('turning points', ('geo_n_tp*', 'geo_tp_*', 'geo_period_*', 'geo_episode_period*', 'geo_window_*')),
             ('runs', ('geo_n_runs', 'geo_n_episodes', 'geo_n_librating*', 'geo_drift*')),
-            ('centre', ('geo_centre_*', 'geo_net_rev*', 'geo_band*', 'geo_wiggle*')),
+            ('center', ('geo_centre_*', 'geo_net_rev*', 'geo_band*', 'geo_wiggle*')),
             ('rate', ('geo_sigmadot*', 'geo_rate_modulation', 'geo_rate_a_corr')),
             ('slips and revolutions', ('geo_*slip*', 'geo_n_revolutions', 'geo_h_rev*')),
             ('stall, arc, pattern B', ('stall_*', 'geo_stall*', 'geo_arc*', 'geo_pattern_b*', 'geo_rate_min*')),
@@ -274,7 +276,7 @@ BLOCKS: Dict[str, BlockSpec] = {
         ('ep_',),
         groups=(
             ('decisive episode', ('ep_episode_id', 'ep_accepted', 'ep_subtype', 'ep_reject_reason', 'ep_t_*', 'ep_n_tp*', 'ep_period*')),
-            ('amplitude and centre', ('ep_half_amp*', 'ep_centre*', 'ep_bands*')),
+            ('amplitude and center', ('ep_half_amp*', 'ep_centre*', 'ep_bands*')),
             ('coverage and window', ('ep_coverage*', 'ep_before*', 'ep_cutoff*', 'ep_window*')),
             ('pendulum', ('ep_T0*', 'ep_omega0*', 'ep_half_width*', 'ep_a_*', 'ep_mu_eff', 'ep_h_*', 'ep_J_*', 'ep_zone*')),
             ('force law and identity', ('ep_force*', 'ep_phi0*', 'ep_identity*', 'ep_b1*')),
@@ -465,7 +467,7 @@ def _forced_words(episode: Mapping[str, Any]) -> str:
 
 # episodes.csv ineligible_reason of an accepted run the status does not count and no other mark names (W28 C11, card
 # g02-9 A) -> the words of its line
-UNCOUNTED_WORDS = {'below_period_floor': 'not counted: below the period floor', 'centre_turns': 'not counted: the centre turns'}
+UNCOUNTED_WORDS = {'below_period_floor': 'not counted: below the period floor', 'centre_turns': 'not counted: the center turns'}
 
 
 def _policy_flag(episode: Mapping[str, Any], column: str) -> Optional[bool]:
@@ -817,7 +819,7 @@ def _term_note(item: Mapping[str, Any]) -> str:
 def period_lines(row: Mapping[str, Any], constants: Sequence[Mapping[str, Any]]) -> List[NumberLine]:
     """CHARACTERISTIC PERIODS: what a period seen on the figure may be (the author's 16b (d)): the synodic periods of
     the angle's planets, the body's orbit and perihelion, ϖ − ϖ_P of the angle's planets (the splitting of the
-    multiplet, the wobble of the centre), the planetary near-commensurabilities (the great inequality ~ 900 yr,
+    multiplet, the wobble of the center), the planetary near-commensurabilities (the great inequality ~ 900 yr,
     U–N 1:2 ~ 4.2 kyr, ...) and the secular modes g5, g6, s6 (and those of the angle's planets)."""
     planets = {str(item.get('planet')): item for item in constants if 'g_arcsec_yr' in item}
     synodic = _synodic_planets(row)
@@ -830,7 +832,7 @@ def period_lines(row: Mapping[str, Any], constants: Sequence[Mapping[str, Any]])
     for item in constants:
         name = str(item.get('planet'))
         if name not in planets and 'period_yr' in item:
-            periods.append((TERM_NAMES.get(name, name.replace('_', ' ')), _float(item.get('period_yr')), _term_note(item)))
+            periods.append((TERM_NAMES.get(name, snake_words(name)), _float(item.get('period_yr')), _term_note(item)))
     modes = list(SECULAR_MODES_SHOWN) + [(kind, planet) for planet in synodic for kind in ('g', 's')]
     for kind, planet in dict.fromkeys(modes):
         rate = _float(planets.get(planet, {}).get(f'{kind}_arcsec_yr'))
@@ -852,8 +854,8 @@ def _float(value: Any) -> float:
 
 def explained_episode_lines(episodes: Sequence[Mapping[str, Any]], decisive_id: Any = None) -> List[NumberLine]:
     """EPISODES: every accepted run (* = the deciding one; 'N accepted, M counted': the runs the status counts, W28 C11;
-    a run it does not count grey, 'not counted: below the period floor') and the longest rejected runs with their
-    reason (centre moves: how far the centre travels against the ripple, a stay rather than a libration: 2003 TG2)."""
+    a run it does not count gray, 'not counted: below the period floor') and the longest rejected runs with their
+    reason (center moves: how far the center travels against the ripple, a stay rather than a libration: 2003 TG2)."""
     accepted = [episode for episode in episodes if episode_accepted(episode)]
     rejected = [episode for episode in episodes if not episode_accepted(episode)]
     kinds: Dict[str, int] = {}
@@ -879,7 +881,7 @@ def explained_episode_lines(episodes: Sequence[Mapping[str, Any]], decisive_id: 
         lines += [NumberLine('numbers', '', part, group=group, style='grey') for part in coorbital_episode_parts(episode)]
     rejected.sort(key=lambda episode: -_float(episode.get('n_tp')))
     for episode in rejected[:REJECTED_ROWS_MAX]:
-        reason = str(episode.get('reject_reason') or '').replace('_', ' ')
+        reason = snake_words(str(episode.get('reject_reason') or ''))
         if str(episode.get('reject_reason')) == 'centre_moves' and not missing(episode.get('centre_shift_deg')):
             # a stay (W34, the author on 2003 TG2 100 kyr): a ripple whose centre travels; how far against how wide
             reason += f" {fmt(abs(_float(episode.get('centre_shift_deg'))))}° (ripple ±{fmt(episode.get('half_amp_med_deg'))}°)"
@@ -941,8 +943,8 @@ def _table_lines(key: str, cells: Sequence[Any], group: str, column: str = '', s
 
 def ranked_members_lines(row: Mapping[str, Any], group: str) -> List[NumberLine]:
     """S2 (W20 CS9, drawn in CS11): the multiplet's best members as a table, W/W0 the range of the member's slow
-    centre against the catalogue angle's own W0, E the share of the catalogue centre's motion it explains, N its own
-    slow cycles in the scan window, A/W σ0's median full swing over W; then the catalogue angle itself (W0 in degrees,
+    center against the catalog angle's own W0, E the share of the catalog center's motion it explains, N its own
+    slow cycles in the scan window, A/W σ0's median full swing over W; then the catalog angle itself (W0 in degrees,
     A/W0) and, for a two-body row with a moving-well track, the minimum of the averaged potential (its W against W0).
     N < 1 is said in words (only a rate matched), and the d'Alembert caveat when the factors are unreliable."""
     members = [i for i in range(1, SUB_TABLE_ROWS + 1) if str(row.get(f'sub_rank{i}_key') or '')]
@@ -955,7 +957,7 @@ def ranked_members_lines(row: Mapping[str, Any], group: str) -> List[NumberLine]
         short = short or (not missing(cells[2]) and float(cells[2]) < 1)
         lines += _table_lines(str(row[f'sub_rank{i}_key']), [_sub_cell(c) for c in cells], group, f'sub_rank{i}_key')
     w0 = row.get('sub_cat_W_deg')
-    label = f'σ W0 {_sub_cell(w0)}°' if not missing(w0) else 'σ (catalogue)'
+    label = f'σ W0 {_sub_cell(w0)}°' if not missing(w0) else 'σ (catalog)'
     lines += _table_lines(label, ('1', '0', '—', _sub_cell(row.get('sub_cat_AW'))), group, 'sub_cat_W_deg')
     w = row.get('sub_pot_W_deg')
     if not missing(w):
@@ -1002,7 +1004,7 @@ def explained_lines(
 ) -> List[NumberLine]:
     """The numbers of the explained column: 'Numbers behind this verdict' first (card g10-5, W28 E10: the lines of
     `text.emphasis`, drawn framed above the table), then the episodes, then EXPLAINED_GROUPS with the characteristic
-    periods after the resonance, bold = compared by the decision, grey = of a test skipped by design (`text`:
+    periods after the resonance, bold = compared by the decision, gray = of a test skipped by design (`text`:
     VerdictText). A number the block prints becomes a pointer in the table when drawn ('↑ decisive [B1]', W20 CS11: no
     number twice; `combined_numbers.point_to_block`)."""
     row = short_hashes({**numbers_row, **summary})
@@ -1016,12 +1018,3 @@ def explained_lines(
         if title == 'RESONANCE, RATES':
             lines += period_lines(row, constants)
     return block + lines  # `numbers.draw_explained` turns the table rows of the block's numbers into pointers
-
-
-def draw_explained(fig, analysis, rows, layout: VerdictFigureLayout, settings=None) -> Dict[str, Any]:
-    """The explained right column of an MMR figure; `rows` = (summary, numbers, episodes, constants)."""
-    summary, numbers_row, episodes, constants = rows
-    text = explain_mmr(analysis, config_settings(settings), {**numbers_row, **summary}, episodes)
-    stats = numbers.draw_explained(fig, text, explained_lines(summary, numbers_row, episodes, constants, text), layout)
-    stats['text'] = text
-    return stats

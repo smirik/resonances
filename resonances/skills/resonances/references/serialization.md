@@ -78,7 +78,7 @@ The restore method:
 2. Recreates `Body` objects and their resonances, derived subresonance rows included (also those known only from
    `summary.csv`, registered before the series are read so that their saved angles load too).
 3. Loads the saved time series, periodograms, free-omega series and planets (to the last bit: the numbers are those
-   the run analysed).
+   the run analyzed).
 4. Sets the verdicts from `summary.csv`: `body.statuses[key]` (the status string) and `body.librations[key]` (a
    `Verdict` rebuilt from the row's verdict columns). A summary of an older version with integer statuses is read for
    secular and Lidov-Kozai rows (the old code is translated, `verdict_from_status_code`); its MMR rows are skipped.
@@ -93,22 +93,22 @@ written after the last body, from the same rows.
 
 After a restore the numbers of the analysis stay in the CSV files: `body.mmr_analyses` and
 `body.classifier_numbers` are empty, and `save_data`/`save_simulation_summary` write and replace only the rows
-analysed in memory, so the rows on disk stay.
-To analyse again from the saved series:
+analyzed in memory, so the rows on disk stay.
+To analyze again from the saved series:
 
 ```python
 sim = SimulationSerializer.restore("output/my_run/simulation.json", recompute_librations=True)
 ```
 
-An MMR is analysed again by `analyse_mmr` on its raw saved angle and elements, with the settings of simulation.json
+An MMR is analyzed again by `analyse_mmr` on its raw saved angle and elements, with the settings of simulation.json
 (`current_settings=True`: the fields of `AnalysisSettings` and `DryRunSettings` are taken from the current
 configuration; the free-element and free-gate settings such as `FREE_GATE_ENABLED`, `FREE_GATE_MIN_CYCLES`,
 `FREE_GATE_MASK_QUANTILE`, the coherence settings and the secular-angle construction keep the saved run's values); its
 derived rows come out of that analysis again. A secular or
-Lidov-Kozai angle is analysed again by `analyse_secular`/`analyse_zlk` on its saved unwrapped angle and elements (the
-centre scale and the free-omega gate are steps of it). Only the resonances whose series were saved are analysed again
+Lidov-Kozai angle is analyzed again by `analyse_secular`/`analyse_zlk` on its saved unwrapped angle and elements (the
+center scale and the free-omega gate are steps of it). Only the resonances whose series were saved are analyzed again
 (their periodograms are rebuilt); the others keep their `summary.csv` verdict. A saved derived row whose parent was not
-saved (`SAVE=resonant` keeps a resonant subresonance of a non-resonant angle) is analysed alone, at depth one.
+saved (`SAVE=resonant` keeps a resonant subresonance of a non-resonant angle) is analyzed alone, at depth one.
 With clones only the nominal is reclassified: the clones keep their stored verdicts, and in the run's folder (the
 one simulation.json is in) the nominal columns of clones.csv and the nominal's rows of summary.csv (and of
 mmr_numbers, episodes, candidates) are rewritten from the nominal's new verdict, so the two files agree. Other bodies'
@@ -130,7 +130,7 @@ During the run, `simulation_state.json` in the output directory records the comp
 
 To resume, run the same script again with the same bodies, settings and `save_path`. Completed batches are skipped. A batch that was interrupted after writing some of its rows is run again and its rows in `summary.csv`, `episodes.csv`, `coherence.csv`, `mmr_numbers.csv` and `candidates.csv` are replaced, not repeated.
 
-If the hash differs, `run()` raises `ValueError` instead of mixing two runs. The usual cause is the date: without `date=` a `nasa` run starts at today's midnight, so a resume on another day must pass the original date (`date=`). With `batch_size` unset the layout depends on `n_cores`, so keep it too. The elements count as obtained, not as requested: AstDyS and MPC elements come from the cached catalogue and are the same on a rerun, but a refreshed get-orb answer (`MPC_LOOKUP=file_then_api`), a new catalogue or a Horizons re-query (astroquery keeps its answers a week) that returns a new orbit solution makes another run, and the error names the bodies whose elements changed. To start over, delete `simulation_state.json` (and the old files). A `simulation_state.json` of an older version is still accepted with a warning when what it covered matches: only `tmax`, `Nout`, the integrator, `dt`, `batch_threshold` and `secular_angle_mode` (the oldest), or everything above except the elements (the elements are then not checked).
+If the hash differs, `run()` raises `ValueError` instead of mixing two runs. The usual cause is the date: without `date=` a `nasa` run starts at today's midnight, so a resume on another day must pass the original date (`date=`). With `batch_size` unset the layout depends on `n_cores`, so keep it too. The elements count as obtained, not as requested: AstDyS and MPC elements come from the cached catalog and are the same on a rerun, but a refreshed get-orb answer (`MPC_LOOKUP=file_then_api`), a new catalog or a Horizons re-query (astroquery keeps its answers a week) that returns a new orbit solution makes another run, and the error names the bodies whose elements changed. To start over, delete `simulation_state.json` (and the old files). A `simulation_state.json` of an older version is still accepted with a warning when what it covered matches: only `tmax`, `Nout`, the integrator, `dt`, `batch_threshold` and `secular_angle_mode` (the oldest), or everything above except the elements (the elements are then not checked).
 
 ```python
 import resonances

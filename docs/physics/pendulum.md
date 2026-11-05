@@ -18,8 +18,8 @@ $$
 $$
 
 with integer coefficients that obey the d'Alembert rules: the coefficients sum to zero, and the nodal ones sum to
-an even number. The catalogue name `4J-2S-1` stands for $4\lambda_J - 2\lambda_S - \lambda$ plus the perihelion term
-that completes the sum ([Resonance matrices](../matrix.md)). Its rate (M&D eq. 8.22, p. 331) is modelled as
+an even number. The catalog name `4J-2S-1` stands for $4\lambda_J - 2\lambda_S - \lambda$ plus the perihelion term
+that completes the sum ([Resonance matrices](../matrix.md)). Its rate (M&D eq. 8.22, p. 331) is modeled as
 
 $$
 \nu(a) = k\,n(a) + \sum_j k_j n_j + \nu_\text{slow}, \qquad n(a) = 2\pi a^{-3/2}\ \text{rad/yr},
@@ -38,7 +38,7 @@ $$
 
 This is the **identity**. Its physical content is simple: $\sigma$ can turn back only when $a$ crosses $a_*$. A
 libration of $\sigma$ therefore needs an oscillation of $a$ about $a_*$ with the right amplitude and the right phase.
-Most catalogue angles have $k<0$, hence $c>0$. A retrograde orbit ($i > 90°$) uses its own angle convention built
+Most catalog angles have $k<0$, hence $c>0$. A retrograde orbit ($i > 90°$) uses its own angle convention built
 from $\Omega,\omega,M$ ([Resonance matrices](../matrix.md)).
 
 ## The averaged potential and Lagrange's equation
@@ -63,7 +63,7 @@ $$
 \qquad V = \frac{3k^2}{a^2}\bar R ,
 $$
 
-using $\dot n = -\tfrac32 (n/a)\,\dot a$. With the positive disturbing function used here, **stable centres are the
+using $\dot n = -\tfrac32 (n/a)\,\dot a$. With the positive disturbing function used here, **stable centers are the
 minima of $\bar R$** (the common Hamiltonian convention writes the perturbation as $-R$; the physics is the same).
 The minimum the body occupies, $\sigma_c$, need not be at $0$ or $\pi$: exterior $1{:}n$ resonances have asymmetric
 wells, and the minima move when $e$, $i$, $\omega$ or the planet's perihelion change (Gallardo 2006, §3).
@@ -73,7 +73,7 @@ encounter (inside a few Hill radii of the planet), where the package does not us
 
 ## The pendulum
 
-Near a single well, $\ddot\sigma = -V'(\sigma)$ is a pendulum. Measured from its centre, $\psi = \sigma - \sigma_c$,
+Near a single well, $\ddot\sigma = -V'(\sigma)$ is a pendulum. Measured from its center, $\psi = \sigma - \sigma_c$,
 the cosine pendulum has (M&D eqs. 8.45–8.52, pp. 335–337)
 
 $$
@@ -88,12 +88,12 @@ $$
 h = \frac{\dot\sigma^2/2 + V(\sigma) - V_\text{min}}{V_\text{max} - V_\text{min}} ,
 $$
 
-normalised by the **global** minimum and maximum of $V$. For one harmonic this is the expression above. With two
+normalized by the **global** minimum and maximum of $V$. For one harmonic this is the expression above. With two
 harmonics and two wells the two maxima alternate with the wells, so both wells are bounded by the lower maximum, the
 barrier between them, which lies below $V_\text{max}$: their separatrix sits at $h<1$, and $h<1$ alone does not say
 which well the orbit is in. $h = 1$ stays the boundary of circulation: a loop between the barrier and $V_\text{max}$
 librates around both wells; only $E > V_\text{max}$ lets the angle turn. The rules that read $h$ against 1 (crossings,
-the filter guard, the turns' zone edge $h_\text{hi}$) mean circulation, and the global normalisation is the right one
+the filter guard, the turns' zone edge $h_\text{hi}$) mean circulation, and the global normalization is the right one
 there. The predicted period of a cycle is taken in the well
 that holds it (the basin of the cycle's fastest sample), up to that well's own barrier, the lower of the two maxima
 around it, and so is its action (below).
@@ -199,7 +199,7 @@ amplitude, so $F$ enters only once). In these units the cosine half-width is
 $\Delta a = \tfrac43 a\sqrt{3\mu_\text{eff}}$.
 
 The **curvature**, not the first Fourier harmonic, is what sets the small-amplitude period, and the curvature is
-taken at the minimum whose basin holds the measured centre. An evaluation counts only when the observed swing
+taken at the minimum whose basin holds the measured center. An evaluation counts only when the observed swing
 librates in that well (it contains $\sigma_c$ and does not pass over the global maximum of $\bar R$). The theory is
 evaluated at `MMR_STRENGTH_SNAPSHOTS` = 3 times in the episode, so it is a range, not a number. When the planet was
 saved, each snapshot uses the simultaneous averaged elements of the body and the planet. Otherwise the planet's
@@ -230,13 +230,13 @@ $[1/x, x]$, $x$ = `MMR_STRENGTH_CHECK_RATIO` = 10, and fails when the whole rang
 thousand times larger (or smaller) than the resonance can give ([Is it this resonance?](response.md#strength)).
 If the potential is resolved but none of its evaluations has the observed swing librating in its well, the check
 **fails** (`centre_outside_well`), whatever the ratio: the range shown then covers every evaluation, also those outside
-the occupied well, and is a diagnostic only. Not measured: no episode, no stable well near the measured centre, a quadrature that does not converge (nearly crossing
-orbits), or the body within `MMR_STRENGTH_MIN_DISTANCE_HILL` = 3 Hill radii of the planet at the centre.
+the occupied well, and is a diagnostic only. Not measured: no episode, no stable well near the measured center, a quadrature that does not converge (nearly crossing
+orbits), or the body within `MMR_STRENGTH_MIN_DISTANCE_HILL` = 3 Hill radii of the planet at the center.
 
 ### Three-body resonances
 
 A three-body term appears at second order in the masses (Morbidelli 2002, §9.3, p. 223; Nesvorný & Morbidelli
-1998, §3, pp. 3031–3032). This implementation has **no directly averaged three-body potential**, and no centre track
+1998, §3, pp. 3031–3032). This implementation has **no directly averaged three-body potential**, and no center track
 for three-body angles; it uses only the order-of-magnitude scale
 
 $$
@@ -298,7 +298,7 @@ The shortest co-orbital libration the analysis keeps is `MMR_COORBITAL_PERIOD_FL
 tadpole period $P_\text{orb}/\sqrt{27\mu/4}$ (Jupiter 148 yr, Earth 222 yr). A quasi-satellite needs its own floor,
 from the same averaged potential: $\omega_{QS}^2 = 3\mu n^2\tilde R''(\theta_c)$ in the well about 0. When the
 orbit-averaged angle turns inside that well during a stay of at least one loop of the averaged potential through its
-own turns (`MMR_COORBITAL_QS_TRIGGER_PERIODS`) and the first pass found no libration, the record is analysed again
+own turns (`MMR_COORBITAL_QS_TRIGGER_PERIODS`) and the first pass found no libration, the record is analyzed again
 with the floor 0.5 $P_{QS}$, $P_{QS} = 2\pi/\omega_{QS}$ (`MMR_COORBITAL_QS_FLOOR`, rule G1q). A horseshoe that turns close to the planet is faster than a
 tadpole as well: a run whose turns all reflect on a top (below) has the floor 0.5 $T$ of the loop through its own
 turns, when its local law has $K/K_\text{th} > 0$ (`MMR_COORBITAL_PROFILE_FLOOR`, rule `coorbital_floor_profile`;
@@ -314,7 +314,7 @@ does not hold), sets what the prominence counts as fast ([signal](signal.md)).
     and follows the 1:1 law with $K/K_\text{th} = 1.00$; the loop through its turns gives 19.5 yr, $P_{QS}$ there 32.5 yr).
     Without a loop through the turns the longest $P_{QS}$ along the stay is used. For Venus at $e = 0.41$ (2021 XA1)
     $P_{QS} \approx 150$ yr is the tadpole period, so the pass changes nothing there. The pass is kept when it
-    holds a librating episode centred in the well and no fewer episodes outside the well than the first pass. An
+    holds a librating episode centered in the well and no fewer episodes outside the well than the first pass. An
     episode takes the quasi-satellite floor only where the well exists on at least `MMR_COORBITAL_QS_WELL_SHARE` = 0.5
     of its samples. The 1:1 force law is then tabulated on blocks of $\min(P_c, P_{QS})$, at most
     `MMR_COORBITAL_QS_MAX_BLOCKS` = 4000 over the record. When the step cannot filter the quasi-satellite cutoff the

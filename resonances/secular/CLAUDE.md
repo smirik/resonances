@@ -72,7 +72,7 @@ Lidov's integrals (`lidov-kozai.md`), −2 vs −9 (`physics/status-tree.md`), t
   Jupiter Trojans are covered: their forced vector is Jupiter's, g5+g6 (591986: fitted g5 1.02 x Jupiter's own term).
 - **The ZLK status** comes from the gate's outcome in `decide_status`: confirmed → resonant; kinematic →
   non_resonant/kinematic_libration (−2); no verdict → uncertain/gate_unavailable (−9). An episodic row without a
-  verdict (not an unfitted co-orbital) goes by `ZLK_EPISODIC_NO_VERDICT` (`decide.episodic_without_verdict`, W28 D10,
+  verdict (not an unfitted co-orbital) goes, in the W28 tree, by its episode's e-i coupling (`decide.episodic_without_verdict`, W28 D10,
   the author's q-1 E of 2026-10-31): transient only when the deciding episode's own e-i coupling is zlk, else −9, rule
   `zlk_gate_unconfirmed` (below). A drift or short
   record changes only on a kinematic outcome with rho_max < 1: max over the record of rollmed(|z_free|, W) /
@@ -98,7 +98,7 @@ Lidov's integrals (`lidov-kozai.md`), −2 vs −9 (`physics/status-tree.md`), t
   pooled period (624: the deciding episode's 3955 yr is 1.2 % off the 3910-yr beat, outside the tight test; the
   pooled 3940 inside). The centre-scale guard still reads the fine geometry's pooled P_cyc.
 - **The episode's e-i coupling decides an episodic row without a gate verdict** (W28 D10; `analysis/zlk/episode_ei.py`,
-  columns `zlk_ei_episode_*`, carried in `GateResult.episode_ei` with `episodic_policy`). Measured on the deciding
+  columns `zlk_ei_episode_*`, carried in `GateResult.episode_ei`). Measured on the deciding
   episode's samples [first TP, last TP] at its own period: e, the tilt i, G, H, K high-passed on the whole record by a
   one-period running mean, then demodulated at P cycle by cycle (one fixed-P fit loses phase over many cycles of a
   drifting period: 162474 1.5 Myr). zlk = antiphase within `ZLK_EI_PHASE_TOL_DEG`, signed coherence <=

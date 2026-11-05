@@ -160,9 +160,9 @@
   "step_yr": 1.0
  },
  "mmr2__385458__9N-17+0+8__300kyr": {
-  "action": "extend",
+  "action": "none",
   "angle_status": "libration",
-  "confidence": "high",
+  "confidence": "certain",
   "example_id": "mmr2__385458__9N-17+0+8__300kyr",
   "final_regime": "libration",
   "integrator": "SABA(10,6,4)",

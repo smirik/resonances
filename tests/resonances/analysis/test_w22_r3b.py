@@ -266,7 +266,7 @@ def test_433_text_names_the_owner_and_the_route():
     facts = vt.MMRFacts(analysis, S, row, analysis.episode_rows())
     rows = [r for section in vt.physics_sections(facts) for r in section.rows]
     owner_row = next(r for r in rows if r.key == 'owner')
-    assert '47M-44+0-3' in owner_row.text and 'by its identity route' in owner_row.text
+    assert '47M-44+0-3' in owner_row.text and '(the identity route)' in owner_row.text
     assert any(r.key == 'identity_fit' for r in rows) and any(r.key == 'identity_strength' for r in rows)
 
 

@@ -103,7 +103,7 @@ class CrossSpectrumPlotter(BasePlotter):
 
     @classmethod
     def from_body(cls, body, resonance, pair: str) -> 'CrossSpectrumPlotter':
-        """Create a plotter for one already-analysed pair of a body."""
+        """Create a plotter for one already-analyzed pair of a body."""
         from resonances.resonance.coherence_analysis import resolve_series
         from resonances.resonance.cross_spectrum import parse_pair
 

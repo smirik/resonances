@@ -39,8 +39,8 @@ What happens on the first run:
 
 - The elements of the asteroid and of the planets are downloaded from **NASA Horizons** at the start date (today,
   by default; the default data source is `DATA_SOURCE=nasa`). The planets are cached in `cache/solar-*.bin`.
-  AstDyS and the MPC catalogue are optional sources ([Configuration](config.md), [Examples](examples.md)).
-- The catalogues of resonances are built once and cached in `cache/mmr-2body.csv`, `cache/mmr-3body.csv`
+  AstDyS and the MPC catalog are optional sources ([Configuration](config.md), [Examples](examples.md)).
+- The catalogs of resonances are built once and cached in `cache/mmr-2body.csv`, `cache/mmr-3body.csv`
   ([Resonance matrices](matrix.md)).
 - The default integration is 100 000 years with `SABA(10,6,4)` and a saved point every
   15.9 years.

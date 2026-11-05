@@ -24,7 +24,7 @@ from resonances.plotting.style import DEFAULT_PLOT_OPTIONS, PlotStyle, PortraitY
 
 
 def diagnostics(centre=np.pi, turns=3, n=4000, years=4000.0, planet=True, focus=None):
-    """A libration about `centre` with period 400 yr, unwrapped `turns` whole turns away."""
+    """A libration about `center` with period 400 yr, unwrapped `turns` whole turns away."""
     t = np.linspace(0, years, n)
     sigma = centre + 2 * np.pi * turns + 0.6 * np.sin(2 * np.pi * t / 400)
     longitude = 2 * np.pi * t / 3.2776**1.5

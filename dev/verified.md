@@ -10,8 +10,8 @@ Facts verified against independent sources, mostly in the package review of 2026
 - Horizons: `CENTER=@0`, ecliptic J2000; astroquery elements and rebound vectors are both TDB (a bare calendar date is
   read as TDB).
 - The asteroid is added with `primary=Sun` and its orbit read heliocentric.
-- 463 against JPL end to end: 233 km at t0, 873 km at +50 yr (ias15); Jupiter barycentre to 1e-8 km. Hektor through
-  Horizons: 2e-15 AU. AstDyS against Horizons at the catalogue epoch: 2.1e-6 AU.
+- 463 against JPL end to end: 233 km at t0, 873 km at +50 yr (ias15); Jupiter barycenter to 1e-8 km. Hektor through
+  Horizons: 2e-15 AU. AstDyS against Horizons at the catalog epoch: 2.1e-6 AU.
 - Masses: GM from DE440 (Sun, Jupiter and Saturn systems, EMB = 399 + 301, Uranus, Neptune, Pluto + Charon). With the
   Moon: Earth + Moon = EMB to 2e-16 AU; the Moon is added last, planet indices kept; ias15 only.
 - yr2pi = 365.25689833 d (Gaussian year); k against IAU 9e-12. The simulation's GM_sun differs from k² by −5e-12, so
@@ -20,7 +20,7 @@ Facts verified against independent sources, mostly in the package review of 2026
   angle, coherence, plotters, CSV); `restore` multiplies back.
 - SABA(10,6,4) at dt = 1 matches ias15 for Earth, Jupiter and a main-belt orbit over 2 kyr; safe_mode 0 and 1 agree.
 - MPCORB: μ = k² holds on all 1.58 M rows within rounding; epochs TT; standard epoch equal to AstDyS's. MPCORB vs
-  AstDyS (objects 1–32, same epoch): |Δa| ≤ 1.1e-7 AU. 463 from both catalogues over 2 kyr: Δa ≤ 5.8e-7 AU, the
+  AstDyS (objects 1–32, same epoch): |Δa| ≤ 1.1e-7 AU. 463 from both catalogs over 2 kyr: Δa ≤ 5.8e-7 AU, the
   4J-2S-1 angle within 0.012°. Eros, 719 and 887 propagated by the package reproduce MPC's own propagation
   (Δa ≤ 5e-8 AU, Δλ ≤ 1.3e-5°).
 - Covariances: the AstDyS/NEODyS OEF `COV` has λ in degrees; SBDB's covariance is at the solution epoch with its own
@@ -45,7 +45,7 @@ Facts verified against independent sources, mostly in the package review of 2026
 ## ZLK
 
 - c1 = (1 − e²) cos² i; the code's `c` (Lidov's c2) with the < 0 criterion matches RK4 integration of the quadrupole
-  equations. Vinogradova 2024 confirms the shifted ZLK centres (Hildas 0/180°, Trojans ±60°).
+  equations. Vinogradova 2024 confirms the shifted ZLK centers (Hildas 0/180°, Trojans ±60°).
 
 ## Signal processing
 

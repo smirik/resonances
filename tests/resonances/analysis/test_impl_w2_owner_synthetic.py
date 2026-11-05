@@ -330,6 +330,55 @@ def test_owner_angle_matches_the_constructed_one(induced):
 def test_windows_keep_clear_of_the_band_pass_edges(induced):
     series, prep, _, _ = induced
     frame = owner.build_frame(prep, series, P_LIB, S)
-    trim = S.filter_edge_trim_cutoffs * S.mmr_owner_band_factor * P_LIB
+    trim = S.mmr_owner_band_edge_trim * S.mmr_owner_band_factor * P_LIB
     inside = frame.t_yr[frame.mask]
     assert inside[0] >= trim - STEP and inside[-1] <= SPAN - trim + STEP
+
+
+def test_stage_three_fits_two_windows_at_the_measured_trim(induced):
+    # 30 kyr = 15 P. Windows of 8 P (stage 1) and 7.5 P (stage 2) need 12 + 4 and 11.25 + 4 P of record at the 2-P
+    # trim: too few. Stage 3 trims 0.375 x 2 P = 0.75 P from either end (13.5 P left) and fits two windows of
+    # 13.5 / 1.5 = 9 P, capped at the 7.5 P of stage 2: they start at the trimmed span's start, half a window apart.
+    series, prep, context, _ = induced
+    settings = replace(S, mmr_force_window_cycles=8.0, mmr_owner_short_window_cycles=7.5)
+    off = owner.run_owner(series, prep, context, P_LIB, replace(settings, mmr_owner_fitted_min_cycles=0.0))
+    assert off.check == CheckValue.NOT_MEASURED and owner.FLAG_TOO_FEW_WINDOWS in off.flags
+    stage, period = owner.fitted_window_settings(prep, P_LIB, settings)
+    assert period == pytest.approx(P_LIB, rel=0.05)
+    assert stage.mmr_force_window_cycles == pytest.approx(7.5)
+    frame = owner.build_frame(prep, series, period, stage)
+    inside = frame.t_yr[frame.mask]
+    trim = 0.75 * period
+    assert inside[0] >= trim - STEP and inside[-1] <= SPAN - trim + STEP
+    assert len(frame.windows) == 2 and frame.windows[1][0] - frame.windows[0][0] == pytest.approx(3.75 * period)
+    found = owner.run_owner(series, prep, context, P_LIB, settings)
+    assert found.check == CheckValue.FAIL and found.accepted.spec.key == '11M-20+0+9'
+    assert {owner.FLAG_SHORT_WINDOWS, owner.FLAG_FITTED_WINDOWS} <= set(found.flags)
+    assert owner.FLAG_TOO_FEW_WINDOWS not in found.flags
+
+
+def test_stage_three_window_follows_the_span_and_its_floor(induced):
+    # T - 2 x 0.75 P left: two windows of (T - 1.5 P) / 1.5 fill it when stage 2 allows longer ones (P is the a_dot peak
+    # the reference search finds, here ~1.8 kyr); a floor above that length switches the stage off for this record.
+    _, prep, _, _ = induced
+    settings = replace(S, mmr_force_window_cycles=14.0, mmr_owner_short_window_cycles=13.0)
+    stage, period = owner.fitted_window_settings(prep, P_LIB, settings)
+    fitted = (SPAN - 2 * 0.75 * period) / 1.5
+    assert stage.mmr_force_window_cycles * period == pytest.approx(fitted, rel=0.02)
+    floor = fitted / period + 0.5
+    assert owner.fitted_window_settings(prep, P_LIB, replace(settings, mmr_owner_fitted_min_cycles=floor)) is None
+
+
+def test_stage_three_sizes_its_windows_on_the_grid_the_frame_fits(induced):
+    # one fit grid for both (`fit_grid_masks`): stage 3's two windows (step 0.5) span 1.5 window lengths, so with the
+    # span-limited length the second window ends on the frame's last fit sample (within one fit stride)
+    series, prep, _, _ = induced
+    settings = replace(S, mmr_force_window_cycles=14.0, mmr_owner_short_window_cycles=13.0)
+    stage, period = owner.fitted_window_settings(prep, P_LIB, settings)
+    frame = owner.build_frame(prep, series, period, stage)
+    mask, fit_mask = owner.fit_grid_masks(prep, period, stage)
+    assert np.array_equal(frame.mask, mask) and np.array_equal(frame.fit_mask, fit_mask)
+    t_fit = frame.t_yr[fit_mask]
+    stride = owner.fit_stride(frame.t_yr, prep.cutoff.cutoff_yr)
+    assert len(frame.windows) == 2 and frame.windows[0][0] == pytest.approx(t_fit[0])
+    assert frame.windows[1][1] == pytest.approx(t_fit[-1], abs=stride * STEP + 1e-6)

@@ -1,8 +1,8 @@
 # What the angle does
 
 This page describes how the filtered angle $\sigma_f$ ([From the integration to the angle](signal.md)) is read as
-geometry: where it turns back, whether its swings close into cycles about a centre, where such a libration starts
-and ends, and how the whole record is summarised in `angle_status`. Nothing here asks whether $a$ responds to the
+geometry: where it turns back, whether its swings close into cycles about a center, where such a libration starts
+and ends, and how the whole record is summarized in `angle_status`. Nothing here asks whether $a$ responds to the
 angle; that is the subject of [Is it this resonance?](response.md). All rules below are those of a mean-motion
 resonance; secular and Lidov-Kozai angles use the same turning points, cycles and episodes
 ([Secular and Lidov-Kozai](secular-zlk.md)).
@@ -33,9 +33,9 @@ $$
 P_i = t_{i+2} - t_i .
 $$
 
-A half-cycle joins two neighbouring turning points; its half-amplitude is $A_i = \tfrac12\lvert\sigma_{i+1} - \sigma_i\rvert$
-and its midpoint $m_i = \tfrac12(\sigma_{i+1} + \sigma_i)$. The full-cycle centre and half-amplitude are the means of
-two neighbouring half-cycles, which cancels the alternation.
+A half-cycle joins two neighboring turning points; its half-amplitude is $A_i = \tfrac12\lvert\sigma_{i+1} - \sigma_i\rvert$
+and its midpoint $m_i = \tfrac12(\sigma_{i+1} + \sigma_i)$. The full-cycle center and half-amplitude are the means of
+two neighboring half-cycles, which cancels the alternation.
 
 **Question: does the angle come back, or does it only pause on its way round?** A cycle is **closed** when its net
 advance is smaller than its swing:
@@ -44,7 +44,7 @@ $$
 Q_i = \frac{\lvert\sigma_{i+2} - \sigma_i\rvert}{\tfrac12\left(\lvert\sigma_{i+1} - \sigma_i\rvert + \lvert\sigma_{i+2} - \sigma_{i+1}\rvert\right)} < 1 .
 $$
 
-This is the same as each of the three turning points lying on its own side of the cycle centre, or the two
+This is the same as each of the three turning points lying on its own side of the cycle center, or the two
 half-swings differing less than threefold; there is no setting. A circulation that stalls and turns back a little
 closes no cycle. An episode needs at least one closed cycle, not all: the entry and exit half-cycles of a capture,
 or a tadpole that becomes a horseshoe, often leave an edge cycle open.
@@ -64,7 +64,7 @@ $t_1$ (at $t_a$) and after $t_2$ (at $t_b$) in the same direction and is back in
 
 The mid-level $(\sigma_1 + \sigma_2)/2$ is a convention, so the levels at $k/20$ of the swing
 (`LIBRATION_RETURN_LEVELS` = 19) are tried as well, and a level counts only inside a band of at least two
-neighbouring levels that also close (`LIBRATION_RETURN_BAND_LEVELS`, `LIBRATION_RETURN_MID_BAND_LEVELS`): a real
+neighboring levels that also close (`LIBRATION_RETURN_BAND_LEVELS`, `LIBRATION_RETURN_MID_BAND_LEVELS`): a real
 return holds over a band of sections, a match at one isolated level is a coincidence. Levels whose crossing may lie
 beyond the record neither close nor break a band, and the crossings are sought inside the run's own regime between
 jumps of $a$. Such a run is an accepted stationary episode of one cycle of period $t_b - t_a$. A verdict resting on
@@ -79,27 +79,27 @@ Turning points are grouped into **runs**. A run breaks where a gap exceeds
 goes over the top), or where two consecutive midpoints differ by more than $\pi$ (a slip). A Lidov-Kozai $\omega$
 breaks at half a turn instead (`ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG` = 90°; [Secular and ZLK](secular-zlk.md#geometry-and-status)).
 
-**Question: is this run a libration about a centre?** A run is an accepted **episode** when it has at least
+**Question: is this run a libration about a center?** A run is an accepted **episode** when it has at least
 `LIBRATION_MIN_TURNING_POINTS` = 3 turning points (one full cycle; or two closed by their phase return), at least
-one closed cycle, and a centre of one of three kinds:
+one closed cycle, and a center of one of three kinds:
 
 - **stationary**: the bands $[m_k - A_k,\ m_k + A_k]$ of all its full cycles share a point. With fewer than
-  `LIBRATION_CENTRE_MIN_ESTIMATES` = 2 independent cycles the episode is accepted but its centre is not measured
+  `LIBRATION_CENTRE_MIN_ESTIMATES` = 2 independent cycles the episode is accepted but its center is not measured
   (cap `three_tp_episode`, at most `high`);
-- **modulated**: the cycle centres turn back at least `LIBRATION_CENTRE_RETURNS_MODULATED` = 3 times within a range
+- **modulated**: the cycle centers turn back at least `LIBRATION_CENTRE_RETURNS_MODULATED` = 3 times within a range
   below `LIBRATION_MODULATED_RANGE_MAX_RAD` = $\pi$. Unequal members of a resonance multiplet, or a slowly modulated
-  resonant term, make the libration's amplitude and centre oscillate (Morbidelli 2002, §9.4, pp. 224–226); the
+  resonant term, make the libration's amplitude and center oscillate (Morbidelli 2002, §9.4, pp. 224–226); the
   rule tests the observed returns, not a model of them;
-- **moving centre**: the bands share a point in the frame $\psi = \sigma - \sigma_c(t)$, and every band holds
+- **moving center**: the bands share a point in the frame $\psi = \sigma - \sigma_c(t)$, and every band holds
   $\psi = 0$. Here $\sigma_c(t)$ is the minimum of the averaged disturbing function of the angle's planet, recomputed
-  along the record from the slowly varying elements: the stable centre of a resonance sits at that minimum
+  along the record from the slowly varying elements: the stable center of a resonance sits at that minimum
   (Gallardo 2006, §3, p. 30), and when the well changes much more slowly than one libration the angle librates
   about the moving minimum (the adiabatic condition: Wisdom 1985, pp. 274, 279). The track is accepted only when
-  the observed cycle centres follow it better (in RMS) than the best fixed centre and than the same track run
+  the observed cycle centers follow it better (in RMS) than the best fixed center and than the same track run
   backwards in time. This is done for two-body angles (1:1 and retrograde included) with the planet saved; this
   implementation has no directly averaged potential for three-body angles, which stay in $\sigma$.
 
-??? info "The centre track in detail"
+??? info "The center track in detail"
     The track is built only for a run that fails in $\sigma$ and is not modulated. $\sigma_c(t)$ is the minimum of the
     full averaged potential (`averaged_potential`) at the elements averaged over $P_c$, at nodes the larger of $P_c$
     and the span / `MMR_CENTRE_TRACK_NODES` (400) apart, followed by descent from the previous node. A node without a
@@ -108,10 +108,10 @@ one closed cycle, and a centre of one of three kinds:
     is fitted in $\psi$.
 
 An accepted episode counts as a libration of this angle only when its median period is not shorter than the
-shortest libration $P_\text{floor}$ (a faster one is a forced wave the cutoff let through) and its centre does not
-run a full revolution inside it. A run whose centre moves is tried again on its regular part (full periods within
+shortest libration $P_\text{floor}$ (a faster one is a forced wave the cutoff let through) and its center does not
+run a full revolution inside it. A run whose center moves is tried again on its regular part (full periods within
 `LIBRATION_REGULAR_PERIOD_RATIO` = 2 of the median, or without one slow edge half-cycle), and may be cut where its
-regime changes: at a step of its centre between two measured librations, or at a stall of a slowly moving centre
+regime changes: at a step of its center between two measured librations, or at a stall of a slowly moving center
 (`LIBRATION_REGIME_CUTS`, `LIBRATION_STALL_MIN_CYCLES` = 3). Two joins undo a cut that separates no regimes (MMR):
 a half-cycle over the top in $\sigma$ but not in $\psi$ (rule q, `LIBRATION_FRAME_JOIN`), and a leftover of a
 stall cut that is the stall's own libration (rule s, `LIBRATION_STALL_JOIN`). A step or stall between two accepted
@@ -120,23 +120,23 @@ Rejected runs keep their reason
 (`too_few_tp`, `centre_moves`, `no_closed_cycle`, `over_the_top`, `edge`) in `episodes.csv`.
 
 ??? info "Regime cuts in detail"
-    A run still rejected for its moving centre is cut where its regime changes, and the cut is kept only when the
-    regimes it claims are accepted. (1) A *centre step*: a half-cycle with ≥ 3 turning points and a closed cycle on
-    each side, each side passing the band test while the two together do not, each side with a measured centre, and
-    the cycle centres differing across the step by more than within either side. Failing that, (2) a *stall of the
-    slow centre*: the longest stretch of ≥ `LIBRATION_STALL_MIN_CYCLES` independent cycles whose midpoints move less
+    A run still rejected for its moving center is cut where its regime changes, and the cut is kept only when the
+    regimes it claims are accepted. (1) A *center step*: a half-cycle with ≥ 3 turning points and a closed cycle on
+    each side, each side passing the band test while the two together do not, each side with a measured center, and
+    the cycle centers differing across the step by more than within either side. Failing that, (2) a *stall of the
+    slow center*: the longest stretch of ≥ `LIBRATION_STALL_MIN_CYCLES` independent cycles whose midpoints move less
     per period than the cycles swing, at the run's own period, cut out as its own run. A steady drift has no stall
     and is not cut.
 
 ??? info "Joins: rules q and s"
     A cut must separate two regimes. **Rule q** (frame join): over the top means over the potential's maximum, and
     the maximum moves with the well. Two runs broken by one half-cycle whose half-amplitude reaches $\pi$ in
-    $\sigma$ are one run when the angle has a centre track whose cycle centres follow it, no half-swing of the
+    $\sigma$ are one run when the angle has a center track whose cycle centers follow it, no half-swing of the
     joined run reaches $\pi$ in $\psi = \sigma - \sigma_c(t)$, and the joined run passes the band test. A slow
     edge piece of the regular-part split that holds the joined half-cycle is judged in $\psi$ too. A true crossing
     of the separatrix reaches $\pi$ in $\psi$ as well and stays a break. Example: 82831 13M−24, where the half-cycle
     at 8.76 kyr passes $\pi$ in $\sigma$ only because the Mars well moved during it: two episodes, 1.9–28.6 and
-    29.8–71.3 kyr, both about the moving centre.
+    29.8–71.3 kyr, both about the moving center.
 
     **Rule s** (stall join): after a stall cut, a leftover piece next to the stall joins it when the joined piece
     passes the band test and the leftover carries the stall's oscillation: at least one of its full cycles (with
@@ -148,7 +148,7 @@ Rejected runs keep their reason
 
 ??? info "A step or stall inside one libration region is a mark"
     Rule `regime_cut_mark` (`LIBRATION_REGIME_CUT_MARKS`, an angle that is not 1:1): an episode boundary separates
-    two libration regions. Two neighbouring *accepted* pieces of a standing centre-step or stall cut are one
+    two libration regions. Two neighboring *accepted* pieces of a standing center-step or stall cut are one
     episode when the last full cycle before the cut and the first after it share a band and a period:
 
     $$\min(m_l + A_l,\ m_r + A_r) - \max(m_l - A_l,\ m_r - A_r) > 0, \qquad
@@ -156,15 +156,15 @@ Rejected runs keep their reason
 
     with $m = (v_0 + 2v_1 + v_2)/4$, $A$ the mean half-swing and $P = t_2 - t_0$ of each cycle's three turning
     points, and when the turning points of the joined stretch, the step or the stall included, span less than a
-    turn ($\max v - \min v < 2\pi$): a libration is an angle that does not take every value, so a centre that
+    turn ($\max v - \min v < 2\pi$): a libration is an angle that does not take every value, so a center that
     carries the swing around the circle leaves no region to be one of. $\sigma$ then swings in one region across the
     cut (the non-1:1 analogue of the 1:1 "same well"); the test adds no threshold of its own. The joined run keeps the band test's verdict when it passes; when it fails
-    only for its moving centre it is accepted as `regime_change` with the centre stationarity not measured. The cut
+    only for its moving center it is accepted as `regime_change` with the center stationarity not measured. The cut
     becomes a mark of the episode, `centre_step@t0:t1` (the step half-cycle) or `stall@t0:t1` (the stall) in
     `episodes.csv` `marks`. Boundaries that stay: an accepted piece next to a rejected one (a drift: 385266
     16N−27), facing bands that do not overlap (2013 VA14 60 kyr at 41.3–41.7 kyr, −4.5° at half-amplitudes
-    9.1/11.3°), a joined stretch that spans a turn (55390 1J+3S−1 at its 8.3-kyr centre scale: the facing bands
-    share 17°, but the centre travels −299° in 75 kyr and the stretch spans 455°; 482824 19N−32: 572°), and every
+    9.1/11.3°), a joined stretch that spans a turn (55390 1J+3S−1 at its 8.3-kyr center scale: the facing bands
+    share 17°, but the center travels −299° in 75 kyr and the stretch spans 455°; 482824 19N−32: 572°), and every
     gap, circulation, passage over the top, jump of $a$, action step and regular-part split. On the benchmark it
     joins 8 boundaries in 6 angles and changes no status, level or reason.
 
@@ -177,12 +177,12 @@ Rejected runs keep their reason
     are read again without them. Status, reason and confidence are those without them; only the reported word may
     keep their loops ([The reported angle word](status-tree.md#the-reported-angle-word)).
 
-The example of a moving centre is 2013 AS27 in 31E−36 ([Gallery](gallery.md#moving-centre)): its 260 turning
+The example of a moving center is 2013 AS27 in 31E−36 ([Gallery](gallery.md#moving-center)): its 260 turning
 points (period 150 yr, half-amplitude 24°) fail the band test in $\sigma$ by 8.8°, because the Earth's well moves by
-about 57° in 20 kyr, and pass in $\psi$ with a margin of 35.5°; the cycle centres lie 1.6° (RMS) from the track,
-against 14.4° from a fixed centre and 28.2° from the reversed track.
+about 57° in 20 kyr, and pass in $\psi$ with a margin of 35.5°; the cycle centers lie 1.6° (RMS) from the track,
+against 14.4° from a fixed center and 28.2° from the reversed track.
 
-![Stationary, modulated and moving-centre episodes](../img/physics/centre_types.png)
+![Stationary, modulated and moving-center episodes](../img/physics/centre_types.png)
 
 ### A co-orbital turn in the edge trim
 
@@ -218,14 +218,14 @@ or of amplitude inside the co-orbital wells is a sub-regime of one libration, no
 the averaged potential of the 1:1 force law ([pendulum](pendulum.md#co-orbitals-11)), on the run's window:
 
 - a run whose cycle bands do not overlap is accepted when every full cycle's swing (its three turning points) holds a
-  minimum of the potential, to within the run's turning-point prominence, and its cycle centres stay within one
+  minimum of the potential, to within the run's turning-point prominence, and its cycle centers stay within one
   turn. The prominence is the smallest swing the run resolves as a turn: a cycle whose amplitude collapses within it
   misses its minimum by less (2021 XO3 1V−1: 4° and 8° at 11°), a ripple drifting past L5 by more (2022 BB2 1V−1:
   7–25° at 4°, rejected);
-- two accepted neighbours, which `split_runs` separates where the next regime is slower or its centre jumps, join
-  when the half-cycle between them does not circulate and the joined run is accepted. A rejected neighbour is never
+- two accepted neighbors, which `split_runs` separates where the next regime is slower or its center jumps, join
+  when the half-cycle between them does not circulate and the joined run is accepted. A rejected neighbor is never
   joined;
-- no regime cut (centre step, stall) applies to a 1:1 angle.
+- no regime cut (center step, stall) applies to a 1:1 angle.
 
 `episodes.csv` keeps the changes as annotations: `wells`, the wells of the run's cycles in time order
 (`qs>compound>horseshoe`), and `marks`: `well_change@t0:t1` (the half-cycle two cycles of different wells share),
@@ -264,20 +264,20 @@ from 443 yr (the leg before it sweeps 3.1 turns) to the record's end: 601 yr is 
 episode 7.75–16.7 kyr. Its sub-regimes are tadpole L5, horseshoe, tadpole L4 and compound, and their laws read
 pass/pass, pass/fail, pass/pass and pass/pass.
 
-## The centre and circulation
+## The center and circulation
 
-The **slow centre** $c(t)$ is $\sigma_f$ smoothed over $W_c$ = `LIBRATION_CENTRE_CYCLES` = 3 libration periods (3 $P_c$
+The **slow center** $c(t)$ is $\sigma_f$ smoothed over $W_c$ = `LIBRATION_CENTRE_CYCLES` = 3 libration periods (3 $P_c$
 without cycles). Its own turns need a prominence $p_c = \max(10°,\ 2p_\text{TP})$
 (`LIBRATION_CENTRE_TP_PROMINENCE_DEG`, `LIBRATION_CENTRE_TP_FACTOR`). A **monotone pass** is the stretch of $c(t)$
 between two of its turns, measured by its maximum minus its minimum.
 
 **Question: does the angle go round?** The angle circulates when the largest monotone pass is at least $2\pi$
 (rule G4): an arc longer than one revolution is never a piece of a libration. A staircase with small step-backs
-circulates as well when the centre advances by at least `LIBRATION_CIRCULATION_NET_REV` = 2 revolutions net over
+circulates as well when the center advances by at least `LIBRATION_CIRCULATION_NET_REV` = 2 revolutions net over
 the window (G4b). On an aliased step such a circulation has the subtype `alias`.
 
-**Drift.** When rejected runs whose centre moves cover at least `LIBRATION_DRIFT_MIN_WINDOW_FRACTION` = 0.5 of the
-window and no revolution is completed, the angle drifts (G5). If the slow centre turns back exactly once inside the
+**Drift.** When rejected runs whose center moves cover at least `LIBRATION_DRIFT_MIN_WINDOW_FRACTION` = 0.5 of the
+window and no revolution is completed, the angle drifts (G5). If the slow center turns back exactly once inside the
 record, farther than $W_c$ from the window's edges, and its range stays below one revolution, the record holds only
 part of one slow swing and cannot tell a drift from a slow libration: `insufficient_time` / `arc` (G5a).
 
@@ -286,7 +286,7 @@ is `arc` (the range of $\sigma_f$ is at least $\pi$) or `stall` (below $\pi$), r
 lower bound on the libration period, which gives the length to integrate ([Confidence](confidence.md#actions)).
 
 ??? info "The lower bound of an arc or a stall"
-    A libration about a centre 0 or $\pi$ moves $a$ at $\lvert\dot a\rvert = K\lvert\sin\sigma\rvert$. Over the
+    A libration about a center 0 or $\pi$ moves $a$ at $\lvert\dot a\rvert = K\lvert\sin\sigma\rvert$. Over the
     analysis window of length $\tau$, with the range $\delta a = \max a_f - \min a_f$ and
     $s_{\min} = \min\lvert\sin\sigma_f\rvert$ there,
     $K_{\max} = \delta a/(\tau\,s_{\min})$ and
@@ -305,12 +305,12 @@ the edge of the analysis window and the episode and the stretch the filter trims
 period. An episode covering both edges makes the angle a `libration`; otherwise it is `episodic` (`recurrent` with two
 or more librating episodes).
 
-**Exit and entry.** After the last turning point the angle may leave its centre:
+**Exit and entry.** After the last turning point the angle may leave its center:
 
-- **suspected**: $\sigma_f$ leaves the episode's centre by more than $\pi$ with less than one period left. The label
-  stays, the flag `exit_suspected` caps the confidence at `medium`. For an MMR the centre is the local one at that
+- **suspected**: $\sigma_f$ leaves the episode's center by more than $\pi$ with less than one period left. The label
+  stays, the flag `exit_suspected` caps the confidence at `medium`. For an MMR the center is the local one at that
   edge, not the episode's mean: the midpoint of the edge swing (the half-cycle that ends at the last turning point,
-  or starts at the first), or the moving well's centre $c(t)$ at that turning point when the episode was accepted in
+  or starts at the first), or the moving well's center $c(t)$ at that turning point when the episode was accepted in
   $\psi$. A mean over an episode whose regime changes inside it can lie more than $\pi$ from its own edge turning
   point: 2016 JA in 1E−1 swings once as a horseshoe about 182° and then as a tadpole about 282° (mean 251°), so its
   first turning point at 45° read as an entry; the edge swing's midpoint holds its turning point at the
@@ -319,7 +319,7 @@ or more librating episodes).
 - **observed**: the raw angle averaged over one orbital period runs at least `LIBRATION_EDGE_ARC_REV` = 1 turn away
   from the last turning point to the end of the record and moves monotonically there. The edge is then not covered,
   there is no `exit_suspected`, and `final_regime` is a circulation from the exit. The same holds for an entry at the
-  start of the record. The centre-scale pass (G2c) does not look for a slower libration behind such an arc.
+  start of the record. The center-scale pass (G2c) does not look for a slower libration behind such an arc.
 
 2017 UM52 in 1E−1 ([Gallery](gallery.md#transient-exit)) is a horseshoe that exits at 949 yr: its averaged angle then
 runs 1.97 turns monotonically, so the exit is observed and the verdict is `transient`.
@@ -331,11 +331,11 @@ $\sigma_f$ lies inside one of three bands, up to `LIBRATION_UNION_BAND_MARGIN_DE
 
 $$|\sigma_f - c_l| \le A_l, \qquad |\sigma_f - c_r| \le A_r, \qquad |\sigma_f - c(t)| \le \max(A_l, A_r),$$
 
-the band of the left episode about its centre at its end, that of the right one at its start (centres: the midpoints
+the band of the left episode about its center at its end, that of the right one at its start (centers: the midpoints
 of their facing full cycles; $A$ the largest half-amplitude of each), and the band carried across the gap, $c(t)$
-linear from $c_l$ to $c_r$ (a step of the centre). The gap holds no libration to measure a centre on; a low-pass of
+linear from $c_l$ to $c_r$ (a step of the center). The gap holds no libration to measure a center on; a low-pass of
 $\sigma_f$ there would follow any excursion slower than its window, and the carried band alone misses a swing back
-into the other neighbour's band (the co-orbital 524522). How long the gap is does not matter (2001 WK15 32E−39: gaps of 1.5 and
+into the other neighbor's band (the co-orbital 524522). How long the gap is does not matter (2001 WK15 32E−39: gaps of 1.5 and
 1.7 $(P_\text{left} + P_\text{right})$ inside the band; an excursion over the top and back stays two episodes, even
 without a full turn). Nothing may go round over the whole chain either, and the outer episodes must reach the record's
 edges. The angle is then `libration` /
@@ -360,7 +360,7 @@ adiabatic drift). It is a confirmed **jump** when the mean dimensionless energy 
 $\max(\tau, P_\text{cyc})$ of an edge (flag `jump_at_edge`).
 
 After a confirmed jump the geometry is measured again on the **last regime** (flag `last_regime_after_jump`; each
-regime has its own centre and turning-point prominence, and no cycle crosses a jump). The last regime decides the
+regime has its own center and turning-point prominence, and no cycle crosses a jump). The last regime decides the
 angle word, with two exceptions that keep the earlier episodes visible:
 
 - the last regime holds no episode but librating episodes precede the jump: the angle is reported `episodic`, the
@@ -399,7 +399,7 @@ jump, when all of these hold:
    (`LIBRATION_ACTION_STEP_ENERGY_DRIFT` = 0.5), and the number of wells is the same at every smoothing.
 
 With fewer than two energy cycles on a side, or a single cycle of the larger swings, the cut is provisional (cap
-`action_step_provisional`, at most `medium`). The record is also analysed whole: if the cut leaves a measurement that
+`action_step_provisional`, at most `medium`). The record is also analyzed whole: if the cut leaves a measurement that
 failed on the whole record (identity, force law, R0, zone, strength) unmeasured and changes the status or the
 confidence, the cut is withheld and the whole record's analysis is kept, because geometry does not override a
 failed measurement (`geo_action_step_withheld_checks`). A cut that stands is a confirmed jump (`jump_action_step` = 1)
@@ -424,7 +424,7 @@ W(t) = \sum_j (A_j + iB_j)\,e^{ij(\varpi - \varpi_P)}, \qquad
 $$
 
 Without resolved members the strength follows the bounded oscillatory part of the eccentricity,
-$\Omega^2 \propto (e_\text{osc}/\bar e)^{\lvert p\rvert}$ ($p$ the coefficient of $\varpi$), with a fixed centre (flag `zone_eq_only`). The scale $\bar\Omega$ comes from
+$\Omega^2 \propto (e_\text{osc}/\bar e)^{\lvert p\rvert}$ ($p$ the coefficient of $\varpi$), with a fixed center (flag `zone_eq_only`). The scale $\bar\Omega$ comes from
 the potential fitted to $\sigma$, and $m(t) = \Omega(t)^2/\bar\Omega^2$. Trial librations and rotations of this model are
 integrated from a grid of starts to the end of the record: initial actions $J_0/\langle J_s\rangle$ from
 `MMR_ZONE_J_MIN` = 0.1 to 1 and rotation energies $h_0$ from 1 to `MMR_ZONE_H_MAX` = 2, both in steps of
@@ -440,7 +440,7 @@ $\lambda = \nu_\text{mod}/\bar\Omega <$ `MMR_ZONE_ADIABATIC_LAMBDA_MAX` = 0.1) a
 this by more than `MMR_ZONE_ADIABATIC_TOL` = 0.05 sets the flag `zone_numeric_mismatch`. There is no zone without a
 finite $\bar\Omega$, or when $2\pi/\bar\Omega$ is shorter than the smoothing of the angle.
 
-**Energy scatter.** The uncertainty of a cycle's energy is the robust scatter of the energies $h_j$ of neighbouring
+**Energy scatter.** The uncertainty of a cycle's energy is the robust scatter of the energies $h_j$ of neighboring
 cycles,
 
 $$
@@ -491,7 +491,10 @@ the zone: a cycle not measured breaks it), `near_separatrix_energy` and `zone_ed
 cycle in the zone, not measured with a cycle not measured and none in the zone) and Z, and the cap
 `episodes_in_separatrix_zone`. The classes are not columns only: they move the confidence through these, and one status
 path: when the episodes lie in the zone, O1 is not read as an objection ([The status tree](status-tree.md)), so the
-unmeasured-force branch does not end at uncertain on it.
+unmeasured-force branch does not end at uncertain on it. When the zone's reading does not survive for the row (the ×2
+filter guard empties Z or L2, or the status rests on an episode before a jump of $a$, whose regime the zone was not
+measured in), the two zone flags and that cap go: the row shows `zone_not_measured`, never both. The `sep_*` columns
+keep the classes measured at $P_c$.
 
 **Crossings.** They are read from $\sigma$ (`pendulum.regime_transitions`): an exit is a libration half-cycle
 followed by a slip or a turn, a capture the reverse. The crossings get one mechanism, `sep_mechanism`, the first
@@ -501,7 +504,7 @@ that applies:
 |---|---|
 | `kick` | an energy-changing step of $a$ within one cycle period of a crossing |
 | `trend` | the slope of $J/\langle J_s\rangle$ over the cycles differs from 0 by more than `SEPARATRIX_TREND_SIGMA` = 3 standard errors, and its total change exceeds $1 - J_\text{lo}$ |
-| `pulsation` | the crossings favour the weak phase of $m(t)$: cyclic-shift p-value ≤ `SEPARATRIX_PERMUTATION_P_MAX` = 0.05 |
+| `pulsation` | the crossings favor the weak phase of $m(t)$: cyclic-shift p-value ≤ `SEPARATRIX_PERMUTATION_P_MAX` = 0.05 |
 | `layer` | $\lambda = \nu_\text{mod}/\bar\Omega >$ `SEPARATRIX_LAYER_ADIABATICITY_MIN` = 0.5: a fast modulation, a chaotic layer |
 | `unexplained` | none of these |
 | (empty) | no crossing |
@@ -533,20 +536,20 @@ need the potential fitted to $\sigma$ alone to hold (the pendulum test R0 on $\s
 The angle is then `near_separatrix` (`pattern_a` or `pattern_b`; rule G3). Example:
 523899 in 3N−5 ([Gallery](gallery.md#near-separatrix)).
 
-## The centre scale
+## The center scale
 
 A slow libration can carry faster waves whose turning points fill the record: at $P_c$ no episode covers it, but the
-centre $c(t)$ itself librates. **Question: is there a libration at the scale of the centre?** When the fine scale
+center $c(t)$ itself librates. **Question: is there a libration at the scale of the center?** When the fine scale
 shows no libration (and no observed exit or entry), the angle is filtered at $W_c = 3P_\text{cyc}$, or, failing that,
-at half the period of the centre's own turns. If that angle holds an episode covering the record, the whole analysis
-is repeated at that cutoff, with its turning points taken at the centre-turn prominence $p_c$
+at half the period of the center's own turns. If that angle holds an episode covering the record, the whole analysis
+is repeated at that cutoff, with its turning points taken at the center-turn prominence $p_c$
 (`LIBRATION_CENTRE_SCALE_TP_AT_CENTRE`), and its verdict is kept when it is a whole-record libration, or an episode
 that would cover both edges of the record but for an exit or entry observed at that scale (rule G2c; column
-`geo_centre_scale_cutoff_yr`). If the libration found there is too fast for that cutoff, it is analysed once more at
+`geo_centre_scale_cutoff_yr`). If the libration found there is too fast for that cutoff, it is analyzed once more at
 half its period, and a libration whose window at $W_c$ holds fewer than two of its periods is read at the
 shortest cutoff that keeps its slow extrema ([scale ladder](signal.md#a-shorter-cutoff-for-a-slow-libration-the-scale-ladder-g2c)).
 385458 in 9N−17 over 300 kyr is a libration at $W_c$ = 4.6 kyr
-([Gallery](gallery.md#centre-scale)); over 100 kyr the same body is `insufficient_time`
+([Gallery](gallery.md#center-scale)); over 100 kyr the same body is `insufficient_time`
 ([Gallery](gallery.md#insufficient-time)).
 
 ## From geometry to `angle_status`
@@ -557,17 +560,17 @@ The first rule that applies gives the angle word:
 |---|---|---|
 | G0 | unphysical orbit; the unwrap residual is over its limits; $\varpi$ undefined ([signal](signal.md)); $P_c \le 2\Delta t$ | `undefined` (`unphysical`, `alias`, `undefined_phase`); `invalid` / `undersampled` |
 | G1 | a confirmed jump of $a$, or a step of the action (G2a) | the rules below on the last regime |
-| G1c | after the last turning point the centre completes a revolution, for longer than one period of the last episode | `episodic` (`recurrent` with ≥ 2 episodes), `final_regime = circulation` from the last turning point |
+| G1c | after the last turning point the center completes a revolution, for longer than one period of the last episode | `episodic` (`recurrent` with ≥ 2 episodes), `final_regime = circulation` from the last turning point |
 | G2 | a librating episode covers the record | `libration` (`stationary`, `modulated`, `moving_centre`) |
 | G2, G2u | librating episodes without circulation between them cover the record | `libration` (`regime_change`) |
 | G2 | librating episodes that do not cover it | `episodic` (`recurrent` with ≥ 2) |
 | G1l | a libration of the last regime after a jump, no librating episode from the record's start to the jump | `episodic`, `final_regime = libration` from the start of the last episode (a capture); a libration on both sides of the jump stays `libration` |
-| G1q | a prograde 1:1 angle without a libration whose orbit-averaged angle stays in the quasi-satellite well long enough | analysed again at the quasi-satellite floor ([pendulum](pendulum.md#co-orbitals-11)) |
-| G2c | no libration at $P_c$ (and no observed exit or entry), but the centre librates | analysed again at the centre scale (below); the rejected analysis is in `geo_cs_rej_*` |
+| G1q | a prograde 1:1 angle without a libration whose orbit-averaged angle stays in the quasi-satellite well long enough | analyzed again at the quasi-satellite floor ([pendulum](pendulum.md#co-orbitals-11)) |
+| G2c | no libration at $P_c$ (and no observed exit or entry), but the center librates | analyzed again at the center scale (below); the rejected analysis is in `geo_cs_rej_*` |
 | G3 | no episode, the $\sigma$-only potential holds, slips or stalls at the top of the well | `near_separatrix` (`pattern_a`, `pattern_b`) |
-| G4, G4b | the centre makes a revolution, or ≥ 2 net | `circulation` (`alias` on an aliased step) |
-| G5 | runs with a moving centre cover half the window | `drift` |
-| G5a | the slow centre turns back once, away from the edges, range < $2\pi$ | `insufficient_time` (`arc`) |
+| G4, G4b | the center makes a revolution, or ≥ 2 net | `circulation` (`alias` on an aliased step) |
+| G5 | runs with a moving center cover half the window | `drift` |
+| G5a | the slow center turns back once, away from the edges, range < $2\pi$ | `insufficient_time` (`arc`) |
 | G6 | turning points but no episode / none: range ≥ $\pi$ / < $\pi$ | `insufficient_time` (`few_cycles` / `arc` / `stall`) |
 | G1e | the last regime holds no episode, librating episodes precede the jump | `episodic`, `final_regime` = the last regime's word; the status reads the earlier episodes with their own response and no energy (cap `episode_before_jump`) |
 
@@ -577,7 +580,7 @@ episode reaches the record's end, which includes every whole-record libration an
 none of these holds.
 
 **The reported word.** The word in the output is not always the raw geometric one: G1c, G1e and G1l are reported as
-`episodic`, a G2u union as `libration` / `regime_change`, a kinematic drift as the centre's word, and forced waves
+`episodic`, a G2u union as `libration` / `regime_change`, a kinematic drift as the center's word, and forced waves
 may keep their loops ([The reported angle word](status-tree.md#the-reported-angle-word)).
 
 So `angle_status` describes what $\sigma$ does, and `status` says whether that is this resonance. A body can be

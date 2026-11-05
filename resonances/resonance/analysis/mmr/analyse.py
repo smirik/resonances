@@ -746,6 +746,7 @@ def _undersampled(series, context, sampling, settings, cells, parent: str, cutof
     columns = {
         'rec_unphysical': 0.0,
         'rec_rule': 'G0',
+        'geo_angle_rule': 'G0',
         'flt_cutoff_yr': cutoff.cutoff_yr,
         'flt_cutoff_binding': cutoff.binding,
         'flt_samples_per_cutoff': cutoff.samples_per_cutoff,
@@ -846,6 +847,7 @@ def _invalid_input(series: MMRSeries, problems: List[str], settings, cells, pare
             'rec_body_coefficient': series.resonance.body_coefficient,
             'rec_input_problems': join_list(problems),
             'rec_rule': 'G0',
+            'geo_angle_rule': 'G0',
         },
     )
 
@@ -1190,6 +1192,7 @@ def _analyse_mmr(
     set_fold_free_step(sampling, context, floor, settings)  # the floor of the cap (the flag may be set just above)
     regime, regime_start = decide.final_regime(angle_decision, geometry, settings, decision)
     flags = _flags(sampling, prep, geometry, read, energy, strength, subresonances, owner, decision)
+    flags = decide.surviving_zone_flags(flags, view.energy, margins)  # the zone flags follow the reading that survived
     lifted_caps = _mark_exit_and_capture(series, view, reported, checks, flags, caps, decision, ledger, settings)
     # the confidence reads the tree's word (its calibration cell), not the rewrite: episodic for a union not promoted
     union_kept = bool(union_episodic) and decision.angle_word is None
@@ -2214,6 +2217,9 @@ def _extra_columns(
     return {
         'rec_unphysical': 0.0,
         'rec_rule': decision.rule,
+        # the angle decision's own rule (`AngleDecision.rule`: G5a, G5w, G6, ...); rec_rule is the status leaf, G6 for
+        # every insufficient_time row whatever rule set the word
+        'geo_angle_rule': angle.rule,
         'geo_tp_half_amp_med_deg': math.degrees(decide.tp_half_amplitude_median(geometry)),
         'geo_n_librating_episodes': len(decide.librating_episodes(geometry, settings)),
         'geo_n_episodes_before_jump': len(decide.librating_episodes(geometry, settings, before_jump=True)),

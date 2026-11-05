@@ -1,6 +1,6 @@
 # Resonance matrices
 
-A resonance matrix is a catalogue of mean-motion resonances with their nominal resonant semi-major axes $a_{\rm res}$.
+A resonance matrix is a catalog of mean-motion resonances with their nominal resonant semi-major axes $a_{\rm res}$.
 It is used to find the resonances near a body before integrating it.
 
 - **Two-body** (`TwoBody`): Kepler's third law at the commensurability $k_P n_P + k n = 0$,
@@ -17,7 +17,7 @@ It is used to find the resonances near a body before integrating it.
 These are nominal values from fixed planetary axes. The classifier does not use them: it measures the exact
 resonance $a_*$ of each angle from the integration ([The resonant pendulum](physics/pendulum.md)).
 
-## Initialisation
+## Initialization
 
 When the app needs to know the value of the resonant semi-major axis for the first time, it calculates it and stores it in the file (the config items `MATRIX_3BODY_FILE`, `MATRIX_2BODY_FILE` and `MATRIX_2BODY_RETRO_FILE`). The files have the following structure:
 
@@ -91,7 +91,7 @@ The following code will find all two-body MMRs with Jupiter between `4.2` and `6
 
 `resonances.find` and `find_mmrs` have their own tolerances: `sigma2 = 0.1` au for two-body, `sigma3 = 0.02` au for three-body and `sigma_retro = 0.5` au for retrograde resonances. A wide tolerance only adds candidates; the integration decides.
 
-### Candidates from a catalogue
+### Candidates from a catalog
 
 The bodies that might be in a given resonance, from their semi-major axis alone (an integration decides), come from
 `search_by_axis` of the `astdys` package (AstDyS) or of `resonances.mpcorb` (Minor Planet Center, see

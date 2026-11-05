@@ -166,7 +166,7 @@ class Response:
 class EpisodeCoupling:
     """The e-i coupling of a ZLK omega inside its deciding librating episode, at the episode's own period P
     (`analysis.zlk.episode_ei.measure_episode_coupling`, W28 D10). The status of an episodic omega without a gate
-    verdict reads `coupling` under ZLK_EPISODIC_NO_VERDICT=ei (`decide.decide_status`); the record's coupling
+    verdict reads `coupling` (`decide.decide_status`); the record's coupling
     (`zlk_ei_coupling`) stays a column.
 
     coupling: zlk | forced_beat | none | not_measured; reason (not_measured): no_episode, short_episode, undersampled,
@@ -233,10 +233,9 @@ class GateResult:
     rho_episodes_min: float = float('nan')
     free_turns_episodes_max: float = float('nan')
     free_turns_min: float = float('nan')  # ZLK_EPISODE_FREE_TURNS_PER_CYCLE [turns per cycle]
-    # W28 D10: the e-i coupling inside the deciding librating episode, and ZLK_EPISODIC_NO_VERDICT (ei | uncertain |
-    # keep), which `decide_status` applies to an episodic omega without a gate verdict
+    # W28 D10: the e-i coupling inside the deciding librating episode, which the W28 tree reads for an episodic omega
+    # without a gate verdict (`decide.episodic_without_verdict`) and the minimal policy for the e-i integral
     episode_ei: EpisodeCoupling = field(default_factory=EpisodeCoupling)
-    episodic_policy: str = 'ei'
 
     def to_columns(self) -> Dict[str, Any]:
         return {

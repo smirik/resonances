@@ -7,7 +7,7 @@ say what to use for real work.
 
 ## Finding resonances {#finding-resonances}
 
-The candidates near a semi-major axis, from the cached catalogues of resonant axes ([Resonance matrices](matrix.md)):
+The candidates near a semi-major axis, from the cached catalogs of resonant axes ([Resonance matrices](matrix.md)):
 
 ```python
 import resonances
@@ -33,8 +33,8 @@ A three-body candidate is accepted within `sigma3 = 0.02` au of the body's $a$, 
 
 ## High-order resonances
 
-The default catalogues hold two-body resonances up to order 10 and three-body resonances up to order 6. For higher
-orders, raise the limits and give the catalogue a new file before anything reads it (a cached file built with other
+The default catalogs hold two-body resonances up to order 10 and three-body resonances up to order 6. For higher
+orders, raise the limits and give the catalog a new file before anything reads it (a cached file built with other
 limits is read as it is, with a warning):
 
 ```python
@@ -56,7 +56,7 @@ The three-body keys are `MATRIX_3BODY_PRIMARY_MAX`, `MATRIX_3BODY_COEF_MAX`, `MA
 falls fast with its order, so a high-order libration needs a fine output step and a long record to be confirmed
 ([Is it this resonance?](physics/response.md)).
 
-## The MPC catalogue
+## The MPC catalog
 
 With `source='mpc'` the elements come from the Minor Planet Center's MPCORB (or a subset, `MPC_CATALOG`), cached in
 `cache/mpc/` on first use and refreshed only by `resonances mpc-update`. `resonances.mpcorb.query` selects rows by
@@ -72,7 +72,7 @@ sim = resonances.find(selection, source='mpc', planets=['Jupiter', 'Saturn'], ty
 print(sim.config.date, sim.config.mpc_snapshot['sha256'][:12], [body.name for body in sim.bodies])
 ```
 
-Without a `date`, an MPC run starts at the catalogue's standard epoch, where most rows are given. A row at another
+Without a `date`, an MPC run starts at the catalog's standard epoch, where most rows are given. A row at another
 epoch is integrated to the date first (`MPC_EPOCH_POLICY=propagate`) or refused (`strict`).
 
 !!! note
@@ -140,7 +140,7 @@ a verdict without a level).
 ## Restoring a run
 
 A saved run is read back from its `simulation.json`. By default the verdicts come from `summary.csv`; with
-`recompute_librations=True` the saved series are analysed again, without integrating:
+`recompute_librations=True` the saved series are analyzed again, without integrating:
 
 ```python
 json_file = f'{sim.config.save_path}/simulation.json'
@@ -152,7 +152,7 @@ again = resonances.SimulationSerializer.restore(json_file, recompute_librations=
 print(again.bodies[0].statuses)
 ```
 
-Only the rows whose series were saved (the `save` mode) can be analysed again. See
+Only the rows whose series were saved (the `save` mode) can be analyzed again. See
 [Serialization and restore](serialization.md).
 
 ## The integrator
@@ -178,5 +178,5 @@ print(sim.bodies[0].statuses)
 ```
 
 `solar_system_moon=True` integrates the Moon as a separate body (only with `ias15`); otherwise the Earth and the Moon
-are one body at their barycentre. The parameters of REBOUND itself are described in
+are one body at their barycenter. The parameters of REBOUND itself are described in
 [Configuration](config.md#integration-options).

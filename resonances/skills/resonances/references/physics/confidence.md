@@ -9,7 +9,8 @@ asteroid orbits. `uncertain` and `invalid` verdicts have no level: they claim no
 ## Minimal policy (default) {#minimal-policy}
 
 The minimal policy's level is a pure function of five pieces of evidence (`policy.level`, column
-`confidence_basis`):
+`confidence_basis`; `policy.level_inputs`, column `pol_level_inputs`, lists each input the level read with the highest
+level it allows, and the level is the lowest of them):
 
 - **N**, complete libration cycles: $(n_{TP} - 1)/2$ of the decisive episode, plus the gap of each covered edge in
   periods (a 2-TP run closed by its phase return counts 1, one 1:1 leg 0.5); a resonant row over several episodes
@@ -86,7 +87,7 @@ separatrix) never make a margin U. Which settings are conventions is marked "(co
 | L3 | S | Does $\dot\sigma \simeq c\,(a - a_*)$ hold? | the identity passes (not applicable to a kinematic verdict) |
 | L4 | D | Does $\dot a$ follow the force law? | $R^2 \ge$ `MMR_FORCE_R2_FULL` = 0.7 in both halves of the record |
 | L5 | S | Is it one pendulum? | $r$ = max/min of $T_0$ over the amplitude regimes ≤ $b$ = `MMR_L5_RATIO_FULL` = 1.15 × $\omega_{\max}/\omega_{\min}$ (the modulation of the force; 1 without one); thin to `MMR_L5_RATIO_FAIL` = 2 × $b$, failed above; above $b$ only thin when the median $e$ > `MMR_L5_E_CAVEAT` = 0.2 |
-| L6 | D | Is the centre fixed? | the centre shifts by ≤ `MMR_L6_SHIFT_FULL` = 0.5 of the mean amplitude |
+| L6 | D | Is the center fixed? | the center shifts by ≤ `MMR_L6_SHIFT_FULL` = 0.5 of the mean amplitude |
 | L7 | D | Does the libration reach both ends of the record? | the gaps at the edges are ≤ `MMR_L7_GAP_FULL` = 0.7 periods |
 | L8 | S | Do the step and the filter resolve the cycle? | $\sigma$ turns by < `MMR_L8_STEP_FULL_DEG` = 10° per step, the filter keeps ≥ `MMR_L8_GAIN_FULL` = 0.94 of the cycle (failed below 0.5), no aliased line in the band; not graded for a circulation ≥ `MMR_FAR_FROM_RES_FACTOR` = 10 $a$-scales from $a_*$ |
 | O1 | cap | Is this a capture, not a wave that was already there? | the $a$-wave before the episode is < `MMR_O1_RATIO_THIN` = 0.25 of the one inside (≥ `MMR_O1_RATIO_FAIL` = 0.5 fails, cap low, only when that wave is coherent at $P$, in phase and not the episode's own law; else thin) |
@@ -96,7 +97,7 @@ separatrix) never make a margin U. Which settings are conventions is marked "(co
 | W | D | Does another resonance own it? | see below |
 | C1–C5 | D/S | (circulation) Is it really a circulation? | see below |
 | K1 | D | (kinematic) Does the angle follow the geometry? | rate correlation ≥ `MMR_K1_FULL` = 0.97 |
-| B5 | S | Is a libration slower than the record excluded? | the centre's rate is ≥ `MMR_B5_RATIO_FULL` = 2 × the slowest rate a libration in the record's range of $a$ would allow |
+| B5 | S | Is a libration slower than the record excluded? | the center's rate is ≥ `MMR_B5_RATIO_FULL` = 2 × the slowest rate a libration in the record's range of $a$ would allow |
 | F | S | Is the required strength available? | required / theory within [1/x, x], x = `MMR_STRENGTH_CHECK_RATIO` = 10 (inverted for a kinematic verdict, below) |
 | N | cap | Was the record one turn short of an episode? | no near-episode |
 
@@ -105,7 +106,7 @@ What each test measures is explained in [Is it this resonance?](response.md) and
 **S and W** support whichever origin the verdict names; they are not tests of absence only.
 
 - S, an accepted member: full when the member's theoretical check confirms it and no tie between members was broken by
-  order alone; otherwise thin. No accepted member: the closest member's centre range over $\sigma$'s,
+  order alone; otherwise thin. No accepted member: the closest member's center range over $\sigma$'s,
   full above `MMR_S_CLOSE_RATIO` = 0.8 (a member nearly as still as $\sigma$ is a near miss: thin).
 - W, an accepted owner: full when its median $R^2 \ge$ `MMR_W_R2_FULL` = 0.85 and its force is reachable (for the
   potential route: every window scale within $[1/1.5,\ 1.5]$, `MMR_OWNER_POTENTIAL_SCALE_FULL`); an owner covering less
@@ -115,7 +116,7 @@ What each test measures is explained in [Is it this resonance?](response.md) and
 
 **C1–C5** grade a circulation:
 
-- C1: the centre passes $\ge$ `MMR_C1_REV_FULL` = 10 turns (not for an alias);
+- C1: the center passes $\ge$ `MMR_C1_REV_FULL` = 10 turns (not for an alias);
 - C2: full when no turning point is found at $P_c$, $P_c/2$ or $2P_c$; otherwise thin;
 - C3: full when the rate never runs against its mean direction, its modulation is below `MMR_C3_MODULATION_MAX` = 0.3
   and pattern B is absent; otherwise thin. The modulation is $\sqrt{b_c^2 + b_s^2}/\lvert b_0\rvert$ from the fit
@@ -137,9 +138,9 @@ The order-of-magnitude $e^q$ scale gives no such margin. The column `check_mmr_s
 
 ### Secular and Lidov-Kozai margins
 
-N (turning points of the decisive episode; thin at the minimum of three), S (the centre stationary over enough
+N (turning points of the decisive episode; thin at the minimum of three), S (the center stationary over enough
 independent cycles), F (the libration period ≥ `FILTER_MIN_LIBRATION_CUTOFFS` = 2 × $P_c$), P (a circulation's
-centre passes a full turn at every smoothing) and, for Lidov-Kozai, G (the free-$\omega$ gate decided with its
+center passes a full turn at every smoothing) and, for Lidov-Kozai, G (the free-$\omega$ gate decided with its
 number of cycles clear of `FREE_GATE_MIN_CYCLES` = 3 by more than the thin band).
 
 ## From margins to a level
@@ -157,7 +158,7 @@ The shown level, `confidence`, is the raw level lowered by every **cap** the ver
 $\text{confidence} = \min(\text{raw},\ \text{ceilings of the caps})$. A failed cap margin (O1, N) is not counted
 as a failure: its cap does the limiting, so the figure lists the limits apart from the support margins.
 
-A catalogue row that takes the status of its accepted member (`subresonance_librates`) takes the member's
+A catalog row that takes the status of its accepted member (`subresonance_librates`) takes the member's
 confidence too, with its raw level, thin and failed margins and caps; its `mrg_*` columns and calibration cell stay
 its own. Read the member's row (`owner`) to see why.
 
@@ -195,12 +196,12 @@ and the panel that decides between the two.
 | `episode_force_law_mixed` | medium | only one episode librates in this resonance; the others carry another force |
 | `episode_before_jump` | medium | the episodes belong to a regime that ended with the jump of $a$ |
 | `action_step_provisional` | medium | one libration over the whole window: the step in amplitude is a large modulation, not two energy levels |
-| `slow_libration_not_excluded` | medium | a slower libration of $\sigma$ about a moving centre |
+| `slow_libration_not_excluded` | medium | a slower libration of $\sigma$ about a moving center |
 | `near_episode` | medium | transient: one more turning point would make a librating episode (a 1:1 leg between passages, or one whose two turns are kicks, counts: leaf G4c) |
 | `near_separatrix_without_zone`, `l2_without_zone` | medium | a circulation, or a libration close to the separatrix |
 | `second_capture_unresolved` | medium | $\sigma$ is held by its own term as well: both resonances at once |
 | `owner_search_skipped`, `catalogue_longitudes` | medium | another resonance drives $a$ (rerun with the search on, the planets saved) |
-| `planets_missing`, `nodal_subresonance_candidate`, `subresonance_tie`, `subresonance_t6_only`, `subresonance_theory_unconfirmed`, `subresonance_undetermined` | medium | a member of the multiplet holds the centre |
+| `planets_missing`, `nodal_subresonance_candidate`, `subresonance_tie`, `subresonance_t6_only`, `subresonance_theory_unconfirmed`, `subresonance_undetermined` | medium | a member of the multiplet holds the center |
 | `jitter_low_e` | medium | invalid: $\varpi$ is undefined at small $e$ |
 | `short_period_aliased` | medium | the turning points are partly the output step's: short-period terms folded into $\sigma_f$ and $a_f$ |
 | `one_cycle_energy_not_conserved` | medium | (1:1) the one cycle may be a passage, not motion in the averaged well |
@@ -219,7 +220,7 @@ and the panel that decides between the two.
 
 How often a level was right is reported next to it, never mixed into it. The verdicts are grouped into **cells**
 (status, angle_status, reason). For each cell, the benchmark ([Benchmark](https://smirik.github.io/resonances/benchmark/)) counts the
-author-labelled verdicts at `high` or `certain`, $n$, and the wrong ones among them, $n_{\rm err}$. With
+author-labeled verdicts at `high` or `certain`, $n$, and the wrong ones among them, $n_{\rm err}$. With
 $\hat p = (n - n_{\rm err})/n$ and $z = 1.96$, the Wilson (1927) 95 % interval of the accuracy is
 
 $$
@@ -237,7 +238,7 @@ Each verdict ends with an `action`, the cheapest step that would make it stronge
 
 | action | when |
 |---|---|
-| `none` | `certain` or `high` |
+| `none` | `certain` (always, even when a longer record could still test something) or `high` |
 | `spot_check` | `medium`: look at the figure |
 | `review` | `low`; `uncertain / origin_unknown`; `invalid` other than an alias or an undersampled step; a record whose period already fits it while it is still too short to decide (more time cures nothing) |
 | `extend` | other `uncertain` verdicts, and an `uncertain / origin_unknown` one whose deciding measurement is missing only for lack of length (below): integrate longer, to `extend_to_years` |
@@ -252,7 +253,7 @@ $$
 
 with $N_{\rm TP}$ = `LIBRATION_MIN_TURNING_POINTS` = 3, $f_{\rm trim}$ = `FILTER_EDGE_TRIM_CUTOFFS` = 1 and $P$ the
 time scale that decides: the measured cycle, or for a too-short record the slowest lower bound its shape allows
-(twice the spacing of its turning points, a slow arc of the centre, the rate of a stall). The physical estimate is
+(twice the spacing of its turning points, a slow arc of the center, the rate of a stall). The physical estimate is
 $N$, a round value $\ge \max(T_{\rm req},\ f_{\min} T)$, $f_{\min}$ = `MMR_EXTEND_MIN_SPAN_FACTOR` = 2, $T$ the record
 length (column `base_extend_to_years`). For `insufficient_time` the action asks only for the **next check**,
 
@@ -260,7 +261,7 @@ $$
 T_{\rm next} = \mathrm{round\ up}\big(\max(f_{\min}T,\ \min(N,\ f_{\rm next}T))\big),
 $$
 
-with $f_{\rm next}$ = `MMR_NEXT_CHECK_SPAN_FACTOR` = 4: a budget after which the record is analysed again, not a promise that it is enough.
+with $f_{\rm next}$ = `MMR_NEXT_CHECK_SPAN_FACTOR` = 4: a budget after which the record is analyzed again, not a promise that it is enough.
 A drift or another `uncertain` verdict asks for $N$ itself. When $T_{\rm req} \le T$, time is not what is missing:
 `base_cause` names what is, and the action is `review`.
 
@@ -290,9 +291,9 @@ EZ84's one reflection at 144 yr). No status or level changes; a review row stays
 
 ??? info "Which time scale decides (`base_period_source`)"
     For `few_cycles`: twice the median spacing of the turning points, and the slow scales. For `arc`: twice the
-    longest stretch without a turn of the slow centre, the $2\omega$ or $e$-cycle when the kinematic test fails, and
+    longest stretch without a turn of the slow center, the $2\omega$ or $e$-cycle when the kinematic test fails, and
     B5's bound. For `stall`: one revolution at the stall's mean rate, and the force bound $P_\text{lib,min}$
-    ([The lower bound of an arc or a stall](geometry.md#the-centre-and-circulation)). The column `base_period_source`
+    ([The lower bound of an arc or a stall](geometry.md#the-center-and-circulation)). The column `base_period_source`
     names the one that decided.
 
 **Which step to resample at.** For an alias or a coarse step, `resample_step_yr` is the largest value of

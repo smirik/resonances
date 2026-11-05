@@ -4,7 +4,7 @@ This folder is for people (and agents) who work on the package from a clone of t
 the documentation site: `mkdocs.yml` reads `docs/` only, and nothing here is linked from there. The user documentation
 is in `docs/`; the release procedure is `dev/release.md`.
 
-What is here is the durable part of the classifier v2 programme (October 2026) and of the earlier work it rests on:
+What is here is the durable part of the classifier v2 program (October 2026) and of the earlier work it rests on:
 what was decided and why, what was tried and rejected, the traps that cost time, and the physics the code relies on.
 The working notes it was condensed from (reports of every wave, review rounds, question pages) are local and
 git-ignored (`tmp/`); a path into `tmp/` below is provenance, not a link that works in a fresh clone.
@@ -30,6 +30,6 @@ Related files in the repository:
   benchmark is built and run.
 - `docs/physics/*.md`: every formula and the status tree, for users; `docs/libration-analysis.md` is the rule index.
 
-Conventions of these pages: dates are 2026 unless stated; "W12" is a wave of the v2 programme (see
+Conventions of these pages: dates are 2026 unless stated; "W12" is a wave of the v2 program (see
 [history.md](history.md)); an object is named by number or designation and resonance (`2003 TX9 3E+2J-10`); a rule
 ID (G2u, F6, K2, R-ALIAS-A, ...) is explained in `resonances/resonance/analysis/mmr/CLAUDE.md`.

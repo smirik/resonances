@@ -15,7 +15,7 @@ The outcome is `libration_origin`:
 | `dynamic` | a measured force of this resonance (force law, energy integral or strength) explains the libration | [two-body](gallery.md#resonant-two-body), [co-orbital](gallery.md#resonant-coorbital) |
 | `kinematic` | $\sigma$ is bounded by geometry (perihelion term, a secular cycle, a planetary ripple); $a$ does not respond | [kinematic libration](gallery.md#kinematic-libration), [kinematic drift](gallery.md#kinematic-drift) |
 | `induced` | another resonance (the *owner*) drives $a$; $\sigma$ follows by the identity | [forced wave](gallery.md#induced-forced-wave), [owner librates](gallery.md#induced-owner-librates) |
-| `subresonance` | another member of the same multiplet librates about a fixed centre | [82831](gallery.md#transient-subresonance) |
+| `subresonance` | another member of the same multiplet librates about a fixed center | [82831](gallery.md#transient-subresonance) |
 | `unknown` | bounded, mechanism not established | [2003 TX9](gallery.md#measured-objection), [geometric libration](gallery.md#geometric-libration) |
 
 How the origins combine into a status is on [The status tree](status-tree.md). Every check has four outcomes:
@@ -77,7 +77,7 @@ part of the potential). Its $R^2$ is the smaller of the median $R^2$ in the two 
 - not measured below an amplitude of `MMR_A_RESPONSE_MIN_AMP_DEG` = 45° (there $\sin\psi$ and $\psi$ differ by
   less than 10 %, and any oscillation carried by $a$ fits), or with fewer than `MMR_FORCE_MIN_WINDOWS` = 2 windows.
 
-The fitted phase tells where the centre is, but its sign depends on $c$: $\sigma$ is stable at $\phi_0$ when $c<0$ and
+The fitted phase tells where the center is, but its sign depends on $c$: $\sigma$ is stable at $\phi_0$ when $c<0$ and
 at $\phi_0 + \pi$ when $c>0$ (from $\ddot\sigma = c\,\dot a$). The phase spread over the windows is recorded but not
 tested: a modulated pendulum's phase legitimately moves (Morbidelli 2002, §9.3).
 
@@ -257,6 +257,14 @@ $c\,\dot a - \ddot s = -V'(\varphi)$, so $V_F$ sees the same motion as $V_E$. Th
   in it, or turns: on a shorter arc the shape of $V$ is not constrained (2004 BG41 3J-1: $r$ = 0.64–0.90 at
   ±20–30°, 0.98–1.00 at ±60–108°). No eligible window: not measured, never a pass. `sep_VE_VF_n_eligible` of
   `sep_VE_VF_n_windows` counted, `sep_VE_VF_arc_deg` their median arc.
+  A correlation does not see a scale: $V_F = kV_E$ correlates at 1.00 for any $k > 0$. So $V_F$ must also carry the
+  observed period (`SEPARATRIX_VF_PERIOD_LAW`): each compared cycle's energy is recomputed in $V_F$ from the observed
+  $\varphi$ and $\dot\varphi$ (the same frame and $m(t)$), its period taken in $V_F$'s loop of that energy, and
+  $\lvert\operatorname{median}(T_\text{obs}/T_\text{pred}(V_F)) - 1\rvert \le$ `SEPARATRIX_PERIOD_TOL` over the
+  eligible windows, else R0 fails. A cycle whose $V_F$ loop is of the other kind (a libration above $V_F$'s top, a
+  turn below it) has no law; none left: not measured. For a pendulum at 90°, $V_F = 2V_E$ gives 1.48 and
+  $V_E/2$ 0.62. On the benchmark every passing row of this route lies within 0.94–1.14
+  (`sep_VF_period_law_med` over `sep_VF_period_law_n` cycles).
 
 $T_\text{pred}$ of a cycle is its period in a potential, through its own turning points. For a two-body angle (not
 1:1) with its planet saved, the potential is the **full averaged well**
@@ -318,11 +326,11 @@ three mechanisms (`origin_detail`):
   its force law stays below 0.4 under every law;
 - **planetary ripple** (`planet_ripple`): the period matches a planetary inequality that survived the filter.
 
-**Kinematic drift.** Some angles show episodes that are only a ripple on a drifting centre. The angle is a kinematic
+**Kinematic drift.** Some angles show episodes that are only a ripple on a drifting center. The angle is a kinematic
 drift (rule K2, `rec_rule` 3k2) when the force law fails under every law, the largest episode swing is below
-`MMR_KIN_RIPPLE_SHARE_MAX` = 0.5 of the range of the slow centre, and the rate of the slow centre correlates
+`MMR_KIN_RIPPLE_SHARE_MAX` = 0.5 of the range of the slow center, and the rate of the slow center correlates
 ($\ge 0.9$) with the rate of the angle's secular part $s = \sigma - \psi_\lambda$ low-passed at the same $W_c$. A
-kinematic libration whose centre moves by more than `MMR_KIN_DRIFT_SHIFT_RATIO` = 1 amplitude over its episode is
+kinematic libration whose center moves by more than `MMR_KIN_DRIFT_SHIFT_RATIO` = 1 amplitude over its episode is
 read the same way. *In the output:* `check_mmr_kinematic`, `kin_*`.
 
 **K1 on the episode and the swing shares.** On the decisive episode, $\sigma$ and $p\varpi$ are low-passed at the
@@ -339,7 +347,7 @@ A kinematic libration has K1e ≈ 1, a swing share ≈ 1 and a small $\lambda$ s
 its own $a$, so its $\lambda$ share is ≈ 1. The numbers are nan, with the reason in `kin_k1_episode_reason`, for
 $p = 0$, a retrograde angle, no librating episode, or an episode shorter than `MMR_KIN_MIN_POINTS` cutoffs.
 `kin_check_reason` names why the slow-angle correlation (K1) has no number, e.g. `too_few_points` when the record is
-shorter than three centre windows. 285637 3M+7J-6: K1e 0.971, swing share 1.13 ($\psi_\lambda$ carries a slow
+shorter than three center windows. 285637 3M+7J-6: K1e 0.971, swing share 1.13 ($\psi_\lambda$ carries a slow
 ±7° wave longer than the 18-kyr cycle, $\lambda$ share 0.24). *In the output:* `kin_k1_episode`, `kin_swing_share`,
 `kin_lambda_swing_share`.
 
@@ -349,14 +357,14 @@ kinematic cause: the margin K1e is full and counts as the verdict's physics, so 
 ([confidence](confidence.md)). 285637 (B1 6·10⁻⁵) and 481085 7E-10M-6 (3.2·10⁻³) are high; 41588 3J+9S-2 (B1 0.095)
 stays medium. No response of $a$ means no resonance: the class stays non_resonant, only the confidence in it rises.
 
-**A slower libration of the centre (slow scale).** Whenever the centre turns, the package stores the slower
-libration at its own scale (`MMR_SLOW_SCALE_REPORT`): the runs G2c finds at the centre scale $W_c$, even when they do
-not cover the record (episodes.csv rows with `scale` = `slow`), else the turns of the slow centre $c(t)$ of a
+**A slower libration of the center (slow scale).** Whenever the center turns, the package stores the slower
+libration at its own scale (`MMR_SLOW_SCALE_REPORT`): the runs G2c finds at the center scale $W_c$, even when they do
+not cover the record (episodes.csv rows with `scale` = `slow`), else the turns of the slow center $c(t)$ of a
 librating angle. Its period, closed cycles and half-amplitude, its own identity $\dot\sigma_s = c\,(a_s - a_*)$, B1 in
 the band of its period, and the nearest secular period ($\pi/\lvert\dot\omega\rvert$, $2\pi/\lvert g - g_j\rvert$)
 are columns. A slow swing at a secular period is that cycle seen through the angle's $p\varpi$ part: a modulation, not
 a second libration. Its cause is named with a level: *identified* when the period matches a secular period and the
-centre follows that cycle ($\dot c$ on its harmonics, $R^2 \ge$ `MMR_OWNER_R2_MIN`, or the slow centre's rate follows the
+center follows that cycle ($\dot c$ on its harmonics, $R^2 \ge$ `MMR_OWNER_R2_MIN`, or the slow center's rate follows the
 secular part of $\sigma$, $\ge$ `MMR_KIN_CORR_MIN`); *possible* with one of the two; *unknown* with neither, and then
 it is said as unknown. Where the identity holds on the slow scale the slow libration is a `dynamic_candidate`: it
 changes no status. An owner row names its owner's slow $x$ cause first. The swing $p\varpi$ alone makes is
@@ -374,14 +382,14 @@ cycle, the $2\omega$ cause of its owner's $x$, identified. *In the output:* `slo
 
     so $\varpi$, and with it $p\varpi$, can be held by the forced mode while $a$ does nothing.
 
-**A slower libration (B5).** A drifting centre could still be a libration slower than the record. B5 excludes it when
-the centre moves faster than any libration through the observed arc could, given how little $a$ moves; else the cap
+**A slower libration (B5).** A drifting center could still be a libration slower than the record. B5 excludes it when
+the center moves faster than any libration through the observed arc could, given how little $a$ moves; else the cap
 `slow_libration_not_excluded` (at most `medium`). In step 3 of [the status tree](status-tree.md), a kinematic
-reading whose centre rate is consistent with an exact commensurability (within `MMR_B5_EXACT_SIGMA` = 2 standard
+reading whose center rate is consistent with an exact commensurability (within `MMR_B5_EXACT_SIGMA` = 2 standard
 errors) becomes `uncertain / baseline_needed` (`rec_rule` 3b5). *In the output:* `rsp_b5_ratio`, `rsp_b5_route`.
 
 ??? info "B5: formula"
-    On the analysis window of length $T_w$ the centre is fitted by a line, $\sigma_c(t) = b + \nu_c t$, with residual
+    On the analysis window of length $T_w$ the center is fitted by a line, $\sigma_c(t) = b + \nu_c t$, with residual
     standard deviation $s_c$; then
 
     $$
@@ -390,9 +398,9 @@ errors) becomes `uncertain / baseline_needed` (`rec_rule` 3b5). *In the output:*
     $$
 
     $\delta a$ the range of the slow $a$ on the window: $K_{\max}$ is the largest force a libration through the
-    observed arc could have without moving $a$ by more than observed (worst case: the arc centred on the stable
+    observed arc could have without moving $a$ by more than observed (worst case: the arc centered on the stable
     point). The slow libration is excluded when $\lvert\nu_c\rvert - \delta\nu_c \ge 2\omega_{0,\max}$ (full at the ratio
-    `MMR_B5_RATIO_FULL` = 2), when the centre completes a revolution at every smoothing over an interval that overlaps
+    `MMR_B5_RATIO_FULL` = 2), when the center completes a revolution at every smoothing over an interval that overlaps
     the deciding episode, or by an owner.
 
 ## Another resonance owns the oscillation
@@ -425,6 +433,12 @@ The windows are `MMR_FORCE_WINDOW_CYCLES` = 3.5 periods long at a half-window st
 between the band-pass edges ($2P$ from either end): about $9.25P$ of record. A shorter record is searched again with
 windows of `MMR_OWNER_SHORT_WINDOW_CYCLES` = 2 periods, about $7P$ of record (flag `owner_short_windows`; a multiplet
 keeps its modulation-period windows; W33: 385533 7N-12 over $8.1P$ finds no owner among 17 candidates).
+When even those do not fit, a third stage trims less: the band-pass edge error falls to its interior level $0.75P$
+from an end (measured on the order-2 band $[P/2, 2P]$; `MMR_OWNER_FITTED_EDGE_TRIM` = 0.375 $fP$), and two windows are
+fitted to the span left, each between `MMR_OWNER_FITTED_MIN_CYCLES` = 1.5 and 2 periods: about $3.75P$ of record
+(flag `owner_fitted_windows`; 385458 9N-17 over 300 kyr, $4.6P$: none of 14 candidates drives $a$). The first two
+stages keep the $2P$ trim: on 2001 HW7 over 150 kyr, windows nearer the ends split the owner 5E-16's regimes
+differently, and its cover of σ's episode falls from 1 to 0.
 
 The potential route keeps the $R^2$, remainder and ripple checks but needs no fixed phase. The identity route has its
 own conditions (in the table).
@@ -461,11 +475,11 @@ filtered $a$ with $\sigma$, a rival one rejected because $a$ does not follow its
 $a$). Two angles sharing $\lambda$ are tied by $\Psi$: while the owner holds $a$, both librate as one oscillation, and
 the body is in both resonances only when $x = \Psi/u$ has a well of its own (*confirmed* below). An owner explains the
 measured forcing but does not exclude an extra restoring term, so an unresolved test caps the confidence (2001 HW7);
-a residual after the owner is no second capture either. A slow swing of the centre at $\pi/\lvert\dot\omega\rvert$
+a residual after the owner is no second capture either. A slow swing of the center at $\pi/\lvert\dot\omega\rvert$
 or $2\pi/\lvert g - g_j\rvert$ is the secular cycle when $\ddot x$ is a function of $2\omega$ or $\varpi - g_jt$, not
 of $x$: a modulation, not a second libration. With no term holding $\lambda$ the same beat is a
 [kinematic libration](#kinematic-origins) (285637, 481085): $a$ stays flat, so non_resonant. Perihelion dominance is no
-veto by itself, and an apocentric centre is a branch of a resonant model, not a synonym for non-resonant.
+veto by itself, and an apocentric center is a branch of a resonant model, not a synonym for non-resonant.
 
 *Two resonances at once?* Both angles can librate together only if $\Psi$ is itself bounded, and a $\Psi$ held by
 $\sigma$'s own term is a pendulum in $x = \Psi/u$. A second capture is excluded by either of two routes:
@@ -480,7 +494,7 @@ $\sigma$'s own term is a pendulum in $x = \Psi/u$. A second capture is excluded 
 *Confirmed* (the third outcome): "both angles librate" is not "in both resonances"; $\Psi$ is, when $x$
 has a well of its own. All of these on the test window: $x$ is bounded (sweep < 180°), $\dot x^2$ is a function of
 $x$ and $\ddot x$ of $\sin x$ ($R^2 \ge 0.7$ both), its period $P_x$ (the median full period of its turns at the
-centre-turn prominence `LIBRATION_CENTRE_TP_PROMINENCE_DEG` = 10°) is no secular one ($|P_x/(P_\text{sec}/k) - 1| >$
+center-turn prominence `LIBRATION_CENTRE_TP_PROMINENCE_DEG` = 10°) is no secular one ($|P_x/(P_\text{sec}/k) - 1| >$
 `MMR_KIN_PERIOD_TOL` for $\pi/|\dot\omega|$, every $2\pi/|\dot\varpi - g_j|$ and $k = 1, 2$: a small forced
 sinusoid passes both fits like a pendulum, only its period tells it), and $x$ closes at least
 `LIBRATION_CENTRE_MIN_ESTIMATES` = 2 cycles (a monotonic $x$ fits the energy integral trivially: 2013 TW135, $R^2$
@@ -491,7 +505,7 @@ The owner's own row is untouched. No benchmark row is confirmed (2026-11-01: 45 
 of them has no turn but HW7's one).
 
 Otherwise it stays unresolved and caps the confidence at medium (2001 HW7: $\ddot x$ follows $2\omega$ but also
-$\sin x$, $R^2$ 0.63). A slow wobble of the centre on an owner row is described, not judged: the period of $x$ and its
+$\sin x$, $R^2$ 0.63). A slow wobble of the center on an owner row is described, not judged: the period of $x$ and its
 secular cause, `identified` when its period matches $\pi/|\dot\omega|$ or $2\pi/|g - g_j|$ (or a harmonic) within
 `MMR_KIN_PERIOD_TOL` and $\dot x$ follows that term with $R^2 \ge 0.7$, `possible` when one of the two holds (HW7:
 6.6 kyr against $\pi/|\dot\omega|$ = 7.2 kyr, identified). A secular
@@ -520,9 +534,9 @@ or Lidov-Kozai angle never demotes an MMR verdict: it has no $\lambda$, so no id
       take up the phase). Unresolved: the cap `second_capture_unresolved`; an exclusion by F3 fires the rule
       `second_capture_f3`.
     - *Well selection (F2), a column only.* Over $\sigma$'s episodes in the test window, the Rayleigh length of the
-      owner's centres against $\sigma$'s (78085: 0.97 against 0.24: the owner returns to its own well, $\sigma$ does
+      owner's centers against $\sigma$'s (78085: 0.97 against 0.24: the owner returns to its own well, $\sigma$ does
       not). Not a criterion: the episodes are few and an owner that re-captures is what rule 2 already says.
-    - *Catalogue longitudes.* A planet whose $\lambda$ was not saved enters the owner search (and nothing else) as the
+    - *Catalog longitudes.* A planet whose $\lambda$ was not saved enters the owner search (and nothing else) as the
       line $\lambda_{j0} + n_jt$. Candidates whose decision lies within the phase error this causes are
       neither accepted nor rejected (flag `owner_catalogue_ambiguous`), and every such search carries the cap `catalogue_longitudes` (at most `medium`).
 
@@ -535,81 +549,81 @@ goes into `owner`, so the column suggests two resonances at once only when they 
 |---|---|---|---|
 | owner | another commensurability librates and makes every deciding episode (F7, P2; `owner_libration`) | `owner` = `cause_term` = its key | 2001 HW7 5J+6S-2: 5E-16 |
 | driver | it circulates and its forced wave makes the cycles (`owner_forced_wave`) | `owner` = `cause_term` = its key | 385266 16N-27: 3N-5+0+2 |
-| neighbour | an accepted owner that does not make the row's own episodes (`owner_outside_episode`, `owner_psi_too_fast`): the body is in it before or after, not at the same time | `neighbours` = `KEY t0–t1 before\|during\|after;…` | 1999 GL4 1V-5: 4J-1 after |
+| neighbor | an accepted owner that does not make the row's own episodes (`owner_outside_episode`, `owner_psi_too_fast`): the body is in it before or after, not at the same time | `neighbours` = `KEY t0–t1 before\|during\|after;…` | 1999 GL4 1V-5: 4J-1 after |
 | empty | rule C: the librating member of the same multiplet; one resonance, its status is the row's | `resonant_argument` | 31935 9M-16+0+7: 9M-16+2+5 |
 | kinematic | the secular part of $\sigma$ makes the cycles, $a$ does not respond | `cause_term` = the term | 285637 3M+7J-6: `-4varpi` |
 | joint | 'both resonances at once?' confirmed: the other commensurability librates and $\Psi$ has a well of its own (origin `joint`) | `owner` = `cause_term` = its key | — (none on the benchmark) |
 
-`commensurability` (`9M-16`) is the key a statistic counts once per body. The place of a neighbour's block is read by
+`commensurability` (`9M-16`) is the key a statistic counts once per body. The place of a neighbor's block is read by
 its midpoint against the span of the row's own episodes.
 
 ## Subresonances
 
 The members of one multiplet, $\sigma_s = \sigma + \Delta_s$, share the fast part and differ by a slow angle
 $\Delta_s = m(\varpi_P - \varpi)$ plus node terms, including the members $\sigma \pm 2m\omega$ (`MMR_SUBRESONANCE_OMEGA_HARMONICS` = 2)
-through which an inclined orbit's centre moves with $\omega$ (Gallardo 2006, §3). If member $s$ librates about a fixed
-centre $c_s$, the catalogue angle's centre drifts as $c_s - \Delta_s(t)$. Nodal members join when the inclination to
+through which an inclined orbit's center moves with $\omega$ (Gallardo 2006, §3). If member $s$ librates about a fixed
+center $c_s$, the catalog angle's center drifts as $c_s - \Delta_s(t)$. Nodal members join when the inclination to
 the invariable plane is at least `MMR_SUBRESONANCE_NODAL_INC_MIN_DEG` = 10°. Nodal members are evaluated in the
 invariable-plane frame and **listed for diagnosis only**: a nodal winner is never accepted. The check is then
 `not_measured`, with the flag and cap `nodal_subresonance_candidate` (confidence at most `medium`), and nothing is
-passed to the catalogue row. What follows applies to accepted planar members.
+passed to the catalog row. What follows applies to accepted planar members.
 
 A member that stands still is not enough: in a libration about a moving well every member's frame looks steady. A
-member is accepted when its centre range is at most `MMR_SUBRESONANCE_RANGE_RATIO` = 0.5 of the catalogue angle's and
+member is accepted when its center range is at most `MMR_SUBRESONANCE_RANGE_RATIO` = 0.5 of the catalog angle's and
 does not drift or revolve; its d'Alembert factor is at least `MMR_SUBRESONANCE_STRENGTH_REL_MIN` = $10^{-3}$ of the
 strongest term of the commensurability (a weaker member would librate over 30 times slower and cannot set the shared
 oscillation); it librates itself in the window; its force-law phase is coherent ($\ge 0.8$, and 0.2 above the
-catalogue angle's) where the swing exceeds 45°; its centre lies near 0 or $\pi$ (within 30°, at low $e$ and $i$); it is
+catalog angle's) where the swing exceeds 45°; its center lies near 0 or $\pi$ (within 30°, at low $e$ and $i$); it is
 unique; and its theoretical small-amplitude period is at most `MMR_SUBRESONANCE_T0_RATIO_MAX` = 2 times the observed
 period (it is a resonance at all). Every one of these tests is a veto applied before the choice, so a member that fails
 one hands the choice to the next. The choice itself is physical, not a score: for a two-body angle whose orbits do not
-cross, the theory chooses the member whose theoretical centre $c_j(t) = \pi - \arg P(\beta(t)) + j\beta(t)$ is the
-flattest over the episode, provided the measured centre follows the theory (RMS ≤ `MMR_SUBRESONANCE_THEORY_RMS_DEG` =
-20°); the measured centre range $W$ breaks ties (within `MMR_SUBRESONANCE_TIE_FRACTION` = 20 %) and is the fallback
+cross, the theory chooses the member whose theoretical center $c_j(t) = \pi - \arg P(\beta(t)) + j\beta(t)$ is the
+flattest over the episode, provided the measured center follows the theory (RMS ≤ `MMR_SUBRESONANCE_THEORY_RMS_DEG` =
+20°); the measured center range $W$ breaks ties (within `MMR_SUBRESONANCE_TIE_FRACTION` = 20 %) and is the fallback
 (three-body, crossing orbits, a theory that does not follow). Each accepted episode is scanned in its own window; the
 row's member is that of the episode its status rests on, and episodes.csv names each episode's own. When nothing is
 admissible, the theory follows, the members are told apart ($\beta$ moves by more than
-`MMR_SUBRESONANCE_CENTRE_MOVE_RATIO` × the half-amplitude) and the two flattest theoretical centres tie (within the
+`MMR_SUBRESONANCE_CENTRE_MOVE_RATIO` × the half-amplitude) and the two flattest theoretical centers tie (within the
 tie fraction: two members of equal weight do, since $C_a = C_b$ gives
-$P = 2C\cos\frac{(a-b)\beta}{2}\,e^{i(a+b)\beta/2}$ and both centres move by $|a-b|/2$ of $\beta$'s range), the
-regime is **composite**: the oscillation is about the moving centre of $P(\beta)$, the catalogue angle's own verdict
+$P = 2C\cos\frac{(a-b)\beta}{2}\,e^{i(a+b)\beta/2}$ and both centers move by $|a-b|/2$ of $\beta$'s range), the
+regime is **composite**: the oscillation is about the moving center of $P(\beta)$, the catalog angle's own verdict
 stands, with `origin_detail` `composite_multiplet` and `resonant_argument` `composite`. An episode whose own window
 cannot decide (members only the unmeasured test A could tell apart) caps the row as the decisive one would
 (`subresonance_undetermined`). The theory names the same member as before on the five two-body accepted rows of the
 benchmark (12218, 27011, 31935, 65366, 67495; 82831's orbits cross Mars: W). An accepted member gets a row of its own
-(`added_by = subresonance_check`) and the catalogue angle gets origin `subresonance`
+(`added_by = subresonance_check`) and the catalog angle gets origin `subresonance`
 ([Gallery](gallery.md#transient-subresonance)). *In the output:* `check_mmr_subresonances`, `sub_*`.
 
 ??? info "The subresonance scan in detail"
-    The scan runs on a trigger: a drift; a moving, modulated or unclosed centre; $a$ responding with a rotating
+    The scan runs on a trigger: a drift; a moving, modulated or unclosed center; $a$ responding with a rotating
     $\phi_0$; a kinematic or unexplained-drift verdict; another member leading by the averaged coefficients; the
-    theoretical centre of the catalogue member $\pi - \arg P + j\beta$ moving over an accepted episode by more than
-    `MMR_SUBRESONANCE_CENTRE_MOVE_RATIO` = 1 × its half-amplitude (T7, two-body). A centre that moves by more than that
+    theoretical center of the catalog member $\pi - \arg P + j\beta$ moving over an accepted episode by more than
+    `MMR_SUBRESONANCE_CENTRE_MOVE_RATIO` = 1 × its half-amplitude (T7, two-body). A center that moves by more than that
     while its bands still overlap, or an `origin_unknown` verdict (2003 ND, 2003 EH16), runs the scan as a
     **diagnostic** (T8): its numbers go to `sub_diag_*`, it never accepts a member and the check stays
     `not_applicable`. Members are
-    every d'Alembert-valid split of the slow coefficients up to the catalogue's largest order
+    every d'Alembert-valid split of the slow coefficients up to the catalog's largest order
     (`MATRIX_2BODY_ORDER_MAX`, `MATRIX_3BODY_ORDER_MAX`); nodal members are built wholly in the invariable plane.
 
     The tests, as the columns name them: E′ (the d'Alembert factor), L (the member librates in the scan window), A
-    (a coherent force-law phase), B (centre near 0 or $\pi$), C (unique; a tie goes to the lower degree), E (a
-    resonance at all: the period ratio). Test D compares the centre with the composite multiplet theory
+    (a coherent force-law phase), B (center near 0 or $\pi$), C (unique; a tie goes to the lower degree), E (a
+    resonance at all: the period ratio). Test D compares the center with the composite multiplet theory
     $c_0(\beta) = \pi - \arg\sum_j C_j e^{ij\beta}$ (Morbidelli 2002, §9.3–9.4) and only raises the confidence. When
     several members pass and only A could tell them apart, no member is accepted (cap `subresonance_undetermined`);
     the other subresonance caps are `subresonance_tie`, `subresonance_t6_only` and `subresonance_theory_unconfirmed`.
 
     `sub_top` lists the best `MMR_SUBRESONANCE_TOP_N` = 10 members as `key:W/W0:E:N:A/W`: the range $W$ of the
-    member's slow centre against $W_0$ of the catalogue angle, $E = 1 - \operatorname{var}(c_s)/\operatorname{var}(c_0)$,
+    member's slow center against $W_0$ of the catalog angle, $E = 1 - \operatorname{var}(c_s)/\operatorname{var}(c_0)$,
     $N$ the number of its slow cycles the window holds, $A/W$ the swing over $W$; `sub_rank1..3_pass_deg` is the
-    largest monotone pass of that member's centre in the scan window (≈ 360° for a centre that turns once there, which
+    largest monotone pass of that member's center in the scan window (≈ 360° for a center that turns once there, which
     step 1 rejects). The list decides nothing.
 
     **Cheap numbers on every row** (prograde, not 1:1; scan or not; nothing reads them for the status). The theory
-    (two-body, planet saved, orbits not crossing) gives the planar shares $|C_j|/\sum|C_j|$, Rouché for the catalogue
+    (two-body, planet saved, orbits not crossing) gives the planar shares $|C_j|/\sum|C_j|$, Rouché for the catalog
     member, $|P|/\max|P|$ of the compound term $P(\beta) = \sum_j C_j e^{ij\beta}$ inside the gaps between accepted
-    episodes and at their edges, and the centre travel behind T7. A gap where $|P|$ nearly vanishes is the compound term
-    cancelling as $\beta = \varpi_P - \varpi$ passes its cancellation phase (12218 4M-7: 9·10⁻⁵ between 48.7 and
-    76.2 kyr). The cheap list puts every planar member up to the catalogue's order on the existing centre of the
+    episodes and at their edges, and the center travel behind T7. A gap where $|P|$ nearly vanishes is the compound term
+    canceling as $\beta = \varpi_P - \varpi$ passes its cancellation phase (12218 4M-7: 9·10⁻⁵ between 48.7 and
+    76.2 kyr). The cheap list puts every planar member up to the catalog's order on the existing center of the
     longest accepted episode, with test E′ and step 1: `sub_cheap_n` pass both, `sub_cheap_best` is the first of them,
     else the flattest frame. A flat frame with a negligible factor is a frame, not a force (2003 UG22 40 kyr: +5+2 and
     +6+1, factors 10⁻⁸ and 10⁻¹⁰).

@@ -293,6 +293,11 @@ class EnergyAnalysis:
     ve_vf_n_windows: int = 0
     ve_vf_n_eligible: int = 0
     ve_vf_arc_rad: float = float('nan')
+    # R0 with a's period law in V_F (SEPARATRIX_VF_PERIOD_LAW): the median T_obs/T_pred(V_F) over the eligible compared
+    # cycles whose V_F loop matches the observed cycle, and their count, on the record or the episode R0 was read in;
+    # nan/0 where no correlation was computed or the 1:1 energy integral replaces the comparison (`zone.vf_period_law`)
+    vf_period_law_med: float = float('nan')
+    vf_period_law_n: int = 0
     # rules (`analysis.rules`) that changed R0 with a: r0_windows (counting the eligible windows only changed the
     # check), potential_on_arc (the comparison without a free constant, on the visited arc, changed it)
     rules_fired: frozenset = frozenset()
@@ -345,6 +350,8 @@ class EnergyAnalysis:
             'sep_VE_VF_n_windows': self.ve_vf_n_windows,
             'sep_VE_VF_n_eligible': self.ve_vf_n_eligible,
             'sep_VE_VF_arc_deg': float(np.degrees(self.ve_vf_arc_rad)) if np.isfinite(self.ve_vf_arc_rad) else NAN,
+            'sep_VF_period_law_med': self.vf_period_law_med,
+            'sep_VF_period_law_n': self.vf_period_law_n,
             'sep_Omega_rad_yr': pe.omega_rad_yr if pe is not None else NAN,
             'sep_well_deg': _deg_0_360(pe.well_rad) if pe is not None else NAN,
             'sep_top_deg': _deg_0_360(pe.top_rad) if pe is not None else NAN,

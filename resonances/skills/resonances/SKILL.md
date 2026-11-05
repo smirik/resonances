@@ -20,7 +20,7 @@ does not say.
 
 `references/` is a copy of the package documentation generated from its `docs/` (same paths, links between the pages
 work; images and the omitted pages link to https://smirik.github.io/resonances/). This file holds the workflow and the
-judgement; formulas, every column, every setting and every threshold are in the references. Look things up there
+judgment; formulas, every column, every setting and every threshold are in the references. Look things up there
 (grep is fine) instead of guessing a column name, a default or a threshold.
 
 ## 1. Choose the entry point
@@ -31,15 +31,15 @@ judgement; formulas, every column, every setting and every threshold are in the 
 | search the resonances near each body | `resonances.find([463, 490], planets=['Jupiter', 'Saturn'], type='mmr')` (MMRs within `sigma2` = 0.1 au two-body, `sigma3` = 0.02 au three-body; `type=None` also adds secular candidates from AstDyS proper frequencies, and `LK`) | core.md, examples.md |
 | full control (several resonance types, own elements) | `sim = resonances.Simulation(...)`, `sim.create_solar_system()`, `sim.add_body(id_or_elements, ['4J-2S-1', 'g-g6'], name=...)`, `sim.run()` | core.md |
 | candidates only, no integration | `resonances.find_mmrs(a, planets=[...])`; `resonances secular-candidates g-g6` | matrix.md, secular.md |
-| select bodies from the MPC catalogue | `resonances.mpcorb.query(a=(2.3, 2.45), U=(None, 2), numbered=True)` → pass the DataFrame to `find`/`check` with `source='mpc'`; CLI `resonances mpc-search ... --ids` | config.md (Minor Planet Center) |
+| select bodies from the MPC catalog | `resonances.mpcorb.query(a=(2.3, 2.45), U=(None, 2), numbered=True)` → pass the DataFrame to `find`/`check` with `source='mpc'`; CLI `resonances mpc-search ... --ids` | config.md (Minor Planet Center) |
 
 Keys: two-body `3J-1` (full key `3J-1+0-2`), three-body `4J-2S-1` (`4J-2S-1+0+0-1`), co-orbital `1E-1`, retrograde
 `1J-3r0` (p, planet, q, k; only for i > 90°), secular `g-g6` (ν6), `s-s6` (ν16), `g-g6+s-s6` (z1), Lidov-Kozai `LK`.
 The output files use the full key. Notation: references/matrix.md, references/core.md.
 
 Data source (`source=`): `nasa` (default; Horizons elements at `date`, which defaults to **today's midnight**),
-`astdys` and `mpc` (the catalogue epoch is the default date; `mpc_lookup='file_then_api'` takes an object missing from
-the catalogue, e.g. an alias or one outside an `MPC_CATALOG` subset, from MPC's get-orb). The planets always come from Horizons at `date`, so a
+`astdys` and `mpc` (the catalog epoch is the default date; `mpc_lookup='file_then_api'` takes an object missing from
+the catalog, e.g. an alias or one outside an `MPC_CATALOG` subset, from MPC's get-orb). The planets always come from Horizons at `date`, so a
 run needs the network once per date. Pin `date=` whenever the result must be reproducible or a batch run may need a
 resume. A bare number sent to Horizons is an asteroid number. Your own elements: heliocentric J2000 ecliptic, angles in
 radians; an `epoch` that differs from `date` is refused.
@@ -97,7 +97,7 @@ anything longer than a few minutes, tell the user the estimate, then run it in t
 - `save` and `plot` select rows by the verdict (default `review`: everything but a confident plain circulation, i.e.
   `nonzero` plus the review queue, `review_required`: non_resonant at medium/low confidence). `nonzero` keeps the old,
   smaller selection for mass runs (the log says how many more rows `review` keeps). Use `save='all'` when
-  the rows may be analysed again later: only saved series can be re-analysed. `save_planets='analysis'` (default)
+  the rows may be analyzed again later: only saved series can be re-analyzed. `save_planets='analysis'` (default)
   must stay on for the owner search and the strength; without the planets those checks cap the confidence.
 - Clones (virtual asteroids from the orbit's covariance; references/clones.md): `resonances.check(463, '4J-2S-1',
   clones=100)`, CLI `--clones=100`, or `resonances.orbit_solution(463, source='astdys').sample(n=100, seed=0)` and
@@ -155,7 +155,7 @@ needed veto not measured for lack of length (`veto_needs_length`, clause `C`) wh
 
 **What a verdict claims.** It describes the saved interval, at the saved step, in the run's model (planets, integrator,
 initial elements, date). A longer span, a finer step or another epoch can change it; chaotic bodies change verdict
-with weeks of start epoch. The thresholds are conventions tested on a benchmark labelled by eye.
+with weeks of start epoch. The thresholds are conventions tested on a benchmark labeled by eye.
 
 Distinctions that matter when you report:
 
@@ -166,7 +166,7 @@ Distinctions that matter when you report:
   `kin_k1_episode` ≥ 0.9, a flat a with B1 < `MMR_KIN_B1_CLEAR` and a secular period; rule `kinematic_high`), else
   `medium` (`all_physics_not_measured`). `kin_swing_share` ≈ 1 says pϖ makes the swing; `kin_pred_swing_deg` (what
   the free and forced e make pϖ swing) against the measured swing says whether the size fits too.
-- **A slower libration of the centre** is stored at its own scale (`slow_*`, episodes.csv `scale` = `slow`): its period,
+- **A slower libration of the center** is stored at its own scale (`slow_*`, episodes.csv `scale` = `slow`): its period,
   cycles, swing, the identity on that scale and a cause with a level (`slow_cause`, `slow_cause_term`,
   `slow_cause_level` identified / possible / unknown). A secular cause (`secular_2omega`, `secular_g_gj`) is a
   modulation of the perihelion term, not a second resonance; `unknown` means a slow libration of another resonance is
@@ -178,7 +178,7 @@ Distinctions that matter when you report:
   (`KEY t0–t1 before|during|after`): the body sits in it before or after, not in two resonances at once, and the row's
   own episodes decide; episodes.csv marks each induced episode (`libration_origin` = `induced`). A librating member of
   the same multiplet is `resonant_argument` (rule C: one resonance), a kinematic cause is in `cause_term` (`-4varpi`).
-  Count a body once per `commensurability` (`9M-16`), not per catalogue row.
+  Count a body once per `commensurability` (`9M-16`), not per catalog row.
 - **Capture or a wave that was already there?** The cap `onset_failed` (≤ low) means σ rides a coherent a-wave at
   its period that began before the episode, continues into it in phase and is not this resonance's own force
   (`ep_onset_coherence_r2`, `ep_onset_phase_gap_deg`, `ep_onset_own_law_r2` vs `ep_onset_own_law_r2_episode`). A large
@@ -191,7 +191,7 @@ Distinctions that matter when you report:
   record ends (`edge`: no exit, the continuation is undetermined; extend the run to know). A change of well inside one
   episode is a sub-regime (`subregimes`, `subregime_checks`; summary `orbit_type` `compound: horseshoe → tadpole L4`,
   the figure's header `orbit: horseshoe → tadpole L4`), not a second episode; an amplitude change inside one well and
-  a kick of a there are marks (`marks`). On the figure the residence is the lighter fill hatched `--` labelled
+  a kick of a there are marks (`marks`). On the figure the residence is the lighter fill hatched `--` labeled
   `inferred`, the sub-regimes are brackets over (a), the kicks ▼ on (d); the text says `measured … ; stays … (inferred,
   not measured)`.
 - **One co-orbital leg is not a cycle.** A 1:1 angle without an episode is read on its single legs between passages
@@ -207,14 +207,14 @@ Distinctions that matter when you report:
   near 1, `geo_period_large_yr`). It confirms the force, not the libration; `rsp_dforce_reason` says why it was
   refused elsewhere (`no_independent_windows`: the episode is too short for two disjoint windows).
 - **Slow libration at a shorter cutoff.** `rules_fired` with `scale_ladder` and the cap `slow_scale_provisional`
-  (≤ medium): the centre scale left fewer than two slow periods in its window, so the verdict was read at the shortest
+  (≤ medium): the center scale left fewer than two slow periods in its window, so the verdict was read at the shortest
   cutoff that keeps its slow extrema (`geo_scale_ladder_cutoff_yr`, `geo_scale_ladder_n_tp` against
   `_n_tp_centre`), and neither the force law nor R0 was measured there: only the theoretical strength supports it.
   Ask for a record of ≥ 5.25 P (TNOs: ≥ 300 kyr) before trusting the level.
 - **Both resonances at once?** An induced row is never "in both": the flag `second_capture_unresolved` (≤ medium)
   means it was not ruled out. It is ruled out when x = Ψ/u sweeps ≥ 180° without an energy integral, or when ẍ follows
   the 2ω / ϖ − ϖ_j cycle and not sin x (`own_second_capture_route` = `secular_forcing`, rule `second_capture_f3`).
-  A slow wobble of the centre is described in `own_x_*` (period, half-amplitude, `own_x_cause` with
+  A slow wobble of the center is described in `own_x_*` (period, half-amplitude, `own_x_cause` with
   `own_x_cause_level` identified/possible): read it as the secular cycle, not as a slow three-body libration.
   Only `own_second_capture` = `confirmed` says "in both" (origin `joint`, `owner` = the other resonance, role
   `joint`): x is bounded, conserves an energy, sits in a well of its own at a non-secular period and closes ≥ 2
@@ -223,8 +223,8 @@ Distinctions that matter when you report:
 - **Resonant with origin unknown.** `geometric_libration` (resonant) and `geometric_episode` (transient) have origin
   `unknown`: the shape of σ says libration but no force of this resonance could be measured. Say "librates
   geometrically; the dynamical origin was not established", not "confirmed resonant".
-- **`subresonance_librates`.** The catalogue angle takes the status of a member of its multiplet (σ ± 2mω, nodal
-  terms) that holds the centre. When counting bodies, count each commensurability once: deduplicate on
+- **`subresonance_librates`.** The catalog angle takes the status of a member of its multiplet (σ ± 2mω, nodal
+  terms) that holds the center. When counting bodies, count each commensurability once: deduplicate on
   (`name`, `parent` or `resonance`).
 - **`transient`** = librating episodes that do not cover the record (capture, escape, jump of a). Check
   `final_regime` before saying "left the resonance" or "was captured".
@@ -266,7 +266,7 @@ Distinctions that matter when you report:
   in the split), so it is uncertain/gate_unavailable even when ω is episodic (rule `zlk_coorbital_episodic`); Jupiter Trojans are covered (forced vector g5 + g6), and 591986 stays kinematic. Any other
   episodic ω without a gate verdict is `transient` only when e and i trade at constant H inside its deciding episode
   (`zlk_ei_episode_coupling` = `zlk`; needs ≥ 3 periods in the episode), else uncertain/gate_unavailable with rule
-  `zlk_gate_unconfirmed` (`ZLK_EPISODIC_NO_VERDICT`: `ei` default, `uncertain`, `keep`). Read `zlk_ei_episode_reason`
+  `zlk_gate_unconfirmed`. Read `zlk_ei_episode_reason`
   (`short_episode`: a longer record with a longer episode may settle it). ω, i, Ω (and the
   free elements) are measured from the invariable plane (`ZLK_ANGLE_FRAME`, column `zlk_angle_frame`): from the
   ecliptic a nearly coplanar orbit (i_inv ≲ 1.6°) shows a false bounded ω; rule `zlk_invariable_frame` marks rows where
@@ -276,7 +276,7 @@ Distinctions that matter when you report:
   circulating ω can show it), `zlk_forcing_*` (which forced mode holds a kinematic libration, or `not_attributed` and
   why; `zlk_attribution_scope` `episodes` for an episodic row demoted inside its episodes), `zlk_node_lock` (a flag:
   the mode the node is locked to, or empty with `zlk_node_lock_reason`, `unresolved` when no full cycle of Ω − ϖ_j fits
-  the record), `zlk_centre_*` (the centre's slow line and its origin, e.g. `forced_beat:g6-g5`, `forced_direction`).
+  the record), `zlk_centre_*` (the center's slow line and its origin, e.g. `forced_beat:g6-g5`, `forced_direction`).
   The combined figure names the cause of a kinematic libration in its third sentence and adds panel (a′) (ω_f with
   the forced direction and the mode against the node) only for such rows.
 - **Clones.** `clones.csv` gives the share of each status with its Wilson interval: a probability under the
@@ -300,48 +300,95 @@ Distinctions that matter when you report:
   With the default linear phases the inner modes' phases stray by tens of degrees over 10 Myr (g4 30°, s4 81°): a
   swing within that (`sec_phase_swing_ratio` ≤ 1) is `insufficient_time` / `phase_unresolved`, action review; rerun
   with `SECULAR_PLANET_PHASES=measured` and `SAVE_PLANETS=all` (a record ≥ 5 Myr) instead of extending.
-- **Stale MMR catalogue.** A log warning "MMR catalog ... was built with other settings" means the cached
+- **Stale MMR catalog.** A log warning "MMR catalog ... was built with other settings" means the cached
   `cache/mmr-*.csv` (paths relative to the working directory) has other `MATRIX_*` limits or planets. Delete it (or
   `TwoBodyMatrix.load(reload=True)`) before trusting `find`.
 - **Today's date.** A `nasa` run without `date=` starts at today's midnight: two days give two runs, and a resume on
   another day fails its hash.
 - **MPC epochs.** Rows at another epoch than the run's date are integrated to it (`MPC_EPOCH_POLICY=propagate`, with
-  a warning) or refused (`strict`). The catalogue is refreshed only by `resonances mpc-update`.
+  a warning) or refused (`strict`). The catalog is refreshed only by `resonances mpc-update`.
 - **Planets not saved** (`save_planets='none'`) or the owner search off: caps `catalogue_longitudes`,
   `owner_search_skipped`, `planets_missing` (≤ medium): rerun with the planets saved.
 
 ## 6. Read the combined figure
 
-One page per plotted row (references/reading-figures.md, panel by panel; examples in references/physics/gallery.md; files in references/plots.md). The right
-column is the verdict: the plaque `STATUS · angle_status · CONFIDENCE` (and `ends: …`), the verdict in words (MMR:
-short bullets; `Driven by X` only when X's measured regimes cover σ's deciding episode, else `Candidate driver: X …
-not shown to make these cycles`; `Other resonances: not tested` is not "none found"; an `Objection` is a failed check
-the verdict did not read; `both resonances at once?` `excluded`, `not ruled out` (no evidence of two resonances) or
-`confirmed`), the header's second line names the role (`owner: …`, `driver: … (circulates, P …): forced wave`, a
-neighbour `… librates after the episode (…), outside it`, `resonant argument: …`, `kinematic: −4ϖ term (…)`); induced
-episodes are hatched `\\\\` on (a), the steps of the status tree, the margins and caps (✓ passes, ⚠ thin, ✗ fails, – skipped by design, · not applicable, ? not measured, ▼ cap) with
-the other reading each cap leaves open, and the next check in years. For an MMR the left panels are: (a) σ raw and
-filtered with turning points and numbered episodes, (b) σ wrapped, (c) σ̇/2ω₀ (±1 = the separatrix speed of a cosine well; each episode's own limits are dashed), (d) a with
-a* and the resonance's half-width, (e) ȧ with the fitted force law and its R², (f), (g) e and i, (h) the energy of
-each cycle against the separatrix h = 1, (i) the slow centre (hatched `slow #id`: the slow scale), (j) the centres of
-other multiplet members and of an owner (a flat line librates), plus pϖ with its secular period when the slow cause is
-a secular cycle; for a kinematic libration (j) is σ = λ part + pϖ on the scale of the swing (σ follows pϖ, the λ part
-stays flat), and the text starts `Driven by: secular cycle −4ϖ (…, P …) [measured | candidate]`. On (a), accepted runs
-that are no libration of this angle are labelled `#id wave` (a forced wave), `#id forced (strength)` (a 5s row: no
-driver identified) or `#id ripple`; a grey strip `#id < floor` / `#id centre turns` is an accepted run the status
-does not count (episodes.csv `eligible` False, `ineligible_reason`; text `Not counted: …`). A 1:1 episode in parts
-has brackets per sub-regime and a hatched `inferred` stay: inferred, not measured. `Suspected kinematic: …` is a
-suspicion, not a status. The block `Numbers behind this verdict` frames the DECISIVE comparison, the LIMIT cap, a
-CONFLICT (a failed check the verdict did not read) and UNMEASURED tests; without FAIR (m) a dark-orange line says why.
-Under the minimal policy the explanation opens with four lines (status · confidence · reason (origin / owner);
-`basis:` N, amplitude margin, objections, filter, veto; `flags:`; `v2:` the tree's verdict), the confidence block lists
-no caps, and (a) of both figures fills only the counted episodes (`#id`; a counted 1:1 leg `leg`) and, faint and
-dashed, the candidates `cand`; no grey strips (episodes.csv still lists every run). For secular/ZLK rows (d) is a
-(with the planet's a and the co-orbital zone's edges for a co-orbital), (e), (f) e and i, (g) the rate fit (secular)
-or the drift of the free and the osculating ω in turns (ZLK: a free ω that winds makes the libration kinematic); their FREQUENCIES table lists the
-body's rates, the planetary modes (g5, g6, s6 always) and the beats in ″/yr with their periods, to name a period seen
-on σ(t) (e.g. 591986: g − g5 6.11 kyr, the kinematic ω cycle; g6 − g5 54 kyr). If you can view images, open the figure of every
-`medium`/`low` verdict before reporting it.
+Each plotted row gets one page. The figures are explained panel by panel in references/reading-figures.md, with
+examples in references/physics/gallery.md and the files in references/plots.md.
+
+The right column is the verdict, in ten blocks that come in the same order for every family:
+
+1. **Header**: the status plaque, the level as four dots (`no level` for uncertain and invalid), and one action chip:
+   `no action needed`, `glance at (b), (i)` (the panels of whatever holds the level), `review figure + numbers`,
+   `extend to 200 kyr` or `resample to 0.5 yr`.
+2. **Subtitle**: the resonance and the subtype in words (`its own libration…`, `induced: borrowed from X`, `kinematic
+   (forced) libration…`), then the type and the step that decided.
+3. **Key facts**: σ, the period and amplitude, the episodes (◆ marks the deciding one), the resonance or driver, the
+   orbit, the radial overlaps and the run.
+4. **Why**: at most five sentences, each test with its number, the last on what limits the level; then one line,
+   `Needed: …` (uncertain, invalid), `Would change the verdict: …`, `Next check: …` or `A longer record cannot make it
+   resonant: …`. This line comes only from computed conditions, such as the extend length or a veto that needs a
+   longer record.
+5. **Confidence**: `Confidence: high — not certain because …`, then one pill per input of the level
+   (`pol_level_inputs`):
+   - ✓ the input is in its best state;
+   - – it is limited but does not bind;
+   - ⚠ it holds the level;
+   - ? it is not measured and holds the level;
+   - ✗ a measured objection that the level reads (`pol_objection_check`).
+6. **Checks**: `Q · Can the data show it?`, then the steps 0–6 of the tree as questions, with each margin nested under
+   its step and a small gray rule ID. ◆ marks the one deciding step. When the minimal policy decided
+   (`pol_decided_by` ≠ `tree`), ◆ is on a `P · …` line and the tree's leaf reads `overruled`. The steps not reached
+   are one gray line. The three-body e^q strength scale is a gray `– scale only`, never an objection.
+7. **Evidence**: `is this X's own pendulum?` and `what makes the cycles?` (owner search, identity, `both resonances at
+   once?`: `excluded`, `not ruled out` or confirmed). Secular and ZLK rows ask `what holds ω?`, answered with the
+   forced vector, the center wave, the node lock and the e–i coupling.
+8. **Caveats**: one sentence per flag the reader must know (`verdict_vocab.FLAG_CAVEATS`), or `none`. A failed check
+   that the level does not read is said here, with the reason it is not read.
+9. **Numbers**: the DECISIVE lines with rule IDs, then labeled groups. Numbers are printed wherever they are needed;
+   there are no pointers.
+10. **Footer**: the codes (status code, leaf · angle rule, reason/origin/veto, flags), then `W28 tree: status/level`
+    (`v2_verdict`, for comparison only: never a second verdict), the settings hash and the docs.
+
+A long column makes the page taller. For the full text, use
+`verdict_column.column_text(verdict_column_mmr.figure_column(analysis, rows, settings))`, or
+`verdict_column_long.figure_column(analysis, row, free_elements, settings)` for secular and ZLK rows.
+
+The header line above the left panels names the role of another resonance: `owner: …`; `driver: … (circulates, P …):
+forced wave`; a neighbor `… librates after the episode (…), outside it`; `resonant argument: …`; `kinematic: −4ϖ
+term (…)`. Induced episodes are hatched `\\\\` on (a).
+
+For an MMR the left panels are:
+- (a) σ raw and filtered, with turning points and numbered episodes;
+- (b) σ wrapped;
+- (c) σ̇/2ω₀: ±1 is the separatrix speed of a cosine well, and each episode's own limits are dashed;
+- (d) a, with a* and the resonance's half-width;
+- (e) ȧ with the fitted force law and its R²;
+- (f), (g) e and i;
+- (h) the energy of each cycle against the separatrix h = 1;
+- (i) the slow center (hatched `slow #id`: the slow scale);
+- (j) the centers of other multiplet members and of an owner (a flat line librates), plus pϖ with its secular period
+  when the slow cause is a secular cycle. For a kinematic libration, (j) is σ = λ part + pϖ on the scale of the swing:
+  σ follows pϖ and the λ part stays flat.
+
+Labels to know:
+- On (a), accepted runs that are not a libration of this angle are labeled `#id wave` (a forced wave), `#id forced
+  (strength)` (a 5s row: no driver identified) or `#id ripple`.
+- A 1:1 episode in parts has brackets per sub-regime and a hatched `inferred` stay, which is inferred, not measured.
+- Without FAIR (m), a dark-orange line says why.
+- (a) of both figures fills only the counted episodes (`#id`; a counted 1:1 leg is `leg`), with the candidates faint
+  and dashed (`cand`). episodes.csv still lists every run.
+
+For secular and ZLK rows:
+- (d) is a (with the planet's a and the co-orbital zone's edges for a co-orbital);
+- (e), (f) are e and i;
+- (g) is the rate fit (secular), or the drift of the free and the osculating ω in turns (ZLK: a free ω that winds
+  makes the libration kinematic).
+
+Their FREQUENCIES table lists the body's rates, the planetary modes (g5, g6, s6 always) and the beats in ″/yr with
+their periods, so you can name a period seen on σ(t) (e.g. 591986: g − g5 6.11 kyr, the kinematic ω cycle; g6 − g5
+54 kyr).
+
+If you can view images, open the figure of every `medium`/`low` verdict before reporting it.
 
 ## 7. Before you report a status
 
@@ -353,9 +400,10 @@ on σ(t) (e.g. 591986: g − g5 6.11 kyr, the kinematic ω cycle; g6 − g5 54 k
 4. Is the step fine enough? `short_period_aliased`: the level is held down by the sampling; propose the resample step.
 5. Name the origin: `dynamic` vs `unknown` (geometric), `kinematic`, `induced` (with `owner`), `subresonance`.
    `subfloor_pass` in `rules_fired`: a two-body libration faster than the 150-yr floor, accepted because its own
-   averaged potential, centre and force law confirm it (G1f; `geo_subfloor_*`).
-6. `certain`/`high`: state it. `medium`: look at the figure and name what limits it (minimal: `confidence_basis`
-   and the flags; v2: the cap and its other reading). `low`: a measured objection: review.
+   averaged potential, center and force law confirm it (G1f; `geo_subfloor_*`).
+6. `certain`/`high`: state it. `medium`: look at the figure and name what limits it (the ⚠/?/✗ pills of the
+   Confidence block, `pol_level_inputs`; the flags). `low`: a measured objection (`pol_objection_check`), N < 1.5 or
+   an MMR own force not shown: review.
 7. ZLK: give the gate's outcome; keep kinematic and gate_unavailable apart (minimal: split by `check_zlk_free_omega`).
 8. Statistics over many bodies: deduplicate multiplet rows, keep −2/−9 style outcomes apart, do not pool runs with
    different settings (`settings_hash`) or steps.
@@ -379,7 +427,7 @@ Record 100 kyr at 1 yr, SABA(10,6,4), Horizons 2026-01-01. Next: none.
 | physics/gallery.md | one example figure of every status, with its record (span, step, integrator) |
 | physics/pendulum.md, physics/geometry.md, physics/response.md | the physics of a single check (turning points, episodes, force law, identity, owner, strength) |
 | physics/secular-zlk.md, secular.md, lidov-kozai.md, free-elements.md, coherence.md | secular and Lidov-Kozai angles, the free-ω gate, e–i coupling, attribution |
-| matrix.md | resonance notation, catalogues, retrograde resonances, the catalogue cache |
+| matrix.md | resonance notation, catalogs, retrograde resonances, the catalog cache |
 | clones.md | clones: sources, epochs, how many, clones.csv |
 | output.md | every file and column of a run |
 | plots.md | figure kinds and options, redrawing after a run |

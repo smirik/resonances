@@ -136,7 +136,7 @@ class DiagnosticPlotter(BasePlotter):
                 self._figure.tight_layout()
 
     def _time_panel(self, aspect: float, draw):
-        """One panel coloured by time, with its time colour bar; `draw(ax, norm)` fills it."""
+        """One panel colored by time, with its time color bar; `draw(ax, norm)` fills it."""
         from .style import time_colorbar, time_label
 
         norm = self.d.time_norm()

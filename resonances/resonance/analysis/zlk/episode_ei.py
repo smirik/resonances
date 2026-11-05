@@ -6,7 +6,7 @@ whole record at the decisive period, and the stretches where omega circulates al
 that period (the quadrupole Hamiltonian does so whether omega librates or not: 15527 circulates and shows zlk). In
 88899 over 500 kyr both librating episodes have e and i in phase with H not conserved (eta_H 1.1-1.4), and 2020 PP1's
 deciding episode shows no coupling, while the whole record says zlk for PP1. The status of an episodic omega without a
-gate verdict (`decide.decide_status`, ZLK_EPISODIC_NO_VERDICT=ei; the author's answer q-1 E, 2026-10-31) reads this
+gate verdict (`decide.decide_status`, the W28 tree; the author's answer q-1 E, 2026-10-31) reads this
 measurement.
 
 Method, on the deciding episode [first TP, last TP] at its own median full period P:

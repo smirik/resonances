@@ -109,7 +109,7 @@ def test_c6_a_clean_conservative_leg_is_one_horseshoe_leg_with_force_and_energy_
     assert [step.number for step in steps] == ['0', 'G4c']
     assert steps[0].ids == ('G4',) and steps[0].outcome.endswith('→ a circulation judged on its best single leg → episodic')
     assert steps[1].ids == ('G4c',) and steps[1].outcome == f'{clause} → transient'
-    assert vt.mmr_angle_sentence(f) == 'σ circulates: its centre passes 21.9 revolutions in one direction.'
+    assert vt.mmr_angle_sentence(f) == 'σ circulates: its center passes 21.9 revolutions in one direction.'
 
 
 def test_c6_a_passing_leg_is_uncertain_and_says_why():
@@ -146,8 +146,9 @@ def test_c6_an_edge_leg_and_an_edge_half_swing_ask_for_the_rest_of_the_cycle():
     edge = _leg(933.519, 999.971, 'qs', (933.519, 1.02, 0.916), (None, None, None), edge='end')
     assert decide.leg_outcome(edge, S) == (decide.LEG_EXTEND, '')
     f = _coorbital(edge, 'G4c', {'status': 'uncertain', 'reason': 'baseline_needed', 'angle_status': 'insufficient_time'})
+    # the span takes its unit from its end rounded as `years` prints it: 999.971 yr is 1 kyr, never '934–1000 yr'
     assert vt.leg_clause(f) == (
-        'one clean quasi-satellite leg 934–1000 yr cut by the record’s end: its turn at 934 yr reflects (out/in 1.02); '
+        'one clean quasi-satellite leg 0.934–1 kyr cut by the record’s end: its turn at 934 yr reflects (out/in 1.02); '
         'the rest of the cycle lies beyond the end'
     )
     half = HalfLibration(28476.1, 32285.5, 'end', 1.0, 1.2, r2_h1=0.716, r2_h2=0.621, restoring=True)
@@ -311,8 +312,8 @@ def test_c11_a_run_below_the_floor_is_not_counted_in_the_words_and_the_episode_l
 
 
 def test_c11_the_figure_draws_an_uncounted_run_in_the_rejected_style_with_its_tag():
-    """g02-9 A: on (a) the run is a grey strip at the bottom (the rejected style) with '#0 < floor' in grey above the
-    panel, and no episode fill; a counted run keeps its coloured fill and bold '#1'."""
+    """g02-9 A: on (a) the run is a gray strip at the bottom (the rejected style) with '#0 < floor' in gray above the
+    panel, and no episode fill; a counted run keeps its colored fill and bold '#1'."""
     floor_run = make_episode(2, episode_id=0, tp_times_yr=[262.8, 299.4], period_med_yr=74.0)
     counted = make_episode(3, episode_id=1, tp_times_yr=[500.0, 560.0, 620.0], period_med_yr=120.0)
     geometry = make_geometry(coorbital=True, runs=[floor_run, counted])
@@ -353,7 +354,7 @@ def test_a6a_the_12218_gap_is_where_the_composite_term_cancels():
     )
     assert vt.gap_cause_line(_facts(row={**row, 'sub_th_P_min_gap': 0.5}, verdict=verdict, episodes=episodes)) == ''
     line = vt.argument_line(f)
-    assert '(chosen by the multiplet theory: its centre π − arg P + jβ is the flattest over the episode)' in line
+    assert '(chosen by the multiplet theory: its center π − arg P + jβ is the flattest over the episode)' in line
     assert line.endswith(' Other episodes: #1 76.2–99.8 kyr chose no member in its own window.')
 
 
@@ -361,7 +362,7 @@ def test_a6b_a_composite_argument_names_no_member():
     f = _facts(verdict={'resonant_argument': 'composite', 'commensurability': '2J-1'})
     assert vt.argument_line(f) == (
         'Resonant argument: composite, one resonance 2J-1 with this angle: no single member of the multiplet stands; σ '
-        'follows the moving centre of the composite term P(β).'
+        'follows the moving center of the composite term P(β).'
     )
 
 
@@ -371,8 +372,8 @@ def test_a6a_the_cheap_list_frames_ug22_and_t8_is_a_diagnostic():
     cheap = '10E-17+5+2:0.42:7.6e-09:E_strength;10E-17+6+1:0.45:1.8e-10:E_strength;10E-17+4+3:0.51:3.2e-07:E_strength;X:0.3:0.5:ok;Y:1.2:1e-9:E_strength'
     f = _facts(row={'sub_cheap_list': cheap}, subresonances=None)
     assert vt.frame_line(f) == (
-        'Members 10E-17+5+2 and 10E-17+6+1 give a flatter centre (W/W0 0.42, 0.45), but their terms are 7.6e-9 and '
-        '1.8e-10 of the strongest (test E′): a frame, not a force; the centre moves with the body’s own e, i, ω.'
+        'Members 10E-17+5+2 and 10E-17+6+1 give a flatter center (W/W0 0.42, 0.45), but their terms are 7.6e-9 and '
+        '1.8e-10 of the strongest (test E′): a frame, not a force; the center moves with the body’s own e, i, ω.'
     )
     row = {'sub_diag_triggers': 'T8', 'sub_diag_best': '1M-3J-1-1+0+4', 'sub_diag_would_accept': '', 'sub_diag_would_check': 'not_measured'}
     assert vt.diagnostic_scan_line(_facts(row=row)) == (

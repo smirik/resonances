@@ -1,5 +1,5 @@
 """
-The eccentricity-vector plane (k, h) = (e*cos(omega), e*sin(omega)) coloured by time.
+The eccentricity-vector plane (k, h) = (e*cos(omega), e*sin(omega)) colored by time.
 
 The resonant-angle portraits of MMRs live in `mmr_plots`.
 """
@@ -14,7 +14,7 @@ from .style import time_cmap, time_label
 
 
 def _scatter_colored_by_time(ax, x, y, times, marker_size: float = 7.5):
-    """Scatter `y` against `x`, coloured by time, with a colorbar labelled in its own unit."""
+    """Scatter `y` against `x`, colored by time, with a colorbar labeled in its own unit."""
     import matplotlib.pyplot as plt
 
     divisor, unit = time_unit(times[-1] - times[0]) if len(times) > 1 else (1.0, 'yr')
@@ -78,7 +78,7 @@ class EccentricityVectorPlotter(BasePlotter):
     def plot(
         self, figsize: tuple = (7, 6), dpi: int = 150, marker_size: float = 7.5, limit: Optional[float] = None
     ) -> 'EccentricityVectorPlotter':
-        """Draw the (k, h) plane coloured by time.
+        """Draw the (k, h) plane colored by time.
 
         `limit` overrides the half-width of the window, so that a free-vector portrait can
         be drawn on exactly the same scale as the osculating one — comparing the two by eye

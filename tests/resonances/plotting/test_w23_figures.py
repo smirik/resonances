@@ -1,5 +1,5 @@
-"""W23 S7: the figure defects F2 (merged labels), F3 (the response variable of a secular angle), F4 (the colour bar's
-label of the secular/ZLK figure) and F5 (one test for 'moving centre'), each on a case computed by hand or from the
+"""W23 S7: the figure defects F2 (merged labels), F3 (the response variable of a secular angle), F4 (the color bar's
+label of the secular/ZLK figure) and F5 (one test for 'moving center'), each on a case computed by hand or from the
 record's own numbers."""
 
 from types import SimpleNamespace
@@ -132,7 +132,7 @@ def _s_term_series():
 
 def test_an_s_term_figure_draws_the_inclination_response():
     """127504 s-s6 drew de/dt with 'R² nan': panel (g) (f before the a panel of W29) now draws d sin(i/2)/dt with the R²
-    the analysis measured for i, and (i) is (sin(i/2) cos σ, sin(i/2) sin σ); the colour bar's label sits above the bar."""
+    the analysis measured for i, and (i) is (sin(i/2) cos σ, sin(i/2) sin σ); the color bar's label sits above the bar."""
     from resonances.plotting.secular_plots import draw_long_period_combined
 
     analysis = analyse_secular(_s_term_series(), S)
@@ -159,7 +159,7 @@ def test_the_secular_info_line_names_the_measured_element():
 
 @pytest.mark.benchmark
 def test_591986_zlk_labels_of_the_bottom_row_do_not_collide():
-    """591986 ZLK: the y label of (i) ('e_free sin ω_free') was printed over the colour bar's 't, kyr'."""
+    """591986 ZLK: the y label of (i) ('e_free sin ω_free') was printed over the color bar's 't, kyr'."""
     import sys
     from pathlib import Path
 

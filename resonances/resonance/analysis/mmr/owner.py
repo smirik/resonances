@@ -39,7 +39,7 @@ Steps of `run_owner`:
      force law is fitted to the band-passed a_dot ([P / f, f P]) in windows of mmr_force_window_cycles x P,
      separately where the owner librates (< 1 turn per window) and where it circulates one way or the other
      (a forced wave): the law is the same, but windows across the owner's resonance mix the regimes and blur
-     phi0 (117306 near 30 kyr). The windows keep clear of the band-pass edges (filter_edge_trim_cutoffs f P).
+     phi0 (117306 near 30 kyr). The windows keep clear of the band-pass edges (mmr_owner_band_edge_trim f P).
      Per regime also the owner's mean rate and the Psi lever (`phase_leverage`).
   4. Acceptance in a regime (`accept`): a forced wave only at an owner period inside the a band (`rate_admissible`,
      R6: 2001 PG14's 27E-47 turns at 1.47 yr), R^2 >= mmr_owner_r2_min, a fixed phase (the phi0 coherence >=
@@ -255,6 +255,7 @@ FLAG_NO_LONGITUDES = 'owner_no_longitudes'
 FLAG_NO_PERIOD = 'owner_no_period'
 FLAG_TOO_FEW_WINDOWS = 'owner_too_few_windows'
 FLAG_SHORT_WINDOWS = 'owner_short_windows'  # measured on mmr_owner_short_window_cycles windows (W33)
+FLAG_FITTED_WINDOWS = 'owner_fitted_windows'  # stage 3: windows fitted to the span at the measured trim (2026-11-05)
 FLAG_UNWRAP_FAILED = 'owner_unwrap_failed'
 FLAG_SEARCH_OFF = 'owner_search_off'
 FLAG_RETROGRADE = 'owner_retrograde'
@@ -672,10 +673,10 @@ class OwnerFrame:
 
 
 def band_window(t_yr: np.ndarray, period_yr: float, settings: AnalysisSettings) -> np.ndarray:
-    """Samples clear of the band-pass edges: filter_edge_trim_cutoffs x its longest cutoff (f P) from either end of
+    """Samples clear of the band-pass edges: mmr_owner_band_edge_trim x its longest cutoff (f P) from either end of
     the record (the record's P_c trim is far too short for a filter at f P)."""
     t = np.asarray(t_yr, float)
-    trim = settings.filter_edge_trim_cutoffs * settings.mmr_owner_band_factor * period_yr
+    trim = settings.mmr_owner_band_edge_trim * settings.mmr_owner_band_factor * period_yr
     return filtering.window_mask(t, filtering.edge_window(t, trim))
 
 
@@ -685,6 +686,17 @@ def fit_stride(t_yr: np.ndarray, cutoff_yr: float) -> int:
     if not (np.isfinite(step) and step > 0 and np.isfinite(cutoff_yr)):
         return 1
     return max(1, int(cutoff_yr / (2 * step)))
+
+
+def fit_grid_masks(
+    prep: Preprocessed, period_yr: float, settings: AnalysisSettings, window=None, stride: Optional[int] = None
+) -> Tuple[np.ndarray, np.ndarray]:
+    """(mask, fit mask) of the owner fits at P: `window` (default prep.window) clear of the band-pass edges
+    (`band_window`), and that mask thinned to the fit grid (`fit_stride`, or `stride`). `build_frame` fits on it and
+    stage 3 (`fitted_window_settings`) sizes its windows on it."""
+    t = np.asarray(prep.t_yr, float)
+    mask = filtering.window_mask(t, prep.window if window is None else window) & band_window(t, period_yr, settings)
+    return mask, mask & (np.arange(len(t)) % (stride or fit_stride(t, prep.cutoff.cutoff_yr)) == 0)
 
 
 def _start_key(start: float) -> float:
@@ -750,13 +762,12 @@ def build_frame(
     the fit grid's thinning (`fit_stride`; 1 = every sample, the dense verification)."""
     t = np.asarray(prep.t_yr, float)
     factor, order = settings.mmr_owner_band_factor, settings.filter_order
-    mask = filtering.window_mask(t, prep.window if window is None else window) & band_window(t, period_yr, settings)
+    mask, fit_mask = fit_grid_masks(prep, period_yr, settings, window, stride)
     a_band = band_pass(t, np.asarray(prep.a_f, float), period_yr, factor, order)
     adot_band = filtering.time_derivative(t, a_band)
     sigma_f = np.asarray(prep.angle_f, float)
     sigma_clean = np.asarray(prep.angle_clean, float)
     length = settings.mmr_force_window_cycles * period_yr
-    fit_mask = mask & (np.arange(len(t)) % (stride or fit_stride(t, prep.cutoff.cutoff_yr)) == 0)
     sigma_band = band_pass(t, sigma_clean, period_yr, factor, order)
     a = np.asarray(series.a, float)
     n_mean = float(np.mean(mean_motion(a[mask]))) if np.any(mask) else NAN
@@ -1753,17 +1764,56 @@ def _not_searched(series: MMRSeries, settings: AnalysisSettings) -> Optional[Own
 def run_owner(
     series: MMRSeries, prep: Preprocessed, context: Context, period_cycle_yr: float, settings: AnalysisSettings, **where
 ) -> OwnerResult:
-    """The owner search (`search_owner`); when sigma has too few force windows of mmr_force_window_cycles x P
-    (owner_too_few_windows), the search again with windows of mmr_owner_short_window_cycles x P, flag
-    owner_short_windows (W33, 385533 7N-12 over 8.1 P). Only the owner's windows change: the response, the geometry and
-    a multiplet's modulation-period windows keep theirs."""
+    """The owner search (`search_owner`) in up to three stages, each only when the one before has too few force windows
+    (owner_too_few_windows); only the owner's windows change: the response, the geometry and a multiplet's
+    modulation-period windows keep theirs.
+
+    1. windows of mmr_force_window_cycles x P, mmr_owner_band_edge_trim x f P from the record ends;
+    2. windows of mmr_owner_short_window_cycles x P, flag owner_short_windows (W33, 385533 7N-12 over 8.1 P);
+    3. the measured trim mmr_owner_fitted_edge_trim, and mmr_force_min_windows windows fitted to the span it leaves,
+       each between mmr_owner_fitted_min_cycles and mmr_owner_short_window_cycles x P, flag owner_fitted_windows
+       (2026-11-05, the author: 385458 9N-17 300 kyr, 4.6 cycles, is enough to test the alternatives). The trim of
+       stages 1 and 2 stays: on 2001 HW7 150 kyr windows nearer the ends re-split the owner's regimes (cover 1 -> 0)."""
     found = search_owner(series, prep, context, period_cycle_yr, settings, **where)
     short = settings.mmr_owner_short_window_cycles
     if FLAG_TOO_FEW_WINDOWS not in found.flags or not 0 < short < settings.mmr_force_window_cycles:
         return found
     found = search_owner(series, prep, context, period_cycle_yr, replace(settings, mmr_force_window_cycles=short), **where)
     found.flags.append(FLAG_SHORT_WINDOWS)
+    if FLAG_TOO_FEW_WINDOWS not in found.flags:
+        return found
+    fitted = fitted_window_settings(prep, period_cycle_yr, settings, where.get('window'))
+    if fitted is None:
+        return found
+    stage, reference_yr = fitted
+    found = search_owner(series, prep, context, period_cycle_yr, stage, reference_yr=reference_yr, **where)
+    found.flags += [FLAG_SHORT_WINDOWS, FLAG_FITTED_WINDOWS]
     return found
+
+
+def fitted_window_settings(
+    prep: Preprocessed, period_cycle_yr: float, settings: AnalysisSettings, window: Optional[Tuple[float, float]] = None
+) -> Optional[Tuple[AnalysisSettings, float]]:
+    """Stage 3 of `run_owner`: (the settings with the measured trim and the window length that fits
+    mmr_force_min_windows windows into the fit grid's span, P); None when the stage is off, P is unknown or the
+    windows would be shorter than mmr_owner_fitted_min_cycles x P."""
+    floor, short = settings.mmr_owner_fitted_min_cycles, settings.mmr_owner_short_window_cycles
+    if not 0 < floor <= short:
+        return None
+    stage = replace(settings, mmr_owner_band_edge_trim=settings.mmr_owner_fitted_edge_trim, mmr_force_window_cycles=short)
+    t = np.asarray(prep.t_yr, float)
+    mask = filtering.window_mask(t, prep.window if window is None else window)
+    period = reference_period(prep, period_cycle_yr, mask, stage)
+    if not (np.isfinite(period) and period > 0):
+        return None
+    use = fit_grid_masks(prep, period, stage, window)[1]
+    if np.count_nonzero(use) < 2:
+        return None
+    span = float(t[use][-1] - t[use][0])
+    cycles = min(short, span / (windows_needed_span(period, stage) / stage.mmr_force_window_cycles))  # per cycle of P
+    if cycles < floor:
+        return None
+    return replace(stage, mmr_force_window_cycles=cycles), float(period)
 
 
 def search_owner(
@@ -1777,6 +1827,7 @@ def search_owner(
     decisive_window: Optional[Tuple[float, float]] = None,
     decisive_period_yr: float = NAN,
     episode_windows: Sequence[Tuple[Optional[int], float, float, float]] = (),
+    reference_yr: float = NAN,
 ) -> OwnerResult:
     """The search; check pass when none is accepted, fail when one is, not_measured without planet longitudes,
     with mmr_owner_search='off' or when the planets' lambda cannot be unwrapped.
@@ -1787,14 +1838,15 @@ def search_owner(
     the accepted owner's intervals are compared with it (`OwnerResult.cover`, F7) and the second capture is tested on
     the intervals that meet it; `decisive_period_yr` is that episode's period (lambda_ad, the bound on sigma's term).
     `episode_windows`: (id, t0, t1, period) of every accepted episode of sigma, each compared with the owner's
-    intervals (F7 per episode, P2: `cover_episodes`); default the decisive window alone."""
+    intervals (F7 per episode, P2: `cover_episodes`); default the decisive window alone. `reference_yr`: P given
+    (stage 3 of `run_owner`, whose windows are fitted to it), else `reference_period`."""
     skipped = _not_searched(series, settings)
     if skipped is not None:
         return skipped
     planets = available_planets(series, settings)
     t = np.asarray(prep.t_yr, float)
     mask = filtering.window_mask(t, prep.window if window is None else window)
-    period = reference_period(prep, period_cycle_yr, mask, settings)
+    period = reference_yr if np.isfinite(reference_yr) else reference_period(prep, period_cycle_yr, mask, settings)
     if not (np.isfinite(period) and period > 0):
         return _empty(CheckValue.NOT_MEASURED, [FLAG_NO_PERIOD])
     frame = build_frame(prep, series, period, settings, window, context=context)
@@ -2037,7 +2089,7 @@ def covered_fraction(intervals: Sequence[Tuple[float, float, str]], window: Tupl
 
 def measured_span(windows: Sequence[Tuple[float, float]]) -> Tuple[float, float]:
     """Where the owner's force law could be measured at all: the hull of the frame's force windows (`frame.windows`),
-    (nan, nan) without one. Outside it lie the band-pass edges of the record (`band_window`: filter_edge_trim_cutoffs
+    (nan, nan) without one. Outside it lie the band-pass edges of the record (`band_window`: mmr_owner_band_edge_trim
     x f P at either end) and the tail the sliding windows' step leaves: there the owner is neither present nor absent,
     it is not measured (HW7 without planets: 630-18981 yr of 0-20000). Inside it, a window the candidate is not fitted
     in (it turns faster than the grid resolves, `resolved_windows`) is a measurement: far from its resonance, it is

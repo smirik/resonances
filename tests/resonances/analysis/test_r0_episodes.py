@@ -38,7 +38,8 @@ def _r0(record):
 def test_a_pendulum_episode_of_two_cycles_passes_on_its_own():
     # T0 = 300 yr at h = 0.5 (A = 90 deg): five turning points are two disjoint full cycles
     found = _r0(_first_cycles(pendulum_record(), 5))
-    assert found == (CheckValue.PASS, CheckValue.PASS, 0)
+    assert found[:3] == (CheckValue.PASS, CheckValue.PASS, 0)
+    assert found[3][0] == pytest.approx(1.0, abs=0.02) and found[3][1] == 2  # V_F carries the period of both cycles
 
 
 def test_one_cycle_is_not_enough():

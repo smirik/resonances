@@ -8,7 +8,7 @@ then as the threshold that decides it, with the name of the setting that holds t
 
 The verdict answers two separate questions:
 
-1. **What does the angle do?** Does $\sigma$ librate (oscillate about a centre), circulate, drift, or do both in
+1. **What does the angle do?** Does $\sigma$ librate (oscillate about a center), circulate, drift, or do both in
    turn? This is pure geometry of the filtered angle ([What the angle does](geometry.md)).
 2. **Is the body in this resonance?** A libration of $\sigma$ alone is not enough. For a mean-motion resonance
    the test is whether the resonant term drives the oscillation of the semi-major axis $a$: $a$ must oscillate
@@ -20,7 +20,7 @@ The verdict answers two separate questions:
     A verdict describes **the saved interval** of the integration, at the saved output step, for the model of
     the run (the planets that were integrated, the integrator, the initial elements). A longer integration, a
     finer step or another epoch can give a different answer. The thresholds are conventions, chosen and tested
-    on a benchmark of examples labelled by eye ([Benchmark](../benchmark.md)); all of them are settings.
+    on a benchmark of examples labeled by eye ([Benchmark](../benchmark.md)); all of them are settings.
 
 !!! tip "Distant bodies: records of 300 kyr or more"
     Beyond a planet's 1:2 (trans-Neptunian objects, outer Centaurs) the cutoff is at least 1.5 times the body's own
@@ -60,7 +60,7 @@ this resonance. The origins of such a *kinematic* or *induced* libration are exp
 ```mermaid
 flowchart LR
     A[integration<br/>saved every Δt] --> B[signal<br/>σ, a, cutoff, filter]
-    B --> C[geometry<br/>turning points, cycles,<br/>episodes, centre]
+    B --> C[geometry<br/>turning points, cycles,<br/>episodes, center]
     C --> D[physics<br/>identity, force law,<br/>energy, strength, owner]
     D --> E[status tree]
     E --> F[confidence<br/>and action]
@@ -69,7 +69,7 @@ flowchart LR
 1. [**Signal**](signal.md). Is the output step fine enough? The angle is unwrapped and low-pass filtered so that
    the short-period terms (orbital and synodic periods) are removed and the libration is kept.
 2. [**Geometry**](geometry.md). Turning points of the filtered angle, closed cycles, librating episodes, the
-   centre of each episode, jumps of $a$. This gives `angle_status`.
+   center of each episode, jumps of $a$. This gives `angle_status`.
 3. [**Physics**](response.md). Does $a$ follow $\sigma$ as the pendulum of this resonance requires? Is the
    strength needed for the observed period available? Does another resonance own the oscillation?
 4. [**Status tree**](status-tree.md). The geometry and the physics are combined, in a fixed order, into
@@ -105,7 +105,7 @@ status with its one-page figure.
 | $n, n_j$ | mean motions; $n(a) = 2\pi\,a^{-3/2}$ rad/yr with $a$ in au |
 | $\nu = \dot\sigma$ | the rate of the angle; $a_*$ the exact resonance, $\nu(a_*) = 0$ |
 | $c = \partial\nu/\partial a$ | how fast the angle's rate changes with $a$; $c = -3kn/(2a)$ |
-| $\sigma_c(t)$, $\psi = \sigma - \sigma_c$ | the centre of libration and the angle measured from it |
+| $\sigma_c(t)$, $\psi = \sigma - \sigma_c$ | the center of libration and the angle measured from it |
 | $\omega_0$ | the small-amplitude libration frequency; $T_0 = 2\pi/\omega_0$ |
 | $A$ | the libration amplitude (half the peak-to-peak swing of $\sigma$) |
 | $P$, $P_i$ | the libration period, the period of cycle $i$ |

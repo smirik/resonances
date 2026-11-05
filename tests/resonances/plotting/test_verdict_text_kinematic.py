@@ -137,7 +137,7 @@ def test_no_driver_line_without_a_secular_cycle():
 # --------------------------------------------------------------------------------------------- the slow-scale line
 
 
-HEAD = 'Slow scale: σ’s centre swings by ±124° with period 5.69 kyr (13 slow cycles, 17.3 kyr–96.6 kyr)'
+HEAD = 'Slow scale: σ’s center swings by ±124° with period 5.69 kyr (13 slow cycles, 17.3 kyr–96.6 kyr)'
 NOT_EXCLUDED = 'a slow libration of another resonance is not excluded'
 
 
@@ -149,7 +149,7 @@ NOT_EXCLUDED = 'a slow libration of another resonance is not excluded'
         ({'slow_cause': '', 'slow_cause_term': '', 'slow_cause_level': 'unknown'}, f'{HEAD}: cause not identified; {NOT_EXCLUDED}.'),
         (
             {'slow_cause': 'pvarpi_term', 'slow_cause_term': '-8varpi', 'slow_cause_level': 'possible'},
-            f'{HEAD}: probably σ’s −8ϖ term (the centre follows it at no secular period); {NOT_EXCLUDED}.',
+            f'{HEAD}: probably σ’s −8ϖ term (the center follows it at no secular period); {NOT_EXCLUDED}.',
         ),
         (
             {'slow_origin': 'dynamic_candidate', 'slow_identity': 'pass'},
@@ -158,7 +158,7 @@ NOT_EXCLUDED = 'a slow libration of another resonance is not excluded'
         ),
         (
             {'slow_period_yr': float('nan'), 'slow_n_cycles': 1, 'slow_halfamp_deg': 10.9, 'slow_t0_yr': 1105.0, 'slow_t1_yr': 11988.0},
-            'Slow scale: σ’s centre swings by ±10.9° over 1.1 kyr–12 kyr (1 slow cycle: no period): the e cycle '
+            'Slow scale: σ’s center swings by ±10.9° over 1.1 kyr–12 kyr (1 slow cycle: no period): the e cycle '
             '2π/|g − g5| = 5.7 kyr (identified).',
         ),
         ({'slow_halfamp_deg': float('nan')}, ''),  # no slow swing: nothing said

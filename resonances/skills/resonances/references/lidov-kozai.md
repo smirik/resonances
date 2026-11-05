@@ -4,8 +4,8 @@
 
 In the classical prograde quadrupole problem the Lidov-Kozai (ZLK) resonance is a libration of the argument of
 perihelion $\omega$ about 90° or 270°, with $e$ and $i$ varying in antiphase at constant $\sqrt{1-e^2}\cos i$.
-Inside a mean-motion resonance the centre can shift, so the classifier tests that $\omega$ and its free counterpart
-are confined ([free-omega gate](free-elements.md)), not that the centre is at 90° or 270°; the e–i phase is a flag
+Inside a mean-motion resonance the center can shift, so the classifier tests that $\omega$ and its free counterpart
+are confined ([free-omega gate](free-elements.md)), not that the center is at 90° or 270°; the e–i phase is a flag
 ([Coherence](coherence.md)). The package checks it as a resonance with the angle
 $\omega$: `resonances.LidovKozaiResonance()`, key `LK`. A run may combine it with MMRs and secular resonances.
 
@@ -20,7 +20,7 @@ c_1 = (1 - e^2)\cos^2 i, \qquad c_2 = e^2\left(\tfrac{2}{5} - \sin^2 i \,\sin^2\
 $$
 
 Here $i$ is the inclination to the perturber's orbital plane and $\omega$ is measured from the node on that plane;
-$c_1$ is then the squared normalised component of the angular momentum normal to the perturber's orbit. In that limit
+$c_1$ is then the squared normalized component of the angular momentum normal to the perturber's orbit. In that limit
 $\omega$ librates about 90° or 270° when $c_1 < 3/5$ and $c_2 < 0$, and circulates otherwise; for an initially
 circular orbit this needs $\arccos\sqrt{3/5} \approx 39.2° < i < 140.8°$ (not a classifier threshold).
 `LidovKozaiParameters.evaluate` rotates nothing: it uses the angles it is given. The package reads them from the
@@ -139,7 +139,7 @@ Four measurements sit next to the status and change none of it ([Free elements](
   otherwise "forcing not attributed". The figure states it as the cause and draws panel (a′).
 - **Node lock** (`zlk_node_lock`, a flag): the node's rate one line with a forced mode's and $\Omega - \varpi_j$
   librating through at least one full cycle (591986 over 4 Myr: g5; over 500 kyr not resolved).
-- **The slow line of the centre** (`zlk_centre_*`): its period and half-amplitude, and its origin (591986: the g6−g5
+- **The slow line of the center** (`zlk_centre_*`): its period and half-amplitude, and its origin (591986: the g6−g5
   beat of the forced vector, 54 kyr, ±22°).
 - **Co-orbitals** of Mercury to Mars have no gate verdict (`zlk_gate_detail` = `coorbital_unfitted_forcing`): their
   forced term is the planet's own vector, which the split does not fit; Jupiter's Trojans are covered.

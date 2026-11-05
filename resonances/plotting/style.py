@@ -6,7 +6,7 @@ Styles are applied through `matplotlib.rc_context`, so global settings stay unto
 """
 
 import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from functools import lru_cache
 from typing import Any, Dict, Optional, Tuple
@@ -201,12 +201,12 @@ def time_cmap():
 
 
 def time_label(unit: str) -> str:
-    """Label of every time colour bar, so all figures read the same."""
+    """Label of every time color bar, so all figures read the same."""
     return f'Time ({unit})'
 
 
 def time_colorbar(fig, norm, label: str, **where):
-    """Colour bar of the time scale; `where` is `ax=...` or `cax=...` plus layout keywords."""
+    """Color bar of the time scale; `where` is `ax=...` or `cax=...` plus layout keywords."""
     from matplotlib.cm import ScalarMappable
 
     bar = fig.colorbar(ScalarMappable(norm=norm, cmap=time_cmap()), **where)
@@ -286,9 +286,10 @@ class VerdictFigureLayout:
     """Geometry of the V1 figure (inches): the same for every object, so that the figures of one
     status folder can be leafed through. The tests pin these rectangles.
 
-    Left: ten time panels (a)-(j) in `panels`, split evenly with `panel_gap` between them, the compact legend of
+    Left: ten time panels (a)-(j) in `panels`, split evenly with `panel_gap` between them (+ `time_label_gap` under
+    (b), whose time axis is labeled like the last panel's), the compact legend of
     their values right of them (from `margin_legend_x`); below them three squares (`bottom`): the whole record's
-    portrait (k) with the time colour bar right of it, the accepted episodes' portrait (l), FAIR (m); then the legend
+    portrait (k) with the time color bar right of it, the accepted episodes' portrait (l), FAIR (m); then the legend
     (over the third slot too when it is empty: `mmr_combined.legend_rect`). The secular and ZLK figures put their two
     portraits in the first two slots. Right: three text columns
     (`text_columns`)."""
@@ -299,6 +300,9 @@ class VerdictFigureLayout:
     panels: Rect = (0.95, 3.6, 10.25, 8.95)  # the column of time panels, split evenly
     n_panels: int = 10
     panel_gap: float = 0.07  # between neighbouring time panels (each has its own frame)
+    # under (b) the time axis is labelled again (the author, 2026-11-05: the bottom labels are far from the angle): the
+    # gap below (b) is this much wider, the panels share the rest evenly
+    time_label_gap: float = 0.15
     # three squares (the portraits keep the aspect of the phase plane; the author, 2026-10-16)
     bottom: Tuple[Rect, Rect, Rect] = ((0.95, 0.5, 2.4, 2.4), (4.45, 0.5, 2.4, 2.4), (7.45, 0.5, 2.4, 2.4))
     colour_bar: Rect = (3.42, 0.5, 0.1, 2.4)  # right of the first slot (the portraits coloured by time)
@@ -317,22 +321,59 @@ class VerdictFigureLayout:
     font_badge_pt: float = 12.0
     font_title_pt: float = 14.0
     tick_margin: float = 0.1  # no y tick label within this fraction of a time panel's edges (labels of neighbours)
+    growth_in: float = 0.0  # how much `grown` has added to the height (decision D8)
+
+    def grown(self, delta_in: float) -> 'VerdictFigureLayout':
+        """The figure `delta_in` inches taller for a right column that does not fit (decision D8): every rect moves up
+        by `delta_in`, so the left panels keep their geometry at the top, and the text columns keep their bottom and grow
+        by `delta_in`. The caller caps `delta_in` at COLUMN_MAX_GROWTH_IN (`verdict_column_draw.fit_layout`)."""
+        if delta_in <= 0:
+            return self
+
+        def up(rect: Rect) -> Rect:
+            return (rect[0], rect[1] + delta_in, rect[2], rect[3])
+
+        return replace(
+            self,
+            size=(self.size[0], self.size[1] + delta_in),
+            header=up(self.header),
+            panels=up(self.panels),
+            bottom=tuple(up(rect) for rect in self.bottom),
+            colour_bar=up(self.colour_bar),
+            legend=up(self.legend),
+            text_columns=tuple((x, y, w, h + delta_in) for x, y, w, h in self.text_columns),
+            growth_in=self.growth_in + delta_in,
+        )
 
 
 LAYOUT_V1 = VerdictFigureLayout()
+# The most the verdict figure grows downward for its right column (decision D8; a convention: 6 in on top of 13.5 in
+# keeps one page readable on a screen); beyond it the column trims (`verdict_column_draw.fit_layout`)
+COLUMN_MAX_GROWTH_IN = 6.0
 
 MONO_FONT = 'DejaVu Sans Mono'
 MONO_CHAR_WIDTH = 0.602  # advance of one DejaVu Sans Mono character, in units of the font size
 
 # Marks of checks, margins and ledger entries; never red and green alone (colour-blind readers)
 MARK_COLOURS = {'✓': '#1b7837', '~': '#e08214', '✗': '#b2182b', '–': '#888888'}
+# The status plaques (decision D4, the spec's palette: white text on each >= 4.5:1), used everywhere a status has a colour
 STATUS_COLOURS = {
-    'resonant': '#1b7837',
-    'transient': '#e08214',
-    'near_separatrix': '#c51b7d',
-    'non_resonant': '#4d4d4d',
-    'uncertain': '#7b3294',
+    'resonant': '#1b7a3a',
+    'transient': '#b35400',
+    'near_separatrix': '#6b3fa0',
+    'non_resonant': '#4a4f57',
+    'uncertain': '#2f5d9e',
     'invalid': '#b2182b',
+}
+# The icons of the right column (`verdict_column`: checks, pills, evidence); ◆ takes the status colour (decision D4)
+COLUMN_ICON_COLOURS = {'✓': '#1b7a3a', '⚠': '#9a6200', '✗': '#b3261e', '?': '#5e6470', '–': '#8a9099'}
+# The action chip by kind (`verdict_column.CHIP_KINDS`): (edge, fill, text)
+CHIP_COLOURS = {
+    'none': ('#8a9099', '#ffffff', '#5a6170'),
+    'glance': ('#9a6200', '#fff4de', '#7a4e00'),
+    'review': ('#b3261e', '#fcebea', '#8c1d17'),
+    'extend': ('#2f5d9e', '#eaf0f9', '#1f3f6e'),
+    'resample': ('#2f5d9e', '#eaf0f9', '#1f3f6e'),
 }
 # The palette of the verdict figures' left panels (MMR and secular/ZLK): one quantity, one colour in every panel.
 # The time panels draw filtered series in INK and osculating ones in RAW (RAW_ALPHA); the colours below are the only

@@ -288,7 +288,7 @@ class TestOrderAndPlacement:
         numbers = {'geo_n_tp': 147, 'geo_centre_window_yr': W_C, 'exit_time_yr': 100.0, 'jump_tau_yr': 70.0}
         blocks, placement = self.placement(numbers)
         groups = [row.text for column in placement.columns for row in column if row.kind == 'group' and row.block == 'GEOMETRY']
-        assert groups == ['turning points', 'centre', 'exit and entry', 'jumps of a']
+        assert groups == ['turning points', 'center', 'exit and entry', 'jumps of a']
 
 
 class TestTables:
@@ -430,8 +430,12 @@ class TestFigure:
         n = mc.LAYOUT_V1.n_panels
         assert n == len(mc.PANELS) == 10
         gap = mc.LAYOUT_V1.panel_gap
-        step = (h - (n - 1) * gap) / n
-        expected = [(x / width, (y + h - (i + 1) * step - i * gap) / height, w / width, step / height) for i in range(n)]
+        label_gap = mc.LAYOUT_V1.time_label_gap  # under (b): its time axis is labelled (2026-11-05)
+        step = (h - (n - 1) * gap - label_gap) / n
+        expected = [
+            (x / width, (y + h - (i + 1) * step - i * gap - (label_gap if i >= 2 else 0)) / height, w / width, step / height)
+            for i in range(n)
+        ]
         assert np.allclose([ax.get_position().bounds for ax in fig.axes[:n]], expected)
         texts = _texts(fig)
         for letter in 'abcdefghij':

@@ -1,16 +1,16 @@
 """W28 C13: what C7 and C8 store about a 1:1 episode, drawn on the combined figure (cards g03-1 A, g03-3 C, g03-8 A,
-g03-9 A): the inferred residence hatched and lighter beyond the episode's fill, labelled 'inferred'; one bracket per
+g03-9 A): the inferred residence hatched and lighter beyond the episode's fill, labeled 'inferred'; one bracket per
 sub-regime over (a), named by its well; the kicks of a as ▼ on (d); the header 'orbit: A → B'; labels that would
 overlap merged; nothing of it on (l).
 
 The truths are worked out by hand:
-- the fill of a run is its first to last turning point plus P/4 on each uncovered side, halfway to a neighbour at most
+- the fill of a run is its first to last turning point plus P/4 on each uncovered side, halfway to a neighbor at most
   (`episode_spans`): run A 1000-2000 yr, P 800 → 800-2200 yr; run B 3000-3500 yr, P 400 → 2900-3600 yr, its start
   clipped at max(2900, (2000 + 3000) / 2 = 2500); so A's residence 500-4000 yr leaves 500-800 and 2200-2900 yr
   (not into B's fill), B's residence 3000-4800 yr leaves 3600-4800 yr;
-- labels 10 units per character: '#0 horseshoe' (12 characters, 120) centred at 50 reaches 110, 'tadpole L4' (10, 100)
-  centred at 120 starts at 70: one label '#0 horseshoe → tadpole L4' over 0-140 (25 characters, reaching 195), clear
-  of 'inferred' (80) centred at 400 (from 360);
+- labels 10 units per character: '#0 horseshoe' (12 characters, 120) centered at 50 reaches 110, 'tadpole L4' (10, 100)
+  centered at 120 starts at 70: one label '#0 horseshoe → tadpole L4' over 0-140 (25 characters, reaching 195), clear
+  of 'inferred' (80) centered at 400 (from 360);
 - the synthetic figure: the 2:1 kinematic record of test_verdict_text_roles (σ librates through ϖ, P 400 yr, TPs every
   200 yr from 100.5 to 2900.5 yr over 0-3000 yr), its run cut to its first 9 TPs (100.5-1700.5 yr) with its exit seen:
   the fill 0-1800.5 yr (start covered, the end 1700.5 + 400/4), the residence to 3000 yr hatched over 1800.5-3000 yr;

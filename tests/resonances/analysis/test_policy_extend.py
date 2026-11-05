@@ -200,3 +200,22 @@ def test_a_slow_swing_baseline_sets_the_next_check(source, estimate, expected):
         )
     v = policy.apply_mmr(libration_at_end(4, baseline=baseline), MINIMAL).verdict
     assert (v.action, v.extend_to_years) == (Action.EXTEND, expected)
+
+
+@pytest.mark.parametrize(
+    'confidence, clause, expected',
+    [
+        ('certain', 'C', Action.NONE),  # the author 2026-11-05: certain asks for nothing, even with clause C
+        ('certain', '', Action.NONE),
+        ('high', 'C', Action.EXTEND),
+        ('high', '', Action.NONE),
+        ('medium', '', Action.SPOT_CHECK),
+    ],
+)
+def test_certain_takes_no_action(confidence, clause, expected):
+    from resonances.resonance.analysis.verdict import Confidence
+
+    level = Confidence(confidence)
+    kept = policy._certain_clause(level, clause)
+    assert kept == ('' if confidence == 'certain' else clause)
+    assert policy._action(Status.RESONANT, level, kept, None, Action.EXTEND) == expected

@@ -122,7 +122,11 @@ guards) → io.
   2003 SL215 8J-3 (61° against 162° for the next): a dominant member is told by its neighbours, not by its own drift.
 - `owner`: catalogue longitudes when a planet's λ is not saved (confidence ≤ medium); `run_owner` = `search_owner`,
   again on `MMR_OWNER_SHORT_WINDOW_CYCLES` windows when σ has too few 3.5-P windows (W33, flag `owner_short_windows`;
-  owner-local settings, the response keeps its windows; 385533 300 kyr, 463, 7343 → certain); `owner_potential`: the owner's
+  owner-local settings, the response keeps its windows; 385533 300 kyr, 463, 7343 → certain); stage 3 (2026-11-05,
+  `fitted_window_settings`, flag `owner_fitted_windows`): the measured trim `MMR_OWNER_FITTED_EDGE_TRIM` (0.75 P: the
+  band-pass edge error reaches its interior level) and two windows fitted to the span, ≥ `MMR_OWNER_FITTED_MIN_CYCLES`
+  P (~3.75 P of record; 385458 300 kyr). Stages 1–2 keep the 2 P trim (`MMR_OWNER_BAND_EDGE_TRIM`): trimming less
+  everywhere re-split 2001 HW7 150 kyr's owner regimes (cover 1 → 0, non_resonant → transient); `owner_potential`: the owner's
   averaged force predicts ȧ (the potential route); `owner_identity` (route 'identity', W22): a three-body σ needing
   ≥ 10³ × μμe^q follows a two-body φ that librates over its episode with a passing direct strength; not run without
   saved longitudes. A candidate owner is tested by the multiplet law (coherent coefficients), never by a bare frequency
@@ -372,6 +376,15 @@ guards) → io.
   R0 not measured is read in each accepted episode with >= 2 disjoint cycles, lift-only; the x2 guard keeps it when it
   compared another episode (`decide.r0_beside_guard`). L4 still needs 2 windows of 3.5 P (a short route was proposed,
   not adopted). A missing half of the L4 windows is no half (`a_response_check`, `lower_half_median`).
+- R0 V_F period law (author D10 A, 2026-11-04; measured by Codex on W34a: 0 of 104 passes lost, medians 0.94-1.14):
+  corr(V_E, V_F) is blind to a positive factor, so a passing correlation route must also have the median
+  T_obs/T_pred(V_F) of the counted windows within `SEPARATRIX_PERIOD_TOL` (`zone.vf_cycle_law`: the energy recomputed
+  in V_F from the observed angle and rate, topology-matched; `vf_period_law`, `r0_with_a`; switch
+  `SEPARATRIX_VF_PERIOD_LAW`; columns `sep_VF_period_law_med`/`_n`). Not on the 1:1 energy integral
+  (`zone.coorbital_law_replaces`), not on R0σ. A failure or not_measured is never read again (only a pass).
+- Zone flags follow the surviving reading (`decide.zone_withdrawn`, `surviving_zone_flags`): with Z (else L2) emptied by
+  the ×2 guard or filter_too_slow, or no regime energy (G1e), episodes_in_separatrix_zone (flag and cap) and
+  libration_in_separatrix_zone go; zone_not_measured stays. Flags only; the W28 v2 level of 2022 YG moved medium → high.
 - Below a 45° half-amplitude, L4 and R0 with a are not_measured (sin σ ≈ σ: indistinguishable from the identity).
   R0 with a applies it per window too (W28 B3, g08-1; `zone.window_eligible`: a window counts with a half-swing ≥ 45°
   or a turn) and compares V_E and V_F on the visited arc (`zone._window_correlation`, `SEPARATRIX_VEVF_ARC`); rules

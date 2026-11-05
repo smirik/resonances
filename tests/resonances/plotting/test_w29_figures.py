@@ -2,7 +2,6 @@
 episode rule of panel (a) under the minimal policy (counted episodes filled, candidates faint and dashed, nothing else),
 and the four lines that open the explanation of a minimal-policy verdict."""
 
-import math
 from types import SimpleNamespace
 
 import matplotlib
@@ -306,15 +305,22 @@ def test_the_figure_draws_under_minimal_with_the_block():
     )
     fig = sp.draw_long_period_combined(analysis)
     try:
-        assert any('basis: N 10 cycles' in text.get_text() for text in fig.texts)
-        assert math.isfinite(fig.text_stats.get('overflow', 0.0))
+        # the right column (`verdict_column`, 2026-11-04): the counted cycles are a Confidence pill, the W28 tree's
+        # verdict only in the footer (decision D2); the column fits
+        drawn = ' '.join(text.get_text() for text in fig.texts if text.get_gid() == 'verdict_column')
+        drawn = drawn.replace('\xa0', ' ')  # a short footer item is glued with no-break spaces
+        assert '10 cycles counted' in drawn and 'W28 tree: resonant/high' in drawn
+        from resonances.plotting.verdict_column import problems
+
+        assert problems(fig.text_stats['column']) == []
+        assert fig.text_stats['overflow'] == 0
     finally:
         plt.close(fig)
 
 
 def test_mmr_panel_a_draws_only_counted_and_candidate_runs():
     """The runs of the v2 strip test (`test_rejected_runs_carry_the_letter_of_their_reason`: '#0', 'T', 'F', 'C'
-    there): under the minimal policy, with #0 counted and #2 a candidate, (a) shows '#0' and 'cand', no grey strip."""
+    there): under the minimal policy, with #0 counted and #2 a candidate, (a) shows '#0' and 'cand', no gray strip."""
     from resonances.resonance.analysis.geometry import RejectReason
 
     from resonances.plotting.style import LAYOUT_V1

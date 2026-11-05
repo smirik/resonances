@@ -1,6 +1,6 @@
 # Physics notes the code relies on
 
-Conclusions measured during the programme, with the objects that showed them. The formulas are in
+Conclusions measured during the program, with the objects that showed them. The formulas are in
 `docs/physics/` (rule IDs: `docs/libration-analysis.md`); here is why the code is built the way it is.
 
 ## The a↔σ identity and what it forbids
@@ -32,7 +32,7 @@ Conclusions measured during the programme, with the objects that showed them. Th
 
 ## Strength
 
-- Two-body strength is computed: the curvature of the directly averaged potential at the occupied centre.
+- Two-body strength is computed: the curvature of the directly averaged potential at the occupied center.
 - Three-body strength is known only to a coefficient of order 1–100 (Gallardo 2006, p. 30): μμe^q is an order
   estimate, not a bound. Hence a three-body libration whose force cannot be measured is capped at medium
   (`strength_scale_only`). 2348 4J-2S-1: required/e^q = 1.59, while its large-swing siblings (force measured) have
@@ -60,23 +60,23 @@ Conclusions measured during the programme, with the objects that showed them. Th
 
 ## Multiplets (sisters)
 
-- Sisters share the fast wiggle; only the centre tells them apart. 65366 6M-11 and 31935 9M-16: separations
+- Sisters share the fast wiggle; only the center tells them apart. 65366 6M-11 and 31935 9M-16: separations
   6.3e-6 / 3.2e-6 AU against widths ~1e-4 AU (λ = 0.032 / 0.018): one overlapped multiplet, a modulated pendulum.
-  The composite centre c0(β) = π − arg P(β) fits to 8–10° RMS against 21–27° for one sister.
+  The composite center c0(β) = π − arg P(β) fits to 8–10° RMS against 21–27° for one sister.
 - The guiding member is the largest coefficient (Murray & Dermott §8.14.2), and only over an episode: for 65366 and
   31935 Rouché dominance fails and the winding over a full β cycle is zero, so the origin is reported as composite,
   not one member as the global owner; the binomial mode is
   j = floor((q + 1)x/(1 + x)), with j = 0 largest for qx ≤ 1 (the earlier x < 1/(2q − 1) rule was wrong).
 - ϖ-type and node-type members can drift at the same rate (g − g_P ≈ −(s − s_P)); rate matching alone cannot choose.
-- The catalogue row takes the status of an accepted member of its multiplet (rule C).
+- The catalog row takes the status of an accepted member of its multiplet (rule C).
 
-## Separatrix and moving centre
+## Separatrix and moving center
 
 - The pulsating-zone half-range is q(e_max − e_min)/(2 mean e) (it had been doubled: 52356 0.609 → 0.304,
   469333 0.139 → 0.070). min/mean speed < 1/4 maps to pendulum h ≈ 1.012, not 1.07. Remove secular trends before
   defining a zone, or a trend-driven capture widens its own zone.
 - 145480 1N-4 needs an asymmetric two-harmonic potential (second/first 1.91; energy R² 0.30 → 0.87).
-- 2013 AS27 31E-36 librates about a moving centre (literature: Gallardo 2006 p. 30; Wisdom 1985 p. 274): track RMS
+- 2013 AS27 31E-36 librates about a moving center (literature: Gallardo 2006 p. 30; Wisdom 1985 p. 274): track RMS
   1.55° against 14.4° fixed and 28.2° reversed; near-zero osculating MOID was not an encounter (minimum 0.0714 AU =
   7.1 Hill radii). Its 4E+9S-5 row is induced.
 - 2003 UG22 10E-17: the full flat-bottom well predicts the periods within 0.98–1.10 against 0.76–0.80 for a cosine.
@@ -123,14 +123,14 @@ Conclusions measured during the programme, with the objects that showed them. Th
 ## ZLK
 
 - A bounded osculating ω in a Trojan can be forced-eccentricity geometry (591986; Vinogradova 2024 on shifted ZLK
-  centres): the free ω winds while the forced e holds the osculating one.
+  centers): the free ω winds while the forced e holds the osculating one.
 - e–i exchange also occurs with circulating ω (41/186 bodies), so it cannot decide ZLK. Two laws tell its mechanism:
   constant √(1−e²)cos i (ZLK: di/de = −e cot i/(1−e²), antiphase) and constant √(1−e²)(1−cos i), the momentum
   conjugate to Ω when the forcing acts on ϖ only (a forced-eccentricity beat: +e tan(i/2)/(1−e²), in phase). 591986's
   6-kyr cycle follows the second (δi 0.0041° vs 0.0037°); 15527 (circulating) follows the first at its cos 2ω harmonic.
 - 591986 has two scales that are both forcing: 6 kyr = 2π/(g_free − g5) (free circle around the forced tip) and
   54 kyr = 2π/(g6 − g5), the forced vector's direction swinging ±arcsin(|c6|/|c5|) = 22.8° (reconstruction r 0.991).
-  A clean synthetic of it decided at the 54-kyr centre scale until the scale guard (forced beat + ρ_max < 1).
+  A clean synthetic of it decided at the 54-kyr center scale until the scale guard (forced beat + ρ_max < 1).
 - One median e_free over the whole record hides a free circle that grows in part of it: compare rolling medians of
   both radii over one libration cycle (555527: 0.59 global, 0.66 local at 100 kyr; an instantaneous ratio reaches
   1.03 on noise).
@@ -139,7 +139,7 @@ Conclusions measured during the programme, with the objects that showed them. Th
   phase, H not conserved, η_H 1.1–1.4; the whole record at P reads zlk or none depending on the estimator).
 - The constant-H test is better read as H cancellation, η_H = |δH| / |cos i δG| at P (δG from e alone; 0 for an exact
   trade), than as the first-order slope di/de = −e cot i/(1−e²): large cycles break the slope (1866 slope 3.0×, 477492
-  2.0×) while H stays cancelled to 4–5 %. On the benchmark ZLK items zlk sits at η_H ≤ 0.28, everything else ≥ 0.58.
+  2.0×) while H stays canceled to 4–5 %. On the benchmark ZLK items zlk sits at η_H ≤ 0.28, everything else ≥ 0.58.
   A fixed-period fit over many cycles of a drifting period loses phase and amplitude (162474 1.5 Myr ep0: 121°);
   demodulate cycle by cycle. Fewer than 3 periods do not separate the classes (two estimators agree 3/11).
 - A planetary-frequency free residual means leakage or a true secular resonance; either makes the ZLK reading

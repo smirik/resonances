@@ -86,7 +86,7 @@ def test_cap_alternative_is_drawn_with_the_cap():
     assert vt.limit_heading(row, 'medium') == 'LIMIT: almost an episode [cap:near_episode] → MEDIUM'
     full = numbers._limit_lines(row)
     assert full[0] == vt.CAP_WORDS['near_episode'] and full[-1].startswith('if not: transient: one more turning point')
-    assert 'look at (a): the grey run with most turning points' in numbers._limit_lines(row, compact=True)[-1]
+    assert 'look at (a): the gray run with most turning points' in numbers._limit_lines(row, compact=True)[-1]
 
 
 W20_ENTRIES = {
@@ -132,7 +132,9 @@ def test_near_threshold_row_prints_words():
 def test_owner_intervals_and_decisive_period():
     """own_intervals in words; the period the owner's bound reads, back from own_sigma_period_min_yr = T/√(|v/u| b):
     385266, Ψ = 5σ − 27φ, b = 0.010454, 11 567.97 yr → T = 11 567.97·√(5.4·0.010454) = 11 567.97·0.23760 = 2 748.5 yr."""
-    assert vt._intervals('9060-88093:forced_wave;100-200:slip') == '9.06 kyr–88.1 kyr (forced wave), 100 yr–200 yr (slip)'
+    assert vt._intervals('9060-88093:forced_wave;100-200:slip') == 'during 9.06–88.1 kyr as a forced wave, 100–200 yr as slip'
+    # one regime for every block (1997 GK3's owner): said once, before the spans
+    assert vt._intervals('455-11600:libration;12800-18600:libration') == 'librating during 0.455–11.6 kyr, 12.8–18.6 kyr'
     assert vt._intervals('') == ''
     row = {'own_psi_def': '5*sigma-27*phi', 'own_sigma_period_min_yr': 11567.97}
     facts = SimpleNamespace(row=row)
@@ -144,7 +146,7 @@ def test_owner_intervals_and_decisive_period():
 
 
 def test_subresonance_table():
-    """S2 (CS9 columns) as a table, written out by hand: W/W0, E, N, A/W of the first three members, the catalogue
+    """S2 (CS9 columns) as a table, written out by hand: W/W0, E, N, A/W of the first three members, the catalog
     angle's W0 and A/W0, the potential minimum's W/W0 = 13.2/36 = 0.37; a long key on its own line; N < 1 in words.
     Every cell after a space (W20 round C: 82157 printed '0.990.00190.0064'), the line as wide as before; a number
     longer than the 5-character cell in a short exponent (0.0019 -> 2e-3; 17346 2J-1: E = -4 020 658 -> -4e6)."""
@@ -317,7 +319,7 @@ def test_rows_say_why_when_not_measured():
     *_, text = _analysis('mmr3__52356__5J-2S-2+0+0-1')
     assert text.physics[0].subtitle == 'order-of-magnitude scale' and 'is a scale only' in text.physics[0].rows[0].text
     *_, text = _analysis('coorbital__2016_CA138__1E-1+0+0')
-    assert len(text.physics) == 1 and text.physics[0].subtitle == '1:1' and 'own 1:1 force law' in text.physics[0].rows[0].text
+    assert len(text.physics) == 1 and text.physics[0].subtitle == '1:1' and 'follows the 1:1 force law' in text.physics[0].rows[0].text
     *_, text = _analysis('mmr2__119066__4N-7+0+3')
     owner = _rows(text)[('What', 'owner')]
     assert owner.icon == '–' and owner.text == 'the libration holds too few force windows for the owner fit'
@@ -351,7 +353,7 @@ W20_WORDING = {
     'coorbital__2017_UM52__1E-1+0+0': ('steps', 'exit seen: the orbit-averaged σ runs 1.97 rev ≥ 1 rev beyond the episode, one way'),
     'coorbital__2016_CA138__1E-1+0+0': ('steps', 'one cycle closed by its phase return: σ_f leaves the 0.5 level of the swing at'),
     # W28 C5 (g01-2): the stay needs one loop through its own turns (69.8 yr), no longer 1.5 small-amplitude P_QS,max
-    'coorbital__164207__1E-1+0+0': ('steps', 'θ stays in the quasi-satellite well for 566 yr ≥ 69.8 yr'),
+    'coorbital__164207__1E-1+0+0': ('steps', 'the orbit-averaged angle stays in the quasi-satellite well for 566 yr ≥ 69.8 yr'),
     'mmr2__33128__6N-7+0+1': ('sentences', 'the force law beats a shifted in time (null test): R² gain 0.264 ≥ 0.2'),
     # W20 round D: no lift by the record; the cap names the scatter of a (0.597 of the a swing, MEASURE: 0.60); W34: the
     # W28 tree's cap ('tree cap'), a flag under the minimal policy
@@ -390,12 +392,15 @@ LAYOUT_RECORDS = ('mmr2__385266__16N-27+0+11', 'mmr2__82157__20N-29+0+9', 'mmr2_
 def test_block_is_drawn_and_nothing_overflows(example):
     from resonances.plotting import mmr_combined as mc
 
+    from resonances.plotting import verdict_column as vc
+
     series, analysis, *_ = _analysis(example)
     fig = mc.draw_combined(analysis, series, settings=S)
-    texts = [artist.get_text() for artist in fig.texts]
-    assert fig.text_stats['overflow'] == 0
-    assert fig.text_stats['wide'] == []  # no row runs into the next column (W20 round D: the EPISODES header)
-    assert any(t.startswith('Is σ the own pendulum of') for t in texts) and 'What makes the cycles?' in texts
+    texts = ' '.join(artist.get_text() for artist in fig.texts)
+    # the right column (2026-11-04): the physics sections are its Evidence block, drawn whole; nothing overflows
+    column = fig.text_stats['column']
+    assert fig.text_stats['overflow'] == 0 and fig.text_stats['not_drawn'] == 0 and vc.problems(column) == []
+    assert column.evidence and all(vc.plain(evidence.title).split()[-1] in texts for evidence in column.evidence)
     plt.close(fig)
 
 
@@ -455,7 +460,7 @@ def test_the_owner_step_follows_the_decision():
 
 
 def test_an_arc_of_the_slow_centre_is_explained():
-    """2003 KQ18: 7 turning points on a slow centre that turns back once within 0.18 rev (G5a) is insufficient_time
+    """2003 KQ18: 7 turning points on a slow center that turns back once within 0.18 rev (G5a) is insufficient_time
     (arc), and the step says so instead of 'too few turning points'."""
     entry = LedgerEntry(
         'G5a slow centre stays within one revolution',
@@ -470,7 +475,7 @@ def test_an_arc_of_the_slow_centre_is_explained():
     )
     f = SimpleNamespace(row={'geo_n_tp': 7}, entry={entry.name: entry}.get)
     assert vt._insufficient_text(f, 'arc') == (
-        '7 turning points ride on a slow centre that turns back once, within 0.18 rev: part of one slow swing, where a '
+        '7 turning points ride on a slow center that turns back once, within 0.18 rev: part of one slow swing, where a '
         'drift and a slow libration look alike → insufficient_time (arc)'
     )
     f = SimpleNamespace(row={'geo_n_tp': 2}, entry={}.get)

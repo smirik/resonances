@@ -294,8 +294,9 @@ def test_62243_kinematic_libration_with_a_moving_centre_is_a_drift():
     analysis = _verdict('mmr3__62243__1M-4J-1+0+0+4')
     verdict = analysis.verdict
     assert (str(verdict.status), str(verdict.angle_status), str(verdict.reason)) == ('non_resonant', 'drift', 'kinematic_drift')
-    # the W28 tree's level, the author's label of 2026-10-24 (W34: the minimal policy's measured veto reads high)
-    assert tree_verdict(verdict).confidence == 'medium'
+    # the W28 tree's level: medium (the author's label of 2026-10-24) while the owner was not measured; the owner's
+    # stage 3 (fitted windows, 2026-11-05) measures it (pass), so the tree reads high, as the minimal policy (W34)
+    assert tree_verdict(verdict).confidence == 'high' and str(analysis.owner.check) == 'pass'
     shape = next(step for step in _explained(analysis).steps if step.key == 'shape')
     assert 'moves 1.82 > 1 × its amplitude' in shape.outcome
 

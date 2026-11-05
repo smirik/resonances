@@ -175,7 +175,7 @@ def test_the_cause_sentence_says_when_a_lock_is_not_resolved():
 
     series, elements = trojan_500kyr()
     sentence = zlk_cause(analyse_zlk(series, SETTINGS, free_elements=elements))[0]
-    assert 'The centre\'s' in sentence and 'is the g6−g5 beat of the forced vector' in sentence
+    assert 'The center\'s' in sentence and 'is the g6−g5 beat of the forced vector' in sentence
     assert 'The node follows g5 within the resolution' in sentence and 'a lock is not resolved' in sentence
 
 
@@ -235,7 +235,7 @@ def test_a_confirmed_libration_keeps_the_eight_panels_in_place():
         panels = _time_panels(fig)
         assert len(panels) == 8  # seven before the a panel of W29
         width, height = fig.get_size_inches()
-        for ax, (x, y, w, h) in zip(panels, panel_rects(LAYOUT_V1, 8)):
+        for ax, (x, y, w, h) in zip(panels, panel_rects(LAYOUT_V1, 8, labelled=1)):  # (b): time labels under it
             assert ax.get_position().bounds == pytest.approx((x / width, y / height, w / width, h / height))
         assert not any(ax.get_legend() and 'arg z_forced' in ' '.join(t.get_text() for t in ax.get_legend().get_texts()) for ax in fig.axes)
     finally:

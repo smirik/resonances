@@ -362,6 +362,31 @@ def episodes_in_separatrix_zone(energy: Optional[EnergyAnalysis]) -> bool:
     return energy is not None and bool(energy.episodes_in_separatrix_zone)
 
 
+# the flags that read the cycle classes of the zone (`zone_withdrawn` takes them off)
+ZONE_READING_FLAGS = (EPISODES_IN_SEPARATRIX_ZONE, str(Flag.LIBRATION_IN_SEPARATRIX_ZONE))
+
+
+def zone_withdrawn(energy: Optional[EnergyAnalysis], margins: Mapping[str, MarginValue]) -> bool:
+    """The zone's reading did not survive for the row: the status read no energy of its regime (`regime_physics`, G1e:
+    the zone was measured on the last regime after the jump), or the margin that carries the reading is not_measured
+    after the guards: Z where it is graded (an episodic or near_separatrix own-dynamics verdict), else L2 (a libration's
+    distance to the separatrix), emptied by the x2 filter guard (the energy changes at 2 P_c) or filter_too_slow.
+    Then the flags `ZONE_READING_FLAGS` and the cap episodes_in_separatrix_zone go (the row shows zone_not_measured,
+    never both); a margin not graded (uncertain, a circulation) withdraws nothing. The sep_* columns keep the classes
+    measured at P_c."""
+    if energy is None:
+        return True
+    margin = margins.get('Z', margins.get('L2'))
+    return margin is not None and margin.margin == Margin.NOT_MEASURED
+
+
+def surviving_zone_flags(flags: Sequence[str], energy: Optional[EnergyAnalysis], margins: Mapping[str, MarginValue]) -> List[str]:
+    """`flags` without `ZONE_READING_FLAGS` when the zone's reading was withdrawn (`zone_withdrawn`)."""
+    if not zone_withdrawn(energy, margins):
+        return list(flags)
+    return [flag for flag in flags if flag not in ZONE_READING_FLAGS]
+
+
 def period_floor(geometry: Geometry, settings: AnalysisSettings, episode=None) -> Tuple[float, str]:
     """The shortest libration period of the angle [yr] and its setting: the one the preprocessing derived
     (geometry.period_floor_yr: a co-orbital's own, `preprocess.libration_period_floor`), else mmr_libration_period_min_yr.
@@ -3985,7 +4010,7 @@ def collect_caps(
     caps += one_cycle_energy_caps(caps, response, settings, one_to_one)
     if angle.angle_status != AngleStatus.CIRCULATION:  # a circulation's scan only names its origin
         caps += subresonance_caps(decision, subresonances)
-    if decision.status == Status.TRANSIENT and episodes_in_separatrix_zone(energy):
+    if decision.status == Status.TRANSIENT and episodes_in_separatrix_zone(energy) and not zone_withdrawn(energy, margins):
         caps.append(str(Cap.EPISODES_IN_SEPARATRIX_ZONE))
     caps += near_separatrix_caps(angle, decision, energy, margins)
     if margins.get('O1') is not None and margins['O1'].margin == Margin.FAIL and capture_claimed(decision):

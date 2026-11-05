@@ -280,7 +280,7 @@ def _axis_frame(mode='clipped'):
 
 
 def _levels(ax):
-    """(colour, y) of the levels drawn over a time span (hlines)."""
+    """(color, y) of the levels drawn over a time span (hlines)."""
     return sorted((to_hex(c.get_edgecolor()[0]), c.get_segments()[0][0][1]) for c in ax.collections if isinstance(c, LineCollection))
 
 
@@ -461,7 +461,7 @@ def test_dense_libration_hides_the_wrapped_line_and_draws_the_strip():
     assert not [line for line in wrapped.lines if to_hex(line.get_color()) == '#000000']
     assert not wrapped.child_axes  # no inset: the strip (b′) is a panel of its own
     assert [line.get_marker() for line in wrapped.lines] == ['v']  # where the strip's window is
-    rects = mc.panel_rects(LAYOUT, len(mc.PANELS) + 1)
+    rects = mc.panel_rects(LAYOUT, len(mc.PANELS) + 1, mc.WRAPPED_INDEX)  # t labeled under (b) too
     width, height = LAYOUT.size
     strips = fig.axes[len(mc.PANELS) :]
     assert len(strips) == 1  # one regime: one window

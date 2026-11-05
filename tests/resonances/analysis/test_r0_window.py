@@ -125,7 +125,7 @@ def test_mixed_amplitudes_pass_on_the_eligible_windows():
     for k in range(8):
         window = (k * period, (k + 1) * period)
         r = 0.75 if k < 3 else 0.98  # the three +-25-deg cycles disagree
-        comparisons.append(zone.WindowComparison(r, zone.window_eligible(geometry, window, False, S), r_reference=r))
+        comparisons.append(zone.WindowComparison(r, zone.window_eligible(geometry, window, False, S), r_reference=r, vf_law=1.0))
     assert [c.eligible for c in comparisons] == [False] * 3 + [True] * 5
     check, fired = zone.r0_with_a(CheckValue.PASS, comparisons, S)
     assert check == CheckValue.PASS  # 5 of 5 eligible windows agree
@@ -150,7 +150,7 @@ def test_no_eligible_window_is_not_measured():
 
 def test_both_parts_fire_when_together_they_change_the_check():
     # 2004 BG41: pre-W28 on every window fails (0.63), each part alone passes
-    comparisons = [zone.WindowComparison(0.95, k % 3 == 0, r_reference=0.95 if k % 3 == 0 else 0.5) for k in range(9)]
+    comparisons = [zone.WindowComparison(0.95, k % 3 == 0, r_reference=0.95 if k % 3 == 0 else 0.5, vf_law=1.0) for k in range(9)]
     check, fired = zone.r0_with_a(CheckValue.PASS, comparisons, S)
     assert check == CheckValue.PASS
     assert fired == frozenset({Rule.R0_WINDOWS, Rule.POTENTIAL_ON_ARC})

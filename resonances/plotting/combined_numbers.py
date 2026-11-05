@@ -4,11 +4,11 @@
 - explained (default, layout A′ chosen by the author on 2026-10-16; `draw_explained`): the verdict plaque (the only
   place the status is printed), the explanation in words (`verdict_text`), two columns 'How it was decided' (the steps
   of the status tree as questions with their ids, under 'Decided at …', W28 E3) and 'Confidence' (W28 E4: the LIMIT
-  rows ▼ first, then every margin as 'name [id]' with ✗ ? ⚠ –, the full ones in one line, the n/a ones in one grey
+  rows ▼ first, then every margin as 'name [id]' with ✗ ? ⚠ –, the full ones in one line, the n/a ones in one gray
   line), the level arithmetic in two lines (support, limits), the legend, one line naming the docs pages, the framed
   block 'Numbers behind this verdict' (W28 E10: `behind_lines`, the table rows of its numbers point up to it,
   `point_to_block`), then the numbers the reader needs in balanced monospaced columns (`group_lines`: episodes, the
-  libration, the response, ..., characteristic periods, orbit, record). Bold numbers were compared by the decision, grey ones belong to a test
+  libration, the response, ..., characteristic periods, orbit, record). Bold numbers were compared by the decision, gray ones belong to a test
   skipped by design;
 - all (`draw_text`): every number of the decision, as described below.
 
@@ -225,6 +225,107 @@ RANGE_LABELS = {
     ('str_mu_eff_theory_min', 'str_mu_eff_theory_max'): 'theory strength μ_th',
     ('sep_zone_h_lo', 'sep_zone_h_hi'): 'separatrix layer in h',
 }
+# The labels of the redesigned right column (`verdict_column`, 2026-11-04: human words, no column stems), for the
+# columns COLUMN_LABELS does not name. Kept apart from COLUMN_LABELS so that the explained column of the W28 figure
+# keeps its labels (its tests read the stems); `column_words` reads COLUMN_LABELS first, then this table.
+COLUMN_WORDS = {
+    # the deciding episode and the whole record's shape
+    'ep_centre_mod_2pi_deg': 'center',
+    'ep_n_tp': 'turning points',
+    'ep_half_amp_med_deg': 'half-amplitude, median',
+    'ep_half_amp_max_deg': 'half-amplitude, max',
+    'ep_centre_shift_over_amp': 'center shift / half-amplitude',
+    'ep_coverage_start_gap_P': 'gap to the record’s start',
+    'ep_coverage_end_gap_P': 'gap to the record’s end',
+    'ep_onset_ratio': 'a-wave before / inside the episode',
+    'geo_n_tp': 'turning points, whole record',
+    'geo_period_cycle_yr': 'cycle period, whole record',
+    'geo_centre_max_pass_rev': 'largest pass of the center',
+    'geo_drift_fraction': 'drifting share of the record',
+    'geo_n_revolutions': 'revolutions of σ',
+    'geo_n_slips': 'slips over the top',
+    'geo_centre_range_rad': 'range of the slow center',
+    'geo_slow_swing_identity_slope_ratio': 'slow swing: |slope/c − 1|',
+    'geo_slow_swing_identity_corr': 'slow swing: correlation of σ̇ and a',
+    'geo_slow_swing_a_ratio': 'slow swing: a swing / the pendulum’s',
+    'geo_slow_swing_period_ratio': 'slow swing: period / T0_th F(A)',
+    'geo_leg_read': 'the leg’s discrepancy',
+    # the response of a
+    'rsp_identity_slope_ratio': 'σ̇ against a: slope / c',
+    'rsp_identity_corr': 'σ̇ against a: correlation',
+    'rsp_b1_ratio': 'a swing / the swing σ needs',
+    'rsp_b1_meas_au': 'a swing',
+    'rsp_force_window_yr': 'force window',
+    'rsp_force_n_windows': 'force windows',
+    'rsp_force_R2_h1': 'force law R², first half',
+    'rsp_force_R2_h2': 'force law R², second half',
+    'rsp_force_phi0_deg': 'force phase φ0',
+    'rsp_phi0_max_dev_deg': 'spread of φ0',
+    'rsp_phi0_tol_deg': 'allowed spread of φ0',
+    'rsp_coorb_K_over_K_theory_h1': 'force scale K/K_th, first half',
+    'rsp_coorb_K_over_K_theory_h2': 'force scale K/K_th, second half',
+    'rsp_coorb_energy_R2': '1:1 energy integral R²',
+    'rsp_omega0_ratio': 'small-swing frequency / the cycle’s',
+    'rsp_b5_ratio': 'slower libration test ratio',
+    'rsp_slow_adot_R2': 'slow ȧ on sin σ_slow R²',
+    'rsp_response_cutoff_yr': 'response cutoff',
+    # pendulum and energy
+    'sep_period_law_med': 'period law, median',
+    'sep_VE_VF_agree_fraction': 'windows with V_E ≈ V_F',
+    'sep_zone_method': 'zone measured by',
+    'sep_mechanism': 'what switches the regimes',
+    # the resonance
+    'ctx_order': 'order',
+    'ctx_a_res_nominal_au': 'a_res (catalog)',
+    'ctx_a_star_au': 'a* (from the rates)',
+    'ctx_a_mean_au': 'mean a',
+    'ctx_delta_a_au': 'mean a − a*',
+    'ctx_a_from_mean_longitude_rate_au': 'a from the mean-longitude rate',
+    'ctx_c_rad_yr_au': 'c = dσ̇/da',
+    'ctx_rate_expected_deg_yr': 'σ̇ expected at mean a',
+    'ctx_rate_measured_deg_yr': 'σ̇ measured',
+    'ctx_P_orb_yr': 'orbital period',
+    # kinematics and the slow scale
+    'kin_corr_rate': 'σ̇ against p ϖ̇: correlation',
+    'kin_e_free': 'free e',
+    'kin_e_forced': 'forced e',
+    'kin_modulation_period_kyr': 'e-cycle 2π/|g − g5|',
+    'kin_two_omega_period_yr': '2ω cycle π/|ω̇|',
+    'kin_pred_swing_deg': 'p ϖ half-swing, predicted',
+    'kin_meas_swing_deg': 'p ϖ half-swing, measured',
+    'slow_period_yr': 'slow period',
+    'slow_halfamp_deg': 'slow half-amplitude',
+    'slow_cutoff_yr': 'slow-scale cutoff',
+    'slow_secular_period_yr': 'nearest secular period',
+    'slow_cause_level': 'slow cause',
+    # step, alias, filter
+    'smp_span_yr': 'record length',
+    'smp_step_yr': 'output step',
+    'smp_step_rotation_deg_max': 'σ turn per step, max',
+    'smp_far_ratio': 'distance of mean a from a*, in a-scales (half its swing)',
+    'smp_da_sp_over_a_excursion': 'short-period scatter of a / a swing',
+    'flt_cutoff_yr': 'filter cutoff',
+    'flt_gain_at_pcyc': 'filter gain at the cycle period',
+    # members and the other resonance
+    'sub_n_scanned': 'members scanned',
+    'sub_best': 'closest member',
+    'sub_accepted': 'member that holds the center',
+    'own_name': 'driver',
+    'own_n_candidates': 'candidate drivers',
+    'own_psi_turns_per_cycle': 'turns of Ψ per cycle',
+    'own_R2': 'driver’s force law R²',
+    'own_cover': 'share of σ’s episode the driver covers',
+    'own_lever_gain': 'driver’s phase gain over σ’s',
+    'str_ratio': 'needed / theory strength',
+    'str_divisor_residual': 'needed / scale × B² (small divisors)',
+    'bw_outcome': 'counted episodes the background carries',
+}
+
+
+def column_words(column: str) -> str:
+    """The human label of a column for the redesigned column: COLUMN_LABELS, then COLUMN_WORDS; '' when neither names it
+    (the caller then leaves the number out of a group, never prints the stem)."""
+    return COLUMN_LABELS.get(column) or COLUMN_WORDS.get(column, '')
 
 
 def label_of(column: str, prefixes: Sequence[str] = ()) -> str:
@@ -298,6 +399,18 @@ def _format_float(column: str, value: float) -> str:
 def unit_space(column: str) -> str:
     unit = unit_of(column)
     return f' {unit}' if unit else ''
+
+
+def cell_with_unit(column: str, value: Any) -> str:
+    """A cell and its unit for the right column's Numbers: a time in yr of 10⁴ yr and more in kyr (Myr from 10⁷ yr),
+    so that neighboring rows read in one unit ('64.41 kyr' beside 'e-cycle 28.47 kyr', not '64409 yr'); the value
+    is the cell's, only rescaled."""
+    if unit_of(column) == 'yr' and not missing(value) and not isinstance(value, (bool, str)):
+        size = abs(float(value))
+        if math.isfinite(size) and size >= _LARGE:
+            scale, unit = (1e6, 'Myr') if size >= 1e7 else (1e3, 'kyr')
+            return f'{float(value) / scale:.{_DIGITS}g} {unit}'
+    return format_cell(column, value) + unit_space(column)
 
 
 # --------------------------------------------------------------------------------------------- blocks
@@ -438,7 +551,7 @@ MARGIN_MARKS = {'full': MARK_PASS, 'thin': MARK_THIN, 'fail': MARK_FAIL}
 
 
 def check_lines(row: Mapping[str, Any], checks: Sequence[str], prefix: str) -> List[NumberLine]:
-    """One line per check column of the type (`checks`), labelled without `prefix`."""
+    """One line per check column of the type (`checks`), labeled without `prefix`."""
     lines = []
     for column in checks:
         value = row.get(column)
@@ -981,7 +1094,7 @@ def _passed_line(pen: _Pen, passed, x: float, y: float, width: float, draw: bool
 
 
 def _na_line(pen: _Pen, rows, x: float, y: float, width: float, draw: bool) -> float:
-    """The n/a margins as one grey line without numbers (`verdict_text.na_line`)."""
+    """The n/a margins as one gray line without numbers (`verdict_text.na_line`)."""
     from .verdict_text import ICONS, CheckState, na_line
 
     if not rows:
@@ -994,7 +1107,7 @@ def _na_line(pen: _Pen, rows, x: float, y: float, width: float, draw: bool) -> f
 def _checks_column(pen: _Pen, text, x: float, y: float, width: float, draw: bool, compact: bool = False) -> float:
     """The confidence block (cards g10-4/g10-4b, g03-5): the LIMIT rows first (▼, `_limit_row`), then the support
     margins that failed, are missing, thin or skipped by design (icon, 'name [id]', the measurement), the full ones in
-    one line 'full: …' and the n/a ones in one grey line without numbers. `compact` (when the numbers would not fit
+    one line 'full: …' and the n/a ones in one gray line without numbers. `compact` (when the numbers would not fit
     otherwise): no need on the rows, the limits with their short reason."""
     from .verdict_text import KIND_NA
 
@@ -1062,9 +1175,9 @@ def plaque_rows(pen: _Pen, text, x: float, right: float) -> int:
 
 
 def _plaque(pen: _Pen, text, x: float, y: float, colour: str, right: float = math.inf) -> None:
-    """The plaque (status · angle_status · confidence, white on the status colour), then right of it the action tag
+    """The plaque (status · angle_status · confidence, white on the status color), then right of it the action tag
     (amber: the advice, W29) and, when the record ends in another regime, the tag 'ends: …' (outlined in the status
-    colour, lighter, so it reads as a note on the verdict, not as a fourth part of it); a tag that would pass `right`
+    color, lighter, so it reads as a note on the verdict, not as a fourth part of it); a tag that would pass `right`
     goes one row down (`plaque_tags`)."""
     plaque = f' {text.badge} '
     pen.text(x, y, plaque, BADGE_PT, weight='bold', color='white', bbox={'boxstyle': f'round,pad={BADGE_PAD}', 'fc': colour, 'ec': 'none'})
@@ -1086,8 +1199,8 @@ LEGEND_GAP = 0.06  # inches above the legend when it goes under the steps
 
 def _physics_section(pen: _Pen, section, x: float, y: float, width: float, draw: bool, compact: bool = False) -> float:
     """One physics section (R1 §4): its title (bold) and subtitle, then per row the icon, the label in a column as wide
-    as the section's widest and the text wrapped right of it; grey rows (context) grey, rows whose number the verdict
-    compared bold. `compact` (the numbers would not fit otherwise): the grey context rows are left out (they are in the
+    as the section's widest and the text wrapped right of it; gray rows (context) gray, rows whose number the verdict
+    compared bold. `compact` (the numbers would not fit otherwise): the gray context rows are left out (they are in the
     CSV files). Returns the y below it."""
     if draw:
         pen.text(x, y, section.title, SECTION_PT, weight='bold', color=KEY_INK)
@@ -1226,8 +1339,8 @@ def group_lines(
     grey: Optional[Mapping[str, str]] = None,
 ) -> List[NumberLine]:
     """The numbers of the explained column: per group (title, columns) the columns present in `row` with a value,
-    labelled without their prefix and unit; a column the decision compared is bold, one of a test skipped by design
-    grey ('not used'). A group with no value is left out. The two columns of a RANGE_LABELS pair present in one group
+    labeled without their prefix and unit; a column the decision compared is bold, one of a test skipped by design
+    gray ('not used'). A group with no value is left out. The two columns of a RANGE_LABELS pair present in one group
     are one line 'lo–hi unit' under the pair's label (the line keeps the low column, the high one in `also`)."""
     grey = grey or {}
     lines = []
@@ -1327,7 +1440,7 @@ def _behind_block(
     pen: _Pen, block: Sequence[NumberLine], x0: float, x1: float, y: float, draw: bool, size: float = BEHIND_PT
 ) -> Tuple[float, int]:
     """'Numbers behind this verdict' from y down at `size` (the numbers' font, so the block and the table shrink
-    together): the title, then per line its rows in a frame (`BEHIND_FRAMES`: the kind's line style and colour), the
+    together): the title, then per line its rows in a frame (`BEHIND_FRAMES`: the kind's line style and color), the
     tag bold. Returns the y below the block and the number of rows drawn."""
     if not block:
         return y, 0
@@ -1465,7 +1578,7 @@ def _fit_numbers(
 
 @dataclass(frozen=True)
 class _Fit:
-    """One way to lay out the explained column (`FIT_LEVELS`): the grey numbers kept, the legend under the steps, the
+    """One way to lay out the explained column (`FIT_LEVELS`): the gray numbers kept, the legend under the steps, the
     number of number columns, the compact explanation, what is kept of the block 'Numbers behind this verdict'
     (`behind_shown`), the compact bullets' size (`bullet_pt`, None: BULLET_COMPACT_PT)."""
 
@@ -1499,7 +1612,7 @@ def draw_explained(fig, text, lines: Sequence[NumberLine], layout: VerdictFigure
     """The explained right column (layout A′): `text` is a `verdict_text.VerdictText`, `lines` the numbers
     (`group_lines` plus free-text lines). The numbers fill `n_columns` monospaced columns below the explanation at the
     largest font from NUMBERS_MAX_PT down to NUMBERS_MIN_PT that holds them in balanced columns; when even the smallest
-    does not, the layouts of `FIT_LEVELS` are tried in order: the grey numbers (of tests skipped by design) are left out,
+    does not, the layouts of `FIT_LEVELS` are tried in order: the gray numbers (of tests skipped by design) are left out,
     the legend goes under the steps, a narrow extra number column is added, and last the explanation turns compact (the
     full margins in one line, the bullets in their short form), and at the very end its bullets at BULLET_TIGHT_PT. What
     still does not fit is counted in a last line (every number is in the CSV files).

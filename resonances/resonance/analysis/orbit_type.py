@@ -11,18 +11,18 @@ neither librates nor is episodic (circulation, drift, ...) names no libration: o
       'compound (horseshoe ↔ quasi-satellite)' (one episode passes both 0° and 180°)
   retrograde 1/-1: 'retrograde co-orbital, libration about 0°'
   other MMR: '[retrograde, ][interior | exterior, ]symmetric libration about 0° | 180°' or 'asymmetric libration
-      about X°' (and its mirror 360° - X when another accepted episode librates there), ', moving centre' when the
-      episode's centre shift exceeds MMR_L6_SHIFT_FULL x its mean amplitude (the L6 margin's own threshold);
-      'libration about a moving centre (mean X°)' for an episode accepted about its moving well (psi frame);
+      about X°' (and its mirror 360° - X when another accepted episode librates there), ', moving center' when the
+      episode's center shift exceeds MMR_L6_SHIFT_FULL x its mean amplitude (the L6 margin's own threshold);
+      'libration about a moving center (mean X°)' for an episode accepted about its moving well (psi frame);
       interior / exterior: two-body angles only, n/n_P = |k_P|/|k| above or below 1; 'forced wave about X°' when
       only forced waves of another argument were accepted (`Geometry.forced_waves`)
   any MMR whose verdict denies or doubts this resonance and names a cause (non_resonant or uncertain, induced,
       kinematic or implausible_strength; `not_this_resonance`): 'episodes about X° (not this resonance)'
-  secular: 'σ libration about 180°'; ZLK: 'ω libration about 90°' (the measured centre)
+  secular: 'σ libration about 180°'; ZLK: 'ω libration about 90°' (the measured center)
 
-The episode described is the decisive one, else the longest accepted. Symmetric: its centre is within
+The episode described is the decisive one, else the longest accepted. Symmetric: its center is within
 MMR_SUBRESONANCE_CENTRE_TOL_DEG of 0° or 180°, the tolerance of the subresonance test B for the same question (no
-setting of its own); the same tolerance finds the mirror centre. Angles in [0°, 360°).
+setting of its own); the same tolerance finds the mirror center. Angles in [0°, 360°).
 
 Pure: no Body/Simulation.
 """
@@ -75,22 +75,22 @@ def described_episode(runs: Sequence[Episode], decisive_id: Optional[int]) -> Op
 
 
 def centre_moves(shift_over_amp: float, shift_max: float) -> bool:
-    """Whether an episode's centre moves: its shift between the first and last full cycle exceeds `shift_max` x its
-    mean amplitude (MMR_L6_SHIFT_FULL, the L6 margin's own threshold). The one source of the header's ', moving centre'
+    """Whether an episode's center moves: its shift between the first and last full cycle exceeds `shift_max` x its
+    mean amplitude (MMR_L6_SHIFT_FULL, the L6 margin's own threshold). The one source of the header's ', moving center'
     and of the verdict sentence (`verdict_text`); the subtype `stationary` is another test, the cycles' bands overlap
-    (`geometry.centre_bands_overlap`), which a damped libration about a shifting centre can pass (2003 TX9 3E+2J-10:
+    (`geometry.centre_bands_overlap`), which a damped libration about a shifting center can pass (2003 TX9 3E+2J-10:
     shift 1.45 x the mean amplitude, every band shares a point with the first wide cycle's)."""
     return bool(np.isfinite(shift_over_amp) and shift_over_amp > shift_max)
 
 
 def libration_text(episode: Episode, runs: Sequence[Episode], tolerance_deg: float, shift_max: float) -> str:
-    """'symmetric libration about 180°', 'asymmetric libration about 72° and 288°' (the mirror centre of another
-    accepted episode), with ', moving centre' when the episode's centre shift / mean amplitude exceeds `shift_max`;
-    'libration about a moving centre (mean 21°)' for an episode accepted in the frame of its moving well (psi; W20
+    """'symmetric libration about 180°', 'asymmetric libration about 72° and 288°' (the mirror center of another
+    accepted episode), with ', moving center' when the episode's center shift / mean amplitude exceeds `shift_max`;
+    'libration about a moving center (mean 21°)' for an episode accepted in the frame of its moving well (psi; W20
     round D: 2013 AS27 31E-36 read 'symmetric about 0°' above a text 'about 21°')."""
     centre = _degrees(episode.centre_mod_2pi_rad)
     if episode.frame == FRAME_PSI:  # accepted about its moving well: the mean centre, not a nominal one
-        return f'libration about a moving centre (mean {centre:.0f}°)'
+        return f'libration about a moving center (mean {centre:.0f}°)'
     nominal = min((0.0, 180.0), key=lambda value: _distance_deg(centre, value))
     if _distance_deg(centre, nominal) <= tolerance_deg:
         text = f'symmetric libration about {nominal:.0f}°'
@@ -100,7 +100,7 @@ def libration_text(episode: Episode, runs: Sequence[Episode], tolerance_deg: flo
         about = f'{centre:.0f}°' + (f' and {mirror[0]:.0f}°' if mirror else '')
         text = f'asymmetric libration about {about}'
     if centre_moves(episode.centre_shift_over_amp, shift_max):
-        text += ', moving centre'
+        text += ', moving center'
     return text
 
 
@@ -213,7 +213,7 @@ def mmr_orbit_type(
 
 
 def long_period_orbit_type(resonance_type: ResonanceType, geometry: Optional[Geometry], decisive_id: Optional[int]) -> str:
-    """'σ libration about 180°' (secular), 'ω libration about 90°' (ZLK): the described episode's measured centre;
+    """'σ libration about 180°' (secular), 'ω libration about 90°' (ZLK): the described episode's measured center;
     '' without an accepted episode."""
     episode = described_episode(accepted_runs(geometry), decisive_id)
     if episode is None:

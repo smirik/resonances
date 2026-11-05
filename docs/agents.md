@@ -15,7 +15,7 @@ is resonant", or "why is this row uncertain with short_period_aliased?".
 
 ## What the skill contains
 
-- `SKILL.md`: the workflow and the judgement: which entry point to use (`check`, `find`, `Simulation`), how to plan
+- `SKILL.md`: the workflow and the judgment: which entry point to use (`check`, `find`, `Simulation`), how to plan
   the span, the output step and the integrator ([dry-run](dry-run.md)), clones, batch runs and restore, what each
   verdict field claims and does not claim, the usual traps, and a checklist before a status is reported to a person.
 - `references/`: a copy of the pages of this documentation, generated from `docs/` (the installed package has no

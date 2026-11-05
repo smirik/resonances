@@ -501,7 +501,7 @@ class TestLibrationText:
 
     def test_moving_centre(self):
         ep = episode(0, 180.0, shift_over_amp=0.8)
-        assert ot.libration_text(ep, [ep], self.TOL, self.SHIFT) == 'symmetric libration about 180°, moving centre'
+        assert ot.libration_text(ep, [ep], self.TOL, self.SHIFT) == 'symmetric libration about 180°, moving center'
         still = episode(0, 180.0, shift_over_amp=0.3)
         assert ot.libration_text(still, [still], self.TOL, self.SHIFT) == 'symmetric libration about 180°'
 
@@ -932,9 +932,9 @@ class TestEpisodeWording:
 # 'of one force window' when the stretch is shorter than one window; else against the span of the windows the test
 # needs ('spanned by 2 force windows of 3.5 cycles (step 0.5 window)', integration W9: TEST-DISPUTES.md)
 CYCLES = re.compile(
-    r'lasts ([\d.]+) (yr|kyr|Myr) = ([\d.]+) cycles < ([\d.]+) '
+    r'lasts ([\d.]+) (yr|kyr|Myr) = ([\d.]+) cycles? < ([\d.]+) '
     r'(?:of one force window|spanned by \d+ force windows of [\d.]+ cycles \(step [\d.]+ window\)) '
-    r'\(cycles of P_cyc ([\d.]+) (yr|kyr)\)'
+    r'\(in cycles of the mean cycle period P_cyc ([\d.]+) (yr|kyr)\)'
 )
 UNIT = {'yr': 1.0, 'kyr': 1e3, 'Myr': 1e6}
 

@@ -1,6 +1,6 @@
 # Status on 2026-11-03
 
-Replace this page at each programme step. W29 (the minimal physical policy, `CLASSIFIER_POLICY=minimal`, now the
+Replace this page at each program step. W29 (the minimal physical policy, `CLASSIFIER_POLICY=minimal`, now the
 default; `v2` kept for comparison and pinned in the tests) is implemented and committed (not pushed). Latest benchmark
 runs: `v2-w29-final` (+ `-secular-zlk`), 725 + 89 examples, 0 errors; the comparison runs `v2-w29-v2` and the W28
 baseline `v2-w28-head` (HEAD 0be0ee5). Acceptance (`benchmark/tools/w29_acceptance.py`): 0 invariant violations on
@@ -12,6 +12,32 @@ rule the author accepted by default on 2026-11-02, each with the rule and the qu
 candidates, a subresonance parent's runs are its member's, Q3, P3, the next-check cap, the ZLK gate flag). Tests:
 test-fast 5388 passed, 5 xfailed (1.3 min); test-slow 406 passed, 1 xfailed (7.3 min); test-benchmark
 656 passed, 3 xfailed (19.6 min, with the reclassification under `--policy minimal`). The record: `benchmark/DECISIONS.md` 2026-11-02, `dev/decisions.md`.
+
+## Before the merge into main (the author 2026-11-04: «Фикси всё, что осталось до слияния»)
+
+Done: untracked deletions (86 benchmark runs, 599 tmp binaries; reports, pages and answers stay until the release);
+591986 (Codex + Claude: no rule change, the g7 split is contaminated; docs/CLAUDE.md wording); `pol_veto_need_yr`
+writes inf; `ZLK_EPISODIC_NO_VERDICT` removed (the tree always reads the episode's e-i coupling); the R0 sentence names
+its episode (79653). In order (one agent at a time where they share files):
+1. figure text: the W28 Codex text defects S2 WK15 coverage, S3 BG ripple, S4 RS2 e-i, S5 HW7 150 kyr joint window,
+   S8 XP16 support, S9 AC4 filter_too_slow; words for the former caps under the minimal flags; the docs-audit list;
+2. dead output: `caps` (always empty), `confidence_raw` (= confidence), `cell_*` and the calibration cells
+   (`CONFIDENCE_CELLS`, `resonances/data/confidence_cells.json`, `benchmark/tools/calibrate.py`);
+3. back-compat: readers of pre-W29 files (`verdict_from_status_code`, `angle_status_from_text`, `reason_from_text`,
+   the figure's pre-W29 path, old summary columns);
+4. 2016 JA over 5 kyr (rerun `__5kyr`, regime C), then the author's look;
+5. R0's scale (a V_F period check, Codex W34) — measure first;
+6. computed three-body strength: a research task (Morbidelli ch. 10 averaging), to plan with the author.
+
+## The right column redesign (2026-11-04, the author's D1–D10 + go)
+
+The right column of both verdict figures is the ten-block model `plotting/verdict_column.py` (builders
+`verdict_column_mmr/_long/_why/_common`, drawing `verdict_column_draw`; reader's guide
+docs/reading-figures.md#the-right-column; decisions `dev/decisions.md` Figures, Nov 4; log `benchmark/DECISIONS.md`
+2026-11-04 (3)). The figure grows downward when the column needs it (D8). Open: the D5 panel map
+(`verdict_vocab.GLANCE_PANELS`) awaits the author's review; D10's V_F period law (`sep_VF_period_law_med`) is not yet a
+line of the Numbers block; the old column engine (`verdict_text` bullets, `policy_block`, `combined_numbers.draw_explained`,
+`secular_plots.draw_long_period_explained_v1`) is no longer drawn and goes in the pre-merge cleanup.
 
 ## Cleanup after W34 (2026-11-04)
 
@@ -59,6 +85,8 @@ Labels written for every "package" / A answer (+ 555527 high, 1580 transient/low
   ~9.25 P of record at 3.5-P windows; with too few windows it runs again at 2 P (~7 P), flag `owner_short_windows`.
   Under v2 it lifts 41588's all_physics_not_measured (medium → high); the v2-pinned text/kinematics tests read 41588
   without the retry (`BEFORE_W33_OWNER`).
+  Stage 3 (Nov 5): the measured 0.75-P trim and two windows fitted to the span (~3.75 P), flag
+  `owner_fitted_windows`; 14 rows high → certain (v2-w35-fit), 137295 awaits the author.
 - Slow-swing extension (the author's W30 epext B, missed in W31): the minimal policy's next check takes the baseline
   estimate when it is a slow swing seen in part (`mmr.decide.SLOW_SWING_SOURCES`), within 4T: 523683 400 kyr (E76
   passes), 385458 300, BG/YG1/ET4 50, EQ7/QT9 60 kyr. The W30 card's "cap 2T" was wrong (the cap is 4T).
@@ -78,11 +106,11 @@ slow scale's swing, TG2 longer) go to the episode page with the 13 known_fail ca
 Answers verbatim: `tmp/classifier-v2-2026-10-15/w32/ANSWERS-2026-11-03b.json`. He took the secular rows at high, PG14
 33S-2 non_resonant, asked for WK15 high "if cheap", accepted R-PASS/R-WAVE/R-NET/R-HALF on condition of a redundancy
 check (Claude subagent + Codex, `tmp/.../w32/redundancy/`), and read 2002 BG as one unfinished slow libration
-(insufficient_time + extend). Both reviews rejected all four rules (R-PASS is the slow-centre turn and fires on forced
+(insufficient_time + extend). Both reviews rejected all four rules (R-PASS is the slow-center turn and fires on forced
 waves and exits too; R-NET exists as G4b; R-WAVE was measured on the raw angle, the great inequality; R-HALF: one
 cycle fits the sine law for any clean wave). Done instead: B6b takes a ripple whose identity does not pass (fails or
 not measured) → BG, 1992 SZ 1M-10J+1, 2011 ET4 uncertain/insufficient_time extend 40 kyr; an all-forced row whose slow
-centre passes < 1 rev goes to the drift rule; forced runs join the background of the others (DE61 ep 4);
+center passes < 1 rev goes to the drift rule; forced runs join the background of the others (DE61 ep 4);
 filter_too_slow below `gain_too_slow` (0.911, the thin band of MMR_L8_GAIN_FULL) → WK15 resonant/high; the x2 guard
 compares shapes only at the full gain. Still disagreeing (listed): 1862 high vs low, 501710/VA14/DE61/1580/TG2/23240
 transient vs uncertain.
@@ -100,7 +128,7 @@ episodes, disputed three-body rows, a forced-wave criterion): `tmp/.../w31/resea
 forcing, omega's revolution 2 pi, median and undefined-phase vetoes only with a broken integral, geometric origin
 without a confirmed gate); the common confidence ladder (certain N >= 3 with 3 observed cycles in the decisive
 episode, high N >= 2; a measured veto is high); the background forced-wave veto (`mmr/background_wave.py`); the
-strength veto's word from the centre; the zone and floor thin bands; the 1:1 compound-swing join (439908); the
+strength veto's word from the center; the zone and floor thin bands; the 1:1 compound-swing join (439908); the
 covered-edge fill; a failed identity under `varpi_fast_low_e` is not measured. Runs `v2-w31b` + `v2-w31a-secular-zlk`:
 KNOWN_DISAGREEMENTS 118 → 43 rows; agreement status 222/231, confidence 151/170. Open for the author: WK15's 150-yr
 floor (a 135-yr floor moves the cutoff of 369 rows), certain for 2.5-cycle secular rows (Codex: no family discount),
@@ -149,9 +177,14 @@ disagreement page (`tmp/.../w30/disagreements/`).
 ## Separate tasks
 
 - **Computed three-body strength** (2348 4J-2S-1 medium only because of `strength_scale_only`; would also move 68436
-  and 24820 3J-1S-1 and the origin of 48789). Paths: second-order averaging (Morbidelli 2002 ch. 10), an off-resonance
-  numerical probe (untested idea), or a family calibration (cheap, data-dependent). Task description:
-  kept in the local working notes (not in git).
+  and 24820 3J-1S-1 and the origin of 48789). Nov 5: the off-resonance probe (shifted clones, σ circulating) agrees
+  with μ_req (4J-2S-1 0.99–1.02 by first harmonic and by curvature, 5J-2S-2 1.0–1.1 with the 2:1 term removed) and
+  must refuse the two-well 3J-1S-1, but costs 15–30 s per row: rejected for the package (`rejected.md`), kept as
+  offline ground truth. Codex and the literature review agree on the next route: a cached second-order coefficient
+  per resonance (Morbidelli 2002 §10.1: direct + indirect terms; the N&M 5-2-2 polynomial, Table 10.1, is already
+  within 0.9–1.3 of the probe), validated against the probe, refusing near two-body commensurabilities and multi-well
+  potentials; ms per row. Estimate: 3–5 days for a 4J-2S-1/5J-2S-2 pilot, 2–4 weeks general (planar, low i). Waits
+  for the author. Working notes are local (not in git).
 - **2003 TX9 two-regime split (Q1b).** The author accepted uncertain with one episode. A split needs each regime's
   period measured in one shared two-well potential on every cycle; test 7 currently fails on late cycles.
 - **Barycentric elements for distant bodies (W28 B6a, cards g07-5/g07-6).** Heliocentric elements osculate about
@@ -224,8 +257,8 @@ disagreement page (`tmp/.../w30/disagreements/`).
   - **Done.** C6 implemented the half-libration leaf (G4h, `MMR_SINGLE_HALF_LIBRATION`; 42946 uncertain + extend);
     C16 the marks (`LIBRATION_REGIME_CUT_MARKS`): on one-example checks the 9 boundaries in 7 angles join, no verdict
     moves, VA14 60 kyr keeps two episodes and 82831 its regular split. The author can still overturn the two
-    readings. The full run found one wrong C16 union (55390: centre travel −299°), fixed by bounding a union to one
-    turn of the centre; 42946's G4h edge reading is a bug (S1 above).
+    readings. The full run found one wrong C16 union (55390: center travel −299°), fixed by bounding a union to one
+    turn of the center; 42946's G4h edge reading is a bug (S1 above).
 - **Physical evidence behind positive statuses (W28 D9, g09-2, Codex audit).** MMR:
   a positive status needs a measured force (L4, R0 or F). Secular: no physical status condition; the response column
   (`check_secular_e_response`) passes 11 of 27 positive rows (every ν6/ν5/ν16-type row and 518; 1 of 7 z1, 0 of 6
@@ -239,7 +272,7 @@ disagreement page (`tmp/.../w30/disagreements/`).
   two blind estimators, H not conserved, η_H 1.1-1.4; over the whole record the package says none, Claude's
   estimator zlk; 2020 PP1 whole record zlk, deciding episode none). Two blind estimators agree 51/51 with the rule
   antiphase, |coherence| ≥ 0.5, η_H = |δH|/|cos i δG| ≤ 0.5 (zlk items ≤ 0.28, others ≥ 0.58), ≥ 3 periods; the
-  first-order slope factor 2 fails on large cycles (477492 ratio 2.03 for Codex, 1866 3.0, with H cancelled to 4-5 %).
+  first-order slope factor 2 fails on large cycles (477492 ratio 2.03 for Codex, 1866 3.0, with H canceled to 4-5 %).
   Episodes of 1.5-3 periods: the two agree 3/11, so the 3-period minimum stays. Under this rule 373136 500 kyr, 3752
   500 kyr (Codex window-sensitive) and 797204 500 kyr stay transient; 88899 500 kyr, 797204 100 kyr and **2023 RS2**
   (2.4 periods: not measured) become uncertain −9 (D10, implemented). RS2 carries the author's 30.10 blanket label
@@ -270,10 +303,10 @@ disagreement page (`tmp/.../w30/disagreements/`).
   500 kyr unresolved); the 4-Myr record is the benchmark example `zlk__591986__LK__4myr` (author's verdict pending).
   The attribution's beat test compares P_cyc with 2π/|b_ϖ − g_j| within the Rayleigh width plus P_cyc's own grid
   precision, 1296000 Δt/P² (W26; 591986 4 Myr: 0.32 + 3.5″/yr).
-- The three-body catalogue axis applies the body's precession correction once (`mmr/three_body.py:107`) with the
+- The three-body catalog axis applies the body's precession correction once (`mmr/three_body.py:107`) with the
   small-α g; measured harmless (≤ 4e-7 au iterated, ≤ 2.5e-4 au from the g formula, against a 0.02 au search window;
   the classifier uses its own `exact_axis`).
-- Moving-centre geometry has two documented possible false refusals with no real-record example yet: the continued
+- Moving-center geometry has two documented possible false refusals with no real-record example yet: the continued
   potential minimum can jump basins when a minimum disappears, and a time-symmetric track cannot beat its reversed
   null (W18).
 
@@ -304,11 +337,11 @@ disagreement page (`tmp/.../w30/disagreements/`).
   against the code that reads it:
   1. column only: `ZLK_MIN_ANTICORRELATION = 0.5` (`zlk_coherent`, set on two objects), `ZLK_COHERENCE_CHECK`, the W25
      e–i conventions `ZLK_EI_*` (`zlk_ei_coupling`, `confirmed_ei`), `ZLK_CENTRE_MIN_CYCLES` (the search band of the
-     centre's slow line, `zlk_centre_*`/`sec_centre_*`; the card put all `ZLK_CENTRE_*` in class 2, but this one bounds
+     center's slow line, `zlk_centre_*`/`sec_centre_*`; the card put all `ZLK_CENTRE_*` in class 2, but this one bounds
      a column only), `ZLK_NODE_LOCK_MIN_CYCLES` (a flag). Since D10 (q-1 E) `ZLK_EPISODIC_NO_VERDICT` with
      `ZLK_EI_MIN_CYCLES`, `ZLK_EI_PHASE_TOL_DEG`, `ZLK_EI_EPISODE_MIN_COHERENCE` and `ZLK_EI_H_RESIDUAL_MAX` are class 2:
      an episodic row without a gate verdict is transient only when its deciding episode's e–i is zlk, else −9.
-  2. may change a status: `ZLK_CENTRE_MODEL_R_MIN`, `ZLK_CENTRE_MODEL_AMP_FACTOR` (the centre-scale guard,
+  2. may change a status: `ZLK_CENTRE_MODEL_R_MIN`, `ZLK_CENTRE_MODEL_AMP_FACTOR` (the center-scale guard,
      `sec_centre_rejected`), `ZLK_RHO_WINDOW_CYCLES`, `ZLK_COORBITAL_HILL_FACTOR`, `ZLK_EPISODE_FREE_TURNS_PER_CYCLE`
      (kinematic episodes), the period floor and turning-point prominence (`ZLK_LIBRATION_PERIOD_MIN_YR`,
      `ZLK_TP_PROMINENCE_DEG`, `ZLK_TP_RIPPLE_FACTOR`), `ZLK_FILTER_GI_FACTOR`, the gate's `FREE_GATE_MIN_CYCLES` and
@@ -330,7 +363,7 @@ disagreement page (`tmp/.../w30/disagreements/`).
   (0-479 yr) triggers the pass, but for Venus at e = 0.41 P_QS (150 yr) is the tadpole period, so the
   quasi-satellite floor (75.2 yr) equals the tadpole floor (75.7) and the pass repeats the first one. What the record
   holds: one loop of ~110 yr over 0-200 yr that follows the 1:1 law (local law R^2 0.84, K/K_theory 1.43, energy
-  integral fails), then 50-75 yr wiggles about a drifting centre that do not (200-430 yr: R^2 0.22; Earth crossing,
+  integral fails), then 50-75 yr wiggles about a drifting center that do not (200-430 yr: R^2 0.22; Earth crossing,
   q = 0.43 au), swinging 7-10 deg below the local turning-point prominence (13.8 deg). Status unchanged
   (non_resonant/medium). Open: whether the single 0-200 yr loop is an episode is the single-leg question (C6, q-4 A).
 - 2014 BT8 1E-1 (W28 C5): the lowered G1q trigger accepts one quasi-satellite loop 794.5-804.2 yr (local law K/K_theory
@@ -338,7 +371,7 @@ disagreement page (`tmp/.../w30/disagreements/`).
   among the 13 rows whose status stays (medium only); PN's answer (B, with "technically transient if it converges
   better") is the more specific one for a clean quasi-satellite loop. To confirm with the author.
 
-- A centre that turned back (W28 B6c against D6). MMR: two slow turns read as `insufficient_time` only when the
+- A center that turned back (W28 B6c against D6). MMR: two slow turns read as `insufficient_time` only when the
   half-swing obeys the resonance's own pendulum (G5w: slow identity, a swing and period within √10 of the directly
   averaged well); unmeasured (three-body, 1:1) stays `drift`, because the author's drifts 101703/142694 1V+3S-7 have two
   turns too (they fail the slow identity, −0.27/−0.25). Secular/ZLK (D6, `centre_turned_insufficient`): any turn back is
@@ -346,13 +379,13 @@ disagreement page (`tmp/.../w30/disagreements/`).
   should the secular rule also need a physical match once a secular pendulum is available, or should the MMR one drop
   it for two-body angles? Moves at B6c: 523683 2U-9 (few_cycles 200 kyr → arc 400 kyr, the author's g07-5) and
   385458 9N-17 at 100 kyr (few_cycles 200 kyr → arc 300 kyr: identity 1.00, a 1.01, period 0.97; its 300-kyr record
-  is resonant/high, so the slow swing is the libration). The card's other fix, keeping a centre-scale (G2c) 'slow part
-  unresolved' outcome in `_decide_at_scale`, was not needed: G5w reads the same centre track at the fine scale.
+  is resonant/high, so the slow swing is the libration). The card's other fix, keeping a center-scale (G2c) 'slow part
+  unresolved' outcome in `_decide_at_scale`, was not needed: G5w reads the same center track at the fine scale.
 
 - 591986: the free-element g is 220″/yr (the 6-kyr free precession, seen directly as the period of the osculating ω
-  libration) against 6.65″/yr in the proper-element catalogue (definition not resolved). Its ~54-kyr centre wave is the
+  libration) against 6.65″/yr in the proper-element catalog (definition not resolved). Its ~54-kyr center wave is the
   g6 − g5 beat of Jupiter's own forced vector (W25); over 4 Myr its node librates against g5 (1.46 Myr).
-- 78085: the captures are clear, yet the unwrapped angle keeps growing (to be analysed later).
+- 78085: the captures are clear, yet the unwrapped angle keeps growing (to be analyzed later).
 - Two resonances at once (W28 A9, g05-7; the rule in words: `docs/physics/response.md`, 'Two librations are not two
   resonances'). Open: 2001 HW7 5J+6S-2's slow component. Its x is the 2ω cycle at the package's cut, but a genuine
   second capture is not excluded on 20 kyr (x drifts +1.5°/kyr, not significant; ≥ 150 kyr would sweep ≥ 180°, L1).

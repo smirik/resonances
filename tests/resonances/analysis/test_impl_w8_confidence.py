@@ -109,7 +109,7 @@ def test_mmr_orbit_type_by_the_centre(key, centres, expected):
 def test_the_decisive_episode_is_described_and_a_moving_centre_said():
     spec = ResonanceSpec.from_key('4M-7+0+3')
     long, short = run(0, 100, end=5000.0), run(1, 3, start=6000.0, end=6500.0, shift=S.mmr_l6_shift_full * 2)
-    assert ot.mmr_orbit_type(spec, geometry(long, short), 1, None, S) == 'exterior, symmetric libration about 0°, moving centre'
+    assert ot.mmr_orbit_type(spec, geometry(long, short), 1, None, S) == 'exterior, symmetric libration about 0°, moving center'
     # without a decisive episode the longest accepted one
     assert ot.mmr_orbit_type(spec, geometry(long, short), None, None, S) == 'exterior, asymmetric libration about 100°'
 

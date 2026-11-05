@@ -7,7 +7,7 @@ the combined MMR figure is the verdict figure of `plotting/mmr_combined.py`):
 
     recurrence  distance between states (sigma, sigma_dot) at two times
     fair        mean anomaly against the mean-longitude difference (prograde two-body only)
-    portrait    sigma against sigma_dot (or a), coloured by time
+    portrait    sigma against sigma_dot (or a), colored by time
     cycles      the sigma cycles, and a over the same cycles, stacked on one period
 
 Times are in years, angles in radians internally; the portrait shows degrees. Every a
@@ -266,7 +266,7 @@ def _planet_series(sim, name: str) -> Optional[PlanetSeries]:
 def portrait_coordinates(d: MMRDiagnostics, y: PortraitY = PortraitY.RATE):
     """(x, y, x_raw, y_raw) of the portrait over the focus: sigma in degrees against
     sigma_dot in deg per display time unit, or against a - a0 in 10^-3 au (the analysis' a_f,
-    `MMRDiagnostics.axis_analysis`; the grey dots are the osculating a).
+    `MMRDiagnostics.axis_analysis`; the gray dots are the osculating a).
 
     The unwrapped angle is shifted by a whole number of turns only, so a libration about
     180 deg is drawn about 180 deg while a circulation still runs off to the side. The raw
@@ -318,7 +318,7 @@ def _dim_outside_focus(ax, d: MMRDiagnostics):
 
 
 def draw_recurrence(ax, d: MMRDiagnostics, options: Dict[str, Any], cax=None):
-    """Recurrence image (dark = the state returns close to itself, in its own scale) with a D colour bar.
+    """Recurrence image (dark = the state returns close to itself, in its own scale) with a D color bar.
 
     The bar goes into `cax` when given (combined figure), otherwise above the panel.
     """
@@ -361,7 +361,7 @@ def draw_fair(ax, d: MMRDiagnostics, style: FigureStyle, norm: Normalize):
 
 
 def draw_portrait(ax, d: MMRDiagnostics, style: FigureStyle, options: Dict[str, Any], norm: Normalize):
-    """sigma against sigma_dot (or a - a0) over the focus, coloured by time (see `portrait_coordinates`)."""
+    """sigma against sigma_dot (or a - a0) over the focus, colored by time (see `portrait_coordinates`)."""
     y_kind = options['portrait']['y']
     x, y, x_raw, y_raw = portrait_coordinates(d, y_kind)
     if options['raw'] != RawMode.NONE:

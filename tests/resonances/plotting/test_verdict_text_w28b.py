@@ -66,15 +66,24 @@ def _wave(episode_id, **fields):
 
 def test_b2_a_5s_row_names_its_strength_marks_and_no_driver():
     """g11-1 A (2012 KL9): the two accepted runs of a 5s row are drawn as forced (strength); the text names the ground
-    (the angle's own force cannot make that period) and says the driver is not identified."""
+    (the angle's own force cannot make that period) and says the driver is not identified. Under the minimal policy
+    (W34, 2897) (a) draws only what the status counts: the runs are not counted and (l) labels them."""
     geometry = make_geometry(forced_waves=(_wave(0, by_strength=True), _wave(2, by_strength=True)))
-    f = _facts(geometry=geometry)
+    v2 = {'policy': ''}
+    f = _facts(geometry=geometry, verdict=v2)
     assert vt.strength_mark_sentence(f) == (
         ' Its 2 accepted episodes are drawn as forced (strength): a period this angle’s force cannot make; the driver is ' 'not identified.'
     )
-    one = _facts(geometry=make_geometry(forced_waves=(_wave(0, by_strength=True),)))
+    one = _facts(geometry=make_geometry(forced_waves=(_wave(0, by_strength=True),)), verdict=v2)
     assert vt.strength_mark_sentence(one).startswith(' Its accepted episode is drawn as forced (strength)')
-    assert vt.strength_mark_sentence(_facts(geometry=make_geometry())) == ''
+    assert vt.strength_mark_sentence(_facts(geometry=make_geometry(), verdict=v2)) == ''
+    minimal = {'policy': 'minimal', 'counted_episode_ids': ''}
+    assert vt.strength_mark_sentence(_facts(geometry=geometry, verdict=minimal)) == (
+        ' Its 2 accepted runs are not counted (not drawn on (a); (l) labels them forced (strength)): a period this angle’s '
+        'force cannot make; the driver is not identified.'
+    )
+    one = _facts(geometry=make_geometry(forced_waves=(_wave(0, by_strength=True),)), verdict=minimal)
+    assert vt.strength_mark_sentence(one).startswith(' Its accepted run is not counted (not drawn on (a); (l) labels it ')
 
 
 def test_b2_b6b_the_figure_labels_and_the_episode_lines_name_the_mark():
@@ -137,7 +146,7 @@ def test_b4_the_5o_objection_no_longer_says_strong_a_wave():
 
 def test_b6b_the_ripple_is_an_unconfirmed_auxiliary_interval():
     """g08-4 A (2004 YG1 20 kyr): the 3.11° ripple #0 of P 680 yr whose identity fails (slope/c 0.65) is set aside;
-    step 0 reads [F6r, G5a] when the slow centre turned back once."""
+    step 0 reads [F6r, G5a] when the slow center turned back once."""
     ripple = _wave(0, period_yr=680.17, identity_slope_ratio=0.65, identity_corr=0.794, ripple=True, half_amp_max_rad=math.radians(3.1075))
     f = _facts(geometry=make_geometry(forced_waves=(ripple,)))
     assert vt.ripple_clause(f) == (
@@ -173,9 +182,10 @@ def test_b6c_g5w_reads_the_half_swing_in_the_well_and_the_orbital_period():
     f = _facts(SLOW_SWING_523683, verdict)
     assert vt.slow_swing_decided(f)
     assert vt.slow_swing_text(f) == (
-        'the slow centre turns back twice (11.9 kyr, 67.7 kyr, within 0.63 rev): the 114° half-swing between them is '
-        'this resonance’s well: slow identity |slope/c − 1| 0.00186 ≤ 0.2, corr 1 ≥ 0.9; a swing 1.08 × the pendulum’s, '
-        'period 112 kyr = 1 × T0_th F(A) (T0_th 84 kyr), both in [0.32, 3.16]'
+        'the slow center turns back twice (at 11.9 kyr and 67.7 kyr; the center stays within 0.63 rev): the 114° '
+        'half-swing between them is this resonance’s well: slow identity |slope/c − 1| 0.00186 ≤ 0.2, corr 1 ≥ 0.9; a '
+        'swing 1.08 × the pendulum’s, period 112 kyr = 1 × T0_th F(A) (the pendulum’s period at this amplitude; T0_th '
+        '84 kyr), both in [0.316, 3.16]'
     )
     assert vt.orbit_period_clause(f) == 'the 379 yr cycles are the orbital period (cutoff 569 yr = 1.5 P_orb)'
     assert vt.shape_rule_ids(f) == ('G5w',)
@@ -204,7 +214,7 @@ def test_b5_g1f_says_which_floor_and_what_confirmed_the_cycle():
     f = _facts(row, {'decision_path': [entry]})
     assert vt.subfloor_clause(f) == (
         'a two-body cycle of 105 yr, below the 150 yr floor, read again at the floor 35.3 yr of its own averaged potential '
-        '(T0_th 112 yr / √10) and kept: F by direct averaging, the centre and the force law (L4) confirm it'
+        '(T0_th 112 yr / √10) and kept: F by direct averaging, the center and the force law (L4) confirm it'
     )
     assert 'G1f' in vt.shape_rule_ids(f)
     assert vt.subfloor_clause(_facts({**row, 'geo_subfloor_kept': 0.0})) == ''
@@ -237,7 +247,7 @@ LAW_59358 = dict(  # 59358 8N-13 (B8 research; rsp_dforce_*)
 
 def test_b8_the_l4_row_names_the_direct_law_and_its_numbers():
     """g07-2 A: L4 decided by the term's averaged force: 3073.875 yr = 0.35 × 8782.5 yr; R² 0.7548 ≥ 0.4 (full, ≥
-    0.7); s 1.14–1.29 within [1/√10, √10] = [0.32, 3.16]; above the null by 0.7548 − 0.0174 = 0.737; the harmonic law's
+    0.7); s 1.14–1.29 within [1/√10, √10] = [0.316, 3.16]; above the null by 0.7548 − 0.0174 = 0.737; the harmonic law's
     halves stay printed."""
     law = make(DirectForceLaw, **LAW_59358)
     base, _ = _kinematic()
@@ -245,7 +255,7 @@ def test_b8_the_l4_row_names_the_direct_law_and_its_numbers():
     f = _facts(response=response)
     assert vt.direct_force_text(f, law, 'R² 0.163/0.168') == (
         'averaged force of 2J-1+0-1 (Jupiter’s real mass) at 3.07 kyr = 0.35 P 8.78 kyr (the large turns): R² 0.755 ≥ '
-        '0.4 (full), s 1.14–1.29 within [0.32, 3.16], above the shifted null by 0.737 ≥ 0.2, 4 windows; harmonic law R² '
+        '0.4 (full), s 1.14–1.29 within [0.316, 3.16], above the shifted null by 0.737 ≥ 0.2, 4 windows; harmonic law R² '
         '0.163/0.168'
     )
     assert vt._margin_name(f, 'L4') == vt.DIRECT_FORCE_NAME

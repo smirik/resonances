@@ -131,7 +131,7 @@ RULES: dict[Rule, RuleInfo] = {
     Rule.ZLK_COORBITAL_EPISODIC: _w28('SZ.G', 'a bounded, non-librating ZLK omega of an unfitted co-orbital sent to -9 (D4)'),
     Rule.CENTRE_TURNED_INSUFFICIENT: _w28('G5s', 'a centre that turned back reads insufficient_time, not drift (D6)'),
     Rule.PHASE_UNRESOLVED: _w28('G5p', 'a secular swing within the uncertainty of the mode phases (D5)'),
-    Rule.ZLK_GATE_UNCONFIRMED: _w28('SZ.ei', 'episodic ZLK without a gate verdict: status by ZLK_EPISODIC_NO_VERDICT (D10)'),
+    Rule.ZLK_GATE_UNCONFIRMED: _w28('SZ.ei', 'episodic ZLK without a gate verdict: status by the episode e-i coupling (D10)'),
 }
 
 _ORDER = {rule: index for index, rule in enumerate(RULES)}

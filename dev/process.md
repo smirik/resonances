@@ -1,6 +1,6 @@
 # How the work is done
 
-Working conventions agreed with the author during the programme, and the resource rules learned the hard way.
+Working conventions agreed with the author during the program, and the resource rules learned the hard way.
 
 ## An iteration
 

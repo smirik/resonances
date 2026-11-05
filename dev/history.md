@@ -5,7 +5,7 @@ confidence, author_verdict), measured by `benchmark/tools/known_disagreements.py
 `agree_author_verdicts.py`). A run name `v2-wNN` is a reclassification of the saved benchmark series in
 `benchmark/data/` (git-ignored).
 
-## Before the programme
+## Before the program
 
 - **July.** An episode-based rewrite of the classifier (raw angle, coverage-gap episodes, σ–a confirmation) was built
   and reverted: it lost obvious transients, and recall on transients mattered more. The adjudicated ground truth
@@ -21,7 +21,7 @@ confidence, author_verdict), measured by `benchmark/tools/known_disagreements.py
   s_j term was wrong. Fixed: the planets' mode longitudes, the invariable plane, reduced angles. Commit fa23598 then
   measured the mode phases in the run (`secular_planet_phases='measured'`).
 
-## The v2 programme
+## The v2 program
 
 - **Oct 13.** Full package review (127 findings, R-01…R-57; section "verified and correct" became
   [verified.md](verified.md)). Status-model design: status / angle_status / confidence / checks / reason; automatic
@@ -37,7 +37,7 @@ confidence, author_verdict), measured by `benchmark/tools/known_disagreements.py
   law; alias gate on the λ part of the angle), W16 (physical filter cutoff; Jupiter Trojans fixed; angle_status
   `transient` renamed `episodic`). W17: independent re-investigation of disputed objects; several earlier claims
   corrected (see [rejected.md](rejected.md)).
-- **Oct 18.** W18: moving centre — runs tested in ψ = σ − c(t), c(t) the occupied minimum of the averaged potential.
+- **Oct 18.** W18: moving center — runs tested in ψ = σ − c(t), c(t) the occupied minimum of the averaged potential.
 - **Oct 19–21.** Reconciliation of 54 author/package disagreements. W20 in rounds A–F: forced waves (F6), kinematic
   drift (K2), baseline estimate N, subresonance table, `certain` for far circulations, the `short_period_aliased` cap
   measured on 47 fine re-integrations. `v2-w20f`: status 72/83.
@@ -46,7 +46,7 @@ confidence, author_verdict), measured by `benchmark/tools/known_disagreements.py
 - **Oct 25.** W22: every agreed rule implemented; `v2-w22` reaches 0 disagreements (status 94/94, angle_status 87/87,
   confidence 60/60, author_verdict 202/202). A simplification pass removed 370 lines with byte-identical output on
   719 examples.
-- **Oct 26.** W23: CS12 multi-harmonic force law, rule (a) at the centre scale, the episode gate (79 cases), the
+- **Oct 26.** W23: CS12 multi-harmonic force law, rule (a) at the center scale, the episode gate (79 cases), the
   low-memory allocator and per-record memo, figure overflow 0. Exactly 5 rows changed against `v2-w22`; 0
   disagreements.
 - **Oct 26–27.** W24:
@@ -64,7 +64,7 @@ confidence, author_verdict), measured by `benchmark/tools/known_disagreements.py
 
   Latest run `v2-w24-tx9b`: 0 disagreements.
 
-## Agreement over the programme
+## Agreement over the program
 
 | Run | Date | Status | Angle | Confidence | author_verdict | Note |
 |---|---|---|---|---|---|---|

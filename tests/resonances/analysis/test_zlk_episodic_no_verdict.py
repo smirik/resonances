@@ -1,6 +1,7 @@
 """W28 D10 (cards g09-2, g09-6, g09-8; the author's answer q-1 E, 2026-10-31): an episodic ZLK omega whose free-omega
 gate gives no verdict is transient only when e and i trade at constant H inside its deciding episode; otherwise it is
-uncertain / gate_unavailable (-9). ZLK_EPISODIC_NO_VERDICT = ei (default) | uncertain | keep.
+uncertain / gate_unavailable (-9), in the W28 tree (`v2_verdict`; the minimal policy reads the same coupling as the e-i
+integral).
 
 Expectations come from outside the package: the sign of the two laws (di/de = -e cot i / (1 - e^2) at constant
 H = sqrt(1-e^2) cos i, +e tan(i/2) / (1 - e^2) at constant K = sqrt(1-e^2)(1 - cos i)) and the synthetic series built
@@ -150,30 +151,15 @@ NO_VERDICT = [
 
 
 @pytest.mark.parametrize('gate_fields', NO_VERDICT)
-def test_policy_ei_keeps_a_transient_only_with_zlk_coupling_in_the_episode(gate_fields):
-    zlk = _status(GateResult(**gate_fields, min_cycles=3.0, episode_ei=_ei('zlk'), episodic_policy='ei'))
+def test_the_tree_keeps_a_transient_only_with_zlk_coupling_in_the_episode(gate_fields):
+    zlk = _status(GateResult(**gate_fields, min_cycles=3.0, episode_ei=_ei('zlk')))
     assert (zlk.status, zlk.reason, _code(zlk)) == (Status.TRANSIENT, Reason.DYNAMIC_EPISODE, 1)
     assert Rule.ZLK_GATE_UNCONFIRMED in zlk.rules_fired  # the rule decided, also when it kept the status
     for coupling in ('none', 'forced_beat', 'not_measured'):  # 88899 500 kyr none, RS2 and 797204 100 kyr not measured
-        other = _status(GateResult(**gate_fields, min_cycles=3.0, episode_ei=_ei(coupling), episodic_policy='ei'))
+        other = _status(GateResult(**gate_fields, min_cycles=3.0, episode_ei=_ei(coupling)))
         assert (other.status, other.reason, _code(other)) == (Status.UNCERTAIN, Reason.GATE_UNAVAILABLE, -9), coupling
         assert other.checks['check_zlk_free_omega'] == CheckValue.NOT_MEASURED
         assert Rule.ZLK_GATE_UNCONFIRMED in other.rules_fired
-
-
-def test_policies_uncertain_and_keep():
-    gate = dict(outcome='planetary_residual', n_cycles=15.0, min_cycles=3.0, rho_max=13.0, episode_ei=_ei('zlk'))
-    uncertain = _status(GateResult(**gate, episodic_policy='uncertain'))
-    assert (uncertain.status, _code(uncertain)) == (Status.UNCERTAIN, -9)
-    keep = _status(GateResult(**dict(gate, episode_ei=_ei('none')), episodic_policy='keep'))
-    assert (keep.status, keep.reason, _code(keep)) == (Status.TRANSIENT, Reason.DYNAMIC_EPISODE, 1)
-    assert Rule.ZLK_GATE_UNCONFIRMED not in keep.rules_fired
-
-
-def test_the_default_policy_is_the_authors_answer():
-    assert SETTINGS.zlk_episodic_no_verdict == 'ei' and GateResult('planetary_residual').episodic_policy == 'ei'
-    with pytest.raises(ValueError):
-        settings_from_config(zlk_episodic_no_verdict='sometimes')
 
 
 def test_the_ledger_holds_the_comparisons_behind_the_class():
@@ -237,15 +223,13 @@ def test_end_to_end_the_episode_coupling_decides_a_row_without_a_gate_verdict():
         assert row['zlk_ei_episode_coupling'] == gate.episode_ei.coupling
         if gate.outcome not in decide.GATE_NO_VERDICT:
             pytest.skip(f'the synthetic gate gives a verdict ({gate.outcome}); the decision tests cover the branch')
-        # W34: ZLK_EPISODIC_NO_VERDICT acts on the W28 tree (`v2_verdict`)
+        # W34: D10 is the W28 tree's rule (`v2_verdict`)
         tree = tree_verdict(verdict)
         expected = (Status.TRANSIENT, 1) if trade else (Status.UNCERTAIN, -9)
         tree_code = status_code(LK, Status(tree.status), AngleStatus(tree.angle_status), tree.reason)
         assert (tree.status, tree_code) == expected, (trade, gate.episode_ei)
         assert gate.episode_ei.coupling == ('zlk' if trade else 'none')
         assert 'zlk_gate_unconfirmed' in verdict.rules_fired
-        keep = analyse_zlk(series, settings_from_config(zlk_episodic_no_verdict='keep'), free_elements=elements).verdict
-        assert tree_verdict(keep).status == Status.TRANSIENT and 'zlk_gate_unconfirmed' not in keep.rules_fired
         # W34, the minimal policy: e and i trading at constant H with rho_max >= ZLK_RHO_KINEMATIC_EXCLUDED keep the
         # transient (flag kinematic_excluded, no cap); i frozen breaks the integral where the forced terms are small:
         # the measured veto zlk_integral, non_resonant -2 (a measurement, never -9), whatever the tree's setting
@@ -254,5 +238,4 @@ def test_end_to_end_the_episode_coupling_decides_a_row_without_a_gate_verdict():
             assert (verdict.status, verdict.status_code, verdict.veto) == (Status.TRANSIENT, 1, '')
             assert {'gate_unavailable', 'kinematic_excluded'} <= set(verdict.flags)
         else:
-            for row in (verdict, keep):
-                assert (row.status, row.status_code, row.veto) == (Status.NON_RESONANT, -2, 'zlk_integral')
+            assert (verdict.status, verdict.status_code, verdict.veto) == (Status.NON_RESONANT, -2, 'zlk_integral')

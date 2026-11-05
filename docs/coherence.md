@@ -213,7 +213,7 @@ proper eccentricity `e_p = 0.0308`.
 
 | column | meaning |
 |---|---|
-| `body`, `resonance`, `pair` | what was analysed |
+| `body`, `resonance`, `pair` | what was analyzed |
 | `n_seg`, `rank`, `decisive` | segmentation level, rank by cross-amplitude, whether this is the line the criterion used |
 | `period`, `gamma2`, `gamma2_crit` | the line and the threshold it cleared |
 | `phase_deg`, `phase_std` | cross-phase and its spread across the line's bins |

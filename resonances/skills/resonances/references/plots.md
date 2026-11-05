@@ -29,7 +29,7 @@ sim = resonances.Simulation(
 | `ecc_vector` | all | `{body}-ecc-vector.png` | the $(k, h) = (e\cos\omega, e\sin\omega)$ plane |
 | `cross_spectrum` | all | `-coherence-{pair}` | coherence and cross-phase ([Cross-spectral coherence](coherence.md)) |
 | `free_omega` | Lidov-Kozai | `-free-omega-drift`, `-portrait`, `-vector` | the free argument of pericentre ([Free elements](free-elements.md)) |
-| `clones` | all, a body with clones | `{body}-{key}-clones.png` | the ensemble: every clone's angle by status, status against initial a (with the catalogue $a_{\rm res}$ of an MMR), the status shares with Wilson intervals (also drawn with `combined`; [Clones](clones.md)) |
+| `clones` | all, a body with clones | `{body}-{key}-clones.png` | the ensemble: every clone's angle by status, status against initial a (with the catalog $a_{\rm res}$ of an MMR), the status shares with Wilson intervals (also drawn with `combined`; [Clones](clones.md)) |
 
 An unknown name is an error; a kind is drawn only for the resonance types it lists. The image format is `image_type`
 (`png` or `pdf`). Combined figures go to `plot_path/combined/`, the others to `plot_path/figures/`, both split by
@@ -41,61 +41,68 @@ kind. One example for every status: [Gallery](physics/gallery.md).
 
 ![The combined figure of (1921) Pala in the 2:1 resonance with Jupiter](https://smirik.github.io/resonances/img/gallery/mmr2__1921__2J-1+0-1.png)
 
-## Colours and units
+## Colors and units
 
-One palette gives a quantity the same colour in every panel of the combined figures, MMR and secular/ZLK alike:
+One palette gives a quantity the same color in every panel of the combined figures, MMR and secular/ZLK alike:
 
-| colour | what |
+| color | what |
 |---|---|
 | black | a filtered series |
-| grey | the osculating series (a band when the samples are dense) |
-| red | the centre of the angle and the line $\dot\sigma = 0$ |
+| gray | the osculating series (a band when the samples are dense) |
+| red | the center of the angle and the line $\dot\sigma = 0$ |
 | blue | a fitted or model quantity (force law, $\pm 2\omega_0$, $\pm\Delta a$) |
-| dark grey | reference marks (turning points, jumps, $h = 1$, $a_*$) |
+| dark gray | reference marks (turning points, jumps, $h = 1$, $a_*$) |
 | dark orange | the warning line at the top of the legend when FAIR (m) is not drawn, with the reason |
-| cyan | the catalogue resonant axis $a_{\rm res}$ |
+| cyan | the catalog resonant axis $a_{\rm res}$ |
 | orange, purple | an accepted subresonance, the owner resonance |
 
-The plaque of the right column is coloured by the status; the action (`→ extend to 40 kyr`, …) is the amber tag beside it. Every time colour bar uses the same map (viridis without
-its palest yellow). Wrapped angles are labelled in [0°, 360°). Time is in yr, kyr or Myr, whichever suits the span
+The right column is ten blocks (header, subtitle, key facts, why, confidence, checks, evidence, caveats, numbers,
+footer; [reading the figures](reading-figures.md#the-right-column)), in two halves with a fixed place for each: header
+to checks on the left, evidence to the footer on the right, on every figure. The time axis is labeled under the last
+panel and under (b). Its plaque and ◆ take the status color (resonant
+#1B7A3A, transient #B35400, near_separatrix #6B3FA0, non_resonant #4A4F57, uncertain #2F5D9E, invalid #B2182B;
+`style.STATUS_COLOURS`, also used by the clone figures). The icons are ✓ green, ⚠ amber, ✗ red, ? gray and – light
+gray. The action is one chip in the header: gray `no action needed`, amber `glance at (…)`, red `review figure +
+numbers`, blue `extend to …` or `resample to …`. A column that does not fit makes the figure taller, by at most
+`style.COLUMN_MAX_GROWTH_IN` (6 in); the left panels keep their place at the top. Beyond that the column trims (the
+Numbers groups first), and `verdict_column.column_text` gives the complete text of the column. Every time color bar
+uses the same map (viridis without its palest yellow). Wrapped angles are labeled in [0°, 360°). Time is in yr, kyr or Myr, whichever suits the span
 (the `evolution` figure keeps years).
 
 `plot_options={'combined': {'numbers': 'all'}}` prints every number of the decision in the right column of the
-combined figures instead of the verdict explained in words (`explained`, the default).
+combined figures instead of the ten blocks (`explained`, the default).
 
 The MMR figure has no empty slot: without FAIR the legend takes the place of (m) under one warning line that says why
 (`mmr_combined.fair_warning`). Panel (l) draws each accepted episode over its fill interval of (a), the part beyond
 its turning points dashed. Panel (e) draws the force law the status read (a witness episode's, rule R, at its own
 cutoff; under the direct averaged-force law its low-passed $\dot a$ and $s\times$ the term's force per window,
-`mmr_combined.draw_direct_law`). Accepted runs that are no libration of the angle are labelled `#id wave`, `#id forced
-(strength)` or `#id ripple` (dotted fill) on (a) and (l) (`mmr_combined.wave_labels`). The ▼ marks of the strip (b′) on (b) keep their x and step clear of the panel letter and the ALIAS plaque
+`mmr_combined.draw_direct_law`). Accepted runs that are no libration of the angle are labeled `#id wave`, `#id forced
+(strength)` or `#id ripple` on (l) (`mmr_combined.wave_labels`; on (a) only a counted one is filled and labeled). The ▼ marks of the strip (b′) on (b) keep their x and step clear of the panel letter and the ALIAS plaque
 (`mmr_combined.strip_marks`). The MMR header's second line names who makes the cycles by its role (owner, driver,
-neighbour with its interval, resonant argument, kinematic term; `verdict_text.cause_line`); the episodes another
+neighbor with its interval, resonant argument, kinematic term; `verdict_text.cause_line`); the episodes another
 resonance induces are hatched `\\\\` on (a) (`mmr_combined.INDUCED_HATCH`, apart from the `////` of an episode before
-a jump) and labelled `induced` on (l); `also in …` names the other resonance of a joint capture. An accepted run the
-status does not count (below the period floor, the centre turns: episodes.csv `eligible` False) is drawn on (a) as a
-grey strip like a rejected run, labelled `#id < floor` or `#id centre turns` in grey (`mmr_combined.uncounted_tags`),
-and the numbers count `N accepted, M counted`. Under the minimal policy (W29) (a) of both
-the MMR and the secular/ZLK figure draws only the counted episodes (a covered edge filled to the record edge, the
-filter-trim stretch pale; a counted 1:1 leg labelled `leg`) and, faint with a dashed outline, the candidates `cand`;
-no grey strip (`mmr_combined.policy_marks`, `shade_policy_runs`; the ids come from the analysis' `PolicyResult`, or
-from the stored verdict's `counted_episode_ids`/`candidate_episode_ids` when a standalone panel re-runs the analysis
-without the scans). The explanation then opens with four lines: status · confidence · reason, `basis:`, `flags:`,
-`v2:` (`verdict_text.policy_block`). A 1:1 circulation judged on one leg or a non-1:1 half-swing between
+a jump) and labeled `induced` on (l); `also in …` names the other resonance of a joint capture. Panel (a) of both
+the MMR and the secular/ZLK figure draws only what the minimal policy (W29) counts: the counted episodes (a covered
+edge filled to the record edge, the filter-trim stretch pale; a counted 1:1 leg labeled `leg`) and, faint with a
+dashed outline, the candidates `cand`; no rejected run and no gray strip (`mmr_combined.policy_marks`,
+`shade_policy_runs`; the ids come from the analysis' `PolicyResult`, or from the stored verdict's
+`counted_episode_ids`/`candidate_episode_ids` when a standalone panel re-runs the analysis without the scans); (l) is
+titled `(l) episodes, counted solid` and the numbers count `N accepted, M counted`. A file written before W29 (no
+`policy` column) keeps the older drawing: every accepted episode filled, rejected runs and runs the status does not
+count as gray strips (`#id < floor`, `#id center turns`, `mmr_combined.uncounted_tags`). A 1:1 circulation judged on one leg or a non-1:1 half-swing between
 passages (leaves G4c, G4h), the flag `extend_time`, the 1:1 profile floor and a turn read in the edge trim are said in
 the right column ([reading the figures](reading-figures.md#the-right-column)).
 One 1:1 episode in parts: (a) brackets its sub-regimes over the panel, named by their well
 (`mmr_combined.draw_subregime_brackets`, `run_label_items`; overlapping names merge, `merge_label_items`), and hatches
-its inferred residence beyond the fill lighter, `--`, labelled `inferred` (`residence_pieces`, `shade_residences`;
+its inferred residence beyond the fill lighter, `--`, labeled `inferred` (`residence_pieces`, `shade_residences`;
 never on (l)); (d) marks the kicks of $a$ at such changes with ▼ `kick` (`draw_kicks`); the header reads `orbit: A →
-B` for a sequence of wells; the right column names the measured core, the inferred stay, the sub-regimes and the
-amplitude changes (`verdict_text.coorbital_parts_clause`) and the EPISODES block lists the stay and the marks.
-Where a slower libration of the centre was found (the slow scale, columns `slow_*`), (i) hatches its intervals
-(`slow #id`, `mmr_combined.slow_intervals`) and the right column says it at its cause level (`Slow scale: …`); when
-its cause is a secular cycle, (j) adds the detrended $p\varpi$ labelled with $p$ and the secular period of its column
+B` for a sequence of wells; the EPISODES group of the right column lists the inferred stay and the marks (well,
+amplitude, kick) under the episode.
+Where a slower libration of the center was found (the slow scale, columns `slow_*`), (i) hatches its intervals
+(`slow #id`, `mmr_combined.slow_intervals`) and the right column's SLOW SCALE group gives its numbers; when
+its cause is a secular cycle, (j) adds the detrended $p\varpi$ labeled with $p$ and the secular period of its column
 (`mmr_combined.varpi_overlay`). A kinematic libration's (j) is $\sigma = \lambda$ part $+ p\varpi$ on the scale of
-that swing (`mmr_combined.kinematic_scale`), and its right column starts with `Driven by: secular cycle −4ϖ (…, P …)
-[measured | candidate]` and gives the swing the free and forced $e$ predict against the measured one.
+that swing (`mmr_combined.kinematic_scale`).
 
 `plotting.mmr_combined.draw_combined(analysis, series)` draws the MMR figure from an analysis. After a restore without
 recomputation the analysis is run again on the saved series and checked against `summary.csv`; a difference is
@@ -108,7 +115,7 @@ an error.
 
 | option | default | meaning |
 |--------|---------|---------|
-| `style` | `screen` | standalone diagnostics only: `screen` (11 pt sans-serif, 150 dpi, a title) or `paper` (8 pt STIX serif, 300 dpi, no title; panels 88 mm, rows up to 180 mm). The width depends on the kind. The `combined` verdict figures keep their 24 × 13.5 in layout and header in either style (MMR at 120 dpi; secular/ZLK saved at the style's dpi) |
+| `style` | `screen` | standalone diagnostics only: `screen` (11 pt sans-serif, 150 dpi, a title) or `paper` (8 pt STIX serif, 300 dpi, no title; panels 88 mm, rows up to 180 mm). The width depends on the kind. The `combined` verdict figures keep their 24 × 13.5 in layout (taller when the right column needs it) and header in either style (MMR at 120 dpi; secular/ZLK saved at the style's dpi) |
 | `raw` | `line` | raw series next to filtered ones: `line`, `markers`, `none` |
 | `series` | `auto` | no effect (accepted for old configurations; no figure draws the standalone time series any more) |
 | `recurrence.max_points` | `None` | display decimation of the recurrence matrix; `None` = about 8 samples per cycle, within 700–2500 |
@@ -117,7 +124,7 @@ an error.
 | `cycles.prominence` | `None` | peak prominence in rad; `None` = 5 % of the range of $\sigma$ within [0.005, 0.1] |
 | `fair.max_step_fraction` | `0.25` | the standalone `fair` figure warns (and still draws) when the output step exceeds this share of the orbit; panel (m) of the combined figure is not drawn above 1/4.2 of it |
 | `combined.osculating_a` | `full` | panel (d): `full` holds the osculating a in view, `clipped` fits the view to the filtered a, `hidden` also hides the osculating a beyond that view |
-| `combined.numbers` | `explained` | the right column: `explained` (the verdict in words, as slotted bullets (secular/ZLK: with the time scales of the record), the steps as questions under 'Decided at …', the confidence block with its LIMIT rows first and the two-line arithmetic, on an MMR figure the framed block 'Numbers behind this verdict' (DECISIVE, LIMIT, CONFLICT, UNMEASURED lines; their rows in the table point up to it), numbers (the pendulum ones labelled in words with their source: observed, from observed cycles, theory), a line naming the docs pages) or `all` (every number of the decision) |
+| `combined.numbers` | `explained` | the right column: `explained` (the verdict in ten blocks: header with the status, level and action chip, subtitle, key facts, why, confidence pills, checks with their margins nested, evidence, caveats, numbers with the DECISIVE lines first, the footer of codes with the W28 tree's verdict) or `all` (every number of the decision) |
 
 ## Redrawing after a run
 
@@ -157,18 +164,16 @@ angle of the osculating elements.
 In the `combined` figure, panel (d) is the semi-major axis (osculating band, filtered at $P_c$, min – max; for a body
 in a planet's co-orbital zone, by $a$ alone, the planet's $a_P$ dashed and the zone's edges $\pm k\,r_H$ dotted,
 `ZLK_COORBITAL_HILL_FACTOR` $k$; `secular_plots.coorbital_planet_geometric`, for drawing only). Panel (g) of a secular angle draws the analysis' own response fit (the element and
-$\sigma_f$ at the decisive cutoff, the centre's when the centre scale decided), the one whose $R^2$ it prints
+$\sigma_f$ at the decisive cutoff, the center's when the center scale decided), the one whose $R^2$ it prints
 ([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)). For a Lidov-Kozai angle panel (g) draws
-the drift of the free and the osculating $\omega$ in turns with a legend, as the `free_omega` drift figure; the right
-column explains the verdict in the slotted bullets of the MMR figure plus the time scales (1/T, $|\dot\sigma|/(1/T)$,
-the search window, the period seen on the angle and the FREQUENCIES row it is, or `unidentified`); a ZLK row adds its
-physics ($i$, $e$, Kozai's 39.2° as a reference, the free-ω turns), the measured e–i coupling, the node lock and the
-slow line of the centre, and names the cause of a kinematic libration
-([Free elements: beyond the gate](free-elements.md#beyond-the-gate)). A number the text prints reads `↑ in the text`
-in the table. The numbers of
+the drift of the free and the osculating $\omega$ in turns with a legend, as the `free_omega` drift figure. The right
+column has the ten blocks of the MMR figure; a ZLK row's Evidence asks what holds $\omega$ (the forced vector, the
+center's slow wave, the node lock, the e–i coupling;
+[Free elements: beyond the gate](free-elements.md#beyond-the-gate)), a secular row's names the period seen on the
+angle against the FREQUENCIES rows, or `unidentified`. The numbers of
 both types include $a$ in ORBIT and a FREQUENCIES table: the body's rates, the planetary modes (g5, g6, s6 always) and
 the beats, each in ″/yr with its period ([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)). An induced ZLK
-libration (attributed to a forced mode, or a centre at a beat of the forced vector) gets one more time panel, (a′)
+libration (attributed to a forced mode, or a center at a beat of the forced vector) gets one more time panel, (a′)
 under (a): $\omega_f$ with the forced direction and the dominant mode against the node
 ([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)); every other row keeps eight. A ZLK
 figure reads $\omega$, $i$, $\Omega$ and the free elements in the plane `ZLK_ANGLE_FRAME` names (the invariable plane

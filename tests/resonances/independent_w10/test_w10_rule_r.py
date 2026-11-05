@@ -516,10 +516,10 @@ def test_right_column_names_where_the_force_law_was_measured():
     _, two = analysed('two_genuine')
     witness_id = two.response.to_columns()['rsp_witness_episode_id']
     text = measured_on(_facts(two))
-    assert f'witness #{witness_id}' in text and 'of 2 witnesses' in text
+    assert f'episode #{witness_id}' in text and 'of 2 eligible episodes' in text  # rule R's witness, named an episode
     _, mixed = analysed('genuine_shuffled')
     text = measured_on(_facts(mixed))
-    assert f"witness #{mixed.response.witness_episode_id}" in text and 'witnesses with most' not in text
+    assert f"episode #{mixed.response.witness_episode_id}" in text and 'the one with most' not in text
     _, pool = analysed('g1e_no_witness')
     assert 'pooled over the 2 episodes before the jump' in measured_on(_facts(pool))
 

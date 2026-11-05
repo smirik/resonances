@@ -126,7 +126,7 @@ $P_\text{floor}$ is the **shortest libration** the angle may have:
   planet, $P_\text{orb}/\sqrt{27\mu/4}$ (Murray & Dermott 1999, eq. 3.151, p. 94): 147.8 yr for Jupiter, giving
   $P_\text{floor} = 73.9$ yr and $P_c = 36.9$ yr; 222 yr for the Earth. The planet of a 1:1 angle does not enter the
   synodic bound: its synodic angle is the resonant angle itself. A quasi-satellite librates faster than a tadpole;
-  when the orbit-averaged angle stays in the quasi-satellite well long enough, the record is analysed again with the
+  when the orbit-averaged angle stays in the quasi-satellite well long enough, the record is analyzed again with the
   floor set by the period of that well (rule G1q). A horseshoe that turns close to the planet is faster than a
   tadpole too: a run whose turning points, read on the orbit-averaged angle, all reflect on a top of the averaged
   potential (the planet's or L3's) gets its own floor, 0.5 times the period of the loop through those turns, provided
@@ -137,7 +137,7 @@ $P_\text{floor}$ is the **shortest libration** the angle may have:
   from the planet (at most the tadpole floor; Earth, circular: 57 yr), else the horseshoe itself raised the
   prominence over its own swing (YN107: 233°);
 - a two-body angle (not 1:1) keeps 150 yr, but a cycle below it can still be accepted by a second pass at the floor of
-  its own averaged potential, $T_{0,\text{th}}/\sqrt{x}$ ($x$ = `MMR_STRENGTH_CHECK_RATIO`), when the theory, the centre
+  its own averaged potential, $T_{0,\text{th}}/\sqrt{x}$ ($x$ = `MMR_STRENGTH_CHECK_RATIO`), when the theory, the center
   and L4 confirm it (rule G1f, [status tree](status-tree.md)); `preprocess.profile_period_floor` is the shared hook
   (the 1:1 floor is the run's own loop above; three-body angles keep 150 yr).
 
@@ -190,16 +190,16 @@ $\Delta t \ge 37.5$ yr; for a Jupiter Trojan at $\Delta t \ge 18.5$ yr.
 
 **Question: does the filter keep the observed libration?** If the gain at the measured libration period is below
 `MMR_L8_GAIN_FULL` = 0.94 read with the thin band `CONFIDENCE_THIN_BAND` of its ratio (0.911: roughly
-$P_\text{cyc} < 1.8P_c$, as the period floor is read at × 0.9; 2001 WK15 32E-39, 143 yr at $P_c$ = 75 yr), the shape of the libration (its amplitude, centre and
+$P_\text{cyc} < 1.8P_c$, as the period floor is read at × 0.9; 2001 WK15 32E-39, 143 yr at $P_c$ = 75 yr), the shape of the libration (its amplitude, center and
 energy) is partly the filter's. The flag `filter_too_slow` is set and the checks that read the shape are
 `not_measured`: the identity L3, the force law L4 and the amplitude check B1 of the response, both potential checks R0,
-one pendulum, and the margins L2 (separatrix distance), L5 and L6 (centre shift). A margin that already failed or does
+one pendulum, and the margins L2 (separatrix distance), L5 and L6 (center shift). A margin that already failed or does
 not apply keeps its value; the numbers themselves stay in the output.
 
 ### A shorter cutoff for a slow libration: the scale ladder (G2c)
 
-**Question: is the centre scale itself hiding the libration's cycles?** The centre scale $W_c$
-([geometry](geometry.md#the-centre-scale)) trims $W_c$ from each end of the record. For a slow libration
+**Question: is the center scale itself hiding the libration's cycles?** The center scale $W_c$
+([geometry](geometry.md#the-center-scale)) trims $W_c$ from each end of the record. For a slow libration
 ($P_\text{slow}$ comparable to the record) the trimmed window may hold fewer than `LIBRATION_CENTRE_MIN_ESTIMATES` = 2
 slow periods, so the tree sees one cycle where the record holds two. Then shorter cutoffs are tried,
 
@@ -211,7 +211,7 @@ $$
 $P_\text{slow}$ being the libration's period at $W_c$ (from its phase return when it closes only one cycle) and
 $P_\text{fast}$ the shortest full period of the fine turning points (the fast wave: at $3P_\text{fast}$ the filter
 keeps $G \approx 0.012$ of it; the factor is `LIBRATION_CENTRE_CYCLES`). Walking down, a rung holds while its turning
-points at the centre prominence $p_c$ agree, in their common window, with those at $W_c$ and at the rung above: the
+points at the center prominence $p_c$ agree, in their common window, with those at $W_c$ and at the rung above: the
 same number and kind, each within `MMR_SCALE_TP_TIME_TOL` = 0.1 $P_\text{slow}$. The shortest rung that holds is taken
 when it shows more slow extrema than $W_c$, and its verdict is kept when it again decides libration (columns
 `geo_scale_ladder_*`, rule `scale_ladder`). With neither the force law L4 nor R0 with $a$ measured there, only the
@@ -285,7 +285,7 @@ see, on the episode the status rests on and its counterpart at $2P_c$ (the episo
 | episode | not reproduced, or its start or end moves by more than one libration period | `MMR_FILTER_GUARD_BOUNDARY_PERIODS` = 1 |
 | stalls | appear or vanish | — |
 | energy $h$ (median per cycle) | crosses $h = 1$, or changes by more than $0.1\max(1, \lvert h\rvert)$ | `MMR_FILTER_GUARD_H_TOL` = 0.1 |
-| shape | the largest half-amplitude changes by more than 20 %, or the amplitude or centre-shift check flips | `MMR_FILTER_GUARD_AMP_REL` = 0.2 |
+| shape | the largest half-amplitude changes by more than 20 %, or the amplitude or center-shift check flips | `MMR_FILTER_GUARD_AMP_REL` = 0.2 |
 
 The energy and the shape are compared only when $2P_c$ itself keeps the libration ($G \ge 0.94$). A change sets the
 flag `filter_sensitive` and empties the checks that read the changed quantity. The guard runs **before** the status

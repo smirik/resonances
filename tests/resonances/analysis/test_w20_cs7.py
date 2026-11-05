@@ -145,7 +145,7 @@ def test_37087_without_its_forced_wave_is_non_resonant(analysed_37087):
     names = [e.name for e in verdict.decision_path]
     assert 'G2 accepted runs that are forced waves, no episodes of the angle' in names
     assert any(name.startswith('angle word episodic: sigma librates in the forced-wave runs') for name in names)
-    assert verdict.orbit_type == 'symmetric forced wave about 180°, moving centre'  # W20 round D: what sigma does
+    assert verdict.orbit_type == 'symmetric forced wave about 180°, moving center'  # W20 round D: what sigma does
 
 
 def test_the_forced_wave_word_changes_no_status():

@@ -62,11 +62,16 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   N/M/V/S/F (N < `CONFIDENCE_MEDIUM_CYCLES` low; W33 F: an MMR row with none of L4, R0, F passing is at most
   `CONFIDENCE_GEOMETRY_ONLY_MAX`, the identity is no force; S = L1 full and no `filter_sensitive`; a subresonance parent's N is
   `(member)`; no caps: every cap becomes a flag, `confidence_raw = confidence`, `cell_*` blank, `review_reasons` without
-  caps), the action through one extend predicate (`extend_clause`; clause C, author Q5: a `veto_needs_length` row whose
+  caps), the action through one extend predicate (`extend_clause`; none at certain, `_certain_clause`; clause C, author Q5: a `veto_needs_length` row whose
 `pol_veto_need_yr` fits `MMR_NEXT_CHECK_SPAN_FACTOR` x T extends to it, beyond it review; an alias with C5 and C2 full
 is certain, Q18), `PolicyResult` (counted and candidate episodes)
   on `MMRAnalysis.policy`/`LongPeriodAnalysis.policy` and episodes.csv `counted`/`candidate`; its comparisons go to
-  the decision path as `policy:*`; the W28 verdict stays in `v2_verdict`.
+  the decision path as `policy:*`; the W28 verdict stays in `v2_verdict`. Source columns for the figure (2026-11-04,
+  no status or level reads them): `level_inputs` (`PolicyResult.level_inputs`, `pol_level_inputs`: each input with
+  its ceiling; the level is their lowest, tested against `level`/`_final_level` on grids; never change `level` to fit
+  it), `pol_decided_by` (`decided_by`: 'tree' or the handler's `DECIDED_*`, `;not_upheld:<leaf>`), `pol_objection_check`
+  (`OBJECTION_*`, non-empty iff V is ambiguous: `_mmr_veto_reading` names what it reads). A word the policy changes
+  clears the tree's `angle_subtype` (`_write`).
   The G2a guard (`_analyse_mmr_record`) still chooses between cut and whole on the raw v2 (status, confidence).
 - `confidence` (the W28 tree's level, in `v2_verdict`; the policy overrides it): the level from margins and caps; `certain` is shown. certain needs every applicable margin full; high
   allows thin or unmeasured evidence but no failed support, and (W28 q-2 b, MMR own dynamics) at least one physical

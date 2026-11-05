@@ -1,4 +1,4 @@
-"""The clones figure, panel (b): the line drawn is the catalogue resonant axis a_res (`resonance.resonant_axis`), labelled
+"""The clones figure, panel (b): the line drawn is the catalog resonant axis a_res (`resonance.resonant_axis`), labeled
 so, at a_res minus the reference (the nominal's initial a); a_res +- the half-width dashed. By hand: nominal a0 =
 2.5020 au, a_res = 2.5000 au, half-width 0.0030 au -> lines at -0.0020, -0.0050 and +0.0010 au."""
 
@@ -25,7 +25,7 @@ def test_panel_b_draws_the_catalogue_a_res():
     )
     ax = plotter._figure.axes[1]
     labels = ax.get_legend_handles_labels()[1]
-    assert 'a_res (catalogue)' in labels and "a_res +- half-width (clones' episodes)" in labels
+    assert 'a_res (catalog)' in labels and "a_res +- half-width (clones' episodes)" in labels
     assert not any('a*' in label or 'exact commensurability' in label for label in labels)
     vertical = sorted(line.get_xdata()[0] for line in ax.lines if len(line.get_xdata()) == 2 and line.get_xdata()[0] == line.get_xdata()[1])
     assert vertical == pytest.approx([-0.0050, -0.0020, 0.0010], abs=1e-12)

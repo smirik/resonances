@@ -32,7 +32,7 @@ END = '<!-- settings-table:end -->'
 TITLES = (
     ('Filter (shared)', 'Filter and cutoff'),
     ('MMR sampling', 'MMR sampling: alias branches and the unwrap'),
-    ('Geometry of an angle', 'Geometry: turning points, centre, episodes, jumps'),
+    ('Geometry of an angle', 'Geometry: turning points, center, episodes, jumps'),
     ('Energy relative to the separatrix', 'Energy and the separatrix zone'),
     ('MMR physics', 'MMR physics: response of a, force law, identity, kinematics'),
     ('MMR subresonances', 'MMR subresonances and the owner search'),

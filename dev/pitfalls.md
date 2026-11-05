@@ -45,7 +45,7 @@ Things that cost a session hours. Each says what happens and what to do instead.
   circulation (σ₀ 151.5° vs 118.1°). `BodyManager.check_epoch` raises at more than 1e-4 d. Never use `datetime.now`
   where the configured date is meant.
 - **Time scales.** Horizons reads a bare calendar date as TDB for vectors and elements; AstDyS and MPC epochs are TT;
-  TT − TDB ≈ −0.7 ms (metres). Sending the TT calendar value is consistent. With `TIME_TYPE=UT` the EM barycentre moves
+  TT − TDB ≈ −0.7 ms (meters). Sending the TT calendar value is consistent. With `TIME_TYPE=UT` the EM barycenter moves
   by ~2000 km (69 s).
 - **MPC near-Earth elements** (neam00) are wrong for bodies discovered at ~20,000 km Earth passes. MPCORB holds ~1.9k
   rows at other epochs (one-opposition orbits each at its own epoch): see `resonances/mpcorb/CLAUDE.md`.
@@ -58,7 +58,7 @@ Things that cost a session hours. Each says what happens and what to do instead.
 
 ## Numerics
 
-- **Butterworth in (b, a) form breaks** at normalised cutoffs ≲ 1e-3 (errors near 1e11 at 1-yr output); analysis v2
+- **Butterworth in (b, a) form breaks** at normalized cutoffs ≲ 1e-3 (errors near 1e11 at 1-yr output); analysis v2
   uses second-order sections. The body-level `resonance/filtering.filter_angle` (the filtered series of the figures)
   still uses (b, a) with `filtfilt`: keep it out of decisions. The digital filtfilt gain uses tan(π dt/P), not the continuous approximation.
 - **`np.unwrap` aliases the trend.** The predictive unwrap is valid while |δν|Δt < π, and wrapped residuals cannot
@@ -76,7 +76,7 @@ Things that cost a session hours. Each says what happens and what to do instead.
   2.1 real cycles, 3.68 inferred). Count cycles from turning points.
 - **Cubic potential extrapolation beyond the record** drove DOP853 to ~1e-6 steps (385266: 4.4 M calls, > 6 GB per
   piece). Clamp model times; store bounded `t_eval` samples.
-- **One force window copied into an empty half is not two independent halves** (24820); one centre compared with
+- **One force window copied into an empty half is not two independent halves** (24820); one center compared with
   itself does not show stationarity. `min(finite, nan)` silently passes a one-sided check: `independent_halves_r2`
   returns nan unless both directions are measured.
 - **A phase-error sum ≥ 1:** arcsin(clamp(sum, 1)) invents a bound; return not_measured.
@@ -84,7 +84,7 @@ Things that cost a session hours. Each says what happens and what to do instead.
   ratio 0.77 instead of 1.00003 without it).
 - **Quadrature self-consistency is not convergence.** Force and potential derivative on the same grid agreed, yet at
   e = 0.2 the 720-node force was 167.3 against 144.1 adaptive (16 %).
-- **Edge coverage with a huge TP gap as its period** falsely covered 154634 (25.6-kyr centre turns hid a 308-yr
+- **Edge coverage with a huge TP gap as its period** falsely covered 154634 (25.6-kyr center turns hid a 308-yr
   ripple); the edge step is capped by `LIBRATION_COVERAGE_PERIODS` × P.
 - **Prominence is excursion, not frequency.** Raising p_c can hide a genuine 4° slow child libration; not_measured is
   the honest outcome there.
@@ -102,7 +102,7 @@ Things that cost a session hours. Each says what happens and what to do instead.
 
 ## Classifier policy (W29)
 
-- **A side with no neighbour run is not the record's edge.** `geometry.half_librations` called a half-swing's side
+- **A side with no neighbor run is not the record's edge.** `geometry.half_librations` called a half-swing's side
   "edge" whenever no run followed it in the list, without looking at σ_f between the facing turning point and the
   window's edge. 42946 43S-6 turned 8.1 revolutions there and still read as cut by the end, so it asked for a futile
   100-kyr extension (codex S1, W28 review). Measure the travel (`geometry.edge_travel_rev`, ≥ 1 revolution = passage).
@@ -132,7 +132,7 @@ Things that cost a session hours. Each says what happens and what to do instead.
 - **Explain a check only after reading what it compares.** An explanation to the author once said a failed C4 meant
   "near the separatrix"; C4 compared σ̇ with a K from a fit the package had itself rejected (R² 0.005–0.18), so it
   measured nothing. A cap's ceiling is not a level; do not attribute to the author words he did not write.
-- **A held-out check must be held out.** A predicted centre built from the observed upper TP is partly fitted by
+- **A held-out check must be held out.** A predicted center built from the observed upper TP is partly fitted by
   construction (2003 UG22); use the held-out lower TP and matched nulls.
-- **Missing owner-planet series** make benchmark and production verdicts differ (catalogue longitudes cap the owner
+- **Missing owner-planet series** make benchmark and production verdicts differ (catalog longitudes cap the owner
   search at medium).

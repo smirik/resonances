@@ -300,7 +300,9 @@ def test_285637_is_a_kinematic_libration_at_high():
     verdict, k = analysis.verdict, analysis.kinematics
     assert (verdict.status, verdict.reason, verdict.confidence) == (Status.NON_RESONANT, Reason.KINEMATIC_LIBRATION, Confidence.HIGH)
     assert verdict.origin_detail == str(OriginDetail.SECULAR_CYCLE)
-    assert verdict.margins['K1e'].margin == Margin.FULL and str(Rule.KINEMATIC_HIGH) in verdict.rules_fired
+    # K1e is full; kinematic_high (K1e lifting a row whose other physics is all unmeasured) no longer acts since the
+    # owner's stage 3 (2026-11-05) measures the owner: the level is high without the lift
+    assert verdict.margins['K1e'].margin == Margin.FULL and str(Rule.KINEMATIC_HIGH) not in verdict.rules_fired
     assert 1.05 <= k.swing_share <= 1.2 and k.k1_episode >= S.mmr_kin_corr_min
     assert k.check_reason == kin.K1E_FEW_POINTS  # K1's slow correlation: 50 kyr against W_c 54 kyr
 

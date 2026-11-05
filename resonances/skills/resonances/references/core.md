@@ -33,7 +33,7 @@ else from the package defaults; [Configuration](config.md) lists them all. The o
 
 | keyword | default | meaning |
 |---|---|---|
-| `date` | today (source `nasa`); the catalogue epoch (`astdys`, `mpc`) | start of the integration; the planets come from NASA Horizons at this date |
+| `date` | today (source `nasa`); the catalog epoch (`astdys`, `mpc`) | start of the integration; the planets come from NASA Horizons at this date |
 | `source` | `nasa` | where the elements of a body given by number or name come from: `nasa` (Horizons), `astdys`, `mpc` |
 | `integration_years` or `tmax` | 100 000 yr | the span; `tmax` is in REBOUND units (see below), negative for a backward run |
 | `integrator`, `dt` | `SABA(10,6,4)`, 1.0 | the REBOUND integrator and its step in REBOUND units; `whfast`, `ias15` (adaptive) also work |
@@ -104,7 +104,7 @@ $\varpi$.
 - `resonances.find(asteroids, planets=None, type=None, **kwargs)` looks for candidates: the MMRs whose resonant
   semi-major axis is within `sigma2 = 0.1` au (two-body) or `sigma3 = 0.02` au (three-body) of the body's $a$
   (`sigma_retro = 0.5` au for $i > 90°$), the secular resonances satisfied by the body's proper frequencies $g$, $s$
-  (from the AstDyS synthetic catalogue; `formulas=` gives your own) and the Lidov-Kozai angle. `type='mmr'`, `'secular'` or `'lidov_kozai'` limits the search ([Examples](examples.md#finding-resonances)).
+  (from the AstDyS synthetic catalog; `formulas=` gives your own) and the Lidov-Kozai angle. `type='mmr'`, `'secular'` or `'lidov_kozai'` limits the search ([Examples](examples.md#finding-resonances)).
 
 Both return a `Simulation` with the bodies added; call `sim.run()`. Their default `name` is `resonance_find`, so
 their output goes to `cache/resonance_find` (with a time stamp when that folder is not empty).

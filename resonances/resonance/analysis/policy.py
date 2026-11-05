@@ -168,6 +168,40 @@ LEG_RULES = ('G4c', 'C')
 NEAR_SEPARATRIX_KEPT = ('5a', '5a*', '5e', '5g')
 LIBRATING_STATUSES = (Status.RESONANT, Status.TRANSIENT, Status.NEAR_SEPARATRIX)
 
+# `pol_decided_by`: the policy step that gave the final status and reason. 'tree' when it kept the tree's status and
+# reason and set no veto or upheld the tree leaf's own; else the step: 'veto:<name>' (a veto the policy set), member
+# (rule 1), objection (a measured objection, P2), strength_scale (5s three-body, 5s*), geometry (a geometric leaf, an
+# unknown one: flag policy_unknown_leaf), drift, insufficient_time, leg (G4c), half (G4h), forced_wave_drift (every
+# counted episode a forced wave on a centre short of a revolution), gate_confirmed / gate_unavailable (ZLK: the gate
+# made a bounded row dynamic / geometric). ';not_upheld:<leaf>' follows when the tree's leaf vetoed and the policy did
+# not uphold that veto (2012 KL9 5E-2M-10: leaf 5s, three-body, then veto forced_wave).
+DECIDED_TREE = 'tree'
+DECIDED_MEMBER, DECIDED_OBJECTION, DECIDED_SCALE, DECIDED_GEOMETRY = 'member', 'objection', 'strength_scale', 'geometry'
+DECIDED_DRIFT, DECIDED_INSUFFICIENT, DECIDED_LEG, DECIDED_HALF = 'drift', 'insufficient_time', 'leg', 'half'
+DECIDED_FORCED_DRIFT = 'forced_wave_drift'
+DECIDED_GATE_CONFIRMED, DECIDED_GATE_UNAVAILABLE = 'gate_confirmed', 'gate_unavailable'
+DECIDED_VETO, NOT_UPHELD = 'veto:', 'not_upheld:'
+NOT_UPHELD_ZLK_GATE = 'zlk_gate'  # the tree's ZLK kinematic status (code -2) that the policy did not uphold
+# `pol_objection_check`: the checks whose measured objection made V ambiguous (empty unless V is ambiguous). MMR: the
+# force law on a (L4), the potential with a (R0), the identity (L3), the strength by direct averaging (F), the onset
+# (O1), the order-of-magnitude strength scale (5s three-body, 5s*), a forced line at the period (5f), an owner or a
+# kinematic origin the tree read but its measured predicate does not hold; ZLK: a kinematic gate that pins no episode,
+# the free e below the forced e with an undefined phase, the e-i integral broken in the deciding episode
+OBJECTION_FORCE_LAW, OBJECTION_POTENTIAL, OBJECTION_IDENTITY = 'force_law', 'potential', 'identity'
+OBJECTION_STRENGTH, OBJECTION_ONSET, OBJECTION_STRENGTH_SCALE = 'strength', 'onset', 'strength_scale'
+OBJECTION_FORCE_LINE, OBJECTION_OWNER, OBJECTION_KINEMATIC = 'force_line', 'owner', 'kinematic'
+OBJECTION_ZLK_GATE, OBJECTION_ZLK_FREE_E, OBJECTION_ZLK_INTEGRAL = 'zlk_gate_kinematic', 'zlk_free_e', 'zlk_ei_integral'
+# the checks an objection leaf of `mmr.decide` measured failing (`_objection`, `_contaminated`, `_identity_objects`);
+# 5o reads its own (`_leaf_objections`)
+LEAF_OBJECTIONS = {
+    '5a': (OBJECTION_FORCE_LAW, OBJECTION_POTENTIAL),
+    '5a*': (OBJECTION_FORCE_LAW,),
+    '5b': (OBJECTION_POTENTIAL,),  # L4 passes, R0 fails: the two contradict each other (flag force_law_disagrees)
+    '5e': (OBJECTION_POTENTIAL,),
+    '5f': (OBJECTION_FORCE_LINE,),
+    '5g': (OBJECTION_IDENTITY,),
+}
+
 
 @dataclass(frozen=True)
 class PolicyResult:
@@ -186,6 +220,7 @@ class PolicyResult:
     stable: bool = False
     extend: bool = False
     extend_clause: str = ''
+    level_inputs: Tuple['LevelInput', ...] = ()  # what the level read, each with its ceiling (`level_inputs`)
 
 
 @dataclass(frozen=True)
@@ -256,6 +291,109 @@ def level(status: Status | str, ev: Evidence, settings: AnalysisSettings) -> Con
     if ev.force == F_NONE:
         return max(found, Confidence(settings.confidence_geometry_only_max), key=CONFIDENCE_ORDER.index)  # the lower
     return found
+
+
+@dataclass(frozen=True)
+class LevelInput:
+    """One input the level read (`level_inputs`): its name, its state (a word, or a number for N and core), the
+    highest level it allows and, for a number, the comparison that sets that ceiling ('>=3', '<2'); for a veto its
+    name in parentheses."""
+
+    name: str
+    state: str
+    ceiling: Confidence
+    detail: str = ''
+
+    def text(self) -> str:
+        """'<name>:<state><detail>:<ceiling>' (column `pol_level_inputs`)."""
+        return f'{self.name}:{self.state}{self.detail}:{self.ceiling}'
+
+
+def level_inputs(
+    status: Status | str, ev: Evidence, settings: AnalysisSettings, outcome_level: Optional[Confidence] = None, veto_thin: bool = False
+) -> Tuple[LevelInput, ...]:
+    """Each input `level` (or the table's fixed level, `_final_level`) reads, with the highest level it allows; the
+    row's level is the lowest ceiling (`lowest_ceiling`). Pure: it explains the level and never sets it (the tests
+    check it against `level` and `_final_level` over a grid of evidence). uncertain and invalid: () (no level).
+
+    resonant, transient   N (below CONFIDENCE_MEDIUM_CYCLES low, below _HIGH_ medium, below _CERTAIN_ high), core
+                          (the decisive episode's own cycles: below CONFIDENCE_CERTAIN_CORE_CYCLES high), M and S
+                          (high unless full), V (clean certain, partial high, not_measured medium, ambiguous low), F
+                          (MMR: none -> CONFIDENCE_GEOMETRY_ONLY_MAX; not read when '')
+    near_separatrix       status (medium), V (as above; only ambiguous lowers the level)
+    non_resonant, vetoed  veto (high, thin medium), second_capture (unresolved medium)
+    non_resonant          candidate (drawn medium), circulation (clear certain, else high)
+    a fixed level         table (the level the policy table fixes: a subresonance member's, 5a on near_separatrix),
+                          and V when that level is medium (as above; only ambiguous lowers the level)
+    a thin veto elsewhere thin_veto (medium; `veto_thin`, the outcome's thin veto that `_final_level` caps)."""
+    status = Status(status)
+    if status in (Status.UNCERTAIN, Status.INVALID) or outcome_level == Confidence.NONE:
+        return ()
+    certain, high, medium, low = CONFIDENCE_ORDER
+    v_ceiling = {V_CLEAN: certain, V_PARTIAL: high, V_NOT_MEASURED: medium, V_AMBIGUOUS: low}
+    vetoed = status == Status.NON_RESONANT and bool(ev.veto) and outcome_level is None
+    inputs: List[LevelInput] = []
+    if outcome_level is not None:
+        inputs.append(LevelInput('table', str(outcome_level), Confidence(outcome_level)))
+        if outcome_level == Confidence.MEDIUM:
+            inputs.append(LevelInput('V', ev.veto_state, v_ceiling.get(ev.veto_state, medium)))
+    elif status == Status.NEAR_SEPARATRIX:
+        inputs.append(LevelInput('status', str(status), medium))
+        inputs.append(LevelInput('V', ev.veto_state, v_ceiling.get(ev.veto_state, medium)))
+    elif vetoed:
+        thin = ev.veto_thin or veto_thin
+        inputs.append(LevelInput('veto', M_THIN if thin else M_FULL, medium if thin else high, f'({ev.veto})'))
+        inputs.append(LevelInput('second_capture', 'unresolved' if ev.second_capture else 'none', medium if ev.second_capture else certain))
+    elif status == Status.NON_RESONANT:
+        inputs.append(LevelInput('candidate', 'drawn' if ev.candidate else 'none', medium if ev.candidate else certain))
+        inputs.append(
+            LevelInput('circulation', 'clear' if ev.circulation_clear else 'not_clear', certain if ev.circulation_clear else high)
+        )
+    else:
+        inputs += _librating_inputs(ev, settings, v_ceiling)
+    if veto_thin and not vetoed:
+        inputs.append(LevelInput('thin_veto', M_THIN, medium))
+    return tuple(inputs)
+
+
+def _librating_inputs(ev: Evidence, settings: AnalysisSettings, v_ceiling: dict) -> List[LevelInput]:
+    """The inputs of a resonant or transient row (`level_inputs`)."""
+    certain, high, medium, low = CONFIDENCE_ORDER
+    n = ev.n_cycles if math.isfinite(ev.n_cycles) else 0.0
+    ladder = (
+        (settings.confidence_medium_cycles, low),
+        (settings.confidence_high_cycles, medium),
+        (settings.confidence_certain_cycles, high),
+    )
+    n_ceiling, n_detail = next(((level_, f'<{bound:g}') for bound, level_ in ladder if n < bound), (certain, f'>={ladder[-1][0]:g}'))
+    core = ev.core_cycles if math.isfinite(ev.core_cycles) else 0.0
+    core_bound = settings.confidence_certain_core_cycles
+    inputs = [
+        LevelInput('N', _number(ev.n_cycles), n_ceiling, n_detail),
+        LevelInput(
+            'core', _number(ev.core_cycles), high if core < core_bound else certain, f'{"<" if core < core_bound else ">="}{core_bound:g}'
+        ),
+        LevelInput('M', ev.margin, certain if ev.margin == M_FULL else high),
+        LevelInput('S', M_FULL if ev.stable else M_THIN, certain if ev.stable else high),
+        LevelInput('V', ev.veto_state, v_ceiling.get(ev.veto_state, medium)),
+    ]
+    if ev.force:
+        inputs.append(LevelInput('F', ev.force, Confidence(settings.confidence_geometry_only_max) if ev.force == F_NONE else certain))
+    return inputs
+
+
+def _number(value: float) -> str:
+    return f'{value:.3g}' if math.isfinite(value) else 'nan'
+
+
+def lowest_ceiling(inputs: Sequence[LevelInput]) -> Confidence:
+    """The level the inputs allow: their lowest ceiling (CONFIDENCE_ORDER); none without an input."""
+    return max((entry.ceiling for entry in inputs), key=CONFIDENCE_ORDER.index, default=Confidence.NONE)
+
+
+def level_inputs_text(inputs: Sequence[LevelInput]) -> str:
+    """The `pol_level_inputs` column: 'N:4.12>=3:certain;core:3>=3:certain;M:thin:high;...' (';'-joined)."""
+    return join_list(entry.text() for entry in inputs)
 
 
 def worst_veto_state(states: Iterable[str]) -> str:
@@ -440,6 +578,10 @@ class _Outcome:
     level: Optional[Confidence] = None  # a level the policy table fixes (subresonance member, 5a on near_separatrix)
     period_dec_yr: Optional[float] = None  # P_dec override (a drift < 1 rev: span / pass)
     check_zlk_free_omega: Optional[CheckValue] = None
+    decided_by: str = DECIDED_TREE  # the step that set the status (`pol_decided_by`; 'tree' when it is the tree's)
+    upheld: bool = False  # the veto is the tree leaf's own, upheld
+    not_upheld: str = ''  # the tree's leaf whose veto the policy did not uphold
+    objections: List[str] = field(default_factory=list)  # the checks behind a forced V ambiguous (`OBJECTION_*`)
 
 
 def _keep(v: Verdict, **fields) -> _Outcome:
@@ -470,9 +612,13 @@ def _write(
     resample: Optional[float],
     veto_need: float,
     ledger: Ledger,
+    inputs: Tuple[LevelInput, ...] = (),
+    objections: Sequence[str] = (),
 ) -> None:
-    """Write the policy's verdict over the tree's (the tree's own in `v2_verdict`), every cap into the flags."""
+    """Write the policy's verdict over the tree's (the tree's own in `v2_verdict`), every cap into the flags; a word
+    the policy changes drops the tree's subtype (it described the tree's word: 'circulation (recurrent)')."""
     v.v2_verdict = f'{v.status}/{v.confidence}/{v.reason}/{v.action}/{v.angle_status}'
+    v.pol_decided_by = decided_by(outcome, v.status, v.reason)
     flags = list(v.flags) + list(v.caps) + list(outcome.flags)
     if outcome.veto_thin:
         flags.append(str(Flag.VETO_THIN))
@@ -482,6 +628,8 @@ def _write(
     v.status, v.reason, v.libration_origin = Status(outcome.status), outcome.reason, outcome.origin
     v.origin_detail = outcome.origin_detail
     if outcome.angle_status is not None:
+        if outcome.angle_status != v.angle_status:
+            v.angle_subtype = AngleSubtype.NONE
         v.angle_status = outcome.angle_status
     v.confidence = v.confidence_raw = confidence
     v.action, v.resample_step_yr = action, resample
@@ -502,7 +650,20 @@ def _write(
     v.pol_n_last, v.pol_last_reaches_end, v.pol_extend_clause = end.n_last, end.last_reaches_end, clause
     v.pol_veto_need_yr = veto_need
     v.pol_core_cycles = ev.core_cycles
+    v.pol_level_inputs = level_inputs_text(inputs)
+    v.pol_objection_check = join_list(dict.fromkeys(objections))
     v.decision_path = list(v.decision_path) + list(ledger)
+
+
+def decided_by(outcome: _Outcome, tree_status: Status | str, tree_reason: Reason | str) -> str:
+    """`pol_decided_by` (`DECIDED_*`): 'tree' when the policy kept the tree's status and reason and set no veto or
+    upheld the tree leaf's own, else the step that set them; ';not_upheld:<leaf>' when the tree's leaf vetoed and the
+    policy did not uphold it."""
+    kept = Status(outcome.status) == Status(tree_status) and str(outcome.reason) == str(tree_reason)
+    step = DECIDED_TREE if kept and (not outcome.veto or outcome.upheld) else outcome.decided_by
+    if step == DECIDED_TREE and not kept:
+        step = DECIDED_GEOMETRY  # a moved status always names its step; a handler that names none read the geometry
+    return join_list([step] + ([NOT_UPHELD + outcome.not_upheld] if outcome.not_upheld else []))
 
 
 def _span_tag(outcome: _Outcome) -> str:
@@ -536,14 +697,22 @@ def _record_level(ev: Evidence, settings: AnalysisSettings, ledger: Ledger) -> N
     )
 
 
+def _certain_clause(confidence: Confidence, clause: str) -> str:
+    """No extend clause at certain: a certain row asks for no longer record (`_action`)."""
+    return '' if confidence == Confidence.CERTAIN else clause
+
+
 def _action(
     status: Status, confidence: Confidence, clause: str, resample: Optional[float], v2_action: Action, veto_beyond: bool = False
 ) -> Action:
-    """Action order (spec §5): invalid keeps the tree's; extend; a needed check R-ALIAS-A withdrew with a fold-free step
-    -> resample; uncertain, or a needed veto no next check measures (`veto_beyond_budget`) -> review; else by level
-    (certain/high none, medium spot_check, low review)."""
+    """Action order (spec §5): invalid keeps the tree's; certain none (the author, 2026-11-05: "если мы уверены, то просто
+    certain, no action required"; `_certain_clause` drops its clause); extend; a needed check R-ALIAS-A withdrew with a
+    fold-free step -> resample; uncertain, or a needed veto no next check measures (`veto_beyond_budget`) -> review;
+    else by level (high none, medium spot_check, low review)."""
     if status == Status.INVALID:
         return v2_action
+    if confidence == Confidence.CERTAIN:
+        return Action.NONE
     if clause:
         return Action.EXTEND
     if resample is not None:
@@ -796,7 +965,7 @@ def _on_member(row: _Row) -> _Outcome:
         return _keep(row.v, candidates=row.ids)
     status = Status.UNCERTAIN if member.status == Status.INVALID else Status(member.status)
     level_ = Confidence(member.confidence) if status not in (Status.UNCERTAIN, Status.INVALID) else Confidence.NONE
-    outcome = _keep(row.v, candidates=row.ids, n_cycles=member.n_cycles, n_basis=N_MEMBER, level=level_)
+    outcome = _keep(row.v, candidates=row.ids, n_cycles=member.n_cycles, n_basis=N_MEMBER, level=level_, decided_by=DECIDED_MEMBER)
     outcome.status = status
     return outcome
 
@@ -807,13 +976,17 @@ def _on_veto(row: _Row) -> _Outcome:
     v = row.v
     veto = _mmr_veto(row.analysis, row.rule, row.settings, row.ledger)
     if veto is None:
-        flag = Flag.STRENGTH_SCALE_IMPLAUSIBLE if row.rule == '5s' else Flag.MEASURED_OBJECTION
-        return _bounded(v, row.word, row.end, row.ids, [flag], V_AMBIGUOUS)
+        scale = row.rule == '5s'
+        flag = Flag.STRENGTH_SCALE_IMPLAUSIBLE if scale else Flag.MEASURED_OBJECTION
+        objection = OBJECTION_STRENGTH_SCALE if scale else (OBJECTION_OWNER if row.rule == '2' else OBJECTION_KINEMATIC)
+        outcome = _bounded(v, row.word, row.end, row.ids, [flag], V_AMBIGUOUS, DECIDED_SCALE if scale else DECIDED_OBJECTION, [objection])
+        outcome.not_upheld = row.rule
+        return outcome
     name, thin = veto
     ids = row.ids - _strength_marked(row.analysis.geometry)  # an upheld strength veto keeps its marks
     stable = _stable_candidate(row.analysis, row.settings, row.ledger) if ids else False
     second = str(Flag.SECOND_CAPTURE_UNRESOLVED) in v.flags or str(Flag.SECOND_CAPTURE_UNRESOLVED) in v.caps
-    outcome = _keep(v, veto=name, veto_thin=thin, second_capture=second, candidates=ids if stable else frozenset())
+    outcome = _keep(v, veto=name, veto_thin=thin, second_capture=second, candidates=ids if stable else frozenset(), upheld=True)
     if name == VETO_STRENGTH and not stable:
         # the strength veto says no run is this angle's libration and none is drawn: the angle's word is what is left,
         # a circulation or a drift (the author, W30: 138537, 182259, 2897 'тут нет эпизодов')
@@ -830,7 +1003,22 @@ def _moving_word(geometry: Optional[Geometry]) -> AngleStatus:
 def _on_objection(row: _Row) -> _Outcome:
     if row.word == AngleStatus.NEAR_SEPARATRIX and row.rule in NEAR_SEPARATRIX_KEPT:
         return _keep(row.v, level=Confidence.MEDIUM)
-    return _bounded(row.v, row.word, row.end, row.ids, [Flag.MEASURED_OBJECTION], V_AMBIGUOUS)
+    objections = _leaf_objections(row.analysis, row.rule)
+    return _bounded(row.v, row.word, row.end, row.ids, [Flag.MEASURED_OBJECTION], V_AMBIGUOUS, DECIDED_OBJECTION, objections)
+
+
+def _leaf_objections(analysis, rule: str) -> List[str]:
+    """The checks an objection leaf measured failing (`LEAF_OBJECTIONS`); 5o: the onset O1 (its ratio failing on the
+    tree's path) and/or the strength F by direct averaging; the leaf itself when none is named."""
+    if rule in LEAF_OBJECTIONS:
+        return list(LEAF_OBJECTIONS[rule])
+    found = []
+    if any(entry.name == mmr_decide.O1_ONSET and entry.result is False for entry in analysis.verdict.decision_path):
+        found.append(OBJECTION_ONSET)
+    strength = analysis.strength
+    if strength is not None and strength.method in DIRECT_METHODS and strength.check == CheckValue.FAIL:
+        found.append(OBJECTION_STRENGTH)
+    return found or [rule]
 
 
 def _on_leg(row: _Row) -> Optional[_Outcome]:
@@ -839,19 +1027,27 @@ def _on_leg(row: _Row) -> Optional[_Outcome]:
     # nothing (W29 integration: 59 co-orbital librators were read as their legs).
     if row.rule != 'G4c' and (row.rule != 'C' or not row.legs[0]):
         return None
-    return _mmr_leg_outcome(*row.legs)
+    return _tagged(_mmr_leg_outcome(*row.legs), DECIDED_LEG)
+
+
+def _tagged(outcome: Optional[_Outcome], decided: str) -> Optional[_Outcome]:
+    if outcome is not None:
+        outcome.decided_by = decided
+    return outcome
 
 
 HANDLERS = {
     MEMBER: _on_member,
     VETO: _on_veto,
-    SCALE: lambda row: _bounded(row.v, row.word, row.end, row.ids, [Flag.STRENGTH_SCALE_IMPLAUSIBLE], V_AMBIGUOUS),
+    SCALE: lambda row: _bounded(
+        row.v, row.word, row.end, row.ids, [Flag.STRENGTH_SCALE_IMPLAUSIBLE], V_AMBIGUOUS, DECIDED_SCALE, [OBJECTION_STRENGTH_SCALE]
+    ),
     OBJECTION: _on_objection,
     GEOMETRIC: lambda row: _bounded(row.v, row.word, row.end, row.ids, [], None),
     DRIFT: lambda row: _drift(row.v, row.analysis.geometry, TWO_PI, _span(row.analysis)),
     LEG: _on_leg,
     KEEP: _on_leg,  # rule C of a 1:1 angle with legs: a scattering leg is a candidate (G4c)
-    HALF: lambda row: _mmr_half_outcome(row.analysis.geometry, row.held, row.settings),
+    HALF: lambda row: _tagged(_mmr_half_outcome(row.analysis.geometry, row.held, row.settings), DECIDED_HALF),
     INSUFFICIENT: lambda row: _insufficient(row.v, row.end, row.analysis.geometry),
 }
 
@@ -910,6 +1106,7 @@ def _without_background_waves(analysis, outcome: _Outcome, settings: AnalysisSet
             # the slow centre passes less than a revolution: without the waves the drift rule decides (P1), not the veto
             drift = _drift(analysis.verdict, analysis.geometry, TWO_PI, _span(analysis))
             drift.angle_status, drift.candidates, drift.flags = AngleStatus.DRIFT, forced, list(outcome.flags)
+            drift.decided_by, drift.not_upheld = DECIDED_FORCED_DRIFT, outcome.not_upheld
             return drift
         thin = any(waves[eid].thin() for eid in forced)
         return _Outcome(
@@ -922,6 +1119,8 @@ def _without_background_waves(analysis, outcome: _Outcome, settings: AnalysisSet
             veto_thin=thin,
             candidates=forced,
             flags=list(outcome.flags),
+            decided_by=DECIDED_VETO + VETO_FORCED_WAVE,
+            not_upheld=outcome.not_upheld,
         )
     outcome.counted = frozenset(outcome.counted) - forced
     outcome.candidates = frozenset(outcome.candidates) | forced
@@ -947,13 +1146,33 @@ def _decisive(analysis) -> frozenset:
     return frozenset([analysis.decisive_episode_id]) if analysis.decisive_episode_id is not None else frozenset()
 
 
-def _bounded(v: Verdict, word: AngleStatus, end: EndReading, ids: frozenset, flags: Sequence, veto_state: Optional[str]) -> _Outcome:
+def _bounded(
+    v: Verdict,
+    word: AngleStatus,
+    end: EndReading,
+    ids: frozenset,
+    flags: Sequence,
+    veto_state: Optional[str],
+    decided: str = DECIDED_GEOMETRY,
+    objections: Sequence[str] = (),
+) -> _Outcome:
     """The geometry's status of a leaf that may not move it (P2): a bounded word keeps its status, the others take
-    their geometry row (circulation, drift, insufficient_time), with `flags` and the forced V."""
+    their geometry row (circulation, drift, insufficient_time), with `flags`, the forced V, the step `decided` and the
+    checks behind a forced V ambiguous (`objections`)."""
     flags = [str(flag) for flag in flags]
     if word in (AngleStatus.LIBRATION, AngleStatus.EPISODIC, AngleStatus.NEAR_SEPARATRIX):
         status, reason, origin = _geometric_status(word, v, keep_reason=True)
-        return _Outcome(status, reason, origin, str(v.origin_detail), flags=flags, veto_state=veto_state, counted=ids)
+        return _Outcome(
+            status,
+            reason,
+            origin,
+            str(v.origin_detail),
+            flags=flags,
+            veto_state=veto_state,
+            counted=ids,
+            decided_by=decided,
+            objections=list(objections),
+        )
     if word == AngleStatus.INSUFFICIENT_TIME:
         outcome = _insufficient(v, end, None)
     elif word == AngleStatus.DRIFT:
@@ -965,6 +1184,7 @@ def _bounded(v: Verdict, word: AngleStatus, end: EndReading, ids: frozenset, fla
     outcome.flags += flags
     outcome.veto_state = veto_state
     outcome.candidates = ids
+    outcome.decided_by, outcome.objections = decided, list(objections)
     return outcome
 
 
@@ -973,10 +1193,10 @@ def _drift(v: Verdict, geometry: Geometry, revolution: float, span_yr: float) ->
     less -> uncertain / drift_mechanism_unknown (MMR; a long-period row keeps baseline_needed), P_dec = span / pass."""
     passed = geometry.centre.max_pass_rad / revolution if geometry is not None else NAN
     if math.isfinite(passed) and passed >= 1.0:
-        return _Outcome(Status.NON_RESONANT, Reason.MODULATED_CIRCULATION, LibrationOrigin.NONE)
+        return _Outcome(Status.NON_RESONANT, Reason.MODULATED_CIRCULATION, LibrationOrigin.NONE, decided_by=DECIDED_DRIFT)
     reason = Reason.DRIFT_MECHANISM_UNKNOWN if v.resonance_type == ResonanceType.MMR else v.reason
     period = span_yr / passed if math.isfinite(passed) and passed > 0 else NAN
-    return _Outcome(Status.UNCERTAIN, reason, LibrationOrigin.UNKNOWN, period_dec_yr=period)
+    return _Outcome(Status.UNCERTAIN, reason, LibrationOrigin.UNKNOWN, period_dec_yr=period, decided_by=DECIDED_DRIFT)
 
 
 def _insufficient(v: Verdict, end: EndReading, geometry: Optional[Geometry]) -> _Outcome:
@@ -985,37 +1205,44 @@ def _insufficient(v: Verdict, end: EndReading, geometry: Optional[Geometry]) -> 
     is never non_resonant (P7)."""
     if end.ends_in_circulation and v.angle_subtype != AngleSubtype.PHASE_UNRESOLVED:
         had = geometry is not None and len(geometry.turning_points) > 0
-        return _Outcome(Status.NON_RESONANT, Reason.CIRCULATION, LibrationOrigin.NONE, flags=[str(Flag.REJECTED_CANDIDATE)] if had else [])
+        flags = [str(Flag.REJECTED_CANDIDATE)] if had else []
+        return _Outcome(Status.NON_RESONANT, Reason.CIRCULATION, LibrationOrigin.NONE, flags=flags, decided_by=DECIDED_INSUFFICIENT)
     origin = v.libration_origin if v.status == Status.UNCERTAIN else LibrationOrigin.NONE
-    return _Outcome(Status.UNCERTAIN, Reason.BASELINE_NEEDED, origin, angle_status=AngleStatus.INSUFFICIENT_TIME)
+    return _Outcome(
+        Status.UNCERTAIN, Reason.BASELINE_NEEDED, origin, angle_status=AngleStatus.INSUFFICIENT_TIME, decided_by=DECIDED_INSUFFICIENT
+    )
 
 
-def _mmr_veto_state(analysis, outcome: _Outcome) -> str:
-    """V of an MMR row (spec §6): ambiguous for a measured objection, an onset that failed or an identity the tree read
-    as failed without a status move; not_measured when the identity was not measured or R-ALIAS-A withdrew it;
-    partial when the identity passes but the owner search was not measured, a candidate owner is probable or W is
-    thin; clean otherwise (the owner search measured with none accepted, or not applicable)."""
+def _mmr_veto_reading(analysis, outcome: _Outcome) -> Tuple[str, List[str]]:
+    """(V, the checks that made it ambiguous) of an MMR row (spec §6): ambiguous for a measured objection (the
+    outcome's), an onset that failed or an identity the tree read as failed without a status move (523899 9N-17,
+    564160: no flag, so the check is named here); not_measured when the identity was not measured or R-ALIAS-A
+    withdrew it; partial when the identity passes but the owner search was not measured, a candidate owner is
+    probable or W is thin; clean otherwise (the owner search measured with none accepted, or not applicable)."""
     v = analysis.verdict
     if outcome.veto_state is not None:
-        return outcome.veto_state
+        return outcome.veto_state, list(outcome.objections) if outcome.veto_state == V_AMBIGUOUS else []
     withdrawn = str(analysis.extra_columns.get('rsp_short_period_unmeasured') or '')
     identity = v.checks.get('check_mmr_identity', CheckValue.NOT_MEASURED)
-    states = []
+    states, objections = [], []
     if v.checks.get('check_mmr_onset') == CheckValue.FAIL or 'onset_failed' in v.caps:
         states.append(V_AMBIGUOUS)
+        objections.append(OBJECTION_ONSET)
     if 'identity' in withdrawn or identity not in (CheckValue.PASS, CheckValue.FAIL, CheckValue.NOT_APPLICABLE):
         states.append(V_NOT_MEASURED)
     elif identity == CheckValue.FAIL and not outcome.veto:
         # at e near 0 the step turns only varpi fast (flag varpi_fast_low_e): the identity's sigma_dot reads that
         # varpi, so its failure is expected and no objection (W31, 17346 2J-1: e 0.005-0.08)
-        states.append(V_NOT_MEASURED if str(Flag.VARPI_FAST_LOW_E) in v.flags else V_AMBIGUOUS)
+        low_e = str(Flag.VARPI_FAST_LOW_E) in v.flags
+        states.append(V_NOT_MEASURED if low_e else V_AMBIGUOUS)
+        objections += [] if low_e else [OBJECTION_IDENTITY]
     owner = v.checks.get('check_mmr_owner', CheckValue.NOT_MEASURED)
     w = v.margins.get('W')
     if owner not in (CheckValue.PASS, CheckValue.NOT_APPLICABLE) or str(Flag.OWNER_PROBABLE) in v.flags:
         states.append(V_PARTIAL)
     if w is not None and w.margin == Margin.THIN:
         states.append(V_PARTIAL)
-    return worst_veto_state(states)
+    return worst_veto_state(states), objections
 
 
 def _mmr_margin(analysis) -> str:
@@ -1156,11 +1383,12 @@ def _finish_mmr(analysis, outcome: _Outcome, settings, ledger, end: EndReading, 
         veto_need_yr=veto_need,
         ledger=ledger,
     )
+    veto_state, objections = _mmr_veto_reading(analysis, outcome)
     ev = Evidence(
         n_cycles=float(n) if n is not None else NAN,
         n_basis=basis,
         margin=_mmr_margin(analysis),
-        veto_state=_mmr_veto_state(analysis, outcome),
+        veto_state=veto_state,
         stable=_mmr_stable(v),
         core_cycles=core_cycles(geometry, analysis.decisive_episode_id),
         veto=outcome.veto,
@@ -1172,6 +1400,7 @@ def _finish_mmr(analysis, outcome: _Outcome, settings, ledger, end: EndReading, 
     )
     _record_level(ev, settings, ledger)
     confidence = _final_level(status, outcome, ev, settings)
+    clause = _certain_clause(confidence, clause)
     resample = _alias_resample_step(analysis)
     action = _action(status, confidence, clause, resample, v.action, veto_beyond_budget(veto_need, span, settings, end))
     extend_to = _mmr_extend_to(analysis, end, span, settings, veto_need, clause) if action == Action.EXTEND else None
@@ -1180,12 +1409,13 @@ def _finish_mmr(analysis, outcome: _Outcome, settings, ledger, end: EndReading, 
     else:
         resample = v.resample_step_yr if status == Status.INVALID else None
     moved = Status(outcome.status) != v.status
-    _write(v, outcome, ev, confidence, action, end, clause, extend_to, resample, veto_need, ledger)
+    inputs = level_inputs(status, ev, settings, outcome.level, outcome.veto_thin)
+    _write(v, outcome, ev, confidence, action, end, clause, extend_to, resample, veto_need, ledger, inputs, objections)
     if outcome.veto == VETO_FORCED_WAVE:  # the roles (A3a): a kinematic cause, the steady wave of the background
         v.cause_role, v.cause_term, v.owner = 'kinematic', FORCED_WAVE_TERM, ''
     if moved:
         v.orbit_type = _mmr_orbit_type(analysis, settings, outcome.counted)
-    analysis.policy = _result(outcome, ev, action, clause)
+    analysis.policy = _result(outcome, ev, action, clause, inputs)
 
 
 def _mmr_orbit_type(analysis, settings: AnalysisSettings, counted: frozenset = frozenset()) -> str:
@@ -1199,7 +1429,7 @@ def _mmr_orbit_type(analysis, settings: AnalysisSettings, counted: frozenset = f
     )
 
 
-def _result(outcome: _Outcome, ev: Evidence, action: Action, clause: str) -> PolicyResult:
+def _result(outcome: _Outcome, ev: Evidence, action: Action, clause: str, inputs: Tuple[LevelInput, ...] = ()) -> PolicyResult:
     return PolicyResult(
         POLICY_MINIMAL,
         outcome.counted,
@@ -1212,6 +1442,7 @@ def _result(outcome: _Outcome, ev: Evidence, action: Action, clause: str) -> Pol
         ev.stable,
         action == Action.EXTEND,
         clause,
+        tuple(inputs),
     )
 
 
@@ -1311,11 +1542,11 @@ def _long_geometric(analysis, end: EndReading, revolution: float, span: float) -
     ids = frozenset(e.episode_id for e in secular_decide.librating_episodes(analysis.geometry))
     # the geometry alone names no mechanism (W30 D6): geometric, origin unknown; a confirmed ZLK gate makes it dynamic
     if word == AngleStatus.LIBRATION:
-        return _Outcome(Status.RESONANT, Reason.GEOMETRIC_LIBRATION, LibrationOrigin.UNKNOWN, counted=ids)
+        return _Outcome(Status.RESONANT, Reason.GEOMETRIC_LIBRATION, LibrationOrigin.UNKNOWN, counted=ids, decided_by=DECIDED_GEOMETRY)
     if word == AngleStatus.EPISODIC:
-        return _Outcome(Status.TRANSIENT, Reason.GEOMETRIC_EPISODE, LibrationOrigin.UNKNOWN, counted=ids)
+        return _Outcome(Status.TRANSIENT, Reason.GEOMETRIC_EPISODE, LibrationOrigin.UNKNOWN, counted=ids, decided_by=DECIDED_GEOMETRY)
     if word == AngleStatus.CIRCULATION:
-        return _Outcome(Status.NON_RESONANT, Reason.CIRCULATION, LibrationOrigin.NONE)
+        return _Outcome(Status.NON_RESONANT, Reason.CIRCULATION, LibrationOrigin.NONE, decided_by=DECIDED_GEOMETRY)
     if word == AngleStatus.DRIFT:
         outcome = _drift(v, analysis.geometry, revolution, span)
         outcome.reason = Reason.BASELINE_NEEDED if outcome.status == Status.UNCERTAIN else outcome.reason
@@ -1376,6 +1607,7 @@ def _long_outcome(
         outcome_ = _zlk_no_verdict(geometric)
         outcome_.flags.append(str(Flag.EI_INTEGRAL_NOT_HELD))
         outcome_.veto_state = V_AMBIGUOUS
+        outcome_.objections.append(OBJECTION_ZLK_INTEGRAL)
         return outcome_
     outcome_ = _zlk_no_verdict(geometric)
     if ei == EI_HELD and small:
@@ -1393,9 +1625,11 @@ def _zlk_confirmed(analysis, geometric: _Outcome, ei: str) -> _Outcome:
     if geometric.status in (Status.RESONANT, Status.TRANSIENT):
         geometric.reason = Reason.DYNAMIC_LIBRATION if geometric.status == Status.RESONANT else Reason.DYNAMIC_EPISODE
         geometric.origin = LibrationOrigin.DYNAMIC
+        geometric.decided_by = DECIDED_GATE_CONFIRMED
     if ei == EI_FAILED:
         geometric.flags.append(str(Flag.EI_INTEGRAL_NOT_HELD))
         geometric.veto_state = V_AMBIGUOUS
+        geometric.objections.append(OBJECTION_ZLK_INTEGRAL)
     return geometric
 
 
@@ -1443,19 +1677,21 @@ def _zlk_measured(analysis, geometric: _Outcome, gate, settings: AnalysisSetting
         pinned = _free_e_pins(gate, word, settings, ledger)
         if pinned is not None and (pinned[0] or ei_failed):
             return _zlk_veto(VETO_ZLK_FREE_E, pinned[1], ids)
-        return _zlk_objection(geometric)
+        return _zlk_objection(geometric, OBJECTION_ZLK_GATE)
     if gate.outcome == 'undefined_phase' and np.isfinite(gate.rho_max):
         if ledger.compare('policy:veto zlk_free_e: rho_max < 1', gate.rho_max, Op.LT, 1.0, '', 'zlk_gate_rho_max'):
             if ei_failed:
                 return _zlk_veto(VETO_ZLK_FREE_E, _near_one(gate.rho_max, settings), ids)
-            return _zlk_objection(geometric)
+            return _zlk_objection(geometric, OBJECTION_ZLK_FREE_E)
     return None
 
 
-def _zlk_objection(geometric: _Outcome) -> _Outcome:
+def _zlk_objection(geometric: _Outcome, objection: str) -> _Outcome:
     geometric.flags.append(str(Flag.MEASURED_OBJECTION))
     geometric.veto_state = V_AMBIGUOUS
     geometric.check_zlk_free_omega = CheckValue.FAIL
+    geometric.decided_by = DECIDED_OBJECTION
+    geometric.objections.append(objection)
     return geometric
 
 
@@ -1465,6 +1701,7 @@ def _zlk_no_verdict(geometric: _Outcome) -> _Outcome:
     if geometric.status in (Status.RESONANT, Status.TRANSIENT):
         geometric.reason = Reason.GEOMETRIC_LIBRATION if geometric.status == Status.RESONANT else Reason.GEOMETRIC_EPISODE
         geometric.origin = LibrationOrigin.UNKNOWN
+        geometric.decided_by = DECIDED_GATE_UNAVAILABLE
     geometric.flags.append(str(Flag.GATE_UNAVAILABLE))
     geometric.veto_state = V_NOT_MEASURED
     geometric.check_zlk_free_omega = CheckValue.NOT_MEASURED
@@ -1518,6 +1755,7 @@ def _zlk_veto(name: str, thin: bool, ids: frozenset) -> _Outcome:
         veto_thin=thin,
         candidates=ids,
         check_zlk_free_omega=CheckValue.FAIL if free_omega else CheckValue.NOT_MEASURED,
+        decided_by=DECIDED_VETO + name,
     )
 
 
@@ -1641,28 +1879,21 @@ def _finish_long(analysis, outcome: _Outcome, settings: AnalysisSettings, ledger
         circulation_clear=_long_circulation_clear(analysis),
     )
     _record_level(ev, settings, ledger)
-    confidence = level(status, ev, settings)
-    if outcome.veto_thin and confidence in (Confidence.CERTAIN, Confidence.HIGH):
-        confidence = Confidence.MEDIUM
+    confidence = _final_level(status, outcome, ev, settings)  # a long-period outcome never fixes a level
+    clause = _certain_clause(confidence, clause)
     beyond = geometry is not None and not phase_unresolved and veto_beyond_budget(veto_need, span, settings, end)
     action = _action(status, confidence, clause, None, v.action, beyond)
     extend_to = None
     if action == Action.EXTEND:
         extend_to = _long_extend_to(analysis, end, span, settings, veto_need, clause)
-    _write(v, outcome, ev, confidence, action, end, clause, extend_to, None, veto_need, ledger)
-    analysis.policy = PolicyResult(
-        POLICY_MINIMAL,
-        outcome.counted,
-        outcome.candidates,
-        (),
-        (),
-        ev.n_cycles,
-        ev.margin == M_FULL,
-        ev.veto_state,
-        ev.stable,
-        action == Action.EXTEND,
-        clause,
-    )
+    # the tree's ZLK kinematic status (code -2) is its veto: upheld by a policy veto, else named as not upheld
+    tree_vetoed = zlk and v.status == Status.NON_RESONANT and v.reason == Reason.KINEMATIC_LIBRATION
+    outcome.upheld = tree_vetoed and bool(outcome.veto)
+    outcome.not_upheld = NOT_UPHELD_ZLK_GATE if tree_vetoed and not outcome.veto else ''
+    inputs = level_inputs(status, ev, settings, None, outcome.veto_thin)
+    objections = outcome.objections if ev.veto_state == V_AMBIGUOUS else []
+    _write(v, outcome, ev, confidence, action, end, clause, extend_to, None, veto_need, ledger, inputs, objections)
+    analysis.policy = _result(outcome, ev, action, clause, inputs)  # a long-period outcome has no spans
 
 
 def _long_extend_to(

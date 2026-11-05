@@ -1,11 +1,11 @@
 """Figures of a secular or Lidov-Kozai angle — what the phase portrait and the combined figure are for an MMR.
 
-    angle    — sigma(t), degrees: the osculating angle in grey, the analysed angle filtered at the scale the verdict
-               rests on in black (`analysis.secular`: P_c, or the scale of the centre), its turning points as red
+    angle    — sigma(t), degrees: the osculating angle in gray, the analyzed angle filtered at the scale the verdict
+               rests on in black (`analysis.secular`: P_c, or the scale of the center), its turning points as red
                circles;
     rate     — the rate of that filtered angle, arcsec/yr, with zero and the mean rate (the divisor);
     portrait — (r cos sigma, r sin sigma), r = e when sigma holds varpi, else i from the invariable plane in
-               degrees: osculating in grey, classified coloured by time;
+               degrees: osculating in gray, classified colored by time;
     combined — the one-page V1 figure of the verdict (`draw_long_period_combined`, below): time panels, portraits
                and every number of the decision in the shared right column (`combined_numbers`). A ZLK row's ω, i, Ω
                and free elements are those of its analysis, measured from the plane ZLK_ANGLE_FRAME names (the
@@ -27,6 +27,7 @@ from resonances.secular.proper_angle import inclination_from_invariable_plane, i
 from .base import DiagnosticPlotter, time_unit
 from .style import CENTRE, EPISODE_COLOURS, INK, MODEL, OWNER, RATE_ZERO, RAW, RAW_ALPHA, REFERENCE, SUBRESONANCE
 from .style import SECULAR_PLOT_KINDS, NumbersMode, resolve_plot_options, time_cmap, time_label
+from .verdict_vocab import snake_words
 
 
 @dataclass
@@ -142,7 +143,7 @@ def draw_rate(ax, d: SecularDiagnostics, style):
 
 
 def draw_portrait(ax, d: SecularDiagnostics, style, norm: Normalize):
-    """(r cos sigma, r sin sigma): osculating in grey, classified coloured by time, origin marked."""
+    """(r cos sigma, r sin sigma): osculating in gray, classified colored by time, origin marked."""
     r, s = d.osculating_radius, d.osculating
     ax.scatter(r * np.cos(s), r * np.sin(s), color=RAW, s=style.marker / 2, linewidths=0, alpha=0.6, rasterized=True)
     r2, s2 = d.radius, d.sigma
@@ -217,43 +218,43 @@ class SecularPlotter(DiagnosticPlotter):
 # columns), so the figure and summary.csv agree.
 
 LONG_PERIOD_PANELS = (
-    ('a', 'sigma unwrapped: raw band, sigma_f at the decisive scale, its centre, librating episodes, turning points'),
-    ('b', 'sigma mod 360 around the centre: osculating points and sigma_f'),
+    ('a', 'sigma unwrapped: raw band, sigma_f at the decisive scale, its center, librating episodes, turning points'),
+    ('b', 'sigma mod 360 around the center: osculating points and sigma_f'),
     ('c', 'sigma_dot_f'),
     ('d', "a: osculating band and a filtered at P_c, min-max; co-orbital: the planet's a and the Hill-zone edges"),
     ('e', 'e: raw band and filtered, min-max written'),
     ('f', 'i: raw band and filtered, min-max written'),
     ('g', 'secular: e_dot_f against A sin(sigma_f) + B cos(sigma_f) + C (R^2); ZLK: the drift of the free and the osculating omega, turns'),
-    ('h', 'the centre of sigma_f (smoothed over W_c), its turns and largest monotone pass'),
+    ('h', 'the center of sigma_f (smoothed over W_c), its turns and largest monotone pass'),
 )
 LONG_PERIOD_LEGEND = (
-    '(a) grey band: raw σ; black: σ_f at the scale the verdict rests on (P_c, or the centre scale W_c); thin grey: σ_f at '
-    'P_c when the centre scale decided; red: centre; ▼▲ turning points; coloured fill #id: librating episodes (to the record edge they '
-    'cover, else ± P/4 beyond the turns); grey strip: other runs, letter = reason (T over the top, F too few turning points, C centre moves, '
+    '(a) gray band: raw σ; black: σ_f at the scale the verdict rests on (P_c, or the center scale W_c); thin gray: σ_f at '
+    'P_c when the center scale decided; red: center; ▼▲ turning points; colored fill #id: librating episodes (to the record edge they '
+    'cover, else ± P/4 beyond the turns); gray strip: other runs, letter = reason (T over the top, F too few turning points, C center moves, '
     'O no closed cycle).',
-    '(b) grey dots: osculating σ; black: σ_f.  (c) dσ_f/dt, red: σ̇ = 0; pale dashed ends of (c), (g): the filter\'s edge '
-    'spread, not analysed.  (d, e, f) grey band: osculating a, e, i; black: filtered at P_c, min – max; (d) a co-orbital: '
+    '(b) gray dots: osculating σ; black: σ_f.  (c) dσ_f/dt, red: σ̇ = 0; pale dashed ends of (c), (g): the filter\'s edge '
+    'spread, not analyzed.  (d, e, f) gray band: osculating a, e, i; black: filtered at P_c, min – max; (d) a co-orbital: '
     "dashed the planet's a, dotted the Hill-zone edges (± ZLK_COORBITAL_HILL_FACTOR r_H).",
     '(g) secular: black the rate of the element σ contains (de_f/dt for ϖ, d sin(i_f/2)/dt for Ω; both, i dashed on the '
     'right axis), blue: A sin σ_f + B cos σ_f + C (R² written; a column, no status). ZLK: the drift of ω from its first '
-    'value in turns, grey osculating, blue free (forced terms removed; net turns written): a free ω that winds makes the '
+    'value in turns, gray osculating, blue free (forced terms removed; net turns written): a free ω that winds makes the '
     'libration kinematic.',
-    '(h) grey: σ_f; red: its centre; ▼▲ turns of the centre; shaded: its largest monotone pass, when ≥ 1 rev.',
-    '(i) (e cos σ, e sin σ), (sin(i/2) cos σ, sin(i/2) sin σ) for an angle of Ω alone; colour: time. (j) secular: σ_f '
+    '(h) gray: σ_f; red: its center; ▼▲ turns of the center; shaded: its largest monotone pass, when ≥ 1 rev.',
+    '(i) (e cos σ, e sin σ), (sin(i/2) cos σ, sin(i/2) sin σ) for an angle of Ω alone; color: time. (j) secular: σ_f '
     'against dσ_f/dt; ZLK: the free eccentricity vector.',
 )
 # the line of (a) under the minimal policy (W29 SPEC §7): only the counted episodes are filled, the candidates faint
 LONG_PERIOD_LEGEND_POLICY_A = (
-    '(a) grey band: raw σ; black: σ_f at the scale the verdict rests on (P_c, or the centre scale W_c); thin grey: σ_f at '
-    'P_c when the centre scale decided; red: centre; ▼▲ turning points; coloured fill #id: counted episodes (to the record '
+    '(a) gray band: raw σ; black: σ_f at the scale the verdict rests on (P_c, or the center scale W_c); thin gray: σ_f at '
+    'P_c when the center scale decided; red: center; ▼▲ turning points; colored fill #id: counted episodes (to the record '
     'edge they cover, pale in the filter trim, else ± P/4 beyond the turns); faint dashed cand: a candidate, not counted; '
     'other runs are not drawn (episodes.csv lists them).'
 )
 # (a′) of a ZLK row whose libration is induced (`forcing_panel_drawn`), drawn under (a); other rows keep eight panels
 FORCING_PANEL = ('a′', 'omega_f with the forced direction against the node and the dominant mode\'s longitude against it')
 FORCING_LEGEND = (
-    '(a′) ZLK, an induced libration only: grey ω_f; orange arg z_forced − Ω, the direction of the fitted forced '
-    'eccentricity vector against the node (the centre the free circle turns about; it carries the beat of the modes); '
+    '(a′) ZLK, an induced libration only: gray ω_f; orange arg z_forced − Ω, the direction of the fitted forced '
+    'eccentricity vector against the node (the center the free circle turns about; it carries the beat of the modes); '
     'purple dashed ϖ_j − Ω, the longitude of the dominant mode against the node (bounded: a node lock).'
 )
 FORCED_DIRECTION = SUBRESONANCE  # arg z_forced - Omega in (a′)
@@ -322,7 +323,7 @@ def long_period_specs(resonance_type: str):
             groups=(
                 ('turning points', ('geo_n_tp*', 'geo_tp_*', 'geo_period_*', 'geo_window_*', 'sec_fine*')),
                 ('runs', ('geo_n_runs', 'geo_n_episodes', 'sec_n_librating*', 'geo_drift*')),
-                ('centre', ('geo_centre_*', 'geo_net_rev*', 'geo_band*', 'geo_wiggle*')),
+                ('center', ('geo_centre_*', 'geo_net_rev*', 'geo_band*', 'geo_wiggle*')),
                 ('exit and entry', ('exit_*', 'entry_*')),
             ),
         ),
@@ -404,7 +405,7 @@ def _filtered(analysis, values):
 
 
 def _mark_turns(ax, frame, tp, scale=np.degrees, centre: bool = False):
-    """Turning points of the angle (grey) or turns of the centre (red, larger, white edge): ▼ maximum, ▲ minimum, as in
+    """Turning points of the angle (gray) or turns of the center (red, larger, white edge): ▼ maximum, ▲ minimum, as in
     the MMR figure (`mmr_combined.turn_markers`)."""
     from resonances.plotting.mmr_combined import CENTRE_TURN_SIZE, MAX_TP_MARKERS, TP_SIZE, turn_markers
 
@@ -452,7 +453,7 @@ def _draw_angle(ax, frame, layout):
 
 
 def forcing_panel_drawn(analysis, free_elements) -> bool:
-    """Whether a ZLK figure gets (a′): a kinematic libration attributed to a forced mode (`zlk_forcing_*`) or a centre
+    """Whether a ZLK figure gets (a′): a kinematic libration attributed to a forced mode (`zlk_forcing_*`) or a center
     whose slow line is a beat of the forced vector (`zlk_centre_origin` forced_beat), with the per-mode amplitudes and
     the node to draw them from."""
     if str(analysis.verdict.resonance_type) != 'lidov_kozai' or analysis.series is None or analysis.series.Omega is None:
@@ -512,7 +513,7 @@ def _forcing_labels(analysis, free_elements, mode: str):
 
 def _draw_forcing(ax, frame, layout, free_elements):
     """(a′) of an induced ZLK libration (`forcing_panel_drawn`): ω_f thin, the forced direction against the node
-    arg z_forced(t) − Ω(t) (the centre the free circle turns about: the beat of the modes and the node's motion), and
+    arg z_forced(t) − Ω(t) (the center the free circle turns about: the beat of the modes and the node's motion), and
     the dominant mode's longitude against the node ϖ_j(t) − Ω(t) (bounded when the node is locked to it), both from
     the fitted forced vector (`FreeElements.forced_vector`, amplitudes c_j at the rates g_j) and the osculating node.
     The curves are moved by whole turns onto ω_f's branch and drawn unwrapped when together they stay within a turn
@@ -737,12 +738,12 @@ def _draw_physics(ax, frame, layout, free_elements):
         r2 = r2_of(analysis.response) if analysis.response is not None else float('nan')
         texts.append(f'R² {r2:.3g}' if len(names) == 1 else f'R² {name} {r2:.3g}')
     if analysis.scale == 'centre':  # the fit of the decisive scale: the centre's cutoff, not P_c of panels (e), (f)
-        texts.append(f'at the centre scale {analysis.angle.cutoff_yr / KYR:.4g} kyr')
+        texts.append(f'at the center scale {analysis.angle.cutoff_yr / KYR:.4g} kyr')
     ax.text(0.99, 0.92, '   '.join(texts), transform=ax.transAxes, ha='right', va='top', fontsize=layout.font_note_pt, color=MODEL)
 
 
 def _draw_free_omega_drift(ax, frame, layout, free_elements):
-    """ZLK (g): the drift of omega from its first value, in turns (as the standalone free-omega drift figure): grey the
+    """ZLK (g): the drift of omega from its first value, in turns (as the standalone free-omega drift figure): gray the
     osculating omega, blue the free one (forced terms removed); a free omega that winds while the osculating one stays
     within a turn is the kinematic case. The free omega's net turns are written."""
     from resonances.plotting.mmr_combined import _note, _style_axis, _view
@@ -821,7 +822,7 @@ def _draw_centre(ax, frame, layout):
         if centre_pass_matters(centre):  # a pass of a revolution or more: what centre_pass reads
             ax.axvspan(frame.times(centre.max_pass_t0_yr), frame.times(centre.max_pass_t1_yr), color=CENTRE, alpha=0.08, lw=0)
         _view(ax, np.degrees(centre.centre_rad))
-    _style_axis(ax, CENTRE_LETTER, 'centre, °', layout)
+    _style_axis(ax, CENTRE_LETTER, 'center, °', layout)
 
 
 def _draw_portraits(fig, frame, layout, norm, free_elements):
@@ -901,9 +902,11 @@ def _draw_header(fig, analysis, layout, stamp):
     )
     series = analysis.series
     cutoff = analysis.cutoff.cutoff_yr if analysis.cutoff is not None else float('nan')
+    binding = analysis.cutoff.binding if analysis.cutoff is not None else '—'
+    scale = snake_words(analysis.scale) if analysis.scale else '—'
     line = (
         f'span {series.span_yr:.6g} yr  |  step {series.step_yr:.4g} yr  |  {len(series.t_yr)} rows  |  '
-        f'P_c {cutoff:.4g} yr ({analysis.cutoff.binding if analysis.cutoff is not None else "—"})  |  scale {analysis.scale or "—"}'
+        f'P_c {cutoff:.4g} yr ({binding})  |  scale {scale}'
     )
     if kind == 'ZLK':
         line += f'  |  ω, i, Ω from the {getattr(series, "frame", "ecliptic")} plane'
@@ -958,17 +961,24 @@ def draw_long_period_combined(
     import matplotlib.pyplot as plt
 
     from resonances.plotting import combined_numbers as numbers
-    from resonances.plotting.mmr_combined import _colour_bar, stacked_axes
+    from resonances.plotting.mmr_combined import _colour_bar, label_time_axes, stacked_axes
     from resonances.plotting.style import LAYOUT_V1
 
     layout = layout or dataclasses.replace(LAYOUT_V1, n_panels=len(LONG_PERIOD_PANELS))
     summary = {**analysis.summary_row(), **(row or {})}
+    explained = resolve_plot_options(options)['combined']['numbers'] != NumbersMode.ALL
+    if explained:  # the column is measured first: the figure grows down when it needs (decision D8)
+        from resonances.plotting.verdict_column_draw import prepare
+        from resonances.plotting.verdict_column_long import figure_parts
+
+        layout, prepared = prepare(*figure_parts(analysis, row, free_elements, settings), layout)
     fig = plt.figure(figsize=layout.size, dpi=layout.dpi)
     _draw_header(fig, analysis, layout, stamp)
     frame = _LongFrame(analysis, settings)
     width, height = fig.get_size_inches()
     forcing = analysis.series is not None and len(analysis.series.t_yr) > 1 and forcing_panel_drawn(analysis, free_elements)
-    axes = stacked_axes(fig, layout, len(LONG_PERIOD_PANELS) + int(forcing))
+    wrapped = 1 + int(forcing)  # (b) the wrapped angle, after (a′) when drawn
+    axes = stacked_axes(fig, layout, len(LONG_PERIOD_PANELS) + int(forcing), labelled=wrapped)
     if analysis.series is not None and len(analysis.series.t_yr) > 1:
         _draw_angle(axes[0], frame, layout)
         if forcing:
@@ -981,9 +991,7 @@ def draw_long_period_combined(
         _draw_element(rest[4], frame, layout, np.degrees(analysis.series.inc), INC_LETTER, _inclination_label(analysis.series), '{:.4g}°')
         _draw_physics(rest[5], frame, layout, free_elements)
         _draw_centre(rest[6], frame, layout)
-        for ax in axes[:-1]:
-            ax.tick_params(labelbottom=False)
-        axes[-1].set_xlabel(f't, {frame.unit}', fontsize=layout.font_axis_pt, labelpad=1)
+        label_time_axes(axes, wrapped, layout, frame.unit)
         axes[-1].set_xlim(frame.x[0], frame.x[-1])
         norm = Normalize(frame.x[0], frame.x[-1])
         _draw_portraits(fig, frame, layout, norm, free_elements)
@@ -992,12 +1000,14 @@ def draw_long_period_combined(
 
     _draw_legend(fig, layout, forcing, policy_marks(analysis) is not None)
     fig.add_artist(plt.Line2D([layout.separator_x / width] * 2, [0.3 / height, (height - 0.2) / height], color='#dddddd', lw=0.8))
-    if resolve_plot_options(options)['combined']['numbers'] == NumbersMode.ALL:
+    if not explained:
         constants = [replace(line, block='constants') for line in long_period_frequency_lines(analysis, summary, free_elements)]
         blocks = long_period_blocks(summary, analysis.verdict.decision_path, analysis.episode_rows(), constants)
         fig.text_stats = numbers.draw_text(fig, blocks, layout, LONG_PERIOD_BLOCK_ORDER)
         return fig
-    fig.text_stats = draw_long_period_explained(fig, analysis, summary, layout, settings, free_elements)
+    from resonances.plotting.verdict_column_draw import draw_prepared
+
+    fig.text_stats = draw_prepared(fig, prepared, layout)
     return fig
 
 
@@ -1155,7 +1165,7 @@ def _zlk_frequency_lines(analysis, row, free_elements) -> list:
     for label in sorted(dict.fromkeys([*FREQUENCY_MODES_SHOWN, *labels]), key=_mode_order):
         rate = basis.get(label, frequencies.get(label, np.nan))
         amplitude = abs(amplitudes[label]) if label in amplitudes else float('nan')
-        note = (f'{amplitude:.2g}' if np.isfinite(amplitude) else ('' if label in basis else 'not fitted')) + (
+        note = (f'{amplitude:.3g}' if np.isfinite(amplitude) else ('' if label in basis else 'not fitted')) + (
             ' ◀' if label == holding else ''
         )
         lines.append(_frequency_line(_mode_name(label), rate, note.strip(), constant=True))
@@ -1215,8 +1225,9 @@ def point_to_text(lines, columns) -> list:
     ]
 
 
-def draw_long_period_explained(fig, analysis, summary, layout, settings=None, free_elements=None):
-    """The explained right column of a secular/ZLK figure (`verdict_text.explain_long_period`, layout A′)."""
+def draw_long_period_explained_v1(fig, analysis, summary, layout, settings=None, free_elements=None):
+    """The former explained right column (`verdict_text.explain_long_period`, layout A′); no longer drawn by the
+    figure, kept until the cleanup."""
     from resonances.plotting import combined_numbers as numbers
     from resonances.plotting.mmr_verdict_panel import config_settings, explained_episode_lines, short_hashes
     from resonances.plotting.verdict_text import bullet_columns, explain_long_period

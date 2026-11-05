@@ -42,7 +42,7 @@ Omega, omega, M in radians, one epoch), or an ensemble saved by `Ensemble.save` 
 
 ## Where the covariance comes from
 
-An orbit is fitted to the astrometry by least squares. With the residuals linearised around the best fit X₀, the
+An orbit is fitted to the astrometry by least squares. With the residuals linearized around the best fit X₀, the
 orbit's density is approximated by the Gaussian
 
 $$
@@ -58,7 +58,7 @@ are probabilities under this approximation, not the true astrometric posterior:
 
 | source | coordinates X | units | epoch | file |
 |---|---|---|---|---|
-| `astdys` (numbered) | equinoctial a, h = e sin ϖ, k = e cos ϖ, p = tan(i/2) sin Ω, q = tan(i/2) cos Ω, λ | au, λ in **degrees** (in the covariance too) | `.eq1`: the catalogue's standard epoch (default); `.eq0`: the fit's own | OEF2.0 `newton.spacedys.com/~astdys2/epoch/numbered/<n/1000>/<n>.eq1` |
+| `astdys` (numbered) | equinoctial a, h = e sin ϖ, k = e cos ϖ, p = tan(i/2) sin Ω, q = tan(i/2) cos Ω, λ | au, λ in **degrees** (in the covariance too) | `.eq1`: the catalog's standard epoch (default); `.eq0`: the fit's own | OEF2.0 `newton.spacedys.com/~astdys2/epoch/numbered/<n/1000>/<n>.eq1` |
 | `neodys` (NEAs) | as AstDyS | as AstDyS | `.eq0`: the fit's own, near the middle of the arc (default); `.eq1` | `~neodys2/epoch/<designation>.eq0` |
 | `sbdb` (JPL) | cometary e, q, t_p, Ω, ω, i | au, JD TDB, degrees | the orbit-solution epoch (not the epoch of the listed elements) | `ssd-api.jpl.nasa.gov/sbdb.api?sstr=..&cov=mat&full-prec=1` |
 | `mpc` | Cartesian x, y, z, vx, vy, vz (heliocentric) | au, au/day | the orbit's epoch | `data.minorplanetcenter.net/api/get-orb` |
@@ -108,7 +108,7 @@ The clones are drawn where the fit was made and each one is integrated to the ru
 `propagate.py`; the nominal alone, the clones together); all of them then start together. Hence the defaults `.eq0` for
 NEODyS, the solution epoch for SBDB, and MPC refused for U ≥ 3 (MPC publishes the covariance only at its standard
 epoch; U ≥ 3 is a conservative policy, not a physical boundary). For numbered main-belt asteroids `.eq1` is fine and
-needs no integration (its epoch is AstDyS's catalogue epoch).
+needs no integration (its epoch is AstDyS's catalog epoch).
 
 Any gap between the covariance's epoch and the run's date is crossed: up to 10⁻⁴ d (8.6 s) on the two-body ellipses
 (5 s already move 463's mean anomaly by 3.8 σ_λ), beyond that by integration. clones.csv records the span
@@ -121,7 +121,7 @@ The carried cloud is in the package's model: no relativity, no asteroid perturbe
 added from another source (the short forms) can then lie off its cloud: `nominal_offset_sigma` in clones.csv is
 max(|Δa|/sd(a), |Δλ|/sd(λ)) of the body against its clones at the date, with a warning above 3.
 
-**Non-gravitational parameters** (Yarkovsky A2, comet-like A1–A3) are not modelled: the orbital 6×6 block of the covariance
+**Non-gravitational parameters** (Yarkovsky A2, comet-like A1–A3) are not modeled: the orbital 6×6 block of the covariance
 (the marginal over them) is used, a warning is logged and clones.csv says so (`nongrav`).
 
 **Main belt.** A numbered main-belt asteroid has σ_a ~ 10⁻⁹ au, orders of magnitude below any resonance width: its
@@ -133,7 +133,7 @@ A share k/N is a binomial estimate; its 95 % interval is Wilson's score interval
 and $z = 1.96$:
 
 $$
-\text{centre} = \frac{\hat p + z^2/2N}{1 + z^2/N}, \qquad
+\text{center} = \frac{\hat p + z^2/2N}{1 + z^2/N}, \qquad
 \text{half-width} = \frac{z}{1 + z^2/N}\sqrt{\frac{\hat p(1 - \hat p)}{N} + \frac{z^2}{4N^2}},
 $$
 
@@ -175,12 +175,12 @@ resonance for a 1-Myr record. Choose the span and the output step with that in m
   and the orbit solution with its provenance. `resonances.Ensemble.load` reads it back (to the bit).
 - `data/ensemble-<name>-results.npz` (with `SAVE` on, kept): every clone's verdict per row (status, confidence,
   angle_status, reason, libration_origin), its initial a, half-widths and derived rows, and the angles of the clones and
-  of the nominal thinned to 2000 points for the figure (years float64, degrees float32: a thumbnail, never analysed).
+  of the nominal thinned to 2000 points for the figure (years float64, degrees float32: a thumbnail, never analyzed).
   Restore reads it ([below](#resume-and-restore)).
 - `figures/<layout>/<name>-<resonance>-clones.png` (plot kind `clones`, also drawn with `combined`; in the folder of the
-  nominal's row; drawn when `PLOT` selects the nominal's row or any clone's): (a) the angle of every clone coloured by its
+  nominal's row; drawn when `PLOT` selects the nominal's row or any clone's): (a) the angle of every clone colored by its
   status, the nominal in black; (b) the status of every clone against its initial a (a jitter separates the points
-  vertically), with the catalogue resonant axis $a_{\rm res}$ of an MMR (dotted, legend `a_res (catalogue)`) and
+  vertically), with the catalog resonant axis $a_{\rm res}$ of an MMR (dotted, legend `a_res (catalog)`) and
   $a_{\rm res}$ ± the median libration half-width the clones' episodes measured (dashed); (c) the shares with their
   Wilson intervals, the nominal's status starred ([How to read the figures](reading-figures.md#clones)).
 

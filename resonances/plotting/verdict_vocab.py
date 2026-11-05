@@ -10,13 +10,27 @@ touching the sentence code (a cap needs its `CapText`: `tests/resonances/plottin
   cap keys are also reasons or flags). The ids, the ledger entries and the CSV columns stay the code's; only the
   printed text changes. The table id → name → meaning is in docs/libration-analysis.md (#names).
 - `CAPS` (`CapText`): how a cap is worded, its other reading and what decides it;
-- the words of reasons, flags, ledger entries, margins and regimes (`*_WORDS`, `*_NAMES`, `REGIME_PHRASES`).
+- the words of reasons, flags, ledger entries, margins and regimes (`*_WORDS`, `*_NAMES`, `REGIME_PHRASES`);
+- `snake_words`: the fallback words of an identifier no table names.
 """
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Dict
+
+# The identifiers of the analysis (reasons, flags, CSV columns: centre_moves, geo_centre_*) keep their British
+# spelling; the printed text is American (the author, 2026-11-05)
+AMERICAN_WORDS = {'centre': 'center', 'centres': 'centers', 'neighbour': 'neighbor', 'neighbours': 'neighbors'}
+AMERICAN_WORDS |= {'catalogue': 'catalog', 'behaviour': 'behavior', 'analysed': 'analyzed'}
+_BRITISH = re.compile(r'\b(' + '|'.join(AMERICAN_WORDS) + r')\b')
+
+
+def snake_words(name) -> str:
+    """An identifier as words: 'centre_moves' -> 'center moves'."""
+    return _BRITISH.sub(lambda m: AMERICAN_WORDS[m.group(0)], str(name).replace('_', ' '))
+
 
 # --------------------------------------------------------------------------------------------- rule and check names
 
@@ -35,13 +49,13 @@ RULE_NAMES: Dict[str, str] = {
     'G2': 'librating episode',
     'G2u': 'episodes joined',
     'G2a': 'step of the action',
-    'G2c': 'slow-centre libration',
+    'G2c': 'slow-center libration',
     'G3': 'stalls and slips at the separatrix',
-    'G4': 'centre makes a revolution',
-    'G4b': 'net revolutions of the centre',
+    'G4': 'center makes a revolution',
+    'G4b': 'net revolutions of the center',
     'G4c': 'single co-orbital leg',  # W28 C6: a 1:1 circulation judged on its best single leg
     'G4h': 'one half-swing between passages',  # W28 C6, q-5 i: not 1:1
-    'G5': 'drifting centre',
+    'G5': 'drifting center',
     'G5a': 'one slow arc',
     'G5w': 'slow swing in the well',
     'G6': 'too few cycles',
@@ -50,7 +64,7 @@ RULE_NAMES: Dict[str, str] = {
     '1': 'a multiplet member librates',
     '2': 'another resonance drives a',
     '3': 'kinematic libration',
-    '3k2': 'kinematic drift of the centre',
+    '3k2': 'kinematic drift of the center',
     '3b5': 'slower libration possible',
     '4': 'unexplained drift',
     '5a': 'force law fails',
@@ -67,7 +81,7 @@ RULE_NAMES: Dict[str, str] = {
     '5s': 'resonance too weak',
     '5s*': 'strength open (small divisors)',
     '5u': 'shape only',
-    '6': 'judged by behaviour',
+    '6': 'judged by behavior',
     '6u': 'union covers the record',
     '2j': 'both resonances? one cycle of x',  # W28 A2b: 'both resonances at once?' with one cycle of x -> extend
     'K3s': 'slow scale is a secular cycle',  # W28 B10a: a circulation whose slow scale is a secular cycle
@@ -77,7 +91,7 @@ RULE_NAMES: Dict[str, str] = {
     'L3': 'σ̇ follows a − a*',
     'L4': 'a obeys the force law',
     'L5': 'one pendulum',
-    'L6': 'fixed centre',
+    'L6': 'fixed center',
     'L7': 'covers the record',
     'L8': 'resolved by step and filter',
     'L8a': 'step resolves σ',
@@ -88,35 +102,43 @@ RULE_NAMES: Dict[str, str] = {
     'R': 'witness episode',
     'R0': 'energy fits the potential',
     'Z': 'separatrix zone measured',
-    'S': 'no member holds the centre',
+    'S': 'no member holds the center',
     'W': 'no other resonance drives a',
     'F': 'strength plausible',
     'N': 'not short of an episode',
     'F6': 'forced wave of another angle',
     'F6r': 'unconfirmed ripple',
     'F7': 'owner covers the episode',
-    'C1': 'centre passes whole revolutions',
+    'C1': 'center passes whole revolutions',
     'C2': 'no reversals at any cutoff',
     'C3': 'steady rate',
     'C4': 'too fast for a pendulum',
     'C5': 'far from resonance',
     'K1': 'slow σ follows pϖ',
     'K1e': 'episode σ follows pϖ, a flat',
-    'K2': 'slow centre follows ϖ',
+    'K2': 'slow center follows ϖ',
     'B5': 'slower libration excluded',
     'U': 'near its convention',  # a ledger comparison in the thin band of a convention (U:<entry>)
     # secular and Lidov-Kozai margins (secular/decide.py); SZ. tells them from the MMR margins N, S, F
     'SZ.N': 'enough reversals',
-    'SZ.S': 'centres agree',
+    'SZ.S': 'centers agree',
     'SZ.F': 'slower than the cutoff',
     'SZ.P': 'circulates at every smoothing',
     'SZ.G': 'free-ω gate',
 }
-# A leaf that is the outcome of a check of the same id: the subtitle names the outcome ('decided: no resonant
-# potential (R0)'), the check row the check ('energy fits the potential [R0]'). C5 decides non_resonant or invalid.
+# A leaf that is the outcome of a check or rule of the same id: the subtitle names the outcome ('decided: no resonant
+# potential (R0)'), the check row the check ('energy fits the potential [R0]'). C5 decides non_resonant or invalid; G6
+# is also the status leaf of every insufficient_time angle (rec_rule G6, `decide.decide_status`), whose word the angle
+# rule set (column geo_angle_rule: G5a, G5w or G6, named by `ANGLE_SUBTYPE_NAMES` below)
 LEAF_NAMES: Dict[str, str] = {
     'R0': 'no resonant potential',
     'C5': 'aliased circulation',
+    'G6': 'too short to decide',
+}
+# angle rule -> {angle subtype: its name}, where one angle rule sets several words (`decide._g4_to_g6`: G6 few_cycles,
+# arc or stall); a subtype not listed takes the rule's own name (G6 few_cycles: 'too few cycles')
+ANGLE_SUBTYPE_NAMES: Dict[str, Dict[str, str]] = {
+    'G6': {'arc': 'arc without turning points', 'stall': 'stall without turning points'},
 }
 # cap key -> short name; printed with the id cap:<key>
 CAP_NAMES: Dict[str, str] = {
@@ -170,13 +192,16 @@ def long_period_id(key: str) -> str:
     return f'{LONG_PERIOD_PREFIX}{key}'
 
 
-def rule_name(rule_id: str, leaf: bool = False) -> str:
-    """The short name of an id ('' when it has none): a leaf's outcome name first when `leaf` (`LEAF_NAMES`); a path
-    of the status tree part by part ('5d/6' -> 'force measured → judged by behaviour'); a thin ledger entry
-    'U:<entry>' by its family U."""
+def rule_name(rule_id: str, leaf: bool = False, subtype: str = '') -> str:
+    """The short name of an id ('' when it has none): a leaf's outcome name first when `leaf` (`LEAF_NAMES`: G6 the
+    leaf 'too short to decide'); an angle rule by the word it set when `subtype` names one (`ANGLE_SUBTYPE_NAMES`: G6
+    arc 'arc without turning points'); a path of the status tree part by part ('5d/6' -> 'force measured → judged by
+    behavior'); a thin ledger entry 'U:<entry>' by its family U."""
     rule_id = str(rule_id)
     if leaf and rule_id in LEAF_NAMES:
         return LEAF_NAMES[rule_id]
+    if not leaf and str(subtype or '') in ANGLE_SUBTYPE_NAMES.get(rule_id, {}):
+        return ANGLE_SUBTYPE_NAMES[rule_id][str(subtype)]
     if rule_id in RULE_NAMES:
         return RULE_NAMES[rule_id]
     if rule_id.startswith('U:'):
@@ -196,7 +221,7 @@ def named(rule_id: str) -> str:
 
 
 def decided(rec_rule: str) -> str:
-    """The subtitle's rule: 'decided: circulation (C)', 'decided: force measured → judged by behaviour (5d/6)'; ''
+    """The subtitle's rule: 'decided: circulation (C)', 'decided: force measured → judged by behavior (5d/6)'; ''
     without a rule."""
     rec_rule = str(rec_rule or '')
     if not rec_rule:
@@ -227,7 +252,7 @@ CAPS = {
     'three_tp_episode': CapText(
         'the libration rests on three turning points only',
         'no libration yet (insufficient_time): three turning points are one cycle',
-        '(a): whether σ_f closes a second cycle about the same centre',
+        '(a): whether σ_f closes a second cycle about the same center',
         margin='N',
     ),
     'exit_suspected': CapText(
@@ -257,13 +282,13 @@ CAPS = {
     ),
     'slow_libration_not_excluded': CapText(
         'a slower libration is not excluded',
-        'a slower libration of σ about a moving centre (the verdict of the slow scale)',
-        '(i): whether the slow centre of σ_f turns back inside the record',
+        'a slower libration of σ about a moving center (the verdict of the slow scale)',
+        '(i): whether the slow center of σ_f turns back inside the record',
         margin='B5',
     ),
     'planets_missing': CapText(
         'the planets were not saved: no subresonance scan',
-        'non_resonant: a member of the multiplet holds the centre (subresonance)',
+        'non_resonant: a member of the multiplet holds the center (subresonance)',
         '(j) has no members to draw: rerun with the planets saved',
     ),
     'owner_search_skipped': CapText(
@@ -272,34 +297,34 @@ CAPS = {
         '(b) and (j) draw no owner: rerun with the owner search on',
     ),
     'catalogue_longitudes': CapText(
-        'the owner search used catalogue planet longitudes (approximate)',
+        'the owner search used catalog planet longitudes (approximate)',
         'another owner, or none, with the true longitudes of the planets',
         "(b): the owner's angle against σ; rerun with the planets saved",
     ),
     'nodal_subresonance_candidate': CapText(
         'a nodal member may carry the libration',
-        'non_resonant: a nodal member of the multiplet holds the centre',
-        "(j): the nodal member's centre against σ's",
+        'non_resonant: a nodal member of the multiplet holds the center',
+        "(j): the nodal member's center against σ's",
     ),
     'subresonance_tie': CapText(
         'the member was chosen by its order only',
-        'another member of the same order holds the centre',
-        '(j): the centres of the tied members, the flatter one owns the libration',
+        'another member of the same order holds the center',
+        '(j): the centers of the tied members, the flatter one owns the libration',
     ),
     'subresonance_t6_only': CapText(
         'the scan ran on the theory trigger alone',
-        'no member holds the centre: σ itself librates',
-        "(j): whether the member's centre is flatter than σ's",
+        'no member holds the center: σ itself librates',
+        "(j): whether the member's center is flatter than σ's",
     ),
     'subresonance_theory_unconfirmed': CapText(
         'the multiplet theory does not confirm the member',
-        'σ itself, or another member, holds the centre',
-        "(j): the member's centre against the multiplet theory's line",
+        'σ itself, or another member, holds the center',
+        "(j): the member's center against the multiplet theory's line",
     ),
     'subresonance_undetermined': CapText(
         'the members cannot be told apart (ϖ_P − ϖ librates)',
-        'another member of the multiplet holds the centre (they move together while ϖ_P − ϖ librates)',
-        '(j): the members whose centres stay flat with σ',
+        'another member of the multiplet holds the center (they move together while ϖ_P − ϖ librates)',
+        '(j): the members whose centers stay flat with σ',
     ),
     'jitter_low_e': CapText(
         'the p·ϖ term wobbles by more than 45° at short periods (osculating)',
@@ -349,7 +374,7 @@ CAPS = {
     ),
     'record_ends_unresolved': CapText(  # W28 C14, card g01-7 A, rule end_arc_extend
         'after circulating, σ_f slows down at the end: since its last revolution it has stayed longer than that '
-        'revolution took without completing another, and the slow centre does not turn back',
+        'revolution took without completing another, and the slow center does not turn back',
         'a capture at the end of the record (an episode beyond it): the slowdown is the start of a libration',
         '(a) at the right edge: σ_f after its last full revolution; a longer integration forward (flag extend_time) decides',
     ),
@@ -402,7 +427,7 @@ CAPS = {
     'near_episode': CapText(
         'one more turning point would make a librating episode',
         'transient: one more turning point would make a librating episode',
-        '(a): the grey run with most turning points',
+        '(a): the gray run with most turning points',
     ),
     'short_period_aliased': CapText(
         'the output step folds short-period terms into slow ones (Δt ≥ P_orb/2 or P_syn/2, or a harmonic folded slower than the period floor)',
@@ -444,17 +469,17 @@ MMR_MARGIN_NAMES = {
     'L3': 'dσ/dt = c (a − a*): the rate follows a',
     'L4': 'ȧ = K sin(σ − φ0): force law',
     'L5': 'one pendulum: T0 stable',
-    'L6': 'centre stationary',
-    'L7': 'covers the record',
+    'L6': 'center stationary',
+    'L7': 'covers the record with margin',
     'L8a': 'the output step resolves σ',
     'L8b': 'the filter passes the cycle',
     'O1': 'no a-wave before the libration',
     'R0': 'energy fits the potential from a',
     'Z': 'separatrix zone measured',
-    'S': 'no multiplet member holds the centre',
+    'S': 'no multiplet member holds the center',
     'W': 'no other resonance drives a',
     'F': 'strength plausible (×10 of theory)',
-    'C1': 'centre passes ≥ 10 rev',
+    'C1': 'center passes ≥ 10 rev',
     'C2': 'no turning points at any cutoff',
     'C3': 'dσ/dt smooth (one sign, no stalls)',
     'C4': 'a-wave as a circulation predicts',
@@ -464,11 +489,34 @@ MMR_MARGIN_NAMES = {
     'B5': 'a slower libration excluded',
     'N': 'not one turning point short of an episode',
 }
+# the name of a sub-check whose measured comparison fails (its row ⚠, ✗ or –): MMR_MARGIN_NAMES states the passing
+# condition, which beside failing numbers reads as their opposite ('centre stationary (5.77 > 0.5)'); the builder
+# (`verdict_column_mmr._reading_name`) picks this name from the comparison the row prints, never from the icon alone
+MMR_MARGIN_FAILED = {
+    'L1': 'too few turning points at P_c ×½, 1, 2',
+    'L2': 'cycles near the separatrix',
+    'L3': 'dσ/dt ≠ c (a − a*): the rate does not follow a',
+    'L4': 'ȧ does not follow K sin(σ − φ0)',
+    'L4:coorbital': 'ȧ does not follow the 1:1 force law',
+    'L5': 'T0 varies more than one pendulum allows',
+    'L6': 'center moves',
+    'L7': 'covers the record, short of the full margin',
+    'L8a': 'the output step is too coarse for σ',
+    'L8b': 'the filter weakens the cycle',
+    'O1': 'a swings already before the libration',
+    'R0': 'energy does not fit the potential from a',
+    'Z': 'separatrix zone only estimated',
+    'W': 'no driver accepted, one fits a in part',
+    'F': 'strength outside ×10 of theory',
+    'C1': 'center passes fewer whole turns than a clear circulation',
+    'C4': 'a-wave unlike a circulation’s',
+    'B5': 'a slower libration not excluded',
+}
 LONG_PERIOD_MARGIN_NAMES = {
     'N': 'more than three turning points',
-    'S': 'centre stationary (bands overlap)',
+    'S': 'center stationary (bands overlap)',
     'F': 'libration slower than 2 P_c (filter guard)',
-    'P': 'centre passes ≥ 1 rev at every smoothing',
+    'P': 'center passes ≥ 1 turn at every smoothing',
     'G': 'free-ω gate: cycles to spare',
 }
 # Why K1 (the slow σ against p·ϖ) has no number: the codes of `mmr.kinematics.check_reason` (kin_check_reason, K1E_*)
@@ -477,7 +525,7 @@ KIN_REASON_WORDS = {
     'retrograde': 'no ϖ convention for i > 90°',
     'no_body_varpi_term': 'σ has no ϖ term of the body (p = 0)',
     'no_episode': 'the angle has no librating episode to read',
-    'too_few_points': 'the record holds fewer than {min_points} independent centre windows',
+    'too_few_points': 'the record holds fewer than {min_points} independent center windows',
     'filter_not_run': 'the low-pass at the response cutoff could not run',
     'no_swing': 'neither σ nor p·ϖ moves',
 }
@@ -501,13 +549,13 @@ CHECK_WORDS = {
 # --------------------------------------------------------------------------------------------- reasons and flags
 
 REJECT_WORDS = {
-    'range': 'its centre swings as far as σ’s',
-    'rate': 'its centre drifts',
-    'pass': 'its centre makes a full turn',
+    'range': 'its center swings as far as σ’s',
+    'rate': 'its center drifts',
+    'pass': 'its center makes a full turn',
     'A_not_measured': 'its force phase was not measured',
     'A_coherence': 'its force phase is not fixed',
     'A_gain': 'it explains ȧ no better than σ',
-    'B_centre': 'its centre is not at 0 or π',
+    'B_centre': 'its center is not at 0 or π',
     'C_tie': 'another member fits as well',
     'D_theory': 'the multiplet theory disagrees',
     'E_t0': 'its T0 disagrees',
@@ -530,7 +578,7 @@ OWNER_FLAG_WORDS = {
     'owner_unwrap_failed': "a candidate's angle could not be unwrapped",
     'owner_search_off': 'the owner search is switched off',
     'owner_retrograde': 'no owner search for a retrograde angle',
-    'owner_catalogue_ambiguous': 'a candidate on catalogue λ (approx.) is too close to call',
+    'owner_catalogue_ambiguous': 'a candidate on catalog λ (approx.) is too close to call',
 }
 OWNER_REASON_WORDS = {
     'phase_incoherent': 'its phase φ0 does not hold, coherence {coherence}',
@@ -539,7 +587,7 @@ OWNER_REASON_WORDS = {
     'psi_share_high': 'σ − its angle keeps too much of the swing',
     'ripple_only': 'it explains only a ripple on σ',
     'not_better_than_sigma': 'it fits a no better than σ itself',
-    'catalogue_ambiguous': 'on catalogue longitudes its coherence sits at a threshold',
+    'catalogue_ambiguous': 'on catalog longitudes its coherence sits at a threshold',
     'rate_outside_band': 'its forced wave would lie outside the a band',
     'phase_unresolved': 'the phases cannot tell it from σ',
     'potential_scale_out': 'its averaged potential needs a scale outside the band',
@@ -559,7 +607,7 @@ T7_WORDS = {
 # base_period_source -> where the period P of the baseline comes from (`decide.baseline_period`)
 BASE_SOURCE_WORDS = {
     'tp_spacing': 'twice the median spacing of the turning points',
-    'arc_slow': 'twice the longest stretch of the slow centre without a turn',
+    'arc_slow': 'twice the longest stretch of the slow center without a turn',
     'two_omega': 'the 2ω cycle the angle follows',
     'modulation': 'the e-cycle 2π/|g − g5| the angle follows',
     'stall_rate': 'one revolution at the rate of the stall',
@@ -570,18 +618,18 @@ BASE_SOURCE_WORDS = {
 # base_cause -> what is missing when the record already holds the time P needs
 BASE_CAUSE_WORDS = {
     'too_few_tp': 'the run of turning points stops before a cycle closes',
-    'centre_moves': 'the centre moves along the run of turning points',
-    'edge': 'the centre moves along the run of turning points',
+    'centre_moves': 'the center moves along the run of turning points',
+    'edge': 'the center moves along the run of turning points',
     'over_the_top': 'σ goes over the top next to the run of turning points',
-    'no_closed_cycle': 'no cycle of the run of turning points returns about its centre',
+    'no_closed_cycle': 'no cycle of the run of turning points returns about its center',
     'period_fits_record': 'the angle does not come back within it',
 }
 STRENGTH_REASON_WORDS = {
     'no_required_strength': 'no cycle to read a required strength from',
     'no_planet_orbit': "the planet's orbit is not known",
-    'close_approach_at_centre': 'the body comes too close to the planet at the centre: outside the averaged problem',
+    'close_approach_at_centre': 'the body comes too close to the planet at the center: outside the averaged problem',
     'no_elements_in_window': 'no elements in the window of the snapshots',
-    'no_stable_centre': 'the averaged potential has no stable centre',
+    'no_stable_centre': 'the averaged potential has no stable center',
     'quadrature_not_converged': 'the averaged potential did not converge',
     'non_finite': 'a quadrature node fell on the planet',
     'precision_exhausted': 'the resonant harmonic is below the extended precision',
@@ -631,7 +679,7 @@ LEDGER_WORDS = {
     'G2 1:1 range of the raw angle': 'the raw angle between the 1:1 regimes stays within a revolution',
     'G2 accepted runs that are forced waves': 'the accepted runs are forced waves, not librations',
     'G2 forced wave': 'a run on a forced line of another argument',
-    'G5a slow centre': 'the slow centre turns back once: an arc, not a drift',
+    'G5a slow centre': 'the slow center turns back once: an arc, not a drift',
     'G1q the orbit-averaged angle stays': 'θ stays in the quasi-satellite well long enough',
     'G1q quasi-satellite floor': 'the quasi-satellite floor lies below the tadpole floor',
     'G1q the pass keeps': 'the quasi-satellite pass keeps the episodes outside the well',
@@ -644,10 +692,10 @@ LEDGER_WORDS = {
     '2 second capture: energy R2': 'x = Ψ/u follows no potential (not both resonances at once)',
     '2 second capture: secular R2': 'ẍ of x = Ψ/u follows the secular harmonics (2ω, ϖ − ϖ_j)',
     '2 second capture: self R2': 'ẍ of x = Ψ/u follows no well of its own (sin x)',
-    '3 K2 angle word': 'the angle word of the slow centre',
-    '3 K2b kinematic libration': 'the kinematic libration’s centre moves more than its amplitude (a drift)',
-    'G4b net shift': 'the slow centre advances by whole revolutions net (circulation)',
-    '3 kinematic (slow centre)': 'the slow centre follows the perihelion term (K2)',
+    '3 K2 angle word': 'the angle word of the slow center',
+    '3 K2b kinematic libration': 'the kinematic libration’s center moves more than its amplitude (a drift)',
+    'G4b net shift': 'the slow center advances by whole revolutions net (circulation)',
+    '3 kinematic (slow centre)': 'the slow center follows the perihelion term (K2)',
     '5s (before 5a/5e/5g/5u)': 'the strength, read before the force law',
     'G0 angle jitter': 'the p·ϖ term wobbles at short periods',
     'G0 full-angle residual': 'the full angle unwraps',
@@ -666,9 +714,178 @@ REGIME_PHRASES = {
     'stall': 'σ_f stalls',
 }
 
+# the angle subtype (`AngleSubtype`) as the grey gloss of the σ key fact, only where it adds to the line's words
+# (docs/physics/geometry.md); 'stationary' says the cycles' bands overlap, not that the centre stands still
+ANGLE_SUBTYPE_WORDS = {
+    'stationary': 'cycle bands overlap',
+    'modulated': 'the center swings back and forth',
+    'moving_centre': 'about a moving center',
+    'regime_change': 'through a change of regime',
+    'alias': 'folded by the output step',
+    'arc': 'one arc, no closed cycle',
+    'stall': 'σ stalls',
+    'few_cycles': 'too few turning points for a cycle',
+    'pattern_a': 'slips over the top by whole turns',
+    'pattern_b': 'stalls near the top of its well in each revolution',
+    'undefined_phase': 'the phase is not defined',
+}
+
 # the marks of rule regime_cut_mark (W28 C16, q-5 i; `geometry.MARK_CENTRE_STEP`, `MARK_STALL`, episodes.csv `marks`):
 # one episode of an angle that is not 1:1 joined across a step or a stall of its centre (`verdict_text.regime_change_clause`)
 REGIME_MARK_WORDS = {
-    'centre_step': 'a step of its centre',
-    'stall': 'a stall of its centre',
+    'centre_step': 'a step of its center',
+    'stall': 'a stall of its center',
 }
+
+# The panels of the chip 'glance at (…)' (decision D5, 2026-11-04; the author reviews the map once): for each input of
+# the level that holds it (`policy.level_inputs` names), the panels that show it. MMR letters: docs/reading-figures.md
+# (a angle, b σ mod 360°, d a, e response of a, h cycle energy, i centre, j related centres, l episode portrait);
+# secular/ZLK: (a) angle, (b) mod 360°, (e)/(f) e and i, (g) the rate or the free ω, (h) centre, (j) free e vector.
+GLANCE_PANELS = {
+    'mmr': {
+        'N': ('a', 'l'),
+        'core': ('a', 'l'),
+        'M': ('h',),
+        'S': ('b', 'i'),
+        'V': ('e', 'j'),
+        'F': ('e', 'h'),
+        'veto': ('j',),
+        'second_capture': ('j',),
+        'candidate': ('a',),
+        'circulation': ('b', 'i'),
+        'table': ('j',),
+        'status': ('h',),
+        'thin_veto': ('j',),
+    },
+    'long': {
+        'N': ('a',),
+        'core': ('a',),
+        'M': ('h',),
+        'S': ('b', 'h'),
+        'V': ('g', 'j'),
+        'veto': ('g', 'j'),
+        'candidate': ('a',),
+        'circulation': ('b', 'h'),
+        'table': ('a',),
+        'status': ('h',),
+        'thin_veto': ('g',),
+    },
+}
+# the gate detail of a ZLK row (zlk_gate_detail) -> the panels of its inputs instead: an unfitted co-orbital's free ω
+# (g) and free e vector (j) are the split the column calls no measurement, so its V points at the episodes (a) and at
+# a with the co-orbital zone (d)
+GLANCE_OVERRIDES = {
+    'coorbital_unfitted_forcing': {'V': ('a', 'd')},
+}
+
+# --------------------------------------------------------------------------------------------- caveats (right column)
+
+# The Caveats block of the right column (`verdict_column`, decision of 2026-11-04 on the flags table of the spec review):
+# flag -> (the statuses it is said on, the sentence). A flag outside this table, or on another status, goes to the
+# footer only (the diagnostics: zone_eq_only, jump_locator_aliased, ...); the level inputs (measured_objection,
+# veto_thin, second_capture_unresolved, filter_sensitive, owner_probable, ...) are pills of the Confidence block, never
+# caveats. Slots: {jump} the start of the regime after the jump of a (regime_start_yr), {ratio} the short-period scatter
+# of a over the episode's a swing (smp_da_sp_over_a_excursion), {exit_P} / {entry_P} the record left after the exit /
+# before the entry in the episode's periods (exit_remaining_P; entry_remaining_P, else record_entry_remaining_P after a
+# cut); a sentence whose slot has no value is not said.
+LIBRATING = ('resonant', 'transient', 'near_separatrix')
+ALL_STATUSES = ('resonant', 'transient', 'near_separatrix', 'non_resonant', 'uncertain', 'invalid')
+FLAG_CAVEATS = {
+    'episodes_in_separatrix_zone': (
+        ('transient',),
+        'Every libration cycle lies in the separatrix zone and σ crosses it, so the episode edges may be crossings of '
+        'the chaotic layer rather than captures and escapes <<h>>.',
+    ),
+    'transient_unexplained': (
+        ('transient',),
+        'No mechanism of the separatrix model explains the switches between libration and circulation.',
+    ),
+    'libration_in_separatrix_zone': (
+        ('resonant',),
+        'Libration cycles lie in the separatrix zone: the libration runs in the chaotic layer near the separatrix <<h>>.',
+    ),
+    'near_separatrix_without_zone': (
+        ('near_separatrix',),
+        'Only the pattern of σ puts it at the separatrix; the separatrix zone was not measured.',
+    ),
+    'exit_suspected': (
+        LIBRATING,
+        'The exit lies {exit_P} libration periods before the record’s end, so the libration may just continue past the record.',
+    ),
+    'entry_suspected': (
+        LIBRATING,
+        'The entry lies {entry_P} libration periods after the record’s start, so the libration may have begun before the record.',
+    ),
+    'last_regime_after_jump': (
+        ALL_STATUSES,
+        'a jumps at {jump}; the record before and after the jump is measured as two regimes, and the one after it gives '
+        'the final regime.',
+    ),
+    'episode_before_jump': (
+        ALL_STATUSES,
+        'The deciding episodes come before the jump of a at {jump}; their energy was not measured, since the potential '
+        'belongs to the later regime.',
+    ),
+    'a_short_period_scatter': (
+        LIBRATING,
+        'The output step folds short-period terms, and their scatter in a is {ratio}× the episode’s a swing: the checks '
+        'that read a may read folded lines.',
+    ),
+    'strength_scale_only': (
+        ALL_STATUSES,
+        'The angle’s own force is shown only by the order-of-magnitude strength scale μ_i μ_j e^q, not by the force law '
+        'or the potential.',
+    ),
+    # true whether no force check passed or each passed near its threshold; the level reads only whether one passed
+    # (policy F), so the sentence says so; not said beside strength_scale_only, which names the one support
+    'no_full_physics_support': (
+        ALL_STATUSES,
+        'No check of the angle’s own force passed with a full margin; the level reads only whether one passed at all.',
+    ),
+    'force_law_theory_only': (
+        ALL_STATUSES,
+        'ȧ follows only the computed averaged force of this term; the measured force law itself fails.',
+    ),
+    'slow_scale_provisional': (
+        ALL_STATUSES,
+        'The slow libration was read at a shorter smoothing cutoff where neither the force law nor the potential was measured.',
+    ),
+    'force_law_disagrees': (ALL_STATUSES, 'The energy fits the potential, but ȧ does not follow sin σ.'),
+    'episode_force_law_mixed': (
+        ALL_STATUSES,
+        'The force law holds on some episodes and fails on others: not every episode may belong to this resonance.',
+    ),
+    'one_cycle_energy_not_conserved': (
+        ALL_STATUSES,
+        'The single 1:1 cycle breaks the co-orbital energy integral: it may be a passage, not motion in the averaged well.',
+    ),
+    'subresonance_composite': (
+        ALL_STATUSES,
+        'Which multiplet member librates is not settled: a composite of members dominates.',
+    ),
+    'subresonance_tie': (ALL_STATUSES, 'Which multiplet member librates is not settled: two members tie, chosen by order.'),
+    'subresonance_undetermined': (ALL_STATUSES, 'Which multiplet member librates is not settled: the members are indistinguishable.'),
+    'nodal_subresonance_candidate': (ALL_STATUSES, 'Which multiplet member librates is not settled: a nodal member is possible.'),
+    'subresonance_theory_disagrees': (
+        ALL_STATUSES,
+        'Which multiplet member librates is not settled: the multiplet theory disagrees with the measured member.',
+    ),
+    'action_step_provisional': (
+        ALL_STATUSES,
+        'The step of the libration’s action rests on one energy cycle on a side: the cut between the regimes is provisional.',
+    ),
+    'catalogue_longitudes': (
+        ALL_STATUSES,
+        'The other resonances were searched on catalog planet longitudes, not on saved ones (approximate).',
+    ),
+    'owner_search_skipped': (ALL_STATUSES, 'Another resonance driving a was not searched (the owner search is off).'),
+    'planets_missing': (ALL_STATUSES, 'The planets were not saved: the tests that need their longitudes did not run.'),
+}
+# the flags whose caveat is said only when the status rests on a multiplet member (rule 1)
+MEMBER_CAVEATS = (
+    'subresonance_composite',
+    'subresonance_tie',
+    'subresonance_undetermined',
+    'nodal_subresonance_candidate',
+    'subresonance_theory_disagrees',
+)

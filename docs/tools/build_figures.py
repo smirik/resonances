@@ -7,11 +7,12 @@
 Three kinds of figures:
 
 - the gallery (docs/img/gallery/<example_id>.png, docs/physics/gallery.md): one-page verdict figures of benchmark
-  examples. Each example's saved series (benchmark/data/examples/<id>, or $RESONANCES_BENCHMARK_DATA) is analysed
+  examples. Each example's saved series (benchmark/data/examples/<id>, or $RESONANCES_BENCHMARK_DATA) is analyzed
   again by the package (`analyse_mmr` for MMRs and co-orbitals; a `Simulation` rebuilt from the series and
   `identify_librations` for secular and Lidov-Kozai angles, as benchmark/tools/reclassify*.py do) and drawn by the
   package's own figure code. The verdicts go to docs/img/gallery/verdicts.json, the page is rewritten from it, and
   each verdict is compared with the latest saved benchmark run (`SAVED_RUNS`): a difference is printed, never hidden.
+  A caption that states a level (`caption_level`) must agree with its verdict, else the run fails.
   Without the benchmark data the gallery figures are kept as they are and only the page is rewritten;
 - schematics (docs/img/physics/*.png): pure numpy/matplotlib drawings of the physics pages, using the package's own
   formulas (pendulum period factor, filter gain, closure of a cycle) where it has them;
@@ -35,6 +36,7 @@ import argparse  # noqa: E402
 import io as stdio  # noqa: E402
 import json  # noqa: E402
 import math  # noqa: E402
+import re  # noqa: E402
 import sys  # noqa: E402
 import time  # noqa: E402
 import traceback  # noqa: E402
@@ -75,6 +77,7 @@ class Case:
     title: str
     caption: str
     member: str = ''  # also draw this derived row (a subresonance member) as a second figure
+    level: str = ''  # the level the caption states in other words than 'the confidence is <level>' (`caption_level`)
 
 
 GROUPS = (
@@ -95,7 +98,7 @@ CASES = (
         'mmr2__1921__2J-1+0-1',
         'resonant',
         'A two-body resonance: the textbook pendulum',
-        '$\\sigma$ librates about a fixed centre over the whole record, $a$ oscillates in step with it, and every test of the force '
+        '$\\sigma$ librates about a fixed center over the whole record, $a$ oscillates in step with it, and every test of the force '
         'law and of the pendulum\'s energy passes.',
     ),
     Case(
@@ -111,15 +114,17 @@ CASES = (
         'mmr3__463__4J-2S-1+0+0-1',
         'resonant',
         'The body of the quick start',
-        'The resonance checked in the [Quick start](../quick-start.md). The libration is as clear as above, but the record '
-        'holds about nine cycles, fewer than the ten that certain needs, so the confidence is high.',
+        'The resonance checked in the [Quick start](../quick-start.md). The libration is as clear as above: about nine '
+        'cycles over the whole record, more than the three that certain needs, the amplitude clear of the separatrix '
+        'and nothing objecting, so the confidence is certain.',
     ),
     Case(
         'resonant-coorbital',
         'coorbital__2002_AA29__1E-1+0+0',
         'resonant',
         'An Earth co-orbital',
-        'The angle $\\lambda - \\lambda_E$ alternates between horseshoe and quasi-satellite motion and never circulates. A 1:1 angle is judged '
+        'The angle $\\lambda - \\lambda_E$ goes from horseshoe motion to a compound orbit (horseshoe and quasi-satellite '
+        'in turn) and back to horseshoe, and never circulates: one episode in three sub-regimes. A 1:1 angle is judged '
         'by its own force law, from the averaged direct and indirect potential of the planet.',
     ),
     Case(
@@ -127,53 +132,63 @@ CASES = (
         'coorbital__164207__1E-1+0+0',
         'resonant',
         'Two co-orbital regimes in turn',
-        'Quasi-satellite motion, then horseshoe motion: two regimes of the same 1:1 resonance follow each other without a '
-        'circulation in between. A 1:1 episode ends only at a separatrix, so this is one episode with a change of well '
-        '(the mark well_change in episodes.csv; subtype regime_change). The header names the wells in time order '
-        '(`orbit: …`) and (a) brackets each sub-regime with its well.',
+        'Quasi-satellite motion, a compound orbit, then horseshoe motion: regimes of the same 1:1 resonance follow each '
+        'other without a circulation in between. A 1:1 episode ends only at a separatrix, so this is one episode with '
+        'changes of well (the mark well_change in episodes.csv; subtype regime_change). The header names the wells in '
+        'time order (`orbit: …`) and (a) brackets each sub-regime with its well.',
     ),
     Case(
-        'moving-centre',
+        'moving-center',
         'mmr2__2013_AS27__31E-36+0+5',
         'resonant',
-        'Libration about a moving centre',
-        'The centre of libration follows the slowly moving minimum of the averaged potential; the libration is tested in '
-        '$\\psi = \\sigma - \\sigma_c(t)$. The output step folds short periods: the flag short_period_aliased warns, but '
-        'it caps nothing, and 131 cycles give high.',
+        'Libration about a moving center',
+        'The center of libration follows the slowly moving minimum of the averaged potential; the libration is tested '
+        'in $\\psi = \\sigma - \\sigma_c(t)$. The output step folds short periods: the flag short_period_aliased warns but '
+        'lowers nothing. 131 cycles would give certain, but another resonance comes close to driving $a$ (best $R^2$ '
+        '0.63, margin W thin), so the objections count as only partly measured and the confidence is high.',
     ),
     Case(
-        'centre-scale',
+        'center-scale',
         'mmr2__385458__9N-17+0+8__300kyr',
         'resonant',
         'A slow libration on a long record',
-        'A high-order resonance with Neptune whose libration period is long: over this record the angle closes enough cycles '
-        'to be called resonant. The same body on a shorter record is [uncertain](#insufficient-time).',
+        'A high-order resonance with Neptune whose libration period is long (64 kyr): over this record the angle closes '
+        '4.6 cycles and is resonant. The other resonances are tested on two windows fitted to this short record: none of '
+        '14 drives $a$, and the confidence is certain, with no action asked (the force law, which needs two windows of '
+        '3.5 periods, is not tested on this record). The same body on a shorter record is '
+        '[uncertain](#insufficient-time).',
     ),
     Case(
         'insufficient-time',
         'mmr2__385458__9N-17+0+8',
         'uncertain',
         'The same body, too short a record',
-        'The body of [the slow libration](#centre-scale) on a shorter record. The angle completes too few cycles to tell '
-        'a libration from a slow circulation: uncertain, insufficient_time, and the action asks for a longer integration.',
+        'The body of [the slow libration](#center-scale) on a shorter record. The slow center of the angle turns back '
+        "only twice: the record holds half of one slow swing in this resonance's well (rule G5w), too short to show the "
+        'libration whole. Uncertain, insufficient_time, and the action asks for a longer integration.',
     ),
     Case(
         'geometric-libration',
         'mmr3__2348__4J-2S-1+0+0-1',
         'resonant',
         'Libration decided by the geometry alone',
-        '$\\sigma$ librates over the whole record, but neither the force law nor the energy of the pendulum could be measured: '
-        'only the geometry decided (reason geometric_libration, origin unknown). Nothing objects, and a missing measurement '
-        'is a flag (no_full_physics_support), not a cap: 14 clean cycles give certain.',
+        '$\\sigma$ librates over the whole record, but neither the force law nor the energy of the pendulum could be '
+        'measured (a half-amplitude of 21°: $\\sin\\sigma \\approx \\sigma$). The geometry decided (reason '
+        "geometric_libration, origin unknown). The resonance's strength agrees with the period of the cycles to an "
+        'order of magnitude (margin F), so the level is not held at the low of a geometry-only row; nothing objects, '
+        'and 14 clean cycles give certain. The missing measurements are a flag (no_full_physics_support).',
+        level='certain',
     ),
     Case(
         'measured-objection',
         'mmr3__2003_TX9__3E+2J-10+0+0+5',
         'resonant',
         'A libration the physics questions',
-        '$\\sigma$ librates about a moving centre over the whole record, but the energy test of the pendulum fails. The '
-        'objection is measured but does not decide (flag measured_objection): the geometry keeps the status, resonant at '
-        'low, with action extend.',
+        '$\\sigma$ librates over the whole record (its center moves, but the bands of the cycles overlap), but the '
+        'energy test of the pendulum fails. The objection is measured but does not decide (flag measured_objection): '
+        "the tree's leaf said uncertain, the minimal policy keeps the geometry's status, resonant, at low (a measured "
+        "objection, and the angle's own force is not shown), with action extend.",
+        level='low',
     ),
     # transient
     Case(
@@ -181,39 +196,45 @@ CASES = (
         'mmr3__52356__5J-2S-2+0+0-1',
         'transient',
         'Repeated capture and release',
-        'Librating episodes alternate with circulation (subtype recurrent). The episodes stay close to the separatrix (flag '
-        'episodes_in_separatrix_zone); the longest closes 3.5 cycles, so the confidence is high.',
+        'Librating episodes alternate with circulation (subtype recurrent). The deciding episode closes 3.5 cycles, '
+        'enough for certain, but the episodes reach the separatrix zone (flag episodes_in_separatrix_zone: the '
+        'amplitude margin is thin), so the confidence is high.',
     ),
     Case(
         'transient-exit',
         'coorbital__2017_UM52__1E-1+0+0',
         'transient',
         'A co-orbital that leaves the 1:1 resonance',
-        'The exit is seen in the orbit-averaged angle: after it $\\lambda - \\lambda_E$ circulates to the end of the record (final_regime circulation).',
+        'A horseshoe libration over most of the record. The exit is seen in the orbit-averaged angle: after it $\\lambda '
+        '- \\lambda_E$ circulates to the end of the record (final_regime circulation).',
     ),
     Case(
         'transient-capture-exit',
         'mmr2__115978__11M-19+0+8',
         'transient',
         'An episode, then circulation',
-        'A libration episode followed by circulation to the end of the record. The episode closes only about one cycle, '
-        'fewer than the three that high needs, so the confidence is medium.',
+        'A libration episode followed by circulation to the end of the record. The episode closes only one cycle, fewer '
+        'than the 1.5 that medium needs, so the confidence is low and the action asks for a review.',
     ),
     Case(
         'transient-before-jump',
         'mmr2__2003_UG22__10E-17+0+7__40kyr',
         'transient',
         'An episode ended by a jump of the semi-major axis',
-        'The episode ends where $a$ jumps (a kick, as at a close approach to a planet); after the jump the angle no longer librates. The '
-        'jump is a flag (episode_before_jump); the episode closes 87 cycles, so the confidence is high.',
+        'Two episodes, both before the jumps of $a$ (hatched; flag episode_before_jump): the long first one closes 87 '
+        'cycles. From about 30 kyr $a$ jumps (kicks, as at close approaches to a planet) and the angle circulates to '
+        'the end. Its amplitude, up to 138°, is near the separatrix, so the confidence is high, not certain.',
     ),
     Case(
         'transient-subresonance',
         'mmr2__82831__13M-24+0+11',
         'transient',
         'Episodes made by a member of the multiplet',
-        'The catalogue angle drifts with $\\varpi$, but its member $\\sigma + 2(\\varpi_M - \\varpi)$ (13M-24+2+9) librates about a fixed centre: the '
-        'episodes belong to that member (reason subresonance_librates). The second figure is the member\'s own verdict.',
+        'The catalog angle librates in episodes about a center that moves with $2(\\varpi_M - \\varpi)$, while its '
+        'member $\\sigma + 2(\\varpi_M - \\varpi)$ (13M-24+2+9) keeps a fixed center: the episodes belong to that member '
+        "(reason subresonance_librates), and this row takes the member's status and its 36 cycles. Its own figure draws "
+        "the episodes faint (`cand`, not counted here); the second figure is the member's own verdict, with them "
+        'counted.',
         member='13M-24+2+9',
     ),
     Case(
@@ -221,8 +242,10 @@ CASES = (
         'mmr3__24820__3J-1S-1+0+0-1',
         'transient',
         'An episode decided by the geometry alone',
-        'A librating episode in part of the record; no force could be measured, so the geometry alone decided '
-        '(reason geometric_episode, origin unknown).',
+        'A librating episode in part of the record. Neither the force law nor the potential could be measured, so the '
+        "geometry decided (reason geometric_episode, origin unknown); the resonance's strength agrees with the cycles "
+        'to an order of magnitude (margin F), so the level is not capped: high.',
+        level='high',
     ),
     # near the separatrix
     Case(
@@ -230,8 +253,10 @@ CASES = (
         'mmr2__523899__3N-5+0+2',
         'near_separatrix',
         'Stalls at the top of the well',
-        'No closed libration cycle, but $\\sigma$ repeatedly stalls near the top of its own potential well while $a$ responds '
-        '(pattern B): motion close to the separatrix. This status is rare.',
+        'No closed libration cycle, but $\\sigma$ stalls near the top of its own potential well in each revolution while '
+        'the energy fits the potential built from $a$ (pattern B): motion close to the separatrix. A measured objection '
+        '($\\dot\\sigma$ does not follow $a - a_*$ closely: the identity check fails) makes the confidence low, and the '
+        'action asks for a review. This status is rare.',
     ),
     # non-resonant
     Case(
@@ -246,8 +271,9 @@ CASES = (
         'mmr3__1999_UQ__7E+2M-9+0+0+0',
         'non_resonant',
         'A stroboscope: the output step aliases a fast angle',
-        'The output step is close to a multiple of the fast period of $\\sigma$, so the sampled angle seems to move slowly. The '
-        'analysis finds the folded branch and reads the true motion as a fast circulation (reason alias).',
+        'The output step is close to a multiple of the fast period of $\\sigma$ (it turns 365° per step), so the sampled '
+        'angle seems to move slowly. The analysis finds a single alias branch and $a$ far from $a_*$, and reads the '
+        'true motion as a fast circulation (reason alias).',
     ),
     Case(
         'alias-fine-step',
@@ -261,23 +287,26 @@ CASES = (
         'mmr3__285637__3M+7J-6+0+0-4',
         'non_resonant',
         'A kinematic libration',
-        '$\\sigma$ librates over the whole record, but $a$ does not follow it: the bound comes from the secular cycle of the '
-        'elements, not from the resonant force (origin kinematic).',
+        "$\\sigma$ librates over the whole record, but $a$ does not follow it: the swing is $\\sigma$'s $-4\\varpi$ term "
+        'at the 18-kyr cycle of $2\\omega$, a secular cycle of the elements, not the resonant force (origin kinematic). '
+        'The veto is measured, so the confidence is high.',
     ),
     Case(
         'kinematic-drift',
         'mmr3__62243__1M-4J-1+0+0+4',
         'non_resonant',
         'A kinematic drift',
-        '$\\sigma$ drifts slowly with the secular terms of the angle while $a$ does not respond: no resonant force is at work.',
+        '$\\sigma$ librates briefly about a center that drifts with its perihelion term ($4\\varpi$, the 20-kyr cycle of '
+        '$e$), while $a$ carries almost none of the swing: a kinematic drift, no resonant force at work.',
     ),
     Case(
         'induced-forced-wave',
         'mmr3__117306__1V+5J-7+0+0+1',
         'non_resonant',
         'Episodes induced by another resonance',
-        '$a$ oscillates because of another resonance (the owner, 11M-20+0+9), which circulates with the period of that '
-        'oscillation; $\\sigma$ follows $a$ only through its rate (origin induced, a forced wave).',
+        '$a$ oscillates because of another resonance, the driver 11M-20+0+9: it circulates with the period of that '
+        'oscillation (about 2 kyr) and drives $a$ by its forced wave. $\\sigma$ follows it only through the identity '
+        '$\\sigma = (7/20)\\varphi + \\Psi/20$ (origin induced, a forced wave).',
     ),
     Case(
         'induced-owner-librates',
@@ -292,8 +321,11 @@ CASES = (
         'mmr2__2897__35S-4+0-31',
         'non_resonant',
         'An implausible strength',
-        'A resonance of order 31 with Saturn: its episodes would need a resonant force many orders of magnitude stronger '
-        'than the averaged potential provides, so they are not this resonance.',
+        'A resonance of order 31 with Saturn. $\\sigma$ circulates, with two short accepted episodes early in the '
+        "record; they would need a resonant force at least $10^{35}$ times stronger than this resonance's harmonic "
+        'provides, so they are not this resonance (a measured veto: high). The status does not count them: (a) leaves '
+        'them unfilled and (l) labels them `forced (strength)`.',
+        level='high',
     ),
     # uncertain
     Case(
@@ -310,7 +342,7 @@ CASES = (
         'invalid',
         'An ambiguous alias',
         'The output step folds the angle so that its alias branches cannot be told apart: the angle cannot be measured '
-        'at this step, and the action asks for a resample at the step given in the right column.',
+        'at this step, and the action asks for a resample at the step given in the plaque (0.2 yr).',
     ),
     # secular
     Case(
@@ -333,7 +365,7 @@ CASES = (
         'secular__2306__g-g6+s-s6',
         'secular',
         'z1: one unfinished slow swing',
-        'The centre of the z1 angle moves, then turns back after less than one revolution: the record holds part of one '
+        'The center of the z1 angle moves, then turns back after less than one revolution: the record holds part of one '
         'slow swing, not a drift, so it is too short to decide (insufficient_time, extend).',
     ),
     Case(
@@ -348,7 +380,8 @@ CASES = (
         'secular__363__g-g6+s-s6',
         'secular',
         'Too few cycles',
-        'The period of the angle is comparable with the record: too few cycles to decide, extend the integration.',
+        'The angle has only two turning points in 10 Myr, fewer than one cycle needs: the shape cannot tell a slow '
+        'libration from a slow circulation. Too short to decide, extend the integration.',
     ),
     # Lidov-Kozai
     Case(
@@ -371,15 +404,20 @@ CASES = (
         'zlk__162474__LK__1500kyr',
         'zlk',
         'Lidov-Kozai episodes',
-        'Two long episodes of libration of $\\omega$, separated by an interval without libration.',
+        'Two long episodes of libration of $\\omega$, the first about 270°, the second about 90°, with a short switch '
+        'between them. The free-omega gate confirms the libration, and the deciding episode closes 13 cycles: certain.',
+        level='certain',
     ),
     Case(
         'zlk-gate-unavailable',
         'zlk__1981__LK',
         'zlk',
         'No verdict from the gate',
-        '$\\omega$ librates, but the free-omega gate cannot be evaluated on this record. The angle decides (resonant), at most '
-        'medium, with the flag gate_unavailable: the gate gave no verdict, so it cannot veto (minimal policy).',
+        '$\\omega$ librates, but the free-omega gate gives no verdict on this record (the free node is not yet separated '
+        'from $s_6$). The angle decides (resonant, flag gate_unavailable). The forced terms are small ($\\rho_{\\max} \\ge '
+        '3$) and the $e$–$i$ integral holds in the libration, so the forcing cannot hold $\\omega$ (flag '
+        'kinematic_excluded): nothing caps the level, and 19 cycles give certain.',
+        level='certain',
     ),
     Case(
         'zlk-circulation',
@@ -397,6 +435,27 @@ CASES = (
     ),
 )
 CASE_BY_ANCHOR = {case.anchor: case for case in CASES}
+CAPTION_LEVEL = re.compile(r'\bconfidence (?:is )?(certain|high|medium|low)\b')  # 'the confidence is high', 'makes the confidence low'
+
+
+def caption_level(case: Case) -> str:
+    """The level the caption states for its row: `Case.level`, else the first 'confidence (is) <level>'; '' when it
+    states none."""
+    if case.level:
+        return case.level
+    found = CAPTION_LEVEL.search(case.caption)
+    return found.group(1) if found else ''
+
+
+def caption_mismatches(verdicts: Dict[str, Dict[str, Any]]) -> List[str]:
+    """A caption whose stated level differs from its row's verdict (the verdict line printed under it), one line each:
+    the captions are written by hand, the level comes from the package and moves with the classifier."""
+    lines = []
+    for case in CASES:
+        stated, entry = caption_level(case), verdicts.get(case.example_id)
+        if stated and entry is not None and entry.get('confidence') != stated:
+            lines.append(f"{case.anchor}: the caption says {stated}, the verdict is {entry.get('confidence') or 'none'}")
+    return lines
 
 
 # ------------------------------------------------------------------ small helpers
@@ -469,7 +528,7 @@ def verdict_fields(row: Dict[str, Any]) -> Dict[str, str]:
 
 
 def render_case(anchor: str) -> Dict[str, Any]:
-    """Analyse and draw one case; returns {'anchor', 'verdicts': {file stem: fields}, 'seconds'} or an 'error'."""
+    """Analyze and draw one case; returns {'anchor', 'verdicts': {file stem: fields}, 'seconds'} or an 'error'."""
     warnings.simplefilter('ignore')
     start = time.perf_counter()
     case = CASE_BY_ANCHOR[anchor]
@@ -622,8 +681,8 @@ Lidov-Kozai angle $\\omega$.
 ## How to read the figure
 
 The left half of each figure holds the time series and the phase portraits, the right half the verdict: the plaque
-with the status, the verdict in words, the steps of the [status tree](status-tree.md), the margins and caps of the
-[confidence](confidence.md) and the numbers behind them, each a column of the [output files](../output.md). What
+with the status, the verdict in words, the steps of the [status tree](status-tree.md), the evidence the
+[confidence](confidence.md) level rests on and the numbers behind them, each a column of the [output files](../output.md). What
 every panel, line and icon means: [How to read the figures](../reading-figures.md).
 """
 
@@ -795,7 +854,7 @@ def schematic_aliasing():
     axes[0].plot(samples, np.degrees(2 * np.pi * samples / period) % 360, 'o', color=ACCENT, ms=3.5)
     axes[0].set_xlabel('t, yr')
     axes[0].set_ylabel(r'$\sigma$ mod 360, deg')
-    axes[0].set_title(rf'true $\sigma$ (grey), samples every {step:g} yr (red)', fontsize=9)
+    axes[0].set_title(rf'true $\sigma$ (gray), samples every {step:g} yr (red)', fontsize=9)
     nu = np.linspace(-0.5, 3.6, 2000) * 2 * np.pi / step  # true rate, rad/yr
     branch = np.round(nu * step / (2 * np.pi))
     apparent = nu - 2 * np.pi * branch / step
@@ -853,7 +912,7 @@ def schematic_turning_points():
 
 
 def schematic_centre_types():
-    """Stationary, modulated and moving-centre librations (synthetic)."""
+    """Stationary, modulated and moving-center librations (synthetic)."""
     import matplotlib.pyplot as plt
 
     t = np.linspace(0, 20000, 8001)
@@ -861,7 +920,7 @@ def schematic_centre_types():
     centres = (
         ('stationary', np.full_like(t, 180.0), 60 * np.sin(phase)),
         ('modulated', 180 + 12 * np.sin(2 * np.pi * t / 9000), (45 + 25 * np.sin(2 * np.pi * t / 9000)) * np.sin(phase)),
-        ('moving centre', 120 + 120 * t / t[-1], 50 * np.sin(phase)),
+        ('moving center', 120 + 120 * t / t[-1], 50 * np.sin(phase)),
     )
     fig, axes = plt.subplots(1, 3, figsize=(10.5, 2.7), sharey=True)
     for ax, (title, centre, swing) in zip(axes, centres):
@@ -869,7 +928,7 @@ def schematic_centre_types():
         ax.plot(t / 1000, centre, color=ACCENT, lw=1.4)
         ax.set_title(title, fontsize=9)
         ax.set_xlabel('t, kyr')
-    axes[0].set_ylabel(r'$\sigma_f$, deg (red: centre $\sigma_c$)')
+    axes[0].set_ylabel(r'$\sigma_f$, deg (red: center $\sigma_c$)')
     return fig
 
 
@@ -1103,6 +1162,7 @@ def run_gallery(anchors: List[str], workers: int) -> int:
             print('  ' + line)
     write_if_changed(VERDICTS, (json.dumps(verdicts, indent=1, sort_keys=True) + '\n').encode())
     write_if_changed(GALLERY_PAGE, gallery_page(verdicts).encode())
+    errors += [f'caption level: {line}' for line in caption_mismatches(verdicts)]  # the page is written; the run fails
     for line in errors:
         print('ERROR ' + line, file=sys.stderr)
     return len(errors)

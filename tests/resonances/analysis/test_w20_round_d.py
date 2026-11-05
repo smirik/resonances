@@ -267,7 +267,7 @@ def test_a_one_to_one_circulation_prints_the_r0_that_decided():
 @pytest.mark.benchmark
 def test_a_moving_centre_names_its_mean():
     v = _analysis('mmr2__2013_AS27__31E-36+0+5').verdict
-    assert 'libration about a moving centre (mean ' in v.orbit_type and 'symmetric' not in v.orbit_type
+    assert 'libration about a moving center (mean ' in v.orbit_type and 'symmetric' not in v.orbit_type
 
 
 def test_the_owner_rejection_prints_the_bar_that_rejected():

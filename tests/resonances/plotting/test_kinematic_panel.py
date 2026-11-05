@@ -1,6 +1,6 @@
 """W28 B10b (cards g08-8 'if the cause is a secular cycle, show it as a line, here and everywhere', g08-7, g05-2,
 g05-3): panel (j) draws σ = λ part + pϖ on the scale of a kinematic swing and the p·ϖ of a secular slow cause in every
-other mode, labelled with p and the secular period of its column; panel (i) hatches the slow scale's intervals.
+other mode, labeled with p and the secular period of its column; panel (i) hatches the slow scale's intervals.
 
 The synthetic record is σ = 5λ_J − λ − 4ϖ (5:1 with Jupiter, p = −4) with ϖ = 0.4 + 0.25 sin(2π t / 400 yr) and a flat
 a: the analysis reads it as a kinematic libration (non_resonant / kinematic_libration, the term −4ϖ). The truths are

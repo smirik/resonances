@@ -28,9 +28,9 @@ the gate finds a planetary residual (free omega winds 1.5 turns); 1866 (kinemati
 episodic omega whose free omega winds over the record is read inside its librating episodes, where it is confirmed when
 the free omega stays put in every one (3752, 373136, 797204 at 500 kyr, 1866, 88899 500 kyr: 0.001-0.04 turns per
 cycle, rho >= 3). An episodic omega without a gate verdict is transient only when e and i
-trade at constant H inside its deciding episode (W28 D10, the author's q-1 E; ZLK_EPISODIC_NO_VERDICT): the gate
-callback measures that coupling (`episode_ei.measure_episode_coupling`, columns zlk_ei_episode_*) and passes it with
-the policy in the GateResult; 3752 (500 kyr: zlk in the 4.6-period episode) stays transient, 88899 (500 kyr: e and i
+trade at constant H inside its deciding episode (W28 D10, the author's q-1 E; the W28 tree): the gate
+callback measures that coupling (`episode_ei.measure_episode_coupling`, columns zlk_ei_episode_*) and passes it in
+the GateResult (`episode_ei`); 3752 (500 kyr: zlk in the 4.6-period episode) stays transient, 88899 (500 kyr: e and i
 in phase, H not conserved) becomes uncertain/gate_unavailable under v2 (the minimal policy: confirmed inside its
 episodes, the broken integral an objection, transient/low).
 
@@ -49,7 +49,7 @@ no unfitted co-orbital): a disabled gate keeps the geometric result.
 
 W29: the minimal policy (`analysis.policy`, the last step) reads the gate as a measured veto (kinematic on a libration;
 the free e below the forced e) or a flag (no verdict, disabled: the geometry's status at <= medium, flag
-gate_unavailable / gate_disabled); ZLK_EPISODIC_NO_VERDICT acts on the W28 tree only (`v2_verdict`).
+gate_unavailable / gate_disabled).
 Columns that change no status (`diagnostics`, `secular.slow`): the e-i coupling of the whole record at the decisive
 period for every row (`zlk_ei_*`, `check_zlk_ei`, `confirmed_ei`; the episode's own coupling is the one a status reads),
 the attribution of a kinematic libration to a forced mode (`zlk_forcing_*`), the slow line of the centre
@@ -118,7 +118,7 @@ def analyse_zlk(
 
     def gate(angle: AngleDecision, geometry) -> Optional[GateResult]:
         if angle.angle_status not in GATED:
-            return GateResult(str(omega_free_gate.GateOutcome.NOT_APPLICABLE), episodic_policy=settings.zlk_episodic_no_verdict)
+            return GateResult(str(omega_free_gate.GateOutcome.NOT_APPLICABLE))
         period = decisive_period_yr(geometry, angle.decisive_episode_id)
         verdict = omega_free_gate.evaluate_gate(free_elements, period if np.isfinite(period) else None, config, coorbital)
         pinning = _episode_pinning(free_elements, angle, geometry, settings)
@@ -143,9 +143,8 @@ def analyse_zlk(
             detail=verdict.detail,
             free_turns_min=settings.zlk_episode_free_turns_per_cycle,
             # the e-i coupling inside the deciding librating episode (a column for a libration; the status of an
-            # episodic omega without a gate verdict under ZLK_EPISODIC_NO_VERDICT=ei, `decide_status`)
+            # episodic omega without a gate verdict in the W28 tree, `decide_status`; the policy's e-i integral)
             episode_ei=measure_episode_coupling(series, decisive_librating_episode(geometry, angle.decisive_episode_id), settings),
-            episodic_policy=settings.zlk_episodic_no_verdict,
             **pinning,
         )
 
