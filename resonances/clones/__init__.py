@@ -3,7 +3,7 @@ of an ensemble (docs/clones.md). The run side is `resonances/simulation/ensemble
 
 from .solution import OrbitSolution, orbit_solution, parse_mpc, parse_oef, parse_sbdb
 from .ensemble import Ensemble, sample
-from .stats import ensemble_row, status_shares, wilson_interval
+from .stats import cloud_row, ensemble_row, status_shares, upgrade_row, wilson_interval
 
 __all__ = [
     'OrbitSolution',
@@ -16,4 +16,6 @@ __all__ = [
     'wilson_interval',
     'status_shares',
     'ensemble_row',
+    'cloud_row',
+    'upgrade_row',
 ]

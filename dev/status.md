@@ -176,15 +176,12 @@ disagreement page (`tmp/.../w30/disagreements/`).
 
 ## Separate tasks
 
-- **Computed three-body strength** (2348 4J-2S-1 medium only because of `strength_scale_only`; would also move 68436
-  and 24820 3J-1S-1 and the origin of 48789). Nov 5: the off-resonance probe (shifted clones, σ circulating) agrees
-  with μ_req (4J-2S-1 0.99–1.02 by first harmonic and by curvature, 5J-2S-2 1.0–1.1 with the 2:1 term removed) and
-  must refuse the two-well 3J-1S-1, but costs 15–30 s per row: rejected for the package (`rejected.md`), kept as
-  offline ground truth. Codex and the literature review agree on the next route: a cached second-order coefficient
-  per resonance (Morbidelli 2002 §10.1: direct + indirect terms; the N&M 5-2-2 polynomial, Table 10.1, is already
-  within 0.9–1.3 of the probe), validated against the probe, refusing near two-body commensurabilities and multi-well
-  potentials; ms per row. Estimate: 3–5 days for a 4J-2S-1/5J-2S-2 pilot, 2–4 weeks general (planar, low i). Waits
-  for the author. Working notes are local (not in git).
+- **Computed three-body strength: closed by the author (Nov 5).** No general cheap method exists (the off-resonance
+  probe costs 15–30 s per row; a cached second-order coefficient per resonance, Morbidelli 2002 §10.1, would be a
+  per-resonance pilot, planar and low-i only), so `eq_scale` stays. The `strength_scale_only` cap (<= medium) exists
+  only in the W28 tree (`v2_verdict`, leaf 5u/6; 4 benchmark rows: 2348, 24820, 48789, 68436); the minimal policy
+  shows F without capping the level (2348 certain), so no final verdict depends on this task. Reopen only if a
+  general method appears (`rejected.md`).
 - **2003 TX9 two-regime split (Q1b).** The author accepted uncertain with one episode. A split needs each regime's
   period measured in one shared two-well potential on every cycle; test 7 currently fails on late cycles.
 - **Barycentric elements for distant bodies (W28 B6a, cards g07-5/g07-6).** Heliocentric elements osculate about

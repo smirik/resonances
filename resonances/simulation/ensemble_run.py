@@ -33,7 +33,7 @@ import tqdm
 from resonances.clones import Ensemble, orbit_solution
 from resonances.clones.elements import KEPLERIAN_KEYS, drift_mean_anomaly, mean_longitude
 from resonances.clones.ensemble import clone_name
-from resonances.clones.stats import ensemble_row
+from resonances.clones.stats import cloud_row
 from resonances.config import config as c
 from resonances.data.util import mjd_from_datetime
 from resonances.logger import logger
@@ -541,12 +541,11 @@ def _nominal_body(simulation, run: EnsembleRun):
 
 
 def member_statuses(run: EnsembleRun, key: str) -> list:
-    """The status of every clone in a row: 'invalid' for a draw that is no bound orbit, None for a clone without a
-    verdict there."""
+    """The status of every bound clone in a row, None for a clone without a verdict there. A draw that is no bound
+    orbit has no entry: it was not integrated and is no observation (`clones.stats.cloud_row`)."""
     statuses = []
     for name, elem in zip(run.names, run.elements):
         if elem is None:
-            statuses.append('invalid')
             continue
         row = (run.results.get(name) or {}).get('rows', {}).get(key)
         statuses.append(row['status'] if row else None)
@@ -570,11 +569,17 @@ def clone_rows(simulation) -> list:
                 'resonance': key,
                 'resonance_type': resonance.type,
                 'n_clones': len(run.names),
-                'n_draw_invalid': sum(1 for elem in run.elements if elem is None),
                 'nominal_status': nominal_status or '',
                 'nominal_confidence': str(verdict.confidence) if verdict is not None else '',
             }
-            row.update(ensemble_row(member_statuses(run, key), nominal_status))
+            n_invalid = sum(1 for elem in run.elements if elem is None)
+            max_invalid = simulation.config.clones_max_invalid
+            row.update(cloud_row(member_statuses(run, key), nominal_status, len(run.names), n_invalid, max_invalid))
+            if not row['cloud_usable']:
+                logger.warning(
+                    f'{run.parent} {key}: {n_invalid} of {len(run.names)} draws are no bound orbit (> CLONES_MAX_INVALID '
+                    f'{max_invalid:g}): the Gaussian is no usable model of this orbit, its row has no shares'
+                )
             row.update(
                 {
                     'nominal_offset_sigma': run.nominal_offset_sigma,
@@ -710,7 +715,7 @@ def plot_ensembles(simulation, rows: list):
             for name, elem in zip(run.names, run.elements):
                 result = run.results.get(name) or {}
                 row = result.get('rows', {}).get(key)
-                status = 'invalid' if elem is None else (row['status'] if row else None)
+                status = row['status'] if (elem is not None and row) else None  # an unbound draw: no verdict, no series
                 a0 = elem['a'] if elem is not None else np.nan
                 members.append({'name': name, 'status': status, 'a0': a0, 'series': result.get('series', {}).get(key)})
             widths = [r['half_width'][key] for r in run.results.values() if key in r.get('half_width', {})]

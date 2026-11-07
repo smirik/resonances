@@ -6,6 +6,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed, BrokenExecutor
 
 from resonances.config import low_memory_allocator, worker_allocator
 from resonances.logger import logger
+from resonances.simulation import run_lock
 
 MAIN_GUARD_MESSAGE = (
     "The worker processes could not start: the script {path} runs the simulation at line {line} outside "
@@ -77,7 +78,11 @@ def _run_batch_worker(batch_index: int, bodies_data: List[Dict], simulation_kwar
         for body_data in bodies_data:
             sim.add_body(body_data["elem_or_num"], body_data["resonances"], name=body_data["name"])
             body_names.append(body_data["name"])
-        sim.run(progress=False)
+        hold = run_lock.hold_as_worker(sim.config.save_path)  # a new run into this folder waits for this worker
+        try:
+            sim.run(progress=False)
+        finally:
+            run_lock.release_worker(hold)
 
         # Rows the MMR analysis added (accepted subresonances): the parent adds them to its bodies before it
         # writes simulation.json, or restore would not know them.

@@ -935,7 +935,8 @@ colored by its status, the nominal orbit in black; (b) each clone's status again
 nominal's), the nominal a black ★, with the catalog resonant axis $a_{\rm res}$ of an MMR (dotted, `a_res
 (catalog)`: from the mean motions, not moved into the osculating frame of the x axis) and $a_{\rm res}$ ± the
 median half-width of the clones' episodes (blue dashed); (c) the share of each status
-with its Wilson 95 % interval, ★ at the nominal's status. The title gives the number of clones, the source of the
+with its Wilson 95 % interval, ★ at the nominal's status (over the bound draws; when more than `CLONES_MAX_INVALID`
+of the draws are no bound orbit, (c) draws no bar and says 'no shares', and the title says so too). The title gives the number of clones, the source of the
 orbit solution, its epoch and the most common status. No example image: drawing it needs an integration of the
 clones.
 

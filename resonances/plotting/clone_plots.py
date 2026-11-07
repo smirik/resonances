@@ -44,13 +44,29 @@ class EnsemblePlotter(BasePlotter):
         self._figure = figure
         self._angles(axes[0], members, nominal_series)
         self._status_vs_axis(axes[1], members, nominal_a0, nominal_status, a_star, half_width)
-        self._shares(axes[2], row, nominal_status)
+        usable = str(row.get('cloud_usable', True)) != 'False'  # clones.stats.cloud_row
+        if usable:
+            self._shares(axes[2], row, nominal_status)
+        else:  # too many unbound draws: the row has no shares, (c) says why and draws no bar
+            axes[2].set_axis_off()
+            axes[2].text(
+                0.5,
+                0.5,
+                f"(c) no shares: {row.get('n_draw_invalid', '?')} of {row.get('n_clones', '?')} draws\nare no bound orbit"
+                ' (CLONES_MAX_INVALID)',
+                transform=axes[2].transAxes,
+                ha='center',
+                va='center',
+                fontsize=10,
+                color='darkred',
+            )
         n_valid = row.get('n_classified', 0)
         source = row.get('source', '')
         figure.suptitle(
             f"{parent}: {key} — {row.get('n_clones', len(members))} clones ({n_valid} classified, source {source}, "
-            f"epoch MJD {row.get('epoch_mjd', float('nan')):.3f}); modal {row.get('modal_status', '')} "
-            f"{100 * row.get('modal_share', float('nan')):.0f} %, nominal {nominal_status or '-'}",
+            f"epoch MJD {row.get('epoch_mjd', float('nan')):.3f}); "
+            + (f"modal {row.get('modal_status', '')} {100 * row.get('modal_share', float('nan')):.0f} %" if usable else 'no shares')
+            + f", nominal {nominal_status or '-'}",
             fontsize=12,
         )
         figure.tight_layout(rect=(0, 0, 1, 0.94))

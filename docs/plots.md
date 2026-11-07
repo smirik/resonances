@@ -23,7 +23,7 @@ prints the rows by status × confidence and how many were drawn.
 | `ecc_vector` | all | `{body}-ecc-vector.png` | the $(k, h) = (e\cos\omega, e\sin\omega)$ plane |
 | `cross_spectrum` | all | `-coherence-{pair}` | coherence and cross-phase ([Cross-spectral coherence](coherence.md)) |
 | `free_omega` | Lidov-Kozai | `-free-omega-drift`, `-portrait`, `-vector` | the free argument of pericentre ([Free elements](free-elements.md)) |
-| `clones` | all, a body with clones | `{body}-{key}-clones.png` | the ensemble: every clone's angle by status, status against initial a (with the catalog $a_{\rm res}$ of an MMR), the status shares with Wilson intervals (also drawn with `combined`; [Clones](clones.md)) |
+| `clones` | all, a body with clones | `{body}-{key}-clones.png` | the ensemble: every clone's angle by status, status against initial a (with the catalog $a_{\rm res}$ of an MMR), the status shares with Wilson intervals, or 'no shares' for an unusable covariance (also drawn with `combined`; [Clones](clones.md)) |
 
 An unknown name is an error; a kind is drawn only for the resonance types it lists. The image format is `image_type`
 (`png` or `pdf`). Combined figures go to `plot_path/combined/`, the others to `plot_path/figures/`, both split by

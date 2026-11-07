@@ -55,3 +55,60 @@ def test_status_shares_and_nominal_agreement():
     assert (agreement['nominal_agreement_lo'], agreement['nominal_agreement_hi']) == wilson_interval(3, 10)
     with pytest.raises(ValueError):
         status_shares(['libration'])
+
+
+def test_cloud_row_counts_only_the_bound_draws():
+    """4 draws, 1 of them unbound: the shares are over the 3 bound clones (2 resonant, 1 transient), worked by hand:
+    f_resonant = 2/3, f_transient = 1/3; the Wilson bounds are those of 2/3 (scipy, a separate implementation);
+    f_draw_invalid = 1/4. With CLONES_MAX_INVALID = 0.3 the cloud is usable."""
+    from resonances.clones import cloud_row
+
+    row = cloud_row(['resonant', 'transient', 'resonant'], 'resonant', n_clones=4, n_draw_invalid=1, max_invalid=0.3)
+    reference = binomtest(2, 3).proportion_ci(confidence_level=0.95, method='wilson')
+    assert row['n_classified'] == 3 and row['n_draw_invalid'] == 1 and row['cloud_usable'] is True
+    assert row['f_resonant'] == pytest.approx(2 / 3) and row['f_transient'] == pytest.approx(1 / 3)
+    assert row['f_invalid'] == 0.0  # an unbound draw is no 'invalid' verdict
+    assert row['f_draw_invalid'] == pytest.approx(0.25)
+    assert (row['f_resonant_lo'], row['f_resonant_hi']) == pytest.approx((reference.low, reference.high), abs=1e-9)
+    assert row['nominal_agreement'] == pytest.approx(2 / 3) and row['modal_status'] == 'resonant'
+
+
+def test_cloud_row_without_a_usable_cloud_has_no_shares():
+    """83 of 100 draws unbound (2010 DH65 from SBDB, a 1-day arc): above CLONES_MAX_INVALID = 0.05 the row keeps its
+    counts (17 classified, all non-resonant) but no share, no modal status and no nominal agreement."""
+    import math
+
+    from resonances.clones import cloud_row
+
+    row = cloud_row(['non_resonant'] * 17, 'transient', n_clones=100, n_draw_invalid=83, max_invalid=0.05)
+    assert row['cloud_usable'] is False and row['n_classified'] == 17 and row['n_non_resonant'] == 17
+    assert row['f_draw_invalid'] == pytest.approx(0.83)
+    shares = [value for key, value in row.items() if key.startswith('f_') and key != 'f_draw_invalid']
+    assert shares and all(math.isnan(value) for value in shares)
+    assert row['modal_status'] == '' and math.isnan(row['modal_share']) and math.isnan(row['nominal_agreement'])
+
+
+def test_cloud_row_at_the_limit_is_usable_and_all_unbound_is_not():
+    """5 of 100 unbound = 0.05: at the limit, usable; 100 of 100: no bound draw, unusable."""
+    from resonances.clones import cloud_row
+
+    assert cloud_row(['resonant'] * 95, None, 100, 5, 0.05)['cloud_usable'] is True
+    assert cloud_row([], None, 100, 100, 0.05)['cloud_usable'] is False
+
+
+def test_an_old_row_is_read_in_the_current_semantics():
+    """A clones.csv row written before 2026-11-06 for 2010 DH65: 100 draws, 83 unbound counted as 'invalid', the 17 bound
+    ones non-resonant. Read back: 17 classified, n_invalid 0, no shares (83 % > 5 %). A current row is untouched."""
+    import math
+
+    from resonances.clones import upgrade_row
+
+    old = {'n_clones': 100, 'n_draw_invalid': 83, 'n_missing': 0, 'n_invalid': 83, 'n_non_resonant': 17, 'nominal_status': 'transient'}
+    old |= {f'n_{s}': 0 for s in ('resonant', 'transient', 'near_separatrix', 'uncertain')}
+    row = upgrade_row(old, 0.05)
+    assert row['n_classified'] == 17 and row['n_invalid'] == 0 and row['n_non_resonant'] == 17
+    assert row['cloud_usable'] is False and math.isnan(row['f_non_resonant'])
+    current = dict(row)
+    assert upgrade_row(current, 0.05) is current
+    usable = upgrade_row({**old, 'n_draw_invalid': 0, 'n_invalid': 0, 'n_non_resonant': 100}, 0.05)
+    assert usable['cloud_usable'] is True and usable['f_non_resonant'] == 1.0

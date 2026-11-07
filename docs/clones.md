@@ -69,8 +69,11 @@ in the published coordinates, and converted exactly to Keplerian elements (equin
 i = 2 atan √(p² + q²), Ω = atan2(p, q), ω = ϖ − Ω, M = λ − ϖ; cometary: a = q/(1 − e), M = k a^−3/2 (t − t_p);
 Cartesian: the two-body map with μ = k², the phase from the argument of latitude, so a circular orbit keeps it). L is
 computed from the correlation matrix (a covariance of a good orbit has a
-condition number of 10¹³–10¹⁹ in its raw units). A clone that is no bound ellipse (e ≥ 1) is kept as an `invalid` clone,
-never redrawn.
+condition number of 10¹³–10¹⁹ in its raw units). A draw that is no bound ellipse (e < 0, e ≥ 1 or a ≤ 0) is kept in
+the ensemble (`valid` False), never redrawn, and never integrated: it is no observation of any status, so it is left
+out of the shares. When such draws are more than `CLONES_MAX_INVALID` (5 %) of the sample, the Gaussian is no usable
+model of the orbit's uncertainty (a linear covariance of a 1-day arc: SBDB gives 2010 CG236 σ_e = 13, all 100 draws
+unbound; 2010 DH65 83 of 100) and its clones.csv row gets no shares at all (`cloud_usable` False).
 
 Each clone's $d^2 = \Delta X^{\mathsf T} C^{-1} \Delta X = \lvert z\rvert^2$ is stored: it follows $\chi^2$ with 6 degrees of freedom. When float64 finds C singular
 (Cholesky fails), the eigen factor keeps its `rank` modes (`Ensemble.rank`, in the JSON as `covariance_rank`) and d² is
@@ -144,13 +147,16 @@ resonance for a 1-Myr record. Choose the span and the output step with that in m
 ## Output
 
 - `clones.csv` (top of `save_path`), one row per body and resonance: `n_clones`, `n_classified`, `n_missing`,
-  `n_draw_invalid` (e ≥ 1 at the draw, counted as `invalid`); for each status `n_<status>`, `f_<status>`,
+  `n_draw_invalid` (draws that are no bound orbit, not integrated), `f_draw_invalid` (their share of `n_clones`),
+  `cloud_usable` (`f_draw_invalid` ≤ `CLONES_MAX_INVALID`); for each status `n_<status>`, `f_<status>`,
   `f_<status>_lo`, `f_<status>_hi` (Wilson 95 %); `modal_status`, `modal_share`; `nominal_status`,
   `nominal_confidence`, `nominal_agreement` (share of clones with the nominal's status, with `_lo`, `_hi`: a diagnostic,
   the nominal has no special weight); `nominal_offset_sigma`; `source`, `product` (eq0, eq1, sbdb, get-orb), `epoch_mjd`
   (the covariance's), `run_date_mjd`, `propagated`, `propagation` (none, kepler, ias15), `propagation_days` (run date
-  − epoch), `seed`, `nongrav`. The shares' denominator is `n_classified` (the draw-invalid clones included as
-  `invalid`; clones without a verdict are `n_missing`, left out). A kinematic Lidov-Kozai libration and one without
+  − epoch), `seed`, `nongrav`. The shares' denominator is `n_classified`: the bound clones with a verdict (the
+  unbound draws are not in it, and `invalid` is only the classifier's verdict on a clone's record; clones without a
+  verdict are `n_missing`, left out). A row with `cloud_usable` False keeps its counts but its shares, modal status and
+  nominal agreement are empty. A kinematic Lidov-Kozai libration and one without
   a gate verdict stay apart ([why](physics/status-tree.md#legacy-integer-codes)).
 - `data/ensemble-<name>.csv` and `.json`: every draw (clone index and name, Keplerian elements at the covariance's
   epoch, `valid`, `d2`, the draw in the fit's coordinates `x_<label>`, the elements at the run's date `<element>_start`)

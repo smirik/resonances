@@ -608,6 +608,9 @@ class SimulationConfig:
             raise ValueError(f"clones_epoch is 'fit', 'standard' or empty, got {self.clones_epoch!r}")
         self.clones_seed = int(kwargs.get('clones_seed', _config_or(c, 'CLONES_SEED', '0')) or 0)
         self.clones_batch = int(kwargs.get('clones_batch', _config_or(c, 'CLONES_BATCH', '20')) or 20)
+        self.clones_max_invalid = float(kwargs.get('clones_max_invalid', _config_or(c, 'CLONES_MAX_INVALID', '0.05')))
+        if not 0.0 <= self.clones_max_invalid <= 1.0:
+            raise ValueError(f'clones_max_invalid is a share in [0, 1], got {self.clones_max_invalid}')
         if self.clones_batch < 1:
             raise ValueError(f'clones_batch is at least 1, got {self.clones_batch}')
         self.clones_plot_each = self._read_bool(kwargs, 'clones_plot_each', 'CLONES_PLOT_EACH', False)

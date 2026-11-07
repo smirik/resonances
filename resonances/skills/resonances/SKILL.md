@@ -281,6 +281,10 @@ Distinctions that matter when you report:
   the forced direction and the mode against the node) only for such rows.
 - **Clones.** `clones.csv` gives the share of each status with its Wilson interval: a probability under the
   provider's covariance, the model and the span, not of the classifier's errors. The nominal has no special weight.
+  The shares are over the bound draws only (`n_classified`); draws that are no bound orbit are `n_draw_invalid`,
+  never integrated, and `invalid` is only the classifier's verdict on a clone. With `cloud_usable` False
+  (`f_draw_invalid` > `CLONES_MAX_INVALID`, 5 %) the covariance is no model of the orbit (a few-day arc): the row has
+  no shares; do not read its counts as evidence.
 - `confirmed_ei` (= `zlk_ei_coupling == zlk`), `zlk_coherent` (the Welch line) and the diagnostic plots (recurrence,
   cycles, FAIR) never change a status.
 - `status_code` is the legacy integer; use the string columns.

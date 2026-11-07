@@ -3,7 +3,8 @@
 `sample(solution, n, seed)` draws the clones from the multivariate normal of the orbit solution's covariance in the
 fit's own coordinates, X_i = X_0 + L z_i with C = L L^T and z_i ~ N(0, I_6), never from independent per-element
 errors, and converts each clone exactly to Keplerian elements at the covariance's epoch. The nominal is kept apart. A
-draw that is no bound orbit (e >= 1) is kept as an invalid clone, never redrawn. Each clone's squared Mahalanobis
+draw that is no bound orbit (e < 0, e >= 1, a <= 0) is kept in the sample (valid False), never redrawn, never integrated
+and never counted in a share (clones.stats.cloud_row; above CLONES_MAX_INVALID of them the cloud gives no shares). Each clone's squared Mahalanobis
 distance d^2 = dX^T C^+ dX is stored (= |z|^2, chi^2 with 6 degrees of freedom; for a covariance float64 finds singular,
 the pseudo-inverse distance over the `rank` modes kept, chi^2 with `rank` degrees of freedom), so a reader can condition
 on it afterwards; there is no truncation.
@@ -245,7 +246,10 @@ def sample(solution: OrbitSolution, n: Optional[int] = None, seed: Optional[int]
         frame[f'x_{label}'] = draws[:, index]
     invalid = int((~kep['valid']).sum())
     if invalid:
-        logger.warning(f'{name}: {invalid} of {n} clones are no bound orbit (e >= 1); kept as invalid clones, not redrawn')
+        logger.warning(
+            f'{name}: {invalid} of {n} draws are no bound orbit (e < 0, e >= 1, a <= 0): kept, not redrawn, not integrated '
+            'and not counted in the shares (none at all above CLONES_MAX_INVALID)'
+        )
     return Ensemble(
         name=name,
         epoch_mjd=float(solution.epoch_mjd),

@@ -16,7 +16,8 @@ parameters only flagged, `find` takes the whole cloud's candidates.
   clones are integrated to `date` (`simulation/propagate.py`, never a linear covariance map). The nominal is an
   ordinary body (its verdict does not change); clones `<name>~c001` run after the ordinary bodies in `CLONES_BATCH`
   batches by the batch workers (`_clone_batch`, `worker_results`, `simulation/ensemble_run.py`).
-- Output: clones.csv (six shares + Wilson, modal, nominal agreement, `nominal_offset_sigma`),
+- Output: clones.csv (six shares + Wilson over the bound draws, modal, nominal agreement, `n_draw_invalid`,
+  `f_draw_invalid`, `cloud_usable`, `nominal_offset_sigma`),
   `data/ensemble-<name>.csv/.json`, `data/ensemble-<name>-results.npz` (kept: verdict rows, a0, half-widths, derived
   rows, thinned angles), figure kind `clones` (`plotting/clone_plots.py`).
 - Resume and restore (author 2026-10-28; `simulation/clone_store.py`, `ensemble_run.run_with_clones`): one checkpoint
@@ -35,7 +36,10 @@ parameters only flagged, `find` takes the whole cloud's candidates.
   OEF only; MPC CAR and SBDB cometary are linear maps of the fit); never independent per-element errors (a cometary diagonal gets
   σ_a wrong by 4–889×). Exceeding an ill-conditioned (1e13–1e19) ellipsoid in another metric is not a dynamical
   failure; compare the marginals that matter (σ_a, σ_e, σ_λ).
-- Draws that are no bound orbit (e ≥ 1) stay in the sample as invalid clones; never redraw them (that is silent
+- Draws that are no bound orbit (e < 0, e ≥ 1, a ≤ 0) are not integrated and never enter a share's denominator
+  (`stats.cloud_row`; author 2026-11-06: counting them as `invalid` read 0/100 'bounded' for 2010 CG236 and DH65 as
+  evidence). Above `CLONES_MAX_INVALID` (5 %) the row has no shares (`cloud_usable` False): such a Gaussian is no model
+  of the orbit. Draws that are no bound orbit stay in the ensemble (`valid` False); never redraw them (that is silent
   truncation).
 - OEF: use `COV`, factor it without inverting; for ill-conditioned orbits `NOR` and `COV` disagree (‖N·C − I‖ up to
   2e8). `WEA`/`EIG` hold only in the radian-scaled metric, while `COV` has λ in degrees.

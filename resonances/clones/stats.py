@@ -9,6 +9,11 @@ interval (Wilson 1927), which, unlike the normal approximation, stays inside [0,
 
 Its half-width at p = 0.5 is about 1/sqrt(N): +-10 % for N = 100, +-5 % for 400, +-3 % for 1000. It says nothing about
 model or classifier errors.
+
+A draw that is no bound orbit (`Ensemble`: e < 0, e >= 1, a <= 0) is not integrated and is no observation of any
+status: the shares are over the bound draws only (`cloud_row`). When more than CLONES_MAX_INVALID of the draws are
+unbound, the Gaussian is no usable model of the orbit's uncertainty (author 2026-11-06: 2010 CG236, 2010 DH65, 1-day
+arcs, gave 0/100 'bounded' that read as evidence against co-orbital motion): the row then has no shares at all.
 """
 
 import math
@@ -58,6 +63,49 @@ def status_shares(statuses: Iterable[Optional[str]], z: float = Z_95) -> dict:
     row['modal_status'] = modal
     row['modal_share'] = counts[modal] / n if n else float('nan')
     return row
+
+
+def cloud_row(
+    statuses: Iterable[Optional[str]],
+    nominal_status: Optional[str],
+    n_clones: int,
+    n_draw_invalid: int,
+    max_invalid: float,
+    z: float = Z_95,
+) -> dict:
+    """`ensemble_row` of the bound draws (`statuses` holds no entry for an unbound draw) with `n_draw_invalid`,
+    `f_draw_invalid` (its share of the n_clones draws) and `cloud_usable` (f_draw_invalid <= max_invalid). An unusable
+    cloud keeps its counts but gets no shares: every f_*, the modal status and share and the nominal agreement are
+    empty (NaN), so no statistic can be read from it."""
+    row = ensemble_row(statuses, nominal_status, z)
+    share = n_draw_invalid / n_clones if n_clones else float('nan')
+    usable = bool(n_clones > 0 and share <= max_invalid)
+    row.update({'n_draw_invalid': int(n_draw_invalid), 'f_draw_invalid': share, 'cloud_usable': usable})
+    if not usable:
+        for key in list(row):
+            if (key.startswith('f_') and key != 'f_draw_invalid') or key.startswith('nominal_agreement') or key == 'modal_share':
+                row[key] = float('nan')
+        row['modal_status'] = ''
+    return row
+
+
+def upgrade_row(record: dict, max_invalid: float, z: float = Z_95) -> dict:
+    """A clones.csv row (dict) in the semantics of `cloud_row`: a row written before 2026-11-06 (no f_draw_invalid, or
+    NaN there) counted the unbound draws in n_invalid and in every share's denominator; its counts are taken back
+    (n_invalid minus n_draw_invalid) and its shares, cloud_usable and nominal agreement recomputed. A current row is
+    returned as it is."""
+    share = record.get('f_draw_invalid')
+    if share is not None and share == share:  # present and not NaN
+        return record
+    counts = {status: int(record.get(f'n_{status}', 0) or 0) for status in STATUSES}
+    n_draw_invalid = int(record.get('n_draw_invalid', 0) or 0)
+    counts['invalid'] = max(0, counts['invalid'] - n_draw_invalid)
+    statuses = [s for s in STATUSES for _ in range(counts[s])] + [None] * int(record.get('n_missing', 0) or 0)
+    nominal = record.get('nominal_status') or None
+    nominal = nominal if isinstance(nominal, str) else None
+    out = dict(record)
+    out.update(cloud_row(statuses, nominal, int(record.get('n_clones', 0) or 0), n_draw_invalid, max_invalid, z))
+    return out
 
 
 def ensemble_row(statuses: Iterable[Optional[str]], nominal_status: Optional[str] = None, z: float = Z_95) -> dict:

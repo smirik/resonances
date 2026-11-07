@@ -738,6 +738,10 @@ Clones (virtual asteroids) drawn from an orbit fit's covariance; see [Clones](cl
 - `clones_seed`/`CLONES_SEED` (int): the seed; each body's generator is seeded by (seed, crc32(name)). Default: `0`.
 - `clones_batch`/`CLONES_BATCH` (int): clones per REBOUND simulation; the batches run on `n_cores` processes after the
   ordinary bodies. Default: `20`.
+- `clones_max_invalid`/`CLONES_MAX_INVALID` (float, a share): the largest share of draws that are no bound orbit
+  (e < 0, e ≥ 1, a ≤ 0) for which clones.csv gives shares. The shares are over the bound draws only; above this the
+  Gaussian is no usable model of the orbit's uncertainty and the row has `cloud_usable` False and no shares. A
+  convention. Default: `0.05`.
 - `clones_plot_each`/`CLONES_PLOT_EACH` (bool): the figures of every clone as of an ordinary body; otherwise only the
   ensemble figure (plot kind `clones`, also drawn with `combined`). Default: `False`.
 - `CLONES_CACHE_DIR` (str): the downloaded orbit solutions, `<dir>/<source>/<file>` and `<file>.meta.json`. Default:

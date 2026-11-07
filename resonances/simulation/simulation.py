@@ -14,7 +14,7 @@ from resonances.data.invariable_plane import FRAME_ECLIPTIC, FRAME_INVARIABLE
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.data.const import SOLAR_SYSTEM_WITH_SUN
 
-from . import mmr_adapter
+from . import mmr_adapter, run_lock
 from .dry_run import prepare_run
 from .config import SavePlanets, SimulationConfig
 from resonances import mpcorb
@@ -127,19 +127,24 @@ class Simulation:
         With ensembles (clones) the ordinary bodies and then the clones run under one checkpoint, resumed as a whole
         (`ensemble_run.run_with_clones`, docs/clones.md)."""
         mpcorb.clear_cache()
-        prepare_run(self)
-        self.times = np.linspace(0.0, self.config.tmax, self.config.Nout)
+        # one run per folder (simulation/run_lock.py); the batch workers write under their parent's lock
+        lock = None if self.data_manager.skip_simulation_json else run_lock.acquire(self.config.save_path)
+        try:
+            prepare_run(self)
+            self.times = np.linspace(0.0, self.config.tmax, self.config.Nout)
 
-        if self.ensembles:  # the ordinary bodies, then the clones (simulation/ensemble_run.py)
-            from . import ensemble_run
+            if self.ensembles:  # the ordinary bodies, then the clones (simulation/ensemble_run.py)
+                from . import ensemble_run
 
-            ensemble_run.run_with_clones(self, progress)
-        elif self.batch_manager.should_batch(len(self.bodies)):
-            self._run_batched(progress)
-        else:
-            self._run_single(progress)
-        if not self.data_manager.skip_simulation_json:  # the parent process only (batch workers skip it): whole run
-            self.data_manager.log_selection(self.bodies)
+                ensemble_run.run_with_clones(self, progress)
+            elif self.batch_manager.should_batch(len(self.bodies)):
+                self._run_batched(progress)
+            else:
+                self._run_single(progress)
+            if not self.data_manager.skip_simulation_json:  # the parent process only (batch workers skip it): whole run
+                self.data_manager.log_selection(self.bodies)
+        finally:
+            run_lock.release(lock, self.config.save_path)
         self.running_time["stop"] = logger.get_current_time()
 
     def _run_single(self, progress=False):

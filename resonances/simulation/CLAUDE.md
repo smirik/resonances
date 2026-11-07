@@ -32,7 +32,8 @@ User docs: `docs/output.md`, `docs/dry-run.md`, `docs/serialization.md`, `docs/c
   ZLK), mmr_numbers/candidates/constants CSVs, coherence.csv — tables at the top of save_path; series CSVs in
   `DATA_FOLDER` (`data/`), figures in `PLOT_FIGURES_FOLDER` (`figures/`) and `PLOT_COMBINED_FOLDER` (`combined/`),
   split by `PLOT_LAYOUT`/`PLOT_COMBINED_LAYOUT` presets (`simulation/layout.py`: flat, status, confidence, confidence/status, …;
-  `figure_folder`; the benchmark tree uses `benchmark/tools/sort_figures.py`). Table writes lock `<table>.lock`,
+  `figure_folder`; the benchmark tree uses `benchmark/tools/sort_figures.py`). `mmr_combined_figure(body, resonance,
+  sim, options)`: the MMR verdict figure unsaved, re-run and checked against summary.csv after a restore (`fig.stamp`). Table writes lock `<table>.lock`,
   removed by its holder (`_locked`: no lock left after a run; after locking, `samestat` checks the path still names the
   locked file, else retry). `save_simulation_summary` replaces the rows of the bodies in memory (`_replace_rows_of`);
   batch workers only append, the parent drops old rows first — this is what prevents duplicate rows on retry.
@@ -54,6 +55,9 @@ User docs: `docs/output.md`, `docs/dry-run.md`, `docs/serialization.md`, `docs/c
 - `mpc_source.py`: MPC_* keys → `mpcorb.Settings`, registered as its defaults; `epoch_refusal`.
 - `propagate.py`: integrates a body given at another epoch to the run date (IAS15 among the run's planets taken at the
   body's own epoch; never a linear covariance map). Used by the MPC `propagate` policy and by clones.
+- `run_lock.py`: one run per folder (`<save_path>/.run.lock`, host and pid), taken by `Simulation.run` in the
+  coordinating process (never by batch workers) before anything is written, released at the end; a live holder stops
+  the run (2026-11-06: a clone run launched twice into one folder left every summary.csv row twice).
 - `ensemble_run.py`: clones in a run (see `resonances/clones/CLAUDE.md`); with ensembles `Simulation.run` goes
   through `run_with_clones` (ordinary part, then clones, one checkpoint). `clone_store.py`: the checkpoint
   `clones_state/` (identity, starts, `batch-<i>.npz` published by tmp + `os.replace`, existence after validation =
