@@ -26,7 +26,7 @@ from resonances.secular.free_elements import RAD_PER_ARCSEC, rate
 from resonances.secular.proper_angle import inclination_from_invariable_plane, inclination_from_vector, reduced_vectors
 from .base import DiagnosticPlotter, time_unit
 from .style import CENTRE, EPISODE_COLOURS, INK, MODEL, OWNER, RATE_ZERO, RAW, RAW_ALPHA, REFERENCE, SUBRESONANCE
-from .style import SECULAR_PLOT_KINDS, NumbersMode, resolve_plot_options, time_cmap, time_label
+from .style import SECULAR_PLOT_KINDS, FigureMode, NumbersMode, resolve_plot_options, time_cmap, time_label
 from .verdict_vocab import snake_words
 
 
@@ -825,7 +825,18 @@ def _draw_centre(ax, frame, layout):
     _style_axis(ax, CENTRE_LETTER, 'center, °', layout)
 
 
-def _draw_portraits(fig, frame, layout, norm, free_elements):
+def _free_vector_drawn(analysis, free_elements) -> bool:
+    """Whether the second portrait is the free eccentricity vector: a ZLK row with its free elements."""
+    return str(analysis.verdict.resonance_type) == 'lidov_kozai' and free_elements is not None and bool(len(free_elements.omega_free))
+
+
+def _second_portrait_drawn(analysis, free_elements) -> bool:
+    """Whether the second portrait has data: the free eccentricity vector of a ZLK row, else the filtered angle."""
+    return _free_vector_drawn(analysis, free_elements) or analysis.angle is not None
+
+
+def _draw_portraits(fig, frame, layout, norm, free_elements, skip_empty: bool = False):
+    """The two portraits of the bottom row; `skip_empty` (the 'panels' figure) leaves out a second one without data."""
     from resonances.plotting.mmr_combined import _rect_axes, rate_zero
 
     analysis = frame.analysis
@@ -849,8 +860,10 @@ def _draw_portraits(fig, frame, layout, norm, free_elements):
     ax.set_ylabel(f'{name} sin σ', fontsize=layout.font_axis_pt)
     ax.tick_params(labelsize=layout.font_ticks_pt)
     ax.set_title(f'({PORTRAIT_LETTERS[0]})', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
+    if skip_empty and not _second_portrait_drawn(analysis, free_elements):
+        return
     ax2 = _rect_axes(fig, layout.bottom[1])
-    if str(analysis.verdict.resonance_type) == 'lidov_kozai' and free_elements is not None and len(free_elements.omega_free):
+    if _free_vector_drawn(analysis, free_elements):
         x, y = free_elements.free_eccentricity_vector()
         t = frame.times(free_elements.omega_times)
         ax2.scatter(x, y, c=t, norm=norm, cmap=time_cmap(), s=0.8, linewidths=0, rasterized=True)
@@ -955,25 +968,35 @@ def draw_long_period_combined(
     the analysis' summary row (the body's free elements, e-i coherence); `free_elements` (ZLK) draws (g) and (j), and
     (a′) under (a) for an induced libration (`forcing_panel_drawn`; nine time panels then, eight otherwise).
     The right column follows the plot option `combined.numbers` (explained | all); `settings`: the AnalysisSettings the
-    explanation compares with (default: from the configuration). Returns the Figure (with `text_stats`)."""
+    explanation compares with (default: from the configuration). Returns the Figure (with `text_stats`).
+    `combined.figure='panels'` (a paper figure, as `mmr_combined.draw_combined`): the time panels and the portraits
+    only, no header, legend or right column (`text_stats` empty), a second portrait without data left out, the page
+    cropped (`mmr_combined.panels_layout`); a `stamp` is still printed."""
     import dataclasses
 
     import matplotlib.pyplot as plt
 
     from resonances.plotting import combined_numbers as numbers
-    from resonances.plotting.mmr_combined import _colour_bar, label_time_axes, stacked_axes
+    from resonances.plotting.mmr_combined import _colour_bar, label_time_axes, panels_layout, panels_stamp, stacked_axes
     from resonances.plotting.style import LAYOUT_V1
 
     layout = layout or dataclasses.replace(LAYOUT_V1, n_panels=len(LONG_PERIOD_PANELS))
     summary = {**analysis.summary_row(), **(row or {})}
-    explained = resolve_plot_options(options)['combined']['numbers'] != NumbersMode.ALL
-    if explained:  # the column is measured first: the figure grows down when it needs (decision D8)
+    resolved = resolve_plot_options(options)
+    panels = resolved['combined']['figure'] == FigureMode.PANELS
+    explained = resolved['combined']['numbers'] != NumbersMode.ALL
+    if panels:
+        layout = panels_layout(layout)
+    elif explained:  # the column is measured first: the figure grows down when it needs (decision D8)
         from resonances.plotting.verdict_column_draw import prepare
         from resonances.plotting.verdict_column_long import figure_parts
 
         layout, prepared = prepare(*figure_parts(analysis, row, free_elements, settings), layout)
     fig = plt.figure(figsize=layout.size, dpi=layout.dpi)
-    _draw_header(fig, analysis, layout, stamp)
+    if not panels:
+        _draw_header(fig, analysis, layout, stamp)
+    else:
+        panels_stamp(fig, layout, stamp)
     frame = _LongFrame(analysis, settings)
     width, height = fig.get_size_inches()
     forcing = analysis.series is not None and len(analysis.series.t_yr) > 1 and forcing_panel_drawn(analysis, free_elements)
@@ -994,8 +1017,11 @@ def draw_long_period_combined(
         label_time_axes(axes, wrapped, layout, frame.unit)
         axes[-1].set_xlim(frame.x[0], frame.x[-1])
         norm = Normalize(frame.x[0], frame.x[-1])
-        _draw_portraits(fig, frame, layout, norm, free_elements)
+        _draw_portraits(fig, frame, layout, norm, free_elements, skip_empty=panels)
         _colour_bar(fig, norm, layout, frame.unit, label_on_top=True)  # (j)'s y label sits right of it (W23 F4)
+    if panels:
+        fig.text_stats = {}
+        return fig
     from resonances.plotting.mmr_combined import policy_marks
 
     _draw_legend(fig, layout, forcing, policy_marks(analysis) is not None)

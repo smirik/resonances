@@ -103,3 +103,40 @@ def test_the_growth_is_capped():
     _, fit = draw.fit_layout(column, tiny, max_growth_in=1.0)
     assert fit.grown_in == pytest.approx(1.0) and fit.height_needed_in > 1.1
     assert fit.fit.trimmed or fit.overflow == 1
+
+
+def test_the_zlk_panels_figure_draws_the_panels_only():
+    """combined.figure='panels' on the secular/ZLK figure: no header, legend or column; both portraits (they hold data),
+    the page cropped as the MMR one (12.45 x 12.8 in, `mc.panels_layout`)."""
+    analysis = _zlk(2.5)
+    full = sp.draw_long_period_combined(analysis, settings=SETTINGS)
+    paper = sp.draw_long_period_combined(analysis, settings=SETTINGS, options={'combined': {'figure': 'panels'}})
+    try:
+        assert tuple(paper.get_size_inches()) == pytest.approx((12.45, 12.8)) and paper.text_stats == {}
+        assert not [a for a in paper.findobj() if a.get_gid() == draw.GID] and _drawn(full)
+        full_texts, paper_texts = [t.get_text() for t in full.texts], [t.get_text() for t in paper.texts]
+        assert 'Legend' in full_texts and 'Legend' not in paper_texts
+        assert not [t for t in paper_texts if t.startswith('synthetic')] and [t for t in full_texts if t.startswith('synthetic')]
+        titles = [ax.get_title(loc='left') for ax in paper.axes if ax.get_title(loc='left').startswith('(')]
+        assert titles == [ax.get_title(loc='left') for ax in full.axes if ax.get_title(loc='left').startswith('(')] == ['(i)', '(j)']
+        box = paper.get_tightbbox(paper.canvas.get_renderer())
+        assert box.x1 <= 12.45 and 12.8 - box.y1 < 0.25
+    finally:
+        plt.close(full)
+        plt.close(paper)
+
+
+def test_the_panels_figure_leaves_out_a_second_portrait_without_data():
+    """No filtered angle and no free elements: the full figure keeps an empty (j) frame, the paper figure only (i); a
+    stamp still prints, in the same style as the MMR one (`mc.panels_stamp`)."""
+    bare = replace(_zlk(2.5), angle=None)
+    full = sp.draw_long_period_combined(bare, settings=SETTINGS)
+    paper = sp.draw_long_period_combined(bare, settings=SETTINGS, options={'combined': {'figure': 'panels'}}, stamp='mismatch')
+    try:
+        titles = [[ax.get_title(loc='left') for ax in fig.axes if ax.get_title(loc='left').startswith('(')] for fig in (full, paper)]
+        assert titles == [['(i)', '(j)'], ['(i)']]
+        (stamp,) = [t for t in paper.texts if t.get_text() == 'mismatch']
+        assert stamp.get_color() == '#b2182b' and stamp.get_fontweight() == 'bold'
+    finally:
+        plt.close(full)
+        plt.close(paper)

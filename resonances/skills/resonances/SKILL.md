@@ -353,6 +353,10 @@ The right column is the verdict, in ten blocks that come in the same order for e
 10. **Footer**: the codes (status code, leaf · angle rule, reason/origin/veto, flags), then `W28 tree: status/level`
     (`v2_verdict`, for comparison only: never a second verdict), the settings hash and the docs.
 
+For a paper, `plot_options={'combined': {'figure': 'panels'}}` draws the panels only (no header, legend, right
+column or empty slot); the caption must then carry the verdict. After a restore,
+`sim.data_manager.mmr_combined_figure(body, resonance, sim, options=...)` returns that figure unsaved.
+
 A long column makes the page taller. For the full text, use
 `verdict_column.column_text(verdict_column_mmr.figure_column(analysis, rows, settings))`, or
 `verdict_column_long.figure_column(analysis, row, free_elements, settings)` for secular and ZLK rows.

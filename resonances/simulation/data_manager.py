@@ -367,21 +367,33 @@ class DataManager:
 
         Drawn from the analysis in memory; after a restore without recomputation (or once its arrays were
         released) the analysis is re-run on the saved series and compared with the summary row (SPEC §2.6)."""
+        figure = self.mmr_combined_figure(body, resonance, simulation)
+        if figure is None:
+            return
+        plotter = BasePlotter()
+        plotter._figure = figure
+        folder = self.figure_folder(body, resonance, combined=True)
+        self._show_or_save(plotter, f'{folder}/{body.name}-{resonance.to_s()}-combined.{self.config.image_type}')
+        plotter.close()
+
+    def mmr_combined_figure(self, body: Body, resonance, simulation, options=None):
+        """The verdict figure of an MMR row as a Figure (not saved), or None when it cannot be drawn; `options`: plot
+        options (default: the configuration's), e.g. {'combined': {'figure': 'panels'}} for a paper. After a restore
+        the analysis is re-run and checked against summary.csv (`_figure_analysis`); `figure.stamp` is the mismatch
+        printed in red, None when they agree or when there is no row to check against (a warning is logged)."""
         from resonances.plotting.mmr_combined import draw_combined
 
-        key = resonance.to_s()
         found = self._figure_analysis(body, resonance, simulation)
         if found is None:
-            return
+            return None
         analysis, series, stamp = found
         summary = self._mmr_summary_row(body, resonance, analysis)
         constants = analysis.context.constants_rows() if analysis.context is not None else []
         rows = (summary, analysis.numbers_row(), analysis.episode_rows(), constants)
-        plotter = BasePlotter()
-        plotter._figure = draw_combined(analysis, series, stamp=stamp, rows=rows, options=self.config.plot_options)
-        folder = self.figure_folder(body, resonance, combined=True)
-        self._show_or_save(plotter, f'{folder}/{body.name}-{key}-combined.{self.config.image_type}')
-        plotter.close()
+        options = self.config.plot_options if options is None else options
+        figure = draw_combined(analysis, series, stamp=stamp, rows=rows, options=options)
+        figure.stamp = stamp
+        return figure
 
     def _figure_analysis(self, body: Body, resonance, simulation):
         """(analysis, series, stamp) for the verdict figure of a row, or None when it cannot be drawn.

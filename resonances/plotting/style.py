@@ -61,6 +61,13 @@ class NumbersMode(StrEnum):
     ALL = 'all'  # every number of the decision (the full dump, for debugging)
 
 
+class FigureMode(StrEnum):
+    """What the verdict figures (MMR, secular, ZLK) draw."""
+
+    FULL = 'full'  # the whole page: header, time panels, portraits, legend, right column (layout V1)
+    PANELS = 'panels'  # for a paper: the panels and their margin legends only, no empty slot, cropped (the caption explains)
+
+
 @dataclass(frozen=True)
 class CombinedLayout:
     """Geometry of the combined figure, in inches.
@@ -234,8 +241,8 @@ DEFAULT_PLOT_OPTIONS: Dict[str, Any] = {
     'portrait': {'y': PortraitY.RATE},
     'cycles': {'prominence': None},  # rad; None = 5% of the angle range within [0.005, 0.1]
     'fair': {'max_step_fraction': 0.25},  # warn when the output step exceeds this share of the orbit
-    # panel (d) of the MMR verdict figure; the right column of every verdict figure
-    'combined': {'osculating_a': OsculatingAxis.FULL, 'numbers': NumbersMode.EXPLAINED},
+    # panel (d) of the MMR verdict figure; the right column and the page of every verdict figure
+    'combined': {'osculating_a': OsculatingAxis.FULL, 'numbers': NumbersMode.EXPLAINED, 'figure': FigureMode.FULL},
 }
 
 # Options whose value must be a member of an enum, by dotted path.
@@ -246,6 +253,7 @@ _CHOICES = {
     'portrait.y': PortraitY,
     'combined.osculating_a': OsculatingAxis,
     'combined.numbers': NumbersMode,
+    'combined.figure': FigureMode,
 }
 
 

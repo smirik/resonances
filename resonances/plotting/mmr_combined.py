@@ -7,9 +7,10 @@ their fill spans of (a) (`portrait_span`), FAIR (m, two-body angles) and the leg
 is no FAIR, then under one warning line with the reason, `fair_warning`). Right (`draw_right_column`): the ten
 blocks of `verdict_column` (header with the status, printed nowhere else, subtitle, key facts, why, confidence,
 checks, evidence, caveats, numbers, footer; `verdict_column_draw.draw_prepared`), or every number of the decision
-(plot option `combined.numbers='all'`). The layout is the same for every object (figures of one status folder are
-leafed through); a column that does not fit grows the figure down, at most `style.COLUMN_MAX_GROWTH_IN`, the left
-panels keeping their place at the top (`prepare_column`, decision D8).
+(plot option `combined.numbers='all'`; `combined.figure='panels'`: the left panels only, for a paper). The layout is
+the same for every object (figures of one status folder are leafed through); a column that does not fit grows the
+figure down, at most `style.COLUMN_MAX_GROWTH_IN`, the left panels keeping their place at the top (`prepare_column`,
+decision D8).
 
 The panels carry no explanatory text (the author, 2026-10-16: what a line means is in the legend and docs/plots.md):
 lines are not labeled, a level outside a panel's axis is a small triangle at the edge (▲ above, ▼ below), and the
@@ -61,7 +62,7 @@ from __future__ import annotations
 
 import itertools
 import textwrap
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Callable, Collection, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
@@ -105,6 +106,7 @@ from resonances.plotting.style import (  # noqa: F401
     STATUS_COLOURS,
     SUBRESONANCE,
     ZONE_FILL,
+    FigureMode,
     NumbersMode,
     OsculatingAxis,
     Rect,
@@ -3375,6 +3377,7 @@ def draw_episode_portrait(
     low: Optional[float] = None,
     settings=None,
     record: Optional[Tuple[float, float]] = None,
+    letter: str = 'l',
 ):
     """(l) the accepted episodes only: sigma_f against sigma_dot at the response cutoff, the PORTRAIT_MAX_EPISODES
     longest, each over its fill span of (a) inside the window of (k) (`portrait_span`, `portrait_pieces`): whole or,
@@ -3383,9 +3386,10 @@ def draw_episode_portrait(
     status does not count '#id < floor', as on (a); the label's times are the turning points'. `low`: the lower edge of the 360-degree window [rad]
     (`portrait_window_low`, shared with (k)); default: around the episodes. `settings`/`record`: as for
     `episode_spans` (the figure passes its own). Under the minimal policy (`policy_marks`) the counted episodes come
-    first and solid; an accepted run it does not count is dashed, '#id cand' or '#id not counted' (138537)."""
+    first and solid; an accepted run it does not count is dashed, '#id cand' or '#id not counted' (138537). `letter`:
+    the panel's letter (the 'panels' figure re-letters the bottom row)."""
     marks = policy_marks(analysis)
-    _bottom_title(ax, '(l) accepted episodes' if marks is None else '(l) episodes, counted solid', layout)
+    _bottom_title(ax, f'({letter}) accepted episodes' if marks is None else f'({letter}) episodes, counted solid', layout)
     prep, geometry = analysis.prep, analysis.geometry
     if _aliased(analysis):
         _empty(ax, _alias_reason(analysis), layout, crossed=True)
@@ -3536,9 +3540,11 @@ def fair_warning(analysis: MMRAnalysis, series: MMRSeries, max_step_fraction: fl
     return FAIR_WARNING_PREFIX + words
 
 
-def draw_fair(ax, analysis: MMRAnalysis, series: MMRSeries, norm, layout: VerdictFigureLayout = LAYOUT_V1, divisor: float = 1.0) -> None:
+def draw_fair(
+    ax, analysis: MMRAnalysis, series: MMRSeries, norm, layout: VerdictFigureLayout = LAYOUT_V1, divisor: float = 1.0, letter: str = 'm'
+) -> None:
     """(m) FAIR plane of a prograde two-body angle with dt <= P/4.2 (`fair_unavailable_reason` is None)."""
-    _bottom_title(ax, '(m) FAIR', layout)
+    _bottom_title(ax, f'({letter}) FAIR', layout)
     planet = series.planets[analysis.resonance.planets[0]]
     inner = osc.is_inner(series.a, planet.a)
     x, y = osc.fair_coordinates(series.mean_anomaly, series.mean_longitude, planet.mean_longitude, inner)
@@ -3632,6 +3638,37 @@ def figure_rows(analysis: MMRAnalysis) -> Tuple[Mapping[str, Any], Mapping[str, 
     return analysis.summary_row(), analysis.numbers_row(), analysis.episode_rows(), constants
 
 
+def episode_portrait_drawn(analysis: MMRAnalysis) -> bool:
+    """Whether (l) draws an episode: not when it would hold only its reason (aliased samples, no filtered angle, no
+    accepted episode; `draw_episode_portrait`). The 'panels' figure leaves such a slot out."""
+    return not _aliased(analysis) and analysis.prep is not None and bool(accepted_runs(analysis.geometry))
+
+
+# The 'panels' figure (plot option combined.figure='panels'), inches: room over (a) for its episode labels and sub-regime
+# brackets; right of `separator_x`, where the margin legends end in the full figure, for their last glyphs
+PANELS_TOP_PAD_IN = 0.25
+PANELS_RIGHT_PAD_IN = 0.15
+
+
+def panels_layout(layout: VerdictFigureLayout) -> VerdictFigureLayout:
+    """The layout of the 'panels' figure (for a paper): the same rectangles, the page cropped to what it draws, the time
+    panels with their margin legends (up to `separator_x`, + PANELS_RIGHT_PAD_IN) and the bottom row; the header's band and the right column
+    are cut off. Every rect is measured from the lower-left corner, so nothing else moves."""
+    x, y, w, h = layout.panels
+    return replace(layout, size=(layout.separator_x + PANELS_RIGHT_PAD_IN, y + h + PANELS_TOP_PAD_IN))
+
+
+def panels_stamp(fig, layout: VerdictFigureLayout, stamp: Optional[str]) -> None:
+    """The 'panels' figure has no header: a `stamp` (a re-run analysis that disagrees with the saved summary) goes in
+    red to its top right corner, so a mismatch is never hidden. Shared by the MMR and the secular/ZLK figures."""
+    if not stamp:
+        return
+    width, height = layout.size
+    fig.text(
+        1 - 0.05 / width, 1 - 0.05 / height, stamp, fontsize=layout.font_letter_pt, va='top', ha='right', color='#b2182b', fontweight='bold'
+    )
+
+
 def draw_combined(
     analysis: MMRAnalysis,
     series: MMRSeries,
@@ -3647,32 +3684,50 @@ def draw_combined(
     `rows` = (summary, numbers, episodes, constants) as read from the CSV files (a restore without
     recomputation); by default they come from the analysis itself (`figure_rows`). `options`: plot options
     (`style.DEFAULT_PLOT_OPTIONS`, e.g. {'combined': {'osculating_a': 'hidden'}}).
+
+    With {'combined': {'figure': 'panels'}} (a paper figure): the time panels with their margin legends and the bottom
+    row only, no header, legend or right column (`fig.text_stats` is empty); (l) is left out when it would draw no
+    episode (`episode_portrait_drawn`), FAIR when it is not drawn (no warning line either); the remaining portraits
+    move left and are lettered on from (k); the page is cropped (`panels_layout`). A `stamp` is still printed (top
+    right), so a mismatch with the saved summary is never hidden.
     """
     import matplotlib.pyplot as plt
     from matplotlib.colors import Normalize
 
     summary, numbers, episodes, constants = rows if rows is not None else figure_rows(analysis)
     settings = settings if settings is not None else _settings()  # read once for the panels and the right column
+    resolved = resolve_plot_options(options)
+    panels = resolved['combined']['figure'] == FigureMode.PANELS
     prepared = None
-    if resolve_plot_options(options)['combined']['numbers'] != NumbersMode.ALL:
+    if panels:
+        layout = panels_layout(layout)
+    elif resolved['combined']['numbers'] != NumbersMode.ALL:
         # the column is measured before the figure exists: the figure grows down when it needs (decision D8)
         layout, prepared = prepare_column(analysis, (summary, numbers, episodes, constants), layout, settings)
     fig = plt.figure(figsize=layout.size, dpi=layout.dpi)
-    draw_header(fig, analysis, layout, series, stamp, header_role(analysis, (summary, numbers, episodes), settings))
+    if not panels:
+        draw_header(fig, analysis, layout, series, stamp, header_role(analysis, (summary, numbers, episodes), settings))
+    else:
+        panels_stamp(fig, layout, stamp)
     draw_time_panels(fig, analysis, series, layout, options, settings, {**numbers, **summary})
     divisor, unit = time_unit(series.t_yr[-1] - series.t_yr[0])
     norm = Normalize(series.t_yr[0] / divisor, series.t_yr[-1] / divisor)
-    whole_rect, episodes_rect, third_rect = layout.bottom
+    slots, letters = list(layout.bottom), iter('lmn')  # the 'panels' figure packs the drawn portraits left
     low = portrait_window_low(analysis)
-    portraits = (_rect_axes(fig, whole_rect), _rect_axes(fig, episodes_rect))
+    portraits = [_rect_axes(fig, slots.pop(0))]
     draw_portrait(portraits[0], analysis, norm, layout, divisor, low)
     _colour_bar(fig, norm, layout, unit)
     record = (float(series.t_yr[0]), float(series.t_yr[-1]))  # the edges the fill of (a) reaches (`_shade_episodes`)
-    draw_episode_portrait(portraits[1], analysis, layout, divisor, unit, low, settings, record)
+    if not panels or episode_portrait_drawn(analysis):
+        portraits.append(_rect_axes(fig, slots.pop(0)))
+        draw_episode_portrait(portraits[1], analysis, layout, divisor, unit, low, settings, record, next(letters))
     share_portrait_limits(portraits, episode_rate_limits(analysis, settings, record))
     warning = fair_warning(analysis, series)
     if warning is None:
-        draw_fair(_rect_axes(fig, third_rect), analysis, series, norm, layout, divisor)
+        draw_fair(_rect_axes(fig, slots.pop(0)), analysis, series, norm, layout, divisor, next(letters))
+    if panels:
+        fig.text_stats = {}
+        return fig
     draw_legend(fig, layout, legend_lines(analysis), rect=legend_rect(layout, third_slot_free=warning is not None), warning=warning)
     width, height = layout.size
     fig.add_artist(plt.Line2D([layout.separator_x / width] * 2, [0.3 / height, (height - 0.2) / height], color='#dddddd', lw=0.8))

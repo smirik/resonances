@@ -61,6 +61,8 @@ Click the image to open it at full size.*
 The page is 24 × 13.5 inches (taller when the right column needs it). The left half holds ten time panels (a)–(j) on one time axis and, below them, two
 phase portraits (k), (l), the FAIR plane (m) and the legend. The time axis is labeled under (j) and again under (b),
 so the times of the angle can be read without looking down the page. The right half explains the verdict.
+With `plot_options={'combined': {'figure': 'panels'}}` (a figure for a paper) only the left half is drawn, without the
+header and the legend, and the empty slots of the bottom row are left out ([options](plots.md#options)).
 
 ### The header
 

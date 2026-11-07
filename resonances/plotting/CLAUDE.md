@@ -51,6 +51,16 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
   column in the tests, and on the benchmark by `test_verdict_column_sweep.py` (every secular/ZLK example; one MMR
   example per kind of verdict of the last test-benchmark run, ~3 min). K3s decides at step 3 (`_kinematic_step`;
   37087 had no ◆); an analysis without a leaf (built by hand) gets one ◆ line 'R · Which rule decided? none recorded'.
+- The paper figure (the author, 2026-11-07: "for the paper remove the legend, do not show empty episodes/plots, the
+  labels on the right can stay, remove the title"): plot option `combined.figure='panels'` (`style.FigureMode`) in
+  `mmr_combined.draw_combined` and `secular_plots.draw_long_period_combined`: no header, legend, separator or right
+  column (not even prepared; `text_stats` = {}), (l) left out when it draws no episode (`episode_portrait_drawn`),
+  FAIR when not drawn (no warning), the rest packed left and lettered on (k, l, m); ZLK/secular: a second portrait
+  without data left out. The margin legends stay. The page is cropped by geometry (`panels_layout`: rects measured
+  from the lower-left corner, so only the size changes, `PANELS_TOP_PAD_IN`, `PANELS_RIGHT_PAD_IN`); a stamp still prints
+  (`panels_stamp`, both figures). The portraits stay squares (author, 2026-10-16), so a lone (k) leaves the row's
+  right part blank (open question to the author: stretch it?). `DataManager.mmr_combined_figure(body, resonance, sim,
+  options)` returns the figure unsaved (`fig.stamp`), the path of a paper script after a restore.
 - Time axis (the author, 2026-11-05): labelled under the last panel and again under (b) (`label_time_axes`,
   `panel_rects(..., labelled)`, `VerdictFigureLayout.time_label_gap` 0.15 in more below (b)), both figures.
 - `plotting/mmr_combined.py`: the one-page v2 combined MMR figure (layout V1, 24 × 13.5 in): time panels left, every decision

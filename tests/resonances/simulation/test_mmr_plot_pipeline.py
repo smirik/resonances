@@ -137,6 +137,22 @@ class TestDispatch:
         assert not [w for w in recwarn if 'FAIR' in str(w.message)]
         assert (tmp_path / 'figures' / f'synthetic-{resonance.to_s()}-fair.png').exists()
 
+    def test_the_combined_figure_is_returned_with_its_options(self, tmp_path):
+        """`mmr_combined_figure` draws without saving; the 'panels' page is 12.3 + 0.15 = 12.45 in wide (separator_x +
+        PANELS_RIGHT_PAD_IN), the full page 24 in."""
+        import matplotlib.pyplot as plt
+
+        sim, body, resonance = synthetic_mmr(tmp_path, plots=['combined'])
+        full = sim.data_manager.mmr_combined_figure(body, resonance, sim)
+        paper = sim.data_manager.mmr_combined_figure(body, resonance, sim, options={'combined': {'figure': 'panels'}})
+        try:
+            assert full.get_size_inches()[0] == pytest.approx(24.0) and paper.get_size_inches()[0] == pytest.approx(12.45)
+            assert full.stamp is None and paper.stamp is None and paper.text_stats == {} and 'column' in full.text_stats
+            assert not list(tmp_path.rglob('*.png'))
+        finally:
+            plt.close(full)
+            plt.close(paper)
+
     def test_three_body_combined_omits_fair_silently(self, tmp_path, recwarn):
         sim, body, resonance = synthetic_mmr(tmp_path, resonance='4J-2S-1', planets=False, plots=['combined'])
         sim.data_manager.plot_body(body, sim)

@@ -242,3 +242,78 @@ def test_names_wider_than_the_fill_leave_the_brackets_unnamed():
     names = [text.get_text() for text in angle.texts]
     assert '#0' in names and not [name for name in names if 'quasi-satellite' in name]
     assert fig.text_stats['overflow'] == 0
+
+
+# --------------------------------------------------------------------------------------------- the 'panels' figure
+# combined.figure='panels' (for a paper): the panels with their margin legends only. Its size, by hand from LAYOUT_V1:
+# width = separator_x 12.3 + 0.15 = 12.45 in; height = the top of the time panels 3.6 + 8.95 = 12.55, + 0.25 = 12.8 in.
+
+PANELS = {'combined': {'figure': 'panels'}}
+
+
+def test_the_figure_option_defaults_to_the_full_page():
+    from resonances.plotting import style
+
+    assert style.resolve_plot_options()['combined']['figure'] == style.FigureMode.FULL
+    assert style.resolve_plot_options(PANELS)['combined'] == {'osculating_a': 'full', 'numbers': 'explained', 'figure': 'panels'}
+    with pytest.raises(ValueError, match='combined.figure'):
+        style.resolve_plot_options({'combined': {'figure': 'paper'}})
+
+
+def _margin_texts(fig):
+    """The figure texts between the margin legends' left edge and the separator (the right column starts beyond)."""
+    width = fig.get_size_inches()[0]
+    return sorted(t.get_text() for t in fig.texts if mc.LAYOUT_V1.margin_legend_x <= t.get_position()[0] * width < mc.LAYOUT_V1.separator_x)
+
+
+def _bottom_titles(fig):
+    return [t.get_text() for ax in fig.axes for t in ax.texts if t.get_text().startswith('(') and ') ' in t.get_text()]
+
+
+def test_the_panels_figure_draws_no_header_legend_or_column():
+    analysis, series = _synthetic()
+    full = mc.draw_combined(analysis, series, settings=S)
+    paper = mc.draw_combined(analysis, series, settings=S, options=PANELS)
+    assert tuple(full.get_size_inches()) == mc.LAYOUT_V1.size and tuple(paper.get_size_inches()) == pytest.approx((12.45, 12.8))
+    full_texts, paper_texts = [t.get_text() for t in full.texts], [t.get_text() for t in paper.texts]
+    assert [a for a in full.findobj() if a.get_gid() == 'verdict_column']
+    assert not [a for a in paper.findobj() if a.get_gid() == 'verdict_column'] and paper.text_stats == {}
+    assert 'Legend' in full_texts and 'Legend' not in paper_texts
+    header = [text for text in full_texts if text.startswith('c13   2J-1+0-1')]
+    record = mc.record_line(analysis, series)
+    assert header and record in full_texts and not set(header + [record]) & set(paper_texts)
+    assert [t for t in full_texts if t.startswith(mc.FAIR_WARNING_PREFIX)]  # no FAIR here: no warning in the paper figure
+    assert not [t for t in paper_texts if t.startswith(mc.FAIR_WARNING_PREFIX)]
+    margin = _margin_texts(paper)  # the margin legends of (c), (d), (h) stay, the same as in the full figure
+    assert margin == _margin_texts(full) and {'h = 1 separatrix', 'σ̇ = 0'} <= set(margin)
+    assert _bottom_titles(paper) == _bottom_titles(full) == ['(k) phase portrait, whole record', '(l) episodes, counted solid']
+    # cropped to what is drawn: nothing beyond the page, no empty band over (a) (the labels over it reach 0.11 in)
+    box = paper.get_tightbbox(paper.canvas.get_renderer())
+    assert box.x1 <= 12.45 and 12.45 - box.x1 < 0.3 and 12.8 - box.y1 < 0.25
+
+
+def test_the_panels_figure_leaves_out_an_empty_episode_portrait_and_reletters_fair():
+    """No accepted episode: the full figure prints '(l) … no accepted episode'; the paper figure has no such axes, and
+    FAIR (drawn once the series has the planet's longitudes) moves into the second slot as (l)."""
+    from resonances.data import const
+    from resonances.resonance.analysis.mmr.models import PlanetSeries
+
+    analysis, series = _synthetic()
+    geometry = replace(analysis.geometry, runs=[replace(run, accepted=False) for run in analysis.geometry.runs])
+    bare = replace(analysis, geometry=geometry)
+    full = mc.draw_combined(bare, series, settings=S)
+    assert 'no accepted episode' in [t.get_text() for ax in full.axes for t in ax.texts]
+    paper = mc.draw_combined(bare, series, settings=S, options=PANELS)
+    assert 'no accepted episode' not in [t.get_text() for ax in paper.axes for t in ax.texts]
+    assert _bottom_titles(paper) == ['(k) phase portrait, whole record']
+    t = series.t_yr
+    n_jupiter = const.PLANET_N_DEG_PER_GAUSS_YR['Jupiter'] * math.pi / 180
+    jupiter = PlanetSeries('Jupiter', t, np.full(len(t), 5.2), *(np.zeros(len(t)),) * 4, np.mod(n_jupiter * t + 1.1, 2 * math.pi))
+    with_fair = replace(series, planets={'Jupiter': jupiter}, mean_anomaly=np.mod(series.mean_longitude - series.varpi, 2 * math.pi))
+    assert mc.fair_warning(bare, with_fair) is None
+    paper = mc.draw_combined(bare, with_fair, settings=S, options=PANELS)
+    assert _bottom_titles(paper) == ['(k) phase portrait, whole record', '(l) FAIR']
+    (fair,) = [ax for ax in paper.axes if '(l) FAIR' in [t.get_text() for t in ax.texts]]
+    assert fair.get_position().x0 * paper.get_size_inches()[0] == pytest.approx(mc.LAYOUT_V1.bottom[1][0])
+    full = mc.draw_combined(bare, with_fair, settings=S)
+    assert _bottom_titles(full)[-1] == '(m) FAIR'  # the full figure keeps its letters and slots

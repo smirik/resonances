@@ -440,6 +440,10 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   and 'not certain because …' adopted. D10 A: R0 with a also checks the period law in V_F
   (`SEPARATRIX_VF_PERIOD_LAW`, `SEPARATRIX_PERIOD_TOL` 0.2; Codex measured 0 pass→fail, 0 status or level changes,
   `tmp/r0-scale-2026-11-04/answer.md`).
+- 2026-11-07 (the author, paper review item 17): a paper variant of the verdict figure goes into the package, plot
+  option `combined.figure='panels'` (MMR and secular/ZLK): no title/header, legend or right column, no empty slot
+  (an (l) without an accepted episode and an undrawn FAIR are left out, the rest lettered on from (k)), the margin
+  labels right of the panels kept (the caption explains them), the page cropped (12.45 × 12.8 in). Default `full`.
 
 ## Benchmark and process
 

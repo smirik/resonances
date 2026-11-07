@@ -108,6 +108,15 @@ that swing (`mmr_combined.kinematic_scale`).
 recomputation the analysis is run again on the saved series and checked against `summary.csv`; a difference is
 logged and stamped in red in the header.
 
+A figure for a paper: `plot_options={'combined': {'figure': 'panels'}}` (or `draw_combined(analysis, series,
+options=...)`, `draw_long_period_combined(..., options=...)`) draws the panels only: no header, legend or right column,
+and no empty slot (an (l) without an accepted episode and an undrawn FAIR are left out, with no warning line; the
+portraits that remain move left and are lettered on from (k)). The margin legends right of the panels stay, so the
+caption explains the rest. The page is cropped to what is drawn (12.45 × 12.8 in); a red stamp is still printed.
+The portraits keep their square size, so a row with one portrait leaves the rest of the bottom row blank. From a run or
+a restored one, `fig = sim.data_manager.mmr_combined_figure(body, resonance, sim, options={'combined': {'figure':
+'panels'}})` returns the MMR figure without saving it (`fig.stamp`: the mismatch with `summary.csv`, or None).
+
 ## Options
 
 `plot_options` (or `PLOT_OPTIONS` in `.env` as JSON) is merged over the defaults. Unknown keys and invalid values raise
@@ -125,6 +134,7 @@ an error.
 | `fair.max_step_fraction` | `0.25` | the standalone `fair` figure warns (and still draws) when the output step exceeds this share of the orbit; panel (m) of the combined figure is not drawn above 1/4.2 of it |
 | `combined.osculating_a` | `full` | panel (d): `full` holds the osculating a in view, `clipped` fits the view to the filtered a, `hidden` also hides the osculating a beyond that view |
 | `combined.numbers` | `explained` | the right column: `explained` (the verdict in ten blocks: header with the status, level and action chip, subtitle, key facts, why, confidence pills, checks with their margins nested, evidence, caveats, numbers with the DECISIVE lines first, the footer of codes with the W28 tree's verdict) or `all` (every number of the decision) |
+| `combined.figure` | `full` | the page of the `combined` verdict figures (MMR, secular, ZLK): `full` (header, panels, legend, right column) or `panels` (for a paper: the panels and their margin legends only, see below) |
 
 ## Redrawing after a run
 
