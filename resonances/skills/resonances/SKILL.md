@@ -147,7 +147,8 @@ record; `high` N ≥ 2; `medium` 1.5 ≤ N < 2 or a needed objection not measure
 a libration (`measured_objection`). An MMR libration whose own force is not shown (no force law, energy law or strength
 passes: `F=none` in `confidence_basis`) is at most `low`: the angle is bounded, the mechanism is not shown. A measured
 veto is `high`; a non_resonant row is `medium` when a candidate episode was rejected (it is plotted in review mode) or
-the veto was thin (`veto_thin`). `extend` only for an unfinished libration at the record's end, a deciding period longer than T/1.5, or a
+the veto was thin (`veto_thin`), or a secular/ZLK record too short for one cycle ends in circulation by less than
+1.1 turns of σ_f (`pol_level_inputs` `end_travel:thin`: perhaps part of a slow libration). `extend` only for an unfinished libration at the record's end, a deciding period longer than T/1.5, or a
 needed veto not measured for lack of length (`veto_needs_length`, clause `C`) whose record `pol_veto_need_yr` is within
 `MMR_NEXT_CHECK_SPAN_FACTOR` × T (beyond it: `review`); a record that ends in circulation is decided now. So more rows are resonant/transient at `low`/`medium` than under v2
 (about 31 benchmark rows v2 left uncertain): the `review` and `nonzero` save/plot modes select them, and a
@@ -249,6 +250,13 @@ Distinctions that matter when you report:
 - **`invalid`** says nothing about the resonance: `alias`/`undersampled` → resample at `resample_step_yr`;
   `unphysical` → the orbit left the ellipse (encounter, ejection: check the integrator); `undefined_phase` → ϖ is
   undefined at e ≈ 0. A non_resonant `alias` (one branch, far from a*) is a real circulation seen through the step.
+- **Secular episodes.** A secular libration makes few cycles in a record (published and measured periods run from
+  ~0.25 Myr for ν6 to ~12 Myr; no period is predicted per body), so read the figure's (a) and the filtered Charlier
+  portraits (k), (l) before trusting a short episode. σ_f running a turn or more after the last turning point is an
+  observed exit: `transient`, `final_regime` circulation. A small ripple on a slower swing, or a short stall of a
+  circulation, is not an episode (secular angles only): the slower scale decides, often `uncertain` + `extend` or a
+  slow `resonant` at `medium` + `extend` (101703 g−2g6+g7: one 12-Myr cycle in 20 Myr). Integrate 40 Myr or more
+  before reporting such rows.
 - **Lidov-Kozai, minimal policy.** The gate can only veto: a measured `kinematic` outcome (`veto` `zlk_kinematic`), or
   free e below forced e (`zlk_free_e`), gives `non_resonant` (code −2, exactly these rows). A gate without a verdict
   (short window, planetary residual, undefined phase, co-orbital of Mercury to Mars) or a disabled one leaves the

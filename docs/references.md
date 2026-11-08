@@ -10,7 +10,8 @@ The physics pages cite these works. Page and equation numbers refer to the print
   the resonant angle and its rate (eq. 8.18, p. 329; eq. 8.22, p. 331), the pendulum model, its period and
   width (eqs. 8.45–8.58, pp. 335–338).
 - Morbidelli, A. (2002). *Modern Celestial Mechanics: Aspects of Solar System Dynamics*. Taylor & Francis.
-  Used: single-resonance normal forms and three-body terms at second order (§9.3, pp. 221–223), multiplets
+  Used: the pendulum frequency $\sqrt{\beta c}$ of a resonant normal form (Eqs. 4.3–4.4, pp. 72–74),
+  single-resonance normal forms and three-body terms at second order (§9.3, pp. 221–223), multiplets
   and modulated resonances (§9.4, pp. 224–226).
 - Gallardo, T. (2006). Atlas of the mean motion resonances in the Solar System. *Icarus*, 184, 29–38.
   doi:[10.1016/j.icarus.2006.04.001](https://doi.org/10.1016/j.icarus.2006.04.001). Used: the averaged disturbing
@@ -39,6 +40,23 @@ The physics pages cite these works. Page and equation numbers refer to the print
 - Li, M., Huang, Y., & Gong, S. (2019). Survey of asteroids in retrograde mean motion resonances with planets.
   *Astronomy & Astrophysics*, 630, A60. doi:[10.1051/0004-6361/201936117](https://doi.org/10.1051/0004-6361/201936117).
   Used: the angle of a retrograde resonance.
+
+**Secular resonances: libration periods**
+
+- Morbidelli, A., & Henrard, J. (1991). Secular resonances in the asteroid belt: theoretical perturbation approach
+  and the problem of their location. *Celestial Mechanics and Dynamical Astronomy*, 51, 131–167.
+  doi:[10.1007/BF00048606](https://doi.org/10.1007/BF00048606). Used: the local resonant Hamiltonian (Eqs. 35–39,
+  pp. 147–149).
+- Milani, A., & Knežević, Z. (1992). Asteroid proper elements and secular resonances. *Icarus*, 98, 211–232.
+  doi:[10.1016/0019-1035(92)90091-K](https://doi.org/10.1016/0019-1035(92)90091-K). Used: $z_1$ libration periods
+  of (339) Dorothea and (221) Eos (p. 227).
+- Vokrouhlický, D., Brož, M., Bottke, W. F., Nesvorný, D., & Morbidelli, A. (2006). The peculiar case of the Agnia
+  asteroid family. *Icarus*, 183, 349–361. doi:[10.1016/j.icarus.2006.03.002](https://doi.org/10.1016/j.icarus.2006.03.002).
+  Used: the $z_1$ cycle of (3701) Purkyne (Fig. 4).
+- Carruba, V., Aljbaae, S., & Winter, O. C. (2016). On the Erigone family and the $z_2$ secular resonance.
+  *Monthly Notices of the Royal Astronomical Society*, 455, 2279–2288.
+  doi:[10.1093/mnras/stv2430](https://doi.org/10.1093/mnras/stv2430). Used: the $z_2$ cycle of (8089) Yukar
+  (Fig. 3, pp. 2281–2282) and its portrait in Charlier variables (Fig. 3B), the model of panel (k).
 
 **Lidov-Kozai**
 

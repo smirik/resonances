@@ -1,0 +1,4 @@
+example_id,status,confidence,angle_status,source
+secular__142694__g-2g6+g7,transient,,,"author:2026-11-08 (answer to the W36 report: ""142694 - ok"": transient as the package reads it; the slow libration from ~7.5 Myr shows two turns, not an episode)"
+secular__165548__s-g5+g6-s6,transient,medium,,"author:2026-11-08 (answer to the W36 report: ""165548 - можно убрать из расхождений; сойдёт"": medium accepted, overrides low of 2026-11-07)"
+secular__455327__s-s3,transient,,,"author:2026-11-08 (answer to the W36 report: ""455327 - да. всё норм."": the episode 9.20-10.84 Myr accepted)"

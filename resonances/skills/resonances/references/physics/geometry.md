@@ -91,7 +91,8 @@ one closed cycle, and a center of one of three kinds:
 - **modulated**: the cycle centers turn back at least `LIBRATION_CENTRE_RETURNS_MODULATED` = 3 times within a range
   below `LIBRATION_MODULATED_RANGE_MAX_RAD` = $\pi$. Unequal members of a resonance multiplet, or a slowly modulated
   resonant term, make the libration's amplitude and center oscillate (Morbidelli 2002, §9.4, pp. 224–226); the
-  rule tests the observed returns, not a model of them;
+  rule tests the observed returns, not a model of them. A secular or ZLK run needs one return, within a turn and under
+  a cycle that swings over every center ([Secular and ZLK](secular-zlk.md));
 - **moving center**: the bands share a point in the frame $\psi = \sigma - \sigma_c(t)$, and every band holds
   $\psi = 0$. Here $\sigma_c(t)$ is the minimum of the averaged disturbing function of the angle's planet, recomputed
   along the record from the slowly varying elements: the stable center of a resonance sits at that minimum
@@ -321,7 +322,9 @@ or more librating episodes).
 - **observed**: the raw angle averaged over one orbital period runs at least `LIBRATION_EDGE_ARC_REV` = 1 turn away
   from the last turning point to the end of the record and moves monotonically there. The edge is then not covered,
   there is no `exit_suspected`, and `final_regime` is a circulation from the exit. The same holds for an entry at the
-  start of the record. The center-scale pass (G2c) does not look for a slower libration behind such an arc.
+  start of the record. The center-scale pass (G2c) does not look for a slower libration behind such an arc. A secular
+  or ZLK angle has no orbit to average: there $\sigma_f$ itself is read (since W36,
+  [Secular and ZLK](secular-zlk.md)).
 
 2017 UM52 in 1E−1 ([Gallery](gallery.md#transient-exit)) is a horseshoe that exits at 949 yr: its averaged angle then
 runs 1.97 turns monotonically, so the exit is observed and the verdict is `transient`.

@@ -589,10 +589,10 @@ class AnalysisSettings:
         1.0,
         'LIBRATION_EDGE_ARC_REV',
         'float',
-        'MMR: an exit (entry) is observed, not suspected, when the orbit-averaged raw angle runs at least this many turns '
-        'away from the center from the last turning point of the last episode to the record end (from the record start '
-        'to the first one) and moves monotonically there; that edge is then not covered (an arc > 2 pi is not a piece of '
-        'libration)',
+        'an exit (entry) is observed, not suspected, when the angle runs at least this many turns away from the last '
+        'turning point of the last episode to the record end (from the record start to the first one) and moves '
+        'monotonically there: the orbit-averaged raw angle of an MMR, sigma_f of a secular or ZLK angle (no orbit to '
+        'average; W36); that edge is then not covered (an arc > 2 pi is not a piece of libration)',
         unit='rev',
         convention=True,
     )
@@ -749,7 +749,11 @@ class AnalysisSettings:
         convention=True,
     )
     libration_centre_returns_modulated: int = _setting(
-        3, 'LIBRATION_CENTRE_RETURNS_MODULATED', 'int', 'a bounded center turning back this many times is modulated, not drift'
+        3,
+        'LIBRATION_CENTRE_RETURNS_MODULATED',
+        'int',
+        'a bounded center turning back this many times is modulated, not drift (secular and ZLK angles: once is enough '
+        'under SECULAR_TURNING_CENTRE, ZLK_TURNING_CENTRE)',
     )
     libration_centre_min_estimates: int = _setting(
         2,
@@ -2225,6 +2229,88 @@ class AnalysisSettings:
         'TP prominence >= this x the 95th percentile of what sigma_f holds faster than SECULAR_LIBRATION_PERIOD_MIN_YR '
         '(a wave of half-amplitude r turns by up to 2 r)',
     )
+    secular_tp_local_prominence: bool = _setting(
+        True,
+        'SECULAR_TP_LOCAL_PROMINENCE',
+        'bool',
+        'each run of turning points found at SECULAR_TP_PROMINENCE_DEG takes the TP prominence measured on its own samples '
+        '(the MMR rule): a circulation elsewhere in the record must not set the threshold of a quiet libration (19289 s-s6: '
+        '77 deg from the record, 32 deg on the libration), never above the record\'s and never where it would lose a '
+        'librating episode the record\'s finds (455327 g-s-g5+s6: the drifting approach to a libration); off: one '
+        'prominence for the whole record',
+    )
+    secular_turning_centre: bool = _setting(
+        True,
+        'SECULAR_TURNING_CENTRE',
+        'bool',
+        'a run of turning points rejected only for its moving centre is a libration with a modulated centre when it '
+        'closes a cycle, its turning points span less than a turn, its cycle centre turns back at least once (within '
+        'LIBRATION_MODULATED_RANGE_MAX_RAD) and one of its cycles swings over every centre it has: a few slow cycles '
+        'cannot show LIBRATION_CENTRE_RETURNS_MODULATED returns (42946 g-g6+s-s6, 1.3-14.6 Myr); a centre that moves one '
+        'way stays a drift, a small wave carried by a slower motion stays rejected; off: the MMR count',
+    )
+    secular_slow_waves: bool = _setting(
+        True,
+        'SECULAR_SLOW_WAVES',
+        'bool',
+        'an accepted episode of a secular angle that is a wave on a slower motion of the angle is no episode of it: a '
+        'ripple on a slow swing (the slow motion between the centre turns around it stays within a turn and is at least '
+        '1/SECULAR_SLOW_SWING_RIPPLE_RATIO times as wide as the episode: 101703 g-2g6+g7, 1-Myr waves on a 12-Myr '
+        'libration) or a stall of a circulation (the slow motion around runs a turn or more and keeps at least '
+        'SECULAR_STALL_RATE_RATIO of its rate inside the episode: 348018 g-g5+s-s7); the slow scale then decides; off: '
+        'every accepted episode counts',
+    )
+    secular_slow_swing_ripple_ratio: float = _setting(
+        0.5,
+        'SECULAR_SLOW_SWING_RIPPLE_RATIO',
+        'float',
+        'an episode is a ripple on the slow swing around it when its largest half-amplitude is at most this x half the '
+        'swing (the range of sigma_f between the centre turns that bracket it, or the record edges, below a turn); the '
+        'MMR W34 ratio',
+        convention=True,
+    )
+    secular_slow_swing_carry_ratio: float = _setting(
+        0.0625,
+        'SECULAR_SLOW_SWING_CARRY_RATIO',
+        'float',
+        'a ripple on a slow swing must be carried by it: the slow track (sigma low-passed at LIBRATION_CENTRE_CYCLES x '
+        'the episode\'s period) moves inside the episode at least this x its fastest rate beside it (over as long again '
+        'on either side); a wave at a smooth turn of the slow motion reads >= 1/8 (the ratio of a parabola centred on '
+        'the episode; 101703 g-2g6+g7: 0.12-0.16, 56700 s+s7-2s6: 0.51), a libration on a plateau of the slow motion '
+        'stops it (two stationary librations joined by a monotone transition: <= 0.04) and stays an episode; half the '
+        'parabola\'s 1/8',
+        convention=True,
+    )
+    secular_stall_rate_ratio: float = _setting(
+        0.5,
+        'SECULAR_STALL_RATE_RATIO',
+        'float',
+        'an episode inside a circulation (sigma_f runs a turn or more between the centre turns around it) is a stall, '
+        'not a capture, when the slow track (sigma low-passed at LIBRATION_CENTRE_CYCLES x its period) carries the angle '
+        'out of its band beside it (at least its largest half-amplitude over as long again on either side) and moves '
+        'inside it at least this x that rate: a capture stops the circulation (19289, '
+        '278067 s-s6: <= 0.06), a stall only slows it (348018 g-g5+s-s7: 0.73)',
+        convention=True,
+    )
+    secular_stall_arm_min_fraction: float = _setting(
+        0.25,
+        'SECULAR_STALL_ARM_MIN_FRACTION',
+        'float',
+        'the slow track\'s rate beside an episode (SECULAR_STALL_RATE_RATIO, SECULAR_SLOW_SWING_CARRY_RATIO) is read on '
+        'an arm of as long again before its first and after its last turning point, inside the record; an arm the '
+        'record cuts shorter than this fraction of the episode\'s span is not read (too short to show the motion the '
+        'episode interrupts)',
+        convention=True,
+    )
+    secular_centre_turns_scale: bool = _setting(
+        True,
+        'SECULAR_CENTRE_TURNS_SCALE',
+        'bool',
+        'when the angle at the centre scale W_c = LIBRATION_CENTRE_CYCLES x P_cyc shows no more libration than the fine '
+        'scale, try the scale of the centre\'s own turns (the fine turning points at the centre prominence, W = their '
+        'median period / FILTER_MIN_LIBRATION_CUTOFFS; the MMR G2c second scale): P_cyc of 1-Myr waves trims 3 Myr off '
+        'each edge of a 12-Myr libration (101703 g-2g6+g7); off: W_c only',
+    )
     secular_response_r2_min: float = _setting(
         0.5,
         'SECULAR_RESPONSE_R2_MIN',
@@ -2272,6 +2358,19 @@ class AnalysisSettings:
         'turning-point prominence floor of omega (see ZLK_TP_RIPPLE_FACTOR)',
         unit='deg',
         convention=True,
+    )
+    zlk_tp_local_prominence: bool = _setting(
+        True,
+        'ZLK_TP_LOCAL_PROMINENCE',
+        'bool',
+        'each run of turning points of omega found at ZLK_TP_PROMINENCE_DEG takes the TP prominence measured on its own '
+        'samples (as SECULAR_TP_LOCAL_PROMINENCE); off: one prominence for the whole record',
+    )
+    zlk_turning_centre: bool = _setting(
+        True,
+        'ZLK_TURNING_CENTRE',
+        'bool',
+        'the rule of SECULAR_TURNING_CENTRE for omega; off: the MMR count of LIBRATION_CENTRE_RETURNS_MODULATED',
     )
     zlk_run_break_half_amplitude_deg: float = _setting(
         90.0,
@@ -2463,7 +2562,11 @@ class AnalysisSettings:
 
     # --- Confidence (shared) -------------------------------------------------------------------
     confidence_thin_band: float = _setting(
-        0.1, 'CONFIDENCE_THIN_BAND', 'float', 'margin U: a decision within this relative distance of a convention'
+        0.1,
+        'CONFIDENCE_THIN_BAND',
+        'float',
+        'margin U: a decision within this relative distance of a convention; also a secular or ZLK record too short '
+        'for one cycle that ends in circulation by an end travel below 1 + this many turns is at most medium (W36)',
     )
     confidence_medium_cycles: float = _setting(
         1.5,

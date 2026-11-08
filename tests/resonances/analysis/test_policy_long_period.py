@@ -249,3 +249,47 @@ def test_a_clear_circulation_is_certain():
     verdict = make_verdict(Status.NON_RESONANT, AngleStatus.CIRCULATION, resonance_type=SECULAR, reason=Reason.CIRCULATION)
     verdict.margins = {'P': MarginValue(margin='full', value=3.0)}
     assert policy.apply_long_period(make_long_period_analysis(verdict, geo, span_yr=SPAN), MINIMAL).verdict.confidence == Confidence.HIGH
+
+
+@pytest.mark.parametrize(
+    'turns, level, action, thin',
+    [
+        # 143662 s+g5-g8-s3 (W36 F5): 1.09 rev with 2 turning points; within CONFIDENCE_THIN_BAND = 0.1 of one turn the
+        # record still ends in circulation (non_resonant) but at most medium (spot_check), as a thin veto
+        (1.05, Confidence.MEDIUM, Action.SPOT_CHECK, True),
+        (1.09, Confidence.MEDIUM, Action.SPOT_CHECK, True),
+        # 1.12 and 3 rev are clear of the band: high, as before (no candidate, no clear circulation: 2 TPs exist)
+        (1.12, Confidence.HIGH, Action.NONE, False),
+        (3.0, Confidence.HIGH, Action.NONE, False),
+    ],
+)
+def test_a_thin_end_travel_is_non_resonant_at_most_medium(turns, level, action, thin):
+    # no accepted run: the travel is read over the whole window, max - min of the ramp = `turns` exactly
+    v = secular_row(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.FEW_CYCLES, lambda t: circulating_after(t, turns=turns)).verdict
+    assert v.pol_end_travel_rev == pytest.approx(turns, rel=1e-9)
+    assert (v.status, v.reason, v.confidence, v.action) == (Status.NON_RESONANT, Reason.CIRCULATION, level, action)
+    assert v.pol_decided_by == policy.DECIDED_INSUFFICIENT
+    assert (policy.END_TRAVEL_INPUT in v.pol_level_inputs) == thin
+    if thin:
+        assert v.pol_level_inputs.endswith('end_travel:thin:medium')
+    entry = next(e for e in v.decision_path if e.name == policy.END_TRAVEL_THIN_ENTRY)
+    assert entry.threshold == pytest.approx(1.1) and entry.result is (not thin)
+
+
+def test_a_thin_end_travel_caps_a_zlk_row_too_and_never_an_uncertain_one():
+    def angle(t):
+        return circulating_after(t, turns=1.04)
+
+    verdict = make_verdict(Status.UNCERTAIN, AngleStatus.INSUFFICIENT_TIME, angle_subtype=AngleSubtype.FEW_CYCLES, resonance_type=ZLK)
+    t = np.linspace(0.0, SPAN, 1001)
+    analysis = make_long_period_analysis(
+        verdict, geometry(2, accepted=False), gate('short_window'), angle=make_filtered_angle(t, angle(t)), span_yr=SPAN
+    )
+    v = policy.apply_long_period(analysis, MINIMAL).verdict
+    assert (v.status, v.confidence) == (Status.NON_RESONANT, Confidence.MEDIUM)
+    assert 'end_travel:thin:medium' in v.pol_level_inputs
+    # 0.96 rev, as thin below one turn: the record does not end in circulation, uncertain has no level to cap
+    bounded = secular_row(AngleStatus.INSUFFICIENT_TIME, AngleSubtype.FEW_CYCLES, lambda t: circulating_after(t, turns=0.96)).verdict
+    assert (bounded.status, bounded.confidence) == (Status.UNCERTAIN, Confidence.NONE)
+    assert policy.END_TRAVEL_INPUT not in bounded.pol_level_inputs
+    assert all(e.name != policy.END_TRAVEL_THIN_ENTRY for e in bounded.decision_path)

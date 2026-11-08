@@ -162,6 +162,18 @@ def test_the_level_table(status, basis, extra, level):
     assert acc.level(status, acc.parse_basis(basis), row(**extra), S) == level
 
 
+def test_a_thin_end_travel_holds_a_long_period_row_at_medium():
+    """W36 F5: a secular or ZLK row the policy decided as ending in circulation (pol_decided_by insufficient_time) by a
+    travel below 1 + CONFIDENCE_THIN_BAND = 1.1 turns is medium; 1.1 turns or more, or an MMR row, keeps high."""
+    basis = acc.parse_basis('N=nan(-);M=not_measured;V=clean;S=thin;veto=-')
+    short = {'example_id': 'secular__143662__s+g5-g8-s3', 'status': 'non_resonant', 'reason': 'circulation'}
+    short['pol_decided_by'] = 'insufficient_time'
+    assert acc.level('non_resonant', basis, row(**short, pol_end_travel_rev='1.0908'), S) == 'medium'
+    assert acc.level('non_resonant', basis, row(**short, pol_end_travel_rev='1.12'), S) == 'high'
+    assert acc.level('non_resonant', basis, row(**{**short, 'example_id': 'mmr2__1__2J-1+0+1'}, pol_end_travel_rev='1.05'), S) == 'high'
+    assert acc.level('non_resonant', basis, row(**{**short, 'pol_decided_by': 'tree'}, pol_end_travel_rev='1.05'), S) == 'high'
+
+
 def test_the_level_never_falls_as_the_cycles_rise():
     for m in ('full', 'thin'):
         for v in ('clean', 'partial', 'not_measured', 'ambiguous'):

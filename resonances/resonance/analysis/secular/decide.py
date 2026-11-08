@@ -3,9 +3,13 @@ measured for the type, the margins and the caps of the confidence. Every compari
 
 angle_status (the shared geometry of the filtered angle, `analysis.geometry`):
     an accepted episode (>= LIBRATION_MIN_TURNING_POINTS turning points, a stationary or modulated centre, a period
-    not below the type's shortest libration, a centre that does not run a turn inside it) covering the record (both
+    not below the type's shortest libration, a centre that does not run a turn inside it; a secular one not a wave on a
+    slower motion of the angle, `slow_waves`, W36 F4) covering the record (both
     ends within LIBRATION_COVERAGE_PERIODS periods)                             -> libration (stationary | modulated)
     accepted episodes, none covering                                            -> episodic
+        (an edge is not covered when the record shows the exit after the last turning point, or the entry before the
+        first: sigma_f runs >= LIBRATION_EDGE_ARC_REV turns monotonically there, the edge rule, W36 F1; the record
+        then ends in circulation, `final_regime`)
     no episode; the centre's largest monotone pass >= 1 turn                    -> circulation
     no turning point; the filtered angle turns >= 1 time                         -> circulation
     no turning point, less than a turn                                          -> insufficient_time (arc | stall)
@@ -56,11 +60,14 @@ import numpy as np
 
 from resonances.resonance.analysis import rules as rules_module
 from resonances.resonance.analysis.confidence import Cap
+from resonances.resonance.analysis.filtering import lowpass_or_none
 from resonances.resonance.analysis.geometry import (
     Episode,
     EpisodeShape,
+    FilteredAngle,
     Geometry,
     covering_episode,
+    covers_edges,
     librating_episodes_with,
     run_of,
 )
@@ -164,10 +171,152 @@ def decisive_period_yr(geometry: Optional[Geometry], episode_id: Optional[int]) 
     return float(np.median(np.concatenate([t[2:] - t[:-2] for t in times])))
 
 
+# the ledger names of the slow-wave rule (`slow_waves`); the explained verdict column reads them
+SLOW_SWING_RIPPLE = 'slow_swing_ripple'
+SLOW_SWING_CARRIED = 'slow_swing_carried'
+STALL_RATE = 'stall_rate'
+STALL_BESIDE = 'stall_beside_sweep_over_amplitude'
+
+
+def slow_waves(geometry: Geometry, angle: FilteredAngle, settings: AnalysisSettings, ledger: Ledger) -> frozenset:
+    """The accepted episodes of a secular angle that are waves on a slower motion of the angle (W36 F4,
+    SECULAR_SLOW_WAVES): no episodes of it (`Geometry.slow_wave_ids`), so the slow scale decides (`analyse`).
+
+    The slow motion around an episode is sigma_f between the turns of the centre track (`Geometry.centre`) that
+    bracket it, or the record's edges: its range R. Then
+
+    - R below a turn (a slow swing, bounded): the episode is a ripple on it when its largest half-amplitude is at most
+      SECULAR_SLOW_SWING_RIPPLE_RATIO x R/2 (the MMR W34 rule) and the swing carries it: the slow track S (below) moves
+      inside the episode at >= SECULAR_SLOW_SWING_CARRY_RATIO x its fastest rate beside it (`stall_reading`). A wave at
+      a smooth turn of the slow motion reads >= 1/8 (a parabola centred on the episode: (D/2)^2 inside against
+      (3D/2)^2 - (D/2)^2 over an arm as long again); a libration on a plateau of the slow motion, with the motion only
+      beside it, reads the filter's leak (two stationary librations joined by a monotone transition: <= 0.04, Codex
+      W36 review) and stays an episode. 101703 g-2g6+g7: 8-19 deg waves of 1 Myr at the turns of a 12-Myr libration of
+      R = 315 deg, carried 0.16 and 0.12; 56700 s+s7-2s6: a 13-deg ripple on a 322-deg arc of 20 Myr, 0.51;
+    - R a turn or more (the angle circulates around it): the episode is a capture when the circulation stops in it,
+      a stall when it only slows down: the slow track S (sigma low-passed at LIBRATION_CENTRE_CYCLES x P of the
+      episode, the scale that removes its own oscillation) carries the angle out of the episode's band beside it (>=
+      A_max over as long again before or after, inside the record: the motion the episode interrupts) and moves inside
+      the episode at >= SECULAR_STALL_RATE_RATIO x that rate. 348018 g-g5+s-s7: 0.73 (a 4-deg ripple on 4.4 turns);
+      captures 19289, 278067 s-s6: 0.04-0.05; 455327 s-s3 0.24. A libration whose pieces lie beside a circulation
+      elsewhere has a still S beside each piece: no motion to interrupt, no stall.
+
+    An episode that covers the record at both ends is the angle's own motion (no slow motion beside it: the MMR B6b
+    guard). A circulation beside an episode is no swing of it: an arc >= one turn is an entry or exit (W36 F1). Each
+    wave found leaves its comparison in the ledger. Empty with the rule off or without a centre track."""
+    if not settings.secular_slow_waves or geometry.centre is None or not len(geometry.centre.t_yr):
+        return frozenset()
+    t = np.asarray(angle.t_yr, dtype=float)
+    angle_f, raw = np.asarray(angle.angle_f, dtype=float), np.asarray(angle.angle_raw, dtype=float)
+    turns = np.asarray(geometry.centre.turns.times_yr, dtype=float)
+    found = []
+    for episode in librating_episodes(geometry):
+        if all(covers_edges(episode, settings)):
+            continue
+        first, last = float(episode.tp_times_yr[0]), float(episode.tp_times_yr[-1])
+        lo = float(turns[turns < first].max()) if np.any(turns < first) else float(t[0])
+        hi = float(turns[turns > last].min()) if np.any(turns > last) else float(t[-1])
+        bracket = (t >= lo) & (t <= hi)
+        swing = float(np.ptp(angle_f[bracket])) if np.count_nonzero(bracket) >= 2 else NAN
+        if not np.isfinite(swing):
+            continue
+        scratch = Ledger.from_settings(settings)
+        if swing < 2 * np.pi:
+            ratio = float(episode.half_amp_max_rad) / (swing / 2) if swing > 0 else NAN
+            ripple = scratch.compare_setting(SLOW_SWING_RIPPLE, ratio, Op.LE, settings, 'secular_slow_swing_ripple_ratio', '', '')
+            # carried by the swing (no number, no wave: an unmeasured rate keeps the episode)
+            carry = stall_reading(t, raw, episode, settings)[0] if ripple else NAN
+            wave = ripple and scratch.compare_setting(SLOW_SWING_CARRIED, carry, Op.GE, settings, 'secular_slow_swing_carry_ratio', '', '')
+        else:
+            ratio, beside = stall_reading(t, raw, episode, settings)
+            amplitude = float(episode.half_amp_max_rad)
+            moving = scratch.compare(STALL_BESIDE, beside / amplitude if amplitude > 0 else NAN, Op.GE, 1.0, '', '')
+            wave = moving and scratch.compare_setting(STALL_RATE, ratio, Op.GE, settings, 'secular_stall_rate_ratio', '', '')
+        ledger.extend(scratch)  # kept or not: a margin close to the convention is a thin one of the row
+        if wave:
+            found.append(episode.episode_id)
+    return frozenset(found)
+
+
+def stall_reading(t: np.ndarray, raw: np.ndarray, episode: Episode, settings: AnalysisSettings) -> Tuple[float, float]:
+    """(the slow track's rate inside the episode over its fastest rate beside it, its sweep there [rad]) (`slow_waves`:
+    the stall of a circulation and the carry of a ripple on a slow swing): S = sigma low-passed at
+    LIBRATION_CENTRE_CYCLES x the episode's period; inside, the range of S over its turning points / their span; beside,
+    the same over as long again before the first and after the last turning point, inside the record (an arm the
+    record cuts shorter than SECULAR_STALL_ARM_MIN_FRACTION of that is not read), the sweep being that rate x the span.
+    (nan, nan) when S cannot be formed or no arm is read."""
+    period = float(episode.period_med_yr)
+    first, last = float(episode.tp_times_yr[0]), float(episode.tp_times_yr[-1])
+    span = last - first
+    if not (np.isfinite(period) and period > 0 and span > 0):
+        return NAN, NAN
+    slow = lowpass_or_none(t, raw, settings.libration_centre_cycles * period, settings)
+    if slow is None:
+        return NAN, NAN
+
+    def rate(start: float, end: float) -> float:
+        start, end = max(start, float(t[0])), min(end, float(t[-1]))
+        inside = (t >= start) & (t <= end)
+        if end - start < settings.secular_stall_arm_min_fraction * span or np.count_nonzero(inside) < 2:
+            return NAN
+        return float(np.ptp(slow[inside])) / (end - start)
+
+    beside = [value for value in (rate(first - span, first), rate(last, last + span)) if np.isfinite(value)]
+    own = rate(first, last)
+    if not beside or not max(beside) > 0 or not np.isfinite(own):
+        return NAN, NAN
+    return own / max(beside), max(beside) * span
+
+
+# the ledger names of an observed exit and entry (`observed_edges`); the explained verdict column reads them
+EDGE_ARC_ENTRIES = {'entry': 'entry_arc', 'exit': 'exit_arc'}
+
+
+def edge_observed(geometry: Optional[Geometry]) -> bool:
+    """The record shows an exit or an entry beyond the accepted episodes (the edge rule on sigma_f, `EdgeEvent.observed`,
+    W36 F1): the centre scale then does not look for a slower libration, whose wider edge trim could hide the arc
+    sigma_f runs (as for an MMR, `mmr.decide.edge_observed`)."""
+    if geometry is None:
+        return False
+    return any(event is not None and event.observed for event in (geometry.entry, geometry.exit))
+
+
+def observed_edges(geometry: Geometry, settings: AnalysisSettings, ledger: Ledger) -> Tuple[str, ...]:
+    """The edges ('entry', 'exit') the record shows (`edge_observed`): after the last turning point of the last
+    accepted episode (before the first one of the first) sigma_f runs >= LIBRATION_EDGE_ARC_REV turns and monotonically
+    (DECISIONS 2026-10-15 "an arc > 2 pi is not a piece of libration", for secular and ZLK angles since W36: 2012 AX10
+    and 33325 2s-s4-s6 leave at ~16 Myr and run 1.9 and 1.6 turns to the end of 20 Myr). That edge is not covered
+    (`geometry.covers_edges`). On the ledger only when observed."""
+    kinds = []
+    for kind in ('entry', 'exit'):
+        event = getattr(geometry, kind)
+        if event is not None and event.observed:
+            arc = event.raw_arc_rad / (2 * np.pi)
+            ledger.compare_setting(EDGE_ARC_ENTRIES[kind], arc, Op.GE, settings, 'libration_edge_arc_rev', 'rev', f'{kind}_arc_rev')
+            kinds.append(kind)
+    return tuple(kinds)
+
+
+def final_regime(geometry: Optional[Geometry], angle: AngleDecision) -> Tuple[str, float]:
+    """(final_regime, its start [yr]): circulation from the exit when the record shows the exit after the last
+    librating episode (`observed_edges`); ('', nan) otherwise (the angle word describes the end, or the record ends in
+    no regime of its own)."""
+    if geometry is None or angle.angle_status not in (AngleStatus.EPISODIC, AngleStatus.LIBRATION):
+        return '', NAN
+    episodes = librating_episodes(geometry)
+    if not episodes or geometry.exit is None or not geometry.exit.observed:
+        return '', NAN
+    last = max(episodes, key=lambda episode: episode.t_end_yr)
+    if not last.exit_observed:
+        return '', NAN
+    return str(AngleStatus.CIRCULATION), float(geometry.exit.time_yr)
+
+
 def decide_angle(geometry: Geometry, settings: AnalysisSettings, ledger: Ledger) -> AngleDecision:
     """angle_status and subtype from the geometry (module docstring)."""
     accepted = librating_episodes(geometry)
     if ledger.compare('librating_episodes', len(accepted), Op.GE, 1, '', 'sec_n_librating_episodes'):
+        observed_edges(geometry, settings, ledger)
         covering = covering_episode(accepted, settings)
         decisive = covering if covering is not None else max(accepted, key=lambda episode: episode.n_tp)
         coverage = 'libration_coverage_periods'

@@ -132,10 +132,24 @@ Lidov's integrals (`lidov-kozai.md`), −2 vs −9 (`physics/status-tree.md`), t
   102 deg) too; anchored at the epoch only, 5026 would stay (dphi 13 deg). Measured on the benchmark: only 5026 moves
   (22 vs 34 deg); the next lowest ratio is 21028 (4.3), z1/z2 >= 4.6 (52773), nu6 >= 78. Caveat: 5026 rebuilt with
   measured phases (the same SABA run) still librates (half-amplitude 10 deg, P 5.0 Myr, one cycle) - but the 5 Myr
-  fit window is blind to a phase wobble at 5 Myr. The benchmark reclassification forces linear phases even for
-  examples built with measured ones (`reclassify_secular_zlk._config_kwargs`), so there the check is active on them.
+  fit window is blind to a phase wobble at 5 Myr. The benchmark reclassification runs with linear phases (no planets
+  loaded) but, since W36 F4, tells the check that the phases were measured when the source run measured them over a
+  record >= the fit window (`reclassify_secular_zlk._phases_measured`): the saved angle is built from them (56700
+  s+s7-2s6 read phase_unresolved in the bench, transient/low in its run).
 - **Secular cutoff** includes the angle's longest forced wave (4305 and 8089 hid real librations behind a fixed
   window). `SECULAR_LIBRATION_PERIOD_MIN_YR` (200 kyr) and the ZLK floor (2 kyr) are conventions.
+  No harder global cutoff (the author's question, W36): there is no lower bound on a secular libration period (P0 =
+  2 pi / sqrt|KA| needs the torsion K and the coefficient A, which the package does not measure; the nu6 pairs librate
+  at the free/forced beat, 0.24-0.57 Myr), so slower scales are tried only where the record shows the slow motion
+  (`dev/physics-notes.md` Secular).
+- **Which runs are a secular angle's episodes** (W36; rules in `resonance/analysis/CLAUDE.md` Geometry, docs
+  `physics/secular-zlk.md`): a run's own TP prominence, capped at the record's and never losing an episode the
+  record's finds (F2, `measure_fine`); a bounded run whose centre turns back once and is covered by one cycle is
+  modulated (F3); a ripple carried by a slow swing or a stall of a circulation is no
+  episode, secular only, and the slower scale (W_c, else the centre-turns window) decides (F4); sigma_f running >= 1
+  turn after the last TP is an observed exit (F1, overrides the Oct 15 "visible exit -> libration <= medium" for such
+  arcs). A record-covering episode is never a wave. The ZLK omega takes F1-F3, not F4 (its ratios overlap 591986 and
+  162474 librations).
 - **The action of an uncertain verdict** (`analysis/secular/extend.py`) changes no status: extend with a next check
   (N by cause, `base_extend_cause`) or review where no length helps (undefined_phase, unavailable, unusable_series,
   a planetary residual beyond `ZLK_EXTEND_MAX_YR`). The gate's `min_distance` (d_min) feeds it; keep the extension

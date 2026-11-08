@@ -24,6 +24,8 @@ from resonances.simulation.serializer import SimulationSerializer  # noqa: E402
 from tests.resonances.simulation.test_impl_w3_output_package import KEY, add_synthetic_body, analysed, synthetic  # noqa: E402
 from tests.resonances.simulation.test_restore_and_resume import LIB, _saved_run  # noqa: E402
 
+pytestmark = pytest.mark.usefixtures('epoch_solar_cache')  # the catalogue longitudes of 2020-01-01: tests/conftest.py
+
 LEVELS = ('certain', 'high', 'medium', 'low')
 
 

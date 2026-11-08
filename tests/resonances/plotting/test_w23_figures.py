@@ -180,4 +180,7 @@ def test_591986_zlk_labels_of_the_bottom_row_do_not_collide():
     bar = next(ax for ax in fig.axes if ax.get_title(loc='left').startswith('t, '))
     vector = next(ax for ax in fig.axes if ax.get_ylabel() == 'e_free sin ω_free')
     assert not _overlap(*_boxes(fig, [bar._left_title, vector.yaxis.label]))
+    # W36 (four squares): nor with the bar's tick labels, which the y label of (j) ran into at 0.55 in
+    ticks = [label for label in bar.get_yticklabels() if label.get_text()]
+    assert ticks and not any(_overlap(*_boxes(fig, [tick, vector.yaxis.label])) for tick in ticks)
     plt.close(fig)

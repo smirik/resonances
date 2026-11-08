@@ -769,6 +769,7 @@ GLANCE_PANELS = {
         'table': ('a',),
         'status': ('h',),
         'thin_veto': ('g',),
+        'end_travel': ('a', 'b'),  # σ_f's travel to the record's end (W36 F5)
     },
 }
 # the gate detail of a ZLK row (zlk_gate_detail) -> the panels of its inputs instead: an unfitted co-orbital's free ω

@@ -1467,9 +1467,25 @@ def _free_e_pin_words(row: Mapping[str, Any]) -> str:
 
 
 def _t_long_circulation(m: _Long) -> List[str]:
+    if vcc.text(m.row.get('pol_decided_by')).split(';')[0] == pol.DECIDED_INSUFFICIENT:
+        return [_ends_in_circulation(m)]
     if m.zlk:
         return ['There is no libration for the free-ω gate to test, so this is no Lidov–Kozai libration.']
     return ['A circulating σ is not in this resonance; no other test is needed.']
+
+
+def _ends_in_circulation(m: _Long) -> str:
+    """A row the policy decided as too short that ends in circulation (`policy._insufficient`, W36 F5): σ_f's range from
+    the last turning point of an accepted run (else the window's start) to the end, `pol_end_travel_rev`."""
+    travel, t_last = m.row.get('pol_end_travel_rev'), m.row.get('pol_t_last_tp_yr')
+    geometry = m.a.geometry
+    start = geometry is not None and vt.finite(t_last) and float(t_last) <= float(geometry.window[0])
+    where = 'over the whole window' if start else 'from its last turning point to the end'
+    spans = f'{vt.fmt(travel)} turns' if vt.finite(travel) else 'at least one turn'
+    return (
+        f'But {where} the filtered {m.short} spans {spans}, at least one: the record ends in circulation, so the status is '
+        f'decided now {_panels(L_ANGLE)}.'
+    )
 
 
 def _t_long_baseline(m: _Long) -> List[str]:

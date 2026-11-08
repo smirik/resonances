@@ -89,6 +89,19 @@ $$
   the widest linear resonances are a few ″/yr wide, so their periods exceed ~1 Myr); $f_{\min}$ =
   `FILTER_MIN_LIBRATION_CUTOFFS` = 2.
 
+**What periods to expect, and why the filter is not stronger.** A local resonant Hamiltonian
+$H = H_0(I) + A(I)\cos\sigma$ gives the small-amplitude period $P_0 = 2\pi/\sqrt{\lvert KA\rvert}$, with $K$ the
+torsion $\partial\delta/\partial I$ of the divisor along the angle's canonical action and $A$ the resonant
+coefficient (Morbidelli 2002, pp. 72–74; Morbidelli & Henrard 1991, Eqs. 35–39); the period grows towards the
+separatrix. Neither $K$ nor $A$ follows from one body's proper elements and frequencies, and the package measures
+neither, so no period is predicted per body. Published cycles span sub-Myr to ~8 Myr ($z_1$: (339) Dorothea 4.15 Myr,
+(221) Eos 3.4 Myr, Milani & Knežević 1992, p. 227; (3701) Purkyne ~8 Myr, Vokrouhlický et al. 2006; $z_2$: (8089)
+Yukar ~6.1 Myr, Carruba et al. 2016). The $\nu_6$ librators of the benchmark (0.24–0.57 Myr) repeat at the
+free/forced beat $2\pi/\lvert g_{\rm free} - g_6\rvert$ within 1 %: a forced oscillator, not a pendulum. No general
+lower bound on the period exists, so a filter set above a real libration's period would erase it ($G(P) = 1/[1 +
+(P_c/P)^4]$ keeps half at $P = P_c$): the slower scales are tried only where the record shows a slow motion (the center
+scale below, W36).
+
 The output step does not enter. The filter acts on the unwrapped angle with its trend removed and restored, so it
 cannot turn a circulation into a libration. A turning point must stand out by at least $\max(5°,\ 4r)$, where $r$ is
 the 95th percentile of what the filtered angle still holds faster than $P_{\rm floor} = \max(P_{\min},\ 2P_c)$, the
@@ -99,12 +112,38 @@ first (as for an MMR, [Geometry: turning points](geometry.md); `geometry.librati
 (591986 over 4 Myr: $r$ = 4.35° and 17.4° against a 16° libration, cut into three episodes where its center moves
 fastest; 1.17° and 5° without the image, one episode).
 
+That $r$ is the record's, and a circulation elsewhere in the record inflates it. So, as for an MMR, each run of
+turning points found at the floor (5°) is selected at the prominence measured on its own samples, its ends trimmed by
+$P_{\rm floor}$ and the rest at least $P_{\rm floor}$ long, and never above the record's
+(`SECULAR_TP_LOCAL_PROMINENCE`, `ZLK_TP_LOCAL_PROMINENCE`). 19289 s−s6 over 20 Myr: 76.8° from the record
+(26.8° outside the libration, 8.0° inside), 31.7° on the run: the libration from 5.1 Myr to the end is one episode
+instead of seven pieces. The cap: where faster waves hide the libration's period from the turning points at the
+floor, its image is not taken out and its own swing would count as fast on the run (2020 PP1, ZLK: 101° against 52°).
+A lower threshold may add libration but never remove it: every librating episode found at the record's prominence
+must lie inside one librating episode of the local reading, else the runs it overlaps keep the record's prominence.
+A run of provisional turning points can span a libration and the slow approach to it, and the approach's wiggles
+then become turning points too: 455327 g−s−g5+s6 (ias15, 20 Myr), 39.0° from the record and 13.8° on the run, a
+32° wiggle at 9.1–9.5 Myr would start the run on the drifting approach (centre_moves) and lose the crescent episode
+10.2–12.5 Myr.
+
 ### Geometry and status
 
 A librating episode needs `LIBRATION_MIN_TURNING_POINTS` = 3 turning points (max–min–max: one full cycle), a period
 not shorter than $\max(P_{\min},\ 2P_c)$ (a faster one is a forced wave), and a center that does not run a full turn
 inside it. One that reaches both ends of the record, within `LIBRATION_COVERAGE_PERIODS` = 1 period, makes
 `libration`; otherwise the record is `episodic`.
+
+**A bounded run whose center turns back.** The center tests are those of [Geometry](geometry.md) (the bands of the
+cycles share a point, or the center turns back `LIBRATION_CENTRE_RETURNS_MODULATED` = 3 times), but a secular
+libration makes only a few cycles in a record, too few for three returns. So a run of a secular or ZLK angle that fails
+only for its moving center is accepted as `modulated` (center stationarity not measured) when it closes a cycle, its
+turning points span less than a turn, its cycle center turns back at least once within less than $\pi$, and one of its
+cycles swings over every center it has (`SECULAR_TURNING_CENTRE`, `ZLK_TURNING_CENTRE`; `geometry.accept_turning_centre`).
+A center that moves one way stays a drift (101703 g−2g6+g7, a run at 13.4–19 Myr: −231°, no return), and so does a
+small wave carried by a slower motion: no cycle of it covers the track (363 g−g6+s−s6: half-amplitudes 4–6° on a center
+that travels 42°). 42946 g−g6+s−s6 over 20 Myr: the run 1.3–14.6 Myr (17 turning points, $P$ = 1.6 Myr, centers
+116–228° turning back twice, bands missing by 18°, the cycle about 183° of half-amplitude 93° covering them all) is
+the early libration episode.
 
 **A ZLK island is half a turn wide.** The averaged Lidov-Kozai Hamiltonian depends on $2\omega$, so its islands
 ($\omega$ about 90° and 270°) are at most half a turn wide. A run of $\omega$ therefore breaks where a half-cycle swings
@@ -141,13 +180,50 @@ $z_1$/$z_2$ libration of the benchmark swings 4.6 times its $\Delta\phi$ (52773)
 fragments. When the fine scale shows no libration, the angle is filtered again at the scale of its center,
 $W_c$ = `LIBRATION_CENTRE_CYCLES` × $P_{\rm cyc}$ = $3P_{\rm cyc}$; if the center itself librates there (or shows episodes
 the fine scale lacks), that scale decides (`sec_scale` = `centre`). There the shortest libration is
-$\max(P_{\min},\ 2W_c)$ and a turning point needs the prominence of a center turn.
+$\max(P_{\min},\ 2W_c)$ and a turning point needs the prominence of a center turn. When $W_c$ shows no more libration
+than the fine scale, a secular angle tries the scale of its center's own turns (the fine turning points at the
+prominence of a center turn, $W$ = their median period / `FILTER_MIN_LIBRATION_CUTOFFS`; the MMR second scale,
+`SECULAR_CENTRE_TURNS_SCALE`): $P_{\rm cyc}$ of fast waves sets $W_c$, and its edge trim of $W_c$ per end, far above
+what the slow turns need. 101703 g−2g6+g7 over 20 Myr: $W_c$ = 3.1 Myr from 1-Myr waves trims 3–17 Myr and loses the
+turn at 18.2 Myr; the turns give 1.6 Myr and one libration of 12 Myr from 6.3 to 18.25 Myr (`resonant`, extend).
+
+**A wave on a slower motion is no episode.** An accepted episode can be a ripple that the slow motion of the angle
+carries (`SECULAR_SLOW_WAVES`; `secular.decide.slow_waves`). The slow motion around it is $\sigma_f$ between the turns of
+the center track that bracket it (or the record's edges), of range $R$:
+
+- $R$ below a turn (a slow swing): the episode is a ripple on it when $A_{\max} \le$
+  `SECULAR_SLOW_SWING_RIPPLE_RATIO` × $R/2$ (0.5, the MMR ratio, a convention) and the swing carries it: the slow
+  track $S$ (below) moves inside the episode at least `SECULAR_SLOW_SWING_CARRY_RATIO` (1/16, a convention) of its
+  fastest rate beside it. A wave at a smooth turn of the slow motion reads at least 1/8 (a parabola centred on the
+  episode: $(D/2)^2$ inside against $(3D/2)^2-(D/2)^2$ on an arm as long again); a libration on a plateau of the slow
+  motion, which moves only beside it, reads the filter's leak and stays an episode (two stationary librations joined
+  by a monotone transition: ≤ 0.04). 101703 g−2g6+g7: 8–19° waves of 1 Myr at the turns of the 12-Myr libration
+  ($R$ = 315°, carried 0.16 and 0.12); 56700 s+s7−2s6: a 13° ripple on a 322° arc of 20 Myr (0.51), which becomes
+  `insufficient_time`, extend (the author: a slow libration we cannot see in 20 Myr);
+- $R$ a turn or more (a circulation): a capture stops the circulation, a stall only slows it. The slow track $S$
+  ($\sigma$ low-passed at `LIBRATION_CENTRE_CYCLES` × the episode's period) must carry the angle out of the episode's
+  band beside it ($\ge A_{\max}$ over as long again before or after; an arm the record cuts below
+  `SECULAR_STALL_ARM_MIN_FRACTION` of the episode's span is not read) and keep inside the episode at least
+  `SECULAR_STALL_RATE_RATIO` (0.5, a convention) of that rate. 348018 g−g5+s−s7: a 4° ripple on 4.4 turns, 0.73:
+  `non_resonant`; the captures of 19289 and 278067 s−s6 read 0.04–0.05, 455327 s−s3 0.24.
+
+A record-covering episode is never a wave (no motion beside it). The rule runs at every scale (a ripple filtered at
+the center scale is still one), and the exit and entry are read again on the episodes left.
+
+**Exit and entry.** As for an MMR ([Geometry](geometry.md#coverage-exits-and-entries)), an arc of more than a turn is
+no piece of libration: when $\sigma_f$ runs at least `LIBRATION_EDGE_ARC_REV` = 1 turn monotonically after the last
+turning point (before the first), the exit (entry) is observed, that end is not covered however short the gap, the
+angle is `episodic` and `final_regime` is a circulation from the exit. A secular angle has no orbit to average, so
+$\sigma_f$ itself is read, against the episode's mean center; the center scale is then not tried. 2012 AX10 and 33325
+in 2s − s4 − s6 over 20 Myr leave their libration near 16 Myr and run 1.9 and 1.7 turns to the end: `transient`
+(they were `resonant` before W36, the end gap of 0.8 P counting as covered). An exit that runs less than a turn stays
+`exit_suspected`.
 
 ??? info "Every `angle_status` rule"
 
     | condition | angle_status |
     |---|---|
-    | an accepted episode covering the record (both ends within `LIBRATION_COVERAGE_PERIODS` periods) | `libration` (`stationary` or `modulated` center) |
+    | an accepted episode covering the record (both ends within `LIBRATION_COVERAGE_PERIODS` periods, no observed exit or entry) | `libration` (`stationary` or `modulated` center) |
     | accepted episodes, none covering | `episodic` |
     | no episode; the center's largest monotone pass ≥ 1 turn | `circulation` |
     | no turning point; the filtered angle turns ≥ 1 time | `circulation` |
@@ -352,7 +428,7 @@ Examples: [3040 librates](gallery.md#zlk-resonant), [591986 kinematic](gallery.m
 
 ## Confidence and output
 
-The level follows the shared rule ([Confidence](confidence.md)); a visible exit or entry caps it at medium. A secular
+The level follows the shared rule ([Confidence](confidence.md)); a suspected exit or entry caps it at medium. A secular
 angle has no physics margin; for ZLK it is G.
 
 ??? info "The margins and their classes"

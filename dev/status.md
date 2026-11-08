@@ -1,4 +1,30 @@
-# Status on 2026-11-03
+# Status on 2026-11-08
+
+## W36 (2026-11-07/08, merged into v1.0.0): secular episodes
+
+The author's review of the pairs secular wave 1 (20 Myr, SABA) → fixes F1–F5 + the four-square bottom row
+(record: `benchmark/DECISIONS.md` 2026-11-07 and 2026-11-08 W36; `dev/decisions.md` Secular and ZLK, Figures). F1
+observed exit/entry on σ_f (≥ 1 turn; overrides the Oct 15 rule for such arcs), F2 local TP prominence (capped at the
+record's), F3 a bounded run whose centre turns back once → modulated, F4 secular ripples/stalls yield to the slow
+motion + the centre-turns scale, F5 a thin end travel holds non_resonant at medium and the figure prints step P. New
+settings (all on, two ratios 0.5 conventions): `SECULAR_TP_LOCAL_PROMINENCE`, `ZLK_TP_LOCAL_PROMINENCE`,
+`SECULAR_TURNING_CENTRE`, `ZLK_TURNING_CENTRE`, `SECULAR_SLOW_WAVES`, `SECULAR_SLOW_SWING_RIPPLE_RATIO`,
+`SECULAR_STALL_RATE_RATIO`, `SECULAR_CENTRE_TURNS_SCALE`. 11 new examples (author:2026-11-07), E107–E117, C55–C60.
+On 2026-11-08 the author accepted the package's readings of 142694 (transient), 165548 (transient/medium, removed from
+KNOWN_DISAGREEMENTS) and 455327 s−s3 (episode 9.2–10.8 Myr): secular/zlk status 53/53, confidence 38/38, no known
+episode failures. 143662 s+g5−g8−s3: he agrees with non_resonant (the policy keeps `t_last` on accepted runs).
+The two MMR tests of `test_impl_w3_simcore_verdicts.py` passed only where `cache/solar-*.bin` exists (catalogue
+longitudes); fixture `epoch_solar_cache` (tests/CLAUDE.md) makes them portable.
+
+Open:
+- ZLK slow waves: the swing ratio overlaps real librations (591986, 162474); 2020 PP1 (464–491 kyr) and 78201
+  (83–101 kyr) carry ripple episodes from F2 that F4 does not touch on ZLK.
+- No per-body libration period (needs K and A; `dev/physics-notes.md` Secular). A resonance-specific lower cutoff
+  only after measuring them.
+- Pairs wave 2 (the extend rows, `experiments/2026-11-pairs-secular-zlk/results/final/extend.csv`) waits for the
+  author.
+
+## Before W36 (2026-11-03)
 
 Replace this page at each program step. W29 (the minimal physical policy, `CLASSIFIER_POLICY=minimal`, now the
 default; `v2` kept for comparison and pinned in the tests) is implemented and committed (not pushed). Latest benchmark

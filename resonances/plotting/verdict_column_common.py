@@ -81,6 +81,7 @@ STATE_WORDS = {
     'candidate': {'drawn': 'a candidate episode (drawn faint)', '': 'no candidate episode'},
     'status': {'': 'near the separatrix: at most medium'},
     'thin_veto': {'': 'a thin veto: at most medium'},
+    'end_travel': {'': 'ends in circulation by a thin margin of one turn: at most medium'},
 }
 
 

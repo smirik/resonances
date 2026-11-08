@@ -119,6 +119,16 @@ Conclusions measured during the program, with the objects that showed them. The 
   and a g-only term need not keep i constant at finite i (Codex, W28 D9). The present response fits raw e and
   sin(i/2) separately over the whole window; on z-type rows other waves dominate (1020: R² 0.002 and 0.012), so its
   fail is no measurement of absence. It passes no non-resonant benchmark row (0/9).
+- Libration periods (W36, Codex, page-checked): a local resonant Hamiltonian gives ω₀² = H_II H_σσ − H_Iσ² at the
+  equilibrium, ≈ |KA| for one harmonic of nearly constant A (P₀ = 2π/sqrt|KA|, Morbidelli 2002 pp. 72–74; Morbidelli &
+  Henrard 1991 Eqs. 35–39); K = kᵀ(D²H₀)k along the angle's canonical direction k = (p, p+q) in Delaunay (G, H). The
+  finite-amplitude factor is 4K(m)/(2π) (1.18 at 90°, 2.44 at 170°). Neither K nor A follows from one body's g, s:
+  the fitted forced vector and the e-response are not A. Published: z1 Dorothea 4.15 Myr, Eos 3.4 Myr (MK92 p. 227),
+  Purkyne ~8 Myr (Vokrouhlický 2006); z2 Yukar ~6.1 Myr (Carruba 2016); ν6 ~7 Myr for a fictitious orbit (MH91). Our
+  ν6 pairs (0.24–0.57 Myr) repeat at the free/forced beat 1,296,000/|g_free − g6| yr within 0.9 % (ν16 5.5 %): a
+  displaced linear oscillator, not a pendulum. For z2 and −g+s+g6−s6 the beat of the angle's own divisor gives
+  92–2108 and ~300 Myr against 4.4–5.1 and 1.3 Myr measured: the divisor is a locking diagnostic, not a frequency.
+  Hence no lower bound on P_lib, and no global cutoff is safe (Butterworth N = 2 keeps 50 % at P = P_c).
 
 ## ZLK
 
@@ -152,5 +162,6 @@ Conclusions measured during the program, with the objects that showed them. The 
 
 Murray & Dermott (1999); Morbidelli (2002); Nesvorný & Morbidelli (1998, 1999); Gallardo (2006, 2014); Gallardo, Coito
 & Badano (2016); Wisdom (1985); Shevchenko (2020); Vinogradova (2024); Knežević & Milani; Laskar (1990); Souami &
-Souchay (2012); Li, Huang & Gong (2019); Morais & Namouni (retrograde λ*, ϖ*); Milani, Chesley & Valsecchi (2000) and
+Souchay (2012); Li, Huang & Gong (2019); Morais & Namouni (retrograde λ*, ϖ*); secular periods: Morbidelli & Henrard (1991), Milani & Knežević (1992, 1994),
+Vokrouhlický et al. (2006), Carruba, Aljbaae & Winter (2016); Milani, Chesley & Valsecchi (2000) and
 the clone literature in `docs/clones.md`.

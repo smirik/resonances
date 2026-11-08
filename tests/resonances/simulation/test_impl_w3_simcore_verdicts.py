@@ -30,6 +30,8 @@ from tests.resonances.simulation.test_restore_and_resume import (
     _trojan_run,
 )
 
+pytestmark = pytest.mark.usefixtures('epoch_solar_cache')  # the catalogue longitudes of 2020-01-01: tests/conftest.py
+
 STATUS_STRINGS = {str(s) for s in Status}
 
 

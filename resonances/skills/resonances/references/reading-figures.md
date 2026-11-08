@@ -642,7 +642,9 @@ The page and the right column follow the MMR figure, but the time panels are few
 The header gives the span, step, number of rows, the cutoff $P_c$ and what set it, and the scale the verdict rests
 on (`fine`, or `center` when the slower center scale decided). A Lidov-Kozai figure adds the plane $\omega$, $i$ and
 $\Omega$ are measured from (`ω, i, Ω from the invariable plane`, `ZLK_ANGLE_FRAME`): (a), (a′), (f) (labeled
-`i (invariable)`), (g), (i) and (j) all read that frame, the free elements included.
+`i (invariable)`), (g) and (i)–(l) all read that frame, the free elements included. Below the time panels are four
+squares, (i)–(l), and under them the legend in two columns (the page is 1.45 in taller than the MMR one; the paper
+figure has no legend, leaves an empty square out and letters the rest on from (i)).
 
 | panel | what it shows |
 |---|---|
@@ -654,13 +656,19 @@ $\Omega$ are measured from (`ω, i, Ω from the invariable plane`, `ZLK_ANGLE_FR
 | (e), (f) | $e$ and $i$ (degrees): gray osculating, black filtered at $P_c$, with min – max |
 | (g) | secular: the rate of the element the angle contains against a sine of $\sigma_f$ (below); Lidov-Kozai: the drift of the free and the osculating $\omega$ in turns (below) |
 | (h) | the center of $\sigma_f$, its turns, and its longest one-way run when it reaches a full turn (as MMR (i)) |
-| (i) | the portrait $(e\cos\sigma, e\sin\sigma)$, or $(\sin\frac i2\cos\sigma, \sin\frac i2\sin\sigma)$ for an angle of $\Omega$ alone; color: time; red + at the origin |
+| (i) | the portrait $(e\cos\sigma, e\sin\sigma)$ of the unfiltered angle and $e$, or $(\sin\frac i2\cos\sigma, \sin\frac i2\sin\sigma)$ for an angle of $\Omega$ alone; color: time; red + at the origin |
 | (j) | secular: $\sigma_f$ against ${\rm d}\sigma_f/{\rm d}t$; Lidov-Kozai: the free eccentricity vector, or $\sigma_f$ against its rate when the free elements were not built (the axis labels say which) |
+| (k) | the Charlier portrait $(R\cos\sigma_f, R\sin\sigma_f)$: $\sigma$ and $e$ filtered at the cutoff the verdict rests on ($P_c$, or the center scale's), inside the filter's window, $R = \sqrt{2(1-\sqrt{1-e_f^2})}$; for an angle of $\Omega$ alone $R = \sqrt{2\sqrt{1-e_f^2}\,(1-\cos i_f)}$ (labeled `R(e, i)`); color: time; red + at the origin |
+| (l) | the same over each episode of (a) (the counted ones and the candidates under the minimal policy), in its color of (a): ○ its start, solid between its first and last turning point, dashed beyond them and for a candidate; at most the five longest |
 
 What to look for: in (a) a libration needs at least three turning points, one full cycle
 (`LIBRATION_MIN_TURNING_POINTS`); a drift is a ramp of less than a turn; a single U is half a cycle; circulation is
 a ramp of several turns. In (i) a libration draws loops around the resonance center: a ring off the origin, or a
 crescent when the libration is wide and the center close to the origin. A ring around the origin is circulation.
+(i) mixes every regime of the record and every short wave of $e$; (k) shows the same plane without the waves the
+filter removes (Carruba, Aljbaae & Winter 2016, Fig. 3B), and (l) one episode at a time: an episode whose curve goes
+round the origin is not a libration of this angle. $R$ is the momentum conjugate to the angle in units of
+$\sqrt{L}$, $R \approx e$ (or $2\sin\frac i2$) for small $e$ and $i$. These panels change no status.
 
 **(g) for a secular angle.** Black is $\dot e_f$ for an angle with $\varpi$, or ${\rm d}\sin(i_f/2)/{\rm d}t$ for an
 angle of $\Omega$ alone (both, $i$ dashed on a right axis, when the angle has both); blue is the fit
@@ -713,7 +721,11 @@ differences:
       (SZ.G), with its cycles, the free e against the forced e, the forcing's beat, a node not yet separated from s_j,
       and a co-orbital the free elements cannot fit;
     - Lidov-Kozai step 2, `Do e and i trade as a ZLK cycle in the deciding episode?`. It carries ◆ when the veto
-      zlk_integral decided.
+      zlk_integral decided;
+    - `P · Is the record long enough?` when the policy decided a record too short for one cycle
+      (`pol_decided_by` insufficient_time): `No, but σ_f ends in circulation → NON-RESONANT`, with the range σ_f spans
+      to the end in turns. Below 1 + `CONFIDENCE_THIN_BAND` turns it adds `at most medium` (pill `ends in circulation
+      by a thin margin of one turn`). Step 0 keeps its `Not yet` and adds `the policy decides at step P`.
 
     The gate decides only when it gives a verdict, confirmed or kinematic. Without one, the shape decides, at most at
     medium (a pill, flag `gate_unavailable`), unless the forced terms are small and the e–i integral holds in the
@@ -972,7 +984,7 @@ for each case below.
   the line `Needed: …` under Why and the action chip say what is missing (a longer record, a finer step) and how
   long to integrate.
 - **secular** ([ν6](physics/gallery.md#secular-nu6), [z1](physics/gallery.md#secular-z1-resonant)): read (a) with the
-  turning-point rule above and (i) for a ring off the origin.
+  turning-point rule above and (i), (k), (l) for a ring off the origin.
 - **Lidov-Kozai** ([confirmed](physics/gallery.md#zlk-resonant), [kinematic](physics/gallery.md#zlk-kinematic)): in
   (g) a free $\omega$ that winds points to kinematic, a confined one supports the libration; the gate's outcome in
   the right column decides when it gives one, else the angle's shape does. An offset eccentricity-vector cloud alone

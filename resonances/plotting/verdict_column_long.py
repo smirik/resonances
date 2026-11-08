@@ -15,6 +15,8 @@ The steps of a long-period row (the ◆ on the one that set the status; `pol_dec
     2   secular: the phase error        the swing against the error of the linear mode phases (G5p)
         ZLK: the e-i exchange           the deciding episode's e and i at constant √(1−e²) cos i (read by the level,
                                         a veto zlk_integral, or flag kinematic_excluded)
+    P   the policy's line               ZLK: a gate without a verdict keeps the shape's status; any row the policy
+                                        decided as too short (`pol_decided_by` insufficient_time): the end travel of σ_f
 
 Words for the long-period inputs of the level replace the MMR ones of `verdict_column_common` (`LONG_PILL_WORDS`)."""
 
@@ -31,6 +33,7 @@ from resonances.plotting import verdict_column_why as why
 from resonances.plotting import verdict_text as vt
 from resonances.plotting import verdict_vocab as vocab
 from resonances.resonance.analysis import policy as pol
+from resonances.resonance.analysis.secular.decide import EDGE_ARC_ENTRIES
 
 DOCS = 'physics/secular-zlk.md'
 NOUN = {'secular': 'σ', 'zlk': 'ω'}
@@ -56,6 +59,14 @@ STEP_WORDS = {
 # free-ω gate gives no verdict keeps the shape's status, at most medium unless a kinematic libration is excluded
 POLICY_NUMBER = 'P'
 POLICY_GATE_QUESTION = 'Does the free-ω gate give a verdict?'
+# the policy's line of a row it decided as too short (`policy._insufficient`, MMR's question): the end travel of σ_f
+POLICY_SHORT_QUESTION = mmr.POLICY_QUESTIONS[pol.DECIDED_INSUFFICIENT][0]
+OVERRULED = f'the policy decides at step {POLICY_NUMBER}'
+SHORT_DECISIVE = {
+    'non_resonant': 'Too few turning points for one cycle, and σ_f spans at least one turn to the record’s end: the record '
+    'ends in circulation, decided now.',
+    '': 'Too few turning points for one cycle: the record is too short to decide.',
+}
 # the gate's cycle count: the record over the libration period, not the cycles counted nor the free ω's turns
 GATE_CYCLES_WORDS = 'cycles of ω in the record T / P_cyc'
 # the policy's veto comparisons of the free ω (ledger names after 'policy:veto zlk_…: ') in words
@@ -145,14 +156,17 @@ def _unphysical(analysis) -> bool:
 
 
 def deciding_step(analysis, row: Mapping[str, Any], family: str) -> str:
-    """The step that set the status ('Q', '0', '1', '2', 'P'): an unphysical orbit Q; a ZLK veto of the free ω, a
-    confirmed or kinematic gate 1 and a veto of the e-i integral 2; a gate without a verdict, on which the policy keeps
-    the shape's status (`pol_decided_by` gate_unavailable), the policy's line P; secular: the phase error 2, the center
-    scale 1; else the shape 0."""
+    """The step that set the status ('Q', '0', '1', '2', 'P'): an unphysical orbit Q; a row the policy decided as too
+    short (`pol_decided_by` insufficient_time: the record ends in circulation, W36 F5) the policy's line P; a ZLK veto
+    of the free ω, a confirmed or kinematic gate 1 and a veto of the e-i integral 2; a gate without a verdict, on which
+    the policy keeps the shape's status (`pol_decided_by` gate_unavailable), the policy's line P; secular: the phase
+    error 2, the center scale 1; else the shape 0."""
     v = analysis.verdict
     if _unphysical(analysis):
         return 'Q'
     by = _decided_by(row)
+    if by == pol.DECIDED_INSUFFICIENT:
+        return POLICY_NUMBER
     if family == 'zlk':
         if by == pol.DECIDED_GATE_UNAVAILABLE:
             return POLICY_NUMBER
@@ -275,6 +289,10 @@ def _shape_numbers(analysis) -> str:
             f'gaps to the record’s ends {vt.fmt(start.value)} P and {vt.fmt(end.value)} P (a gap of ≤ {vt.fmt(start.threshold)} '
             f'libration period{"" if start.threshold == 1 else "s"} counts as reaching the end)'
         )
+    for kind, where in (('entry', 'before the first turning point'), ('exit', 'after the last turning point')):
+        arc = entries.get(EDGE_ARC_ENTRIES[kind])
+        if arc is not None and vt.finite(arc.value):
+            parts.append(f'{where} σ_f runs {_turns(arc)} one way: the {kind} is seen, that end is not reached')
     passed = entries.get('centre_pass')
     if passed is not None and vt.finite(passed.value) and angle in ('circulation', 'drift', 'insufficient_time'):
         parts.append(f'center’s largest one-way pass {_turns(passed)}')
@@ -319,6 +337,8 @@ def _shape_step(analysis, row, settings, eps, family, decides: bool) -> vc.Check
     icon = None if children else vc.OK
     rule = 'G5s' if 'centre_turned_insufficient' in set(v.rules_fired) else ''
     answer = _shape_answer(analysis, row, eps, family)
+    if _decided_by(row) == pol.DECIDED_INSUFFICIENT:  # the shape's 'not yet' is the tree's; the policy's line decides
+        answer = f'{answer.rstrip(".")}; {OVERRULED}.'
     return _line('0', question, answer, _shape_numbers(analysis), rule, children, decides, icon=icon)
 
 
@@ -526,9 +546,46 @@ def _ei_step(analysis, row, settings, decides: bool) -> Optional[vc.CheckLine]:
     return _line('2', question, answer, numbers, children=children, decides=decides, icon=None if read else vc.QUIET)
 
 
+def _travel_parts(analysis, row) -> Tuple[str, str, bool]:
+    """(where the end travel is read from, its comparison with one turn, whether it is thin) of a row the policy
+    decided as too short (`policy.apply_long_period`: σ_f's range from the last turning point of an accepted run, else
+    from the window's start, to the window's end; thin within CONFIDENCE_THIN_BAND of one turn, `policy._travel_thin`)."""
+    entries = _entries(analysis)
+    travel, thin = entries.get(pol.END_TRAVEL_ENTRY), entries.get(pol.END_TRAVEL_THIN_ENTRY)
+    geometry = analysis.geometry
+    t_last = _f(row, 'pol_t_last_tp_yr')
+    start = geometry is not None and vt.finite(t_last) and t_last <= float(geometry.window[0])
+    where = 'over the window (no accepted run, so no last turning point)' if start else 'after the last turning point'
+    if vt.finite(t_last) and not start:
+        where += f' ({vt.years(t_last)})'
+    numbers = f'σ_f spans {_turns(travel)} {where}' if travel is not None and vt.finite(travel.value) else ''
+    is_thin = thin is not None and thin.result is False
+    if is_thin:
+        numbers += f'; thin: {_turns(thin)}'
+    return where, numbers, is_thin
+
+
+def _short_line(analysis, row) -> vc.CheckLine:
+    """◆ P of a row the policy decided as too short (`pol_decided_by` insufficient_time): MMR's question; a record that
+    ends in circulation (σ_f spans at least one turn after the last turning point) is non-resonant, at most medium when
+    that travel is thin (W36 F5, 143662 s+g5−g8−s3: the shape's step still says 'not yet')."""
+    status = f'!!{vt.status_head(analysis.verdict.status).lower()}!!'
+    _, numbers, thin = _travel_parts(analysis, row)
+    if str(analysis.verdict.status) == 'non_resonant':
+        answer = f'No, but σ_f ends in circulation → {status}'
+        if thin:
+            answer += ', at most medium: within the thin band of one turn'
+    else:
+        answer = mmr.POLICY_QUESTIONS[pol.DECIDED_INSUFFICIENT][1].format(status=status)
+    return vc.CheckLine(vc.DECIDES, POLICY_NUMBER, POLICY_SHORT_QUESTION, answer, numbers, POLICY_NUMBER, decides=True)
+
+
 def _policy_line(analysis, row) -> vc.CheckLine:
-    """◆ P: the free-ω gate gave no verdict and the policy kept the shape's status (at most medium; at its level when a
-    kinematic libration is excluded, flag kinematic_excluded); the gate's numbers that stopped it."""
+    """◆ P: a row the policy decided as too short (`_short_line`); else the free-ω gate gave no verdict and the policy
+    kept the shape's status (at most medium; at its level when a kinematic libration is excluded, flag
+    kinematic_excluded); the gate's numbers that stopped it."""
+    if _decided_by(row) == pol.DECIDED_INSUFFICIENT:
+        return _short_line(analysis, row)
     words, numbers = _no_verdict_parts(analysis, row)
     if not numbers and _outcome(analysis) == 'short_window':
         cycles = _entries(analysis).get('gate_cycles')
@@ -556,7 +613,7 @@ def checks(analysis, settings, row, episodes, family: str) -> Tuple[Tuple[vc.Che
         return (q, _not_reached(('0', '2'), words)), ''
     lines = [q, _shape_step(analysis, row, settings, eps, family, step == '0')]
     if family == 'zlk':
-        policy = step == POLICY_NUMBER
+        policy = step == POLICY_NUMBER and _decided_by(row) == pol.DECIDED_GATE_UNAVAILABLE
         later = [_gate_step(analysis, row, settings, step == '1', policy), _ei_step(analysis, row, settings, step == '2')]
     else:
         later = [_secular_centre_step(analysis, row, step == '1'), _phase_step(analysis, row, step == '2')]
@@ -620,7 +677,11 @@ def subtitle(analysis, row, family: str, step: str, planet: str = '') -> vc.Subt
     title = f'{name} · {_status_words(analysis, row, family)}'
     what = STEP_WORDS.get(step) or STEP_WORDS.get(f'{family}:{step}', '')
     decided = f'decided at step {step} ({what})'
-    if step == POLICY_NUMBER:
+    if step == POLICY_NUMBER and _decided_by(row) == pol.DECIDED_INSUFFICIENT:
+        decided = f'decided by the policy: too few turning points, and the record ends in circulation (step {POLICY_NUMBER})'
+        if str(analysis.verdict.status) != 'non_resonant':
+            decided = f'decided by the policy: the record is too short (step {POLICY_NUMBER})'
+    elif step == POLICY_NUMBER:
         decided = f'decided without a gate verdict: the status follows the shape of {NOUN[family]} (step P)'
     if family == 'secular':
         detail = f'secular resonance, proper angle · {decided}'
@@ -668,6 +729,9 @@ def _sigma_fact(analysis, row, eps: vt.Episodes, family: str) -> str:
     if _unphysical(analysis):
         return 'not read (the orbit is unphysical)'
     words = _shape_answer(analysis, row, eps, family).rstrip('.')
+    travel = _f(row, 'pol_end_travel_rev')
+    if _decided_by(row) == pol.DECIDED_INSUFFICIENT and str(v.status) == 'non_resonant' and vt.finite(travel):
+        return f'too few turning points for one cycle; σ_f spans **{vt.fmt(travel)} turns** to the end: it ends in circulation'
     return words[:1].lower() + words[1:]
 
 
@@ -1111,6 +1175,8 @@ def _decisive_lines(analysis, row, lines: Sequence[vc.CheckLine], settings) -> T
     gate = _gate_comparison(analysis, row, step)
     if gate:
         out = [gate]
+    elif step is not None and step.number == POLICY_NUMBER and _decided_by(row) == pol.DECIDED_INSUFFICIENT:
+        out = [SHORT_DECISIVE.get(str(analysis.verdict.status), SHORT_DECISIVE[''])]
     else:
         text, ids, _ = vt.long_period_decisive_line(analysis, row)
         out = [text + (f' [{", ".join(ids)}]' if ids else '')]

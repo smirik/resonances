@@ -71,6 +71,11 @@ reason given. Sources in `tmp/` are local and git-ignored.
 | Broad order-≤4 secular combination scans for status | The hits were near-commensurabilities with g1/g2/s1/s2, which the model gets wrong without GR | Oct 13 | literature list |
 | Planets' osculating ϖ and Ω in secular angles | Wrong for every s_j term (see [physics-notes.md](physics-notes.md)) | Oct 12 | the Oct 12 fix |
 | ZLK center comparison modulo 180° and keeping 162474 resonant across its island switch | The accepted reading is transient over the whole record | Oct 17 | W16 |
+| Secular turning-centre rule without the cover condition (F3a: one return within a turn is enough) | 363, 2306 g−g6+s−s6 (4–6° waves on 42–45° of centre travel) went uncertain → transient/certain against the author's 363 label; 518 accepted waves on 144° of travel | Nov 7 | W36 F3 |
+| Slow wave as "the slow motion sweeps more than the band over ±P" or "S drifts inside more than the band" | Cuts real captures out of a circulation (19289, 278067 s−s6, 455327 s−s3, 21028): a capture and a ripple both have fast motion on one side; inside drift/band separates nothing (348018 0.98, 21028 0.86) | Nov 7 | W36 F4 |
+| "Carried" for a slow-swing ripple as S's displacement inside the episode ≥ A_max (or any S-range/A_max), or as the spread of its full-cycle centres | S-range/A_max overlaps: real waves 0.50–1.65 (518, 101703 below 1), Codex's stationary librations up to 0.48 (0.82 at a record edge) from the filter's leak; a 3-TP episode has one cycle centre. The rate ratio inside/beside (≥ 1/8 at a parabolic turn) is used | Nov 7 | W36 F4a |
+| The slow-swing ripple rule on ZLK ω | Catches the 591986 (4 Myr) and 162474 (1.5 Myr) librations; the ratios overlap. Open, not retried without a ZLK-specific measure | Nov 7 | W36 F4 |
+| Raising the secular TP prominence or filtering every secular angle harder to drop ripples | Prominence is excursion, not frequency; no lower bound on a secular libration period exists (ν6 at the free/forced beat 0.24–0.57 Myr), so a global cutoff can erase real librations. Slower scales only where the record shows the slow motion | Nov 7 | W36, Codex periods review |
 
 ## Performance and engineering
 

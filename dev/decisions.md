@@ -376,6 +376,59 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   changes no status"; rows with a gate verdict keep it). Per-episode classes are rechecked with Codex first (D9).
 - **Oct 31 (author, W28 g09-4 B).** 2306 g−g6+s−s6: angle insufficient_time instead of drift when the center turned
   back; the uncertain label stays.
+- **Nov 7 (W36 F1, author's items 1-2).** The edge rule E1 applies to secular and ZLK angles on σ_f itself (no orbit to
+  average, the episode's mean center): ≥ `LIBRATION_EDGE_ARC_REV` turns monotone after the last TP (before the first)
+  is an observed exit (entry), the edge is not covered, the angle is episodic, `final_regime` circulation, no center
+  scale behind it. Overrides the Oct 15 "visible exit → libration ≤ medium" for arcs ≥ 1 turn (below a turn it still
+  holds). 2012 AX10, 33325 2s−s4−s6: resonant → transient.
+- **Nov 7 (W36 F2, author's items 4, 9).** Secular and ZLK turning points: each run of provisional turning points (at
+  the type's floor) takes the prominence measured on its own samples, as the MMR does (`preprocess.run_prominence`,
+  `geometry.local_thresholds`), capped at the record's: a circulation elsewhere must not set the threshold of a quiet
+  libration (19289 76.8° → 31.7°, 278067 83.0° → 23.3°: one episode each, 5.1/6.1 Myr to the end). The cap because a
+  run's fast part keeps the libration's own swing where interleaved waves hide its period from the image (2020 PP1
+  ZLK 101° vs 52°). Settings `SECULAR_TP_LOCAL_PROMINENCE`, `ZLK_TP_LOCAL_PROMINENCE` (on).
+- **Nov 7 (W36 F2 guard, Claude; regression found on pairs wave 1).** The local prominence may add libration, never
+  remove it: every librating episode of the record's reading must lie inside one librating episode of the local
+  reading, else the stretches it overlaps keep the record's prominence (repeated until none is lost;
+  `secular.analyse.measure_fine`). 455327 g−s−g5+s6 (ias15): the run's 13.8° (record 39.0°) took a 32° wiggle of the
+  drifting approach, the run became 9.14–12.47 Myr centre_moves and the crescent episode 10.23–12.47 Myr was lost
+  (non_resonant); with the guard transient again. No setting (a guarantee, not a threshold). Benchmark: no row changes;
+  example `secular__455327__g-s-g5+s6` (c0808, not an author label), case C61 (tier C, Codex).
+- **Nov 7 (W36 F3, author's item 5: 42946).** A secular/ZLK run rejected only for its moving centre is accepted as
+  `modulated` (stationarity not measured) when it closes a cycle, its TPs span < a turn, its cycle centre turns back
+  at least once (instead of `LIBRATION_CENTRE_RETURNS_MODULATED` = 3: a secular libration makes few cycles in a record)
+  and one of its cycles swings over every centre (`geometry.accept_turning_centre`; `SECULAR_TURNING_CENTRE`,
+  `ZLK_TURNING_CENTRE`, on). Without the last condition 363, 2306 (4–6° waves at P ≈ 210 kyr on a centre travelling
+  42–45°) and 518 went uncertain → transient/certain, against the author's 363 label. 42946: the run 1.3–14.6 Myr is the
+  early episode; transient stays, confidence high → certain (N 2.0 → 8.8 cycles of the decisive episode).
+- **Nov 7 (W36 F4, author's items 6, 7, 8, 10).** A secular episode that is a wave on a slower motion of the angle is no
+  episode (`secular.decide.slow_waves`, `Geometry.slow_wave_ids`, reason `slow_wave`; `SECULAR_SLOW_WAVES`): on a slow
+  swing (σ_f between the centre turns around it < a turn) when A_max ≤ 0.5 × R/2 (`SECULAR_SLOW_SWING_RIPPLE_RATIO`, the
+  MMR W34 ratio); inside a circulation when the slow track beside it moves ≥ A_max in as long as the episode and keeps
+  ≥ 0.5 of that rate inside (`SECULAR_STALL_RATE_RATIO`: a capture stops the circulation, a stall slows it). The slow
+  scale gets the MMR second scale, the centre's own turns (`SECULAR_CENTRE_TURNS_SCALE`). 101703 → resonant/medium +
+  extend, 348018 → non_resonant, 56700 → uncertain + extend; 142694, 165548 unchanged (see benchmark/DECISIONS.md).
+  Secular only: on ZLK the swing ratio also caught 591986 (4 Myr) and 162474 (1.5 Myr) librations.
+- **Nov 7 (W36 F4a, Codex review P1).** The slow-swing ripple must be carried by the swing: the slow track S (as
+  `stall_reading`) moves inside the episode at >= 1/16 of its fastest rate beside it (`SECULAR_SLOW_SWING_CARRY_RATIO`,
+  a convention: half of the 1/8 that a parabolic turn centred on the episode gives). Codex's two stationary
+  librations joined by a monotone transition (0.013-0.037) stay episodes; the waves the rule is for read 0.12-0.57
+  (101703 0.16/0.12, 518 0.12-0.22, 56700 0.51). No benchmark verdict changed. Thin for a very slow transition (a
+  10-Myr variant: up to 0.078 at the centre scale). Also `SECULAR_STALL_ARM_MIN_FRACTION` (0.25, was hard-coded) and
+  the secular figure accepts an explicit MMR layout (`long_period_layout(base=...)`).
+- **Nov 7 (W36 F5, Claude's finding: 143662 s+g5−g8−s3).** The policy turns a secular/ZLK insufficient_time angle into
+  non_resonant when σ_f's travel to the end is ≥ 1 turn (`_insufficient`); 143662 got high from 1.09 turns while the
+  figure's only decisive text said "Not yet". The travel is a range (the swing 2A in it), so within
+  `CONFIDENCE_THIN_BAND` of one turn the level is at most medium (`policy._travel_thin`, input `end_travel`), like a
+  thin veto; the status stays (principle 5: a record that ends in circulation is decided now). The figure prints the
+  policy's step P (`Is the record long enough?`, MMR's question) with the travel; step 0 keeps "Not yet" and says the
+  policy decides at P. No benchmark row changes (no secular/ZLK row is decided this way there).
+- **Nov 7 (W36, the author's items 2 and 4: periods and a stronger filter).** No per-body libration period is predicted
+  and the angle is not filtered harder everywhere: P₀ = 2π/sqrt(|KA|) needs the torsion K and the resonant coefficient
+  A, which one body's proper elements do not give and the package does not measure; no general lower bound on the
+  period exists (the ν6 librators repeat at the free/forced beat, 0.24–0.57 Myr). Slower scales are tried only where
+  the record shows a slow motion (center scale, center-turns scale, F4's slow waves). The references (Codex,
+  page-checked): `benchmark/DECISIONS.md` 2026-11-07 W36; the summary in `docs/physics/secular-zlk.md`.
 
 ## Figures
 
@@ -444,6 +497,11 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   option `combined.figure='panels'` (MMR and secular/ZLK): no title/header, legend or right column, no empty slot
   (an (l) without an accepted episode and an undrawn FAIR are left out, the rest lettered on from (k)), the margin
   labels right of the panels kept (the caption explains them), the page cropped (12.45 × 12.8 in). Default `full`.
+- 2026-11-07 (W36, the author's items 1 and 4): the bottom row of the secular/ZLK figure is four squares: (i) the
+  osculating portrait, (j) σ_f against its rate, (k) the filtered Charlier portrait (σ_f and e, or e and i for an
+  Ω-only angle, low-passed at the decisive cutoff; R = sqrt(2(1 − sqrt(1 − e²))), Carruba, Aljbaae & Winter 2016
+  Fig. 3B), (l) the same per accepted episode in the colours of (a). The legend moved to a band under the row; the
+  paper figure drops empty squares and re-letters from (i). Both are for reading only: nothing in them feeds a status.
 
 ## Benchmark and process
 

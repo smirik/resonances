@@ -55,8 +55,8 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
   labels on the right can stay, remove the title"): plot option `combined.figure='panels'` (`style.FigureMode`) in
   `mmr_combined.draw_combined` and `secular_plots.draw_long_period_combined`: no header, legend, separator or right
   column (not even prepared; `text_stats` = {}), (l) left out when it draws no episode (`episode_portrait_drawn`),
-  FAIR when not drawn (no warning), the rest packed left and lettered on (k, l, m); ZLK/secular: a second portrait
-  without data left out. The margin legends stay. The page is cropped by geometry (`panels_layout`: rects measured
+  FAIR when not drawn (no warning), the rest packed left and lettered on (k, l, m); ZLK/secular: any of the four
+  squares without data left out, the rest lettered on from (i) (`_draw_portraits`, skip_empty), no legend band. The margin legends stay. The page is cropped by geometry (`panels_layout`: rects measured
   from the lower-left corner, so only the size changes, `PANELS_TOP_PAD_IN`, `PANELS_RIGHT_PAD_IN`); a stamp still prints
   (`panels_stamp`, both figures). The portraits stay squares (author, 2026-10-16), so a lone (k) leaves the row's
   right part blank (open question to the author: stretch it?). `DataManager.mmr_combined_figure(body, resonance, sim,
@@ -102,6 +102,15 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
   co-orbital zone's edges a_P(1 ± k (m_P/3)^(1/3)) dotted when `coorbital_planet_geometric` names a planet by ⟨a⟩
   alone, ZLK_COORBITAL_HILL_FACTOR k, for drawing only: Trojans and secular rows too), so e, i, physics, centre,
   portraits are (e)…(j) (`*_LETTER`, `PORTRAIT_LETTERS`).
+  W36 (author 2026-11-07, item 4): the bottom row is four 2.2-in squares (`long_period_layout`: LONG_PERIOD_BOTTOM,
+  LONG_PERIOD_COLOUR_BAR; the MMR LAYOUT_V1 is untouched): (i) osculating portrait, (j) σ_f–rate or free e vector,
+  (k) the filtered Charlier portrait (`filtered_charlier`: σ_f and e — e and i for an Ω-only angle — low-passed at
+  `angle.cutoff_yr` with the analysis' filter order, inside `angle.window`; `charlier_radius` R = sqrt(2P/L) or
+  sqrt(2Q/L)), (l) the same per episode (`portrait_episodes`: counted + candidates under the policy, else
+  `librating_episodes`; colours `episode_colour_map`, shared with (a); spans/pieces from mmr_combined). (k) and (l)
+  share a square view about the origin. The legend left the third slot: a band of LONG_PERIOD_LEGEND_BAND_IN under the
+  row, two columns (`legend_columns`, font shrinks to LEGEND_MIN_FONT_PT); the band grows the page without touching
+  `growth_in` (D8 starts from it). Paper figure: no band (12.45 x 12.8 in as before).
   panel (g) draws the rate of each element in `Response.variables` (d sin(i/2)/dt for an Ω-only angle, with `r2_i`),
   (i) is sin(i/2) cos/sin σ there. ZLK (g): the drift of the osculating and the free ω from their first values, in
   turns, with a legend (`_draw_free_omega_drift`); the right column's Evidence 'what holds ω?' (forced vector, centre
@@ -134,6 +143,10 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
   analysis keep British spelling (`centre_moves`, `geo_centre_*`, ledger keys such as 'G5a slow centre' in
   `verdict_vocab`). An identifier shown as words goes through `verdict_vocab.snake_words`, never a bare
   `.replace('_', ' ')`.
+- Secular/ZLK step P (`verdict_column_long`): `deciding_step` gives P for `pol_decided_by` gate_unavailable (ZLK) and
+  insufficient_time (W36 F5, `_short_line`: the end travel σ_f spans, thin → at most medium); for the latter step 0
+  keeps the tree's 'Not yet' with 'the policy decides at step P', and Key facts/Why/DECISIVE say the record ends in
+  circulation.
 
 ## The author's figure decisions
 

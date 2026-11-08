@@ -138,6 +138,10 @@ def filtered_angle(series: LongPeriodSeries, cutoff: Cutoff, settings: AnalysisS
     """sigma_f at P_c (and at P_c x 0.5 and x 2 for the robustness of the turning-point count), its rate, e_f as the
     slow variable, the edge-trimmed window and the shortest libration (`period_floor`); sets the prominence of `cutoff`.
     A Lidov-Kozai omega breaks its runs at ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG (half a turn), a secular angle at pi.
+    The edge rule reads sigma_f (`FilteredAngle.edge_arc_filtered`): >= LIBRATION_EDGE_ARC_REV turns of it, monotone,
+    after the last turning point (before the first) is an observed exit (entry). A run rejected only for its moving
+    centre is accepted when it stays within a turn and its centre turns back (`geometry.accept_turning_centre`;
+    SECULAR_TURNING_CENTRE, ZLK_TURNING_CENTRE).
     None when the record cannot be filtered (non-uniform grid, or shorter than the cutoff needs)."""
     t = np.asarray(series.t_yr, dtype=float)
     x = np.asarray(series.angle, dtype=float)
@@ -167,6 +171,10 @@ def filtered_angle(series: LongPeriodSeries, cutoff: Cutoff, settings: AnalysisS
         period_floor_setting=floor[1],
         # a ZLK island is at most half a turn wide (2 omega): its runs break there (`geometry.split_runs`)
         run_break_half_amplitude_rad=float(np.radians(settings.zlk_run_break_half_amplitude_deg)) if zlk else np.pi,
+        # an arc of sigma_f of >= LIBRATION_EDGE_ARC_REV turns beyond the episodes is an observed exit (entry), W36 F1
+        edge_arc_filtered=True,
+        # a run bounded within a turn whose centre turns back is a libration with a modulated centre, W36 F3
+        turning_centre=settings.zlk_turning_centre if zlk else settings.secular_turning_centre,
     )
 
 
@@ -177,12 +185,29 @@ def centre_scale_angle(
     (`geometry.centre_scale_angle`; its shortest libration is `period_floor` at that cutoff, the prominence that of a
     centre turn, `geometry.centre_prominence`). A slow secular libration under a faster oscillation (518 z1: 3.3 Myr
     under 400 kyr waves that fragment the fine turning points) is the libration of this centre."""
-    coarse = geometry.centre_scale_angle(angle, period_cycle_yr, settings)
+    return with_period_floor(series, geometry.centre_scale_angle(angle, period_cycle_yr, settings), cutoff, settings)
+
+
+def with_period_floor(
+    series: LongPeriodSeries, coarse: Optional[FilteredAngle], cutoff: Cutoff, settings: AnalysisSettings
+) -> Optional[Tuple[FilteredAngle, float]]:
+    """(the angle at a slower scale with the shortest libration of that cutoff, `period_floor`, and the prominence of a
+    centre turn), None for no angle."""
     if coarse is None:
         return None
     floor, setting = period_floor(series, coarse.cutoff_yr, settings)
     coarse = replace(coarse, period_floor_yr=floor, period_floor_setting=setting)
     return coarse, float(geometry.centre_prominence(cutoff.prominence_rad, settings))
+
+
+def _fast_part(t: np.ndarray, x: np.ndarray, angle_f: np.ndarray, window, cutoff_yr: float, period_min: float, floor_rad: float, settings):
+    """|sigma_f - lowpass(sigma, P_min) - image| [rad], what sigma_f holds faster than the shortest libration P_min
+    (`_set_prominence`); None when P_min <= P_c (nothing between the two filters) or the low-pass cannot be formed."""
+    slow = lowpass_or_none(t, x, period_min, settings) if period_min > cutoff_yr else None
+    if slow is None:
+        return None
+    image = geometry.libration_image(t, angle_f, window, cutoff_yr, period_min, floor_rad, settings)
+    return np.abs(angle_f - slow - image)
 
 
 def _set_prominence(series: LongPeriodSeries, cutoff: Cutoff, x: np.ndarray, angle_f: np.ndarray, window, period_min, settings) -> None:
@@ -198,20 +223,78 @@ def _set_prominence(series: LongPeriodSeries, cutoff: Cutoff, x: np.ndarray, ang
     sigma_f - lowpass(sigma, P_min); its image (`geometry.libration_image`, the MMR rule) is taken out first. Without it
     591986 (ZLK, 4 Myr, P_c 1874 yr, P_min 3748 yr, a 6.1-kyr libration of half-amplitude 16 deg) had r = 4.35 deg and
     p_TP = 17.4 deg: the turns of the libration where its centre moves fastest fell below it and one libration over
-    the record came out as three episodes."""
+    the record came out as three episodes.
+
+    This is the record's prominence; a run of turning points gets its own (`run_prominence`)."""
     _, floor_deg, _, factor, _ = _type_settings(series, settings)
     t = np.asarray(series.t_yr, dtype=float)
     inside = window_mask(t, window)
     floor = np.radians(floor_deg)
     cutoff.fast_amplitude_rad = float(np.percentile(np.abs(x - angle_f)[inside], FAST_PERCENTILE)) if inside.any() else NAN
-    slow = lowpass_or_none(t, x, period_min, settings) if period_min > cutoff.cutoff_yr else None
-    ripple = 0.0
-    if slow is not None and inside.any():
-        image = geometry.libration_image(t, angle_f, window, cutoff.cutoff_yr, period_min, floor, settings)
-        ripple = float(np.percentile(np.abs(angle_f - slow - image)[inside], FAST_PERCENTILE))
+    part = _fast_part(t, x, angle_f, window, cutoff.cutoff_yr, period_min, floor, settings) if inside.any() else None
+    ripple = float(np.percentile(part[inside], FAST_PERCENTILE)) if part is not None else 0.0
     cutoff.ripple_rad = ripple
     cutoff.prominence_rad = float(max(floor, factor * ripple))
     cutoff.prominence_binding = 'floor' if floor >= factor * ripple else 'ripple'
+
+
+def run_prominence(
+    series: LongPeriodSeries, cutoff: Cutoff, angle: FilteredAngle, settings: AnalysisSettings
+) -> Optional[geometry.LocalProminence]:
+    """The TP prominence of a run of turning points from its own samples (`geometry.local_thresholds`, the MMR rule
+    `mmr.analyse.regime_prominence`): max(floor, K r) with r the 95th percentile of the fast part (`_set_prominence`)
+    on the run's samples only. None when the rule is off (SECULAR_TP_LOCAL_PROMINENCE, ZLK_TP_LOCAL_PROMINENCE).
+
+    The record's r mixes the regimes: where sigma circulates, or wanders at the edges, the fast part is the
+    circulation's own unevenness (19289 s-s6, 20 Myr: 26.8 deg outside the libration, 8.0 deg inside it; the record's
+    95th percentile 19.2 deg gave p_TP = 76.8 deg against swings 2A of 42-120 deg, and the gaps left by the lost
+    turns cut one libration of 5.1-19.9 Myr into pieces; on the run, 31.7 deg). A regime elsewhere must not set the
+    threshold of a quiet libration. The run's ends are where its oscillation starts and stops, and the low-pass at P_min carries the motion
+    beyond them FILTER_EDGE_TRIM_CUTOFFS x P_min into it: that stretch at each end does not count, and what is left
+    must span at least P_min (one cycle of the slowest wave the fast part holds), else the run keeps the record's
+    prominence (NaN).
+
+    A run's prominence is never above the record's (`cutoff.prominence_rad`): the rule only stops another regime from
+    inflating it. The libration's own image is taken out of the fast part (`geometry.libration_image`) only where the
+    turning points at the floor show its period, and waves interleaved with the libration hide it; the run's own
+    swing then counts as fast (2020 PP1 ZLK, 6.5-18 kyr: a 4.5-kyr libration among 1-kyr waves, 101 deg on the run
+    against 52 deg of the record). The record dilutes that, a run does not.
+
+    A lower threshold can also lose an episode (the run spans the drifting approach to a libration and admits its
+    wiggles): the fine geometry keeps a run's prominence only where no librating episode of the record's reading is
+    lost (`analyse.measure_fine`)."""
+    _, floor_deg, _, factor, _ = _type_settings(series, settings)
+    local_on = (
+        settings.zlk_tp_local_prominence if series.resonance_type == ResonanceType.LIDOV_KOZAI else settings.secular_tp_local_prominence
+    )
+    if not local_on:
+        return None
+    t = np.asarray(angle.t_yr, dtype=float)
+    floor = float(np.radians(floor_deg))
+    record = float(cutoff.prominence_rad)
+    period_min = float(angle.period_floor_yr)
+    window = tuple(angle.window)
+    inside = window_mask(t, window)
+    margin = settings.filter_edge_trim_cutoffs * period_min
+    raw, angle_f = np.asarray(angle.angle_raw, dtype=float), np.asarray(angle.angle_f, dtype=float)
+    cache: list = []  # the fast part of the record, formed once on the first run that needs it
+
+    def prominence(own: np.ndarray) -> float:
+        samples = np.flatnonzero(own)
+        if not len(samples):
+            return NAN
+        start = t[samples[0]] + (margin if samples[0] > 0 else 0.0)
+        end = t[samples[-1]] - (margin if samples[-1] < len(t) - 1 else 0.0)
+        supported = own & inside & (t >= start) & (t <= end)
+        if not np.any(supported) or np.ptp(t[supported]) < period_min:
+            return NAN
+        if not cache:
+            cache.append(_fast_part(t, raw, angle_f, window, angle.cutoff_yr, period_min, floor, settings))
+        part = cache[0]
+        ripple = float(np.percentile(part[supported], FAST_PERCENTILE)) if part is not None else 0.0
+        return float(min(record, max(floor, factor * ripple)))
+
+    return geometry.LocalProminence(floor, prominence)
 
 
 def terms_from_formula(terms) -> Tuple[AngleTerm, ...]:

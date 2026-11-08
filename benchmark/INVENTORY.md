@@ -95,6 +95,7 @@ weak-phase-portrait 11, negative-control 8, apocentric-libration 8, shared-a-eve
 | вековые v4 | `.../output/secular-10myr-v4/data/data-<name>.csv` | 10 млн лет, SABA dt 0.5, 100 лет (100001) | + `_osculating/_proper`; планет нет; 125–220 МБ/тело | 15 |
 | вековые эталоны | `.../output/secular-reference-10myr[-astdys\|-literature-z]/` | 10 млн лет, 100 лет | 9 углов; **статусы в summary.csv старые — переклассифицировать** | 33 |
 | вековые 20 млн лет | `.../output/test-v5-20myr/` | 20 млн лет, измеренные фазы, планеты сохранены | 21 угол | 2 |
+| вековые пары, волна 1 | `experiments/2026-11-pairs-secular-zlk/output/secular-w1[-ias15-p12]/data/data-<name>.csv` | 20 млн лет, SABA dt 0.5 (ias15 для пары 12), 500 лет (40001), измеренные фазы | `<res>_angle*`, планеты в `data/`; SAVE=review: 31 из 186 тел | 11 (W36) |
 | фикстуры ZLK | `tests/fixtures/free-omega/{3040,4257,162474,591986}.csv.gz` | 500 тыс. лет, 100 лет (5001) | times,a,e,inc,Omega,omega,LK_angle_unwrapped | 5 |
 | скан LK | `<external>/lkr-ias15/output_*/data-<name>.csv` | 100 тыс. лет, ias15, около 16 лет (6283) | + LK_angle*; статусы до free-omega gate | 12 |
 | 2nu6-nu5 | `output/batch_mmr_test/data-<name>-g-2g6+g5.csv` | 100 тыс. лет, SABA dt 1 | angle, `_osculating`, `_proper` | 5 |

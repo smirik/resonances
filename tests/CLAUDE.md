@@ -18,6 +18,8 @@ the detail. Benchmark gates: `benchmark/CLAUDE.md`.
   it runs (`tests/resonances/local_data.py`), not at import. `tests/conftest.py` points every other test at a folder
   that does not exist and turns a skip for missing data into a failure; `make test-portable` runs test-fast on a
   fresh copy (no `benchmark/data`, no `cache/`). Never `pytest.skip` a fast or slow test for missing local data.
+  A run built by hand (no integration) on 2020-01-01 reads its MMR catalogue longitudes from the fixture
+  `epoch_solar_cache` (tests/conftest.py: `pytestmark = pytest.mark.usefixtures('epoch_solar_cache')`), not from `cache/`.
 - Committed fixtures (`tests/fixtures/`): a few tens of KB each, 1 MB in all; larger ones live in
   `benchmark/data/fixtures/` (the free-omega series, ~147 KB each, moved there on 2026-10-29).
 - `tests/resonances/independent_wN/`: tests written by a context-free subagent for wave N. When one fails, check the

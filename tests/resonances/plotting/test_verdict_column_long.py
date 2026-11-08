@@ -563,3 +563,35 @@ def test_secular_main_zone_has_no_origin(example):
     column = _column(example)
     main = '\n'.join(_block(column, name) for name in vc.BLOCKS if name != 'footer')
     assert 'origin' not in main.lower()
+
+
+@pytest.mark.parametrize('k, b, thin', [(0.95, 0.9, True), (0.90, 1.3, False)])
+def test_a_short_record_decided_by_the_policy_shows_step_p(k, b, thin):
+    """W36 F5 (143662 s+g5−g8−s3): the policy, not the tree, decided a too-short record that ends in circulation
+    (`pol_decided_by` insufficient_time). ◆ moves to P with MMR's question and the end travel σ_f spans (1.04 and 1.11
+    turns by hand, `test_secular_thin_end_travel`); the shape's 'Not yet' stays, overruled; a thin travel says at most
+    medium."""
+    from tests.resonances.analysis.test_secular_thin_end_travel import short_record_series
+
+    analysis = analyse_secular(short_record_series(k, b), SETTINGS)
+    row = {**analysis.summary_row(), 'resonance': 's+g5-g8-s3'}
+    column = long_column(analysis, SETTINGS, row, analysis.episode_rows(), long_period_frequencies(analysis, row), 'secular')
+    assert vc.problems(column) == []
+    assert (column.header.status, column.header.level) == ('non_resonant', 'medium' if thin else 'high')
+    line = _decides(column)
+    assert (line.number, line.rule_id, column.decided_rule) == ('P', 'P', 'P')
+    assert line.question == 'Is the record long enough?'
+    answer, numbers = vc.plain(line.answer), vc.plain(line.numbers)
+    assert answer.startswith('No, but σ_f ends in circulation → non-resonant')
+    assert ('at most medium' in answer) == thin
+    travel = '1.04' if thin else '1.11'
+    assert numbers.startswith(f'σ_f spans {travel} turns ≥ 1 turn over the window')
+    assert ('thin: 1.04 turns < 1.1 turns' in numbers) == thin
+    shape = next(line for line in column.checks if line.number == '0')
+    assert not shape.decides and shape.answer == 'Not yet: fewer turning points than one cycle needs; the policy decides at step P.'
+    assert 'decided by the policy' in column.subtitle.detail and 'rule P' in column.footer
+    assert 'the record ends in circulation' in _block(column, 'why')
+    pills = [p.key for p in column.confidence.pills]
+    assert ('end_travel' in pills) == thin
+    if thin:
+        assert column.header.chip.text == 'glance at (a), (b)'

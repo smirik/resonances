@@ -45,7 +45,9 @@ def test_the_cases_are_well_formed():
     # B10a: C38 (37087 slow scale), E94, E95 (37087 x2 K3s), C39 (HW7 slow cause); C3: E68 (2003 YN107), C21 (2026 AC4);
     # C4: E69 (2006 BZ147), E67 (2007 VU6); C8: E70 (2009 BE81 20 kyr, tier C); C6: C25, C26, C40-C53 (tier C, leaf G4c)
     # C14: C54 (2022 BB2, flag extend_time, tier C); W29 (2026-11-02 review page): E100-E105 (no episodes / at most one)
-    assert len(names) == len(set(names)) == 153
+    # W36 (the author's review of the pairs secular wave 1, 2026-11-07): E107-E117 (A/B), C55-C60 (Codex/Claude, tier C)
+    # W36 F2 guard: C61 (455327 g-s-g5+s6, Codex, tier C: the episode the local prominence lost)
+    assert len(names) == len(set(names)) == 171
     assert {case.tier for case in CASES} <= set(ee.TIERS)
     assert {case.scope for case in CASES} <= set(ee.SCOPES)
     for case in CASES:
@@ -61,7 +63,13 @@ def test_the_cases_are_well_formed():
     # each edge as geometry.covers_edges does; E76 (523683) passes, a slow swing's baseline sets the extension
     # W34 (the author's epcount A): the nine cases read the geometric pool (counted + candidates) and pass; D01 (the
     # gate reads 88899's episodes) and E67 (uncertain + extend, his e67 A) rewritten: no known failure left
-    assert sorted(case.case for case in CASES if case.known_fail) == []
+    # W36 test-first: the eleven secular cases of 2026-11-07 fail on the unchanged classifier; each fix (F1-F4) clears
+    # its own: E107/E108 (exit at the end), E109/E110 (prominence), E111 (moving centre), E112-E117 (ripple, slow scale);
+    # F1 (the edge rule on sigma_f) cleared E107/E108, F2 (each run at its own prominence) E109/E110, F3 (a bounded
+    # run whose centre turns back) E111, F4 (slow waves, the centre-turns scale) E112, E113, E116; E114 (142694), E115
+    # (165548: medium, not low) and E117 (455327 s-s3) stayed known failures; the author accepted the package's reading
+    # of all three on 2026-11-08 (transient; medium; the episode 9.20-10.84 Myr), so they pass: no known failure left
+    assert not [case.case for case in CASES if case.known_fail]
 
 
 def test_every_quote_is_verbatim_at_its_line():

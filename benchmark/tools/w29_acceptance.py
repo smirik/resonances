@@ -198,6 +198,11 @@ def level(status: str, basis: Dict[str, str], row, settings) -> str:
             return 'medium' if thin or 'second_capture_unresolved' in flags else 'high'
         if candidate:
             return 'medium'
+        # W36 F5: a long-period record decided as ending in circulation by a travel within the thin band of one turn
+        band = float(getattr(settings, 'confidence_thin_band', 0.1))
+        short = text(row.get('pol_decided_by')).split(';')[0] == 'insufficient_time'
+        if short and family(row.get('example_id')) in ('secular', 'zlk') and number(row.get('pol_end_travel_rev')) < 1 + band:
+            return 'medium'
         if text(row.get('reason')) != 'modulated_circulation':
             if family(row.get('example_id')) in ('secular', 'zlk'):
                 tps = [number(row.get(c)) for c in ('geo_n_tp', 'geo_n_tp_cut_half', 'geo_n_tp_cut_double')]

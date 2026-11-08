@@ -288,7 +288,11 @@ def resolve_run(data_path: Path, name: str) -> Run:
             )
         return _RUNS[key]
 
-    if 'lkr-ias15' in run_dir.parts:
+    if run_dir.name == 'data' and (run_dir.parent / 'simulation.json').exists():
+        # the package's DATA_FOLDER layout: data-<name>.csv in data/, simulation.json, run.json, summary.csv one level up
+        run_dir = run_dir.parent
+        key = f'{run_dir.parent.parent.name}-{run_dir.name}'  # <experiment>-<run>: 2026-11-pairs-secular-zlk-secular-w1
+    elif 'lkr-ias15' in run_dir.parts:
         key = f'lkr-ias15-{run_dir.name}'
     elif run_dir.name == 'pair74':
         key = f'{run_dir.parent.name}-pair74'
@@ -502,6 +506,8 @@ def source_angle(df: pd.DataFrame, key: str, run: Run) -> tuple[Optional[np.ndar
 
 def old_semantics(run: Run) -> str:
     c = run.commit or ''
+    if '90a97d3' in c:  # 'deployed <date> from 90a97d335bfa ...' (W35): the angle the package classifies today
+        return 'package 90a97d3: reduced angle against measured mode longitudes (as classified)'
     if run.kind == 'batch_mmr_test':
         return 'old package (2025-12): `angle` = classified angle, built from the planets\' osculating elements'
     if c.startswith(('d0c31b4', 'fa23598')):

@@ -136,6 +136,15 @@ SABA-задачи объединяют до 8 тел в одну Simulation: т�
     источника как `free_omega.csv.gz`. Захват узла g5 (Ω − ϖ5 либрирует 52°–129°, 1.46 млн лет) под кинематической
     либрацией ω (6 тыс. лет) и биением g6−g5 (54 тыс. лет). Автор: «2 - в бенч» (W25, Q2), вердикт ожидается;
     proposed/claude = вердикт пакета при добавлении (non_resonant/episodic/kinematic_libration).
+- 2026-11-07 (W36, `extract_existing.py --only c0797,...,c0807`; `resolve_run` читает прогон с CSV в `data/`
+  (DATA_FOLDER пакета): simulation.json, run.json и summary.csv на уровень выше, run_id `<эксперимент>-<прогон>`):
+  - 11 вековых примеров из волны 1 пар (`experiments/2026-11-pairs-secular-zlk/output/secular-w1`, 20 млн лет,
+    SABA(10,6,4) dt 0.5, шаг 500 лет, Horizons 2026-09-29, измеренные фазы, пакет 90a97d3; 455327 s-s3 — из
+    `secular-w1-ias15-p12`, ias15): 2012 AX10 и 33325 2s-s4-s6, 19289 и 278067 s-s6, 42946 g-g6+s-s6, 56700
+    s+s7-2s6, 101703 и 142694 g-2g6+g7, 165548 s-g5+g6-s6, 348018 g-g5+s-s7. Угол пересчитан тем же коммитом
+    (reduced_vs_src 0°). `classifier_config` обрезан до `secular_planet_phases`, `secular_angle_mode`,
+    `secular_phase_window` (остальные ключи совпадали с умолчаниями, а замороженные умолчания не пускали бы к
+    примерам будущие исправления). Метки автора: `author_label_decisions_2026-11-07.csv`; эпизоды E107–E117, C55–C60.
 
 ## Переклассификация и `make test-benchmark`
 

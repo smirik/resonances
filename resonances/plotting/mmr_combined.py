@@ -3558,7 +3558,7 @@ def draw_fair(
 
 def legend_rect(layout: VerdictFigureLayout, third_slot_free: bool) -> Rect:
     """The legend's box: `layout.legend`, widened over the third slot of the bottom row when nothing is drawn there
-    (no FAIR; the secular and ZLK figures)."""
+    (no FAIR)."""
     x, y, w, h = layout.legend
     if not third_slot_free:
         return layout.legend

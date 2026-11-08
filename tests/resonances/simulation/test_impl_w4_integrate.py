@@ -8,10 +8,13 @@ LIB (4J-2S-1+0+0-1) is a pendulum libration of known period (8 kyr), so its verd
 """
 
 import numpy as np
+import pytest
 import pandas as pd
 
 from resonances.simulation import SimulationSerializer, mmr_adapter
 from tests.resonances.simulation.test_restore_and_resume import LIB, LIBRATION_PERIOD, N, _saved_run, _series, _simulation
+
+pytestmark = pytest.mark.usefixtures('epoch_solar_cache')  # the catalogue longitudes of 2020-01-01: tests/conftest.py
 
 DERIVED = '4J-2S-1-1+0+0'  # a planar subresonance of LIB: the same lambda part, varpi_J in place of varpi
 

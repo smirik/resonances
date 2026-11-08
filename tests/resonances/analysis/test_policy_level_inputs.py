@@ -124,17 +124,17 @@ def test_a_fixed_level_and_a_thin_veto_are_inputs():
 # --------------------------------------------------------------------------------------------- the contract on grids
 
 
-def outcome_with(status, level_=None, veto_thin=False):
-    return policy._Outcome(status, Reason.CIRCULATION, LibrationOrigin.NONE, level=level_, veto_thin=veto_thin)
+def outcome_with(status, level_=None, veto_thin=False, travel_thin=False):
+    return policy._Outcome(status, Reason.CIRCULATION, LibrationOrigin.NONE, level=level_, veto_thin=veto_thin, travel_thin=travel_thin)
 
 
-def check(status, evidence, level_=None, veto_thin=False):
-    inputs = policy.level_inputs(status, evidence, SETTINGS, level_, veto_thin)
-    final = policy._final_level(status, outcome_with(status, level_, veto_thin), evidence, SETTINGS)
+def check(status, evidence, level_=None, veto_thin=False, travel_thin=False):
+    inputs = policy.level_inputs(status, evidence, SETTINGS, level_, veto_thin, travel_thin)
+    final = policy._final_level(status, outcome_with(status, level_, veto_thin, travel_thin), evidence, SETTINGS)
     assert policy.lowest_ceiling(inputs) == final, (status, evidence, level_, veto_thin, policy.level_inputs_text(inputs))
     if status in (Status.UNCERTAIN, Status.INVALID):
         assert inputs == () and final == Confidence.NONE
-    if level_ is None and not veto_thin:
+    if level_ is None and not veto_thin and not travel_thin:
         assert final == policy.level(status, evidence, SETTINGS)
     for entry in inputs:
         assert entry.ceiling in CONFIDENCE_ORDER
@@ -176,6 +176,18 @@ def test_the_other_statuses_take_the_lowest_ceiling():
             n, veto_state=veto_state, veto=veto, veto_thin=ev_thin, second_capture=second, candidate=candidate, circulation_clear=clear
         )
         check(status, evidence, veto_thin=thin)
+        check(status, evidence, travel_thin=True)  # W36 F5: a thin end travel, at most medium on any status with a level
+
+
+def test_a_thin_end_travel_is_an_input():
+    # 143662 (W36 F5): a non_resonant row, no candidate, no clear circulation -> high; the thin travel holds it at medium
+    inputs = policy.level_inputs(Status.NON_RESONANT, ev(), SETTINGS, travel_thin=True)
+    assert policy.level_inputs_text(inputs) == 'candidate:none:certain;circulation:not_clear:high;end_travel:thin:medium'
+    assert policy.lowest_ceiling(inputs) == M
+    # a clear circulation (certain) is held at medium too; uncertain has no level
+    inputs = policy.level_inputs(Status.NON_RESONANT, ev(circulation_clear=True), SETTINGS, travel_thin=True)
+    assert policy.lowest_ceiling(inputs) == M
+    assert policy.level_inputs(Status.UNCERTAIN, ev(), SETTINGS, travel_thin=True) == ()
 
 
 def test_a_fixed_level_takes_the_lowest_ceiling():

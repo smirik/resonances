@@ -7,6 +7,7 @@ pendulum for 6 kyr followed by a circulation of 700 yr per turn is one episode o
 N >= 3) whose record ends in circulation (no extend)."""
 
 import numpy as np
+import pytest
 import pandas as pd
 
 from resonances.resonance.analysis.mmr.analyse import analyse_mmr
@@ -16,6 +17,8 @@ from resonances.resonance.analysis.verdict import Action, Confidence, Status
 from resonances.simulation import SimulationSerializer
 from resonances.simulation.config import status_selected
 from tests.resonances.simulation.test_restore_and_resume import CIRC, LIB, _saved_run
+
+pytestmark = pytest.mark.usefixtures('epoch_solar_cache')  # the catalogue longitudes of 2020-01-01: tests/conftest.py
 
 MINIMAL = AnalysisSettings()
 N = 12001

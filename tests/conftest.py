@@ -95,6 +95,39 @@ def hide_local_data(request, monkeypatch):
             monkeypatch.setattr(bio, name, NO_LOCAL_DATA if name == 'DATA' else NO_LOCAL_DATA / name.lower())
 
 
+# Heliocentric mean longitudes [rad] of the planets on 2020-01-01 (time 0), read from the solar-system cache that
+# IntegrationEngine.create_solar_system wrote for that date from NASA Horizons
+EPOCH_2020_LONGITUDES = {
+    'Mercury': 4.620579957898155,
+    'Venus': 0.08277773476273254,
+    'Earth': 1.7426511089600503,
+    'Mars': 3.896413464437231,
+    'Jupiter': 4.910090975224032,
+    'Saturn': 5.13788151977448,
+    'Uranus': 0.6757073929832886,
+    'Neptune': 6.0790752162817805,
+}
+
+
+@pytest.fixture
+def epoch_solar_cache(monkeypatch):
+    """Runs built by hand on 2020-01-01 (no integration) read the MMR catalogue longitudes from a solar-system cache of
+    the test's own, not from cache/ (local only): with it the rows are certain, without it high (2026-11-08).
+    The cache holds only what the catalogue reads, each planet's longitude; never integrate with it."""
+    import datetime
+
+    import rebound
+
+    folder = Path(TEST_CACHE)
+    folder.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setitem(resonances.config.config, 'SOLAR_SYSTEM_FILE', f'{TEST_CACHE}/solar.bin')
+    solar = rebound.Simulation()
+    solar.add(m=1.0, hash='Sun')
+    for index, (name, longitude) in enumerate(EPOCH_2020_LONGITUDES.items()):
+        solar.add(m=1e-9, a=0.4 + index, e=0.01, l=longitude, hash=name, primary=solar.particles[0])
+    solar.save_to_file(str(folder / f'solar-{int(datetime.datetime(2020, 1, 1).timestamp())}.bin'))
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     """A test not marked `benchmark` that skips for missing local data fails: that skip passes silently elsewhere."""

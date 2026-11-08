@@ -71,7 +71,28 @@ Things that cost a session hours. Each says what happens and what to do instead.
 - **A libration can raise its own turning-point threshold:** its image leaking through the two filters (2013 AS27:
   48.9°, alternate TPs lost, period doubled to 310 yr). `analyse.fast_part` subtracts `libration_image` first. The secular/ZLK prominence (`secular.preprocess._set_prominence`)
   missed it until W26 (591986 4 Myr: 17.4° against a 16° libration, three episodes instead of one); the rule now lives
-  in `geometry.libration_image`, shared.
+  in `geometry.libration_image`, shared. The image needs the run's period from the turning points at the floor:
+  faster waves between the libration's turns hide it, and a run's own (local) prominence then holds the libration's
+  swing (2020 PP1 ZLK: 101° on the run, 52° on the record). The secular/ZLK run prominence is capped at the record's.
+- **A lower turning-point threshold can lose an episode too** (W36 F2 guard): it adds turning points everywhere on
+  the run, also on the slow approach to a libration; the run then starts on the drift, its centre moves and the
+  whole run is rejected (455327 g−s−g5+s6: the run's 13.8° against the record's 39.0° took a 32° wiggle at 9.1–9.5
+  Myr; the accepted 10.2–12.5 Myr episode became a rejected 9.1–12.5 Myr run, non_resonant). "Lower threshold → more
+  libration" is not monotone by itself: `secular.analyse.measure_fine` checks every record episode survives.
+- **A ripple and a short capture look alike locally** (W36 F4): next to a circulation both have a fast slow motion on
+  one side, so a sweep over the neighbourhood ±P cuts 19289/278067 s-s6 (captures from 900°/Myr circulation), and the
+  inside drift of S over band separates nothing (348018 ripple 0.98, 21028 libration 0.86, 455327 0.75). What works:
+  a bounded slow swing (R < 2π) at least twice the episode, or, in a circulation, the slow rate kept inside the episode
+  (capture ≤ 0.06, stall 0.73) — and only where S beside actually moves (pieces of one libration have a still S there).
+- **The end travel is a range, the swing included** (W36 F5): `pol_end_travel_rev` is max − min of σ_f, so 2A sits in
+  it; 1.09 turns with two turning points in 18.6 Myr (143662 s+g5−g8−s3) may be a piece of a slow libration. Below
+  1 + `CONFIDENCE_THIN_BAND` turns the level stays at medium.
+- **The secular bench must read the source run's phases** (W36 F4): a saved angle built from measured mode longitudes,
+  reclassified under the linear law, adds the phase uncertainty and turns rows into `phase_unresolved` (56700 s+s7−2s6:
+  review in the bench, transient/low in the run). `reclassify_secular_zlk.py` now passes `measured` when the source
+  run measured them.
+- **`test_episode_expectations.py` without `-m "not benchmark"`** starts `benchmark/tools/reclassify.py --workers 8`
+  through its fixture: on a shared machine pass the marker (or the worker limit) first.
 - **Lomb-Scargle in [2/T, 1/500 yr] hides long periods**, so T/P passes a "three cycles" gate spuriously (2023 RS2:
   2.1 real cycles, 3.68 inferred). Count cycles from turning points.
 - **Cubic potential extrapolation beyond the record** drove DOP853 to ~1e-6 steps (385266: 4.4 M calls, > 6 GB per

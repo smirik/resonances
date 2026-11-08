@@ -179,6 +179,10 @@ DECIDED_TREE = 'tree'
 DECIDED_MEMBER, DECIDED_OBJECTION, DECIDED_SCALE, DECIDED_GEOMETRY = 'member', 'objection', 'strength_scale', 'geometry'
 DECIDED_DRIFT, DECIDED_INSUFFICIENT, DECIDED_LEG, DECIDED_HALF = 'drift', 'insufficient_time', 'leg', 'half'
 DECIDED_FORCED_DRIFT = 'forced_wave_drift'
+END_TRAVEL_INPUT = 'end_travel'  # the level input of a thin end travel (`_travel_thin`, column pol_level_inputs)
+# the ledger entries of a long-period row's end travel (`apply_long_period`, `_travel_thin`; the figure reads them)
+END_TRAVEL_ENTRY = 'policy:end travel after the last turning point < 1 own rev'
+END_TRAVEL_THIN_ENTRY = 'policy:end travel >= (1 + confidence_thin_band) own rev'
 DECIDED_GATE_CONFIRMED, DECIDED_GATE_UNAVAILABLE = 'gate_confirmed', 'gate_unavailable'
 DECIDED_VETO, NOT_UPHELD = 'veto:', 'not_upheld:'
 NOT_UPHELD_ZLK_GATE = 'zlk_gate'  # the tree's ZLK kinematic status (code -2) that the policy did not uphold
@@ -310,7 +314,12 @@ class LevelInput:
 
 
 def level_inputs(
-    status: Status | str, ev: Evidence, settings: AnalysisSettings, outcome_level: Optional[Confidence] = None, veto_thin: bool = False
+    status: Status | str,
+    ev: Evidence,
+    settings: AnalysisSettings,
+    outcome_level: Optional[Confidence] = None,
+    veto_thin: bool = False,
+    travel_thin: bool = False,
 ) -> Tuple[LevelInput, ...]:
     """Each input `level` (or the table's fixed level, `_final_level`) reads, with the highest level it allows; the
     row's level is the lowest ceiling (`lowest_ceiling`). Pure: it explains the level and never sets it (the tests
@@ -325,7 +334,9 @@ def level_inputs(
     non_resonant          candidate (drawn medium), circulation (clear certain, else high)
     a fixed level         table (the level the policy table fixes: a subresonance member's, 5a on near_separatrix),
                           and V when that level is medium (as above; only ambiguous lowers the level)
-    a thin veto elsewhere thin_veto (medium; `veto_thin`, the outcome's thin veto that `_final_level` caps)."""
+    a thin veto elsewhere thin_veto (medium; `veto_thin`, the outcome's thin veto that `_final_level` caps)
+    a thin end travel     end_travel (medium; `travel_thin`: a long-period row that ends in circulation by a travel
+                          within CONFIDENCE_THIN_BAND of one own revolution, W36 F5)."""
     status = Status(status)
     if status in (Status.UNCERTAIN, Status.INVALID) or outcome_level == Confidence.NONE:
         return ()
@@ -353,6 +364,8 @@ def level_inputs(
         inputs += _librating_inputs(ev, settings, v_ceiling)
     if veto_thin and not vetoed:
         inputs.append(LevelInput('thin_veto', M_THIN, medium))
+    if travel_thin:
+        inputs.append(LevelInput(END_TRAVEL_INPUT, M_THIN, medium))
     return tuple(inputs)
 
 
@@ -567,6 +580,9 @@ class _Outcome:
     flags: List[str] = field(default_factory=list)
     veto: str = ''
     veto_thin: bool = False
+    # a long-period row that ends in circulation only by an end travel within CONFIDENCE_THIN_BAND of one own
+    # revolution (W36 F5, 143662 s+g5-g8-s3: 1.09 rev): at most medium, like a thin veto
+    travel_thin: bool = False
     second_capture: bool = False
     veto_state: Optional[str] = None  # forced V (ambiguous for an objection, not_measured for a gate without verdict)
     counted: frozenset = frozenset()
@@ -1348,11 +1364,12 @@ def _mmr_veto_need(analysis, outcome: _Outcome, settings: AnalysisSettings) -> f
 
 
 def _final_level(status: Status, outcome: _Outcome, ev: Evidence, settings: AnalysisSettings) -> Confidence:
-    """`level`, or the level the table fixes (low instead of medium with V ambiguous); a thin veto at most medium."""
+    """`level`, or the level the table fixes (low instead of medium with V ambiguous); a thin veto or a thin end
+    travel (`_Outcome.travel_thin`) at most medium."""
     confidence = outcome.level if outcome.level is not None else level(status, ev, settings)
     if outcome.level == Confidence.MEDIUM and ev.veto_state == V_AMBIGUOUS:
         confidence = Confidence.LOW
-    if outcome.veto_thin and confidence in (Confidence.CERTAIN, Confidence.HIGH):
+    if (outcome.veto_thin or outcome.travel_thin) and confidence in (Confidence.CERTAIN, Confidence.HIGH):
         confidence = Confidence.MEDIUM
     return confidence
 
@@ -1528,11 +1545,30 @@ def apply_long_period(analysis, settings: AnalysisSettings):
         times = [run.t_end_yr for run in geometry.runs if run.accepted and run.n_tp and lo <= run.t_end_yr <= hi]
         t_last = float(max(times)) if times else float(lo)
         travel = edge_travel_rev(angle.t_yr, angle.angle_f, t_last, hi, geometry.window, revolution) if angle is not None else NAN
-        ledger.compare('policy:end travel after the last turning point < 1 own rev', travel, Op.LT, 1.0, 'rev', 'pol_end_travel_rev')
+        ledger.compare(END_TRAVEL_ENTRY, travel, Op.LT, 1.0, 'rev', 'pol_end_travel_rev')
         end = EndReading(t_last, travel)
         outcome = _long_outcome(analysis, end, revolution, span, settings, ledger, zlk)
+        outcome.travel_thin = _travel_thin(outcome, end, settings, ledger)
     _finish_long(analysis, outcome, settings, ledger, end, span, zlk)
     return analysis
+
+
+def _travel_thin(outcome: _Outcome, end: EndReading, settings: AnalysisSettings, ledger: Ledger) -> bool:
+    """W36 F5: a row the policy made non_resonant because the record ends in circulation (`_insufficient`) whose end
+    travel lies within CONFIDENCE_THIN_BAND of one own revolution. The travel is a range of sigma_f (the swing 2A
+    included), so 1.09 rev over 18.6 Myr with two turning points (143662 s+g5-g8-s3) may be part of a slow libration:
+    the status stands, the level is at most medium."""
+    if outcome.decided_by != DECIDED_INSUFFICIENT or Status(outcome.status) != Status.NON_RESONANT:
+        return False
+    entry = ledger.compare(
+        END_TRAVEL_THIN_ENTRY,
+        end.end_travel_rev,
+        Op.GE,
+        1.0 + settings.confidence_thin_band,
+        'rev',
+        'pol_end_travel_rev',
+    )
+    return entry.result is False
 
 
 def _long_geometric(analysis, end: EndReading, revolution: float, span: float) -> _Outcome:
@@ -1824,6 +1860,7 @@ def _finish_long(analysis, outcome: _Outcome, settings: AnalysisSettings, ledger
         and np.isfinite(last.coverage_end_gap_p)
         and last.coverage_end_gap_p <= settings.libration_coverage_periods
         and not exit_seen
+        and not last.exit_observed  # the record shows the exit (the edge rule on sigma_f, W36 F1)
     )
     end = EndReading(
         end.t_last_yr, end.end_travel_rev, period, episode_cycles(last, settings, **seen) if last is not None else NAN, reaches
@@ -1890,7 +1927,7 @@ def _finish_long(analysis, outcome: _Outcome, settings: AnalysisSettings, ledger
     tree_vetoed = zlk and v.status == Status.NON_RESONANT and v.reason == Reason.KINEMATIC_LIBRATION
     outcome.upheld = tree_vetoed and bool(outcome.veto)
     outcome.not_upheld = NOT_UPHELD_ZLK_GATE if tree_vetoed and not outcome.veto else ''
-    inputs = level_inputs(status, ev, settings, None, outcome.veto_thin)
+    inputs = level_inputs(status, ev, settings, None, outcome.veto_thin, outcome.travel_thin)
     objections = outcome.objections if ev.veto_state == V_AMBIGUOUS else []
     _write(v, outcome, ev, confidence, action, end, clause, extend_to, None, veto_need, ledger, inputs, objections)
     analysis.policy = _result(outcome, ev, action, clause, inputs)  # a long-period outcome has no spans

@@ -3212,5 +3212,292 @@
         "transcript": "W30 page answers 2026-11-03"
       }
     ]
+  },
+  {
+    "case": "E107",
+    "example_id": "secular__2012_AX10__2s-s4-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 13,
+        "who": "author",
+        "text": "2012 AX10 2s-s4-s6 - неверно определена граница эпизода — он заканчивается около 16 Myr и переходит в циркуляцию. Отсюда и статус, который должен быть, скорее, transient.",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E108",
+    "example_id": "secular__33325__2s-s4-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 13,
+        "who": "author",
+        "text": "2012 AX10 2s-s4-s6 - неверно определена граница эпизода — он заканчивается около 16 Myr и переходит в циркуляцию. Отсюда и статус, который должен быть, скорее, transient.",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      },
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 14,
+        "who": "author",
+        "text": "33325 1998 RH3 2s-s4-s6 — аналогично",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E109",
+    "example_id": "secular__19289__s-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 16,
+        "who": "author",
+        "text": "19289 1996 HY12 s-s6.png — неверно определён эпизод. Начиная где-то с 5 Myr и до конца идёт эпизод либраций. А у тебя разделено на кусочки.",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E110",
+    "example_id": "secular__278067__s-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 21,
+        "who": "author",
+        "text": "278067 2006 YY40 s-s6 — похоже на 19289: начиная с 6.5 Myr до конца идёт один эпизод.",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E111",
+    "example_id": "secular__42946__g-g6+s-s6",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 17,
+        "who": "author",
+        "text": "42946 1999 TU95 g-g6+s-s6 — неверно определён эпизод (ты уже об этом писал).",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E112",
+    "example_id": "secular__56700__s+s7-2s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 18,
+        "who": "author",
+        "text": "56700 2000 LL28 s+s7-2s6 — есть подозрение, что надо extend, что мы медленную либрацию не видим…",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E113",
+    "example_id": "secular__101703__g-2g6+g7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 19,
+        "who": "author",
+        "text": "101703 1999 CA150 g-2g6+g7.png — тоже хитрый случай. Система поймала короткие либрации. Но нет ли тут глобальной либрации (весь промежуток интегрирования — сплошной эпизод)?",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      },
+      {
+        "file": "tmp/secular-episodes-2026-11-07/PLAN.md",
+        "line": 36,
+        "who": "author",
+        "text": "Как пакет классифицирует, так и считаем (если это resonant или uncertain). extend - да.",
+        "transcript": "chat answer 2026-11-07, recorded in PLAN.md"
+      }
+    ]
+  },
+  {
+    "case": "E114",
+    "example_id": "secular__142694__g-2g6+g7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 19,
+        "who": "author",
+        "text": "Похожее в 142694 2002 TW243 g-2g6+g7 где-то с 7.5 Myr и до конца (плюс-минус).",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      },
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-ANSWERS-2026-11-08.md",
+        "line": 7,
+        "who": "author",
+        "text": "142694 - ok",
+        "transcript": "chat 2026-11-08 11:31 CET (answers to the W36 report)"
+      }
+    ]
+  },
+  {
+    "case": "E115",
+    "example_id": "secular__165548__s-g5+g6-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 20,
+        "who": "author",
+        "text": "165548 2001 DO37 s-g5+g6-s6 — тут, ИМХО, идёт дрифт, а система ловит мелкие либрации…",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      },
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-ANSWERS-2026-11-08.md",
+        "line": 7,
+        "who": "author",
+        "text": "165548 - можно убрать из расхождений; сойдёт",
+        "transcript": "chat 2026-11-08 11:31 CET (answers to the W36 report)"
+      }
+    ]
+  },
+  {
+    "case": "E116",
+    "example_id": "secular__348018__g-g5+s-s7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 22,
+        "who": "author",
+        "text": "348018 2003 SF334 g-g5+s-s7 — нерезонансное (как ты и указывал).",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E117",
+    "example_id": "secular__455327__s-s3",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 24,
+        "who": "author",
+        "text": "455327 2002 OP28 s-s3 — тут мне кажется, эпизод тоже подлиннее должен быть.",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      },
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-ANSWERS-2026-11-08.md",
+        "line": 7,
+        "who": "author",
+        "text": "455327 - да. всё норм.",
+        "transcript": "chat 2026-11-08 11:31 CET (answers to the W36 report)"
+      }
+    ]
+  },
+  {
+    "case": "C55",
+    "example_id": "secular__2012_AX10__2s-s4-s6",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 17,
+        "who": "codex",
+        "text": "**Author yes; transient.** Libration is already present at the open initial boundary; last closed core ends at 13.74–13.81, then escape occurs around 15.6–16.4.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C56",
+    "example_id": "secular__101703__g-2g6+g7",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 81,
+        "who": "codex",
+        "text": "Small ~1-Myr waves are superposed, not separate captures.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C57",
+    "example_id": "secular__142694__g-2g6+g7",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 83,
+        "who": "codex",
+        "text": "**142694: author partly (onset approximate, long episode plausible); transient, provisional.** The initial branch circulates",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C58",
+    "example_id": "secular__165548__s-g5+g6-s6",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 95,
+        "who": "codex",
+        "text": "**Author partly; transient (geometric, weak), not global resonance.** Circulation dominates0–11 and after ~14.2, with a large reverse-and-return excursion in between.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C59",
+    "example_id": "secular__348018__g-g5+s-s7",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 115,
+        "who": "codex",
+        "text": "**Author yes; non_resonant.** No credible slow bounded episode; circulation 0–20 with weak .35-Myr reversals, not a slow libration.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C60",
+    "example_id": "secular__455327__s-s3",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 135,
+        "who": "codex",
+        "text": "**Author partly; transient, boundaries uncertain.** The package's9.20–10.84 core understates bounded residence: the additional minimum at 12.40–12.45 returns to the initial σ≈−2820° by 13.30.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C61",
+    "example_id": "secular__455327__g-s-g5+s6",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 125,
+        "who": "codex",
+        "text": "Core boundaries~10.2–12.49 are robust; onset/exit shoulders are not exactly those TPs. Extending back to 9.2 includes a near-turn-wide drifting approach, not automatically another closed libration.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
   }
 ]

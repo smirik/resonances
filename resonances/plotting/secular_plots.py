@@ -6,10 +6,13 @@
     rate     — the rate of that filtered angle, arcsec/yr, with zero and the mean rate (the divisor);
     portrait — (r cos sigma, r sin sigma), r = e when sigma holds varpi, else i from the invariable plane in
                degrees: osculating in gray, classified colored by time;
-    combined — the one-page V1 figure of the verdict (`draw_long_period_combined`, below): time panels, portraits
-               and every number of the decision in the shared right column (`combined_numbers`). A ZLK row's ω, i, Ω
-               and free elements are those of its analysis, measured from the plane ZLK_ANGLE_FRAME names (the
-               header's record line says which; (a), (a′), (f) and (i) share it).
+    combined — the one-page V1 figure of the verdict (`draw_long_period_combined`, below): time panels, four squares
+               under them ((i) the osculating portrait, (j) sigma_f against its rate or the free eccentricity vector,
+               (k) the Charlier portrait of sigma and e filtered at the decisive cutoff, (l) the same per episode;
+               `charlier_radius`, `filtered_charlier`), the legend under those, and every number of the decision in
+               the shared right column (`combined_numbers`). A ZLK row's ω, i, Ω and free elements are those of its
+               analysis, measured from the plane ZLK_ANGLE_FRAME names (the header's record line says which; (a), (a′),
+               (f), (i)-(l) share it).
 
 Nothing here changes a status. Reading guide: docs/plots.md, "Secular diagnostics".
 """
@@ -213,7 +216,8 @@ class SecularPlotter(DiagnosticPlotter):
 # ============================================================================== the one-page V1 figure
 #
 # The combined figure of a secular or Lidov-Kozai verdict, layout V1 of the MMR figure (24 x 13.5 in): long thin time
-# panels on the left, two portraits below them (the first two slots of `layout.bottom`), every number of the decision on the right (`combined_numbers`).
+# panels on the left, four squares below them (`long_period_layout`: (i)-(l)) and the legend under those, every number
+# of the decision on the right (`combined_numbers`).
 # Everything printed comes from the analysis' CSV row (`LongPeriodAnalysis.summary_row()` plus the caller's extra
 # columns), so the figure and summary.csv agree.
 
@@ -240,8 +244,12 @@ LONG_PERIOD_LEGEND = (
     'value in turns, gray osculating, blue free (forced terms removed; net turns written): a free ω that winds makes the '
     'libration kinematic.',
     '(h) gray: σ_f; red: its center; ▼▲ turns of the center; shaded: its largest monotone pass, when ≥ 1 rev.',
-    '(i) (e cos σ, e sin σ), (sin(i/2) cos σ, sin(i/2) sin σ) for an angle of Ω alone; color: time. (j) secular: σ_f '
-    'against dσ_f/dt; ZLK: the free eccentricity vector.',
+    '(i) (e cos σ, e sin σ) of the unfiltered σ and e, (sin(i/2) cos σ, sin(i/2) sin σ) for an angle of Ω alone; color: '
+    'time. (j) secular: σ_f against dσ_f/dt; ZLK: the free eccentricity vector.',
+    '(k) Charlier portrait (R cos σ_f, R sin σ_f): σ and e filtered at the cutoff the verdict rests on, inside the '
+    'filter\'s window, R = √(2(1 − √(1 − e_f²))) (an angle of Ω alone: R = √(2√(1 − e_f²)(1 − cos i_f))); color: time; '
+    'red +: the origin, which a libration does not go round and a circulation does. (l) the same over each episode of '
+    '(a), in its color: ○ its start, dashed beyond its first and last turning point and for a candidate.',
 )
 # the line of (a) under the minimal policy (W29 SPEC §7): only the counted episodes are filled, the candidates faint
 LONG_PERIOD_LEGEND_POLICY_A = (
@@ -277,7 +285,7 @@ KYR = 1e3
 ANGLE_EXTRA_TOP = 0.1  # (a): room above the view of sigma_f and the raw band (the turning points, the episode labels)
 # the letters of the panels after (a)-(c) (W29: (d) is a, author d11): e, i, the physics panel, the centre, the portraits
 AXIS_LETTER, ECC_LETTER, INC_LETTER, PHYSICS_LETTER, CENTRE_LETTER = 'd', 'e', 'f', 'g', 'h'
-PORTRAIT_LETTERS = ('i', 'j')
+PORTRAIT_LETTERS = ('i', 'j', 'k', 'l')  # the squares of the bottom row; the 'panels' figure re-letters the drawn ones
 PLANET_AXIS_STYLE = {'color': OWNER, 'lw': 1.0, 'ls': '--', 'alpha': 0.85, 'zorder': 5}  # (d): a_P of a co-orbital's planet
 HILL_EDGE_STYLE = {'color': OWNER, 'lw': 0.8, 'ls': ':', 'alpha': 0.85, 'zorder': 5}  # (d): a_P (1 ± k (m_P/3)^(1/3))
 
@@ -423,8 +431,7 @@ def _draw_angle(ax, frame, layout):
     _raw(ax, frame.x, np.degrees(analysis.series.angle))
     geometry, angle = analysis.geometry, analysis.angle
     if geometry is not None:
-        librating = sorted(_librating(analysis), key=lambda run: run.t_start_yr)
-        colours = {run.episode_id: EPISODE_COLOURS[i % len(EPISODE_COLOURS)] for i, run in enumerate(librating)}
+        colours = episode_colour_map(analysis)
         record = (float(frame.t_yr[0]), float(frame.t_yr[-1]))
         marks = policy_marks(analysis)
         if marks is not None:  # the minimal policy (W29 SPEC §7): counted episodes, candidates faint, nothing else
@@ -587,6 +594,13 @@ def _librating(analysis):
     from resonances.resonance.analysis.secular.decide import librating_episodes
 
     return librating_episodes(analysis.geometry) if analysis.geometry is not None else []
+
+
+def episode_colour_map(analysis) -> dict:
+    """The color of each librating episode (`decide.librating_episodes`), in time order, cycled: the fills of (a) and
+    the curves of (l) share it."""
+    librating = sorted(_librating(analysis), key=lambda run: run.t_start_yr)
+    return {run.episode_id: EPISODE_COLOURS[i % len(EPISODE_COLOURS)] for i, run in enumerate(librating)}
 
 
 def _draw_wrapped(ax, frame, layout):
@@ -825,6 +839,170 @@ def _draw_centre(ax, frame, layout):
     _style_axis(ax, CENTRE_LETTER, 'center, °', layout)
 
 
+def charlier_radius(e, inc=None) -> np.ndarray:
+    """Charlier's radius R of the momentum conjugate to the angle, in units of sqrt(L) (Carruba, Aljbaae & Winter 2016,
+    Fig. 3B): R = sqrt(2 (1 - sqrt(1 - e^2))) for an angle of the perihelion (sqrt(2P/L), P = L (1 - sqrt(1 - e^2)));
+    with `inc` [rad], for an angle of the node alone, R = sqrt(2 sqrt(1 - e^2) (1 - cos i)) (sqrt(2Q/L),
+    Q = L sqrt(1 - e^2) (1 - cos i)). R ~ e, resp. ~ 2 sin(i/2), for small e and i."""
+    e = np.asarray(e, dtype=float)
+    root = np.sqrt(np.clip(1.0 - e**2, 0.0, None))
+    if inc is None:
+        return np.sqrt(2.0 * (1.0 - root))
+    return np.sqrt(2.0 * root * (1.0 - np.cos(np.asarray(inc, dtype=float))))
+
+
+CHARLIER_TICKS = 4  # at most this many intervals on each axis of (k) and (l)
+
+
+@dataclass(frozen=True)
+class Charlier:
+    """The filtered Charlier portrait of (k) and (l): sigma_f and R of the elements filtered at the same cutoff
+    (`filtered_charlier`), on the analysis' time grid; `inside` is the filter's window (finite samples only)."""
+
+    t_yr: np.ndarray
+    sigma: np.ndarray  # rad, sigma_f at the decisive scale
+    radius: np.ndarray  # R of e_f (and i_f)
+    inside: np.ndarray  # bool
+    name: str  # 'R(e)' or 'R(e, i)': the axis label
+
+    @property
+    def limit(self) -> float:
+        """Half the side of the square view: 1.05 x the largest R inside, so the origin is always in the middle."""
+        values = self.radius[self.inside]
+        return 1.05 * float(np.max(values)) if len(values) and np.max(values) > 0 else 1.0
+
+
+def filtered_charlier(analysis, settings=None) -> Optional[Charlier]:
+    """sigma_f and Charlier's R (`charlier_radius`) of e (and i for an angle of the node alone, `portrait_radius`)
+    filtered at sigma_f's own cutoff (`angle.cutoff_yr`: P_c, or W_c when the center scale decided) with the analysis'
+    filter order, inside the filter's window; None without a filtered angle, when the elements cannot be filtered or
+    no sample is left."""
+    from resonances.resonance.analysis.filtering import lowpass_or_none
+    from resonances.resonance.analysis.settings import AnalysisSettings
+
+    angle, series = analysis.angle, analysis.series
+    if angle is None or series is None or len(series.t_yr) < 2:
+        return None
+    settings = replace(settings if settings is not None else AnalysisSettings(), filter_order=analysis.filter_order)
+    t = np.asarray(series.t_yr, dtype=float)
+    e_f = lowpass_or_none(t, np.asarray(series.e, dtype=float), angle.cutoff_yr, settings)
+    nodal = portrait_radius(analysis)[1] == 'sin(i/2)'
+    inc_f = lowpass_or_none(t, np.asarray(series.inc, dtype=float), angle.cutoff_yr, settings) if nodal else None
+    if e_f is None or (nodal and inc_f is None):
+        return None
+    sigma = np.asarray(angle.angle_f, dtype=float)
+    radius = charlier_radius(e_f, inc_f)
+    inside = (t >= angle.window[0]) & (t <= angle.window[1]) & np.isfinite(sigma) & np.isfinite(radius)
+    if not inside.any():
+        return None
+    return Charlier(t, sigma, radius, inside, 'R(e, i)' if nodal else 'R(e)')
+
+
+def _charlier_axes(ax, charlier: Charlier, layout, letter: str):
+    """The square view about the origin (+), the labels and the panel's letter, shared by (k) and (l)."""
+    from matplotlib.ticker import MaxNLocator
+
+    limit = charlier.limit
+    ax.set_xlim(-limit, limit)
+    ax.set_ylim(-limit, limit)
+    for axis in (ax.xaxis, ax.yaxis):  # a 2.25-in square: few ticks, or the labels of R ~ 0.0x run into each other
+        axis.set_major_locator(MaxNLocator(CHARLIER_TICKS, symmetric=True))
+    ax.set_aspect('equal', adjustable='box')
+    ax.axhline(0, color=RAW, lw=0.5, ls='--', zorder=0)
+    ax.axvline(0, color=RAW, lw=0.5, ls='--', zorder=0)
+    ax.plot(0, 0, '+', color=CENTRE, ms=7, zorder=6)
+    ax.set_xlabel(f'{charlier.name} cos σ_f', fontsize=layout.font_axis_pt, labelpad=1)
+    ax.set_ylabel(f'{charlier.name} sin σ_f', fontsize=layout.font_axis_pt, labelpad=1)
+    ax.tick_params(labelsize=layout.font_ticks_pt)
+    ax.set_title(f'({letter})', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
+
+
+def _draw_charlier(ax, frame, layout, norm, charlier: Charlier, letter: str):
+    """(k): the filtered Charlier portrait over the filter's window, colored by time (a line: the series is smooth)."""
+    from matplotlib.collections import LineCollection
+
+    inside = charlier.inside
+    stride = max(1, int(inside.sum()) // 25000)
+    x = (charlier.radius * np.cos(charlier.sigma))[inside][::stride]
+    y = (charlier.radius * np.sin(charlier.sigma))[inside][::stride]
+    times = frame.x[inside][::stride]
+    points = np.column_stack([x, y])
+    segments = np.stack([points[:-1], points[1:]], axis=1)
+    collection = LineCollection(segments, cmap=time_cmap(), norm=norm, linewidths=0.7, rasterized=True)
+    collection.set_array(times[:-1])
+    ax.add_collection(collection)
+    _charlier_axes(ax, charlier, layout, letter)
+
+
+def portrait_episodes(analysis, settings=None) -> tuple:
+    """The episodes of (l) and how to draw them: (runs, their fill spans [yr] as in (a), colors, policy marks or None).
+    Under the minimal policy the counted episodes and the candidates (as (a) draws them), else the librating ones
+    (`decide.librating_episodes`); the PORTRAIT_MAX_EPISODES longest (counted first), in time order. `settings`: the
+    coverage rule of the fill (`mc.episode_spans`), as in (a)."""
+    from resonances.plotting.mmr_combined import _portrait_episodes, episode_spans, policy_marks
+
+    geometry = analysis.geometry
+    if geometry is None or analysis.series is None:
+        return [], {}, {}, None
+    marks = policy_marks(analysis)
+    record = (float(analysis.series.t_yr[0]), float(analysis.series.t_yr[-1]))
+    if marks is not None:
+        runs = [run for run in geometry.runs if run.episode_id in marks.counted or run.episode_id in marks.candidates]
+        spans = episode_spans(runs, record, settings)
+    else:
+        runs = list(_librating(analysis))
+        spans = episode_spans(geometry.runs, record, settings)
+    chosen = _portrait_episodes(runs, marks.counted if marks is not None else None)
+    return chosen, spans, episode_colour_map(analysis), marks
+
+
+def _draw_charlier_episodes(ax, frame, layout, charlier: Charlier, letter: str, episodes) -> None:
+    """(l): the filtered Charlier portrait over each episode of `portrait_episodes`, in its color of (a), over its fill
+    span inside the filter's window (`mc.portrait_span`): solid between its first and last turning point, dashed beyond
+    them (`mc.portrait_pieces`, at most PORTRAIT_MAX_CYCLES cycles of a long one) and for a candidate the policy does not
+    count; ○ at its start; labeled '#id [cand] t0–t1 unit' (with more than two episodes '#id [cand]', in three
+    columns) in a legend above the square."""
+    from resonances.plotting.mmr_combined import PORTRAIT_CORE_STYLE, PORTRAIT_EXTENSION_STYLE, _policy_tag, portrait_pieces
+    from resonances.plotting.mmr_combined import portrait_span
+    from resonances.plotting.style import REJECTED
+
+    runs, spans, colours, marks = episodes
+    timed = len(runs) <= 2  # more episodes: '#id' only (their times are on (a)), so the legend fits over the square
+    tp = frame.analysis.geometry.turning_points
+    t = charlier.t_yr
+    window = tuple(frame.analysis.angle.window)
+    for run in runs:
+        colour = colours.get(run.episode_id, REJECTED if marks is not None else EPISODE_COLOURS[0])
+        counted = marks is None or run.episode_id in marks.counted
+        tag = _policy_tag(run.episode_id, marks) if marks is not None else ''
+        label = f'#{run.episode_id}{tag}'
+        if timed:
+            label += f' {frame.times(run.t_start_yr):.3g}–{frame.times(run.t_end_yr):.3g} {frame.unit}'
+        pieces = portrait_pieces(run, portrait_span(run, spans, window), tp.times_yr, tp.kinds)
+        labelled = next((n for n, piece in enumerate(pieces) if not piece[2]), 0)
+        for n, (t0, t1, extended) in enumerate(pieces):
+            mask = (t >= t0) & (t <= t1) & charlier.inside
+            x = charlier.radius[mask] * np.cos(charlier.sigma[mask])
+            y = charlier.radius[mask] * np.sin(charlier.sigma[mask])
+            look = PORTRAIT_EXTENSION_STYLE if extended or not counted else PORTRAIT_CORE_STYLE
+            ax.plot(x, y, color=colour, label=label if n == labelled else None, rasterized=True, **look)
+            if n == 0 and len(x):
+                ax.plot(x[:1], y[:1], 'o', ms=3, color=colour)
+    _charlier_axes(ax, charlier, layout, letter)
+    handles = ax.get_legend_handles_labels()[0]
+    if handles:  # above the square, right of its letter: inside, it covered the origin the panel is read against
+        ax.legend(
+            fontsize=layout.font_note_pt,
+            loc='lower right',
+            bbox_to_anchor=(1.0, 1.0),
+            ncol=1 if len(handles) <= 2 else 3,
+            frameon=False,
+            handlelength=1.2,
+            borderaxespad=0.1,
+            columnspacing=0.8,
+        )
+
+
 def _free_vector_drawn(analysis, free_elements) -> bool:
     """Whether the second portrait is the free eccentricity vector: a ZLK row with its free elements."""
     return str(analysis.verdict.resonance_type) == 'lidov_kozai' and free_elements is not None and bool(len(free_elements.omega_free))
@@ -835,13 +1013,10 @@ def _second_portrait_drawn(analysis, free_elements) -> bool:
     return _free_vector_drawn(analysis, free_elements) or analysis.angle is not None
 
 
-def _draw_portraits(fig, frame, layout, norm, free_elements, skip_empty: bool = False):
-    """The two portraits of the bottom row; `skip_empty` (the 'panels' figure) leaves out a second one without data."""
-    from resonances.plotting.mmr_combined import _rect_axes, rate_zero
-
+def _draw_raw_portrait(ax, frame, layout, norm, letter: str):
+    """(i): the osculating portrait (r cos σ, r sin σ), r = e or sin(i/2) (`portrait_radius`), colored by time."""
     analysis = frame.analysis
     stride = max(1, len(frame.x) // 25000)
-    ax = _rect_axes(fig, layout.bottom[0])
     radius, name = portrait_radius(analysis)
     sigma = np.asarray(analysis.series.angle, dtype=float)
     ax.scatter(
@@ -859,23 +1034,28 @@ def _draw_portraits(fig, frame, layout, norm, free_elements, skip_empty: bool = 
     ax.set_xlabel(f'{name} cos σ', fontsize=layout.font_axis_pt)
     ax.set_ylabel(f'{name} sin σ', fontsize=layout.font_axis_pt)
     ax.tick_params(labelsize=layout.font_ticks_pt)
-    ax.set_title(f'({PORTRAIT_LETTERS[0]})', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
-    if skip_empty and not _second_portrait_drawn(analysis, free_elements):
-        return
-    ax2 = _rect_axes(fig, layout.bottom[1])
+    ax.set_title(f'({letter})', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
+
+
+def _draw_second_portrait(ax, frame, layout, norm, free_elements, letter: str):
+    """(j): the free eccentricity vector of a ZLK row, else σ_f against dσ_f/dt inside the filter's window."""
+    from resonances.plotting.mmr_combined import rate_zero
+
+    analysis = frame.analysis
     if _free_vector_drawn(analysis, free_elements):
         x, y = free_elements.free_eccentricity_vector()
         t = frame.times(free_elements.omega_times)
-        ax2.scatter(x, y, c=t, norm=norm, cmap=time_cmap(), s=0.8, linewidths=0, rasterized=True)
-        ax2.plot(0, 0, '+', color=CENTRE, ms=7)
-        ax2.set_aspect('equal', adjustable='datalim')
-        ax2.set_xlabel('e_free cos ω_free', fontsize=layout.font_axis_pt)
-        ax2.set_ylabel('e_free sin ω_free', fontsize=layout.font_axis_pt)
+        ax.scatter(x, y, c=t, norm=norm, cmap=time_cmap(), s=0.8, linewidths=0, rasterized=True)
+        ax.plot(0, 0, '+', color=CENTRE, ms=7)
+        ax.set_aspect('equal', adjustable='datalim')
+        ax.set_xlabel('e_free cos ω_free', fontsize=layout.font_axis_pt)
+        ax.set_ylabel('e_free sin ω_free', fontsize=layout.font_axis_pt)
     elif analysis.angle is not None:
+        stride = max(1, len(frame.x) // 25000)
         inside = (frame.t_yr >= analysis.angle.window[0]) & (frame.t_yr <= analysis.angle.window[1])
         scale = ARCSEC_PER_RAD if str(analysis.verdict.resonance_type) == 'secular' else np.degrees(1.0) * KYR
-        ax2.scatter(
-            np.degrees(np.asarray(analysis.angle.angle_f)[inside][::stride]),
+        ax.scatter(
+            np.degrees(np.asarray(analysis.angle.angle_f))[inside][::stride],
             (np.asarray(analysis.angle.rate_f) * scale)[inside][::stride],
             c=frame.x[inside][::stride],
             norm=norm,
@@ -884,11 +1064,50 @@ def _draw_portraits(fig, frame, layout, norm, free_elements, skip_empty: bool = 
             linewidths=0,
             rasterized=True,
         )
-        rate_zero(ax2)
-        ax2.set_xlabel('σ_f, °', fontsize=layout.font_axis_pt)
-        ax2.set_ylabel('dσ_f/dt', fontsize=layout.font_axis_pt)
-    ax2.tick_params(labelsize=layout.font_ticks_pt)
-    ax2.set_title(f'({PORTRAIT_LETTERS[1]})', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
+        rate_zero(ax)
+        ax.set_xlabel('σ_f, °', fontsize=layout.font_axis_pt)
+        ax.set_ylabel('dσ_f/dt', fontsize=layout.font_axis_pt)
+    ax.tick_params(labelsize=layout.font_ticks_pt)
+    ax.set_title(f'({letter})', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
+
+
+def _draw_portraits(fig, frame, layout, norm, free_elements, skip_empty: bool = False) -> list:
+    """The four squares of the bottom row (`layout.bottom`): (i) the osculating portrait, (j) the free eccentricity
+    vector (ZLK) or σ_f against its rate, (k) the filtered Charlier portrait (`filtered_charlier`), (l) the same per
+    episode (`portrait_episodes`). In the full figure an empty one keeps its frame with the reason; with `skip_empty`
+    (the 'panels' figure) it is left out and the next ones move left and take the next letter. Returns the letters drawn."""
+    from resonances.plotting.mmr_combined import _empty, _rect_axes
+
+    analysis = frame.analysis
+    slots, letters, drawn = list(layout.bottom), iter(PORTRAIT_LETTERS), []
+
+    def take():
+        letter = next(letters)
+        drawn.append(letter)
+        return _rect_axes(fig, slots.pop(0)), letter
+
+    ax, letter = take()
+    _draw_raw_portrait(ax, frame, layout, norm, letter)
+    if not skip_empty or _second_portrait_drawn(analysis, free_elements):
+        ax, letter = take()
+        _draw_second_portrait(ax, frame, layout, norm, free_elements, letter)
+    charlier = filtered_charlier(analysis, frame.settings)
+    if charlier is not None or not skip_empty:
+        ax, letter = take()
+        if charlier is None:
+            _empty(ax, 'not computed: no filtered angle or elements', layout)
+            ax.set_title(f'({letter})', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
+        else:
+            _draw_charlier(ax, frame, layout, norm, charlier, letter)
+    episodes = portrait_episodes(analysis, frame.settings) if charlier is not None else ([], {}, {}, None)
+    if episodes[0] or not skip_empty:
+        ax, letter = take()
+        if not episodes[0]:
+            _empty(ax, 'no librating episode' if charlier is not None else 'not computed: no filtered angle or elements', layout)
+            ax.set_title(f'({letter})', fontsize=layout.font_letter_pt, loc='left', fontweight='bold')
+        else:
+            _draw_charlier_episodes(ax, frame, layout, charlier, letter, episodes)
+    return drawn
 
 
 def _inclination_label(series) -> str:
@@ -944,21 +1163,97 @@ def long_period_legend(forcing: bool = False, policy: bool = False) -> tuple:
     return legend[:1] + (FORCING_LEGEND,) + legend[1:] if forcing else legend
 
 
-def _draw_legend(fig, layout, forcing: bool = False, policy: bool = False):
-    """The legend over the third slot of the bottom row and the legend's own box (`mmr_combined.legend_rect`); with
-    `forcing` the line of (a′), with `policy` (a)'s line of the minimal policy."""
+# The bottom row of the secular/ZLK figure (W36, the author 2026-11-07): four squares (i)-(l), a little smaller than the
+# MMR figure's three (2.4 in) so that they fit left of the separator and inside the 12.45-in paper crop; the time color
+# bar right of (i) (its label on top); room for the y labels of the next square between them
+# (0.7 in after the bar's tick labels: 591986's 'e_free sin ω_free' beside '−0.015' ran into them at 0.55 in)
+LONG_PERIOD_SQUARE_IN = 2.2
+LONG_PERIOD_BOTTOM = tuple((x, 0.5, LONG_PERIOD_SQUARE_IN, LONG_PERIOD_SQUARE_IN) for x in (0.95, 4.35, 7.2, 10.0))
+LONG_PERIOD_COLOUR_BAR = (3.22, 0.5, 0.1, LONG_PERIOD_SQUARE_IN)
+# The legend is no longer in a slot of the bottom row: it takes a band under the row, across the left half, in
+# LONG_PERIOD_LEGEND_COLUMNS columns; the full page is that much taller (the 'panels' figure has no legend and no band)
+LONG_PERIOD_LEGEND_BAND_IN = 1.45
+LONG_PERIOD_LEGEND_COLUMNS = 2
+LONG_PERIOD_LEGEND_GAP_IN = 0.25  # between the legend's columns
+LEGEND_HEADING_IN = 0.22  # the 'Legend' heading over the columns
+
+
+def long_period_layout(n_panels: Optional[int] = None, legend: bool = True, base=None):
+    """The layout of the secular/ZLK figure: `base` (default LAYOUT_V1) with `n_panels` time panels (default: the eight
+    of LONG_PERIOD_PANELS) and the four squares of
+    LONG_PERIOD_BOTTOM; with `legend` (the full figure) everything moved up by LONG_PERIOD_LEGEND_BAND_IN and the legend
+    in the band under the bottom row (the D8 growth for the right column, `growth_in`, is not touched: it starts from
+    this page)."""
+    from resonances.plotting.style import LAYOUT_V1
+
+    n_panels = len(LONG_PERIOD_PANELS) if n_panels is None else n_panels
+    base = LAYOUT_V1 if base is None else base
+    layout = replace(base, n_panels=n_panels, bottom=LONG_PERIOD_BOTTOM, colour_bar=LONG_PERIOD_COLOUR_BAR)
+    if not legend:
+        return layout
+    band = LONG_PERIOD_LEGEND_BAND_IN
+    left = layout.header[0]
+    rect = (left, 0.08, layout.separator_x - 0.1 - left, band - 0.08)
+    return replace(layout.grown(band), growth_in=layout.growth_in, legend=rect)
+
+
+def legend_columns(lines, n: int = LONG_PERIOD_LEGEND_COLUMNS, chars: int = 100) -> list:
+    """`lines` split in order into at most `n` columns whose tallest is as short as it can be, each line counted by the
+    rows it wraps to at `chars` characters (`textwrap.wrap`, as `_draw_legend` wraps it)."""
+    import textwrap
+    from itertools import combinations
+
+    lines = list(lines)
+    rows = [max(1, len(textwrap.wrap(line, chars, subsequent_indent='   '))) for line in lines]
+    best = [lines]
+    best_height = sum(rows)
+    for cuts in combinations(range(1, len(lines)), min(n, len(lines)) - 1):
+        bounds = (0, *cuts, len(lines))
+        height = max(sum(rows[i:j]) for i, j in zip(bounds[:-1], bounds[1:]))
+        if height < best_height:
+            best, best_height = [lines[i:j] for i, j in zip(bounds[:-1], bounds[1:])], height
+    return best
+
+
+def _draw_legend(fig, layout, forcing: bool = False, policy: bool = False) -> float:
+    """The legend in `layout.legend` (the band under the bottom row, `long_period_layout`), in LONG_PERIOD_LEGEND_COLUMNS
+    columns (`legend_columns`, balanced at the font tried); with `forcing` the line of (a′), with `policy` (a)'s line of the minimal policy. The font
+    shrinks (to `mc.LEGEND_MIN_FONT_PT`) until every column fits the band. Returns the font size used."""
     import textwrap
 
-    from resonances.plotting.mmr_combined import legend_rect
+    from resonances.plotting.mmr_combined import LEGEND_CHAR_WIDTH, LEGEND_MIN_FONT_PT
 
     width, height = fig.get_size_inches()
-    x, y, w, h = legend_rect(layout, third_slot_free=True)
+    x, y, w, h = layout.legend
     top = y + h
+    renderer = fig.canvas.get_renderer()
     fig.text(x / width, top / height, 'Legend', fontsize=layout.font_legend_pt + 1.5, fontweight='bold', va='top')
-    chars = max(int(w * 72 / (0.56 * layout.font_legend_pt)), 20)
-    legend = long_period_legend(forcing, policy)
-    text = '\n'.join(textwrap.fill(line, chars, subsequent_indent='   ') for line in legend)
-    fig.text(x / width, (top - 0.22) / height, text, fontsize=layout.font_legend_pt, va='top', color='#333333', linespacing=1.2)
+    lines = long_period_legend(forcing, policy)
+    gap = LONG_PERIOD_LEGEND_GAP_IN
+    column_w = (w - gap * (LONG_PERIOD_LEGEND_COLUMNS - 1)) / LONG_PERIOD_LEGEND_COLUMNS
+    font = layout.font_legend_pt
+    while True:
+        chars = max(int(column_w * 72 / (LEGEND_CHAR_WIDTH * font)), 20)
+        columns = legend_columns(lines, LONG_PERIOD_LEGEND_COLUMNS, chars)
+        artists = [
+            fig.text(
+                (x + i * (column_w + gap)) / width,
+                (top - LEGEND_HEADING_IN) / height,
+                '\n'.join(textwrap.fill(line, chars, subsequent_indent='   ') for line in column),
+                fontsize=font,
+                va='top',
+                color='#333333',
+                linespacing=1.2,
+            )
+            for i, column in enumerate(columns)
+        ]
+        boxes = [artist.get_window_extent(renderer) for artist in artists]
+        room = (column_w * fig.dpi + 0.5, (h - LEGEND_HEADING_IN) * fig.dpi + 0.5)
+        if all(box.width <= room[0] and box.height <= room[1] for box in boxes) or font <= LEGEND_MIN_FONT_PT:
+            return font
+        for artist in artists:
+            artist.remove()
+        font -= 0.25
 
 
 def draw_long_period_combined(
@@ -966,24 +1261,27 @@ def draw_long_period_combined(
 ):
     """The V1 figure of a secular or Lidov-Kozai verdict (`LongPeriodAnalysis` with its arrays); `row` adds columns to
     the analysis' summary row (the body's free elements, e-i coherence); `free_elements` (ZLK) draws (g) and (j), and
-    (a′) under (a) for an induced libration (`forcing_panel_drawn`; nine time panels then, eight otherwise).
+    (a′) under (a) for an induced libration (`forcing_panel_drawn`; nine time panels then, eight otherwise). The bottom
+    row holds four squares, (i)-(l) (`_draw_portraits`), the legend the band under it (`long_period_layout`); a `layout`
+    with fewer than four bottom squares (LAYOUT_V1, the MMR figure's) gets them and the band (`long_period_layout` on it).
     The right column follows the plot option `combined.numbers` (explained | all); `settings`: the AnalysisSettings the
     explanation compares with (default: from the configuration). Returns the Figure (with `text_stats`).
     `combined.figure='panels'` (a paper figure, as `mmr_combined.draw_combined`): the time panels and the portraits
-    only, no header, legend or right column (`text_stats` empty), a second portrait without data left out, the page
-    cropped (`mmr_combined.panels_layout`); a `stamp` is still printed."""
-    import dataclasses
-
+    only, no header, legend (nor its band) or right column (`text_stats` empty), a square without data left out and
+    the next ones moved left and re-lettered, the page cropped (`mmr_combined.panels_layout`); a `stamp` is still
+    printed."""
     import matplotlib.pyplot as plt
 
     from resonances.plotting import combined_numbers as numbers
     from resonances.plotting.mmr_combined import _colour_bar, label_time_axes, panels_layout, panels_stamp, stacked_axes
-    from resonances.plotting.style import LAYOUT_V1
 
-    layout = layout or dataclasses.replace(LAYOUT_V1, n_panels=len(LONG_PERIOD_PANELS))
     summary = {**analysis.summary_row(), **(row or {})}
     resolved = resolve_plot_options(options)
     panels = resolved['combined']['figure'] == FigureMode.PANELS
+    if layout is None or len(layout.bottom) < len(LONG_PERIOD_BOTTOM):
+        # an explicit layout of the MMR figure (three squares, the legend in a slot: LAYOUT_V1) has no room for (i)-(l):
+        # the secular/ZLK row and legend band are put on its page
+        layout = long_period_layout(len(LONG_PERIOD_PANELS), legend=not panels, base=layout)
     explained = resolved['combined']['numbers'] != NumbersMode.ALL
     if panels:
         layout = panels_layout(layout)

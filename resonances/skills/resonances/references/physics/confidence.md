@@ -37,7 +37,7 @@ level it allows, and the level is the lowest of them):
 | resonant, transient | V ambiguous or N < `CONFIDENCE_MEDIUM_CYCLES` (1.5: one closed cycle, a single 1:1 leg) → low; N ≥ `CONFIDENCE_CERTAIN_CYCLES` (3), at least `CONFIDENCE_CERTAIN_CORE_CYCLES` (3) observed cycles $(n_{TP}-1)/2$ inside the decisive episode, with M, S and V clean → certain; N ≥ `CONFIDENCE_HIGH_CYCLES` (2) with V clean or partial → high; otherwise medium; MMR with F none: at most low |
 | near_separatrix | medium (low when V is ambiguous) |
 | non_resonant by a veto | medium when the veto is thin or a second capture is unresolved; else high (a stable vetoed episode is still drawn as a candidate) |
-| non_resonant | medium with a candidate (a leg, a half-swing, a near-episode run); certain for a clear circulation (MMR: C1 and C2 full, an alias C5 and C2 full; long-period: P full and no turning point at any cutoff); else high |
+| non_resonant | medium with a candidate (a leg, a half-swing, a near-episode run); certain for a clear circulation (MMR: C1 and C2 full, an alias C5 and C2 full; long-period: P full and no turning point at any cutoff); else high. A secular or ZLK record too short for one cycle that the policy decides as ending in circulation with an end travel below $1 +$ `CONFIDENCE_THIN_BAND` turns is at most medium (input `end_travel`; the travel is a range of $\sigma_f$, the swing included, so 1.09 turns may still be part of a slow libration: 143662 s+g5−g8−s3) |
 
 The counts are the same for every resonance type: in units of its own period two returns of a 4-Myr secular
 libration carry the same information as two of a 500-yr one, so a long period is no reason for a lower count (W31,

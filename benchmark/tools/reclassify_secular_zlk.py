@@ -75,7 +75,22 @@ def build_simulation(example: 'bio.Example'):
     sim = Simulation(**_config_kwargs(example))
     sim.times = body.times
     sim.body_manager.bodies.append(body)
+    if _phases_measured(example):
+        # the saved angle was built from the measured mode longitudes: the phase check must not add the linear
+        # law's uncertainty (W36: 56700 s+s7-2s6 read phase_unresolved here, the source run did not)
+        sim.secular_phases_measured = lambda: True
     return sim, body, resonance
+
+
+def _phases_measured(example: 'bio.Example') -> bool:
+    """The source run measured the mode phases (classifier_config secular_planet_phases) over a record not shorter
+    than its fit window (`Simulation.secular_phases_measured`); the config here says linear (no planets loaded)."""
+    config = example.meta.get('classifier_config') or {}
+    if config.get('secular_planet_phases') != 'measured':
+        return False
+    t = example.series['t_yr'].to_numpy(dtype=float)
+    window = float(config.get('secular_phase_window', 0.0))
+    return len(t) >= 2 and abs(float(t[-1] - t[0])) >= window
 
 
 def _config_kwargs(example: 'bio.Example') -> Dict[str, Any]:

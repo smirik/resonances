@@ -183,6 +183,7 @@ def test_every_strip_reason_has_a_letter_in_both_legends():
         g.RejectReason.BELOW_PERIOD_FLOOR,
         g.RejectReason.CENTRE_TURNS,
         g.RejectReason.BEFORE_LAST_JUMP,
+        g.RejectReason.SLOW_WAVE,
     }
     assert set(UNCOUNTED_TAGS) == {g.RejectReason.BELOW_PERIOD_FLOOR, g.RejectReason.CENTRE_TURNS}
     strip_reasons = set(g.RejectReason) - {g.RejectReason.EDGE, g.RejectReason.NONE} - not_counted

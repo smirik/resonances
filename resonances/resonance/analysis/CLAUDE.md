@@ -58,7 +58,9 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   leaf needs a mapping, `test_policy_mapping` fails otherwise; the single 1:1 legs are read only on G4c and rule C,
   `LEG_RULES`: beside an accepted episode a leg is no evidence; rule 5s's strength marks count again where the veto is
   not upheld, also as Episode rows for N: `_countable`; a status the policy moves re-reads the header's orbit type), non_resonant only by a measured veto (owner, kinematic,
-  strength two-body, ZLK kinematic or free e < forced e; thin -> medium + `veto_thin`), the level `policy.level` from
+  strength two-body, ZLK kinematic or free e < forced e; thin -> medium + `veto_thin`; a secular/ZLK insufficient_time
+  angle that ends in circulation by an end travel below 1 + `CONFIDENCE_THIN_BAND` turns -> non_resonant at most
+  medium, `_travel_thin`, input `end_travel`, W36 F5: the travel is a range with the swing in it), the level `policy.level` from
   N/M/V/S/F (N < `CONFIDENCE_MEDIUM_CYCLES` low; W33 F: an MMR row with none of L4, R0, F passing is at most
   `CONFIDENCE_GEOMETRY_ONLY_MAX`, the identity is no force; S = L1 full and no `filter_sensitive`; a subresonance parent's N is
   `(member)`; no caps: every cap becomes a flag, `confidence_raw = confidence`, `cell_*` blank, `review_reasons` without
@@ -89,7 +91,12 @@ is certain, Q18), `PolicyResult` (counted and candidate episodes)
 ## Geometry (`resonance/analysis/geometry.py`)
 
 - Each regime between jumps of a is measured on its own samples, with its own turning-point prominence; smoothing
-  stays inside the regime. Turning points and centre per run.
+  stays inside the regime. Turning points and centre per run. Every run of provisional TPs (at the type's floor) gets
+  its own prominence too (`local_thresholds`): MMR `mmr.analyse.regime_prominence`, secular/ZLK
+  `secular.preprocess.run_prominence` (W36 F2, capped at the record's: a run's fast part can hold its own libration
+  where interleaved waves hide its period from `libration_image`). Secular/ZLK only: a stretch keeps the record's
+  prominence when its own would lose a librating episode the record's finds (`secular.analyse.measure_fine`: the
+  run spans the slow approach to a libration, 455327 g-s-g5+s6); the MMR path has no such guard.
 - An episode must close at least one full cycle (`closure_ratios`), or one cycle by its phase return between two TPs
   (`phase_return`: at the mid-level or a band of levels, `LIBRATION_RETURN_LEVELS`, `LIBRATION_RETURN_BAND_LEVELS`);
   a return-closed cycle caps the level at medium and cannot cross a confirmed jump. ≥ 3 TPs and a closed cycle, never a
@@ -98,9 +105,10 @@ is certain, Q18), `PolicyResult` (counted and candidate episodes)
   `FilteredAngle.run_break_half_amplitude_rad` in `_find_episodes`/`_measure`: pi for MMR and secular, half a turn for a
   ZLK omega (`ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG`, a 2 omega island; W28 D3, rule `zlk_half_turn_cut`). It only splits
   runs: no rule may read which island (90/270) an episode is in (island_switch, centre mod 180: `dev/rejected.md`).
-- MMR only: an exit/entry is observed, not covered, when the orbit-averaged raw angle runs ≥ 1 turn monotonically from
-  the last TP (edge arc). |σ_f − c| > π and the arc's crossing read the local centre at that edge
-  (`Episode.edge_centre_rad`: the edge half-cycle's midpoint, or the well's c(t) at the edge TP in ψ; C9, W28 g03-2),
+- An exit/entry is observed, not covered, when the orbit-averaged raw angle (MMR) or σ_f itself (secular/ZLK,
+  `FilteredAngle.edge_arc_filtered`, W36 F1: no orbit to average) runs ≥ 1 turn monotonically from the last TP (edge
+  arc); secular/ZLK then skip the centre scale (`secular.decide.edge_observed`) and set `final_regime` circulation.
+  For an MMR |σ_f − c| > π and the arc's crossing read the local centre at that edge (`Episode.edge_centre_rad`: the edge half-cycle's midpoint, or the well's c(t) at the edge TP in ψ; C9, W28 g03-2),
   never the episode's mean (2016 JA: HS swing then tadpole, the mean put TP0 206° away) nor the first full cycle's
   midpoint (still 190°); `_edge_reading` fires `local_centre_entry` when the mean reading differs. Secular/ZLK edges
   keep the mean centre (not measured there). A run whose centre moves is cut at a centre step or a stall of the slow centre (regime cuts).
@@ -115,6 +123,24 @@ is certain, Q18), `PolicyResult` (counted and candidate episodes)
   (`cycles_continue`); the joined run is `regime_change` (L6 not measured) only when it fails for `centre_moves`
   alone, and the cut goes to `Episode.marks` (`centre_step@t0:t1`, `stall@t0:t1`). Never join an accepted|rejected
   pair, and never drop the band test (VA14 60 kyr E17 and 2002 BG 20 kyr move: C15's naive reading).
+- Secular/ZLK only, rule turning_centre (W36 F3, `FilteredAngle.turning_centre`, `SECULAR_TURNING_CENTRE`,
+  `ZLK_TURNING_CENTRE`; `accept_turning_centre`, first in `_find_episodes`, before split_regular/trims): a run rejected
+  only for `centre_moves` is `modulated` (L6 not measured) when it closes a cycle, its TPs span < a turn
+  (`within_one_turn`), its cycle centre turns back ≥ 1 time (p_c) within < π, and one cycle's band holds every centre
+  (`swing_covers_centres`). The last condition is what keeps a small wave on a slower motion out (363/2306/518
+  g−g6+s−s6: 4–20° waves on 42–144° centre travel); without it those rows went uncertain → transient/certain. Never
+  drop it for "rule A" (every max above every min: rejected).
+- Secular only, slow waves (W36 F4, `secular.decide.slow_waves` → `Geometry.slow_wave_ids`, in `excluded_ids`,
+  eligibility `SLOW_WAVE`; `SECULAR_SLOW_WAVES`): an accepted episode not covering both edges is a wave on a slower
+  motion when σ_f between the centre turns bracketing it spans R < 2π, A_max ≤ `SECULAR_SLOW_SWING_RIPPLE_RATIO` ×
+  R/2 and the swing carries it (the slow track's rate inside ≥ `SECULAR_SLOW_SWING_CARRY_RATIO` × its fastest rate
+  beside, `stall_reading`: a parabolic turn reads ≥ 1/8, a plateau the filter's leak; Codex's two stationary
+  librations joined by a transition were discarded without it), or R ≥ 2π and the slow track (low-pass at 3 P_ep)
+  beside it moves ≥ A_max in as long as the episode while inside it keeps ≥ `SECULAR_STALL_RATE_RATIO` of that rate
+  (a stall, not a capture). An arm the record cuts below `SECULAR_STALL_ARM_MIN_FRACTION` of the span is not read. Applied at every scale
+  (`analyse._set_slow_waves`), edges re-read (`refresh_edges`). The "moves ≥ A_max beside" condition is what keeps the
+  pieces of one libration (F2 off) from reading as stalls. Not on ZLK (591986/162474 would be hit). The centre scale
+  of a secular angle tries the centre-turns window (MMR G2c second scale) after W_c (`SECULAR_CENTRE_TURNS_SCALE`).
 - MMR 1:1 only, rule `coorbital_edge_turn` (W28 C4, `_edge_raw_turns`, model `FilteredAngle.edge_turn` =
   `mmr.coorbital_geometry.CoorbitalEdgeTurn`, wired in `mmr.analyse._measure`): a reversal of the raw angle averaged
   over `MMR_COORBITAL_EDGE_TURN_ORBITS` orbits in the filter's edge trim, after the last (before the first) TP, is

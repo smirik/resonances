@@ -298,8 +298,8 @@ class VerdictFigureLayout:
     (b), whose time axis is labeled like the last panel's), the compact legend of
     their values right of them (from `margin_legend_x`); below them three squares (`bottom`): the whole record's
     portrait (k) with the time color bar right of it, the accepted episodes' portrait (l), FAIR (m); then the legend
-    (over the third slot too when it is empty: `mmr_combined.legend_rect`). The secular and ZLK figures put their two
-    portraits in the first two slots. Right: three text columns
+    (over the third slot too when it is empty: `mmr_combined.legend_rect`). The secular and ZLK figures replace the row
+    by four smaller squares and put the legend under them (`secular_plots.long_period_layout`). Right: three text columns
     (`text_columns`)."""
 
     size: Tuple[float, float] = (24.0, 13.5)

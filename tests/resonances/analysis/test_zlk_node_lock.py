@@ -14,7 +14,6 @@ import numpy as np
 import pytest
 
 from resonances.data.const import PLANETARY_FREQUENCIES
-from resonances.plotting.style import LAYOUT_V1
 from resonances.resonance.analysis.secular import LongPeriodSeries
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import ResonanceType
@@ -228,6 +227,7 @@ def test_a_confirmed_libration_keeps_the_eight_panels_in_place():
     import matplotlib.pyplot as plt
 
     from resonances.plotting.mmr_combined import panel_rects
+    from resonances.plotting.secular_plots import long_period_layout
 
     series, elements = genuine_librator()
     _, fig = _figure(series, elements)
@@ -235,7 +235,8 @@ def test_a_confirmed_libration_keeps_the_eight_panels_in_place():
         panels = _time_panels(fig)
         assert len(panels) == 8  # seven before the a panel of W29
         width, height = fig.get_size_inches()
-        for ax, (x, y, w, h) in zip(panels, panel_rects(LAYOUT_V1, 8, labelled=1)):  # (b): time labels under it
+        # the secular/ZLK page (W36: the legend's band under the four squares); (b): time labels under it
+        for ax, (x, y, w, h) in zip(panels, panel_rects(long_period_layout(8), 8, labelled=1)):
             assert ax.get_position().bounds == pytest.approx((x / width, y / height, w / width, h / height))
         assert not any(ax.get_legend() and 'arg z_forced' in ' '.join(t.get_text() for t in ax.get_legend().get_texts()) for ax in fig.axes)
     finally:

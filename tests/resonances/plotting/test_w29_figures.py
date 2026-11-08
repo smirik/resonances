@@ -90,8 +90,8 @@ def test_the_long_period_figure_has_the_a_panel_before_e():
         assert [panel[0] for panel in sp.LONG_PERIOD_PANELS] == list('abcdefgh')
         # a far from every planet: no planet line
         assert not [line for line in panels[3].lines if line.get_gid() in ('planet_axis', 'hill_edge')]
-        portraits = [ax.get_title(loc='left') for ax in fig.axes if ax.get_title(loc='left') in ('(i)', '(j)')]
-        assert portraits == ['(i)', '(j)']
+        portraits = [ax.get_title(loc='left') for ax in fig.axes if ax.get_title(loc='left') in ('(i)', '(j)', '(k)', '(l)')]
+        assert portraits == ['(i)', '(j)', '(k)', '(l)']
     finally:
         plt.close(fig)
 

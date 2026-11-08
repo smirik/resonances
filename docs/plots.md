@@ -105,7 +105,8 @@ logged and stamped in red in the header.
 A figure for a paper: `plot_options={'combined': {'figure': 'panels'}}` (or `draw_combined(analysis, series,
 options=...)`, `draw_long_period_combined(..., options=...)`) draws the panels only: no header, legend or right column,
 and no empty slot (an (l) without an accepted episode and an undrawn FAIR are left out, with no warning line; the
-portraits that remain move left and are lettered on from (k)). The margin legends right of the panels stay, so the
+portraits that remain move left and are lettered on from (k); the secular/ZLK figure does the same with its four
+squares, from (i)). The margin legends right of the panels stay, so the
 caption explains the rest. The page is cropped to what is drawn (12.45 × 12.8 in); a red stamp is still printed.
 The portraits keep their square size, so a row with one portrait leaves the rest of the bottom row blank. From a run or
 a restored one, `fig = sim.data_manager.mmr_combined_figure(body, resonance, sim, options={'combined': {'figure':
@@ -167,7 +168,11 @@ libration (attributed to a forced mode, or a center at a beat of the forced vect
 under (a): $\omega_f$ with the forced direction and the dominant mode against the node
 ([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)); every other row keeps eight. A ZLK
 figure reads $\omega$, $i$, $\Omega$ and the free elements in the plane `ZLK_ANGLE_FRAME` names (the invariable plane
-by default; the header says which, panel (f) is `i (invariable)`).
+by default; the header says which, panel (f) is `i (invariable)`). Below the time panels four squares: (i) the
+osculating portrait, (j) $\sigma_f$ against its rate (ZLK: the free eccentricity vector), (k) the Charlier portrait of
+$\sigma$ and $e$ filtered at the decisive cutoff (`secular_plots.filtered_charlier`, `charlier_radius`), (l) the same per
+episode of (a); the legend is in a band under them, so this page is 1.45 in taller than the MMR one
+([how to read it](reading-figures.md#the-secular-and-lidov-kozai-figure)).
 
 ## Eccentricity vector
 

@@ -26,6 +26,8 @@ from resonances.simulation.parallel_executor import ParallelExecutor
 from resonances.simulation.state_manager import StateManager, SimulationState
 from tests.resonances.local_data import free_omega_fixture
 
+pytestmark = pytest.mark.usefixtures('epoch_solar_cache')  # the catalogue longitudes of 2020-01-01: tests/conftest.py
+
 LIB, CIRC = '4J-2S-1+0+0-1', '6J-7S-1+0+0+2'
 YEARS, N = 1e5, 10001
 A_LIB = resonances.create_mmr(LIB).resonant_axis  # 2.3985 au

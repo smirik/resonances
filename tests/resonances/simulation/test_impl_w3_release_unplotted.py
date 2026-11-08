@@ -3,8 +3,12 @@ only the arrays of the rows it draws). The rows written to summary.csv and mmr_n
 
 import math
 
+import pytest
+
 from resonances.simulation.data_manager import DataManager
 from tests.resonances.simulation.test_restore_and_resume import CIRC, LIB, _saved_run
+
+pytestmark = pytest.mark.usefixtures('epoch_solar_cache')  # the catalogue longitudes of 2020-01-01: tests/conftest.py
 
 
 def _rows(sim) -> dict:

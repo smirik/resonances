@@ -48,7 +48,9 @@ def wrap_pi(x):
 
 class EpisodeShape(StrEnum):
     STATIONARY = 'stationary'  # bands of the first and last full cycle overlap
-    MODULATED = 'modulated'  # bounded centre turning back >= libration_centre_returns_modulated times
+    # bounded centre turning back >= libration_centre_returns_modulated times; secular, ZLK: at least once, within a
+    # turn, under a swing that holds every centre (`accept_turning_centre`, W36 F3)
+    MODULATED = 'modulated'
     MOVING_CENTRE = 'moving_centre'  # the bands overlap only in psi = sigma - c(t), c the caller's well track (`MovingWell`)
     # MMR 1:1 (W28 C7, rule coorbital_well_cut): the bands do not overlap, but every cycle librates in a well of the
     # averaged co-orbital potential (the caller's `WellsModel`): its wells or its amplitude change inside one libration
@@ -213,6 +215,7 @@ class RejectReason(StrEnum):
     BELOW_PERIOD_FLOOR = 'below_period_floor'  # faster than the angle's shortest libration (the period floor)
     CENTRE_TURNS = 'centre_turns'  # the centre completes a revolution inside the run (`episode_centre_travel`)
     BEFORE_LAST_JUMP = 'before_last_jump'  # a librating run before the last jump of a (only G1e/G1l read those)
+    SLOW_WAVE = 'slow_wave'  # secular: a wave on a slower motion of the angle (`Geometry.slow_wave_ids`, W36 F4)
 
 
 @dataclass(frozen=True)
@@ -987,6 +990,10 @@ class Geometry:
     # set by the analysis' second pass); like the forced waves they stay in `runs` but are no episodes of the angle.
     # Empty for secular/ZLK
     induced_ids: frozenset = frozenset()
+    # secular: accepted runs that are waves on a slower motion of the angle (a ripple on a slow swing or a stall of a
+    # circulation, `secular.decide.slow_waves`, W36 F4); like the forced waves they stay in `runs` but are no episodes
+    # of the angle. Empty for MMR/ZLK
+    slow_wave_ids: frozenset = frozenset()
     # the geometry-level rules (`analysis.rules.Rule`) that acted on this geometry (a cut, a join, an edge read), added
     # by `rules.fire` where they act; the decide steps merge them into `Verdict.rules_fired`. No decision reads them
     rules_fired: frozenset = frozenset()
@@ -1038,6 +1045,8 @@ class Geometry:
             return RejectReason.FORCED_WAVE
         if run.episode_id in self.induced_ids:
             return RejectReason.INDUCED
+        if run.episode_id in self.slow_wave_ids:
+            return RejectReason.SLOW_WAVE
         return self.eligibility.get(run.episode_id)
 
     def run_floor(self, run: 'Episode') -> Optional[RunFloor]:
@@ -1050,12 +1059,13 @@ class Geometry:
 
     @property
     def excluded_ids(self) -> frozenset:
-        """Accepted runs that are no episodes of the angle: the forced waves and the induced episodes."""
-        return self.forced_wave_ids | self.induced_ids
+        """Accepted runs that are no episodes of the angle: the forced waves, the induced episodes and the slow waves."""
+        return self.forced_wave_ids | self.induced_ids | self.slow_wave_ids
 
     @property
     def episodes(self) -> List[Episode]:
-        """Accepted runs of the last regime, but for the forced waves (`forced_waves`) and induced ones (`induced_ids`)."""
+        """Accepted runs of the last regime, but for the forced waves (`forced_waves`), induced ones (`induced_ids`) and
+        slow waves (`slow_wave_ids`)."""
         forced = self.excluded_ids
         return [run for run in self.runs if run.accepted and not run.before_last_jump and run.episode_id not in forced]
 
@@ -2178,8 +2188,8 @@ def episode_eligibility(geometry: 'Geometry', floor_of: Callable[[Episode], floa
     """Whether each accepted run counts for the status (W28 C11, card g02-9 A: the figure must not show as an episode a
     run the verdict does not count), by episode_id: NONE for a librating episode of the last regime (the runs
     `librating_episodes_with` keeps), else the first reason that holds, in this order: FORCED_WAVE, INDUCED (no episode
-    of this angle at all), BELOW_PERIOD_FLOOR, CENTRE_TURNS (`librates_as_episode`), BEFORE_LAST_JUMP (a librating run
-    of a regime before the last jump of a, read only by G1e/G1l). The rejected runs are not in it."""
+    of this angle at all), SLOW_WAVE (secular), BELOW_PERIOD_FLOOR, CENTRE_TURNS (`librates_as_episode`), BEFORE_LAST_JUMP
+    (a librating run of a regime before the last jump of a, read only by G1e/G1l). The rejected runs are not in it."""
     scratch = Ledger(thin_band=0.0)
     waves, induced = geometry.forced_wave_ids, geometry.induced_ids
     reasons = {}
@@ -2190,6 +2200,8 @@ def episode_eligibility(geometry: 'Geometry', floor_of: Callable[[Episode], floa
             reasons[run.episode_id] = RejectReason.FORCED_WAVE
         elif run.episode_id in induced:
             reasons[run.episode_id] = RejectReason.INDUCED
+        elif run.episode_id in geometry.slow_wave_ids:
+            reasons[run.episode_id] = RejectReason.SLOW_WAVE
         else:
             reason = librates_as_episode(geometry, run, floor_of, scratch)
             if reason == RejectReason.NONE and run.before_last_jump:
@@ -2947,6 +2959,51 @@ def within_one_turn(values: np.ndarray) -> bool:
     return bool(len(v) and np.ptp(v) < TWO_PI)
 
 
+def swing_covers_centres(cycle_mids: np.ndarray, cycle_amps: np.ndarray) -> bool:
+    """Some full cycle's band [m_k - A_k, m_k + A_k] holds every full-cycle centre m_i of the run: sigma once swings
+    over the whole stretch its centre travels (rule turning_centre, `accept_turning_centre`). No threshold: the run's
+    own swing is the scale. False for no cycle."""
+    mids, amps = np.asarray(cycle_mids, dtype=float), np.asarray(cycle_amps, dtype=float)
+    if not len(mids):
+        return False
+    return bool(np.any((mids - amps <= mids.min()) & (mids + amps >= mids.max())))
+
+
+def accept_turning_centre(episode: Episode, settings: AnalysisSettings) -> Episode:
+    """Rule turning_centre (secular and ZLK angles, `FilteredAngle.turning_centre`, W36 F3): a run rejected only for
+    its moving centre (`centre_moves`: the bands of its cycles share no point and its centre turns back fewer than
+    LIBRATION_CENTRE_RETURNS_MODULATED times) is a libration whose centre is modulated when
+    - it closes a cycle (`closure_ratios`, as every episode);
+    - its turning points span less than a turn (`within_one_turn`): the angle never takes every value;
+    - its full-cycle centre turns back at least once (`centre_returns` >= 1, at the centre prominence p_c of
+      `_classify_run`) within less than LIBRATION_MODULATED_RANGE_MAX_RAD: a centre that only moves one way is a
+      drift and stays rejected (101703 g-2g6+g7, a run with its centre -231 deg away and no return);
+    - the centre moves inside the libration, not the libration on the centre: one of its full cycles swings over every
+      centre the run has (`swing_covers_centres`). A small wave carried by a slower motion fails: 363 g-g6+s-s6,
+      1.1-3.6 Myr, cycles of half-amplitude 4-6 deg at P 206 kyr (the shortest secular libration is 200 kyr) on a
+      centre that travels 42 deg and turns back with the ~10-Myr libration that carries it.
+    Accepted with shape MODULATED, frame sigma and centre stationarity not measured (one turn back is not a stationary
+    centre). The count of LIBRATION_CENTRE_RETURNS_MODULATED returns stays the MMR test: a secular resonance makes few
+    cycles in a record (42946 g-g6+s-s6, 1.3-14.6 Myr: 17 TPs, P 1.6 Myr, TPs within 262 deg, cycle centres between
+    116 and 228 deg turning back twice, bands missing by 18 deg, the cycle of half-amplitude 93 deg about 183 deg
+    covering them all). Any other episode is returned unchanged."""
+    if episode.reject_reason != RejectReason.CENTRE_MOVES or not episode.closed_cycles or episode.centre_returns < 1:
+        return episode
+    _, cycle_mids, cycle_amps = cycle_centres(episode.tp_times_yr, episode.tp_values_rad)
+    if not len(cycle_mids) or np.ptp(cycle_mids) >= settings.libration_modulated_range_max_rad:
+        return episode
+    if not (within_one_turn(episode.tp_values_rad) and swing_covers_centres(cycle_mids, cycle_amps)):
+        return episode
+    return replace(
+        episode,
+        accepted=True,
+        shape=EpisodeShape.MODULATED,
+        reject_reason=RejectReason.NONE,
+        frame=FRAME_SIGMA,
+        centre_stationarity=str(CheckValue.NOT_MEASURED),
+    )
+
+
 def _regime_cut_mark(tp: TurningPoints, cut: RegimeCut, left: np.ndarray, right: np.ndarray) -> str:
     """The mark of the cut between the pieces `left` and `right` (TP indices): a centre step, its half-cycle; a stall,
     the stall (the regime the cut claims, as `split_at_regime_changes` found it)."""
@@ -3588,7 +3645,9 @@ def _find_episodes(
     return_bounds: Optional[Tuple[float, float]] = None,
     fired: Optional[set] = None,
 ) -> List[Episode]:
-    """Every run classified. A run rejected with `centre_moves` is classified again in pieces: first at its regular
+    """Every run classified. A run of a secular or ZLK angle (`FilteredAngle.turning_centre`) rejected with
+    `centre_moves` is first accepted whole when it stays within a turn and its centre turns back
+    (`accept_turning_centre`). A run still rejected with `centre_moves` is classified again in pieces: first at its regular
     stretch (`_split_regular`, slow full cycles), kept split only when a piece is accepted; failing that, without one
     slow edge half-cycle at either end (`_trim_slow_edges`), the trimmed half-cycles kept as rejected `edge` pieces.
     Neither touches an accepted run.
@@ -3629,7 +3688,7 @@ def _find_episodes(
         if returns and len(run) == 2 and episode.reject_reason in (RejectReason.TOO_FEW_TP, RejectReason.OVER_THE_TOP):
             cycle = phase_return(angle, tp, run, settings, return_bounds)
             episode = _returned(episode, cycle, record, window) if cycle is not None else episode
-        episode = _in_wells_or_same(episode, wells, settings, fired)
+        episode = _accepted_whole(episode, angle, wells, settings, fired)
         if episode.reject_reason != RejectReason.CENTRE_MOVES:
             episodes.append(episode)
             continue
@@ -3660,6 +3719,17 @@ def _find_episodes(
         split = [_classify_run(first + i, tp, piece, record, settings, window, well_model) for i, piece in enumerate(trimmed)]
         episodes.extend(piece if piece.accepted else replace(piece, reject_reason=RejectReason.EDGE) for piece in split)
     return _join_in_wells(tp, episodes, angle, record, window, settings, first_id, fired)
+
+
+def _accepted_whole(
+    episode: Episode, angle: Optional['FilteredAngle'], wells: Optional[WellsModel], settings: AnalysisSettings, fired: Optional[set]
+) -> Episode:
+    """A run the band test rejects, accepted whole before it is cut: in its wells (MMR 1:1, `_accept_in_wells`) or,
+    for a secular or ZLK angle, by its turning centre (`accept_turning_centre`); else the same episode."""
+    episode = _in_wells_or_same(episode, wells, settings, fired)
+    if angle is not None and angle.turning_centre:
+        episode = accept_turning_centre(episode, settings)
+    return episode
 
 
 def _edge_candidate(
@@ -4332,20 +4402,22 @@ def _visible_edge(
     settings,
     averaged: Optional[np.ndarray] = None,
 ) -> Optional[EdgeEvent]:
-    """`visible_edge` on the record `record`. With `averaged` (the orbit-averaged raw angle, `orbit_averaged`; MMR
-    only) the edge rule of variant (a) applies (author 2026-10-19; DECISIONS 2026-10-15 "an arc > 2pi is not a piece of
-    libration"): on the stretch from the episode's last turning point to the record's end (entry: from the record's
-    start to its first one) that angle travels >= libration_edge_arc_rev turns away from the turning point and moves
-    monotonically there (means over half-period blocks, `_raw_monotonic`): the exit (entry) is observed, not suspected,
-    however little record is left. Arc, direction and monotonicity are read on that one stretch of the averaged angle,
-    whether or not sigma_f crosses |sigma_f - c| = pi there (the low-pass may hide the crossing at the record's
-    edge; Codex W20 A #10); the event's time is then the averaged angle's own crossing.
+    """`visible_edge` on the record `record`. With `averaged` (the orbit-averaged raw angle, `orbit_averaged`, of an
+    MMR; sigma_f itself of a secular or ZLK angle, which has no orbit to average, W36 F1) the edge rule of variant (a)
+    applies (author 2026-10-19; DECISIONS 2026-10-15 "an arc > 2pi is not a piece of libration"): on the stretch from
+    the episode's last turning point to the record's end (entry: from the record's start to its first one) that angle
+    travels >= libration_edge_arc_rev turns away from the turning point and moves monotonically there (means over
+    half-period blocks, `_raw_monotonic`): the exit (entry) is observed, not suspected, however little record is left.
+    Arc, direction and monotonicity are read on that one stretch of the averaged angle, whether or not sigma_f crosses
+    |sigma_f - c| = pi there (the low-pass may hide the crossing at the record's edge; Codex W20 A #10); the event's
+    time is then the averaged angle's own crossing.
 
     With the MMR edge rule (`averaged` given) the centre c of |sigma_f - c| > pi and of the averaged angle's crossing is
     the local one at that edge (`Episode.edge_centre_rad`; C9, W28 g03-2, every MMR); the reading against the run's
     mean centre is made too (`_edge_reading`), and an event that differs from it is marked `differs_from_mean_centre`.
-    Without it (secular, ZLK) c stays the run's mean centre: the local reading is not measured on those angles yet."""
-    return _edge_reading(t, angle_f, raw, episode, kind, record, settings, averaged)[0]
+    Secular and ZLK angles (and every angle without `averaged`) keep the run's mean centre: the local reading is not
+    measured on those angles yet."""
+    return _edge_reading(t, angle_f, raw, episode, kind, record, settings, averaged, averaged is not None)[0]
 
 
 def _edge_reading(
@@ -4357,13 +4429,14 @@ def _edge_reading(
     record: Tuple[float, float],
     settings,
     averaged: Optional[np.ndarray] = None,
+    local_centre: bool = True,
 ) -> Tuple[Optional[EdgeEvent], bool]:
     """(the edge event of `_visible_edge`, whether the reading against the run's mean centre differs from the one
     against the local centre: an event on one side only, or other suspected/observed marks). The caller fires
-    Rule.LOCAL_CENTRE_ENTRY on True. Without `averaged` (no MMR edge rule) only the mean centre is read: (event,
-    False)."""
+    Rule.LOCAL_CENTRE_ENTRY on True. Without `averaged` (no edge rule), or with `local_centre` False (the edge rule
+    on sigma_f of a secular or ZLK angle), only the mean centre is read: (event, False)."""
     mean = _edge_event(t, angle_f, raw, episode, kind, record, settings, averaged, episode.centre_mean_rad)
-    if averaged is None:
+    if averaged is None or not local_centre:
         return mean, False
     local = _edge_event(t, angle_f, raw, episode, kind, record, settings, averaged, episode.edge_centre_rad(kind))
     if local is None or mean is None:
@@ -5109,6 +5182,12 @@ class FilteredAngle:
     # averaged for the edge rule (`orbit_averaged`)
     orbit_period_yr: float = NAN
     edge_arc_rule: bool = False  # an exit (entry) whose raw arc beyond the episode is >= one turn is observed
+    # secular, ZLK (`secular.preprocess.filtered_angle`, W36 F1): the same edge rule on sigma_f itself (no orbit to
+    # average), read against the run's mean centre; the arc is not kept as `Geometry.averaged_raw`
+    edge_arc_filtered: bool = False
+    # secular, ZLK (`secular.preprocess.filtered_angle`, W36 F3): a run rejected only for its moving centre is accepted
+    # when it stays within one turn and its centre turns back at least once (`accept_turning_centre`)
+    turning_centre: bool = False
     return_closure: bool = False  # a 2-TP run closed by its phase return is one cycle (`phase_return`)
     split_regimes: bool = False  # a run whose centre moves is cut at a centre step or a stall (`split_at_regime_changes`)
     coorbital: bool = False  # a 1:1 angle: the status reads its union of regimes as a libration (`mmr.decide._g2`)
@@ -5274,9 +5353,10 @@ def _mark_edges(
         t, angle_f = np.asarray(angle.t_yr, dtype=float), np.asarray(angle.angle_f, dtype=float)
         raw = np.asarray(angle.angle_raw, dtype=float)
         averaged = orbit_averaged(t, raw, angle.orbit_period_yr) if (angle.edge_arc_rule or angle.coorbital) else None
-        edge_averaged = averaged if angle.edge_arc_rule else None
-        geometry.exit, exit_differs = _edge_reading(t, angle_f, raw, accepted[-1], 'exit', record, settings, edge_averaged)
-        geometry.entry, entry_differs = _edge_reading(t, angle_f, raw, accepted[0], 'entry', record, settings, edge_averaged)
+        edge_averaged = _edge_arc_series(angle, averaged)
+        local = bool(angle.edge_arc_rule)
+        geometry.exit, exit_differs = _edge_reading(t, angle_f, raw, accepted[-1], 'exit', record, settings, edge_averaged, local)
+        geometry.entry, entry_differs = _edge_reading(t, angle_f, raw, accepted[0], 'entry', record, settings, edge_averaged, local)
         if exit_differs or entry_differs:
             geometry.rules_fired = rules.fire(geometry.rules_fired, rules.Rule.LOCAL_CENTRE_ENTRY)
         accepted[-1].exit_observed = bool(geometry.exit is not None and geometry.exit.observed)
@@ -5286,6 +5366,19 @@ def _mark_edges(
     if geometry.entry is not None and geometry.entry.suspected:
         geometry.flags.append(str(Flag.ENTRY_SUSPECTED))
     return averaged
+
+
+def _edge_arc_series(angle: FilteredAngle, averaged: Optional[np.ndarray]) -> Optional[np.ndarray]:
+    """The angle the edge rule reads (`_visible_edge`): the orbit-averaged raw angle of an MMR (`averaged`, formed
+    here when not given), sigma_f of a secular or ZLK angle (`FilteredAngle.edge_arc_filtered`: no orbit to average,
+    W36 F1), None when the rule is off."""
+    if angle.edge_arc_rule:
+        if averaged is not None:
+            return averaged
+        return orbit_averaged(np.asarray(angle.t_yr, dtype=float), np.asarray(angle.angle_raw, dtype=float), angle.orbit_period_yr)
+    if angle.edge_arc_filtered:
+        return np.asarray(angle.angle_f, dtype=float)
+    return None
 
 
 def _mark_record_entry(geometry: Geometry, angle: FilteredAngle, settings) -> None:
@@ -5300,11 +5393,11 @@ def _mark_record_entry(geometry: Geometry, angle: FilteredAngle, settings) -> No
     first = min(earlier, key=lambda run: run.t_start_yr)
     t = np.asarray(angle.t_yr, dtype=float)
     raw = np.asarray(angle.angle_raw, dtype=float)
-    averaged = None
-    if angle.edge_arc_rule:
-        averaged = geometry.averaged_raw if geometry.averaged_raw is not None else orbit_averaged(t, raw, angle.orbit_period_yr)
+    averaged = _edge_arc_series(angle, geometry.averaged_raw)
     record = (float(t[0]), float(t[-1]))
-    event, differs = _edge_reading(t, np.asarray(angle.angle_f, dtype=float), raw, first, 'entry', record, settings, averaged)
+    event, differs = _edge_reading(
+        t, np.asarray(angle.angle_f, dtype=float), raw, first, 'entry', record, settings, averaged, bool(angle.edge_arc_rule)
+    )
     if differs:
         geometry.rules_fired = rules.fire(geometry.rules_fired, rules.Rule.LOCAL_CENTRE_ENTRY)
     geometry.record_entry = event
@@ -5317,8 +5410,8 @@ def refresh_edges(geometry: Geometry, angle: FilteredAngle, settings) -> None:
     """The edge rule again on the episodes of the last regime once the forced waves are known (`Geometry.forced_waves`,
     set after the response is measured): the exit belongs to the last real episode, the entry to the first (W20 round
     C, review B #9: 145480 1N-4 at 1 Myr, whose real episode 0 is followed by the forced waves 1 and 2); the same once
-    induced episodes are taken out (`Geometry.induced_ids`). The marks and flags the first pass left on the excluded
-    runs go; nothing changes without forced waves or induced episodes."""
+    induced episodes (`Geometry.induced_ids`) or a secular angle's slow waves (`Geometry.slow_wave_ids`) are taken out.
+    The marks and flags the first pass left on the excluded runs go; nothing changes without excluded runs."""
     if not geometry.excluded_ids:
         return
     geometry.forget_derived()
