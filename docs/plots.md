@@ -91,7 +91,7 @@ One 1:1 episode in parts: (a) brackets its sub-regimes over the panel, named by 
 its inferred residence beyond the fill lighter, `--`, labeled `inferred` (`residence_pieces`, `shade_residences`;
 never on (l)); (d) marks the kicks of $a$ at such changes with ▼ `kick` (`draw_kicks`); the header reads `orbit: A →
 B` for a sequence of wells; the EPISODES group of the right column lists the inferred stay and the marks (well,
-amplitude, kick) under the episode.
+amplitude, kick, `no well` for the cycles beyond its well-holding core, rule `coorbital_well_core`) under the episode.
 Where a slower libration of the center was found (the slow scale, columns `slow_*`), (i) hatches its intervals
 (`slow #id`, `mmr_combined.slow_intervals`) and the right column's SLOW SCALE group gives its numbers; when
 its cause is a secular cycle, (j) adds the detrended $p\varpi$ labeled with $p$ and the secular period of its column

@@ -557,3 +557,10 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   page answers became 70 label rows (`author:2026-11-02 (W28 review page…)`) and episode cases E100–E105; where a label
   and an accepted-by-default rule differ, `KNOWN_DISAGREEMENTS.csv` names the rule and the question (category
   `minimal_policy`, 100 rows).
+- **Nov 14 (author; log entry by Claude, `benchmark/DECISIONS.md` 2026-11-14, last entry).** Three co-orbital fixes after
+  his labels of four Earth co-orbital clones, one commit each: (1) rule `coorbital_well_core` (Codex's variant, not the
+  designer's E1/E2 range test): a 1:1 run some of whose cycles miss the well keeps its well-holding cores, the first and
+  last continued until sigma crosses the planet or L3 (g03-1), the core giving the cycle count; (2) the fallback floor
+  of a run with a non-reflecting turn (amin07h + Codex's force-law witness); (3) `_mmr_t_last` reads the last turning
+  point of any run, clipped to the window end. The secular/ZLK `apply_long_period` analogue is left for him.
+

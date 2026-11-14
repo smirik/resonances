@@ -608,16 +608,34 @@ class Episode:
     # points stay its core (`core_t0_yr`, `core_t1_yr`): coverage, edges, margins and the status read only it
     subregimes: Tuple[SubRegime, ...] = ()
     residence: Optional[Residence] = None
+    # MMR 1:1 (rule coorbital_well_core): (t0, t1) [yr] of the turning points of the cycles that hold a well, when the
+    # run continues beyond them through cycles that hold none without crossing a separatrix (`_accept_well_core`);
+    # () when every cycle of the run holds one (or for any other run). The core, not the run, gives `core_cycles`
+    held_core: Tuple[float, float] = ()
 
     @property
     def core_t0_yr(self) -> float:
-        """The start of the core, the first measured turning point (an accepted run; nan for a rejected one)."""
-        return self.t_start_yr if self.accepted and self.n_tp else NAN
+        """The start of the core, the first measured turning point (an accepted run; nan for a rejected one); for a
+        run that continues beyond its well-holding cycles (`held_core`), the first turning point of those."""
+        if not (self.accepted and self.n_tp):
+            return NAN
+        return float(self.held_core[0]) if self.held_core else self.t_start_yr
 
     @property
     def core_t1_yr(self) -> float:
-        """The end of the core, the last measured turning point (an accepted run; nan for a rejected one)."""
-        return self.t_end_yr if self.accepted and self.n_tp else NAN
+        """The end of the core, the last measured turning point (an accepted run; nan for a rejected one); for a run
+        that continues beyond its well-holding cycles (`held_core`), the last turning point of those."""
+        if not (self.accepted and self.n_tp):
+            return NAN
+        return float(self.held_core[1]) if self.held_core else self.t_end_yr
+
+    @property
+    def core_n_tp(self) -> int:
+        """The turning points inside the core [core_t0, core_t1] (all of them without `held_core`)."""
+        if not self.held_core:
+            return self.n_tp
+        times = np.asarray(self.tp_times_yr, dtype=float)
+        return int(np.count_nonzero((times >= self.held_core[0]) & (times <= self.held_core[1])))
 
     @property
     def several_wells(self) -> bool:
@@ -3169,6 +3187,205 @@ def _in_wells_or_same(episode: Episode, model: Optional[WellsModel], settings: A
     return accepted
 
 
+def well_blocks(held: Sequence[bool]) -> List[Tuple[int, int]]:
+    """(first, last) index of every maximal stretch of consecutive True in `held` (the cycles of a run that hold a
+    well, `cycle_wells`), in order."""
+    blocks: List[Tuple[int, int]] = []
+    start = None
+    for k, ok in enumerate(list(held) + [False]):
+        if ok and start is None:
+            start = k
+        elif not ok and start is not None:
+            blocks.append((start, k - 1))
+            start = None
+    return blocks
+
+
+def crossed_lines(first_rad: float, second_rad: float) -> frozenset:
+    """The multiples m of pi that a swing of a 1:1 angle from `first_rad` to `second_rad` (unwrapped) passes: even m is
+    the planet (sigma = 0 mod 2 pi), odd m is L3 (pi mod 2 pi), whichever sign the angle has. A tadpole swing passes
+    none, a horseshoe swing one odd m, a quasi-satellite swing one even m."""
+    lo, hi = sorted((float(first_rad), float(second_rad)))
+    if not (np.isfinite(lo) and np.isfinite(hi)):
+        return frozenset()
+    return frozenset(range(int(np.ceil(lo / np.pi)), int(np.floor(hi / np.pi)) + 1))
+
+
+def _continuation(values: np.ndarray, times: np.ndarray, start: int, step: int, lines: frozenset, limit: float, passes) -> int:
+    """The outermost turning point (index) reached from `start` going `step` (-1: back in time, +1: forward) while each
+    half-cycle crosses no line outside `lines` (`crossed_lines`: neither the planet nor L3 unless the core crosses it),
+    swings less than `limit` (its half-amplitude: over the top is a passage) and does not circulate (`passes`(t0, t1)
+    False: sigma_f or the orbit-averaged raw angle covers less than a turn on it)."""
+    k = start
+    while 0 <= k + step < len(values):
+        j = k + step
+        a, b = (j, k) if step < 0 else (k, j)
+        if not crossed_lines(values[a], values[b]) <= lines or abs(values[b] - values[a]) / 2 >= limit or passes(times[a], times[b]):
+            break
+        k = j
+    return k
+
+
+def _accept_well_core(
+    first: int,
+    tp: TurningPoints,
+    run: np.ndarray,
+    episode: Episode,
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+    angle: Optional['FilteredAngle'],
+) -> Optional[List[Episode]]:
+    """Rule coorbital_well_core (MMR_COORBITAL_WELL_CORE; the author 2026-11-14 on 2024 JR16, Codex's variant; cards
+    g03-1 A, g03-9 A): a 1:1 run the band test rejects and `_accept_in_wells` does not accept whole because some of its
+    cycles hold no well of the averaged potential (`cycle_wells`) is read in pieces instead of being lost whole.
+
+    Its cores are the maximal blocks of consecutive cycles that hold a well (`well_blocks`; two blocks that share the
+    turning point of one failing cycle between them give it to the earlier), each accepted on its own by the band
+    test or in its wells (`_accept_in_wells`), with >= libration_min_turning_points TPs. The first core continues back
+    and the last one forward over the run's remaining turning points while sigma stays in the same connected
+    co-orbital region (`_continuation`: no half-cycle crosses the planet or L3 unless the core itself crosses that
+    line, none swings over the top, none circulates; a 1:1 episode ends only at a separatrix, g03-1 A): the edge cycles
+    that miss the well's minimum are no escape. The continued run is accepted as one libration (band test, else
+    shape REGIME_CHANGE, frame sigma, centre stationarity not measured, as `_accept_in_wells`; its centres within a
+    turn) with `held_core` = its core's TP span (`core_cycles` counts only the core); without a continuation, or when
+    the continued run is not accepted, the core alone. Failing cycles between two cores split the evidence: they are
+    never bridged (a rejected piece in between; `_join_in_wells` joins only runs whose every cycle holds a well).
+    Cycles that hold no well are no libration of their own: what the continuation leaves at an edge (beyond a
+    crossing) is a rejected `edge` piece, a stretch between two cores a rejected `centre_moves` one. `_find_episodes`
+    calls it only when its other pieces (`_moving_centre_pieces`) accept nothing. None (nothing changes) without the
+    model or the setting, for a run none of whose blocks is a core, and for a run every cycle of which holds a well."""
+    model = angle.coorbital_wells if angle is not None else None
+    if model is None or not settings.mmr_coorbital_well_core or episode.reject_reason != RejectReason.CENTRE_MOVES:
+        return None
+    min_tp = int(settings.libration_min_turning_points)
+    if episode.n_tp < min_tp:
+        return None
+    times = np.asarray(episode.tp_times_yr, dtype=float)
+    values = np.asarray(episode.tp_values_rad, dtype=float)
+    held = [bool(name) for name in cycle_wells(model, times, values, episode.tp_prominence_rad)]
+    if not held or all(held) or not any(held):
+        return None
+    cores = _well_cores(first, tp, run, held, record, window, settings, model)
+    if not cores:
+        return None
+    averaged = orbit_averaged(angle.t_yr, angle.angle_raw, angle.orbit_period_yr)
+    limit = float(tp.break_half_amplitude_rad)
+
+    def passes(t0: float, t1: float) -> bool:
+        return _half_cycle_circulates(angle, t0, t1, averaged)
+
+    def lines_of(lo: int, hi: int) -> frozenset:
+        return frozenset().union(*(crossed_lines(values[k], values[k + 1]) for k in range(lo, hi)))
+
+    spans = list(cores)
+    spans[0] = (_continuation(values, times, cores[0][0], -1, lines_of(*cores[0]), limit, passes), spans[0][1])
+    spans[-1] = (spans[-1][0], _continuation(values, times, cores[-1][1], +1, lines_of(*cores[-1]), limit, passes))
+    built: Dict[int, Episode] = {}
+    for i in {0, len(cores) - 1}:
+        if spans[i] != cores[i]:
+            continued = _continued_core(first, tp, run[spans[i][0] : spans[i][1] + 1], times[list(cores[i])], record, window, settings)
+            if continued is None:
+                spans[i] = cores[i]  # the continued run is no libration: the core alone
+            else:
+                built[i] = continued
+    return _core_pieces(first, tp, run, spans, built, record, window, settings, model)
+
+
+def _well_cores(
+    first: int,
+    tp: TurningPoints,
+    run: np.ndarray,
+    held: Sequence[bool],
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+    model: WellsModel,
+) -> List[Tuple[int, int]]:
+    """(first, last) TP index into `run` of every core of `_accept_well_core`: a block of consecutive cycles that hold
+    a well (`held`, `well_blocks`; cycle k is TPs k..k+2, a TP shared with the previous core goes to it) with
+    >= libration_min_turning_points TPs, accepted on its own by the band test or in its wells."""
+    cores: List[Tuple[int, int]] = []
+    for a, b in well_blocks(held):
+        lo, hi = a, b + 2
+        if cores and lo <= cores[-1][1]:
+            lo = cores[-1][1] + 1
+        if hi - lo + 1 < settings.libration_min_turning_points:
+            continue
+        core = _classify_run(first, tp, run[lo : hi + 1], record, settings, window)
+        if core.accepted or _accept_in_wells(core, model, settings) is not None:
+            cores.append((lo, hi))
+    return cores
+
+
+def _core_pieces(
+    first: int,
+    tp: TurningPoints,
+    run: np.ndarray,
+    spans: Sequence[Tuple[int, int]],
+    built: Dict[int, Episode],
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+    model: WellsModel,
+) -> List[Episode]:
+    """The episodes of `_accept_well_core` in time order: each core's span (`built[i]` when continued, else the core
+    accepted as it is) and, between and around them, the rejected pieces of cycles that hold no well: `edge` at either
+    end of the run (beyond a crossing), `centre_moves` between two cores. Ids from `first`."""
+    pieces: List[Tuple[int, int, int]] = []  # (first, last TP index into the run, the core's index or -1)
+    at = 0
+    for i, (lo, hi) in enumerate(spans):
+        if lo > at:
+            pieces.append((at, lo - 1, -1))
+        pieces.append((lo, hi, i))
+        at = hi + 1
+    if at < len(run):
+        pieces.append((at, len(run) - 1, -1))
+    out: List[Episode] = []
+    for k, (lo, hi, i) in enumerate(pieces):
+        if i in built:
+            out.append(replace(built[i], episode_id=first + k))
+            continue
+        piece = _classify_run(first + k, tp, run[lo : hi + 1], record, settings, window)
+        if i >= 0:
+            out.append(piece if piece.accepted else _accept_in_wells(piece, model, settings))
+            continue
+        reason = RejectReason.EDGE if k in (0, len(pieces) - 1) else RejectReason.CENTRE_MOVES
+        out.append(replace(piece, accepted=False, shape=EpisodeShape.NONE, reject_reason=reason, frame=''))
+    return out
+
+
+def _continued_core(
+    episode_id: int,
+    tp: TurningPoints,
+    run: np.ndarray,
+    core_yr: np.ndarray,
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+) -> Optional[Episode]:
+    """A core continued to the turning points `run` (`_accept_well_core`) as one accepted episode with `held_core` =
+    `core_yr` (the core's first and last TP times): accepted by the band test, else as one libration of moving centre
+    (shape REGIME_CHANGE, frame sigma, centre stationarity not measured) when it closes a cycle and its full-cycle
+    centres stay within a turn. None otherwise."""
+    piece = _classify_run(episode_id, tp, run, record, settings, window)
+    if not piece.accepted:
+        if piece.reject_reason != RejectReason.CENTRE_MOVES or not piece.closed_cycles:
+            return None
+        _, mids, _ = cycle_centres(piece.tp_times_yr, piece.tp_values_rad)
+        if not (len(mids) and np.ptp(mids) < TWO_PI):
+            return None
+        piece = replace(
+            piece,
+            accepted=True,
+            shape=EpisodeShape.REGIME_CHANGE,
+            reject_reason=RejectReason.NONE,
+            frame=FRAME_SIGMA,
+            centre_stationarity=str(CheckValue.NOT_MEASURED),
+        )
+    return replace(piece, held_core=(float(core_yr[0]), float(core_yr[1])))
+
+
 def _half_cycle_circulates(angle: 'FilteredAngle', t0_yr: float, t1_yr: float, averaged: np.ndarray) -> bool:
     """sigma_f, or the raw angle averaged over the body's orbit (`averaged`, on the angle's grid), covers a whole turn
     between t0 and t1: a crossing of the separatrix (`gap_circulates` on one half-cycle). A stretch without a finite
@@ -3300,6 +3517,17 @@ def amplitude_changes(
 
 
 MARK_WELL_CHANGE, MARK_AMPLITUDE_CHANGE, MARK_KICK = 'well_change', 'amplitude_change', 'kick'
+# rule coorbital_well_core: a stretch of a continued 1:1 run beyond its core whose cycles hold no well (`Episode.held_core`)
+MARK_UNHELD = 'unheld'
+
+
+def unheld_spans(run: Episode) -> List[Tuple[str, float, float]]:
+    """(MARK_UNHELD, t0, t1) of the stretches of a run continued beyond its well-holding core (rule coorbital_well_core,
+    `Episode.held_core`): from its first TP to the core and from the core to its last TP, where not empty."""
+    if not run.held_core:
+        return []
+    ends = ((run.t_start_yr, float(run.held_core[0])), (float(run.held_core[1]), run.t_end_yr))
+    return [(MARK_UNHELD, a, b) for a, b in ends if b > a]
 
 
 def coorbital_marks(geometry: 'Geometry', angle: 'FilteredAngle', settings: AnalysisSettings) -> None:
@@ -3308,8 +3536,9 @@ def coorbital_marks(geometry: 'Geometry', angle: 'FilteredAngle', settings: Anal
     where the well that consecutive half-cycles swing through changes (`half_cycle_swings`, `swing_wells`: 469219 1E-1
     at 257 yr, quasi-satellite to the transitional swing, and at 426 yr, to the horseshoe; 2016 JA at 339 yr, horseshoe
     to tadpole), `amplitude_change@t0:t1` (`amplitude_changes`, the transitional half-cycle) and, near either,
-    `kick@t` for a jump of the slow variable whose zone meets it (`Geometry.jumps`, G2a steps aside).
-    `Episode.wells` gets the sequence of the half-cycles' wells; a run of several wells takes
+    `kick@t` for a jump of the slow variable whose zone meets it (`Geometry.jumps`, G2a steps aside), and
+    `unheld@t0:t1` for the stretch of a run continued beyond its well-holding core (rule coorbital_well_core,
+    `Episode.held_core`; no sub-regime). `Episode.wells` gets the sequence of the half-cycles' wells; a run of several wells takes
     the shape REGIME_CHANGE whatever test accepted it (a horseshoe band holds a quasi-satellite's: 164207 1E-1), so
     its floor is that of the fastest well it holds (`FloorWell.holds`) and L5's one pendulum does not apply to it.
     Fires COORBITAL_WELL_CUT when a change is marked. Nothing without the model."""
@@ -3333,6 +3562,7 @@ def coorbital_marks(geometry: 'Geometry', angle: 'FilteredAngle', settings: Anal
         spans = [(MARK_WELL_CHANGE, times[k + 1], times[k + 1]) for k in range(len(halves) - 1) if halves[k] != halves[k + 1]]
         levels = model.levels(float(times[0]), float(times[-1]), values)
         spans += [(MARK_AMPLITUDE_CHANGE, a, b) for a, b in amplitude_changes(times, values, names, levels, settings)]
+        spans += unheld_spans(run)
         items: List[str] = []
         for name, start, end in sorted(spans, key=lambda span: span[1]):
             items.append(f'{name}@{start:.1f}' if start == end else f'{name}@{start:.1f}:{end:.1f}')
@@ -3676,7 +3906,9 @@ def _find_episodes(
     An angle with `coorbital_wells` (MMR 1:1, rule coorbital_well_cut, W28 C7) ends an episode only at a separatrix:
     a run the band test rejects is accepted whole when every cycle holds a well (`_accept_in_wells`), before any of
     the pieces above; no regime cut applies; accepted neighbours join across a half-cycle that does not circulate
-    (`_join_in_wells`)."""
+    (`_join_in_wells`). When none of the pieces above is accepted, a run some of whose cycles hold no well is kept
+    from its well-holding cores, continued to the next separatrix crossing (rule coorbital_well_core,
+    `_accept_well_core`)."""
     episodes: List[Episode] = []
     tp = with_run_break(tp, angle)
     return_bounds = record if return_bounds is None else return_bounds
@@ -3694,33 +3926,56 @@ def _find_episodes(
         if episode.reject_reason != RejectReason.CENTRE_MOVES:
             episodes.append(episode)
             continue
-        pieces = _split_regular(tp, run, settings)
-        if len(pieces) > 1:
-            regular = int(_regular_stretch(tp, run, settings)[0] > 0)  # the index of the regular piece
-            frames = [well_model if i == regular or _holds(piece, joined) else None for i, piece in enumerate(pieces)]
-            split = [
-                _classify_run(first + i, tp, piece, record, settings, window, frame) for i, (piece, frame) in enumerate(zip(pieces, frames))
-            ]
-            if any(piece.accepted for piece in split):
-                episodes.extend(split)
-                continue
-        trimmed = _trim_slow_edges(tp, run, record, window, settings)
-        if trimmed is None and well_model is not None:
-            episode = _classify_run(first, tp, run, record, settings, window, well_model)  # rejected: keeps the psi numbers
-            if episode.accepted:
-                episodes.append(episode)
-                continue
-            trimmed = _trim_outside_well(tp, run, record, window, settings, well_model)
-            if trimmed is None:
-                trimmed = _trim_slow_edges(tp, run, record, window, settings, well_model)
-        if trimmed is None:
-            cut = split_at_regime_changes(tp, run, settings) if cuts else None
-            split = _regime_pieces(tp, cut, first, record, window, settings, well_model, fired) if cut else None
-            episodes.extend(split if split is not None else [episode])
-            continue
-        split = [_classify_run(first + i, tp, piece, record, settings, window, well_model) for i, piece in enumerate(trimmed)]
-        episodes.extend(piece if piece.accepted else replace(piece, reject_reason=RejectReason.EDGE) for piece in split)
+        pieces = _moving_centre_pieces(first, tp, run, episode, record, window, settings, well_model, joined, cuts, fired)
+        if not any(piece.accepted for piece in pieces):
+            cored = _accept_well_core(first, tp, run, episode, record, window, settings, angle)
+            if cored is not None:
+                pieces = cored
+                if fired is not None:
+                    fired.add(rules.Rule.COORBITAL_WELL_CORE)
+        episodes.extend(pieces)
     return _join_in_wells(tp, episodes, angle, record, window, settings, first_id, fired)
+
+
+def _moving_centre_pieces(
+    first: int,
+    tp: TurningPoints,
+    run: np.ndarray,
+    episode: Episode,
+    record: Tuple[float, float],
+    window: Tuple[float, float],
+    settings: AnalysisSettings,
+    well_model: Optional[WellModel],
+    joined: frozenset,
+    cuts: bool,
+    fired: Optional[set],
+) -> List[Episode]:
+    """The pieces of a run the band test rejects with `centre_moves` (`episode`, its whole-run classification), as
+    `_find_episodes` describes them: its regular stretch, its slow edges trimmed, the frame of a moving well, its
+    regime cuts; [episode] when none applies."""
+    pieces = _split_regular(tp, run, settings)
+    if len(pieces) > 1:
+        regular = int(_regular_stretch(tp, run, settings)[0] > 0)  # the index of the regular piece
+        frames = [well_model if i == regular or _holds(piece, joined) else None for i, piece in enumerate(pieces)]
+        split = [
+            _classify_run(first + i, tp, piece, record, settings, window, frame) for i, (piece, frame) in enumerate(zip(pieces, frames))
+        ]
+        if any(piece.accepted for piece in split):
+            return split
+    trimmed = _trim_slow_edges(tp, run, record, window, settings)
+    if trimmed is None and well_model is not None:
+        episode = _classify_run(first, tp, run, record, settings, window, well_model)  # rejected: keeps the psi numbers
+        if episode.accepted:
+            return [episode]
+        trimmed = _trim_outside_well(tp, run, record, window, settings, well_model)
+        if trimmed is None:
+            trimmed = _trim_slow_edges(tp, run, record, window, settings, well_model)
+    if trimmed is None:
+        cut = split_at_regime_changes(tp, run, settings) if cuts else None
+        split = _regime_pieces(tp, cut, first, record, window, settings, well_model, fired) if cut else None
+        return split if split is not None else [episode]
+    split = [_classify_run(first + i, tp, piece, record, settings, window, well_model) for i, piece in enumerate(trimmed)]
+    return [piece if piece.accepted else replace(piece, reject_reason=RejectReason.EDGE) for piece in split]
 
 
 def _accepted_whole(

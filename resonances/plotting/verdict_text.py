@@ -2936,7 +2936,8 @@ def _timed_items(value: Any) -> List[Tuple[str, float, float]]:
 
 def episode_marks(row: Mapping[str, Any]) -> List[Tuple[str, float, float]]:
     """The changes inside an accepted 1:1 run that are no boundary (episodes.csv `marks`, rule coorbital_well_cut):
-    ('well_change', t, t), ('amplitude_change', t0, t1), ('kick', t, t) [yr]."""
+    ('well_change', t, t), ('amplitude_change', t0, t1), ('kick', t, t) [yr]; ('unheld', t0, t1), the stretch of an
+    episode beyond its well-holding core (rule coorbital_well_core)."""
     return _timed_items(row.get('marks'))
 
 

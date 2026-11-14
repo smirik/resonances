@@ -681,12 +681,13 @@ def _span_tag(outcome: _Outcome) -> str:
 
 
 def core_cycles(geometry: Optional[Geometry], decisive_id) -> float:
-    """(n_TP - 1) / 2 cycles observed inside the decisive episode (a 2-TP run closed by its phase return: 1), no edge
-    coverage added; nan without one."""
+    """(n_TP - 1) / 2 cycles observed inside the decisive episode's core (a 2-TP run closed by its phase return: 1),
+    no edge coverage added; nan without one. The core of a 1:1 run continued beyond its well-holding cycles is those
+    cycles (`Episode.core_n_tp`, rule coorbital_well_core)."""
     run = run_of(geometry, decisive_id) if geometry is not None else None
     if run is None:
         return NAN
-    return 1.0 if run.n_tp == 2 and run.closed_by_return else max((run.n_tp - 1) / 2.0, 0.0)
+    return 1.0 if run.n_tp == 2 and run.closed_by_return else max((run.core_n_tp - 1) / 2.0, 0.0)
 
 
 def _record_level(ev: Evidence, settings: AnalysisSettings, ledger: Ledger) -> None:

@@ -620,7 +620,7 @@ def draw_text(fig, blocks: Dict[str, TextBlock], layout: VerdictFigureLayout) ->
 
 REJECTED_ROWS_MAX = 4  # rejected runs listed one by one in the explained column (the longest)
 MARKS_SHOWN = 3  # the changes of a 1:1 run that are no boundary listed under it (W28 C13), the first ones, then '…'
-MARK_WORDS = {'well_change': 'well', 'amplitude_change': 'amplitude', 'kick': 'kick'}
+MARK_WORDS = {'well_change': 'well', 'amplitude_change': 'amplitude', 'kick': 'kick', 'unheld': 'no well'}  # 'unheld': coorbital_well_core
 # constants.csv rows of planetary terms -> their name on the figure
 TERM_NAMES = {
     'great_inequality': 'great ineq. 2J−5S',

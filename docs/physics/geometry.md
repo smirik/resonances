@@ -222,7 +222,20 @@ the averaged potential of the 1:1 force law ([pendulum](pendulum.md#co-orbitals-
   minimum of the potential, to within the run's turning-point prominence, and its cycle centers stay within one
   turn. The prominence is the smallest swing the run resolves as a turn: a cycle whose amplitude collapses within it
   misses its minimum by less (2021 XO3 1V−1: 4° and 8° at 11°), a ripple drifting past L5 by more (2022 BB2 1V−1:
-  7–25° at 4°, rejected);
+  7–25° at 4°);
+- a run some of whose cycles hold no minimum is not lost whole (rule `coorbital_well_core`,
+  `MMR_COORBITAL_WELL_CORE`, the author 2026-11-14 on 2024 JR16). Its **cores** are the longest blocks of consecutive
+  cycles that hold one, each accepted on its own (bands, or the wells test above). The first core continues back and
+  the last one forward over the run's other turning points while $\sigma$ stays in the same connected co-orbital
+  region: no half-cycle crosses the planet ($\sigma = 0$) or L3 ($\pi$) unless the core itself crosses that line,
+  none swings over the top, none circulates. The episode is the core with its continuation; the core alone gives the
+  cycle count (`core_t0_yr`/`core_t1_yr`, mark `unheld@t0:t1`). Cycles that miss the minimum between two cores split
+  the run: two episodes, never bridged. Past a crossing the turning points are a rejected `edge` piece: the episode
+  ends at the separatrix. 2024 JR16 c005: core 132–856 yr, its last cycle (a 14° loop 243–271° drifting towards L3)
+  misses the well, episode 132–929 yr, `resonant`/low (the force law fails); a JR16 clone integrated for 2000 yr crosses
+  L3 near 1450 yr and its episode ends at 1488 yr (`transient`). 2022 BB2 1V−1: core 445–691 yr after circulation, then
+  a ripple drifting towards L3 to the end, episode 445–926 yr. A wave riding a circulation crosses the planet and L3
+  within a few cycles and stays rejected;
 - two accepted neighbors, which `split_runs` separates where the next regime is slower or its center jumps, join
   when the half-cycle between them does not circulate and the joined run is accepted. A rejected neighbor is never
   joined;
@@ -241,8 +254,9 @@ per well). 2021 XO3: one episode 90–945 yr with amplitude changes at 326–446
 
 **Question: what is a 1:1 episode made of?** Three intervals (rule `coorbital_residence`, `MMR_COORBITAL_RESIDENCE`):
 
-- the **core**, from the first to the last measured turning point (`core_t0_yr`, `core_t1_yr`). Coverage, the edges,
-  the margins and the status read only the core;
+- the **core**, from the first to the last measured turning point (`core_t0_yr`, `core_t1_yr`); of a run continued
+  beyond its well-holding cycles (rule `coorbital_well_core`, above), those cycles only. Coverage, the edges and the
+  margins read the run's turning points, the confidence's core cycles read the core;
 - the **sub-regimes**, the stretches of the core between its changes of well or amplitude (`subregimes`,
   `well@t0:t1`); for two or more, each one's own 1:1 force law and energy integral at the angle's cutoff
   (`subregime_checks`, `force/energy`). They describe; the episode's own response decides. The header's orbit type is

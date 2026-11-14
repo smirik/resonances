@@ -187,7 +187,9 @@ Distinctions that matter when you report:
 - **High needs a full physical support.** An own-dynamics resonant/transient verdict whose force law (or 1:1 law),
   potential and strength all pass only thin is at most `medium` (`no_full_physics_support`).
 - **A co-orbital stay beyond its measured episode is inferred.** episodes.csv `core_t0_yr`/`core_t1_yr` are the
-  measured turning points that coverage and the status read; `residence_t0_yr`/`residence_t1_yr` are the inferred stay
+  measured turning points that coverage and the status read (of an episode continued past cycles that miss the well,
+  rule `coorbital_well_core`, only the well-holding ones; the rest is marked `unheld@t0:t1`: a 1:1 episode ends only
+  where σ crosses the planet or L3); `residence_t0_yr`/`residence_t1_yr` are the inferred stay
   around them, until the orbit-averaged angle sweeps a whole turn (`residence_bounded_by_*` = `circulation`) or the
   record ends (`edge`: no exit, the continuation is undetermined; extend the run to know). A change of well inside one
   episode is a sub-regime (`subregimes`, `subregime_checks`; summary `orbit_type` `compound: horseshoe → tadpole L4`,

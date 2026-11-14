@@ -59,6 +59,7 @@ class Rule(StrEnum):
     COORBITAL_LEG = 'coorbital_leg'
     COORBITAL_NEAR_EPISODE = 'coorbital_near_episode'
     COORBITAL_WELL_CUT = 'coorbital_well_cut'
+    COORBITAL_WELL_CORE = 'coorbital_well_core'
     COORBITAL_RESIDENCE = 'coorbital_residence'
     SINGLE_HALF_LIBRATION = 'single_half_libration'  # not 1:1: one half-swing between passages (q-5 i)
     ELIGIBLE_REASON = 'eligible_reason'
@@ -123,6 +124,9 @@ RULES: dict[Rule, RuleInfo] = {
     Rule.COORBITAL_LEG: _w28('G4c', '1:1 single-leg branch G4c decided (C6)'),
     Rule.COORBITAL_NEAR_EPISODE: _w28('G4c', '1:1 structural near-episode cap (C6)'),
     Rule.COORBITAL_WELL_CUT: _w28('G2', '1:1 well or amplitude change kept as an annotation, not a boundary (C7)'),
+    Rule.COORBITAL_WELL_CORE: RuleInfo(
+        'G2', "1:1 run kept from its well-holding core, continued to the next separatrix crossing (JR16)", 'W38'
+    ),
     Rule.COORBITAL_RESIDENCE: _w28('G2', '1:1 core, return, residence and sub-regimes stored (C8)'),
     Rule.SINGLE_HALF_LIBRATION: _w28('G4h', 'a half-swing of another MMR between passages with its own law: uncertain (C6, q-5 i)'),
     Rule.ELIGIBLE_REASON: _w28('G2', 'an accepted episode is ineligible, with its reason (C11)'),

@@ -36,6 +36,8 @@ guards) → io.
   side (acceptance in wells, joins, marks) is in `analysis/CLAUDE.md`. Here: `analyse._measure` wires the model,
   `analyse._kept_in_regime_change` lets G1q count the first pass's horseshoe inside a joined QS episode as kept,
   `decide` sets L5 not_applicable for an episode of several wells. Moves (259 co-orbitals on/off): see dev/decisions.md.
+  Rule `coorbital_well_core` (`MMR_COORBITAL_WELL_CORE`, 2026-11-14): a run some of whose cycles miss the well keeps
+  its well-holding cores, continued to the next crossing of the planet or L3 (geometry side in `analysis/CLAUDE.md`).
 - **W28 C8 core / residence / sub-regimes** (`CoorbitalWells.legs`, `zone_max`, `law`, `reversal_indices`; models
   `residence_columns`, `described_coorbital_columns` (summary `geo_orbit_type_sequence`, `geo_residence_*` in
   `SUMMARY_FIXED_COLUMNS`); `orbit_type._coorbital_sequence` reads the sub-regimes' wells first; rule

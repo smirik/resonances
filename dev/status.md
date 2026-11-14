@@ -239,6 +239,10 @@ disagreement page (`tmp/.../w30/disagreements/`).
   or the cases are rewritten; a question for him, not a code fix.
 - `pol_veto_need_yr` = inf (no record up to `ZLK_EXTEND_MAX_YR` resolves the gate, 797204 500 kyr) is written blank
   like "no length named"; the action (review) tells them apart.
+- Rule `coorbital_well_core` (2026-11-14): 2022 BB2 1V-1 moved uncertain → transient/low (the ripple on its end arc
+  drifts towards L3 without crossing it: one episode 445–926 yr) and 2026 SZ2 high → certain; both are unreviewed rows
+  of `KNOWN_DISAGREEMENTS.csv`. A drift that stays inside the co-orbital sector is an episode by g03-1; is that what he
+  wants for BB2's end arc?
 
 ## Next steps (agreed order)
 

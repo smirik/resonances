@@ -170,6 +170,19 @@ is certain, Q18), `PolicyResult` (counted and candidate episodes)
   gets shape REGIME_CHANGE (a horseshoe band holds a QS band: 164207), `FloorWell.holds` reads any of its cycle centres
   (the floor of its fastest well; G1q keeps the outside episodes it contains, `analyse._kept_in_regime_change`), L5
   not_applicable (`decide`). Trap: without the G1q/L5 parts 164207 and 469219 fell to transient/medium.
+- MMR 1:1 only, rule `coorbital_well_core` (the author 2026-11-14, 2024 JR16, Codex's variant; `MMR_COORBITAL_WELL_CORE`;
+  `_accept_well_core`, `_well_cores`, `well_blocks`, `crossed_lines`, `_continuation`, `_continued_core`, `_core_pieces`,
+  `unheld_spans`): only when the stock path
+  (`_moving_centre_pieces`: regular stretch, slow-edge trims, psi frame) accepts nothing of a run that `_accept_in_wells`
+  rejected because some cycles hold no well: the maximal blocks of held cycles are cores (each accepted by bands or
+  wells; a TP shared by two blocks goes to the earlier), the first core continues back and the last forward while no
+  half-cycle crosses a multiple of pi the core does not cross (planet even, L3 odd), swings over the top or circulates
+  (`_half_cycle_circulates`). The continued run is one episode (`Episode.held_core`: its core's TP span; `core_t0/t1_yr`
+  and `core_n_tp` read it; policy `core_cycles` counts the core only; mark `unheld@t0:t1`, no sub-regime); interior
+  failures leave a rejected `centre_moves` piece between two episodes, the rest beyond a crossing a rejected `edge`
+  piece. Stock first: with it in front of `_split_regular`, 2026 SZ2 (accepted in psi) went high → certain. Moves
+  (264 co-orbitals): JR16 c005/c010 → resonant/low, 2022 BB2 uncertain → transient/low (KNOWN_DISAGREEMENTS). A
+  drift that stays in the sector (the ripple of test xiii, BB2) is an episode by g03-1; only a crossing ends it.
 - MMR 1:1 only, rule `coorbital_residence` (W28 C8, cards g03-3 C, g03-8 A, g03-9 A, g02-3 A;
   `MMR_COORBITAL_RESIDENCE`; `Residence`, `SubRegime`, `AveragedLegs`, `residence_of`, `coorbital_residences` after
   `coorbital_marks` in `finish_geometry` and again (residence only) in `refresh_edges`): every accepted run's core is its

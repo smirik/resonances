@@ -608,7 +608,8 @@ The figure is the same, with these differences:
   `aud_unc_*`; the row is in the review queue, its status unchanged);
 - (a) brackets the sub-regimes and hatches the inferred residence, and (d) marks the kicks of $a$ (above). The
   EPISODES group of the right column lists the stay under the episode (`stay start–end (inferred)`) and the marks
-  (`well 339 yr`, `amplitude 326–446 yr`, `kick 4.69 kyr`);
+  (`well 339 yr`, `amplitude 326–446 yr`, `kick 4.69 kyr`; `no well 856–929 yr` for the cycles of an episode beyond
+  its well-holding core, rule `coorbital_well_core`: 2024 JR16 clones);
 - (e) draws no sine windows: a co-orbital is judged by its own force law, and the panel prints its $R^2$ (with the
   two halves) and $K/K_{\rm th}$, the fitted strength over the planet's (1 means the planet's own mass);
 - in the right column, Evidence names the 1:1 force law, `what makes the cycles?` is left out, and step 2 says that

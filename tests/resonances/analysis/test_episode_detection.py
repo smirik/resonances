@@ -84,7 +84,12 @@ not from the package:
       episode with an amplitude_change mark on the transitional half-cycle 750-850 yr (bands fail, every swing holds
       L4 within 1 deg); a quasi-satellite gliding into a tadpole without a turn is one episode, wells qs > compound >
       tadpole_L4, with well_change marks at the two turning points of the glide's half-cycle; one turn of circulation between two
-      quasi-satellites is a crossing: two episodes; a ripple drifting 60 deg past L5 holds no minimum: no episode.
+      quasi-satellites is a crossing: two episodes; a ripple drifting 60 deg past L5 holds no minimum after its first
+      cycles: no episode without rule coorbital_well_core, one episode from that core to the record's end with it (the
+      drift crosses no separatrix). Rule coorbital_well_core (the author 2026-11-14, 2024 JR16): a tadpole whose last two
+      cycles swing 25-45 deg off L4 is one episode to its last turning point with its core 25-675 yr; failing cycles
+      between two cores split the run; a drift across L3 ends the episode before the crossing half-cycle; a wave riding
+      a circulation (Codex's 4 t + 20 sin(2 pi t / 20) deg) stays rejected.
 (xv)  C11, episodes.csv eligible / ineligible_reason (W28 g02-9 A): a 1:1 tadpole of 30 deg at P = 100 yr with the
       angle's floor set by hand to 150 yr is an accepted run the status does not count (below_period_floor, no
       libration), counted at a 50-yr floor; a forced wave marked after the verdict reads forced_wave; the G2a step of
@@ -1496,18 +1501,145 @@ def test_xiii_one_turn_of_circulation_between_quasi_satellites_separates_two_epi
     assert decide.librating_union(geometry, S).episodes == ()  # the turn: no union either
 
 
-def test_xiii_a_ripple_drifting_past_l5_is_no_episode():
+def ripple_past_l5(model):
     """8 deg of ripple at 100 yr on a centre drifting from L5 by 60 deg over 1 kyr (6 deg per period, slower than the
-    ripple turns it): the cycles beyond 8 + 2 deg (the prominence) from L5 hold no minimum, so the wells reject what
-    the bands reject (2022 BB2 1V-1)."""
-    model = wells_model()
+    ripple turns it): the cycles beyond 8 + 2 deg (the prominence) from L5 hold no minimum (2022 BB2 1V-1)."""
     l5 = math.radians(minimum_deg(model, 'tadpole_L5'))
     t = np.arange(0.0, 1000.0 + 0.25, 0.25)
     sigma = l5 - math.radians(60.0) * t / 1000.0 + math.radians(8.0) * np.sin(TWO_PI * t / 100.0)
     rate = -math.radians(60.0) / 1000.0 + math.radians(8.0) * TWO_PI / 100.0 * np.cos(TWO_PI * t / 100.0)
-    geometry = wells_geometry(wells_angle(t, sigma, rate, model), 2.0)
-    assert not any(run.accepted for run in geometry.runs)
-    assert any(str(run.reject_reason) == 'centre_moves' for run in geometry.runs)
+    return t, sigma, rate
+
+
+def well_core_geometry(t, sigma, rate, model, prominence_deg, on=True):
+    """The 1:1 geometry with rule coorbital_well_core on or off (MMR_COORBITAL_WELL_CORE)."""
+    settings = replace(S, mmr_coorbital_well_core=on)
+    angle = wells_angle(t, sigma, rate, model)
+    geometry = g.measure_geometry(angle, math.radians(prominence_deg), settings)
+    g.coorbital_marks(geometry, angle, settings)
+    return geometry
+
+
+def test_xiii_a_ripple_drifting_past_l5_holds_its_well_only_at_the_start():
+    """Without rule coorbital_well_core the wells reject what the bands reject (the run is lost whole). With it the
+    first cycles, which hold L5, are the core, and the drift that follows never reaches L3 (300 -> 240 deg) nor the
+    planet: one episode to the record's end (the author's g03-1 A: a 1:1 episode ends only at a separatrix; its 100-yr
+    period is under the Earth's 111-yr tadpole floor, so no status would count it)."""
+    model = wells_model()
+    t, sigma, rate = ripple_past_l5(model)
+    off = well_core_geometry(t, sigma, rate, model, 2.0, on=False)
+    assert not any(run.accepted for run in off.runs)
+    assert any(str(run.reject_reason) == 'centre_moves' for run in off.runs)
+
+    geometry = well_core_geometry(t, sigma, rate, model, 2.0)
+    (episode,) = [run for run in geometry.runs if run.accepted]
+    assert covering(episode) and episode.held_core
+    # the core: the cycles whose swing (8 deg about a centre 6 deg further each period) holds L5 within 2 deg
+    assert episode.held_core[0] == episode.t_start_yr and episode.held_core[1] < 300.0
+    assert episode.core_t1_yr == episode.held_core[1] and episode.core_n_tp < episode.n_tp
+    assert marks_of(episode, 'unheld') == [pytest.approx((episode.held_core[1], episode.t_end_yr))]
+    assert g.rules.Rule.COORBITAL_WELL_CORE in geometry.rules_fired
+
+
+def steps_about_l4(model, pieces, period=100.0, end_yr=None):
+    """A tadpole about L4 at P = `period`: `pieces` = [(n cycles, centre offset from L4 deg, amplitude deg)], each
+    starting at a zero crossing of the sine (the centre steps there, the rate stays continuous); turning points at
+    P/4 + n P/2."""
+    l4 = math.radians(minimum_deg(model, 'tadpole_L4'))
+    total = sum(n for n, _, _ in pieces) * period if end_yr is None else end_yr
+    t = np.arange(0.0, total + 0.25, 0.25)
+    centre, amp = np.full(len(t), l4), np.zeros(len(t))
+    start = 0.0
+    for n, offset, amplitude in pieces:
+        part = (t >= start) & (t <= start + n * period)
+        centre[part], amp[part] = l4 + math.radians(offset), math.radians(amplitude)
+        start += n * period
+    w = TWO_PI / period
+    return t, centre + amp * np.sin(w * t), amp * w * np.cos(w * t)
+
+
+def test_xiii_a_tadpole_whose_last_cycles_miss_l4_is_one_episode_to_the_record_end():
+    """2024 JR16 c005 (the author 2026-11-14: resonant, one episode over the whole record): 6 cycles of 20 deg about L4
+    (TPs at 25, 75, ..., 575 yr), then 2 cycles of 10 deg about L4 + 35 deg (TPs 625-775 yr). By hand: the cycles
+    (TP_k, TP_k+1, TP_k+2) up to (575, 625, 675 yr: -20, +45, +25 deg from L4) hold L4; (625, 675, 725) swings
+    [+25, +45] deg and misses it by 25 deg, far above the 2-deg prominence, and so does the last one. The bands of the
+    first and last cycles share no point (L4 +- 20 against L4 + 25..45): the band test rejects the run, the wells test
+    rejects it whole. The core is 25-675 yr; the two edge cycles cross neither L3 (180 deg) nor the planet: the run
+    continues to its last TP (775 yr) and covers the record; its core gives (14 - 1) / 2 cycles."""
+    model = wells_model()
+    t, sigma, rate = steps_about_l4(model, [(6, 0.0, 20.0), (2, 35.0, 10.0)])
+    off = well_core_geometry(t, sigma, rate, model, 2.0, on=False)
+    assert not any(run.accepted for run in off.runs)
+
+    geometry = well_core_geometry(t, sigma, rate, model, 2.0)
+    (episode,) = [run for run in geometry.runs if run.accepted]
+    assert episode.t_start_yr == pytest.approx(25.0, abs=0.5) and episode.t_end_yr == pytest.approx(775.0, abs=0.5)
+    assert episode.held_core == (pytest.approx(25.0, abs=0.5), pytest.approx(675.0, abs=0.5))
+    assert episode.n_tp == 16 and episode.core_n_tp == 14 and covering(episode)
+    assert episode.shape == g.EpisodeShape.REGIME_CHANGE and episode.centre_stationarity == str(CheckValue.NOT_MEASURED)
+    assert marks_of(episode, 'unheld') == [pytest.approx((675.0, 775.0), abs=0.5)]
+    assert all(sub.t1_yr <= 675.5 for sub in episode.subregimes)  # the unheld stretch is no sub-regime
+    from resonances.resonance.analysis import policy
+
+    assert policy.core_cycles(geometry, episode.episode_id) == pytest.approx(6.5)
+
+
+def test_xiii_failing_cycles_between_two_cores_split_the_run():
+    """4 cycles of 20 deg about L4, 2 cycles of 8 deg about L4 + 40 deg (their swings [+32, +48] miss L4), 4 cycles of
+    20 deg about L4 again (TPs at 25 + 50 n yr): two cores, 25-425 and 625-975 yr (the failing cycles' turning points
+    in between are no core and are never bridged: two episodes, the middle a rejected piece)."""
+    model = wells_model()
+    t, sigma, rate = steps_about_l4(model, [(4, 0.0, 20.0), (2, 40.0, 8.0), (4, 0.0, 20.0)])
+    geometry = well_core_geometry(t, sigma, rate, model, 2.0)
+    first, second = [run for run in geometry.runs if run.accepted]
+    assert first.t_start_yr == pytest.approx(25.0, abs=0.5) and second.t_end_yr == pytest.approx(975.0, abs=0.5)
+    assert first.t_end_yr < 500.0 < 550.0 < second.t_start_yr
+    middle = [run for run in geometry.runs if not run.accepted and first.t_end_yr < run.t_start_yr < second.t_start_yr]
+    assert middle and all(str(run.reject_reason) == 'centre_moves' for run in middle)
+
+
+def test_xiii_a_drift_across_l3_ends_the_episode_at_the_crossing():
+    """5 cycles of 20 deg about L4 (60 deg) at P = 100 yr, then the centre moves towards L3 at 0.25 deg/yr with the
+    amplitude kept: the swing first reaches L3 (180 deg) when the centre is at 160 deg, 400 yr into the drift, at
+    900 yr. The episode ends at the last turning point before the half-cycle that crosses 180 deg (the separatrix);
+    the turning points after it are a rejected edge piece."""
+    model = wells_model()
+    l4 = math.radians(minimum_deg(model, 'tadpole_L4'))
+    t = np.arange(0.0, 1400.0 + 0.25, 0.25)
+    w = TWO_PI / 100.0
+    centre = l4 + math.radians(0.25) * np.clip(t - 500.0, 0.0, None)
+    sigma = centre + math.radians(20.0) * np.sin(w * t)
+    rate = math.radians(0.25) * (t > 500.0) + math.radians(20.0) * w * np.cos(w * t)
+    geometry = well_core_geometry(t, sigma, rate, model, 2.0)
+    (episode,) = [run for run in geometry.runs if run.accepted]
+    values = np.degrees(np.asarray(episode.tp_values_rad))
+    assert values.max() < 180.0 and episode.t_end_yr < 900.0 < episode.t_end_yr + 100.0
+    after = [run for run in geometry.runs if not run.accepted and run.t_start_yr > episode.t_end_yr]
+    assert after and str(after[0].reject_reason) == 'edge'
+    assert np.degrees(np.max(after[0].tp_values_rad)) > 180.0
+
+
+def test_xiii_a_wave_riding_a_circulation_is_no_episode():
+    """Codex's counterexample (sigma = 4 t + 20 sin(2 pi t / 20) deg): the reversing wave rides a circulation, every
+    piece of it crosses the planet and L3 within a few cycles; nothing is accepted with or without the rule."""
+    model = wells_model()
+    t = np.arange(0.0, 1000.0 + 0.05, 0.05)
+    sigma = math.radians(4.0) * t + math.radians(20.0) * np.sin(TWO_PI * t / 20.0)
+    rate = math.radians(4.0) + math.radians(20.0) * TWO_PI / 20.0 * np.cos(TWO_PI * t / 20.0)
+    for on in (False, True):
+        geometry = well_core_geometry(t, sigma, rate, model, 2.0, on=on)
+        assert not any(run.accepted for run in geometry.runs)
+
+
+def test_crossed_lines_counts_the_planet_and_l3():
+    # even multiples of pi: the planet, odd: L3; by hand from the swing's ends
+    assert g.crossed_lines(math.radians(20.0), math.radians(100.0)) == frozenset()  # a tadpole about L4
+    assert g.crossed_lines(math.radians(100.0), math.radians(250.0)) == {1}  # across L3: a horseshoe swing
+    assert g.crossed_lines(math.radians(-10.0), math.radians(10.0)) == {0}  # across the planet: a QS swing
+    assert g.crossed_lines(math.radians(370.0), math.radians(350.0)) == {2}  # the planet one turn on, either order
+    assert g.crossed_lines(math.radians(-200.0), math.radians(-170.0)) == {-1}
+    assert g.well_blocks([True, True, False, True, False, False, True]) == [(0, 1), (3, 3), (6, 6)]
+    assert g.well_blocks([False, False]) == []
 
 
 # --- (xiv) C8, rule coorbital_residence: the core, the inferred residence and the sub-regimes ------------------------

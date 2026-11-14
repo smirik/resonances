@@ -301,6 +301,17 @@ class AnalysisSettings:
         'amplitude are annotations (episodes.csv marks). False = the band test, the regime cuts and the union of '
         'regimes as before',
     )
+    mmr_coorbital_well_core: bool = _setting(
+        True,
+        'MMR_COORBITAL_WELL_CORE',
+        'bool',
+        'rule coorbital_well_core (the author 2026-11-14, 2024 JR16; needs MMR_COORBITAL_WELL_EPISODES): a 1:1 run the '
+        'band test rejects and some of whose cycles hold no well of the averaged potential is kept from its cores, the '
+        'maximal blocks of cycles that hold one (each accepted on its own); the first core continues back and the last '
+        'forward while sigma crosses neither the planet nor L3 (unless the core does), nor swings over the top, nor '
+        'circulates: such a run is one episode whose core gives the cycle count (episodes.csv core_*; mark unheld). '
+        'Failing cycles between two cores split it. False = the run is rejected whole as before',
+    )
     mmr_coorbital_residence: bool = _setting(
         True,
         'MMR_COORBITAL_RESIDENCE',
