@@ -1,3 +1,7 @@
 example_id,status,confidence,angle_status,source
 mmr3__485__3J-1S-1+0+0-1,transient,medium,,author:2026-11-14 (after the Nesvorny & Morbidelli 1998 check: «Генуя явно transient ... Похоже на transient/medium»)
 mmr3__485__3J-1S-1+0+0-1,transient,high,,author:2026-11-14 (answer on the open confidence question: «1 - оставь high»)
+coorbital__2003_YN107_c027__1E-1+0+0,transient,,,author:2026-11-14 (combined figure of the clone: «эпизод от 0 до 200 плюс-минус»)
+coorbital__2003_YN107_c032__1E-1+0+0,transient,,,author:2026-11-14 (combined figure of the clone: «эпизод от 0 до 300» and then «эпизод до 350-370 лет»: the end written as ~350-370 yr)
+coorbital__2024_JR16_c005__1E-1+0+0,resonant,,,"author:2026-11-14 (combined figure of the clone: «resonant, вроде бы, хотя ФП странноват; эпизод - весь интервал»)"
+coorbital__2024_JR16_c010__1E-1+0+0,resonant,,,"author:2026-11-14 (combined figure of the clone: «Второй пример - похоже» (Claude's reading: the second JR16 figure pair, c010, reads as c005))"

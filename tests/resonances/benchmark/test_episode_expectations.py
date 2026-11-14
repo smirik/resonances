@@ -48,7 +48,8 @@ def test_the_cases_are_well_formed():
     # W36 (the author's review of the pairs secular wave 1, 2026-11-07): E107-E117 (A/B), C55-C60 (Codex/Claude, tier C)
     # W36 F2 guard: C61 (455327 g-s-g5+s6, Codex, tier C: the episode the local prominence lost)
     # 2026-11-14: E118 (485 Genua 3J-1S-1, the author: transient; K2 needs a measured force law)
-    assert len(names) == len(set(names)) == 172
+    # 2026-11-14: E119-E122 (Earth co-orbital clones 2003 YN107 c027/c032, 2024 JR16 c005/c010, the author's figure labels)
+    assert len(names) == len(set(names)) == 176
     assert {case.tier for case in CASES} <= set(ee.TIERS)
     assert {case.scope for case in CASES} <= set(ee.SCOPES)
     for case in CASES:
@@ -70,7 +71,9 @@ def test_the_cases_are_well_formed():
     # run whose centre turns back) E111, F4 (slow waves, the centre-turns scale) E112, E113, E116; E114 (142694), E115
     # (165548: medium, not low) and E117 (455327 s-s3) stayed known failures; the author accepted the package's reading
     # of all three on 2026-11-08 (transient; medium; the episode 9.20-10.84 Myr), so they pass: no known failure left
-    assert not [case.case for case in CASES if case.known_fail]
+    # 2026-11-14 test-first: the four clone cases fail on the unchanged classifier (YN107: a horseshoe run below the
+    # period floor, not counted; JR16: the 1:1 run rejected centre_moves); the co-orbital fix is expected to clear them
+    assert [case.case for case in CASES if case.known_fail] == ['E119', 'E120', 'E121', 'E122']
 
 
 def test_every_quote_is_verbatim_at_its_line():

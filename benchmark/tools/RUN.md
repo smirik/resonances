@@ -145,6 +145,23 @@ SABA-задачи объединяют до 8 тел в одну Simulation: т�
     (reduced_vs_src 0°). `classifier_config` обрезан до `secular_planet_phases`, `secular_angle_mode`,
     `secular_phase_window` (остальные ключи совпадали с умолчаниями, а замороженные умолчания не пускали бы к
     примерам будущие исправления). Метки автора: `author_label_decisions_2026-11-07.csv`; эпизоды E107–E117, C55–C60.
+- 2026-11-14 (`experiments/2026-11-earth-coorbitals/rosengren/claude/followup/fixes/bench/add_examples.py`, таблицы —
+  `add_tables.py` там же): четыре клона прогона клонов коорбиталей Земли clones100 (клоны JPL SBDB, вытянуты на эпоху
+  решения и проинтегрированы ias15 до 2026-06-09, MJD 61200; элементы `<x>_start` из
+  `output/clones100/data/ensemble-<объект>.csv`). Пакет считал клоны пачками по 20 в одной Simulation ias15
+  (`CLONES_BATCH=20`); общий адаптивный шаг ias15 делает хаотичную орбиту клона зависящей от состава пачки, поэтому
+  пачка — часть записи: её состав и команда воспроизведения в `data/runs/<run>/run.json` (`batch`, `reproduce`) и в
+  `meta.source_extra.batch`. ias15 + Луна, 1000 лет вперёд, шаг 0.05 года (20001 строка), планеты прогона в
+  `runs/<run>/planets.csv.gz` (Венера–Нептун). Ряды взяты из перезапусков пачек кодом ветки qs-missed-episodes
+  (статусы те же, что в clones100, проверено по summary.csv):
+  - `coorbital__2003_YN107_c027__1E-1+0+0` (c0810), `coorbital__2003_YN107_c032__1E-1+0+0` (c0811): пачка c021–c040,
+    run `earth-coorbitals-clones100-2003_YN107-b021` (`followup/combined-yn107/run.py --first 21`, ряды — pickle
+    `MMRSeries` этого прогона). Автор: transient, эпизод от начала записи до ~200 лет (c027) и до ~350–370 лет (c032).
+  - `coorbital__2024_JR16_c005__1E-1+0+0` (c0812), `coorbital__2024_JR16_c010__1E-1+0+0` (c0813): пачка c001–c020,
+    run `earth-coorbitals-clones100-2024_JR16-b001` (`followup/point5-jr16/verify/rerun_batch.py`, ряды из его
+    `sim.pkl` через `mmr_adapter.series_from_body`). Автор: resonant, эпизод — вся запись.
+  Вердикт сохранённого ряда (`io.load_series`, настройки по умолчанию, как reclassify.py) совпал с вердиктом прогона у
+  всех четырёх; угол и a после записи `%.12g` совпадают с исходными до 1e-9 рад / 1e-11 отн.
 
 ## Переклассификация и `make test-benchmark`
 

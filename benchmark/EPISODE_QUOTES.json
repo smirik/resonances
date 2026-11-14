@@ -3513,5 +3513,61 @@
         "transcript": "chat 2026-11-14 00:58 CET (after the Nesvorny & Morbidelli 1998 check)"
       }
     ]
+  },
+  {
+    "case": "E119",
+    "example_id": "coorbital__2003_YN107_c027__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/coorbital-clones-2026-11-14/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "2003 YN107 - с027 (эпизод от 0 до 200 плюс-минус; сейчас не определён)",
+        "transcript": "chat 2026-11-14 (on the combined figures A = current code of followup/combined-yn107 and combined-jr16)"
+      }
+    ]
+  },
+  {
+    "case": "E120",
+    "example_id": "coorbital__2003_YN107_c032__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/coorbital-clones-2026-11-14/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "c032 (эпизод от 0 до 300, сейчас неверно) transient; c032 - transient (эпизод до 350-370 лет)",
+        "transcript": "chat 2026-11-14 (on the combined figures A = current code of followup/combined-yn107 and combined-jr16)"
+      }
+    ]
+  },
+  {
+    "case": "E121",
+    "example_id": "coorbital__2024_JR16_c005__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/coorbital-clones-2026-11-14/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "2024 jr16 c005 - resonant, вроде бы, хотя ФП странноват; эпизод - весь интервал)",
+        "transcript": "chat 2026-11-14 (on the combined figures A = current code of followup/combined-yn107 and combined-jr16)"
+      }
+    ]
+  },
+  {
+    "case": "E122",
+    "example_id": "coorbital__2024_JR16_c010__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/coorbital-clones-2026-11-14/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "Второй пример - похоже.",
+        "transcript": "chat 2026-11-14 (on the combined figures A = current code of followup/combined-yn107 and combined-jr16)"
+      }
+    ]
   }
 ]
