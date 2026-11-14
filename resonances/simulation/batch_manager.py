@@ -144,16 +144,13 @@ class BatchManager:
         'batch_enabled',
         'resume_enabled',
     )
-    # data_folder values a resumed run may switch between: the manifest looks in both (serializer.MANIFEST_DATA_FOLDERS),
-    # and leaving them out of the hash keeps resuming the runs started before the data folder. Any other value is in
-    # the hash: changing it would leave the completed batches' series where the manifest does not look.
-    RESUME_DATA_FOLDERS = ('', 'data')
 
     def _get_config_dict(self, batches: List[List[Dict]] | None = None) -> Dict[str, Any]:
         """What a resumed run must share with the interrupted one, for the resume hash.
 
         The whole serialised config (date and source included: a run without date= starts at today's
-        midnight) except RESUME_IGNORED and the plot settings, plus the batch layout as body names and
+        midnight; the data folder too: the completed batches' series are in it and the manifest looks only
+        there) except RESUME_IGNORED and the plot settings, plus the batch layout as body names and
         resonances, since completed batches are matched by index, and every body's initial elements as
         they were used (`clone_store.canonical_elements`: exact float reprs, with the get-orb sha256 of a
         get-orb body). The elements are what was obtained, not how: a refreshed get-orb answer, a new
@@ -165,8 +162,6 @@ class BatchManager:
         config_dict = {
             k: v for k, v in config.items() if k not in self.RESUME_IGNORED and not k.startswith('plot') and not k.startswith('clones')
         }
-        if config_dict.get('data_folder') in self.RESUME_DATA_FOLDERS:
-            config_dict.pop('data_folder')
         if batches is not None:
             from .clone_store import canonical_elements
 

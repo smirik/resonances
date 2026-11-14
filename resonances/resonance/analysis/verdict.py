@@ -9,7 +9,7 @@ the member of the multiplet that librates, `cause_role`/`cause_term` the term be
 the key a statistic counts once; `analysis.mmr.roles`),
 `checks` the values of the named checks, `margins` and `decision_path` how sure the decision is
 and which comparisons made it, `rules_fired` which named rules acted on the row (`analysis.rules`).
-`status_code` is the old integer, kept for comparison with old runs.
+`status_code` is the integer status of the versions before 1.0, an output column for comparison with their runs.
 
 MMR verdicts come from `analysis.mmr`, secular and ZLK verdicts from `analysis.secular` and `analysis.zlk`;
 every one ends with the W29 minimal policy (`analysis.policy`).
@@ -285,7 +285,7 @@ class Flag(StrEnum):
     POLICY_UNKNOWN_LEAF = 'policy_unknown_leaf'  # a v2 leaf the policy has no mapping for: the geometry's status
 
 
-# the `policy` column of a verdict the W29 minimal policy layer wrote (`analysis.policy`); empty in older files
+# the `policy` column of a verdict the W29 minimal policy layer wrote (`analysis.policy`)
 POLICY_MINIMAL = 'minimal'
 
 
@@ -378,7 +378,7 @@ class Verdict:
     resample_step_yr: Optional[float] = None
     libration_origin: LibrationOrigin = LibrationOrigin.NONE
     origin_detail: OriginDetail | str = OriginDetail.NONE
-    # the roles of the other resonance (MMR, `analysis.mmr.roles`; '' for another type and in older files): `owner` keeps
+    # the roles of the other resonance (MMR, `analysis.mmr.roles`; '' for another type): `owner` keeps
     # only an owner or driver that covers the deciding episode; `neighbours` 'KEY t0–t1 before|during|after;...' [yr]
     # for an accepted owner F7/P2 refused; `resonant_argument` the multiplet member that librates (rule C) or 'composite';
     # `cause_role` (CauseRole) and `cause_term` the full key of that resonance or the secular term ('-4varpi') of a
@@ -396,7 +396,7 @@ class Verdict:
     # the named rules (`analysis.rules.Rule`) that acted on this row, also when the verdict stayed the same: merged by
     # the decide steps from the geometry and the result objects, deduplicated, in registry order (column `rules_fired`)
     rules_fired: list[str] = field(default_factory=list)
-    # W29 policy layer (`analysis.policy`, docs/physics/status-tree.md): which policy set the row ('' in older files),
+    # W29 policy layer (`analysis.policy`, docs/physics/status-tree.md): which policy set the row ('' when none did),
     # the complete cycles N its level read, the episodes it counts and the candidates it drew faint (';'-joined ids, a
     # 1:1 leg 'leg', a half-swing 'half'), the measured veto that moved a bounded angle to non_resonant, the evidence
     # behind the level (`confidence_basis`), the W28 tree's verdict under minimal (status/confidence/reason/action/angle)
@@ -530,69 +530,70 @@ class Verdict:
 
         The decision path keeps only the comparison names (the numbers are in the row's columns);
         margins keep their class as DECISIVE (the class is a property of the rule, not stored).
-        `review_required`/`review_reasons` are not read: they follow from the other columns (absent in older files).
+        `review_required`/`review_reasons` are not read: they follow from the other columns. Every verdict column must
+        be in the row (`to_flat_dict` writes them all): a missing one raises KeyError.
         """
         margins = {}
         for key, value in row.items():
             if key.startswith('mrg_') and not key.endswith('_value') and cell_text(value):
                 margin_id = key[len('mrg_') :]
-                margins[margin_id] = MarginValue(Margin(cell_text(value)), _number(row.get(f'{key}_value')))
-        multiplet = cell_text(row.get('multiplet_status'))
+                margins[margin_id] = MarginValue(Margin(cell_text(value)), _number(row[f'{key}_value']))
+        multiplet = cell_text(row['multiplet_status'])
         return cls(
-            resonance_type=ResonanceType(cell_text(row.get('resonance_type'))),
-            status=Status(cell_text(row.get('status'))),
-            angle_status=AngleStatus(cell_text(row.get('angle_status'))),
-            angle_subtype=AngleSubtype(cell_text(row.get('angle_subtype'))),
-            final_regime=_enum_or_text(AngleStatus, cell_text(row.get('final_regime'))),
-            final_regime_start_yr=_number(row.get('final_regime_start_yr')),
-            orbit_type=cell_text(row.get('orbit_type')),
-            confidence=Confidence(cell_text(row.get('confidence'))),
-            confidence_raw=Confidence(cell_text(row.get('confidence_raw'))),
-            cell_n_examples=_integer(row.get('cell_n_examples')),
-            cell_n_errors=_integer(row.get('cell_n_errors')),
-            cell_accuracy_low_95=_number(row.get('cell_accuracy_low_95')),
-            cell_accuracy_high_95=_number(row.get('cell_accuracy_high_95')),
-            reason=_enum_or_text(Reason, cell_text(row.get('reason'))),
-            flags=split_list(row.get('flags')),
-            thin_margins=split_list(row.get('thin_margins')),
-            failed_support=split_list(row.get('failed_support')),
-            caps=split_list(row.get('caps')),
-            action=Action(cell_text(row.get('action')) or Action.NONE),
-            extend_to_years=_number(row.get('extend_to_years')),
-            extend_direction=cell_text(row.get('extend_direction')),
-            resample_step_yr=_number(row.get('resample_step_yr')),
-            libration_origin=LibrationOrigin(cell_text(row.get('libration_origin'))),
-            origin_detail=_enum_or_text(OriginDetail, cell_text(row.get('origin_detail'))),
-            owner=cell_text(row.get('owner')),
-            neighbours=cell_text(row.get('neighbours')),
-            resonant_argument=cell_text(row.get('resonant_argument')),
-            cause_role=_enum_or_text(CauseRole, cell_text(row.get('cause_role'))),
-            cause_term=cell_text(row.get('cause_term')),
-            commensurability=cell_text(row.get('commensurability')),
+            resonance_type=ResonanceType(cell_text(row['resonance_type'])),
+            status=Status(cell_text(row['status'])),
+            angle_status=AngleStatus(cell_text(row['angle_status'])),
+            angle_subtype=AngleSubtype(cell_text(row['angle_subtype'])),
+            final_regime=_enum_or_text(AngleStatus, cell_text(row['final_regime'])),
+            final_regime_start_yr=_number(row['final_regime_start_yr']),
+            orbit_type=cell_text(row['orbit_type']),
+            confidence=Confidence(cell_text(row['confidence'])),
+            confidence_raw=Confidence(cell_text(row['confidence_raw'])),
+            cell_n_examples=_integer(row['cell_n_examples']),
+            cell_n_errors=_integer(row['cell_n_errors']),
+            cell_accuracy_low_95=_number(row['cell_accuracy_low_95']),
+            cell_accuracy_high_95=_number(row['cell_accuracy_high_95']),
+            reason=_enum_or_text(Reason, cell_text(row['reason'])),
+            flags=split_list(row['flags']),
+            thin_margins=split_list(row['thin_margins']),
+            failed_support=split_list(row['failed_support']),
+            caps=split_list(row['caps']),
+            action=Action(cell_text(row['action']) or Action.NONE),
+            extend_to_years=_number(row['extend_to_years']),
+            extend_direction=cell_text(row['extend_direction']),
+            resample_step_yr=_number(row['resample_step_yr']),
+            libration_origin=LibrationOrigin(cell_text(row['libration_origin'])),
+            origin_detail=_enum_or_text(OriginDetail, cell_text(row['origin_detail'])),
+            owner=cell_text(row['owner']),
+            neighbours=cell_text(row['neighbours']),
+            resonant_argument=cell_text(row['resonant_argument']),
+            cause_role=_enum_or_text(CauseRole, cell_text(row['cause_role'])),
+            cause_term=cell_text(row['cause_term']),
+            commensurability=cell_text(row['commensurability']),
             multiplet_status=Status(multiplet) if multiplet else None,
-            checks={name: CheckValue(cell_text(row.get(name))) for name in ALL_CHECKS if cell_text(row.get(name))},
+            checks={name: CheckValue(cell_text(row[name])) for name in ALL_CHECKS if cell_text(row[name])},
             margins=margins,
-            decision_path=[LedgerEntry.name_only(name) for name in split_list(row.get('decision_path'))],
-            rules_fired=ordered_rules(split_list(row.get('rules_fired'))),
-            policy=cell_text(row.get('policy')),
-            n_cycles=_nan_number(row.get('n_cycles')),
-            n_counted_episodes=_integer(row.get('n_counted_episodes')),
-            counted_episode_ids=cell_text(row.get('counted_episode_ids')),
-            candidate_episode_ids=cell_text(row.get('candidate_episode_ids')),
-            veto=cell_text(row.get('veto')),
-            confidence_basis=cell_text(row.get('confidence_basis')),
-            v2_verdict=cell_text(row.get('v2_verdict')),
-            pol_end_travel_rev=_nan_number(row.get('pol_end_travel_rev')),
-            pol_t_last_tp_yr=_nan_number(row.get('pol_t_last_tp_yr')),
-            pol_period_dec_yr=_nan_number(row.get('pol_period_dec_yr')),
-            pol_n_last=_nan_number(row.get('pol_n_last')),
-            pol_last_reaches_end=_boolean(row.get('pol_last_reaches_end')),
-            pol_extend_clause=cell_text(row.get('pol_extend_clause')),
-            pol_veto_need_yr=_nan_number(row.get('pol_veto_need_yr')),
-            pol_core_cycles=_nan_number(row.get('pol_core_cycles')),
-            pol_level_inputs=cell_text(row.get('pol_level_inputs')),
-            pol_decided_by=cell_text(row.get('pol_decided_by')),
-            pol_objection_check=cell_text(row.get('pol_objection_check')),
+            decision_path=[LedgerEntry.name_only(name) for name in split_list(row['decision_path'])],
+            rules_fired=ordered_rules(split_list(row['rules_fired'])),
+            policy=cell_text(row['policy']),
+            n_cycles=_nan_number(row['n_cycles']),
+            n_counted_episodes=_integer(row['n_counted_episodes']),
+            counted_episode_ids=cell_text(row['counted_episode_ids']),
+            candidate_episode_ids=cell_text(row['candidate_episode_ids']),
+            veto=cell_text(row['veto']),
+            confidence_basis=cell_text(row['confidence_basis']),
+            v2_verdict=cell_text(row['v2_verdict']),
+            pol_end_travel_rev=_nan_number(row['pol_end_travel_rev']),
+            pol_t_last_tp_yr=_nan_number(row['pol_t_last_tp_yr']),
+            pol_period_dec_yr=_nan_number(row['pol_period_dec_yr']),
+            pol_n_last=_nan_number(row['pol_n_last']),
+            pol_last_reaches_end=_boolean(row['pol_last_reaches_end']),
+            pol_extend_clause=cell_text(row['pol_extend_clause']),
+            pol_veto_need_yr=_nan_number(row['pol_veto_need_yr']),
+            pol_core_cycles=_nan_number(row['pol_core_cycles']),
+            pol_level_inputs=cell_text(row['pol_level_inputs']),
+            pol_decided_by=cell_text(row['pol_decided_by']),
+            pol_objection_check=cell_text(row['pol_objection_check']),
         )
 
 

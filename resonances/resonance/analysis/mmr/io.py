@@ -2,8 +2,8 @@
 
 Layout: <data>/examples/<example_id>/{series.csv.gz, meta.json, planets.csv.gz}; <data> is
 `benchmark/data` or $RESONANCES_BENCHMARK_DATA. series.csv.gz columns: t_yr, a, e, inc, Omega, omega,
-varpi, M, mean_longitude (formerly `lam`), angle_raw (np.unwrap-ed, unfiltered). planets.csv.gz:
-t_yr and `<Planet>.<field>` for a, e, inc, Omega, omega, M, mean_longitude (formerly `l`), varpi.
+varpi, M, mean_longitude, angle_raw (np.unwrap-ed, unfiltered). planets.csv.gz:
+t_yr and `<Planet>.<field>` for a, e, inc, Omega, omega, M, mean_longitude, varpi.
 The step is taken from the series itself (some examples are decimated, meta.regime.decimation).
 
 Some examples keep only the angle's planets; the planets the run saved (<data>/runs/<run>/planets.csv.gz) complete them
@@ -32,8 +32,6 @@ from resonances.resonance.analysis.mmr.context import CATALOGUE_PLANETS, catalog
 from resonances.resonance.analysis.mmr.models import PLANET_NAMES_ORDER, SAME_GRID_TOLERANCE, MMRSeries, PlanetSeries, Regime, ResonanceSpec
 
 DATA_ENV = 'RESONANCES_BENCHMARK_DATA'
-LEGACY_SERIES_COLUMNS = {'lam': 'mean_longitude'}
-LEGACY_PLANET_SUFFIXES = {'.l': '.mean_longitude'}
 PLANET_FIELDS = ('a', 'e', 'inc', 'Omega', 'varpi', 'mean_longitude')
 SERIES_COLUMNS = ('t_yr', 'a', 'e', 'inc', 'Omega', 'omega', 'varpi', 'M', 'mean_longitude', 'angle_raw')
 TWO_PI = 2 * np.pi
@@ -82,41 +80,28 @@ def list_examples(resonance_type: Optional[str] = 'mmr') -> List[str]:
     return ids
 
 
-def _current_names(header: List[str]) -> Dict[str, str]:
-    """Each column under its current name: a legacy name (`lam`, `<Planet>.l`) is renamed when the new one is absent."""
-    names = {}
-    for column in header:
-        new = LEGACY_SERIES_COLUMNS.get(column, column)
-        for old, suffix in LEGACY_PLANET_SUFFIXES.items():
-            if column.endswith(old):
-                new = column[: -len(old)] + suffix
-        names[column] = column if new in header else new
-    return names
-
-
 def _read_columns(path: Path, wanted: Iterable[str]) -> Dict[str, np.ndarray]:
-    """The `wanted` numeric columns of a CSV as float arrays, under their current names (`_current_names`). numpy parses
+    """The `wanted` numeric columns of a CSV as float arrays. numpy parses
     them straight into one array (the columns are views of it); a file with empty fields goes through pandas in chunks.
     A whole DataFrame of the 73 planet columns at 1e6 rows peaked at 2.6 GB for 0.5 GB of arrays (285637 2 Myr); this
     reads them at 0.65 GB."""
     import pandas as pd
 
     header = list(pd.read_csv(path, nrows=0).columns)
-    names = _current_names(header)
     wanted = set(wanted)
-    usecols = [column for column in header if names[column] in wanted]
+    usecols = [column for column in header if column in wanted]
     if not usecols:
         return {}
     try:
         with gzip.open(path, 'rt') if str(path).endswith('.gz') else open(path) as handle:
             block = np.loadtxt(handle, delimiter=',', skiprows=1, usecols=[header.index(c) for c in usecols], dtype=np.float64, ndmin=2)
-        return {names[column]: block[:, j] for j, column in enumerate(usecols)}
+        return {column: block[:, j] for j, column in enumerate(usecols)}
     except ValueError:  # an empty field (a column the run did not fill): pandas reads it as NaN
         pass
-    chunks: Dict[str, list] = {names[column]: [] for column in usecols}
+    chunks: Dict[str, list] = {column: [] for column in usecols}
     for chunk in pd.read_csv(path, usecols=usecols, dtype={column: np.float64 for column in usecols}, chunksize=CHUNK_ROWS):
         for column in usecols:
-            chunks[names[column]].append(chunk[column].to_numpy(np.float64, copy=True))
+            chunks[column].append(chunk[column].to_numpy(np.float64, copy=True))
         del chunk
     columns = {}
     for name in list(chunks):  # join one column at a time, freeing its chunks
@@ -218,14 +203,12 @@ def _run_file_longitudes(meta: Dict[str, Any], names: List[str]) -> Optional[Tup
         return None
     import pandas as pd
 
-    header = list(pd.read_csv(path, nrows=0).columns)
-    names_now = _current_names(header)
-    columns = {names_now[column]: column for column in header}
-    wanted = {name: columns[f'{name}.mean_longitude'] for name in names if f'{name}.mean_longitude' in columns}
-    if 't_yr' not in columns or not wanted:
+    header = set(pd.read_csv(path, nrows=0).columns)
+    wanted = [name for name in names if f'{name}.mean_longitude' in header]
+    if 't_yr' not in header or not wanted:
         return None
-    row = pd.read_csv(path, usecols=['t_yr', *wanted.values()], nrows=1).iloc[0]
-    return float(row['t_yr']), {name: float(row[column]) for name, column in wanted.items()}
+    row = pd.read_csv(path, usecols=['t_yr', *(f'{name}.mean_longitude' for name in wanted)], nrows=1).iloc[0]
+    return float(row['t_yr']), {name: float(row[f'{name}.mean_longitude']) for name in wanted}
 
 
 def _cache_path(meta: Dict[str, Any]) -> Optional[str]:
@@ -264,7 +247,6 @@ def _column(frame: Dict[str, np.ndarray], name: str, order: Optional[np.ndarray]
 def load_series(example: str | Path, with_planets: bool = True) -> MMRSeries:
     """The example as an MMRSeries: time-ordered, angle_wrapped = angle_raw mod 2pi, angle_unwrapped_numpy = angle_raw,
     resonance from meta.resonance, regime from meta.regime with the step measured from t_yr, planets from planets.csv.gz.
-    Accepts the legacy column names.
 
     Every saved planet is loaded (the context measures mean motions and the great inequality from them), the run's
     planets file completing the example's (`_run_planets`); the angle's own planets are kept only when all of them are

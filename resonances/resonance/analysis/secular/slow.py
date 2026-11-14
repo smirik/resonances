@@ -15,8 +15,8 @@ The verdict rests on one scale; this measures the other one as a column, even wh
                                                    within a factor ZLK_CENTRE_MODEL_AMP_FACTOR (591986: g6-g5, r 0.99,
                                                    model half-swing arcsin(|c_g6|/|c_g5|) = 22.8 deg). Correlation alone
                                                    is blind to size: a g6 term of 1e-6 has the shape of any centre wave
-                                                   at that period (a node's, say). Without the per-mode amplitudes (an
-                                                   old file) no forced beat is named.
+                                                   at that period (a node's, say). Without two nonzero per-mode
+                                                   amplitudes no forced beat is named.
                             node                   the node's own wave (Omega less its linear trend) does instead
                             forced_direction       the direction of the whole fitted forced vector less the node,
                                                    arg z_forced(t) - Omega(t), does (the same r and gain test): with the

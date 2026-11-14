@@ -21,6 +21,7 @@ import pytest
 import resonances
 from resonances.clones import orbit_solution
 from resonances.clones.elements import KEPLERIAN_KEYS
+from resonances.resonance.analysis.verdict import AngleStatus, Confidence, ResonanceType, Status, Verdict
 from resonances.simulation import clone_store, ensemble_run
 from resonances.simulation.serializer import SimulationSerializer
 
@@ -215,22 +216,9 @@ def hand_written_run(path, save='all'):
     run.complete = True
     body = sim.bodies[0]
     body.statuses[KEY] = 'resonant'
-    body.librations[KEY] = SimulationSerializer._verdict_of_row(
-        {'status': 'resonant', 'resonance_type': 'mmr', 'angle_status': 'libration', 'confidence': 'medium'}, KEY, True
-    )
+    body.librations[KEY] = Verdict(ResonanceType.MMR, Status.RESONANT, AngleStatus.LIBRATION, confidence=Confidence.MEDIUM)
     Path(path).mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(
-        [
-            {
-                'name': '463',
-                'resonance': KEY,
-                'resonance_type': 'mmr',
-                'status': 'resonant',
-                'angle_status': 'libration',
-                'confidence': 'medium',
-            }
-        ]
-    ).to_csv(Path(path) / 'summary.csv', index=False)
+    pd.DataFrame([{'name': '463', 'resonance': KEY, **body.librations[KEY].to_flat_dict()}]).to_csv(Path(path) / 'summary.csv', index=False)
     ensemble_run.write_outputs(sim)
     return sim, run
 

@@ -94,21 +94,3 @@ def test_cloud_row_at_the_limit_is_usable_and_all_unbound_is_not():
 
     assert cloud_row(['resonant'] * 95, None, 100, 5, 0.05)['cloud_usable'] is True
     assert cloud_row([], None, 100, 100, 0.05)['cloud_usable'] is False
-
-
-def test_an_old_row_is_read_in_the_current_semantics():
-    """A clones.csv row written before 2026-11-06 for 2010 DH65: 100 draws, 83 unbound counted as 'invalid', the 17 bound
-    ones non-resonant. Read back: 17 classified, n_invalid 0, no shares (83 % > 5 %). A current row is untouched."""
-    import math
-
-    from resonances.clones import upgrade_row
-
-    old = {'n_clones': 100, 'n_draw_invalid': 83, 'n_missing': 0, 'n_invalid': 83, 'n_non_resonant': 17, 'nominal_status': 'transient'}
-    old |= {f'n_{s}': 0 for s in ('resonant', 'transient', 'near_separatrix', 'uncertain')}
-    row = upgrade_row(old, 0.05)
-    assert row['n_classified'] == 17 and row['n_invalid'] == 0 and row['n_non_resonant'] == 17
-    assert row['cloud_usable'] is False and math.isnan(row['f_non_resonant'])
-    current = dict(row)
-    assert upgrade_row(current, 0.05) is current
-    usable = upgrade_row({**old, 'n_draw_invalid': 0, 'n_invalid': 0, 'n_non_resonant': 100}, 0.05)
-    assert usable['cloud_usable'] is True and usable['f_non_resonant'] == 1.0

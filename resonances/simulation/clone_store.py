@@ -483,17 +483,13 @@ def ensembles_entry(simulation) -> Optional[dict]:
     return {'version': SCHEMA, 'items': items}
 
 
-def _clones_table(path: Path, max_invalid: float):
-    """clones.csv with every row in the current semantics (`clones.stats.upgrade_row`: rows written before 2026-11-06
-    counted the unbound draws as status invalid)."""
+def _clones_table(path: Path):
+    """clones.csv, or None when it is missing or empty."""
     import pandas as pd
-
-    from resonances.clones.stats import upgrade_row
 
     if not path.exists() or path.stat().st_size == 0:
         return None
-    table = pd.read_csv(path, dtype={'name': str, 'resonance': str, 'nominal_status': str, 'nominal_confidence': str})
-    return pd.DataFrame([upgrade_row(row, max_invalid) for row in table.to_dict('records')])
+    return pd.read_csv(path, dtype={'name': str, 'resonance': str, 'nominal_status': str, 'nominal_confidence': str})
 
 
 def restore_ensembles(sim, base_dir: Path, simulation_data: dict) -> list:
@@ -519,7 +515,7 @@ def restore_ensembles(sim, base_dir: Path, simulation_data: dict) -> list:
     if entry.get('version') != SCHEMA:
         logger.warning(f"simulation.json: ensembles of version {entry.get('version')!r}, not {SCHEMA}: not restored")
         return []
-    table = _clones_table(base_dir / (simulation_data.get('data_files', {}).get('clones') or 'clones.csv'), sim.config.clones_max_invalid)
+    table = _clones_table(base_dir / (simulation_data.get('data_files', {}).get('clones') or 'clones.csv'))
     date_mjd = mjd_from_datetime(sim.config.date)
     summary_only, parents = [], []
     for item in entry.get('items', []):
@@ -587,8 +583,8 @@ def recompute_clone_rows(sim, base_dir: Path, summary_only: list) -> None:
             key = str(record['resonance'])
             status = body.statuses.get(key) if body is not None else None
             verdict = body.librations.get(key) if body is not None else None
-            # the clones' statuses as counted in the row (their order does not enter the shares); the table was read
-            # in the current semantics (`_clones_table`: unbound draws are not in n_invalid)
+            # the clones' statuses as counted in the row (their order does not enter the shares; unbound draws are not
+            # in n_invalid)
             counts = {s: int(record[f'n_{s}']) for s in STATUSES}
             n_draw_invalid = int(record.get('n_draw_invalid', 0) or 0)
             statuses = [s for s in STATUSES for _ in range(counts[s])] + [None] * int(record['n_missing'])

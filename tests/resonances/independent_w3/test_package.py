@@ -37,6 +37,8 @@ from resonances.resonance.analysis.verdict import (
     MMR_CHECKS,
     SECULAR_CHECKS,
     ZLK_CHECKS,
+    AngleStatus,
+    ResonanceType,
     Status,
     Verdict,
 )
@@ -411,30 +413,9 @@ def test_restore_recompute_gives_the_same_rows(saved_run):
         assert np.max(np.abs(body.angles_unwrapped[MMR_KEY] - truth[body.name])) < 1e-9
 
 
-def _write_old_summary(path, rows):
-    pd.DataFrame(rows).to_csv(path, index=False)
-
-
-def test_restore_statuses_of_old_integer_file(tmp_path):
-    sim, _ = make_sim(tmp_path)
-    csv = tmp_path / 'old-summary.csv'
-    _write_old_summary(
-        csv,
-        [
-            {'name': 'lib', 'resonance': SEC_KEY, 'status': 2},
-            {'name': 'lib', 'resonance': LK_KEY, 'status': -2},
-            {'name': 'lib', 'resonance': MMR_KEY, 'status': 2},
-        ],
-    )
-    n = SimulationSerializer.restore_statuses(sim.bodies, str(csv))
-    body = sim.bodies[0]
-    assert n == 0  # an integer status (a file before v1.0) is not read: restore with recompute_librations=True
-    assert not {MMR_KEY, SEC_KEY, LK_KEY} & set(body.statuses)
-
-
 def test_restore_statuses_re_adds_derived_rows(tmp_path):
     sim, _ = make_sim(tmp_path, types=('mmr',))
-    v = Verdict.from_flat_dict({'resonance_type': 'mmr', 'status': 'resonant', 'angle_status': 'libration'})
+    v = Verdict(ResonanceType.MMR, Status.RESONANT, AngleStatus.LIBRATION)
     parent = {'name': 'lib', 'resonance': MMR_KEY, 'resonance_type': 'mmr', 'added_by': '', 'parent': ''}
     derived = {'name': 'lib', 'resonance': '2J-1-1+0', 'resonance_type': 'mmr', 'added_by': 'subresonance_check', 'parent': MMR_KEY}
     rows = [{**parent, **v.to_flat_dict()}, {**derived, **v.to_flat_dict()}]

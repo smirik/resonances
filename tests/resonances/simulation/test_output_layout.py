@@ -2,7 +2,7 @@
 
 The tables stay at the top of save_path, the series CSVs go to the data folder, the individual and the combined figures
 to their own folders, each split by a layout preset; every name can be overridden, and a restore still finds the
-series (new layout, flat layout, and a run saved before the data folder existed). The bodies are the hand-built ones
+series (the data folder, the flat layout). The bodies are the hand-built ones
 of test_impl_w3_output_package (a 2J-1 libration -> resonant, a circulation -> non_resonant) and of
 test_restore_and_resume; the expected paths are written out here, not taken from the package.
 """
@@ -223,24 +223,6 @@ def test_restore_finds_the_series(tmp_path, data_folder):
     assert LIB in librator.angles and LIB in librator.periodogram_frequency
 
 
-def test_restore_of_a_run_saved_before_the_data_folder(tmp_path):
-    """A flat run whose simulation.json has no data_folder (the config then defaults to 'data') and, as the oldest
-    files, no manifest of the bodies: the series are found at the top."""
-    _saved_run(tmp_path, data_folder='')
-    path = tmp_path / 'simulation.json'
-    saved = json.loads(path.read_text())
-    saved['config'].pop('data_folder')
-    for key in ('plot_layout', 'plot_combined_layout', 'plot_figures_folder', 'plot_combined_folder'):
-        saved['config'].pop(key)
-    for files in ({k: v for k, v in saved['simulation']['data_files'].items() if k != 'bodies'}, saved['simulation']['data_files']):
-        saved['simulation']['data_files'] = files
-        path.write_text(json.dumps(saved))
-        sim = SimulationSerializer.restore(str(path), recompute_librations=True)
-        assert sim.config.data_folder == 'data' and sim.config.plot_layout == 'confidence/status'
-        assert sim.bodies[0].statuses[LIB] == 'resonant'
-        assert LIB in sim.bodies[0].angles and LIB in sim.bodies[0].periodogram_frequency
-
-
 # --------------------------------------------------------------------------- edge cases (Codex review, 2026-10-26)
 
 
@@ -265,25 +247,8 @@ def test_an_absolute_data_folder_is_listed_relative_to_the_run(tmp_path):
     assert KEY in restored.bodies[0].angles and restored.bodies[0].statuses[KEY] == 'resonant'
 
 
-@pytest.mark.parametrize('data_folder,in_hash', [('data', False), ('', False), ('series', True)])
-def test_resume_hash_and_the_data_folder(tmp_path, data_folder, in_hash):
-    """'' and 'data' may change on resume (the manifest looks in both); any other folder is part of the hash."""
+@pytest.mark.parametrize('data_folder', ['data', '', 'series'])
+def test_the_data_folder_is_in_the_resume_hash(tmp_path, data_folder):
+    """The completed batches' series are in the data folder and the manifest looks only there: changing it is another run."""
     config = SimulationConfig(save_path=str(tmp_path), plot_path=str(tmp_path), data_folder=data_folder)
-    assert ('data_folder' in BatchManager(config)._get_config_dict()) is in_hash
-
-
-def test_a_run_resumed_across_the_data_folder_lists_both_places(tmp_path):
-    """Batches written flat before the change and into data/ after it: the manifest has both, restore reads both."""
-    sim = synthetic(tmp_path, data_folder='')
-    add_synthetic_body(sim, 4000, True, 'circulator')
-    analysed(sim)
-    first, second = sim.bodies
-    sim.data_manager.save_body(first, sim.times)
-    sim.config.data_folder = 'data'
-    sim.data_manager.save_body(second, sim.times)
-    sim.data_manager.save_simulation_summary(sim.bodies)
-    sim.data_manager.save_configuration_details(sim.bodies, sim)
-    manifest = json.loads((tmp_path / 'simulation.json').read_text())['simulation']['data_files']
-    assert manifest['bodies'] == ['data-synthetic.csv', 'data/data-circulator.csv']
-    restored = SimulationSerializer.restore(str(tmp_path / 'simulation.json'))
-    assert all(KEY in body.angles for body in restored.bodies)
+    assert BatchManager(config)._get_config_dict()['data_folder'] == data_folder

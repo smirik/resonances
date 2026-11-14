@@ -393,7 +393,7 @@ class FreeElements:
     def forced_i_turning(self) -> Optional[np.ndarray]:
         """The fitted forced inclination vector without its constant term, sum over the s modes != const of
         c_j exp(i s_j t) on `times`; None when no such term was fitted (the baseline merged s6-s8 into the constant)
-        or the per-mode amplitudes are missing (a file written before they were persisted).
+        or no amplitude was fitted.
 
         The constant (s5 = 0) is the tilt of the reference plane, not a forcing that turns the node: from the
         invariable plane it is about zero, from the ecliptic about 1.6 deg."""
@@ -454,8 +454,8 @@ class FreeElements:
     def forced_beats(self) -> Dict[str, float]:
         """{'gk-gj': period [yr]} of every pair of fitted eccentricity modes with nonzero measured amplitudes (j the
         larger): the length and the direction of the forced vector beat at 2 pi/|g_k - g_j| (591986: g6-g5, 54.0 kyr).
-        Empty without the per-mode amplitudes (a file written before they were persisted): basis membership is not a
-        measured term, and a zero amplitude has no beat."""
+        Empty with fewer than two nonzero amplitudes: basis membership is not a measured term, and a zero amplitude
+        has no beat."""
         amplitude = {label: abs(self.amplitudes_e.get(label, 0.0)) for label in self.basis_e}
         labels = [label for label, value in amplitude.items() if np.isfinite(value) and value > 0]
         beats = {}
@@ -469,7 +469,7 @@ class FreeElements:
 
     def forced_vector(self, times: np.ndarray) -> Optional[np.ndarray]:
         """The fitted forced eccentricity vector sum_j c_j exp(i g_j t) on `times` [yr]; None without the amplitudes
-        (an old restored run)."""
+        (no eccentricity mode fitted)."""
         if not self.amplitudes_e:
             return None
         times = np.asarray(times, dtype=float)
@@ -746,7 +746,7 @@ def series_rows(elements: Optional[FreeElements]) -> Optional[dict]:
 
 
 def _restored_amplitudes(frame, kind: str) -> Dict[str, complex]:
-    """{mode: c_j} of one vector from the amp_ columns of an omega-free.csv frame ({} in a file written before them)."""
+    """{mode: c_j} of one vector from the amp_ columns of an omega-free.csv frame (`series_rows`)."""
     prefix = f'{AMPLITUDE_PREFIX}{kind}_'
     labels = [column[len(prefix) : -len('_re')] for column in frame.columns if column.startswith(prefix) and column.endswith('_re')]
     amplitudes = {}
@@ -796,8 +796,8 @@ def from_series_frame(frame, setup: Optional[dict] = None) -> Optional[FreeEleme
     amplitudes_e, amplitudes_i = _restored_amplitudes(frame, 'e'), _restored_amplitudes(frame, 'i')
 
     def forced(kind: str, column: str, amplitudes: Dict[str, complex]) -> np.ndarray:
-        """The forced vector from its persisted amplitudes; a file without them keeps the magnitudes at a stable zero
-        phase, so rho/rho_envelope remain exactly reproducible from the persisted data."""
+        """The forced vector from its persisted amplitudes; without them (no mode fitted, or amplitudes outside the run's
+        basis) the magnitudes at a stable zero phase, so rho/rho_envelope remain exactly reproducible from the file."""
         rates = basis(kind)
         if amplitudes and set(amplitudes) <= set(rates):
             return sum(c * np.exp(1j * rates[label] * RAD_PER_ARCSEC * times) for label, c in amplitudes.items())

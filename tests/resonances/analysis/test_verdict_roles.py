@@ -301,11 +301,7 @@ def test_the_roles_round_trip_and_an_old_row_reads_empty():
         '1V-5',
         '',
     )
-    # a summary.csv written before A3a has none of the columns, a CSV read gives NaN cells: both restore as ''
-    old = {key: value for key, value in row.items() if key not in ROLE_COLUMNS}
-    old['owner'] = '4J-1+0-3'  # the old meaning stays as written
-    restored = Verdict.from_flat_dict(old)
-    assert [str(getattr(restored, column)) for column in ROLE_COLUMNS] == [''] * 5 and restored.owner == '4J-1+0-3'
+    # a CSV read gives NaN cells: they restore as ''
     frame = pd.DataFrame([{**row, 'neighbours': None, 'cause_term': None}])
     restored = Verdict.from_flat_dict(frame.iloc[0].to_dict())
     assert restored.neighbours == '' and restored.cause_term == ''

@@ -10,10 +10,11 @@ User docs: `docs/output.md`, `docs/dry-run.md`, `docs/serialization.md`, `docs/c
   `body.librations[key]` (a `Verdict`) and `body.statuses[key]` (its status string). No hook after the analysis: the
   W29 policy layer (`analysis.policy`) is the analysis' own last step, so every
   path, restore with recompute included, gets it with the run's saved settings.
-- `restore` reads the statuses from summary.csv by default (string statuses only: an integer status of a file before
-  1.0 is skipped with a warning; a removed plot kind in simulation.json is refused, `SimulationConfig`); with `recompute_librations=True` it classifies only the
+- `restore` reads the statuses from summary.csv by default (`Verdict.from_flat_dict`: every verdict column must be
+  there, so a summary of an earlier version raises; a removed plot kind in simulation.json is refused,
+  `SimulationConfig`); only the format the current code writes is read. With `recompute_librations=True` it classifies only the
   saved series and rebuilds their periodograms; it writes no table, except for ensembles' nominals (clones.csv and
-  their summary.csv rows, together). It finds the series through the manifest (old flat runs too), reads them with `float_precision='round_trip'` (the
+  their summary.csv rows, together). It finds the series through the manifest (`data_files`, paths in the run's data folder), reads them with `float_precision='round_trip'` (the
   analysis must read the bits the run read) and takes the saved years (`times`) as they are.
 - Derived rows (subresonance members) keep `parent`/`added_by` through workers, simulation.json and restore; they are
   emitted once (never recursively through `.derived` after the body's own resonances).
@@ -47,7 +48,7 @@ User docs: `docs/output.md`, `docs/dry-run.md`, `docs/serialization.md`, `docs/c
   baseline, the ZLK gate's cycles of the quadrupole time); they never set the step.
 - `batch_manager.py`, `parallel_executor.py`: spawn workers, `max_tasks_per_child=1`, BLAS threads pinned, the
   low-memory allocator on macOS. Workers get element dicts and the serialised config; they never open a catalogue.
-  The resume hash includes date, source, body list, settings, the MPC snapshot and every body's initial elements
+  The resume hash includes date, source, body list, settings (the data folder too), the MPC snapshot and every body's initial elements
   (`clone_store.canonical_elements`, shared with the clone-run identity; a get-orb body's `getorb_sha256` with them);
   simulation_state.json's `body_elements` lets a refusal name the changed bodies. A state of any other hash (the
   versions before 1.0 included) is refused.

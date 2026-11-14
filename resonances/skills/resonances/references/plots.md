@@ -87,9 +87,7 @@ edge filled to the record edge, the filter-trim stretch pale; a counted 1:1 leg 
 dashed outline, the candidates `cand`; no rejected run and no gray strip (`mmr_combined.policy_marks`,
 `shade_policy_runs`; the ids come from the analysis' `PolicyResult`, or from the stored verdict's
 `counted_episode_ids`/`candidate_episode_ids` when a standalone panel re-runs the analysis without the scans); (l) is
-titled `(l) episodes, counted solid` and the numbers count `N accepted, M counted`. A file written by an older version (no
-`policy` column) keeps the older drawing: every accepted episode filled, rejected runs and runs the status does not
-count as gray strips (`#id < floor`, `#id center turns`, `mmr_combined.uncounted_tags`). A 1:1 circulation judged on one leg or a non-1:1 half-swing between
+titled `(l) episodes, counted solid` and the numbers count `N accepted, M counted`. A 1:1 circulation judged on one leg or a non-1:1 half-swing between
 passages (leaves G4c, G4h), the flag `extend_time`, the 1:1 profile floor and a turn read in the edge trim are said in
 the right column ([reading the figures](reading-figures.md#the-right-column)).
 One 1:1 episode in parts: (a) brackets its sub-regimes over the panel, named by their well

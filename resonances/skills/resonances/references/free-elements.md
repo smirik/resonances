@@ -241,7 +241,7 @@ Columns of a ZLK row that change no status (`analysis.zlk.diagnostics`, `analysi
   (median local $\rho < 1$ in each, the free $\omega$ turning with each cycle) is attributed with
   `zlk_attribution_scope` `episodes`: the node need not follow the mode there (624 Hektor: node − g5 =
   −17.2″/yr, 6.6 turns of the center $\varpi_5 - \Omega$, which keeps the librations apart). The per-mode amplitudes
-  are persisted in `{body}-omega-free.csv`; a file written before them restores no attribution.
+  are persisted in `{body}-omega-free.csv`, so a restored run gets its attribution back.
 - **Node lock** (`zlk_node_lock`, a flag no status reads): the osculating node against the longitude of the fitted
   mode with the nearest rate, $\varpi_j(t) = g_j t + \arg c_j$. Locked when $|b_\Omega - g_j| < 1296000/T$ (one
   Rayleigh width), $\Omega - \varpi_j$ stays within a turn, and, low-passed at the node's longest forced wave
@@ -260,7 +260,7 @@ Columns of a ZLK row that change no status (`analysis.zlk.diagnostics`, `analysi
   `ZLK_CENTRE_MODEL_AMP_FACTOR`: correlation alone is blind to size), `node` when the node's own
   wave does, `forced_direction` when $\arg z_{\rm forced} - \Omega$ does (the center of $\omega$ itself when the
   forced vector holds $\varpi$: 591986 over 4 Myr, a 1.43-Myr wave of the node locked to g5 plus the g6−g5 beat,
-  $r = 0.998$; the node alone gives 0.82), else `unexplained`. No per-mode amplitudes (an old file): no forced beat.
+  $r = 0.998$; the node alone gives 0.82), else `unexplained`. Fewer than two nonzero per-mode amplitudes: no forced beat.
   591986: 53.8 kyr, ±21.6°, `forced_beat:g6-g5`, $r = 0.991$, gain 1.00, model ±22.8°. A modulated secular
   angle gets the same line (`sec_centre_*`), named `forced_wave:<mode>` after a forced wave of its
   own modes.

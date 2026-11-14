@@ -21,7 +21,7 @@ class SimulationState:
     config_hash: str
     # One record per body, in batch order: {'name', 'elements' (digest of its canonical initial elements),
     # 'getorb_sha256' (None unless from MPC get-orb)}; lets a refused resume name the bodies whose elements changed.
-    # Absent (None) in the states of versions before it.
+    # None when the state was created without it (`create_new`'s default).
     body_elements: Optional[List[Dict[str, Any]]] = field(default=None)
 
     @classmethod

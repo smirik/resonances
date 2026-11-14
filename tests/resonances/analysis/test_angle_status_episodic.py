@@ -1,6 +1,4 @@
-"""angle_status 'episodic' (author, 2026-10-17 10:56: the angle's word is no longer the status's 'transient').
-
-Files written before the rename (angle_status 'transient') are not read any more (v1.0: no back-compat readers)."""
+"""angle_status 'episodic' (author, 2026-10-17 10:56: the angle's word is no longer the status's 'transient')."""
 
 import json
 

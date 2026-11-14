@@ -166,11 +166,11 @@ Lidov's integrals (`lidov-kozai.md`), −2 vs −9 (`physics/status-tree.md`), t
   slow wave (54 kyr) is the g6−g5 beat of the forced vector, ±arcsin(|c6|/|c5|) = 22.8°, measured as a column
   (`zlk_centre_*`, origin `forced_beat:g6-g5`, reconstruction r 0.99, gain 1.00). A centre-scale libration at a forced
   beat while rho_max < 1 never becomes the decisive period (`sec_centre_rejected`; a clean synthetic otherwise decided
-  at 54 kyr), only if the beat is measured (two nonzero per-mode amplitudes; old files: no beats) and its forced phase
+  at 54 kyr), only if the beat is measured (two nonzero per-mode amplitudes) and its forced phase
   wave explains the centre in shape and size (`slow.forced_beat_model`: r and `ZLK_CENTRE_MODEL_AMP_FACTOR`; r alone
   is blind to size), and only where the gate acts (enabled, a split, no unfitted co-orbital): a disabled gate keeps the
   geometric scale (Codex W25 review, findings 1 and 5). Attribution (`zlk_forcing_*`) needs the per-mode amplitudes,
-  persisted in omega-free.csv (`amp_*`); old files: none. Its strict pin bounds the free radius by its maximum over the
+  persisted in omega-free.csv (`amp_*`). Its strict pin bounds the free radius by its maximum over the
   record, never the median (finding 2). The e-i coupling is `none` only on finite numbers; an undersampled or
   unfilterable band is not_measured (finding 4).
 

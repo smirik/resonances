@@ -353,8 +353,8 @@ The columns `libration_origin`, `origin_detail` and `owner` are described in [Ou
 that decided is the column `rec_rule` of `mmr_numbers.csv` (5d/6, 5u/6, 3k2, C5, …).
 
 Files before 2026-10-26 wrote `dynamic_libration` / `dynamic_episode` also for the geometric leaf (origin
-`unknown`). This renamed the reason only; it was not a new classification. Since 1.0 the package reads only its own
-format: reclassify an older run (`restore(..., recompute_librations=True)`).
+`unknown`). This renamed the reason only; it was not a new classification. Since 1.0 the package reads only the
+format it writes: a run of an earlier version is not restored (run it again).
 
 ## The reported angle word
 

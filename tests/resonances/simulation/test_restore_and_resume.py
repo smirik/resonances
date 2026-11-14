@@ -179,16 +179,6 @@ class TestRestore:
         assert librator.librations[LIB].status == 'resonant'
         assert circulator.mmr_analyses == {}
 
-    @pytest.mark.parametrize('content', ['', '\n'])
-    def test_an_empty_periodogram_file_is_skipped(self, tmp_path, content):
-        _saved_run(tmp_path)
-        (tmp_path / 'data' / 'data-librator-periodograms.csv').write_text(content)
-
-        sim = SimulationSerializer.restore(str(tmp_path / 'simulation.json'))
-
-        assert sim.bodies[0].periodogram_frequency == {}
-        assert sim.bodies[0].statuses[LIB] == 'resonant'
-
     def test_no_periodogram_writes_no_file(self, tmp_path):
         sim = _simulation(tmp_path, save='all')
         sim.body_manager.add_body(ELEMENTS, [LIB], name='bare')

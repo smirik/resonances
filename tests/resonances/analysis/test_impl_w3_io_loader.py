@@ -1,5 +1,5 @@
 """The benchmark loader reads only the columns it needs (W3-M3: the whole DataFrame of 1e6 rows x 73 planet columns
-peaked at 2.6 GB). Written by hand here: a forward and a backward run, legacy column names, and an empty column
+peaked at 2.6 GB). Written by hand here: a forward and a backward run, and an empty column
 (numpy cannot parse it, pandas reads it as NaN)."""
 
 import gzip
@@ -10,8 +10,8 @@ import pytest
 
 from resonances.resonance.analysis.mmr import io
 
-SERIES = ('t_yr', 'a', 'e', 'inc', 'Omega', 'omega', 'varpi', 'M', 'lam', 'angle_raw')
-PLANET_FIELDS = ('a', 'e', 'inc', 'Omega', 'omega', 'M', 'l', 'varpi')
+SERIES = ('t_yr', 'a', 'e', 'inc', 'Omega', 'omega', 'varpi', 'M', 'mean_longitude', 'angle_raw')
+PLANET_FIELDS = ('a', 'e', 'inc', 'Omega', 'omega', 'M', 'mean_longitude', 'varpi')
 
 
 def _write(folder, t, empty_mean_anomaly=False):
@@ -45,10 +45,10 @@ def test_columns_by_hand(tmp_path, backward):
     np.testing.assert_array_equal(series.t_yr, expected_t)
     np.testing.assert_allclose(series.a, 5.2 + expected_t / 1e6, rtol=0, atol=1e-15)
     np.testing.assert_allclose(series.angle_unwrapped_numpy, 0.01 * expected_t, rtol=0, atol=1e-15)
-    np.testing.assert_allclose(series.mean_longitude, 0.25 * expected_t)  # legacy `lam`
+    np.testing.assert_allclose(series.mean_longitude, 0.25 * expected_t)
     assert series.mean_anomaly is not None and np.all(series.mean_anomaly == 0.5)
     assert sorted(series.planets) == ['Jupiter', 'Saturn']
-    np.testing.assert_allclose(series.planets['Jupiter'].mean_longitude, 0.529 * expected_t)  # legacy `.l`
+    np.testing.assert_allclose(series.planets['Jupiter'].mean_longitude, 0.529 * expected_t)
     np.testing.assert_array_equal(series.planets['Saturn'].varpi, np.full(t.size, 1.6))
     assert series.regime.n_rows == t.size and series.regime.step_yr == 1.0
 

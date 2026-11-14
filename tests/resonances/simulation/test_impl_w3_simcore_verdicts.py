@@ -91,22 +91,6 @@ def test_coherence_is_skipped_for_a_non_resonant_mmr(tmp_path):
     assert circulator.coherence == {}
 
 
-def test_an_old_summary_with_integer_statuses(tmp_path):
-    """A summary.csv of a version before v1.0 (integer statuses): no row is read (no back-compat reader); restore with
-    recompute_librations=True analyses the series again."""
-    sim = Simulation(name='old', date='2020-01-01', save_path=str(tmp_path), plot_path=str(tmp_path))
-    sim.body_manager.add_body({'a': 2.6, 'e': 0.1, 'inc': 0.1, 'Omega': 0.0, 'omega': 0.0, 'M': 0.0}, ['4J-2S-1', 'g-g6', 'LK'], name='old')
-    pd.DataFrame({'name': ['old', 'old', 'old'], 'resonance': ['4J-2S-1+0+0-1', 'g-g6', 'LK'], 'status': [2, -6, -2]}).to_csv(
-        tmp_path / 'summary.csv', index=False
-    )
-
-    count = SimulationSerializer.restore_statuses(sim.bodies, tmp_path / 'summary.csv')
-
-    body = sim.bodies[0]
-    assert count == 0
-    assert body.statuses == {} and body.librations == {}
-
-
 # --------------------------------------------------------------------------------------------- save/plot modes
 
 # SPEC §11.5, by hand: (status, libration_origin) -> selected under each mode
@@ -309,7 +293,7 @@ def test_review_selects_nonzero_and_the_doubtful_negatives(row, expected):
 
 
 def test_review_without_a_level_is_nonzero():
-    """An old summary.csv (no confidence, no action) or a caller that passes neither: review selects what nonzero does."""
+    """A caller that passes no level and no action: review selects what nonzero does."""
     for status, origin in ROWS:
         assert status_selected('review', status, origin) == status_selected('nonzero', status, origin)
     assert not status_selected('review', None)
@@ -338,9 +322,8 @@ def test_review_columns_say_why():
     assert not sure.review_required and sure.review_reasons == []
     row = medium.to_flat_dict()
     assert row['review_required'] is True and row['review_reasons'] == 'confidence:medium;veto_thin'
-    # the columns follow from the others: a row without them rebuilds the same verdict
-    old = {k: v for k, v in row.items() if not k.startswith('review_')}
-    assert Verdict.from_flat_dict(old).review_reasons == medium.review_reasons == Verdict.from_flat_dict(row).review_reasons
+    # the columns follow from the others: they are not read back
+    assert Verdict.from_flat_dict(row).review_reasons == medium.review_reasons
 
 
 def _classified(path, **config):

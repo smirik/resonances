@@ -5,9 +5,17 @@ import json
 
 import pandas as pd
 
+from resonances.resonance.analysis.verdict import AngleStatus, ResonanceType, Status, Verdict
 from resonances.simulation.serializer import SimulationSerializer
 
 PARENT, CHILD = '4J-2S-1+0+0-1', '4J-2S-1-1+0+0'
+
+
+def _row(name, resonance, parent=''):
+    """A summary.csv row with the verdict columns a run writes (a resonant libration)."""
+    return dict(
+        name=name, resonance=resonance, parent=parent, **Verdict(ResonanceType.MMR, Status.RESONANT, AngleStatus.LIBRATION).to_flat_dict()
+    )
 
 
 def _write_run(folder, name, summary_rows):
@@ -28,7 +36,7 @@ def _write_run(folder, name, summary_rows):
 
 
 def test_a_body_named_by_a_number_gets_its_series(tmp_path):
-    sim = _write_run(tmp_path, 123, [dict(name=123, resonance=PARENT, status='resonant', parent='')])
+    sim = _write_run(tmp_path, 123, [_row(123, PARENT)])
     body = sim.bodies[0]
     assert list(body.axis) == [2.6, 2.61, 2.62]
     assert list(body.angles[PARENT]) == [0.0, 0.1, 0.2]
@@ -38,8 +46,8 @@ def test_a_body_named_by_a_number_gets_its_series(tmp_path):
 
 def test_a_derived_row_from_the_summary_gets_its_series(tmp_path):
     rows = [
-        dict(name='child', resonance=PARENT, status='resonant', parent=''),
-        dict(name='child', resonance=CHILD, status='resonant', parent=PARENT),
+        _row('child', PARENT),
+        _row('child', CHILD, PARENT),
     ]
     sim = _write_run(tmp_path, 'child', rows)
     body = sim.bodies[0]

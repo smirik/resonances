@@ -338,12 +338,6 @@ def test_mode_amplitudes_survive_omega_free_csv(tmp_path):
     for label, value in elements.amplitudes_e.items():
         assert restored.amplitudes_e[label] == pytest.approx(value, rel=1e-9)
     np.testing.assert_allclose(restored.z_e_forced, elements.z_e_forced, rtol=1e-6, atol=1e-12)
-    # a file written before the amplitudes: magnitudes only, and no attribution
-    old = pd.read_csv(path)
-    old = old[[column for column in old.columns if not column.startswith(fe.AMPLITUDE_PREFIX)]]
-    legacy = fe.from_series_frame(old, setup)
-    assert legacy.amplitudes_e == {}
-    assert diagnostics.attribute_forcing(legacy, 'kinematic', 5952.0, 0.4).reason == 'no_mode_amplitudes'
 
 
 def _ecliptic_elements(inc_p, node_p, omega_p):
@@ -523,8 +517,3 @@ def test_a_beat_refuses_the_centre_scale_only_when_the_forced_terms_make_that_wa
     # wave; correlation alone is blind to size
     tiny = _with_forcing(lambda x: np.full_like(x, 0.01), {'g5': c5, 'g6': c5 * np.sin(np.radians(8.0)) / 100.0})
     assert diagnostics.forced_beat_centre(tiny, beat, 0.2, track, t, SETTINGS) == ''
-    # an old file: no per-mode amplitudes, no measured beat
-    from dataclasses import replace
-
-    legacy = replace(explaining, amplitudes_e={})
-    assert legacy.forced_beats() == {} and diagnostics.forced_beat_centre(legacy, beat, 0.2, track, t, SETTINGS) == ''

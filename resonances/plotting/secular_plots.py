@@ -1463,8 +1463,6 @@ def _zlk_frequency_lines(analysis, row, free_elements) -> list:
         lines.append(_frequency_line(_mode_name(label), rate, note.strip(), constant=True))
     forced = {label: abs(amplitudes.get(label, 0.0)) for label in labels if label.startswith('g')}
     largest = sorted((label for label in forced if forced[label] > 0), key=lambda label: -forced[label])[:FREQUENCY_BEAT_MODES]
-    if not largest:  # no per-mode amplitudes (an old file): the beats of Jupiter's and Saturn's modes when fitted
-        largest = [label for label in ('g5', 'g6') if label in basis]
     for label in sorted(largest, key=_mode_order):
         lines.append(_frequency_line(f'g − {label}', rates['varpi'] - basis[label], 'kinematic' if label == holding else ''))
     beats = elements.forced_beats() if elements is not None else {}

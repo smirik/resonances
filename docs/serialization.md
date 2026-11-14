@@ -5,8 +5,7 @@ This page explains how `resonances` saves and restores simulations. The logic li
 ## What is saved
 
 After a simulation run, the output directory contains (the series in `data/`, `data_folder`; the manifest
-`simulation.data_files` of `simulation.json` lists them relative to the run folder, and restore reads them from there, or
-from the top for runs saved before the data folder):
+`simulation.data_files` of `simulation.json` lists them relative to the run folder, and restore reads them from there):
 
 1. `simulation.json` – the metadata and configuration.
 2. `data/data-<body>.csv` – time series of each body with at least one resonance that passed the `save` mode, and only those resonances' angles.
@@ -76,12 +75,11 @@ The restore method:
 3. Loads the saved time series, periodograms, free-omega series and planets (to the last bit: the numbers are those
    the run analyzed).
 4. Sets the verdicts from `summary.csv`: `body.statuses[key]` (the status string) and `body.librations[key]` (a
-   `Verdict` rebuilt from the row's verdict columns). A row of a version before 1.0 (an integer status) is not read
-   (skipped with a warning): restore with `recompute_librations=True` to analyse its series again.
+   `Verdict` rebuilt from the row's verdict columns). Only the format the current version writes is read: a
+   summary.csv without a verdict column (a run of an earlier version) raises an error.
 5. With `ensembles`: rebuilds `sim.ensembles` from each manifest and results archive (the clones' names, their
    elements at the date to the bit, the stored verdict rows and thumbnails) and `sim.clone_summary` from clones.csv;
-   without a manifest (SAVE off) only `sim.clone_summary`, with a warning. A simulation.json without `ensembles` (older
-   runs) restores as before.
+   without a manifest (SAVE off) only `sim.clone_summary`, with a warning. A run without clones has no `ensembles`.
 
 A run (and every batch worker) handles one body at a time from its verdicts to its data files and figures, then
 releases the arrays of its analyses, so only one body's analyses are in memory; summary.csv and the tables are

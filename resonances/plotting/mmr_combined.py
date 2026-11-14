@@ -759,9 +759,9 @@ class PolicyMarks:
 
 def policy_marks(analysis) -> Optional[PolicyMarks]:
     """The episodes the minimal policy counts and its candidates (W29 SPEC §3.3), or None when the row is not under it
-    (`policy` '': a file written before W29, (a) is drawn as before). Read from the analysis' `PolicyResult` (`analysis.policy`), else from
-    its verdict's `counted_episode_ids`/`candidate_episode_ids` (a stored verdict: the figure re-run path, §7), where a
-    leg or a half-swing has no span and is not drawn."""
+    (`policy` '': an inner pass or a verdict built by hand, (a) is drawn without marks). Read from the analysis'
+    `PolicyResult` (`analysis.policy`), else from its verdict's `counted_episode_ids`/`candidate_episode_ids` (a stored
+    verdict: the figure re-run path, §7), where a leg or a half-swing has no span and is not drawn."""
     result = getattr(analysis, 'policy', None)
     if result is not None and str(getattr(result, 'policy', '')) == verdict_text.POLICY_MINIMAL:
         return PolicyMarks(

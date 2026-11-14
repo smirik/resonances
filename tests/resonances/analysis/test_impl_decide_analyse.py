@@ -163,7 +163,7 @@ def test_round_up_and_baseline():
 # --- io -------------------------------------------------------------------------------------------
 
 
-def test_load_series_reads_legacy_columns_and_orders_time(tmp_path, monkeypatch):
+def test_load_series_orders_time(tmp_path, monkeypatch):
     import pandas as pd
 
     folder = tmp_path / 'examples' / 'mmr2__x__2J-1+0-1'
@@ -181,7 +181,7 @@ def test_load_series_reads_legacy_columns_and_orders_time(tmp_path, monkeypatch)
             'omega': 2.0,
             'varpi': 3.0,
             'M': 0.1 * t,
-            'lam': 0.2 * t,
+            'mean_longitude': 0.2 * t,
             'angle_raw': angle,
         }
     )
@@ -189,7 +189,7 @@ def test_load_series_reads_legacy_columns_and_orders_time(tmp_path, monkeypatch)
     planets = pd.DataFrame(
         {'t_yr': t, **{f'Jupiter.{f}': np.full(n, v) for f, v in (('a', 5.2), ('e', 0.05), ('inc', 0.0), ('Omega', 0.0), ('varpi', 0.2))}}
     )
-    planets['Jupiter.l'] = 0.53 * t
+    planets['Jupiter.mean_longitude'] = 0.53 * t
     planets.to_csv(folder / 'planets.csv.gz', index=False)
     meta = {
         'name': 'x',

@@ -2,8 +2,7 @@
 unknown (MMR leaf 5u/6), only the geometry decided; before the rename those rows read dynamic_libration /
 dynamic_episode. A row with origin dynamic (a measured force) keeps dynamic_*.
 
-The package reads only today's spelling (v1.0: no back-compat readers); the benchmark tools still read the old runs
-in benchmark/data in today's spelling (`bench_io.read_summary`: the origin column tells the two cases apart, origin
+The benchmark tools read the old runs in benchmark/data in today's spelling (`bench_io.read_summary`: the origin column tells the two cases apart, origin
 unknown -> geometric_*, origin dynamic -> dynamic_*)."""
 
 import pandas as pd
@@ -46,7 +45,7 @@ def test_summary_row_restores_the_geometric_verdict(tmp_path):
     path = tmp_path / 'summary.csv'
     pd.DataFrame([dict(new, name='24820', resonance='3J-1S-1+0+0-1')]).to_csv(path, index=False)
     row = SimulationSerializer._summary_frame(path).iloc[0].to_dict()
-    restored = SimulationSerializer._verdict_of_row(row, '3J-1S-1+0+0-1', True)
+    restored = Verdict.from_flat_dict(row)
     assert (restored.status, restored.reason, restored.libration_origin) == (
         Status.TRANSIENT,
         Reason.GEOMETRIC_EPISODE,

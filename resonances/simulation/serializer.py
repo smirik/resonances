@@ -9,15 +9,10 @@ import pandas as pd
 
 from resonances.body import Body
 from resonances.logger import logger
-from resonances.resonance.analysis.verdict import AngleStatus, ResonanceType, Status, Verdict
-from resonances.resonance.factory import create_resonance, detect_resonance_type
+from resonances.resonance.analysis.verdict import Verdict
+from resonances.resonance.factory import create_resonance
 from resonances.data.util import datetime_from_string
 
-# Columns of summary.csv a Verdict is rebuilt from (Verdict.from_flat_dict); older files have only `status`
-VERDICT_COLUMNS = ('resonance_type', 'status', 'angle_status')
-# Where the manifest looks for a series besides the run's data_folder: the top (runs before the data folder) and the
-# default folder (a run resumed across the change, BatchManager.RESUME_DATA_FOLDERS)
-MANIFEST_DATA_FOLDERS = ('', 'data')
 # The run-wide MMR tables written next to summary.csv (by DataManager), listed in the manifest when present
 MMR_TABLES = ('mmr_numbers', 'episodes', 'candidates', 'constants')
 
@@ -126,45 +121,33 @@ class SimulationSerializer:
     def restore_statuses(cls, bodies, summary_csv) -> int:
         """Set the verdicts of the bodies from summary.csv; return how many were set.
 
-        `body.statuses[key]` gets the status string; `body.librations[key]` a `Verdict` rebuilt from the row when the
-        file has the verdict columns. A derived row (column `parent` not empty) that the body does not have yet is
-        added to it first (`Body.add_derived_resonance`), which also brings back the rows of resumed batches.
-        A row whose status is no status string (an integer status of a file written before v1.0) is skipped with a
-        warning: restore with recompute_librations=True to analyse its series again.
+        `body.statuses[key]` gets the status string, `body.librations[key]` the `Verdict` rebuilt from the row's
+        verdict columns (`Verdict.from_flat_dict`). A derived row (column `parent` not empty) that the body does not
+        have yet is added to it first (`Body.add_derived_resonance`), which also brings back the rows of resumed batches.
         """
         frame = cls._summary_frame(summary_csv)
         if frame is None:
             return 0
-        has_verdict = all(column in frame.columns for column in VERDICT_COLUMNS)
         by_body = cls._rows_by_body(frame)
-        count = skipped = 0
+        count = 0
         for body in bodies:
             rows = by_body.get(str(body.name), [])
             cls._add_derived_rows(body, rows)
             keys = {r.to_s() for r in body.resonances()}
             for row in (row for row in rows if row["resonance"] in keys):
-                verdict = cls._verdict_of_row(row, row["resonance"], has_verdict)
-                if verdict is None:
-                    skipped += 1
-                    continue
+                verdict = Verdict.from_flat_dict(row)
                 body.statuses[row["resonance"]] = str(verdict.status)
                 body.librations[row["resonance"]] = verdict
                 count += 1
-        if skipped:
-            logger.warning(
-                f"{skipped} rows of {summary_csv} have no status string (an integer status of an older version): they are "
-                "not read; restore with recompute_librations=True to analyse them again"
-            )
         return count
 
     @staticmethod
     def _summary_frame(summary_csv) -> Optional[pd.DataFrame]:
-        """summary.csv as strings, or None when it is missing, empty or has no name/resonance/status columns."""
+        """summary.csv as strings, or None when it is missing or empty."""
         path = Path(summary_csv)
         if not path.exists() or path.stat().st_size == 0:
             return None
-        frame = pd.read_csv(path, dtype=str, keep_default_na=False)
-        return frame if {"name", "resonance", "status"} <= set(frame.columns) else None
+        return pd.read_csv(path, dtype=str, keep_default_na=False)
 
     @staticmethod
     def _rows_by_body(frame: pd.DataFrame) -> Dict[str, list]:
@@ -190,17 +173,6 @@ class SimulationSerializer:
             parent = str(row.get("parent") or "")
             if parent and row["resonance"] not in {r.to_s() for r in body.resonances()}:
                 body.add_derived_resonance(row["resonance"], parent)
-
-    @staticmethod
-    def _verdict_of_row(row: Dict[str, Any], key: str, has_verdict: bool) -> Optional[Verdict]:
-        """The verdict of one summary.csv row: from its verdict columns, or the status alone when the file has none;
-        None when the status is no status string."""
-        status = str(row["status"]).strip()
-        if status not in {str(s) for s in Status}:
-            return None
-        if has_verdict and str(row.get("resonance_type") or ""):
-            return Verdict.from_flat_dict(row)
-        return Verdict(resonance_type=ResonanceType(detect_resonance_type(key)), status=Status(status), angle_status=AngleStatus.UNDEFINED)
 
     @staticmethod
     def _saved_resonances(body: Body) -> set:
@@ -323,19 +295,14 @@ class SimulationSerializer:
 
     @classmethod
     def _data_files_manifest(cls, bodies, config, simulation) -> Dict[str, Any]:
-        """The data files of this run that are on disk (the SAVE mode writes only some bodies' files), as paths
-        relative to save_path (also for an absolute data folder, so a moved run folder restores): in the data folder
-        (`config.data_folder`), else at the top or in data/ (MANIFEST_DATA_FOLDERS: a run resumed across the change)."""
+        """The data files of this run that are on disk in its data folder (`config.data_path`; the SAVE mode writes
+        only some bodies' files), as paths relative to save_path (also for an absolute data folder, so a moved run
+        folder restores)."""
         save_path = Path(config.save_path)
-        folders = list(dict.fromkeys([str(getattr(config, 'data_folder', '') or '')] + list(MANIFEST_DATA_FOLDERS)))
+        data_path = Path(config.data_path)
 
         def written(names):
-            found = []
-            for name in names:
-                path = next((save_path / folder / name for folder in folders if (save_path / folder / name).exists()), None)
-                if path is not None:
-                    found.append(Path(os.path.relpath(path, save_path)).as_posix())
-            return found
+            return [Path(os.path.relpath(data_path / name, save_path)).as_posix() for name in names if (data_path / name).exists()]
 
         manifest = {
             "bodies": written(f"data-{body.name}.csv" for body in bodies),
@@ -424,11 +391,8 @@ class SimulationSerializer:
     @classmethod
     def _restore_body_data(cls, sim: "Simulation", base_dir: Path, files_manifest: Dict[str, Any]) -> None:
         # names as strings: the manifest's file names are, a body may be named by a number. The names are relative
-        # to the run folder (data/data-<body>.csv; data-<body>.csv in runs before the data folder)
-        if "bodies" in files_manifest:
-            body_files_by_name = {Path(fname).stem.removeprefix("data-"): fname for fname in files_manifest["bodies"]}
-        else:
-            body_files_by_name = {str(body.name): cls._first_existing(base_dir, f"data-{body.name}.csv", sim.config) for body in sim.bodies}
+        # to the run folder (data/data-<body>.csv by default)
+        body_files_by_name = {Path(fname).stem.removeprefix("data-"): fname for fname in files_manifest["bodies"]}
 
         for body in sim.bodies:
             if str(body.name) not in body_files_by_name:  # not saved under the SAVE mode
@@ -443,12 +407,8 @@ class SimulationSerializer:
             cls._populate_body_from_dataframe(sim, body, df)
 
             periodogram_csv = body_csv.parent / f"data-{body.name}-periodograms.csv"  # next to the body's series
-            if periodogram_csv.exists() and periodogram_csv.stat().st_size > 0:
-                try:
-                    periodograms = pd.read_csv(periodogram_csv)
-                except pd.errors.EmptyDataError:  # written empty by versions that saved no-periodogram files
-                    continue
-                cls._populate_periodograms(body, periodograms)
+            if periodogram_csv.exists():  # none when the body has no periodogram (`DataManager._save_periodogram_data`)
+                cls._populate_periodograms(body, pd.read_csv(periodogram_csv))
 
     @classmethod
     def _populate_body_from_dataframe(cls, sim: "Simulation", body: Body, df: pd.DataFrame) -> None:
@@ -475,7 +435,7 @@ class SimulationSerializer:
             if f"{key}_angle" in df.columns:
                 body.angles[key] = cls._get_column(df, f"{key}_angle")
 
-            # MMR files hold no filtered columns (the analysis reproduces sigma_f); older files may
+            # secular/ZLK files hold the filtered angle; MMR files do not (the analysis reproduces sigma_f)
             filtered_unwrapped = cls._get_column(df, f"{key}_angle_filtered_unwrapped")
             filtered = cls._get_column(df, f"{key}_angle_filtered")
             if filtered_unwrapped is not None:
@@ -533,16 +493,6 @@ class SimulationSerializer:
             path = base_dir / filename
             if path.exists():
                 body.free_elements = from_series_frame(pd.read_csv(path), setup)
-
-    @staticmethod
-    def _first_existing(base_dir: Path, filename: str, config) -> str:
-        """`filename` in the run's data folder when it is there, else in data/, else at the top (runs before the data
-        folder; MANIFEST_DATA_FOLDERS)."""
-        for folder in (str(getattr(config, "data_folder", "") or ""), *MANIFEST_DATA_FOLDERS):
-            candidate = base_dir / folder / filename
-            if candidate.exists():
-                return Path(os.path.relpath(candidate, base_dir)).as_posix()
-        return filename
 
     @classmethod
     def _get_column(cls, df: pd.DataFrame, col: str) -> Optional[np.ndarray]:

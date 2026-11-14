@@ -18,7 +18,7 @@ import column_cache as cc  # noqa: E402
 
 from resonances.resonance.analysis.mmr import io  # noqa: E402
 
-SERIES = ['t_yr', 'a', 'e', 'inc', 'Omega', 'omega', 'varpi', 'M', 'lam', 'angle_raw']  # legacy `lam`
+SERIES = ['t_yr', 'a', 'e', 'inc', 'Omega', 'omega', 'varpi', 'M', 'mean_longitude', 'angle_raw']
 
 
 def bits(values):
@@ -56,7 +56,7 @@ def test_cached_columns_are_bit_identical(tmp_path, empty_m):
     write_csv(path, SERIES, series_rows(empty_m=empty_m))
     root = tmp_path / 'cache'
     ref = io._read_columns(path, io.SERIES_COLUMNS)
-    assert 'mean_longitude' in ref and 'lam' not in ref
+    assert 'mean_longitude' in ref
     first = cc.read_columns(path, io.SERIES_COLUMNS, root=root)  # writes the copy
     assert cc.cache_path(path, root).exists()
     second = cc.read_columns(path, io.SERIES_COLUMNS, root=root, reader=pytest.fail)  # must not parse the CSV
@@ -66,7 +66,9 @@ def test_cached_columns_are_bit_identical(tmp_path, empty_m):
 
 
 def test_subset_absent_and_uncached_columns(tmp_path):
-    header = ['t_yr'] + [f'{p}.{f}' for p in ('Mars', 'Jupiter') for f in ('a', 'e', 'inc', 'Omega', 'omega', 'M', 'l', 'varpi')]
+    header = ['t_yr'] + [
+        f'{p}.{f}' for p in ('Mars', 'Jupiter') for f in ('a', 'e', 'inc', 'Omega', 'omega', 'M', 'mean_longitude', 'varpi')
+    ]
     rng = np.random.default_rng(2)
     write_csv(tmp_path / 'planets.csv.gz', header, [[f'{v:.12g}' for v in rng.normal(size=len(header))] for _ in range(30)])
     path = tmp_path / 'planets.csv.gz'
@@ -121,7 +123,7 @@ def test_a_saved_example_loads_identically(tmp_path):
         if not path.exists():
             continue
         header = list(pd.read_csv(path, nrows=0).columns)
-        wanted = [n for n in io._current_names(header).values() if cc.is_cacheable(n)]
+        wanted = [n for n in header if cc.is_cacheable(n)]
         ref = io._read_columns(path, wanted)
         cc.read_columns(path, wanted, root=tmp_path)
         assert_identical(cc.read_columns(path, wanted, root=tmp_path, reader=pytest.fail), ref)
@@ -153,7 +155,7 @@ def test_auto_workers_rule(monkeypatch):
 def test_planet_columns_are_read_only_maps_and_series_columns_are_arrays(tmp_path):
     """W23 P5: a planet's column comes back as a read-only memory map of its .npy (a write raises), the same bits on the
     first read and the later ones; the body's columns are ordinary arrays."""
-    header = ['t_yr'] + [f'Jupiter.{f}' for f in ('a', 'e', 'inc', 'Omega', 'omega', 'M', 'l', 'varpi')]
+    header = ['t_yr'] + [f'Jupiter.{f}' for f in ('a', 'e', 'inc', 'Omega', 'omega', 'M', 'mean_longitude', 'varpi')]
     rng = np.random.default_rng(3)
     path = tmp_path / 'planets.csv.gz'
     write_csv(path, header, [[f'{v:.12g}' for v in rng.normal(size=len(header))] for _ in range(40)])

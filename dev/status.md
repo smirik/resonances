@@ -14,7 +14,19 @@ back-compat readers (integer statuses, old spellings, legacy resume hashes, remo
 `owner_angle_reference`, `lowest_ceiling`, `record_tables_kept`, `averaged_profile`, `elements_from_invariable_plane`,
 `argument_of_pericentre`. Reclassification of 42 MMR/co-orbital + 30 secular/ZLK examples byte-identical. Kept:
 `PolicyResult.policy`/`Verdict.policy` (plotting reads them; a column), `load_cells` (the sha column),
-`mode_phase_ranges` (the builder of `data/mode_phase_uncertainty.json`), the old-flat-run lookup of restore.
+`mode_phase_ranges` (the builder of `data/mode_phase_uncertainty.json`).
+
+Second pass (2026-11-14, the author: only the format the current code writes is read): restore reads only the
+manifest's paths in the run's data folder (no flat-run, no-manifest or `data/` fallbacks), every verdict column of a
+summary.csv row (`Verdict.from_flat_dict` raises on a missing one; no status-only rows), no empty periodogram files;
+the data folder is in the resume hash (`RESUME_DATA_FOLDERS` gone; `settings_hash` unchanged); the benchmark loader
+has no `lam`/`<Planet>.l` names (none of 828 series and 445 planet files used them); `clones.stats.upgrade_row`
+(clones.csv before 2026-11-06) and the figure's g5/g6 fallback without per-mode amplitudes are gone. Kept, current
+cases: `verdict_text`'s angle-rule reconstruction (G4c/G4h words keep the circulation's angle rule), the policy-less
+(a) (inner passes, hand-built verdicts), `pendulum.fit_potential_from_force(free_constant=)`
+(`SEPARATRIX_VF_FREE_CONSTANT` and every window's reference correlation). Runs written before (experiments/nea-mmrs,
+2026-09-binary-asteroids: no `multiplet_status`) no longer restore. Reclassification of 40 MMR/co-orbital + all 101
+secular/ZLK examples byte-identical.
 
 ## W36 (2026-11-07/08, merged into v1.0.0): secular episodes
 

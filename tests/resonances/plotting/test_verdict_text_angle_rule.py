@@ -3,8 +3,9 @@ steps) is the angle rule the analysis saved (geo_angle_rule), and the leaf G6 ha
 
 The records are those of `tests/resonances/analysis/test_angle_rule_column.py` (their rules worked out there by hand):
 a slow arc (G5a) and the same swing with two turning points outside the ripple (G6 few_cycles; the ledger holds G5a's
-entry, written by the ripple test: 1992 SZ 1M-10J+1 and 2002 BG 1E-10S-1 were headed G5a). A file older than the column
-falls back on the ledger, and that fallback no longer names G5a on a few_cycles row."""
+entry, written by the ripple test: 1992 SZ 1M-10J+1 and 2002 BG 1E-10S-1 were headed G5a). An angle rule that set no
+insufficient_time word (a word the status tree set: G4c, G4h keep the circulation's rule) falls back on the ledger, and
+that fallback never names G5a on a few_cycles row."""
 
 import matplotlib
 
@@ -18,11 +19,9 @@ from tests.resonances.analysis.test_angle_rule_column import analysed, slow_swin
 S = AnalysisSettings()
 
 
-def explained(sigma, row=None, drop=()):
+def explained(sigma, row=None):
     analysis = analysed(sigma)
     columns = {**analysis.numbers_row(), **analysis.summary_row(), **(row or {})}
-    for column in drop:
-        columns.pop(column)
     facts = vt.MMRFacts(analysis, S, columns, analysis.episode_rows())
     return facts
 
@@ -33,9 +32,9 @@ def test_a_few_cycles_row_is_headed_by_the_leaf_g6_not_g5a():
     assert vt.shape_rule_ids(facts) == ('F6r', 'G6')
 
 
-def test_without_the_column_a_few_cycles_row_still_never_names_g5a():
-    facts = explained(slow_swing(dip_deg=30.0), drop=('geo_angle_rule',))
-    assert facts.angle_rule == '' and vt._slow_arc(facts) is None
+def test_a_rule_that_set_no_such_word_still_never_names_g5a_on_a_few_cycles_row():
+    facts = explained(slow_swing(dip_deg=30.0), row={'geo_angle_rule': 'G4'})
+    assert vt.insufficient_angle_rule(facts) == '' and vt._slow_arc(facts) is None
     assert vt.shown_rule(facts) == 'G6'
 
 

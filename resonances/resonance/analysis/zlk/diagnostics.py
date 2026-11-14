@@ -26,7 +26,7 @@ with the largest |c_j| (named with the cluster the baseline merged into it) is w
     (the largest free radius over the record, not its median: the bound must hold at every sample);
     the predicted beat 2 pi/|b_varpi - g_j| is P_cyc within a Rayleigh width (what the osculating omega librates with);
     the free node follows the mode: |b_Omega - g_j| T < 1 turn (else the centre varpi_j - Omega would turn);
-    the per-mode amplitudes exist (a run restored from a file written before they were persisted has none).
+    the per-mode amplitudes exist (none when no eccentricity mode was fitted).
 Otherwise 'not_attributed' with the first condition that failed. An episodic omega that the decision made kinematic
 inside its episodes (`decide_status`: median |z_free|/|z_forced| < 1 inside every librating episode and the free omega turning
 with each cycle, 624 Hektor) is attributed with scope 'episodes': the episodes stand for the free-circle condition, and
@@ -55,8 +55,8 @@ Centre-scale guard (`forced_beat_centre`): a libration at the centre scale whose
 beat 2 pi/|g_k - g_j| of two fitted forced modes with nonzero amplitudes, whose reconstructed forced phase wave explains
 the centre (shape and size, `slow.forced_beat_model`), while rho_max < 1 at the fine period, is the forced vector
 turning its direction, not a libration of omega: the fine scale stays decisive (a clean synthetic 591986 with
-e_g6 = 0.017 otherwise decides at 54 kyr instead of 5.95 kyr). No amplitudes (an old file), a zero term or a wave of
-another size: no rejection. The caller applies it only where the gate acts (`analyse_zlk`).
+e_g6 = 0.017 otherwise decides at 54 kyr instead of 5.95 kyr). Fewer than two nonzero amplitudes, or a wave of another
+size: no rejection. The caller applies it only where the gate acts (`analyse_zlk`).
 """
 
 from __future__ import annotations
@@ -488,10 +488,10 @@ def forced_beat_centre(elements, slow_period_yr: float, rho_max_fine: float, tra
     """'forced_beat:<gk>-<gj>' when a centre-scale libration of period `slow_period_yr` is a measured beat of the
     fitted forced modes that explains the centre while the free circle stays off the origin; '' otherwise.
 
-    All of: a beat of two modes with nonzero per-mode amplitudes within a Rayleigh width of the period (none without
-    the amplitudes: an old file); the phase wave of the reconstructed forced vector explains `track` (the fine
-    geometry's centre, the slow wave the centre scale would decide on) in shape and size (`slow.forced_beat_model`:
-    r >= ZLK_CENTRE_MODEL_R_MIN, gain within ZLK_CENTRE_MODEL_AMP_FACTOR); rho_max at the fine period < 1. With a
+    All of: a beat of two modes with nonzero per-mode amplitudes within a Rayleigh width of the period; the phase wave
+    of the reconstructed forced vector explains `track` (the fine geometry's centre, the slow wave the centre scale
+    would decide on) in shape and size (`slow.forced_beat_model`: r >= ZLK_CENTRE_MODEL_R_MIN, gain within
+    ZLK_CENTRE_MODEL_AMP_FACTOR); rho_max at the fine period < 1. With a
     ledger the comparisons are recorded (centre_beat_distance, centre_beat_model_r, centre_beat_model_gain,
     centre_beat_rho_max)."""
     from resonances.resonance.analysis.secular import slow

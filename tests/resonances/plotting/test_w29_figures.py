@@ -209,7 +209,7 @@ def test_a_counted_episode_to_a_covered_edge_is_pale_in_the_filter_trim():
 
 def test_policy_marks_from_a_stored_verdict_and_without_a_policy():
     """The figure re-run path (§7): without a PolicyResult the marks come from the verdict's id cells; 'leg' and 'half'
-    have no episode row. A verdict without the field (a file written before W29) has no marks: (a) is drawn as before."""
+    have no episode row. A verdict the policy did not write (`policy` '') has no marks."""
     analysis = _zlk(2.5)
     analysis.policy = None
     analysis.verdict.policy = ''

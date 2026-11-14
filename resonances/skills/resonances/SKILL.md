@@ -107,8 +107,8 @@ anything longer than a few minutes, tell the user the estimate, then run it in t
 - Resume an interrupted batch run, or any run with clones: the same script, bodies, settings, `save_path` and
   **date**; a changed hash raises `ValueError` naming what changed. A run with clones skips its finished clone batches
   and its finished ordinary part (checkpoint `clones_state/`; references/clones.md, references/serialization.md).
-- Restore a finished run: `resonances.SimulationSerializer.restore('<save_path>/simulation.json')` reads the verdicts
-  from summary.csv, and with clones `sim.ensembles` and `sim.clone_summary`; `recompute_librations=True` analyses the
+- Restore a finished run (written by this version; earlier formats are not read):
+  `resonances.SimulationSerializer.restore('<save_path>/simulation.json')` reads the verdicts from summary.csv, and with clones `sim.ensembles` and `sim.clone_summary`; `recompute_librations=True` analyses the
   saved series again without integrating (`current_settings=True`: with today's `.env`); clones keep their stored
   verdicts, only the nominal is reclassified (its clones.csv columns and summary.csv rows are rewritten together).
 - Settings: argument of `Simulation`/`check`/`find` (lower case) > `.env` in the working directory > environment >
@@ -278,7 +278,7 @@ Distinctions that matter when you report:
   (`short_episode`: a longer record with a longer episode may settle it). ω, i, Ω (and the
   free elements) are measured from the invariable plane (`ZLK_ANGLE_FRAME`, column `zlk_angle_frame`): from the
   ecliptic a nearly coplanar orbit (i_inv ≲ 1.6°) shows a false bounded ω; rule `zlk_invariable_frame` marks rows where
-  the two frames disagree by a turn. Old runs restored without recomputation keep the ecliptic angle.
+  the two frames disagree by a turn.
   Columns that change no status (references/free-elements.md, "Beyond the gate"): `zlk_ei_coupling` (e–i of the
   whole record at the decisive period, every row: `zlk` antiphase at constant H, `forced_beat` in phase; coupling is not libration — a
   circulating ω can show it), `zlk_forcing_*` (which forced mode holds a kinematic libration, or `not_attributed` and

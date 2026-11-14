@@ -420,7 +420,8 @@ def plural(n: int, word: str, form: str = '') -> str:
 
 
 def policy_minimal(verdict) -> bool:
-    """The verdict was set by the minimal policy layer (its `policy` field; '' in older files and under v2)."""
+    """The verdict was set by the minimal policy layer (its `policy` field; '' on a verdict the policy did not write: an
+    inner pass, a verdict built by hand)."""
     return str(getattr(verdict, 'policy', '') or '') == POLICY_MINIMAL
 
 
@@ -687,7 +688,7 @@ class MMRFacts:
         self.margins = alias_margins(self.v.margins, self.alias_unmeasured)
         self.checks = {name: 'not_measured' if name in self.alias_unmeasured else value for name, value in checks.items()}
         self.rule = _text(row.get('rec_rule'))
-        # the angle decision's own rule (G5a, G5w, G6, ...: `AngleDecision.rule`); '' in a file older than the column
+        # the angle decision's own rule (G5a, G5w, G6, ...: `AngleDecision.rule`; column geo_angle_rule)
         self.angle_rule = '' if _text(row.get('geo_angle_rule')) in ('', 'nan') else _text(row.get('geo_angle_rule'))
         response = analysis.response
         self.coorbital = response is not None and response.force_law == 'coorbital'
@@ -2090,7 +2091,7 @@ def _short_period_title(f: MMRFacts) -> Tuple[str, str]:
         step, limit = f.row.get('smp_step_yr'), f.row.get('smp_short_period_step_yr')
         if holds(step, '>=', limit):
             title = SHORT_PERIOD_TITLES['nyquist'].format(comparison=compare(step, '>=', limit, ' yr'))
-        else:  # neither part on record (an old row): the cap's general words
+        else:  # neither part on record: the cap's general words
             title = CAP_WORDS['short_period_aliased']
         short = ''  # the title names it (Δt ≥ min(P)/2)
     if scatter:
@@ -2312,8 +2313,8 @@ def _insufficient_rest(f: MMRFacts, subtype: str, tp: str) -> str:
 def _slow_arc(f: MMRFacts):
     """G5a's last entry when G5a set the word (the slow center turns back once within a revolution), else None. The
     entry alone does not say so (B6b's ripple test writes it too: 1992 SZ 1M-10J+1, 2002 BG 1E-10S-1 are few_cycles
-    G6 rows with it held), so the angle rule (geo_angle_rule) decides, and without that column (an older file) only an
-    arc can be G5a's."""
+    G6 rows with it held), so the angle rule (geo_angle_rule) decides, and where that rule set no insufficient_time word
+    (`insufficient_angle_rule` '') only an arc can be G5a's."""
     rule = insufficient_angle_rule(f)
     if rule and rule != 'G5a':
         return None
@@ -2356,8 +2357,8 @@ def ripple_clause(f: MMRFacts) -> str:
 
 
 def slow_swing_decided(f: MMRFacts) -> bool:
-    """G5w decided the angle: the angle rule (geo_angle_rule), else (an older file) the rule slow_swing_in_well (W28
-    B6c: `analyse._decide_angle` fires it exactly then)."""
+    """G5w decided the angle: the angle rule (geo_angle_rule), else (`insufficient_angle_rule` '') the rule
+    slow_swing_in_well (W28 B6c: `analyse._decide_angle` fires it exactly then)."""
     if getattr(f, 'v', None) is None or str(f.v.angle_status) != 'insufficient_time':
         return False
     rule = insufficient_angle_rule(f)
@@ -2369,8 +2370,9 @@ INSUFFICIENT_ANGLE_RULES = ('G5a', 'G5w', 'G6')
 
 
 def insufficient_angle_rule(f: MMRFacts) -> str:
-    """The angle rule of an insufficient_time row as saved (geo_angle_rule: G5a, G5w or G6); '' when the row has no
-    such column (an older summary file: the readers then rebuild it from the ledger) or reads another word."""
+    """The angle rule of an insufficient_time row as saved (geo_angle_rule: G5a, G5w or G6); '' when it is another
+    rule: the status tree set the word (G4c's edge leg, G4h's edge half-libration keep the circulation's angle rule),
+    and the readers then rebuild it from the ledger."""
     rule = getattr(f, 'angle_rule', '')
     return rule if rule in INSUFFICIENT_ANGLE_RULES else ''
 
@@ -2762,7 +2764,7 @@ def _base_shape_ids(f: MMRFacts, angle: str) -> List[str]:
         return ['G1c' if _held(f, G1C_FINAL) else ('G4b' if _net_shift(f, G4B_NET) else 'G4')]
     if angle == 'insufficient_time':
         ripple = ['F6r'] if ripple_waves_of(f) else []
-        if insufficient_angle_rule(f):  # the angle rule as saved; below, its reconstruction for older files
+        if insufficient_angle_rule(f):  # the angle rule as saved; below, its reconstruction for a word the tree set
             return ripple + [insufficient_angle_rule(f)]
         if slow_swing_decided(f):
             return ripple + ['G5w']
@@ -3168,7 +3170,7 @@ def _k2_clause(f: MMRFacts) -> str:
 
 def _unexplained_lifted(f: MMRFacts) -> bool:
     """Whether the mark exit_and_capture took the cap transient_unexplained off this verdict (`sep_unexplained_lifted`,
-    recorded by the analysis; rows written before 2026-10-18 have none)."""
+    recorded by the analysis)."""
     value = f.row.get('sep_unexplained_lifted', f.a.extra_columns.get('sep_unexplained_lifted'))
     return finite(value) and float(value) == 1.0
 
@@ -4501,7 +4503,7 @@ def shown_rule(f: MMRFacts) -> str:
     """The rule the subtitle and the steps' header name: rec_rule, except that an insufficient_time leaf (rec_rule G6
     for every subtype, `decide.decide_status`) names the angle rule that set the word (column geo_angle_rule: G5a one
     slow arc, G5w a slow swing in the well, W28 B6c, or G6 itself), so 'decided: slow swing in the well (G5w)' agrees
-    with step 0; a file without the column rebuilds it from the ledger (`_base_shape_ids`)."""
+    with step 0; an angle rule that set no such word is rebuilt from the ledger (`_base_shape_ids`)."""
     if f.rule == 'G6' and str(f.v.angle_status) == 'insufficient_time':
         if insufficient_angle_rule(f):
             return insufficient_angle_rule(f)

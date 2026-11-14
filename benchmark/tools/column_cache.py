@@ -144,7 +144,7 @@ def read_columns(path, wanted: Iterable[str], reader=None, root: Optional[Path] 
     import pandas as pd
 
     header = list(pd.read_csv(path, nrows=0).columns)
-    names = [name for name in io._current_names(header).values() if is_cacheable(name)]
+    names = [name for name in header if is_cacheable(name)]
     full = reader(path, names)
     if _store(target, full, source):
         columns = _load(target, source, wanted)  # the first read is served as the later ones (maps)

@@ -89,25 +89,6 @@ def cloud_row(
     return row
 
 
-def upgrade_row(record: dict, max_invalid: float, z: float = Z_95) -> dict:
-    """A clones.csv row (dict) in the semantics of `cloud_row`: a row written before 2026-11-06 (no f_draw_invalid, or
-    NaN there) counted the unbound draws in n_invalid and in every share's denominator; its counts are taken back
-    (n_invalid minus n_draw_invalid) and its shares, cloud_usable and nominal agreement recomputed. A current row is
-    returned as it is."""
-    share = record.get('f_draw_invalid')
-    if share is not None and share == share:  # present and not NaN
-        return record
-    counts = {status: int(record.get(f'n_{status}', 0) or 0) for status in STATUSES}
-    n_draw_invalid = int(record.get('n_draw_invalid', 0) or 0)
-    counts['invalid'] = max(0, counts['invalid'] - n_draw_invalid)
-    statuses = [s for s in STATUSES for _ in range(counts[s])] + [None] * int(record.get('n_missing', 0) or 0)
-    nominal = record.get('nominal_status') or None
-    nominal = nominal if isinstance(nominal, str) else None
-    out = dict(record)
-    out.update(cloud_row(statuses, nominal, int(record.get('n_clones', 0) or 0), n_draw_invalid, max_invalid, z))
-    return out
-
-
 def ensemble_row(statuses: Iterable[Optional[str]], nominal_status: Optional[str] = None, z: float = Z_95) -> dict:
     """status_shares plus the nominal's agreement: the share of classified clones with the nominal's status and its
     Wilson interval (a diagnostic: the nominal is one member of the cloud with no special weight)."""

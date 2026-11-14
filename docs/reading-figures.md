@@ -128,13 +128,6 @@ The resonant angle $\sigma$, unwrapped: a circulation runs off upwards or downwa
 What to look for: fills that cover the whole record are a libration; fills in part of it are episodes; faint `cand`
 fills are librations the status does not count (the EPISODES group of the right column marks them).
 
-A figure drawn from a file written by an older version (no `policy` column) keeps the older drawing, and its legend says so:
-every accepted episode is filled; accepted runs that are no libration of this angle are labeled `#3 wave` (a forced
-wave of another argument), `#3 forced (strength)` (this angle's force cannot make that period) or `#3 ripple`
-(dotted); rejected runs are a gray strip along the bottom with a letter for the reason (**T** over the top of the
-well, **F** too few turning points, **C** the center moves, **O** no closed cycle), and a run the status does not
-count is a gray strip labeled `#0 < floor` or `#0 center turns`.
-
 ??? info "The math: angle, turning points, episodes"
     $$
     \sigma = k\lambda + \sum_j k_j\lambda_j + p\varpi + \sum_j p_j\varpi_j + v\Omega + \sum_j v_j\Omega_j
