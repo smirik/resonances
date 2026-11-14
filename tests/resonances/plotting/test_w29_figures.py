@@ -1,6 +1,6 @@
 """W29 figures (SPEC §7, §9): the a panel (d) of the secular/ZLK figure with the planet's a and the co-orbital zone, the
 episode rule of panel (a) under the minimal policy (counted episodes filled, candidates faint and dashed, nothing else),
-and the four lines that open the explanation of a minimal-policy verdict."""
+and the right column of a minimal-policy verdict."""
 
 from types import SimpleNamespace
 
@@ -239,60 +239,11 @@ def _minimal(verdict, **values):
     return verdict
 
 
-def test_basis_words_by_hand():
-    assert vt.basis_words('N=3.5(episode);M=full;V=clean;S=full;veto=-') == (
-        'N 3.5 cycles (the episode) · amplitude clear of the separatrix · objections measured, none · filter-stable · no veto'
-    )
-    assert vt.basis_words('N=0.5(leg);M=not_measured;V=not_measured;S=thin;veto=zlk_free_e:thin') == (
-        'N 0.5 cycles (one 1:1 leg) · amplitude margin not measured · a needed objection not measured · filter-sensitive · '
-        'veto zlk_free_e (thin)'
-    )
-    # as policy.Evidence.basis writes a row without counted cycles (624 ZLK, vetoed)
-    assert vt.basis_words('N=nan(-);M=full;V=clean;S=full;veto=zlk_free_e:thin') == (
-        'no cycles counted · amplitude clear of the separatrix · objections measured, none · filter-stable · veto zlk_free_e (thin)'
-    )
-    assert vt.basis_words('') == ''
-
-
-def test_the_explanation_opens_with_the_policy_block():
-    analysis = _zlk(2.5)
-    _minimal(
-        analysis.verdict,
-        confidence_basis='N=10(cover);M=full;V=not_measured;S=full;veto=-',
-        n_counted_episodes=1,
-        v2_verdict='resonant/medium/geometric_libration/spot_check/libration',
-        flags=['gate_disabled'],
-    )
-    text = vt.explain_long_period(analysis, SETTINGS, analysis.episode_rows())
-    head = [bullet.text for bullet in text.bullets[:4]]
-    assert [bullet.slot for bullet in text.bullets[:4]] == [vt.SLOT_POLICY] * 4
-    assert head[0].startswith(f'{vt.status_head(analysis.verdict.status).upper()} · ')
-    assert head[1] == (
-        'basis: N 10 cycles (the whole record) · amplitude clear of the separatrix · a needed objection not measured · '
-        'filter-stable · no veto; 1 counted episode'
-    )
-    assert head[2] == 'flags: gate_disabled'
-    assert head[3] == 'v2: resonant · medium · geometric_libration · spot_check · libration'
-    # a verdict without a policy (a file written before W29) has no block
-    analysis.verdict.policy = ''
-    assert vt.SLOT_POLICY not in [bullet.slot for bullet in vt.explain_long_period(analysis, SETTINGS, analysis.episode_rows()).bullets]
-
-
-def test_the_reason_comes_first_with_the_owner():
-    verdict = SimpleNamespace(
-        status='non_resonant', confidence='medium', reason='induced_libration', owner='5M-2', libration_origin='induced'
-    )
-    assert vt.policy_reason_words(verdict) == 'induced by 5M-2 (origin induced)'
-    verdict = SimpleNamespace(status='transient', confidence='low', reason='geometric_episode', owner='', libration_origin='unknown')
-    assert vt.policy_reason_words(verdict) == 'geometric episode (origin unknown)'
-
-
 def test_the_short_period_prose_survives_as_a_flag():
     """Under the minimal policy every cap is a flag (SPEC §2.3): the text that read the cap reads the flag (`has_mark`)."""
     analysis = _zlk(2.5)
     verdict = _minimal(analysis.verdict, flags=['short_period_aliased'])
     assert verdict.caps == [] and vt.has_mark(verdict, 'short_period_aliased')
-    assert vt._short_period_resample(verdict) == bool(str(verdict.confidence))
     assert not vt.has_mark(verdict, 'near_separatrix_without_zone')
 
 
@@ -305,11 +256,11 @@ def test_the_figure_draws_under_minimal_with_the_block():
     )
     fig = sp.draw_long_period_combined(analysis)
     try:
-        # the right column (`verdict_column`, 2026-11-04): the counted cycles are a Confidence pill, the W28 tree's
-        # verdict only in the footer (decision D2); the column fits
+        # the right column (`verdict_column`, 2026-11-04): the counted cycles are a Confidence pill; the W28 tree's
+        # verdict is not printed (the author 2026-11-14); the column fits
         drawn = ' '.join(text.get_text() for text in fig.texts if text.get_gid() == 'verdict_column')
         drawn = drawn.replace('\xa0', ' ')  # a short footer item is glued with no-break spaces
-        assert '10 cycles counted' in drawn and 'W28 tree: resonant/high' in drawn
+        assert '10 cycles counted' in drawn and 'W28 tree' not in drawn
         from resonances.plotting.verdict_column import problems
 
         assert problems(fig.text_stats['column']) == []
@@ -345,20 +296,3 @@ def test_mmr_panel_a_draws_only_counted_and_candidate_runs():
         assert [_extent(patch) for patch in candidate] == [(6.0, 8.0)] * 2  # its turning points: fill and dashed outline
     finally:
         plt.close(fig)
-
-
-def test_minimal_level_lines_read_the_basis_not_the_margins():
-    """Under minimal the level is the evidence's: the arithmetic and the confidence sentence print the basis, the
-    'change' bullet no v2 support count; a ZLK libration without a gate verdict is not called a Lidov-Kozai one."""
-    analysis = _zlk(2.5)
-    basis = 'N=18.9(cover);M=full;V=not_measured;S=full;veto=-'
-    verdict = _minimal(analysis.verdict, confidence_basis=basis, flags=['gate_unavailable'], v2_verdict='uncertain//gate_unavailable')
-    verdict.status, verdict.confidence = 'resonant', 'medium'
-    words = vt.basis_words(basis)
-    assert vt.arithmetic_line(verdict, []) == f'Level from the evidence: {words} → MEDIUM'
-    assert vt.confidence_sentence(verdict, []) == f'Medium from the evidence: {words}.'
-    assert 'margin' not in vt.change_line(verdict, [])
-    assert vt.long_period_verdict_line(analysis) == (
-        'RESONANT: ω librates over the whole record; the free-ω gate gives no verdict, so it is not confirmed as Lidov-Kozai.'
-    )
-    assert vt.policy_block(verdict)[3].text == 'v2: uncertain · gate_unavailable'

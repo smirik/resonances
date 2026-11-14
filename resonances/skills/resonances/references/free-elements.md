@@ -201,7 +201,7 @@ $b_\varpi$, $b_\Omega$ off the modes ([the gate inside the episodes](physics/sec
 
 Any other episodic row without a verdict (a planetary residual, a short window, an undefined
 phase) keeps the geometry's status under the minimal policy (flag `gate_unavailable`, at most
-medium); the W28 tree (`v2_verdict`) made it `transient` only when $e$ and $i$ trade at constant
+medium); the full tree (`v2_verdict`) made it `transient` only when $e$ and $i$ trade at constant
 $\sqrt{1-e^2}\cos i$ inside its deciding episode (`zlk_ei_episode_coupling` = `zlk`), else
 `uncertain` / `gate_unavailable`: [From the outcome to the status](physics/secular-zlk.md).
 

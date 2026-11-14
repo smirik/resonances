@@ -53,7 +53,16 @@ PAREN_WITH_TAG = re.compile(r'\s*\((?:[^()]|\([^()]*\))*?\b' + TAG + r'(?:[^()]|
 BARE_TAG = re.compile(r'(?:[;,]\s*)?\b' + TAG + r'\b:?\s*')
 
 
+# Review-card ids ("card g08-2 B", "cards g08-7, g05-2") and the dates of a decision are dropped too; the rest of a
+# parenthesis that holds one stays ("(F3, card g05-6)" -> "(F3)").
+CARD = re.compile(r'[,;]?\s*\bcards? g\d{2}-\d+[a-z]?(?: [A-Z]\b)?(?:,\s*g\d{2}-\d+[a-z]?(?: [A-Z]\b)?)*')
+DATED = re.compile(r',?\s*the trim before 20\d\d-\d\d-\d\d|(?<=\()20\d\d-\d\d-\d\d,\s*')
+
+
 def clean(text: str) -> str:
+    text = CARD.sub('', text)
+    text = text.replace(' (B9, A-FW)', '').replace('the single-leg rule of C6', 'the single-leg rule G4c')
+    text = DATED.sub('', text)
     text = re.sub(r',?\s*as before W\d{1,2}[a-z]?', '', text)
     text = re.sub(r'\.?\s*Question [A-Z0-9]+ to the author \(W\d+\)', '', text)
     text = PAREN_WITH_TAG.sub('', text)
@@ -61,6 +70,7 @@ def clean(text: str) -> str:
     text = re.sub(r'\s+([;,.:)])', r'\1', text)
     text = re.sub(r'\(\s*\)', '', text)
     text = re.sub(r'\s{2,}', ' ', text).strip(' ;,')
+    text = re.sub(r'^:\s*', '', text)  # a meaning that began with a dropped tag
     return text.replace('|', '\\|')
 
 

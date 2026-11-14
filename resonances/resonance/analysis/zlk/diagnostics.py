@@ -70,7 +70,7 @@ from scipy.signal import butter, sosfiltfilt
 from resonances.data.invariable_plane import FRAME_ECLIPTIC, FRAME_INVARIABLE, inclination_to_invariable_plane
 from resonances.resonance.analysis.filtering import lowpass_or_none
 from resonances.resonance.analysis.ledger import Op
-from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN
+from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN, within_rayleigh
 from resonances.resonance.analysis.verdict import AngleStatus, CheckValue
 
 NAN = float('nan')
@@ -353,12 +353,6 @@ def measure_ei_coupling(t_yr, e, inc, Omega, period_yr: float, period_source: st
 # ------------------------------------------------------------------------------------------------- attribution
 
 
-def _within_rayleigh(period_a: float, period_b: float, resolution: float) -> bool:
-    if not (np.isfinite(period_a) and np.isfinite(period_b) and period_a > 0 and period_b > 0):
-        return False
-    return abs(ARCSEC_PER_TURN / period_a - ARCSEC_PER_TURN / period_b) < resolution
-
-
 def _beat_tolerance(resolution: float, period_cycle_yr: float, step_yr: float) -> float:
     """The frequency tolerance of P_cyc = the beat [arcsec/yr]: the free elements' Rayleigh width plus P_cyc's own
     precision, one grid step on a period of turning points, 1296000 dt / P^2 (591986 over 4 Myr: 0.32 + 3.5 at
@@ -414,7 +408,7 @@ def attribute_forcing(
     gap = abs(elements.b_varpi - rate)
     beat = ARCSEC_PER_TURN / gap if np.isfinite(gap) and gap > 0 else NAN
     period = episodes_period_yr if scope == 'episodes' and np.isfinite(episodes_period_yr) else period_cycle_yr
-    if not _within_rayleigh(beat, period, _beat_tolerance(elements.resolution, period, step_yr)):
+    if not within_rayleigh(beat, period, _beat_tolerance(elements.resolution, period, step_yr)):
         return Attribution(reason='beat_period_mismatch')
     node = float(elements.b_Omega - rate)
     turns = abs(node) * elements.baseline / ARCSEC_PER_TURN

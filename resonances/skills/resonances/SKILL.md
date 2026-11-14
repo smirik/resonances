@@ -134,7 +134,7 @@ references/output.md; every value: references/physics/overview.md and references
 | `veto`, `n_cycles`, `n_counted_episodes`, `counted_episode_ids`, `candidate_episode_ids` | minimal policy: the measured physics that made a bounded angle non_resonant (`owner`, `kinematic`, `forced_wave`, `strength`, `zlk_kinematic`, `zlk_free_e`; '' none), the complete cycles N behind the level, the counted episodes and the candidates (episodes.csv `counted`, `candidate`) |
 | `action` | `none`, `spot_check` (look at the figure), `review`, `extend` (to `extend_to_years`), `resample` (at `resample_step_yr`) |
 | `rules_fired` | the named rules that acted on the row (a cut, a join, a cap, an outcome), even when the status stayed; each has a row id in references/libration-analysis.md (`frame_join` → G2q). A flag list, never a status |
-| `review_required`, `review_reasons` | the review queue: rows a human should look at (medium/low level, a spot_check/review action, origin unknown) and why (`confidence:`, `cap:`, `failed:`, `origin_unknown`); no status reads it |
+| `review_required`, `review_reasons` | the review queue: rows a human should look at (medium/low level, a spot_check/review action, origin unknown) and why (`confidence:`, `action:`, `origin_unknown`, `veto_thin`); no status reads it |
 
 **The minimal policy** (the W28 tree's verdict is kept in `v2_verdict`;
 references/physics/status-tree.md, references/physics/confidence.md). The status is the geometry of σ_f: bounded over
@@ -358,8 +358,9 @@ The right column is the verdict, in ten blocks that come in the same order for e
    that the level does not read is said here, with the reason it is not read.
 9. **Numbers**: the DECISIVE lines with rule IDs, then labeled groups. Numbers are printed wherever they are needed;
    there are no pointers.
-10. **Footer**: the codes (status code, leaf · angle rule, reason/origin/veto, flags), then `W28 tree: status/level`
-    (`v2_verdict`, for comparison only: never a second verdict), the settings hash and the docs.
+10. **Footer**: the codes (status code, leaf · angle rule, reason/origin/veto, flags), the settings hash and the docs.
+    The full tree's verdict before the minimal policy is only in the `v2_verdict` column, for comparison: never a
+    second verdict.
 
 For a paper, `plot_options={'combined': {'figure': 'panels'}}` draws the panels only (no header, legend, right
 column or empty slot); the caption must then carry the verdict. After a restore,

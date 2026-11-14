@@ -169,7 +169,7 @@ reports the loop's own action $J_\text{loop}$, the same integral between the loo
 (`sep_cycle_J_loop_rad2_yr`), with $dJ_\text{loop}/dE = P_\text{loop}/2\pi$ (`sep_cycle_dJdE_loop_yr`), finite
 between the saddles. For $V = -\cos\sigma + \cos2\sigma$ at $E = 1$ the turning points are
 $\pm\arccos\big((1 - \sqrt{17})/4\big) = \pm 2.4667$, $J_\text{loop} = 2.6051$ and $P_\text{loop} = 6.8905$; just above
-the barrier $J_\text{loop}$ is the sum of the two lobes' actions. Before W25 the ratio was clipped to 1 there, which
+the barrier $J_\text{loop}$ is the sum of the two lobes' actions. Clipping the ratio to 1 there would
 put such a cycle in the separatrix zone. A libration whose mean energy reaches the top of a potential of one well keeps
 $J/J_s = 1$ (the separatrix, within the energy's scatter).
 

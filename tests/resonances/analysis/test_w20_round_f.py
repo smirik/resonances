@@ -25,13 +25,10 @@ import matplotlib
 
 matplotlib.use('Agg')
 
-import matplotlib.pyplot as plt  # noqa: E402
 import pytest  # noqa: E402
 
 import resonances  # noqa: E402
-from resonances.plotting import combined_numbers as numbers  # noqa: E402
 from resonances.plotting import verdict_text as vt  # noqa: E402
-from resonances.plotting.style import LAYOUT_V1  # noqa: E402
 from resonances.resonance.analysis import orbit_type as ot  # noqa: E402
 from resonances.resonance.analysis import pendulum  # noqa: E402
 from resonances.resonance.analysis.ledger import Ledger  # noqa: E402
@@ -241,29 +238,6 @@ def test_a_regime_in_a_sentence_is_plain_words(regime, phrase):
     assert '_' not in vt.regime_phrase(regime)
 
 
-@pytest.mark.benchmark
-@pytest.mark.parametrize(
-    'example, phrase',
-    [
-        ('mmr2__1999_TJ10__19M-22+0+3', 'to the end the record is too short to tell what σ does'),
-        ('coorbital__536531__1M-1+0+0__20kyr', 'to the end the record is too short to tell what σ does'),
-        ('mmr3__501710__1E+7S-4+0+0-4__500kyr', 'to the end σ drifts'),
-    ],
-)
-def test_no_raw_regime_name_in_the_sentences(example, phrase):
-    """Verify E: 'from 18.8 kyr to the end σ is in insufficient_time' (1999 TJ10 19M-22 and 536531)."""
-    if not io.example_path(example).exists():
-        pytest.skip('benchmark data not available')
-    result = analyse_mmr(io.load_series(example), S)
-    row = {**result.numbers_row(), **result.summary_row()}
-    text = vt.explain_mmr(result, S, row, result.episode_rows())
-    joined = ' '.join(text.sentences)
-    assert phrase in joined
-    for value in AngleStatus:
-        if '_' in str(value):
-            assert str(value) not in joined
-
-
 # --------------------------------------------------------------------------------------------- 4. round-E gaps
 
 
@@ -290,32 +264,6 @@ def test_the_harmonic_flag_alone_keeps_exit_and_capture_off():
     other = [flag for flag in smp.flags if flag != FLAGGED]
     assert decide.exit_and_capture(flags=other, ledger=Ledger.from_settings(S), **args)
     assert not decide.exit_and_capture(flags=list(smp.flags), ledger=Ledger.from_settings(S), **args)
-
-
-def _overflowing_text():
-    checks = [vt.CheckRow(f'M{i}', f'margin number {i}', vt.CheckState.PASS, 'detail ' * 12, 'need', vt.COUNTS_FULL) for i in range(14)]
-    checks.append(vt.CheckRow('cap', 'cap short_period_aliased', vt.CheckState.FAIL, 'held by the step', counts='cap ≤ medium'))
-    return vt.VerdictText('resonant', 'libration', 'medium', 'reason x', ['A sentence. ' * 30] * 3, [], checks, 'raw: …')
-
-
-@pytest.mark.slow
-def test_the_grey_numbers_go_first_and_the_cap_and_decisive_lines_stay():
-    """Review E #6: the same 700 numbers with 690 plain lines do not fit even compact in five columns (a count of what
-    is left); as grey lines (tests skipped by design) they are dropped first (W23 F1: before any other change of the
-    layout, the explanation stays whole) and the 10 bold (decisive) lines and the cap row stay."""
-    bold = [numbers.NumberLine('numbers', f'decisive{i}', str(i), group='D', style=numbers.STYLE_BOLD) for i in range(10)]
-    for style, overflows in (('', True), (numbers.STYLE_GREY, False)):
-        rest = [numbers.NumberLine('numbers', f'context{i}', str(i), group='G', style=style) for i in range(690)]
-        fig = plt.figure(figsize=LAYOUT_V1.size, dpi=40)
-        stats = numbers.draw_explained(fig, _overflowing_text(), bold + rest, LAYOUT_V1)
-        texts = [artist.get_text() for artist in fig.texts]
-        plt.close(fig)
-        assert stats['compact'] == overflows and (stats['overflow'] > 0) == overflows and stats['grey_dropped']
-        assert stats['n_columns'] == (5 if overflows else 4)
-        assert any('cap short_period_aliased' in t for t in texts)
-        if not overflows:
-            assert all(any(t.startswith(f'decisive{i} ') for t in texts) for i in range(10))
-            assert not any(t.startswith('context') for t in texts)
 
 
 @pytest.mark.parametrize(

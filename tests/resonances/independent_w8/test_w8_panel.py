@@ -18,11 +18,9 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from resonances.plotting.verdict_text import explain_long_period, explain_mmr
+from resonances.plotting.verdict_text import explain_mmr
 from resonances.resonance.analysis.confidence import (
     Cap,
-    CellRecord,
-    ConfidenceCells,
     apply_caps,
     assess,
     load_cells,
@@ -81,48 +79,39 @@ CONFIDENCE_CASES = {
     'ledger_u_thin': ({'L4': mv(FULL), 'Z': mv(FULL)}, [], ['U:libration_min_tp'], 'high', 'high'),
 }
 
-CELL = ('resonant', 'libration', 'dynamic_libration')
-
 
 @pytest.mark.parametrize('case', sorted(CONFIDENCE_CASES))
 def test_confidence_level_from_margins_and_caps(case):
     margins, caps, ledger_thin, raw, shown = CONFIDENCE_CASES[case]
-    # a calibration cell with no author labels at all: it must not hold the level down (no gate)
-    cells = ConfidenceCells(records={CELL: CellRecord(0, 0)})
-    result = assess(Status.RESONANT, 'libration', 'dynamic_libration', margins, caps, ledger_thin, PHYSICS, cells)
+    # no calibration cell holds the level down (no gate): the level is the margins' and the caps'
+    result = assess(Status.RESONANT, margins, caps, ledger_thin, PHYSICS)
     assert str(result.confidence_raw) == raw
     assert str(result.confidence) == shown
-    assert result.cell == CellRecord(0, 0)
 
 
 def test_all_physics_not_measured_adds_its_cap():
     margins, caps, ledger_thin, _, _ = CONFIDENCE_CASES['all_physics_not_measured']
-    result = assess(Status.RESONANT, 'libration', 'dynamic_libration', margins, caps, ledger_thin, PHYSICS, ConfidenceCells())
+    result = assess(Status.RESONANT, margins, caps, ledger_thin, PHYSICS)
     assert str(Cap.ALL_PHYSICS_NOT_MEASURED) in result.caps
-    assert result.cell is None  # no record for the cell: nothing attached, the level is still shown
 
 
 def test_ledger_thin_item_is_listed():
     margins, caps, ledger_thin, _, _ = CONFIDENCE_CASES['ledger_u_thin']
-    result = assess(Status.RESONANT, 'libration', 'dynamic_libration', margins, caps, ledger_thin, PHYSICS, ConfidenceCells())
+    result = assess(Status.RESONANT, margins, caps, ledger_thin, PHYSICS)
     assert 'U:libration_min_tp' in result.thin_margins
 
 
-@pytest.mark.parametrize('cell', [CellRecord(0, 0), CellRecord(1, 1), CellRecord(3, 3)])
-def test_certain_shown_whatever_the_cell(cell):
+def test_certain_shown_whatever_the_labels():
     """Author 16b C2: the real levels now, certain included, whatever the labels say."""
     margins = {'L4': mv(FULL), 'Z': mv(FULL), 'R0': mv(FULL)}
-    result = assess(Status.RESONANT, 'libration', 'dynamic_libration', margins, [], [], PHYSICS, ConfidenceCells({CELL: cell}))
+    result = assess(Status.RESONANT, margins, [], [], PHYSICS)
     assert result.confidence == Confidence.CERTAIN
-    assert result.cell == cell
 
 
 @pytest.mark.parametrize('status', [Status.UNCERTAIN, Status.INVALID])
-def test_uncertain_and_invalid_have_no_level_and_no_cell(status):
-    cells = ConfidenceCells({(str(status), 'drift', 'x'): CellRecord(10, 0)})
-    result = assess(status, 'drift', 'x', {'L4': mv(FULL)}, [], [], PHYSICS, cells)
+def test_uncertain_and_invalid_have_no_level(status):
+    result = assess(status, {'L4': mv(FULL)}, [], [], PHYSICS)
     assert result.confidence == Confidence.NONE and result.confidence_raw == Confidence.NONE
-    assert result.cell is None
 
 
 def test_apply_caps_ceiling_table():
@@ -187,15 +176,6 @@ def test_verdict_columns_orbit_type_and_cell():
     assert (back.cell_n_examples, back.cell_n_errors) == (7, 1)
     assert back.cell_accuracy_low_95 == pytest.approx(0.49)
     assert back.cell_accuracy_high_95 == pytest.approx(0.97)
-
-
-def test_cell_record_verdict_fields_nan_to_none():
-    assert CellRecord(5, 2).verdict_fields() == {
-        'cell_n_examples': 5,
-        'cell_n_errors': 2,
-        'cell_accuracy_low_95': None,
-        'cell_accuracy_high_95': None,
-    }
 
 
 # ----------------------------------------------------------------------------------------------- orbit type
@@ -511,16 +491,6 @@ EXPECTED_STATUS = {
     'unphysical': 'invalid',
 }
 
-# the status as a word opening its sentence and on the plaque
-STATUS_WORD = {
-    'resonant': 'Resonant',
-    'transient': 'Transient',
-    'near_separatrix': 'Near-separatrix',
-    'non_resonant': 'Non-resonant',
-    'uncertain': 'Uncertain',
-    'invalid': 'Invalid',
-}
-
 
 @pytest.fixture(scope='module')
 def explained():
@@ -533,20 +503,8 @@ def explained():
     return out
 
 
-def all_text(text):
-    parts = list(text.sentences) + [text.badge, text.subtitle, text.arithmetic] + list(text.info)
-    parts += [f'{s.title} {s.outcome}' for s in text.steps]
-    parts += [f'{c.name} {c.detail} {c.need} {c.note}' for c in text.checks]
-    return '\n'.join(parts)
-
-
 def accepted(episodes):
     return [row for row in episodes if str(row['accepted']).lower() in ('true', '1')]
-
-
-def kyr(value):
-    """`years` as printed for a time ≥ 1 kyr: three significant digits."""
-    return f'{float(f"{value / 1000:.3g}"):g} kyr'
 
 
 @pytest.mark.parametrize('case', sorted(EXPECTED_STATUS))
@@ -555,42 +513,13 @@ def test_synthetic_status(explained, case):
     assert str(analysis.verdict.status) == EXPECTED_STATUS[case]
 
 
-@pytest.mark.parametrize('case', sorted(EXPECTED_STATUS))
-def test_status_words_printed_once(explained, case):
-    analysis, _, text = explained[case]
-    status = str(analysis.verdict.status)
-    head = STATUS_WORD[status].upper()
-    assert text.badge.startswith(head)
-    assert text.badge.count(head) == 1
-    # the plaque is the only place of the status in capitals
-    assert head not in '\n'.join(text.sentences + [text.subtitle])
-    # 'Status: …' opens the why-sentence
-    assert any(s.startswith(STATUS_WORD[status] + ':') for s in text.sentences), text.sentences
-    level = str(analysis.verdict.confidence)
-    if status in ('uncertain', 'invalid'):
-        assert level == ''
-        assert not any(word in text.badge.replace(head, '', 1) for word in ('CERTAIN', 'HIGH', 'MEDIUM', 'LOW'))
-    else:
-        assert text.badge.endswith('· ' + level.upper())
-        assert any(s.startswith(level.capitalize()) for s in text.sentences)
-
-
-@pytest.mark.parametrize('case', sorted(EXPECTED_STATUS))
-def test_whole_record_only_for_libration(explained, case):
-    analysis, _, text = explained[case]
-    says = any('librates over the whole record' in s for s in text.sentences)
-    assert says == (str(analysis.verdict.angle_status) == 'libration')
-
-
-def test_one_episode_covering_the_record_never_says_episode(explained):
+def test_one_episode_covering_the_record(explained):
     analysis, episodes, text = explained['libration']
     rows = accepted(episodes)
     assert len(rows) == 1
-    assert 'episode' not in all_text(text).lower()
     # TPs at 62.5 + 125 k yr inside the window [P_c, 20000 - P_c], P_c = 150 / 2 = 75 yr: 187.5 ... 19812.5, i.e.
-    # (19812.5 - 187.5) / 125 + 1 = 158, by construction; the text prints the episode row's numbers
+    # (19812.5 - 187.5) / 125 + 1 = 158, by construction
     assert int(rows[0]['n_tp']) == 158 and float(rows[0]['period_med_yr']) == pytest.approx(P_LIB, abs=1.0)
-    assert '158 turning points, period 250 yr' in text.sentences[0]
 
 
 def test_one_episode_covering_the_record_edge_gap(explained):
@@ -601,74 +530,9 @@ def test_one_episode_covering_the_record_edge_gap(explained):
     assert re.search(r'larger edge gap ([\d.]+) ', detail).group(1) == f'{gap:.3g}'
 
 
-def test_single_episode_not_covering(explained):
-    _, episodes, text = explained['one_episode']
-    rows = accepted(episodes)
-    assert len(rows) == 1
-    row = rows[0]
-    t0, t1, period = float(row['t_start_yr']), float(row['t_end_yr']), float(row['period_med_yr'])
-    sentence = text.sentences[0]
-    # W34: the minimal policy's level sentence names where N was counted, '(the episode)' (docs/reading-figures.md,
-    # the explanation's basis); the description of σ itself still says 'only', not 'episode'
-    described = [s for s in text.sentences if 'from the evidence' not in s]
-    assert 'only' in sentence and 'episode' not in '\n'.join(described).lower()
-    assert f'({round(100 * (t1 - t0) / SPAN)}% of the record)' in sentence
-    # edge gaps in libration periods: start t0/P, end (span − t1)/P
-    assert f'misses the start by {t0 / period:.2g} and the end by {(SPAN - t1) / period:.2g}' in sentence
-    assert f'from {kyr(t1)} to the end σ circulates' in sentence  # plain words, not the enum (W20 round F)
-    assert text.ends == 'ends: circulation' and 'ends:' not in text.badge
-
-
-def test_single_episode_from_x_to_y(explained):
-    _, episodes, text = explained['one_episode']
-    row = accepted(episodes)[0]
-    assert f'librates from {kyr(float(row["t_start_yr"]))} to {kyr(float(row["t_end_yr"]))} only' in text.sentences[0]
-
-
 def test_two_episodes_are_counted(explained):
     _, episodes, text = explained['two_episodes']
-    rows = accepted(episodes)
-    assert len(rows) == 2
-    covered = sum(float(r['t_end_yr']) - float(r['t_start_yr']) for r in rows) / SPAN
-    assert f'2 separate episodes covering {round(100 * covered)}% of the record' in text.sentences[0]
-
-
-def cycle_claims(text):
-    """(duration_yr, cycles, P_cyc_yr) of every 'lasts X = N cycles … (cycles of P_cyc Y' in the text."""
-    pattern = r'lasts ([\d.]+) (yr|kyr) = ([\d.]+) cycles? .*?cycle period P_cyc ([\d.]+) (yr|kyr)'
-    out = []
-    for m in re.finditer(pattern, '\n'.join(text.sentences)):
-        scale = {'yr': 1.0, 'kyr': 1000.0}
-        out.append((float(m.group(1)) * scale[m.group(2)], float(m.group(3)), float(m.group(4)) * scale[m.group(5)]))
-    return out
-
-
-@pytest.mark.parametrize('case', ['pendulum_episodes', 'short_episode_70'])
-def test_cycles_equal_duration_over_period(explained, case):
-    analysis, episodes, text = explained[case]
-    claims = cycle_claims(text)
-    assert claims, text.sentences
-    longest = max(float(r['t_end_yr']) - float(r['t_start_yr']) for r in accepted(episodes))
-    period = float(accepted(episodes)[0]['period_med_yr'])
-    for duration, cycles, p_cyc in claims:
-        assert duration == pytest.approx(longest, rel=6e-3)  # printed with 3 significant digits
-        assert p_cyc == pytest.approx(period, rel=6e-3)
-        assert cycles == pytest.approx(longest / p_cyc, abs=0.051 if cycles != round(cycles) else 0.5)
-
-
-@pytest.mark.parametrize(
-    'case',
-    [
-        'pendulum_episodes',
-        'short_episode_70',
-    ],
-)
-def test_printed_cycle_comparison_holds(explained, case):
-    _, _, text = explained[case]
-    found = re.findall(r'([\d.]+) cycles < ([\d.]+)', '\n'.join(text.sentences))
-    assert found
-    for left, right in found:
-        assert float(left) < float(right), f'{left} cycles < {right}'
+    assert len(accepted(episodes)) == 2
 
 
 def test_synthetic_libration_orbit_type(explained):
@@ -693,7 +557,7 @@ def test_summary_cell_columns_match_cells_file(explained):
         assert row[column] in (None, '')
 
 
-# ------------------------------------------------------------------------- secular (explain_long_period)
+# ------------------------------------------------------------------------- secular
 
 
 @pytest.fixture(scope='module')
@@ -711,23 +575,16 @@ def secular_explained():
     for name, angle in angles.items():
         series = LongPeriodSeries(ResonanceType.SECULAR, 'g-g6', f'syn_{name}', t, angle, 2.3 * ones, 0.1 * ones, 0.1 * ones)
         analysis = analyse_secular(series, SETTINGS)
-        episodes = analysis.episode_rows()
-        out[name] = (analysis, explain_long_period(analysis, SETTINGS, episodes))
+        out[name] = analysis
     return out
 
 
-def test_secular_libration_text(secular_explained):
-    analysis, text = secular_explained['libration']
+def test_secular_libration(secular_explained):
+    analysis = secular_explained['libration']
     assert str(analysis.verdict.status) == 'resonant'
-    assert text.badge.startswith('RESONANT') and text.badge.count('RESONANT') == 1
-    assert any('over the whole record' in s for s in text.sentences)
-    assert 'episode' not in '\n'.join(text.sentences).lower()
     assert analysis.verdict.orbit_type == 'σ libration about 180°'
 
 
-def test_secular_circulation_text(secular_explained):
-    analysis, text = secular_explained['circulation']
+def test_secular_circulation(secular_explained):
+    analysis = secular_explained['circulation']
     assert str(analysis.verdict.status) == 'non_resonant'
-    assert text.badge.startswith('NON-RESONANT')
-    assert not any('over the whole record' in s for s in text.sentences)
-    assert any(s.startswith('Non-resonant') for s in text.sentences)

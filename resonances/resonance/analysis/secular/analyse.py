@@ -202,14 +202,7 @@ def analyse_long_period(
     # F is read at the cutoff of the decisive angle (the centre scale's when it decided)
     margins, caps, flags = decide.margins_and_caps(angle_decision, geometry, angle.cutoff_yr, gate_result, settings, ledger)
     assessment = confidence_module.assess(
-        status.status,
-        str(angle_decision.angle_status),
-        str(status.reason),
-        margins,
-        caps,
-        ledger.thin_margins(),
-        decide.PHYSICS_MARGINS[series.resonance_type],
-        cells,
+        status.status, margins, caps, ledger.thin_margins(), decide.PHYSICS_MARGINS[series.resonance_type]
     )
     extension = extend_module.recommend(
         status.status,
@@ -240,7 +233,6 @@ def analyse_long_period(
         orbit_type=orbit_type_module.long_period_orbit_type(series.resonance_type, geometry, angle_decision.decisive_episode_id),
         confidence=assessment.confidence,
         confidence_raw=assessment.confidence_raw,
-        **assessment.cell_fields(),
         reason=status.reason,
         flags=all_flags,
         thin_margins=assessment.thin_margins,

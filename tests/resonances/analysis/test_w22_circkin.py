@@ -308,7 +308,6 @@ def test_142694_staircase_over_200_kyr_circulates():
     # the level is the W28 tree's (W34: the minimal policy reads its own, high)
     assert (str(verdict.status), str(verdict.angle_status), tree_verdict(verdict).confidence) == ('non_resonant', 'circulation', 'medium')
     assert analysis.geometry.centre.max_pass_rev < 1 and abs(analysis.geometry.centre.net_rev) == pytest.approx(2.75, abs=0.01)
-    assert 'advances 2.75 ≥ 2 revolutions net' in _explained(analysis).sentences[0]
 
 
 def test_f_only_for_a_kinematic_non_resonant_verdict_with_a_direct_strength():

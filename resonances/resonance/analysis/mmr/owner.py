@@ -33,7 +33,7 @@ Steps of `run_owner`:
      mmr_owner_rate_factor x 2 pi / min(P, P_cyc) of 0 somewhere in the a range of the window (an owner may
      hold the body for part of the record: 2000 YG4 sits in 7E-23 for 6 of 20 kyr). Angles with sigma's
      lambda part (sigma, its subresonances, harmonics) are not owners: SPEC §6 handles them.
-  3. Each candidate (`AngleBasis`, `fit_on_frame`; `owner_angle` + `measure_candidate` for one given angle): phi_o
+  3. Each candidate (`AngleBasis`, `fit_on_frame`; `measure_candidate` on the full grid, `dense_frame`): phi_o
      from the saved longitudes, unwrapped by its model rate, minus the planets' slow ripple sum k_j dlambda_j (as
      sigma), filtered at P_c. The
      force law is fitted to the band-passed a_dot ([P / f, f P]) in windows of mmr_force_window_cycles x P,
@@ -490,28 +490,16 @@ def wrapped_angle(candidate: ResonanceSpec, series: MMRSeries) -> np.ndarray:
     return np.mod(phi, TWO_PI)
 
 
-def owner_angle_with_residual(
-    candidate: ResonanceSpec,
-    series: MMRSeries,
-    planet_n: Mapping[str, float],
-    body_n_offset: float = 0.0,
-    varpi_rate: Optional[float] = None,
-) -> Tuple[np.ndarray, np.ndarray]:
+def owner_angle_with_residual(candidate: ResonanceSpec, series: MMRSeries, planet_n: Mapping[str, float]) -> Tuple[np.ndarray, np.ndarray]:
     """(phi_o unwrapped [rad], per-step model error [rad], length N-1): phi_o mod 2 pi from the saved longitudes,
-    unwrapped by sum k_j n_j + k (n(a) + offset) + p varpi_dot (varpi_dot: slope over the record)."""
+    unwrapped by sum k_j n_j + k n(a) + p varpi_dot (varpi_dot: slope over the record)."""
     t = np.asarray(series.t_yr, float)
     a = np.asarray(series.a, float)
-    if varpi_rate is None:
-        varpi_rate = slope(t, np.unwrap(np.asarray(series.varpi, float)))
-    body = mean_motion(0.5 * (a[1:] + a[:-1])) + body_n_offset
+    varpi_rate = slope(t, np.unwrap(np.asarray(series.varpi, float)))
+    body = mean_motion(0.5 * (a[1:] + a[:-1]))
     lam = sum(k * planet_n[name] for name, k in zip(candidate.planets, candidate.planet_coefficients))
     rate = lam + candidate.body_coefficient * body + candidate.body_varpi_coefficient * varpi_rate
     return predictive_unwrap(t, wrapped_angle(candidate, series), rate)
-
-
-def owner_angle(candidate: ResonanceSpec, series: MMRSeries, planet_n: Mapping[str, float]) -> np.ndarray:
-    """phi_o from the saved lambda, lambda_P (or its catalogue line), varpi with the predictive unwrap [rad]."""
-    return owner_angle_with_residual(candidate, series, planet_n)[0]
 
 
 def unwrap_ok(residual_rad: np.ndarray, settings: AnalysisSettings) -> bool:
@@ -688,15 +676,13 @@ def fit_stride(t_yr: np.ndarray, cutoff_yr: float) -> int:
     return max(1, int(cutoff_yr / (2 * step)))
 
 
-def fit_grid_masks(
-    prep: Preprocessed, period_yr: float, settings: AnalysisSettings, window=None, stride: Optional[int] = None
-) -> Tuple[np.ndarray, np.ndarray]:
+def fit_grid_masks(prep: Preprocessed, period_yr: float, settings: AnalysisSettings, window=None) -> Tuple[np.ndarray, np.ndarray]:
     """(mask, fit mask) of the owner fits at P: `window` (default prep.window) clear of the band-pass edges
-    (`band_window`), and that mask thinned to the fit grid (`fit_stride`, or `stride`). `build_frame` fits on it and
+    (`band_window`), and that mask thinned to the fit grid (`fit_stride`). `build_frame` fits on it and
     stage 3 (`fitted_window_settings`) sizes its windows on it."""
     t = np.asarray(prep.t_yr, float)
     mask = filtering.window_mask(t, prep.window if window is None else window) & band_window(t, period_yr, settings)
-    return mask, mask & (np.arange(len(t)) % (stride or fit_stride(t, prep.cutoff.cutoff_yr)) == 0)
+    return mask, mask & (np.arange(len(t)) % fit_stride(t, prep.cutoff.cutoff_yr) == 0)
 
 
 def _start_key(start: float) -> float:
@@ -754,15 +740,13 @@ def build_frame(
     window=None,
     *,
     context: Optional[Context] = None,
-    stride: Optional[int] = None,
 ) -> OwnerFrame:
     """The band [P/f, fP] of a, a_dot and sigma on `window` (default prep.window); sigma's force-law windows; the
     body's mean motion (measured lambda_dot when lambda is saved, else n(<a>)) and varpi rate on the window.
-    `context` gives the planets' varpi rates of the multiplet law (none: the law is not measured); `stride` overrides
-    the fit grid's thinning (`fit_stride`; 1 = every sample, the dense verification)."""
+    `context` gives the planets' varpi rates of the multiplet law (none: the law is not measured)."""
     t = np.asarray(prep.t_yr, float)
     factor, order = settings.mmr_owner_band_factor, settings.filter_order
-    mask, fit_mask = fit_grid_masks(prep, period_yr, settings, window, stride)
+    mask, fit_mask = fit_grid_masks(prep, period_yr, settings, window)
     a_band = band_pass(t, np.asarray(prep.a_f, float), period_yr, factor, order)
     adot_band = filtering.time_derivative(t, a_band)
     sigma_f = np.asarray(prep.angle_f, float)
@@ -1284,23 +1268,20 @@ def measure_candidate(
     series: MMRSeries,
     cutoff_yr: float,
     settings: AnalysisSettings,
-    ripple: Optional[np.ndarray] = None,
-    residual: Optional[np.ndarray] = None,
-    *,
-    psi_all: bool = False,
 ) -> OwnerFit:
-    """The force law of phi_o (unwrapped, minus `ripple`, filtered at P_c) by regime, sigma on the same windows, and psi
-    for the regimes that pass R^2 and the coherence (every regime with `psi_all`). The angle is given at full
-    resolution here (`fit_owner`); `run_owner` measures its candidates through `AngleBasis` instead."""
+    """The force law of phi_o (unwrapped and cleaned of the planets' slow ripple, `AngleBasis.clean`; filtered here at
+    P_c) by regime, sigma on the same windows, and psi for the regimes that pass R^2 and the coherence. The angle is
+    given at full resolution: `run_owner` measures a candidate this way on the full grid (`dense_frame`) when the fit
+    grid does not resolve one of its windows, every other one through `AngleBasis`, and sets `unwrap_ok` (True here)
+    from the basis."""
     t, mask = frame.t_yr, frame.mask
-    phi_clean = np.asarray(phi, float) - (0.0 if ripple is None else ripple)
+    phi_clean = np.asarray(phi, float)
     phi_f = filtering.lowpass_with(t, phi_clean, cutoff_yr, settings)
-    ok = True if residual is None else unwrap_ok(residual, settings)
     rate = slope(t[mask], phi_clean[mask])
-    result = fit_on_frame(candidate, phi_f[frame.fit_mask], frame.spans(phi_f), rate, ok, frame, settings=settings)
+    result = fit_on_frame(candidate, phi_f[frame.fit_mask], frame.spans(phi_f), rate, True, frame, settings=settings)
     result.phi_f = phi_f
     for regime in result.regimes:
-        if psi_all or _psi_needed(regime, settings):
+        if _psi_needed(regime, settings):
             add_psi(result, regime, phi_clean, frame, series, settings)
     return result
 
@@ -1334,7 +1315,8 @@ class AngleBasis:
     Components: the body's lambda (model rate n(a) + the measured offset), the body's varpi (record rate), each planet's
     lambda minus its slow deviation (its ripple, as for sigma) or its catalogue line (`catalogue_line`: no ripple, no
     unwrap error) and, when a candidate needs it, a planet's varpi.
-    Memory: two full-grid arrays per component (the detrended series and its unwrap error), never one per candidate."""
+    Memory: two full-grid arrays per component (the detrended series and its unwrap error), never one per candidate;
+    a planet's slow deviation is dropped once its lambda part is built (its own copy of `deviations`)."""
 
     def __init__(
         self,
@@ -1346,7 +1328,7 @@ class AngleBasis:
         varpi_rate: float,
         settings: AnalysisSettings,
     ):
-        self.series, self.frame, self.planet_n, self.deviations = series, frame, planet_n, deviations
+        self.series, self.frame, self.planet_n, self.deviations = series, frame, planet_n, dict(deviations)
         self.cutoff_yr, self.varpi_rate, self.settings = cutoff_yr, varpi_rate, settings
         self.t = np.asarray(frame.t_yr, float)
         self.parts: Dict[str, BasisSeries] = {}
@@ -1366,7 +1348,7 @@ class AngleBasis:
                 unwrapped, residual = catalogue_line(series, planet), np.zeros(max(len(t) - 1, 0))
             elif kind == 'lambda':
                 unwrapped, residual = predictive_unwrap(t, np.asarray(saved.mean_longitude, float), self.planet_n[planet])
-                unwrapped = unwrapped - self.deviations[planet]
+                unwrapped = unwrapped - self.deviations.pop(planet)  # read once: the part is kept
             else:
                 unwrapped, residual = predictive_unwrap(t, np.asarray(saved.varpi, float), 0.0)
         elapsed = t - t[0]
@@ -1477,30 +1459,6 @@ def _candidate(fit: OwnerFit, regime: Optional[RegimeFit]) -> OwnerCandidate:
         lever_sigma=regime.lever_sigma,
         **common,
     )
-
-
-def fit_owner(
-    candidate: ResonanceSpec,
-    phi: np.ndarray,
-    prep: Preprocessed,
-    context: Context,
-    period_cycle_yr: float,
-    settings: AnalysisSettings,
-    *,
-    series: Optional[MMRSeries] = None,
-    frame: Optional[OwnerFrame] = None,
-    ripple: Optional[np.ndarray] = None,
-) -> OwnerCandidate:
-    """R^2 of a_dot_f (band [P/f, f P], P = `period_cycle_yr`) on sin/cos phi_o per window, phi0 coherence, psi share of
-    sigma = (k/k_o) phi_o + psi, force K_o and theory K_th,o = omega0_th,o^2 / |c_o|, for the owner's regime with the
-    higher R^2 (`run_owner` judges every regime). `phi` is the unwrapped angle (`owner_angle`), `ripple` the planets'
-    slow term (default 0). Needs `series` (the body's lambda and varpi); `frame` is built from it when not given."""
-    if series is None:
-        raise ValueError('fit_owner needs the series (the body lambda and varpi)')
-    frame = build_frame(prep, series, period_cycle_yr, settings, context=context) if frame is None else frame
-    fit = measure_candidate(candidate, phi, frame, series, prep.cutoff.cutoff_yr, settings, ripple, psi_all=True)
-    best = max(fit.regimes, key=lambda r: _finite_or(r.r2, -np.inf), default=None)
-    return _candidate(fit, best)
 
 
 # --------------------------------------------------------------------------------------------- acceptance
@@ -1870,6 +1828,7 @@ def search_owner(
     longitudes = {name: series.planets[name].mean_longitude for name in used if name not in catalogued}
     deviations = planet_slow_deviations(t, longitudes, planet_n, prep.cutoff.cutoff_yr, settings.filter_order)
     basis = AngleBasis(series, frame, planet_n, deviations, prep.cutoff.cutoff_yr, slope(t, frame.varpi_unwrapped), settings)
+    del deviations  # the basis holds them until each is read
 
     judged, dense = [], None
     for spec in specs:

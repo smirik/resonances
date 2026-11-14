@@ -390,12 +390,6 @@ def test_the_zlk_figure_draws_the_free_omega_in_turns_and_names_the_measured_fac
         assert [text.get_text() for text in panel.get_legend().get_texts()] == ['osculating ω', 'free ω']
         # the free omega winds (222 - g5) x 500 kyr / 1296000 = 84 turns; the panel's top holds them
         assert panel.get_ylim()[1] > 80
-        # the cause of a kinematic libration is in the sentences (`verdict_text.zlk_cause`), the e-i coupling stays grey
-        info = ' '.join(fig.text_stats['text'].info)
-        sentences = ' '.join(fig.text_stats['text'].sentences)
-        assert 'Induced by the forced eccentricity of mode g5' in sentences and 'g6−g5 beat of the forced vector' in sentences
-        assert 'e-i at' in info and 'held by the forced mode' not in info and 'forced beat g6-g5' not in info
-        assert 'cycles of the free' not in sentences
     finally:
         plt.close(fig)
 

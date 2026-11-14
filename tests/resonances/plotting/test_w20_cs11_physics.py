@@ -25,10 +25,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa: E402
 import pytest  # noqa: E402
 
-from resonances.plotting import combined_numbers as numbers  # noqa: E402
 from resonances.plotting import mmr_verdict_panel as panel  # noqa: E402
 from resonances.plotting import verdict_text as vt  # noqa: E402
-from resonances.resonance.analysis.confidence import CAP_CEILING, Cap  # noqa: E402
 from resonances.resonance.analysis.ledger import LedgerEntry, Op  # noqa: E402
 from resonances.resonance.analysis.mmr import io  # noqa: E402
 from resonances.resonance.analysis.settings import settings_from_config  # noqa: E402
@@ -52,41 +50,6 @@ S = settings_from_config()
 )
 def test_sci(value, expected):
     assert vt.sci(value) == expected
-
-
-def _lowering(cap) -> bool:
-    return str(CAP_CEILING[cap]) in ('medium', 'low')
-
-
-def test_every_cap_that_lowers_the_level_names_its_alternative():
-    """q1: each cap whose ceiling is medium or low has (alternative, what decides it), its row prints them, and the
-    confidence sentence of a level set by it says them; a cap at high only reports (its row has none)."""
-    lowering = [cap for cap in Cap if _lowering(cap)]
-    assert len(lowering) >= 25  # 26 medium/low caps of confidence.Cap on 2026-10-20
-    for cap in lowering:
-        alternative, look = vt.CAP_ALTERNATIVES[str(cap)]
-        assert alternative and look, cap
-        assert look.startswith('(') or 'figure' in look or 'block' in look or 'rerun' in look, (cap, look)
-        (row,) = vt.cap_rows([str(cap)], str(CAP_CEILING[cap]))
-        assert vt.alternative_text(row) == f'if not: {alternative}; look at {look}'
-        verdict = SimpleNamespace(confidence=str(CAP_CEILING[cap]), confidence_raw='high')
-        sentence = vt.confidence_sentence(verdict, [row])
-        assert f'The other reading: {alternative}; the figure decides it in {look}.' in sentence, cap
-        assert vt.alternative_text(row) == 'if not: the other reading in the confidence sentence above'  # not twice
-    for cap in Cap:
-        if not _lowering(cap):
-            (row,) = vt.cap_rows([str(cap)], 'high')
-            assert row.alternative == '' and vt.alternative_text(row) == ''
-
-
-def test_cap_alternative_is_drawn_with_the_cap():
-    """The cap row of the confidence column carries the alternative (full and compact); since W28 E4 it is drawn as
-    'LIMIT: short name [id] → LEVEL' with what the cap means under it."""
-    row = vt.cap_rows(['near_episode'], 'medium')[0]
-    assert vt.limit_heading(row, 'medium') == 'LIMIT: almost an episode [cap:near_episode] → MEDIUM'
-    full = numbers._limit_lines(row)
-    assert full[0] == vt.CAP_WORDS['near_episode'] and full[-1].startswith('if not: transient: one more turning point')
-    assert 'look at (a): the gray run with most turning points' in numbers._limit_lines(row, compact=True)[-1]
 
 
 W20_ENTRIES = {
@@ -185,17 +148,6 @@ def test_subresonance_table():
         "d'Alembert factors unreliable: e, crossing",
     ]
     assert panel.ranked_members_lines({}, 'G') == []
-
-
-def test_physics_columns_leave_the_numbers():
-    """No number twice: a column the physics block prints is not in the numbers below it."""
-    section = vt.PhysicsSection('A', '', [vt.PhysicsRow('strength', '✓', 'strength', 'x', columns=('str_method', 'rsp_b5_ratio'))])
-    text = SimpleNamespace(physics=[section], bold_columns=[], grey_columns={})
-    row = {'str_method': 'direct_averaging', 'rsp_b5_ratio': 0.24, 'rsp_b1_ratio': 1.36, 'str_n_evaluations': 3}
-    lines = panel.explained_lines(row, {}, [], [], text)
-    columns = {line.column for line in lines}
-    assert 'str_method' not in columns and 'rsp_b5_ratio' not in columns
-    assert {'rsp_b1_ratio', 'str_n_evaluations'} <= columns
 
 
 # --------------------------------------------------------------------------------------------- benchmark records
@@ -298,10 +250,9 @@ def test_385266_block_against_the_r1_prototype():
     assert rows[('What', 'identity')].text.startswith('σ = (27/5)φ + (ϖ − λ_N)/5')
     assert rows[('What', 'theory')].icon == '✓' and rows[('What', 'amplitude')].icon == '✓'
     assert 'a linear forced wave' in rows[('What', 'amplitude')].text
-    assert rows[('What', 'sigma_wave')].text.startswith('σ on sin/cos φ: 12.6°') and rows[('What', 'sigma_wave')].grey
+    assert rows[('What', 'sigma_wave')].text.startswith('σ on sin/cos φ: 12.6°')
     assert rows[('What', 'capture')].icon == '✓' and rows[('What', 'capture')].text.endswith('→ excluded')
     assert 'model limit' in rows[('What', 'own_term')].text  # bound 0.0105 < MMR_OWNER_POTENTIAL_MODEL_ERROR
-    assert not any('strength' in item for item in text.info)  # shown in section A, not under 'also measured'
 
 
 @pytest.mark.benchmark
@@ -333,20 +284,17 @@ def test_rows_say_why_when_not_measured():
     assert text.physics[0].subtitle == 'directly averaged potential' and text.physics[0].rows[0].text.startswith('T0_th 33.9')
     *_, text = _analysis('mmr3__237743__5J-2S-2+0+0-1')
     assert _rows(text)[('What', 'theory')].text.startswith('no direct theory for a three-body owner (second order)')
-    assert _rows(text)[('What', 'phases')].grey  # accepted by R², the phases are context
 
 
 @pytest.mark.benchmark
 def test_hw7_second_capture_and_its_cap():
     """2001 HW7 5J+6S-2 (R5: x sweep 46°, energy R² 0.04–0.06 → unresolved): the block says unresolved with the
-    comparisons, and the medium cap names the other reading. W34: the cap is the W28 tree's (its text); under the
-    minimal policy it is the flag second_capture_unresolved and the level is the evidence's."""
+    comparisons. W34: under the minimal policy the W28 tree's cap is the flag second_capture_unresolved."""
     *_, analysis, row, text = _analysis('mmr3__2001_HW7__5J+6S-2+0+0-9')
     capture = _rows(text)[('What', 'capture')]
     assert capture.icon == '?' and capture.text.endswith('→ not ruled out') and capture.label == 'both resonances at once?'
     assert f'x moved {vt.fmt(row["own_psi_sweep_deg"])}° < 180°' in capture.text
-    assert 'second_capture_unresolved' in analysis.verdict.flags and text.sentences[2].startswith('Medium from the evidence: ')
-    assert 'The other reading: two resonances at once' in _tree_text('mmr3__2001_HW7__5J+6S-2+0+0-9').sentences[2]
+    assert 'second_capture_unresolved' in analysis.verdict.flags
 
 
 W20_WORDING = {
@@ -354,7 +302,6 @@ W20_WORDING = {
     'coorbital__2016_CA138__1E-1+0+0': ('steps', 'one cycle closed by its phase return: σ_f leaves the 0.5 level of the swing at'),
     # W28 C5 (g01-2): the stay needs one loop through its own turns (69.8 yr), no longer 1.5 small-amplitude P_QS,max
     'coorbital__164207__1E-1+0+0': ('steps', 'the orbit-averaged angle stays in the quasi-satellite well for 566 yr ≥ 69.8 yr'),
-    'mmr2__33128__6N-7+0+1': ('sentences', 'the force law beats a shifted in time (null test): R² gain 0.264 ≥ 0.2'),
     # W20 round D: no lift by the record; the cap names the scatter of a (0.597 of the a swing, MEASURE: 0.60); W34: the
     # W28 tree's cap ('tree cap'), a flag under the minimal policy
     'mmr3__2001_HW7__5J+6S-2+0+0-9': ('tree cap', 'short-period scatter of a 0.597 > 0.5 × the a swing'),
@@ -365,7 +312,7 @@ W20_WORDING = {
 @pytest.mark.parametrize('example', sorted(W20_WORDING))
 def test_w20_rules_in_words(example):
     """The W20 rules that decided a record are said in words with their numbers (the ledger values of the CS10 run:
-    UM52 arc 1.97 rev, 164207 visit 566 yr against 145 yr, 69.8 yr since W28 C5, 33128 null gain 0.264, HW7 scatter of a 0.597)."""
+    UM52 arc 1.97 rev, 164207 visit 566 yr against 145 yr, 69.8 yr since W28 C5, HW7 scatter of a 0.597)."""
     *_, text = _analysis(example)
     where, words = W20_WORDING[example]
     if where == 'tree cap':
@@ -373,8 +320,6 @@ def test_w20_rules_in_words(example):
     parts = {
         'steps': [step.outcome for step in text.steps],
         'cap': [row.detail for row in text.checks if row.is_cap],
-        'sentences': text.sentences,
-        'info': text.info,
     }[where]
     assert any(words in part for part in parts), (words, parts)
 
@@ -414,7 +359,7 @@ def test_ca138_return_times_are_printed_once():
     (its text); under the minimal policy it is a flag and the final text has no cap row."""
     *_, analysis, _, text = _analysis('coorbital__2016_CA138__1E-1+0+0')
     for shown in (text, _tree_text('coorbital__2016_CA138__1E-1+0+0')):
-        everything = [step.outcome for step in shown.steps] + [row.detail for row in shown.checks] + shown.info
+        everything = [step.outcome for step in shown.steps] + [row.detail for row in shown.checks]
         assert sum('crosses it back at' in part for part in everything) == 1
     assert 'one_return_cycle' in analysis.verdict.flags and not any(row.is_cap for row in text.checks)
     (cap,) = [row for row in _tree_text('coorbital__2016_CA138__1E-1+0+0').checks if row.key == 'cap:one_return_cycle']

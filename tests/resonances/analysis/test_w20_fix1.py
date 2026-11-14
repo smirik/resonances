@@ -26,6 +26,7 @@ from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.mmr.coorbital import Orbit
 from resonances.resonance.analysis.settings import AnalysisSettings, settings_from_config
 from tests.resonances.analysis.builders import make_episode, tree_verdict
+from tests.resonances.analysis.oracles import record_tables_kept
 
 sys.path.insert(0, str(Path(__file__).parent))
 import test_w20_undefined_phase as undefined_phase  # noqa: E402
@@ -114,9 +115,9 @@ def test_record_tables_are_bounded_and_keep_the_first_ones():
         for _ in range(2):
             for body in orbits:
                 coorbital.table_for(body, planet, 16, 1e-3)
-        assert coorbital.record_tables_kept() == 100
+        assert record_tables_kept() == 100
         assert coorbital.cached_table.cache_info().misses == 2300
-    assert coorbital.record_tables_kept() == 0
+    assert record_tables_kept() == 0
     coorbital.cached_table.cache_clear()
 
 

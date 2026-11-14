@@ -43,6 +43,7 @@ from tests.resonances.analysis.builders import (
     make_turning_points,
     make_verdict,
 )
+from tests.resonances.analysis.oracles import lowest_ceiling
 
 SETTINGS = AnalysisSettings()
 NAN = math.nan
@@ -102,7 +103,7 @@ def ev(n=40.0, margin=policy.M_FULL, veto_state=policy.V_CLEAN, stable=True, **f
 def test_the_inputs_name_what_the_level_read(status, evidence, text, expected):
     inputs = policy.level_inputs(status, evidence, SETTINGS)
     assert policy.level_inputs_text(inputs) == text
-    assert policy.lowest_ceiling(inputs) == expected == policy.level(status, evidence, SETTINGS)
+    assert lowest_ceiling(inputs) == expected == policy.level(status, evidence, SETTINGS)
 
 
 def test_a_fixed_level_and_a_thin_veto_are_inputs():
@@ -115,10 +116,10 @@ def test_a_fixed_level_and_a_thin_veto_are_inputs():
     # the table's medium with V partial or not_measured: V's own ceiling (high, medium), the level stays medium
     for state, text in ((policy.V_PARTIAL, 'V:partial:high'), (policy.V_NOT_MEASURED, 'V:not_measured:medium')):
         inputs = policy.level_inputs(Status.NON_RESONANT, ev(veto_state=state), SETTINGS, outcome_level=M)
-        assert policy.level_inputs_text(inputs) == f'table:medium:medium;{text}' and policy.lowest_ceiling(inputs) == M
+        assert policy.level_inputs_text(inputs) == f'table:medium:medium;{text}' and lowest_ceiling(inputs) == M
     # a thin veto on a row that is no vetoed non_resonant caps certain at medium
     inputs = policy.level_inputs(Status.RESONANT, ev(), SETTINGS, veto_thin=True)
-    assert inputs[-1].text() == 'thin_veto:thin:medium' and policy.lowest_ceiling(inputs) == M
+    assert inputs[-1].text() == 'thin_veto:thin:medium' and lowest_ceiling(inputs) == M
 
 
 # --------------------------------------------------------------------------------------------- the contract on grids
@@ -131,7 +132,7 @@ def outcome_with(status, level_=None, veto_thin=False, travel_thin=False):
 def check(status, evidence, level_=None, veto_thin=False, travel_thin=False):
     inputs = policy.level_inputs(status, evidence, SETTINGS, level_, veto_thin, travel_thin)
     final = policy._final_level(status, outcome_with(status, level_, veto_thin, travel_thin), evidence, SETTINGS)
-    assert policy.lowest_ceiling(inputs) == final, (status, evidence, level_, veto_thin, policy.level_inputs_text(inputs))
+    assert lowest_ceiling(inputs) == final, (status, evidence, level_, veto_thin, policy.level_inputs_text(inputs))
     if status in (Status.UNCERTAIN, Status.INVALID):
         assert inputs == () and final == Confidence.NONE
     if level_ is None and not veto_thin and not travel_thin:
@@ -183,10 +184,10 @@ def test_a_thin_end_travel_is_an_input():
     # 143662 (W36 F5): a non_resonant row, no candidate, no clear circulation -> high; the thin travel holds it at medium
     inputs = policy.level_inputs(Status.NON_RESONANT, ev(), SETTINGS, travel_thin=True)
     assert policy.level_inputs_text(inputs) == 'candidate:none:certain;circulation:not_clear:high;end_travel:thin:medium'
-    assert policy.lowest_ceiling(inputs) == M
+    assert lowest_ceiling(inputs) == M
     # a clear circulation (certain) is held at medium too; uncertain has no level
     inputs = policy.level_inputs(Status.NON_RESONANT, ev(circulation_clear=True), SETTINGS, travel_thin=True)
-    assert policy.lowest_ceiling(inputs) == M
+    assert lowest_ceiling(inputs) == M
     assert policy.level_inputs(Status.UNCERTAIN, ev(), SETTINGS, travel_thin=True) == ()
 
 
@@ -202,7 +203,7 @@ def test_the_geometry_only_limit_moves_the_f_ceiling():
     settings = AnalysisSettings(confidence_geometry_only_max='medium')
     inputs = policy.level_inputs(Status.RESONANT, ev(force=policy.F_NONE), settings)
     assert inputs[-1].text() == 'F:none:medium'
-    assert policy.lowest_ceiling(inputs) == M == policy.level(Status.RESONANT, ev(force=policy.F_NONE), settings)
+    assert lowest_ceiling(inputs) == M == policy.level(Status.RESONANT, ev(force=policy.F_NONE), settings)
 
 
 # --------------------------------------------------------------------------------------------- MMR rows
@@ -230,7 +231,7 @@ def row(rule, word=AngleStatus.LIBRATION, status=Status.UNCERTAIN, reason=Reason
 
 def applied(analysis) -> Verdict:
     v = policy.apply_mmr(analysis, SETTINGS).verdict
-    assert policy.lowest_ceiling(analysis.policy.level_inputs) == v.confidence  # the inputs explain the level
+    assert lowest_ceiling(analysis.policy.level_inputs) == v.confidence  # the inputs explain the level
     assert policy.level_inputs_text(analysis.policy.level_inputs) == v.pol_level_inputs
     assert bool(v.pol_objection_check) == (analysis.policy.veto_state == policy.V_AMBIGUOUS)
     return v
@@ -367,7 +368,7 @@ def zlk_row(word, status, reason, outcome, **gate_fields):
     analysis.decisive_period_yr = PERIOD
     policy.apply_long_period(analysis, SETTINGS)
     v = analysis.verdict
-    assert policy.lowest_ceiling(analysis.policy.level_inputs) == v.confidence
+    assert lowest_ceiling(analysis.policy.level_inputs) == v.confidence
     assert bool(v.pol_objection_check) == (analysis.policy.veto_state == policy.V_AMBIGUOUS)
     return v
 

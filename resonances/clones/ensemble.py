@@ -49,13 +49,6 @@ def clone_name(parent: str, index: int, width: int = 3) -> str:
     return f'{parent}{CLONE_MARK}{index:0{width}d}'
 
 
-def parent_of(name: str) -> Optional[str]:
-    """The parent of a clone name ('463~c001' -> '463'), None for an ordinary body."""
-    text = str(name)
-    head, mark, tail = text.rpartition(CLONE_MARK)
-    return head if mark and tail.isdigit() else None
-
-
 # Eigen fallback: a correlation eigenvalue below -NEGATIVE_EIGEN x the largest is a real indefiniteness (raises); one
 # below RANK_EIGEN x the largest (numpy's matrix_rank tolerance, 6 eps) is a null mode of the repaired matrix
 NEGATIVE_EIGEN = 1e-8

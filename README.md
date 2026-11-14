@@ -1,4 +1,4 @@
-# Mean-Motion Resonances
+# resonances: identification of mean-motion, secular and Lidov-Kozai resonances
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Resonances](https://github.com/smirik/resonances/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/smirik/resonances/actions/workflows/ci.yml)
@@ -14,24 +14,13 @@ For more information, [read the documentation](https://smirik.github.io/resonanc
 
 Working with a coding agent? `resonances skill install` puts the package's agent skill (how to set up runs and read the verdicts) into `.claude/skills/` of your project ([Using the package with AI agents](https://smirik.github.io/resonances/agents/)).
 
-**Note:** while this app has many functional and integration tests built in, it is still in the dev stage. Hence, it might include some inconsistencies. So, any community help is appreciated!
+## What's new in 1.0.0
 
-## What's new
+Version 1.0.0 is a major release with breaking changes. One libration analysis now classifies mean-motion, secular and Lidov–Kozai angles. Statuses are strings (`resonant`, `transient`, `near_separatrix`, `non_resonant`, `uncertain`, `invalid`) instead of integers, and each verdict has a confidence level and a next action. The release also adds clones, the Minor Planet Center as a data source, a dry-run, a command line, the one-page verdict figure and an agent skill. See [CHANGELOG.md](CHANGELOG.md) for what changed and how to update code written for 0.5.x.
 
-### October 2026
+## Changes before 1.0.0
 
-1. **Libration analysis v2:** one classifier for MMR, secular and Lidov–Kozai angles. Statuses are strings (`resonant`, `transient`, `near_separatrix`, `non_resonant`, `uncertain`, `invalid`) with `angle_status`, the origin of a bounded oscillation, a confidence and every decisive number in `summary.csv`; one combined figure per verdict; a dry-run checks the output step before a long run. See [How the status is determined](https://smirik.github.io/resonances/physics/overview/).
-
-### November 2025
-
-1. **Lidov–Kozai Resonances:** Introduced the `LidovKozaiResonance` class with analytic `c1/c2` diagnostics so the argument of pericenter can be tracked exactly like MMRs and secular resonances.
-1. **Summary Enhancements:** `summary.csv` now includes the Lidov–Kozai invariants in Lidov's notation, `c1 = (1−e²)cos²i` and `c2 = e²(2/5 − sin²i sin²ω)`, and the quadrupole Hamiltonian `h_quad`, so you can immediately check the classical libration criterion (`c1 < 3/5` and `c2 < 0`). The criterion is exact only far inside the perturber's orbit; for main-belt asteroids it is indicative. The sign of `h_quad` is not a criterion.
-
-### September 2025
-
-1. Secular resonances are now supported. See [Secular resonances](https://smirik.github.io/resonances/secular/).
-
-### June 2025
+### June 2025 (0.5.0)
 
 1. **Clean Architecture Implementation**: The `Simulation` class has been completely refactored into a clean, component-based architecture without backward compatibility concerns. The main `simulation.py` file has been reduced by **67%** (from 613 to 204 lines) by removing unnecessary setters/getters and moving specialized functionality into dedicated components: `SimulationConfig`, `BodyManager`, `IntegrationEngine`, and `DataManager`.
 1. **Modern Configuration Syntax**: Configuration parameters are now accessed using the clean `sim.config.property` syntax (e.g., `sim.config.dt = 0.1`, `sim.config.save = 'all'`). Essential properties needed by external modules (like libration analysis) are still available directly on the simulation object.
@@ -96,7 +85,7 @@ For those who are not familiar with the mean-motion resonances, here is the list
 ### Papers to cite:
 
 1. Secular resonance support: Smirnov, E. A. (2026). Implementation of secular resonance support in the open-source python package “resonances.” Astronomy and Computing, 54, 101022.
-1. MMRs and package itself: 2. Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing, 100707. https://doi.org/10.1016/j.ascom.2023.100707
+1. MMRs and package itself: Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing, 100707. https://doi.org/10.1016/j.ascom.2023.100707
 1. Three-body MMRs identification procedure: Smirnov, E. A. & Shevchenko, I. I. Massive identification of asteroids in three-body resonances. Icarus 222, 220–228 (2013).
 1. Two-body MMRs identification procedure and periodograms: Smirnov, E. A. & Dovgalev, I. S. Identification of Asteroids in Two-Body Resonances. Solar System Research 52, 347–354 (2018).
 
@@ -149,29 +138,13 @@ Whenever you use this package, we are kindly asking you to refer to one of the f
 }
 ```
 
-2. **The Libration module and automatic identification of librations**:
-
-- Smirnov, E. A. (2023). A new python package for identifying celestial bodies trapped in mean-motion resonances. Astronomy and Computing, 100707. https://doi.org/10.1016/j.ascom.2023.100707
-
-```tex
-@article{Smirnov2023,
-  title    = {A new python package for identifying celestial bodies trapped in mean-motion resonances},
-  journal  = {Astronomy and Computing},
-  year     = {2023},
-  issn     = {2213-1337},
-  doi      = {https://doi.org/10.1016/j.ascom.2023.100707},
-  url      = {https://www.sciencedirect.com/science/article/pii/S2213133723000227},
-  author   = {E.A. Smirnov},
-  keywords = {Mean-motion resonances, Python, Identification, Asteroids},
-  abstract = {In this paper, a new open-source package ‘resonances’ written in python is introduced. It allows to find, analyse, and plot two-body and three-body mean-motion eccentricity-type resonances in the Solar and other planetary systems. The package has a better accuracy of the automatic identification procedure for resonant objects compared to previous studies. Furthermore, it has built-in integrations with AstDyS and NASA JPL catalogues. The code is extensively documented and tested with automatic tests. The package is available on GitHub under MIT Licence.}
-}
-```
+2. **The libration analysis and automatic identification of librations**: the same paper, Smirnov (2023), above.
 
 3. **Mass identification of mean-motion resonances:**
 
 - Smirnov, E. A., & Dovgalev, I. S. (2018). Identification of Asteroids in Two-Body Resonances. Solar System Research, 52(4), 347–354. https://doi.org/10.1134/S0038094618040056
 - Smirnov, E. A., Dovgalev, I. S. & Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.
-- Smirnov, E. A. & Dovgalev, I. S. Identification of Asteroids in Two-Body Resonances. Solar System Research 52, 347–354 (2018).
+- Smirnov, E. A., & Shevchenko, I. I. (2013). Massive identification of asteroids in three-body resonances. Icarus, 222(1), 220–228. https://doi.org/10.1016/j.icarus.2012.10.034
 
 ```tex
 @article{Smirnov2013a,

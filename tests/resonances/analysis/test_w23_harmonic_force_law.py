@@ -205,14 +205,14 @@ def _response(law, force_law):
     return make_response(force_harmonic=law, force_law=force_law, force_r2_h1=0.1, force_r2_h2=0.2, multiplet=multiplet)
 
 
-def test_k2_every_law_fails_reads_the_taken_harmonic_law():
+def test_k2_every_law_reads_the_taken_harmonic_law():
     taken = HarmonicLaw(2, 0.65, 0.18, 2, coherence=0.99, null_max=0.1, oos_r2=0.6, c2_over_c1=1.9, taken=True)
     refused = replace(taken, taken=False, reason=R.HARMONIC_HALVES)
-    assert not decide.force_law_fails(_response(taken, R.LAW_HARMONIC), S)
-    assert [label for label, _, _ in decide.force_laws(_response(taken, R.LAW_HARMONIC))][-1] == '2 harmonics'
+    laws = decide.force_laws(_response(taken, R.LAW_HARMONIC))
+    assert laws[-1][0] == '2 harmonics' and laws[-1][1] == pytest.approx(0.65)  # above mmr_force_r2_fail: a answers
     # a refused fit is no law, whatever its R^2: the halves and the multiplet decide
     labels = [label for label, _, _ in decide.force_laws(_response(refused, R.LAW_SINGLE))]
-    assert labels == ['half 1', 'half 2', 'multiplet'] and decide.force_law_fails(_response(refused, R.LAW_SINGLE), S)
+    assert labels == ['half 1', 'half 2', 'multiplet']
 
 
 def test_the_ledger_records_the_guards_of_the_harmonic_law():

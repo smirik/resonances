@@ -1428,7 +1428,11 @@ class AnalysisSettings:
         0.2, 'MMR_KIN_SLOW_R2_MAX', 'float', 'kinematic: slow a_dot answers sin sigma_slow with R^2 <= this', convention=True
     )
     mmr_kin_min_points: int = _setting(
-        3, 'MMR_KIN_MIN_POINTS', 'int', 'independent points (length / center window) needed for the kinematic correlation'
+        3,
+        'MMR_KIN_MIN_POINTS',
+        'int',
+        "independent points needed for the kinematic correlations: K1's slow angle (length / center window) and K2's"
+        " slow center ((window - 2 W_c) / W_c); fewer, and the correlation is not measured",
     )
     mmr_kin_period_tol: float = _setting(
         0.1,

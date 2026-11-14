@@ -1,4 +1,4 @@
-"""The node lock of a ZLK row, the attribution inside episodes, the cause sentence and the forcing panel (a′).
+"""The node lock of a ZLK row, the attribution inside episodes and the forcing panel (a′).
 
 Expectations are computed by hand from the synthetic vectors, not from the package: a forced eccentricity 0.045 at g5
 with phase 83 deg plus a free circle; the node Omega = g5 t + 146 deg + A sin(2 pi t / P_lock). Then
@@ -155,36 +155,10 @@ def test_an_episodic_row_pinned_in_its_episodes_is_attributed_there():
 # --------------------------------------------------------------------------------------------- the cause sentence
 
 
-def test_the_cause_sentence_names_the_mode_the_beat_and_the_lock():
-    from resonances.plotting.verdict_text import zlk_cause, zlk_column_lines
-
-    series, elements = locked_4myr()
-    analysis = analyse_zlk(series, SETTINGS, free_elements=elements)
-    sentence, used = zlk_cause(analysis)
-    assert sentence.startswith('Induced by the forced eccentricity of mode g5 (|c| 0.045), which holds ϖ')
-    assert 'the beat 2π/|b_ϖ − g5| 6 kyr = P_cyc' in sentence  # 1296000 / 216 = 6000 yr
-    assert 'The node is locked to g5: Ω − ϖ5 within 23–103° (2 cycles of 1.4 Myr).' in sentence
-    assert set(used) >= {'attribution', 'node_lock'}
-    # what the sentence says is not repeated in the grey line
-    assert not any('locked' in line or 'held by the forced mode' in line for line in zlk_column_lines(analysis))
-
-
-def test_the_cause_sentence_says_when_a_lock_is_not_resolved():
-    from resonances.plotting.verdict_text import zlk_cause
-
-    series, elements = trojan_500kyr()
-    sentence = zlk_cause(analyse_zlk(series, SETTINGS, free_elements=elements))[0]
-    assert 'The center\'s' in sentence and 'is the g6−g5 beat of the forced vector' in sentence
-    assert 'The node follows g5 within the resolution' in sentence and 'a lock is not resolved' in sentence
-
-
-def test_no_cause_sentence_for_a_confirmed_libration():
-    from resonances.plotting.verdict_text import zlk_cause
-
+def test_a_genuine_librator_is_confirmed():
     series, elements = genuine_librator()
     analysis = analyse_zlk(series, SETTINGS, free_elements=elements)
     assert analysis.gate.outcome == 'confirmed'
-    assert zlk_cause(analysis) == ('', ())
 
 
 # ------------------------------------------------------------------------------------------------- panel (a′)

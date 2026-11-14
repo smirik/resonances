@@ -28,7 +28,7 @@ import numpy as np
 
 from resonances.resonance.analysis import filtering
 from resonances.resonance.analysis.filtering import is_finite
-from resonances.resonance.analysis.geometry import Geometry
+from resonances.resonance.analysis.geometry import Geometry, interior_turn_times
 from resonances.resonance.analysis.mmr import strength as strength_module
 from resonances.resonance.analysis.mmr.models import Context, MMRSeries, Preprocessed
 from resonances.resonance.analysis.mmr.response import identity
@@ -93,15 +93,6 @@ def within_well(ratio: float, settings: AnalysisSettings) -> bool:
     return is_finite(ratio) and 1 / bound <= ratio <= bound
 
 
-def slow_turns(geometry: Geometry) -> np.ndarray:
-    """The slow centre's turns farther than W_c from both window edges (`decide.interior_turn_times`, repeated here
-    so that this module does not import the decision code)."""
-    centre = geometry.centre
-    times = np.sort(np.asarray(centre.turns.times_yr, dtype=float))
-    start, end = geometry.window
-    return times[(times - start > centre.window_yr) & (end - times > centre.window_yr)]
-
-
 def half_swing(
     geometry: Optional[Geometry], t_yr: np.ndarray, a_au: np.ndarray, identity_coefficient: float, settings: AnalysisSettings
 ) -> SlowSwing:
@@ -115,7 +106,7 @@ def half_swing(
     if geometry is None or geometry.coorbital:
         return SlowSwing(reason=REASON_COORBITAL if geometry is not None else REASON_TURNS)
     centre = geometry.centre
-    turns = slow_turns(geometry)
+    turns = interior_turn_times(geometry)
     if len(turns) != 2 or not (is_finite(centre.range_rad) and centre.range_rad < TWO_PI):
         return SlowSwing()
     t = np.asarray(centre.t_yr, dtype=float)

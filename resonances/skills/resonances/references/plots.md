@@ -82,12 +82,12 @@ cutoff; under the direct averaged-force law its low-passed $\dot a$ and $s\times
 neighbor with its interval, resonant argument, kinematic term; `verdict_text.cause_line`); the episodes another
 resonance induces are hatched `\\\\` on (a) (`mmr_combined.INDUCED_HATCH`, apart from the `////` of an episode before
 a jump) and labeled `induced` on (l); `also in …` names the other resonance of a joint capture. Panel (a) of both
-the MMR and the secular/ZLK figure draws only what the minimal policy (W29) counts: the counted episodes (a covered
+the MMR and the secular/ZLK figure draws only what the minimal policy counts: the counted episodes (a covered
 edge filled to the record edge, the filter-trim stretch pale; a counted 1:1 leg labeled `leg`) and, faint with a
 dashed outline, the candidates `cand`; no rejected run and no gray strip (`mmr_combined.policy_marks`,
 `shade_policy_runs`; the ids come from the analysis' `PolicyResult`, or from the stored verdict's
 `counted_episode_ids`/`candidate_episode_ids` when a standalone panel re-runs the analysis without the scans); (l) is
-titled `(l) episodes, counted solid` and the numbers count `N accepted, M counted`. A file written before W29 (no
+titled `(l) episodes, counted solid` and the numbers count `N accepted, M counted`. A file written by an older version (no
 `policy` column) keeps the older drawing: every accepted episode filled, rejected runs and runs the status does not
 count as gray strips (`#id < floor`, `#id center turns`, `mmr_combined.uncounted_tags`). A 1:1 circulation judged on one leg or a non-1:1 half-swing between
 passages (leaves G4c, G4h), the flag `extend_time`, the 1:1 profile floor and a turn read in the edge trim are said in
@@ -134,7 +134,7 @@ an error.
 | `cycles.prominence` | `None` | peak prominence in rad; `None` = 5 % of the range of $\sigma$ within [0.005, 0.1] |
 | `fair.max_step_fraction` | `0.25` | the standalone `fair` figure warns (and still draws) when the output step exceeds this share of the orbit; panel (m) of the combined figure is not drawn above 1/4.2 of it |
 | `combined.osculating_a` | `full` | panel (d): `full` holds the osculating a in view, `clipped` fits the view to the filtered a, `hidden` also hides the osculating a beyond that view |
-| `combined.numbers` | `explained` | the right column: `explained` (the verdict in ten blocks: header with the status, level and action chip, subtitle, key facts, why, confidence pills, checks with their margins nested, evidence, caveats, numbers with the DECISIVE lines first, the footer of codes with the W28 tree's verdict) or `all` (every number of the decision) |
+| `combined.numbers` | `explained` | the right column: `explained` (the verdict in ten blocks: header with the status, level and action chip, subtitle, key facts, why, confidence pills, checks with their margins nested, evidence, caveats, numbers with the DECISIVE lines first, the footer of codes with the full tree's verdict) or `all` (every number of the decision) |
 | `combined.figure` | `full` | the page of the `combined` verdict figures (MMR, secular, ZLK): `full` (header, panels, legend, right column) or `panels` (for a paper: the panels and their margin legends only, see below) |
 
 ## Redrawing after a run

@@ -15,7 +15,7 @@ Core modules in `resonances/` (* = own `CLAUDE.md` with detail, rules, traps):
 | `mmr` * | MMR classes (`TwoBody`, `ThreeBody`, `RetrogradeTwoBody`), catalogues (`TwoBodyMatrix`, `ThreeBodyMatrix`, `RetrogradeTwoBodyMatrix`), finder functions |
 | `mpcorb` * | `DATA_SOURCE=mpc`: the MPC catalogue, self-contained; package side `simulation/mpc_source.py` |
 | `plotting` * | Evolution plots, combined verdict figures, MMR/secular diagnostics, ecc-vector, cross-spectrum, free-omega, clones |
-| `resonance` | `analysis` * (libration analysis v2, the only classifier; MMR in `analysis/mmr` *), classify (`resonance/classify/util.py` only: `is_unphysical_orbit`, `check_chaos`, `merge_intervals`, `calc_sigma_derivative`), factory, filtering, periodogram, cross spectra and coherence, `oscillations`, `omega_free_gate` |
+| `resonance` | `analysis` * (libration analysis v2, the only classifier; MMR in `analysis/mmr` *), classify (`resonance/classify/util.py` only: `unphysical_arrays`, `calc_sigma_derivative`), factory, filtering, periodogram, cross spectra and coherence, `oscillations`, `omega_free_gate` |
 | `secular` * | Secular resonances (also the ZLK science): formula parser, finder, `proper_angle`, `planet_modes`, `combinations`, `free_elements` |
 | `simulation` * | Simulation engine: batches, bodies, I/O and layout, `dry_run`, integration (rebound), `propagate`, serializer, `state_manager` |
 | `skills` | The agent skill (`skills/resonances/`: SKILL.md + generated `references/`) and `install_skill` behind `resonances skill install` |

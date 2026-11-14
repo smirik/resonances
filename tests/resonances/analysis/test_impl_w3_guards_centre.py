@@ -24,7 +24,7 @@ def run_of(times, values) -> geo.Episode:
     values = np.asarray(values, dtype=float)
     kinds = np.where(values > np.r_[values[1:2], values[:-1]], 1, -1)
     tp = TurningPoints(np.arange(len(values)), np.asarray(times, dtype=float), values, kinds, 0.01)
-    return geo.classify_run(0, tp, np.arange(len(values)), np.asarray([times[0], times[-1]], dtype=float), (times[0], times[-1]), S)
+    return geo._classify_run(0, tp, np.arange(len(values)), (times[0], times[-1]), S, (times[0], times[-1]))
 
 
 def test_three_turning_points_are_one_centre_estimate():

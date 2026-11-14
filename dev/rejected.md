@@ -45,6 +45,9 @@ reason given. Sources in `tmp/` are local and git-ignored.
 | Tuning 2003 TX9's window lengths or line cap in CS12 | Helped one record; coefficients and independent halves were unstable | Oct 25 | `w23-work/design/cs12/REPORT.md` |
 | G2a test 7 as `energy_level` (cycle h against the turning points' energy) | Replaced by `regime_periods`; and the first G2a version lifted TX9 only because the cut made the failed physics unmeasured | Oct 27 | `w24-work/g2a-fix`, `review-g2a` |
 | G2a cut that hides a check failed on the whole record | Geometry must not override a failed measurement (W22 rule); `_action_step_guard` withholds such a cut | Oct 27 | same |
+| K2 only where no episode is counted (485 Genua) | Deletes K2 on its own ripple cases (21028, 2002 BG 100 kyr), which have counted ripple episodes | Nov 14 | `tmp/genua-k2-2026-11-14` (Codex, Fable) |
+| An episode whose identity and B1 pass is protected from K2's veto (485 Genua) | Works on the benchmark, but reads the identity as evidence of a resonant force (rejected above); the measurement-level fix (halves nan below two windows, K2 correlation nan below MMR_KIN_MIN_POINTS) frees Genua without it | Nov 14 | same |
+| K2's correlation on the episode windows only | Genua's window was already inside its episode; the leak is the 42-kyr smoothing of the preceding circulation, and trimming W_c at the episode edges leaves no samples | Nov 14 | same |
 
 ## Jumps, filters, sampling
 

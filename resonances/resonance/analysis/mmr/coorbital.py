@@ -401,11 +401,6 @@ def table_for(body: Orbit, planet: Orbit, grid_points: int, softening: float) ->
     return found
 
 
-def record_tables_kept() -> int:
-    """How many tables the open `record_tables` scope holds (0 outside one)."""
-    return len(_RECORD_TABLES) if _RECORD_TABLES is not None else 0
-
-
 def quasi_satellite_well(table: CoorbitalTable) -> Optional[Tuple[float, float, float]]:
     """(theta_c, R~''(theta_c), half-width) [rad, -, rad] of the quasi-satellite well of R~(theta): the local minimum
     nearest theta = 0 whose basin, between its two neighbouring maxima, holds theta = 0 nearer its bottom than its wall;

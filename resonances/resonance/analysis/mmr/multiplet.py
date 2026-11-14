@@ -213,11 +213,6 @@ def composite(coefficients: np.ndarray, j_values: np.ndarray, beta_rad: np.ndarr
     return np.sum(coefficients * phases, axis=-1)
 
 
-def composite_centre(coefficients: np.ndarray, j_values: np.ndarray, beta_rad: np.ndarray) -> np.ndarray:
-    """c0(beta) = pi - arg P(beta) [rad] (unwrapped along beta): the stable point of sigma_0 (j = 0)."""
-    return np.unwrap(np.pi - np.angle(composite(coefficients, j_values, beta_rad)))
-
-
 def winding_number(coefficients: np.ndarray, j_values: np.ndarray) -> int:
     """Turns of P(beta) around 0 over one turn of beta: the member whose centre stays fixed over a beta cycle
     (argument principle; 0 = the pure-asteroid angle, as in the composite regime of both prototypes)."""

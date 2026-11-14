@@ -583,7 +583,7 @@ class Episode:
     well_rms_rad: float = NAN
     well_rms_fixed_rad: float = NAN
     well_rms_reversed_rad: float = NAN
-    # MMR edge rule (variant a, `_visible_edge`): the orbit-averaged raw angle runs >= libration_edge_arc_rev turns
+    # MMR edge rule (variant a, `_edge_reading`): the orbit-averaged raw angle runs >= libration_edge_arc_rev turns
     # away from the centre beyond the last (first) turning point, so the record shows the exit (entry): that edge is
     # not covered (`covers_edges`). Set on the last (first) accepted run only
     exit_observed: bool = False
@@ -662,7 +662,7 @@ class Episode:
 
     def edge_centre_rad(self, kind: str) -> float:
         """The local centre at the run's 'entry' (first turning point) or 'exit' (last one) [rad, sigma_f's branch],
-        which the edge rule reads (`_visible_edge`; C9, W28 g03-2): in the frame of its moving well (FRAME_PSI) the
+        which the edge rule reads (`_edge_reading`; C9, W28 g03-2): in the frame of its moving well (FRAME_PSI) the
         well's centre c(t) at that turning point; otherwise the midpoint of the edge swing, the half-cycle between that
         turning point and its neighbour, (v_0 + v_1) / 2 at the entry and (v_n-1 + v_n) / 2 at the exit (a 2-TP run:
         its only half-cycle). The mean midpoint of the run (`centre_mean_rad`) mixes every regime of the run: 2016 JA
@@ -1413,7 +1413,14 @@ class Extrema:
 
 def extrema(x: np.ndarray) -> Extrema:
     """The local extrema of x and their prominences, both kinds from one skeleton of local extrema and ends: measured
-    once, they serve every prominence threshold (the regimes between jumps, `finish_geometry`)."""
+    once, they serve every prominence threshold (the regimes between jumps, `finish_geometry`). The maxima of
+    `above(p)` are the set of `scipy.signal.find_peaks(x, prominence=p)` (prominence = the peak over the higher of its
+    two bases), the minima those of -x.
+
+    A base is a minimum between the peak and the nearest higher point, and every such minimum is a local minimum
+    or an end of the series, so the prominences are measured on the skeleton of local extrema and ends (exact).
+    scipy searches each side of every peak sample by sample: on 10^6 points with 4 x 10^4 ripple maxima on a
+    trend that took 5-11 s per call; the skeleton and `_base_minima` take 0.05-0.1 s."""
     x = np.asarray(x, dtype=float)
     maxima, _ = signal.find_peaks(x)
     minima, _ = signal.find_peaks(-x)
@@ -1432,22 +1439,6 @@ def extrema(x: np.ndarray) -> Extrema:
     return Extrema(maxima, prominences(maxima, y), minima, prominences(minima, -y))
 
 
-def _prominent_extrema(x: np.ndarray, prominence: float) -> Tuple[np.ndarray, np.ndarray]:
-    """(maxima, minima) of x with prominence >= `prominence`."""
-    return extrema(x).above(prominence)
-
-
-def prominent_peaks(x: np.ndarray, prominence: float) -> np.ndarray:
-    """Indices of the maxima of x with prominence >= `prominence`: the same set as
-    `scipy.signal.find_peaks(x, prominence=prominence)` (prominence = the peak over the higher of its two bases).
-
-    A base is a minimum between the peak and the nearest higher point, and every such minimum is a local minimum
-    or an end of the series, so the prominences are measured on the skeleton of local extrema and ends (exact).
-    scipy searches each side of every peak sample by sample: on 10^6 points with 4 x 10^4 ripple maxima on a
-    trend that took 5-11 s per call; the skeleton and `_base_minima` take 0.05-0.1 s."""
-    return _prominent_extrema(np.asarray(x, dtype=float), prominence)[0]
-
-
 def find_turning_points(
     t_yr: np.ndarray,
     angle_rad: np.ndarray,
@@ -1459,7 +1450,7 @@ def find_turning_points(
     """Alternating maxima/minima of `angle_rad` inside `window` with prominence >= `prominence_rad` (inside a stretch
     of `local`: >= that stretch's own prominence).
 
-    `_prominent_extrema` (the extrema of `scipy.signal.find_peaks` with that prominence, `prominent_peaks`; `found`:
+    `extrema(angle_rad).above` (the extrema of `scipy.signal.find_peaks` with that prominence; `found`:
     `extrema(angle_rad)` measured already); of two consecutive extrema of the same kind the more extreme is kept. Empty
     result has zero-length arrays.
     """
@@ -1501,11 +1492,6 @@ def midpoint_values(values: np.ndarray) -> np.ndarray:
 def half_amplitudes(tp: TurningPoints) -> np.ndarray:
     """A_i = |sigma(TP_i) - sigma(TP_i+1)| / 2 [rad]."""
     return half_amplitude_values(tp.values_rad)
-
-
-def midpoints(tp: TurningPoints) -> np.ndarray:
-    """m_i = (sigma(TP_i) + sigma(TP_i+1)) / 2 [rad], one per half-cycle."""
-    return midpoint_values(tp.values_rad)
 
 
 # --- centre -----------------------------------------------------------------------------------
@@ -1942,8 +1928,22 @@ def _classify_run(
     window: Optional[Tuple[float, float]] = None,
     well_model: Optional[WellModel] = None,
 ) -> Episode:
-    """`classify_run` on the record edges `record` and the analysis window `window` (None: the record); `well_model`
-    the caller's track of the well's centre (`_moving_frame`), read only when the band test in sigma fails."""
+    """Accept a run as an episode (>= libration_min_turning_points TPs, a stationary or modulated
+    centre and at least one closed full cycle, `closure_ratios`) or reject it with `too_few_tp`, `centre_moves`,
+    `no_closed_cycle` or `over_the_top`; coverage gaps from the
+    true record edges in units of the run's median period, and from the edges of the analysis `window` in years
+    (`covers_edges`).
+
+    Stationary: the bands (midpoint +- half-amplitude) of every full cycle share a point (`centre_bands_overlap`);
+    with fewer than libration_centre_min_estimates independent cycles (three TPs: one cycle, one centre) the run is
+    still accepted, but its `centre_stationarity` is not_measured (the decision reads it as a thin margin, L6).
+    Modulated: the full-cycle midpoints turn back >= libration_centre_returns_modulated
+    times (prominence p_c) within a range below libration_modulated_range_max_rad. `over_the_top`:
+    too few TPs because a neighbouring half-cycle went over the top. The TPs were selected inside `window` already.
+
+    `record`: the true record edges, `window`: the analysis window (None: the record); `well_model` the caller's track
+    of the well's centre (`_moving_frame`), read only when the band test in sigma fails.
+    """
     run = np.asarray(run, dtype=int)
     times = np.asarray(tp.times_yr, dtype=float)[run]
     values = np.asarray(tp.values_rad, dtype=float)[run]
@@ -2097,6 +2097,16 @@ def _moving_frame(
     return MovingFrame(well, rms, margin, bool(np.isfinite(margin) and margin > 0 and bands_hold_bottom(psi_mids, psi_amps)))
 
 
+def interior_turn_times(geometry: 'Geometry') -> np.ndarray:
+    """The times [yr] of the slow centre's turns (`Geometry.centre.turns`) farther than the centre's own smoothing
+    window W_c from both edges of the analysis window, in order (nearer, the low-pass of the centre bends at the edge):
+    `mmr.decide.interior_turns` counts them, `mmr.slow_swing` reads them."""
+    centre = geometry.centre
+    times = np.sort(np.asarray(centre.turns.times_yr, dtype=float))
+    start, end = geometry.window
+    return times[(times - start > centre.window_yr) & (end - times > centre.window_yr)]
+
+
 def well_shift(t_yr: np.ndarray, runs: Sequence[Episode], continuous: bool = False) -> Optional[np.ndarray]:
     """c(t) - its mean over the run, on the samples of every accepted run of `runs` in the frame of its moving well
     (FRAME_PSI), 0 elsewhere [rad]: sigma - shift is psi up to a constant, so a law fitted on it sees the well's centre
@@ -2208,31 +2218,6 @@ def episode_eligibility(geometry: 'Geometry', floor_of: Callable[[Episode], floa
                 reason = RejectReason.BEFORE_LAST_JUMP
             reasons[run.episode_id] = reason
     return reasons
-
-
-def classify_run(
-    episode_id: int,
-    tp: TurningPoints,
-    run: np.ndarray,
-    t_yr: np.ndarray,
-    window: Tuple[float, float],
-    settings: AnalysisSettings,
-) -> Episode:
-    """Accept a run as an episode (>= libration_min_turning_points TPs, a stationary or modulated
-    centre and at least one closed full cycle, `closure_ratios`) or reject it with `too_few_tp`, `centre_moves`,
-    `no_closed_cycle` or `over_the_top`; coverage gaps from the
-    true record edges in units of the run's median period, and from the edges of the analysis `window` in years
-    (`covers_edges`).
-
-    Stationary: the bands (midpoint +- half-amplitude) of every full cycle share a point (`centre_bands_overlap`);
-    with fewer than libration_centre_min_estimates independent cycles (three TPs: one cycle, one centre) the run is
-    still accepted, but its `centre_stationarity` is not_measured (the decision reads it as a thin margin, L6).
-    Modulated: the full-cycle midpoints turn back >= libration_centre_returns_modulated
-    times (prominence p_c) within a range below libration_modulated_range_max_rad. `over_the_top`:
-    too few TPs because a neighbouring half-cycle went over the top. The TPs were selected inside `window` already.
-    """
-    t = np.asarray(t_yr, dtype=float)
-    return _classify_run(episode_id, tp, run, (float(t[0]), float(t[-1])), settings, tuple(window))
 
 
 def regular_part(times_yr: np.ndarray, ratio: float) -> Optional[Tuple[int, int]]:
@@ -3907,7 +3892,7 @@ def covers_edges(episode: Episode, settings: AnalysisSettings) -> Tuple[bool, bo
 
     start = covered(episode.coverage_start_gap_p, episode.window_start_gap_yr, episode.window_start_hidden_p)
     end = covered(episode.coverage_end_gap_p, episode.window_end_gap_yr, episode.window_end_hidden_p)
-    # an observed entry (exit) is a regime the record shows beyond the episode (MMR edge rule, `_visible_edge`)
+    # an observed entry (exit) is a regime the record shows beyond the episode (MMR edge rule, `_edge_reading`)
     return start and not getattr(episode, 'entry_observed', False), end and not getattr(episode, 'exit_observed', False)
 
 
@@ -4392,34 +4377,6 @@ def orbit_averaged(t_yr: np.ndarray, raw: np.ndarray, period_yr: float) -> np.nd
     return (total[hi] - total[lo]) / (hi - lo)
 
 
-def _visible_edge(
-    t: np.ndarray,
-    angle_f: np.ndarray,
-    raw: np.ndarray,
-    episode: Episode,
-    kind: str,
-    record: Tuple[float, float],
-    settings,
-    averaged: Optional[np.ndarray] = None,
-) -> Optional[EdgeEvent]:
-    """`visible_edge` on the record `record`. With `averaged` (the orbit-averaged raw angle, `orbit_averaged`, of an
-    MMR; sigma_f itself of a secular or ZLK angle, which has no orbit to average, W36 F1) the edge rule of variant (a)
-    applies (author 2026-10-19; DECISIONS 2026-10-15 "an arc > 2pi is not a piece of libration"): on the stretch from
-    the episode's last turning point to the record's end (entry: from the record's start to its first one) that angle
-    travels >= libration_edge_arc_rev turns away from the turning point and moves monotonically there (means over
-    half-period blocks, `_raw_monotonic`): the exit (entry) is observed, not suspected, however little record is left.
-    Arc, direction and monotonicity are read on that one stretch of the averaged angle, whether or not sigma_f crosses
-    |sigma_f - c| = pi there (the low-pass may hide the crossing at the record's edge; Codex W20 A #10); the event's
-    time is then the averaged angle's own crossing.
-
-    With the MMR edge rule (`averaged` given) the centre c of |sigma_f - c| > pi and of the averaged angle's crossing is
-    the local one at that edge (`Episode.edge_centre_rad`; C9, W28 g03-2, every MMR); the reading against the run's
-    mean centre is made too (`_edge_reading`), and an event that differs from it is marked `differs_from_mean_centre`.
-    Secular and ZLK angles (and every angle without `averaged`) keep the run's mean centre: the local reading is not
-    measured on those angles yet."""
-    return _edge_reading(t, angle_f, raw, episode, kind, record, settings, averaged, averaged is not None)[0]
-
-
 def _edge_reading(
     t: np.ndarray,
     angle_f: np.ndarray,
@@ -4431,10 +4388,31 @@ def _edge_reading(
     averaged: Optional[np.ndarray] = None,
     local_centre: bool = True,
 ) -> Tuple[Optional[EdgeEvent], bool]:
-    """(the edge event of `_visible_edge`, whether the reading against the run's mean centre differs from the one
-    against the local centre: an event on one side only, or other suspected/observed marks). The caller fires
-    Rule.LOCAL_CENTRE_ENTRY on True. Without `averaged` (no edge rule), or with `local_centre` False (the edge rule
-    on sigma_f of a secular or ZLK angle), only the mean centre is read: (event, False)."""
+    """(the edge event, whether the reading against the run's mean centre differs from the one against the local
+    centre: an event on one side only, or other suspected/observed marks). The caller fires Rule.LOCAL_CENTRE_ENTRY on
+    True. Without `averaged` (no edge rule), or with `local_centre` False (the edge rule on sigma_f of a secular or ZLK
+    angle), only the mean centre is read: (event, False).
+
+    The event: exit ('exit', after the last TP) or entry ('entry', before the first), the first time |sigma_f - c| > pi
+    on the record `record`; suspected when the remaining record is < libration_coverage_periods episode periods; None
+    if none. Without the edge rule `raw_monotonic` says whether the raw angle averaged over half-period blocks moves
+    monotonically away from the centre after an exit (towards it before an entry).
+
+    With `averaged` (the orbit-averaged raw angle, `orbit_averaged`, of an MMR; sigma_f itself of a secular or ZLK
+    angle, which has no orbit to average, W36 F1) the edge rule of variant (a)
+    applies (author 2026-10-19; DECISIONS 2026-10-15 "an arc > 2pi is not a piece of libration"): on the stretch from
+    the episode's last turning point to the record's end (entry: from the record's start to its first one) that angle
+    travels >= libration_edge_arc_rev turns away from the turning point and moves monotonically there (means over
+    half-period blocks, `_raw_monotonic`): the exit (entry) is observed, not suspected, however little record is left.
+    Arc, direction and monotonicity are read on that one stretch of the averaged angle, whether or not sigma_f crosses
+    |sigma_f - c| = pi there (the low-pass may hide the crossing at the record's edge; Codex W20 A #10); the event's
+    time is then the averaged angle's own crossing.
+
+    With the MMR edge rule (`averaged` given) the centre c of |sigma_f - c| > pi and of the averaged angle's crossing
+    is the local one at that edge (`Episode.edge_centre_rad`; C9, W28 g03-2, every MMR); the reading against the run's
+    mean centre is made too, and an event that differs from it is marked `differs_from_mean_centre`.
+    Secular and ZLK angles (and every angle without `averaged`) keep the run's mean centre: the local reading is not
+    measured on those angles yet."""
     mean = _edge_event(t, angle_f, raw, episode, kind, record, settings, averaged, episode.centre_mean_rad)
     if averaged is None or not local_centre:
         return mean, False
@@ -4459,7 +4437,7 @@ def _edge_event(
     averaged: Optional[np.ndarray],
     centre: float,
 ) -> Optional[EdgeEvent]:
-    """The edge event of `_visible_edge` read against the centre `centre` [rad]; None without a crossing."""
+    """The edge event of `_edge_reading` read against the centre `centre` [rad]; None without a crossing."""
     period = episode.period_med_yr
     if not np.isfinite(centre):
         return None
@@ -4508,28 +4486,6 @@ def _edge_event(
         direction = away if kind == 'exit' else -away  # entering: the raw angle moves towards the centre
         monotonic = _raw_monotonic(t, raw, last_piece, block, direction)
     return EdgeEvent(kind, float(t[crossing]), beyond_rad, remaining_periods, suspected and not observed, monotonic, raw_arc, observed)
-
-
-def visible_edge(
-    t_yr: np.ndarray,
-    angle_f: np.ndarray,
-    raw_angle: np.ndarray,
-    episode: Episode,
-    kind: str,
-    settings: AnalysisSettings,
-) -> Optional[EdgeEvent]:
-    """Exit ('exit', after the last TP) or entry ('entry', before the first): first time |sigma_f - c| > pi;
-    suspected when the remaining record is < libration_coverage_periods episode periods. None if none.
-
-    c is the mean midpoint of the episode (no MMR edge rule here: `_visible_edge` with the orbit-averaged angle reads
-    the local centre). The search runs to the true record edge. `raw_monotonic`:
-    the raw angle averaged over half-period blocks moves monotonically away from the centre after an
-    exit (towards it before an entry).
-    """
-    t = np.asarray(t_yr, dtype=float)
-    return _visible_edge(
-        t, np.asarray(angle_f, dtype=float), np.asarray(raw_angle, dtype=float), episode, kind, (float(t[0]), float(t[-1])), settings
-    )
 
 
 def jump_baseline_yr(cutoff_yr: float, step_yr: float, settings: AnalysisSettings) -> float:
@@ -5346,7 +5302,7 @@ def _measure(
 def _mark_edges(
     geometry: Geometry, angle: FilteredAngle, accepted: Sequence[Episode], record: Tuple[float, float], settings
 ) -> Optional[np.ndarray]:
-    """Exit after the last of the `accepted` runs and entry before the first (`_visible_edge`), their observed marks on
+    """Exit after the last of the `accepted` runs and entry before the first (`_edge_reading`), their observed marks on
     those runs and the flags exit/entry_suspected; returns the orbit-averaged raw angle when it was formed."""
     averaged = None
     if accepted:
@@ -5369,7 +5325,7 @@ def _mark_edges(
 
 
 def _edge_arc_series(angle: FilteredAngle, averaged: Optional[np.ndarray]) -> Optional[np.ndarray]:
-    """The angle the edge rule reads (`_visible_edge`): the orbit-averaged raw angle of an MMR (`averaged`, formed
+    """The angle the edge rule reads (`_edge_reading`): the orbit-averaged raw angle of an MMR (`averaged`, formed
     here when not given), sigma_f of a secular or ZLK angle (`FilteredAngle.edge_arc_filtered`: no orbit to average,
     W36 F1), None when the rule is off."""
     if angle.edge_arc_rule:
@@ -5382,7 +5338,7 @@ def _edge_arc_series(angle: FilteredAngle, averaged: Optional[np.ndarray]) -> Op
 
 
 def _mark_record_entry(geometry: Geometry, angle: FilteredAngle, settings) -> None:
-    """After a cut (the regimes measured anew): the entry rule (`_visible_edge`) on the record's first accepted run,
+    """After a cut (the regimes measured anew): the entry rule (`_edge_reading`) on the record's first accepted run,
     which lies before the jump, on the whole record: `Geometry.record_entry`, the run's entry_observed mark and the flag
     entry_suspected. `_mark_edges` reads the last regime only, yet G1l calls the record a libration from its start
     through that run (`decide.before_jump_coverage`, `covers_edges`) and G1e may decide on it, so its entry is checked

@@ -25,7 +25,6 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from resonances.plotting import verdict_text as vt
 from resonances.resonance.analysis.confidence import Cap, cap_binds
 from resonances.resonance.analysis.mmr import io, sampling
 from resonances.resonance.analysis.mmr.analyse import analyse_mmr, short_period_resample
@@ -175,10 +174,6 @@ def test_benchmark_rows_held_by_the_cap(example, status, confidence, raw, step):
     assert (str(v.status), str(v.confidence), str(v.confidence_raw), list(v.caps)) == (status, confidence, raw, [CAP])
     assert (v.action, v.resample_step_yr) == (Action.RESAMPLE, step)
     assert result.sampling.fold_free_step_yr == step
-    row = {**result.numbers_row(), **result.summary_row()}
-    text = vt.explain_mmr(result, S, row, result.episode_rows())
-    assert f'a rerun at ≤ {vt.fmt(step)} yr output step lifts this cap' in ' '.join(text.sentences)
-    assert f'Action: rerun with an output step of {vt.fmt(step)} yr (it folds no short period' in text.sentences[-1]
 
 
 @pytest.mark.benchmark
@@ -207,23 +202,6 @@ def test_benchmark_row_with_a_second_cap_keeps_the_spot_check():
 
 
 # --------------------------------------------------------------------------------------------- 5. the figure text
-
-
-def test_the_cap_row_names_the_step():
-    default = vt.CAP_ALTERNATIVES[CAP][1]
-    assert vt.short_period_look(0.25, default) == '(a): the fast spread about σ_f; a rerun at ≤ 0.25 yr output step lifts this cap'
-    assert vt.short_period_look(math.nan, default) == default
-    assert vt.short_period_look(None, default) == default
-
-
-def test_the_action_line_names_the_step():
-    held = SimpleNamespace(action='resample', resample_step_yr=2.5, confidence='medium', caps=[CAP])
-    assert (
-        vt.action_sentence(held)
-        == 'Action: rerun with an output step of 2.5 yr (it folds no short period: lifts the cap short_period_aliased).'
-    )
-    alias = SimpleNamespace(action='resample', resample_step_yr=0.2, confidence='', caps=[])
-    assert vt.action_sentence(alias) == 'Action: rerun with an output step of 0.2 yr.'
 
 
 # ===================================================================================== Task B (Q9): the filter guard
@@ -628,13 +606,6 @@ def test_d_va14_60kyr_measures_the_onset_of_the_group():
     ratio = episode.a_band_std_before_au / episode.a_band_std_in_au
     assert ratio == pytest.approx(0.73, abs=0.01)  # 1.028 before W21 D; the reviews' #4+#5: 0.73, 0.725
     assert ratio >= S.mmr_o1_ratio_fail  # still a fail: the row stays uncertain, never non_resonant
-    # the explained column names the group: the wave O1 reads lies before #4, not on it
-    row = {**analysis.numbers_row(), **analysis.summary_row()}
-    text = ' '.join(vt.explain_mmr(analysis, S, row, analysis.episode_rows()).sentences)
-    assert (
-        'before the episode a already oscillated with comparable strength (before/inside 0.733 ≥ 0.5, the wave before episode 4, which no'
-        in text
-    )
 
 
 @pytest.mark.benchmark

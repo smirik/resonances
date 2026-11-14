@@ -39,7 +39,6 @@ from resonances.resonance.analysis.verdict import (
     ZLK_CHECKS,
     Status,
     Verdict,
-    verdict_from_status_code,
 )
 from resonances.simulation.config import SavePlotMode, status_selected
 from resonances.simulation.data_manager import DataManager
@@ -429,47 +428,8 @@ def test_restore_statuses_of_old_integer_file(tmp_path):
     )
     n = SimulationSerializer.restore_statuses(sim.bodies, str(csv))
     body = sim.bodies[0]
-    assert n == 2  # the integer MMR row has no translation and is skipped
-    assert MMR_KEY not in body.statuses
-    assert body.statuses[SEC_KEY] == 'resonant'  # old LIBRATION
-    assert body.librations[SEC_KEY].status_code == 2
-    assert body.librations[LK_KEY].status_code == -2
-    assert body.statuses[LK_KEY] == str(body.librations[LK_KEY].status)
-
-
-@pytest.mark.parametrize(
-    'code,status',
-    [
-        (2, 'resonant'),
-        (1, 'transient'),
-        (0, 'non_resonant'),
-        (-3, 'near_separatrix'),
-        (-5, 'near_separatrix'),
-        (-4, 'uncertain'),
-        (-6, 'uncertain'),
-        (-9, 'uncertain'),
-        (-99, 'invalid'),
-    ],
-)
-def test_old_secular_codes_round_trip_through_restore(tmp_path, code, status):
-    sim, _ = make_sim(tmp_path, types=('sec',))
-    csv = tmp_path / 'old.csv'
-    _write_old_summary(csv, [{'name': 'lib', 'resonance': SEC_KEY, 'status': code}])
-    assert SimulationSerializer.restore_statuses(sim.bodies, str(csv)) == 1
-    v = sim.bodies[0].librations[SEC_KEY]
-    assert sim.bodies[0].statuses[SEC_KEY] == status
-    assert v.status_code == code
-
-
-def test_minus_two_and_minus_nine_stay_distinct():
-    # CLAUDE.md: -2 is a measurement (kinematic libration), -9 the absence of one
-    a = verdict_from_status_code(-2, 'lidov_kozai')
-    b = verdict_from_status_code(-9, 'lidov_kozai')
-    assert (str(a.status), str(a.reason)) != (str(b.status), str(b.reason))
-    assert a.status_code == -2 and b.status_code == -9
-    with pytest.raises(Exception) as excinfo:
-        verdict_from_status_code(-1, 'secular')
-    assert excinfo.type is not AssertionError
+    assert n == 0  # an integer status (a file before v1.0) is not read: restore with recompute_librations=True
+    assert not {MMR_KEY, SEC_KEY, LK_KEY} & set(body.statuses)
 
 
 def test_restore_statuses_re_adds_derived_rows(tmp_path):
@@ -556,7 +516,7 @@ def test_save_mode_selects_data_files_by_mmr_status(tmp_path, mode, expected):
 def test_plot_folder_is_the_status_string(tmp_path):
     sim, _ = make_sim(tmp_path, bodies=(('lib', 'libration'), ('circ', 'circulation')), types=('mmr',), years=4000.0)
     run_pipeline(sim, save=False)
-    sim.config.plot_subfolder_strategy = 'status'
+    sim.config.plot_layout = sim.config.plot_combined_layout = 'status'
     lib, circ = sim.bodies
     p_lib = sim.data_manager.figure_folder(lib, lib.mmrs[0])
     p_circ = sim.data_manager.figure_folder(circ, circ.mmrs[0])

@@ -1,5 +1,5 @@
-"""The subtitle and the steps' header of an insufficient_time row name the angle rule the analysis saved
-(geo_angle_rule), and the leaf G6 its own name.
+"""The rule an insufficient_time row is shown decided by (`verdict_text.shown_rule`, read by the column's subtitle and
+steps) is the angle rule the analysis saved (geo_angle_rule), and the leaf G6 has its own name.
 
 The records are those of `tests/resonances/analysis/test_angle_rule_column.py` (their rules worked out there by hand):
 a slow arc (G5a) and the same swing with two turning points outside the ripple (G6 few_cycles; the ledger holds G5a's
@@ -24,36 +24,30 @@ def explained(sigma, row=None, drop=()):
     for column in drop:
         columns.pop(column)
     facts = vt.MMRFacts(analysis, S, columns, analysis.episode_rows())
-    return facts, vt.explain_mmr(analysis, S, columns, analysis.episode_rows())
+    return facts
 
 
 def test_a_few_cycles_row_is_headed_by_the_leaf_g6_not_g5a():
-    facts, text = explained(slow_swing(dip_deg=30.0))
+    facts = explained(slow_swing(dip_deg=30.0))
     assert facts.angle_rule == 'G6' and vt.shown_rule(facts) == 'G6'
-    assert text.subtitle.endswith('decided: too short to decide (G6)')
-    assert text.decided_at == 'Decided at G6: too short to decide → UNCERTAIN'
     assert vt.shape_rule_ids(facts) == ('F6r', 'G6')
-    assert 'G5a' not in text.decided_at and 'one slow arc' not in text.subtitle
 
 
 def test_without_the_column_a_few_cycles_row_still_never_names_g5a():
-    facts, text = explained(slow_swing(dip_deg=30.0), drop=('geo_angle_rule',))
+    facts = explained(slow_swing(dip_deg=30.0), drop=('geo_angle_rule',))
     assert facts.angle_rule == '' and vt._slow_arc(facts) is None
-    assert vt.shown_rule(facts) == 'G6' and text.decided_at == 'Decided at G6: too short to decide → UNCERTAIN'
+    assert vt.shown_rule(facts) == 'G6'
 
 
 def test_a_slow_arc_row_is_headed_by_g5a():
-    facts, text = explained(slow_swing())
-    assert facts.angle_rule == 'G5a' and vt.shape_rule_ids(facts) == ('F6r', 'G5a')
-    assert text.subtitle.endswith('decided: one slow arc (G5a)')
-    assert text.decided_at == 'Decided at G5a: one slow arc → UNCERTAIN'
+    facts = explained(slow_swing())
+    assert facts.angle_rule == 'G5a' and vt.shape_rule_ids(facts) == ('F6r', 'G5a') and vt.shown_rule(facts) == 'G5a'
 
 
 def test_the_header_reads_the_column():
     # the column, not the ledger: a G5a record whose row says G5w is headed G5w
-    facts, text = explained(slow_swing(), row={'geo_angle_rule': 'G5w'})
+    facts = explained(slow_swing(), row={'geo_angle_rule': 'G5w'})
     assert vt.shown_rule(facts) == 'G5w' and vt.slow_swing_decided(facts)
-    assert text.decided_at == 'Decided at G5w: slow swing in the well → UNCERTAIN'
 
 
 def test_g6_names_the_leaf_and_the_angle_rule_apart():

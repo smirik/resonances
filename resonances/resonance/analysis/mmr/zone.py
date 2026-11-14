@@ -557,14 +557,22 @@ def build_zone(
     if settings.mmr_zone_method == str(ZoneMethod.ADIABATIC):
         return Zone(ZoneMethod.ADIABATIC, lo, pendulum.h_from_action_ratio_in_potential(potential, lo), hi**2, lo, hi, False)
     scaled = relative**2 * omega_bar**2
-    j_lo, h_hi = numeric_zone(
-        t,
-        lambda times: np.interp(times, t, scaled),
-        lambda times: np.interp(times, t, np.asarray(well, dtype=float)),
-        settings,
-        modulation_period_yr,
-        omega_bar,
-    )
+    well = np.asarray(well, dtype=float)
+
+    def compute():
+        return numeric_zone(
+            t,
+            lambda times: np.interp(times, t, scaled),
+            lambda times: np.interp(times, t, well),
+            settings,
+            modulation_period_yr,
+            omega_bar,
+        )
+
+    # the same model twice in a record (the second pass without forced waves, A1's without induced episodes) is one
+    # integration: remembered by the values of everything it reads (`filtering.value_key`)
+    key = filtering.value_key(t, scaled, well, float(modulation_period_yr), float(omega_bar))
+    j_lo, h_hi = filtering.memoised('numeric_zone', (settings,), key, compute, lambda result: ())
     mismatch = bool(
         np.isfinite(adiabaticity)
         and adiabaticity < settings.mmr_zone_adiabatic_lambda_max

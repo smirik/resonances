@@ -57,7 +57,6 @@ def test_the_mmr_figure_draws_the_exported_column():
         assert tuple(fig.get_size_inches()) == LAYOUT_V1.size  # a column that fits leaves the figure as it was
         drawn = _drawn(fig)
         assert column.header.word in drawn and '↑' not in drawn
-        assert fig.text_stats['text'].status == column.header.status  # the VerdictText the column was built from
     finally:
         plt.close(fig)
 

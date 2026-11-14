@@ -22,10 +22,10 @@ from resonances.resonance.analysis.verdict import (
     AngleSubtype,
     Confidence,
     LibrationOrigin,
+    Reason,
     ResonanceType,
     Status,
     status_code,
-    verdict_from_status_code,
 )
 from resonances.resonance.analysis.zlk.analyse import analyse_zlk
 from resonances.secular.free_elements import free_elements
@@ -102,77 +102,32 @@ GATE_ON = SimpleNamespace(free_gate_enabled=True, free_gate_min_cycles=3.0)
 # SPEC §5.7: the integer status <-> the shared verdict (secular and ZLK)
 # --------------------------------------------------------------------------------------------------------------
 
-# (code, status, angle_status, reason) straight from the table of SPEC §5.7.
+# (code, status, angle_status, reason) straight from the table of SPEC §5.7 (the old -5 is produced by no analysis now).
 TABLE_5_7 = [
-    (2, Status.RESONANT, AngleStatus.LIBRATION, 'dynamic_libration'),
-    (1, Status.TRANSIENT, AngleStatus.EPISODIC, 'dynamic_episode'),
-    (0, Status.NON_RESONANT, AngleStatus.CIRCULATION, 'circulation'),
-    (-2, Status.NON_RESONANT, AngleStatus.LIBRATION, 'kinematic_libration'),
-    (-3, Status.NEAR_SEPARATRIX, AngleStatus.NEAR_SEPARATRIX, 'separatrix_zone'),
-    (-4, Status.UNCERTAIN, AngleStatus.INSUFFICIENT_TIME, 'baseline_needed'),
-    (-5, Status.NEAR_SEPARATRIX, AngleStatus.NEAR_SEPARATRIX, 'separatrix_zone'),
-    (-6, Status.UNCERTAIN, AngleStatus.DRIFT, 'baseline_needed'),
-    (-99, Status.INVALID, AngleStatus.UNDEFINED, 'unphysical'),
+    (2, Status.RESONANT, AngleStatus.LIBRATION, Reason.DYNAMIC_LIBRATION),
+    (1, Status.TRANSIENT, AngleStatus.EPISODIC, Reason.DYNAMIC_EPISODE),
+    (0, Status.NON_RESONANT, AngleStatus.CIRCULATION, Reason.CIRCULATION),
+    (-2, Status.NON_RESONANT, AngleStatus.LIBRATION, Reason.KINEMATIC_LIBRATION),
+    (-3, Status.NEAR_SEPARATRIX, AngleStatus.NEAR_SEPARATRIX, Reason.SEPARATRIX_ZONE),
+    (-4, Status.UNCERTAIN, AngleStatus.INSUFFICIENT_TIME, Reason.BASELINE_NEEDED),
+    (-6, Status.UNCERTAIN, AngleStatus.DRIFT, Reason.BASELINE_NEEDED),
+    (-9, Status.UNCERTAIN, AngleStatus.UNDEFINED, Reason.GATE_UNAVAILABLE),
+    (-9, Status.UNCERTAIN, AngleStatus.UNDEFINED, Reason.UNUSABLE_SERIES),
+    (-99, Status.INVALID, AngleStatus.UNDEFINED, Reason.UNPHYSICAL),
 ]
 
 
 @pytest.mark.parametrize('rtype', [ResonanceType.SECULAR, ResonanceType.LIDOV_KOZAI])
 @pytest.mark.parametrize('code,status,angle_status,reason', TABLE_5_7)
-def test_status_code_table_5_7_round_trip(rtype, code, status, angle_status, reason):
-    v = verdict_from_status_code(code, rtype, confidence='medium')
-    assert v.status == status
-    assert v.angle_status == angle_status
-    assert str(v.reason) == reason
-    # exact inverse: the old integer is recovered (SPEC §5.7: status_code = legacy.status)
-    assert v.status_code == code
-    assert status_code(rtype, v.status, v.angle_status, v.reason, v.flags) == code
-
-
-def test_minus_nine_reason_depends_on_type():
-    # SPEC §5.7: -9 is gate_unavailable for ZLK, unusable_series for secular; both uncertain/undefined, action extend
-    zlk = verdict_from_status_code(-9, ResonanceType.LIDOV_KOZAI)
-    sec = verdict_from_status_code(-9, ResonanceType.SECULAR)
-    for v in (zlk, sec):
-        assert v.status == Status.UNCERTAIN
-        assert v.angle_status == AngleStatus.UNDEFINED
-        assert v.action == Action.EXTEND
-        assert v.status_code == -9
-    assert str(zlk.reason) == 'gate_unavailable'
-    assert str(sec.reason) == 'unusable_series'
+def test_status_code_table_5_7(rtype, code, status, angle_status, reason):
+    assert status_code(rtype, status, angle_status, reason) == code
 
 
 def test_kinematic_minus_two_and_unavailable_minus_nine_never_merge():
     # CLAUDE.md: -2 is a measurement (kinematic libration), -9 the absence of one; they must stay apart.
-    kin = verdict_from_status_code(-2, ResonanceType.LIDOV_KOZAI)
-    una = verdict_from_status_code(-9, ResonanceType.LIDOV_KOZAI)
-    assert kin.libration_origin == LibrationOrigin.KINEMATIC
-    assert kin.action == Action.NONE
-    assert (kin.status, str(kin.reason)) != (una.status, str(una.reason))
-    assert kin.status_code != una.status_code
-
-
-def test_probable_near_separatrix_is_low_with_flag_and_review():
-    # SPEC §5.7: -5 -> near_separatrix, confidence low, action review; told apart from -3 only by the flag
-    v = verdict_from_status_code(-5, ResonanceType.SECULAR, confidence='high')
-    assert v.confidence == Confidence.LOW
-    assert 'probable_near_separatrix' in v.flags
-    assert v.action == Action.REVIEW
-    assert verdict_from_status_code(-3, ResonanceType.SECULAR, confidence='medium').action == Action.SPOT_CHECK
-
-
-def test_legacy_confidence_is_uncalibrated_and_never_certain():
-    # SPEC §5.7: `certain` is not given to these types before their own calibration; the flag says uncalibrated
-    v = verdict_from_status_code(2, ResonanceType.SECULAR, confidence='high')
-    assert v.confidence == Confidence.HIGH
-    assert 'confidence_uncalibrated' in v.flags
-    w = verdict_from_status_code(2, ResonanceType.LIDOV_KOZAI, confidence='certain')
-    assert w.confidence != Confidence.CERTAIN
-
-
-def test_minus_one_is_refused():
-    # API: -1 is produced by no classifier and is refused
-    with pytest.raises(ValueError):
-        verdict_from_status_code(-1, ResonanceType.SECULAR)
+    kin = status_code(ResonanceType.LIDOV_KOZAI, Status.NON_RESONANT, AngleStatus.LIBRATION, Reason.KINEMATIC_LIBRATION)
+    una = status_code(ResonanceType.LIDOV_KOZAI, Status.UNCERTAIN, AngleStatus.UNDEFINED, Reason.GATE_UNAVAILABLE)
+    assert (kin, una) == (-2, -9)
 
 
 # --------------------------------------------------------------------------------------------------------------
@@ -347,7 +302,7 @@ def test_secular_libration_then_circulation_is_transient():
 
 
 def test_secular_unphysical_orbit_is_invalid():
-    # e > 1.3 is unphysical (is_unphysical_orbit): invalid / undefined, code -99, whatever the angle does
+    # e > 1.3 is unphysical (classify.util.unphysical_arrays): invalid / undefined, code -99, whatever the angle does
     e = np.full(len(T_GRID), 0.1)
     e[len(e) // 2] = 1.5
     v = analyse_secular(_secular(_sine(1.0e6), T_GRID, e=e), SETTINGS).verdict
@@ -464,7 +419,7 @@ def test_zlk_without_free_elements_is_minus_nine_not_minus_two():
     tree_status, _, tree_reason, _, tree_angle = _tree(v)  # the W28 tree's verdict
     assert tree_status == Status.UNCERTAIN
     assert tree_reason == 'gate_unavailable'
-    assert status_code(v.resonance_type, Status(tree_status), AngleStatus(tree_angle), tree_reason, v.flags) == -9
+    assert status_code(v.resonance_type, Status(tree_status), AngleStatus(tree_angle), tree_reason) == -9
     # W34: the minimal policy gives a gate without a verdict the geometry's status back, flag gate_unavailable, at most
     # medium (status-tree.md#minimal-policy, principle 2); never -2
     assert (v.status, v.status_code) == (Status.RESONANT, 2)

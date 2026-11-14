@@ -283,7 +283,8 @@ def test_a_hilda_is_not_a_kinematic_drift():
 def test_2897_is_no_k2_drift_while_its_multiplet_law_holds():
     """2897 35S-4 (review B #1): the slow centre runs 10.8 rev with 31 varpi (corr 1.000), the harmonic law fails in
     both halves (R^2 0.20), but the multiplet law reaches R^2 0.50 >= MMR_FORCE_R2_FAIL (0.4): a answers sigma under
-    one law, so K2 does not fire and rule 5s decides (non_resonant/implausible_strength, as before CS7)."""
+    one law, so K2 does not fire and rule 5s decides (non_resonant/implausible_strength, as before CS7). Since its
+    record holds one force window only, its halves are not measured (nan) and K2's route stops at the first half."""
     example = 'mmr2__2897__35S-4+0-31'
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
@@ -292,10 +293,9 @@ def test_2897_is_no_k2_drift_while_its_multiplet_law_holds():
     assert analysis.response.multiplet.r2 >= S.mmr_force_r2_fail
     assert analysis.extra_columns['rec_rule'] != decide.RULE_K2
     assert (verdict.status, verdict.reason) == (Status.NON_RESONANT, Reason.IMPLAUSIBLE_STRENGTH)
-    entry = next(
-        e for e in verdict.decision_path if e.name == '3 kinematic (slow centre): a does not answer sigma, force law R2 (multiplet)'
-    )
-    assert entry.value == pytest.approx(analysis.response.multiplet.r2) and entry.result is False
+    assert len(analysis.response.windows) < S.mmr_force_min_windows
+    entry = next(e for e in verdict.decision_path if e.name == '3 kinematic (slow centre): a does not answer sigma, force law R2 (half 1)')
+    assert entry.value is None and entry.result is None  # not measured: no comparison
 
 
 def test_k2_needs_every_force_law_to_fail(drift_records):
@@ -314,6 +314,67 @@ def test_k2_needs_every_force_law_to_fail(drift_records):
         ledger = Ledger.from_settings(S)
         assert not decide._slow_centre_route(angle, geometry, changed, kinematics, S, ledger)
         assert ledger.entries[-1].name.endswith('(multiplet)') and ledger.entries[-1].value == value
+
+
+def test_k2_correlation_needs_independent_points(drift_records):
+    """K2's centre correlation is a measurement only over mmr_kin_min_points independent points, (T - 2 W_c) / W_c, as
+    K1's. The flat record: T = 50 kyr; W_c = 3 cycles of the 700-yr ripple = 2.1 kyr, so (50 - 4.2) / 2.1 = 21.8
+    points: measured at the default 3, nan when 30 are asked (485 Genua: 15 kyr of a 42-kyr W_c, 0.37 points)."""
+    from resonances.resonance.analysis.mmr.kinematics import slow_centre_kinematics
+
+    analysis = analyse_mmr(drift_records['flat'], S, scan_owner=False, scan_subresonances=False)
+    record, geometry = drift_records['flat'], analysis.geometry
+    window = geometry.centre.window_yr
+    start, end = geometry.window
+    points = (end - start - 2 * window) / window
+    assert window == pytest.approx(2100.0, rel=0.05) and points == pytest.approx(21.8, abs=1.5)
+    corr, slope, _ = slow_centre_kinematics(record, analysis.prep, geometry, S)
+    assert corr >= 0.99 and slope == pytest.approx(1.0, abs=0.01)
+    assert all(math.isnan(x) for x in slow_centre_kinematics(record, analysis.prep, geometry, replace(S, mmr_kin_min_points=30)))
+
+
+def test_k2_premise_needs_a_measured_force_law(drift_records):
+    """'a does not answer sigma' needs two halves of force windows: below mmr_force_min_windows windows the halves are
+    nan (`response.measure_pieces`), not one window copied into both (485 Genua: one 49-kyr window, R2 0.21 twice).
+    The flat record is K2 with its many windows; asking for more windows than it has leaves the halves unmeasured and
+    K2 does not fire."""
+    analysis = analyse_mmr(drift_records['flat'], S, scan_owner=False, scan_subresonances=False)
+    n = len(analysis.response.windows)
+    assert n >= S.mmr_force_min_windows and analysis.extra_columns['rec_rule'] == decide.RULE_K2
+    strict = analyse_mmr(drift_records['flat'], replace(S, mmr_force_min_windows=n + 1), scan_owner=False, scan_subresonances=False)
+    assert math.isnan(strict.response.force_r2_h1) and math.isnan(strict.response.force_r2_h2)
+    assert strict.extra_columns['rec_rule'] != decide.RULE_K2
+
+
+def test_k2_decisive_line_shows_its_force_law(drift_records):
+    """Every '3 kinematic (slow centre)' entry is K2's (`verdict_text.ENTRY_PREFIX_IDS`; before 2026-11-14 they fell
+    through to K1): the decisive K2 line shows the force law's half 1 with its comparison."""
+    from resonances.plotting import verdict_text as vt
+    from resonances.plotting.mmr_combined import figure_rows
+
+    analysis = analyse_mmr(drift_records['flat'], S, scan_owner=False, scan_subresonances=False)
+    assert analysis.extra_columns['rec_rule'] == decide.RULE_K2
+    summary, numbers_row, episodes, _ = figure_rows(analysis)
+    row = {**numbers_row, **summary}
+    text = vt.explain_mmr(analysis, S, row, episodes)
+    f = vt.MMRFacts(analysis, S, row, episodes)  # the Numbers block's lines as `verdict_column_mmr.mmr_column` builds them
+    k2 = next(item for item in vt.number_emphasis(f, text.steps, text.checks, vt.info_items(f, text.physics)) if item.rule_id == 'K2')
+    half = next(part for part in k2.parts if part.column == 'rsp_force_R2_h1')
+    assert '0.4' in half.text
+
+
+@pytest.mark.benchmark
+def test_genua_is_no_kinematic_drift():
+    """485 Genua 3J-1S-1 (the author 2026-11-14: transient; Nesvorny & Morbidelli 1998: 3-1-1 governs Genua): a clean
+    episode 42-97.5 kyr (P 14.1 kyr) after circulation. K2 read 15 kyr of a 42-kyr W_c (0.37 independent points) and
+    one force window; neither is a measurement, so K2 does not fire and the episode stands."""
+    example = 'mmr3__485__3J-1S-1+0+0-1'
+    if not io.example_path(example).exists():
+        pytest.skip('benchmark data not available')
+    analysis = analyse_mmr(io.load_series(example), S)
+    assert math.isnan(analysis.kinematics.centre_corr_rate)
+    assert analysis.extra_columns['rec_rule'] != decide.RULE_K2
+    assert analysis.verdict.status == Status.TRANSIENT
 
 
 def test_k2_grades_the_centre_as_a_drift(drift_records):

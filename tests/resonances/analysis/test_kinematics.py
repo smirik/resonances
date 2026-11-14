@@ -223,9 +223,7 @@ def _margins(k1e: Margin):
 def test_a_full_k1e_lifts_all_physics_not_measured_and_fires_kinematic_high():
     physics = decide.physics_margins_of(KINEMATIC, ('L4', 'R0', 'Z', 'W'))
     margins = _margins(Margin.FULL)
-    level = confidence.assess(
-        Status.NON_RESONANT, 'libration', 'kinematic_libration', margins, [], [], physics, confidence.ConfidenceCells()
-    )
+    level = confidence.assess(Status.NON_RESONANT, margins, [], [], physics)
     assert level.confidence == Confidence.HIGH and str(Cap.ALL_PHYSICS_NOT_MEASURED) not in level.caps
     assert decide.kinematic_high_rules(KINEMATIC, margins, physics) == frozenset({str(Rule.KINEMATIC_HIGH)})
 
@@ -233,9 +231,7 @@ def test_a_full_k1e_lifts_all_physics_not_measured_and_fires_kinematic_high():
 def test_without_k1e_the_cap_stays_at_medium_and_no_rule_fires():
     physics = decide.physics_margins_of(KINEMATIC, ('L4', 'R0', 'Z', 'W'))
     margins = _margins(Margin.NOT_MEASURED)
-    level = confidence.assess(
-        Status.NON_RESONANT, 'libration', 'kinematic_libration', margins, [], [], physics, confidence.ConfidenceCells()
-    )
+    level = confidence.assess(Status.NON_RESONANT, margins, [], [], physics)
     assert level.confidence == Confidence.MEDIUM and str(Cap.ALL_PHYSICS_NOT_MEASURED) in level.caps
     assert decide.kinematic_high_rules(KINEMATIC, margins, physics) == frozenset()
 

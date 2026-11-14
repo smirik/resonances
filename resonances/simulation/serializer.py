@@ -9,7 +9,7 @@ import pandas as pd
 
 from resonances.body import Body
 from resonances.logger import logger
-from resonances.resonance.analysis.verdict import AngleStatus, ResonanceType, Status, Verdict, verdict_from_status_code
+from resonances.resonance.analysis.verdict import AngleStatus, ResonanceType, Status, Verdict
 from resonances.resonance.factory import create_resonance, detect_resonance_type
 from resonances.data.util import datetime_from_string
 
@@ -65,7 +65,6 @@ class SimulationSerializer:
         config["_skip_path_verification"] = True
         if isinstance(config.get("date"), str):
             config["date"] = cls._parse_datetime(config["date"])
-        cls._drop_removed_plot_kinds(config)
         if current_settings:
             for name in cls._analysis_setting_names():
                 config.pop(name, None)
@@ -130,15 +129,15 @@ class SimulationSerializer:
         `body.statuses[key]` gets the status string; `body.librations[key]` a `Verdict` rebuilt from the row when the
         file has the verdict columns. A derived row (column `parent` not empty) that the body does not have yet is
         added to it first (`Body.add_derived_resonance`), which also brings back the rows of resumed batches.
-        A file of an older version with integer statuses: secular and Lidov-Kozai rows are translated
-        (`verdict_from_status_code`); an integer MMR status has no translation and is skipped with a warning.
+        A row whose status is no status string (an integer status of a file written before v1.0) is skipped with a
+        warning: restore with recompute_librations=True to analyse its series again.
         """
         frame = cls._summary_frame(summary_csv)
         if frame is None:
             return 0
         has_verdict = all(column in frame.columns for column in VERDICT_COLUMNS)
         by_body = cls._rows_by_body(frame)
-        count = skipped_mmr = 0
+        count = skipped = 0
         for body in bodies:
             rows = by_body.get(str(body.name), [])
             cls._add_derived_rows(body, rows)
@@ -146,15 +145,15 @@ class SimulationSerializer:
             for row in (row for row in rows if row["resonance"] in keys):
                 verdict = cls._verdict_of_row(row, row["resonance"], has_verdict)
                 if verdict is None:
-                    skipped_mmr += 1
+                    skipped += 1
                     continue
                 body.statuses[row["resonance"]] = str(verdict.status)
                 body.librations[row["resonance"]] = verdict
                 count += 1
-        if skipped_mmr:
+        if skipped:
             logger.warning(
-                f"{skipped_mmr} MMR rows of {summary_csv} have an integer status (an older version): MMR statuses are strings "
-                "now and have no translation; restore with recompute_librations=True to analyse them again"
+                f"{skipped} rows of {summary_csv} have no status string (an integer status of an older version): they are "
+                "not read; restore with recompute_librations=True to analyse them again"
             )
         return count
 
@@ -194,18 +193,14 @@ class SimulationSerializer:
 
     @staticmethod
     def _verdict_of_row(row: Dict[str, Any], key: str, has_verdict: bool) -> Optional[Verdict]:
-        """The verdict of one summary.csv row: from its verdict columns, or translated from an integer status
-        (secular and Lidov-Kozai only; None for an integer MMR status)."""
+        """The verdict of one summary.csv row: from its verdict columns, or the status alone when the file has none;
+        None when the status is no status string."""
         status = str(row["status"]).strip()
-        if status in {str(s) for s in Status}:
-            if has_verdict and str(row.get("resonance_type") or ""):
-                return Verdict.from_flat_dict(row)
-            resonance_type = detect_resonance_type(key)
-            return Verdict(resonance_type=ResonanceType(resonance_type), status=Status(status), angle_status=AngleStatus.UNDEFINED)
-        resonance_type = detect_resonance_type(key)
-        if resonance_type == ResonanceType.MMR:
+        if status not in {str(s) for s in Status}:
             return None
-        return verdict_from_status_code(int(float(status)), resonance_type)
+        if has_verdict and str(row.get("resonance_type") or ""):
+            return Verdict.from_flat_dict(row)
+        return Verdict(resonance_type=ResonanceType(detect_resonance_type(key)), status=Status(status), angle_status=AngleStatus.UNDEFINED)
 
     @staticmethod
     def _saved_resonances(body: Body) -> set:
@@ -293,18 +288,6 @@ class SimulationSerializer:
             setup[f"basis_{kind}"] = list(basis)
             setup[f"dropped_{kind}"] = dropped
         return setup
-
-    @classmethod
-    def _drop_removed_plot_kinds(cls, config: Dict[str, Any]) -> None:
-        """Let simulations saved before a plot kind was removed still be restored."""
-        from resonances.simulation.config import PLOT_KINDS
-
-        plots = config.get("plots")
-        if isinstance(plots, list):
-            removed = [kind for kind in plots if kind not in PLOT_KINDS]
-            if removed:
-                logger.warning(f"Ignoring removed plot kind(s) {', '.join(removed)} (see docs/plots.md)")
-                config["plots"] = [kind for kind in plots if kind in PLOT_KINDS]
 
     @classmethod
     def _config_to_dict(cls, config) -> Dict[str, Any]:

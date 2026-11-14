@@ -1,6 +1,6 @@
 """W28 E19b: the words of the co-orbital, record-edge, subresonance and joint-capture rules and the C11 figure style
-(cards g02-9 A, g02-5 B, g02-6 B, g01-7 A, g06-1 A, g06-2 A, g06-4 A, g05-8 B; WPs C3, C4, C6, C11, C14, A6a, A6b,
-A2b).
+(cards g02-9 A, g02-5 B, g02-6 B, g05-8 B; WPs C3, C4, C6, C11, A2b; the C14, A6a and A6b sentences were removed
+with the old column, 2026-11-14).
 
 Fast tests build real result objects (`SingleLeg`, `LegTurn`, `HalfLibration`, `EdgeTurn`, geometry and episode
 builders) on the 2:1 kinematic synthetic of test_verdict_text_roles and set the columns a sentence reads to the
@@ -100,7 +100,6 @@ def test_c6_a_clean_conservative_leg_is_one_horseshoe_leg_with_force_and_energy_
         'integral passes and both turns reflect (out/in 0.836 and 1.2; |ln out/in| ≤ 0.34); half a cycle, no closed one'
     )
     assert vt.leg_clause(f) == clause
-    assert vt.mmr_status_sentence(f) == f'Transient: {clause}. Transient, not resonant, because one leg covers part of the record only.'
     assert (
         vt.verdict_line(f)
         == f'TRANSIENT: one leg in a co-orbital well of {f.v.commensurability or f.a.resonance.key}, held by the planet’s force; no closed cycle.'
@@ -109,15 +108,14 @@ def test_c6_a_clean_conservative_leg_is_one_horseshoe_leg_with_force_and_energy_
     assert [step.number for step in steps] == ['0', 'G4c']
     assert steps[0].ids == ('G4',) and steps[0].outcome.endswith('→ a circulation judged on its best single leg → episodic')
     assert steps[1].ids == ('G4c',) and steps[1].outcome == f'{clause} → transient'
-    assert vt.mmr_angle_sentence(f) == 'σ circulates: its center passes 21.9 revolutions in one direction.'
 
 
 def test_c6_a_passing_leg_is_uncertain_and_says_why():
     """g02-4 A (2018 KS): reason one_coorbital_leg in words, not 'one coorbital leg.'."""
     f = _coorbital(KS, 'G4c', {'status': 'uncertain', 'reason': 'one_coorbital_leg', 'angle_status': 'episodic'})
-    assert vt.mmr_status_sentence(f) == (
-        'Uncertain: one passing leg 779–934 yr between passages: it laps past the planet (it crosses both the planet and '
-        'L3), not one swing of a co-orbital well, so no capture is shown and none excluded.'
+    assert vt.leg_clause(f) == (
+        'one passing leg 779–934 yr between passages: it laps past the planet (it crosses both the planet and L3), not '
+        'one swing of a co-orbital well, so no capture is shown and none excluded'
     )
     assert vt.verdict_line(f) == 'UNCERTAIN: one leg near the planet does not show a capture, nor exclude one.'
     # 2022 BB2: |ln 0.64| = 0.446 > 0.34 (a kick), |ln 1.31| = 0.270 (a reflection); law and energy pass
@@ -162,7 +160,6 @@ def test_c6_an_edge_leg_and_an_edge_half_swing_ask_for_the_rest_of_the_cycle():
         '0.4) and its force turns σ back at both turns; the rest of the cycle lies beyond the end'
     )
     assert vt.half_libration_clause(f) == clause
-    assert vt.mmr_status_sentence(f).startswith(f'Uncertain: {clause}; ')
     assert vt.verdict_line(f) == 'UNCERTAIN: one half-swing of the resonance runs into the record’s edge.'
     assert [step.number for step in vt.mmr_steps(f)] == ['0', 'G4h']
     f = _facts(
@@ -171,51 +168,6 @@ def test_c6_an_edge_leg_and_an_edge_half_swing_ask_for_the_rest_of_the_cycle():
         geometry=make_geometry(half_librations=(replace(half, edge=''),)),
     )
     assert vt.half_libration_clause(f).endswith('half a cycle, no closed one, so no libration is shown and none excluded')
-
-
-# --------------------------------------------------------------------------------------------- C14: extend_time
-
-
-def test_c14_the_flag_extend_time_says_where_and_why_with_the_next_check():
-    """g01-7 A (2022 BB2: end slowdown and an end leg; 2008 EZ84: one reflection at the start; 42946: action extend,
-    the action sentence names the next check)."""
-    bb2_verdict = {
-        'extend_direction': 'forward',
-        'extend_to_years': 2000.0,
-        'action': 'review',
-        'final_regime': 'arc',
-        'final_regime_start_yr': 361.0,
-    }
-    bb2_row = {'geo_extend_time_from': 'end:slowdown;leg:end'}
-    # a file written before W29 (no policy) keeps the advice with its next check
-    bb2 = _facts(row=bb2_row, verdict={**bb2_verdict, 'policy': ''})
-    assert vt.extend_flag_sentence(bb2) == (
-        'Extend: a longer integration forward (next check: 2 kyr) would show how the record ends (σ_f slows to an arc '
-        'after circulating; a clean 1:1 leg is cut by the end).'
-    )
-    assert vt._end_clause(bb2) == '; from 361 yr to the end σ_f slows to an arc (less than one revolution)'
-    # W34: under the minimal policy the sentence reads the action (status-tree.md#minimal-policy, step 5): action review
-    # extends nothing, so the causes are named as a flag without advice
-    assert vt.extend_flag_sentence(_facts(row=bb2_row, verdict=bb2_verdict)) == (
-        'Flag extend_time (σ_f slows to an arc after circulating; a clean 1:1 leg is cut by the end): no extension; the '
-        'action extends only an unfinished libration at the record’s end or a deciding period too long for the record.'
-    )
-    ez84_verdict = {'extend_direction': 'backward', 'extend_to_years': 2000.0}
-    ez84 = _facts(row={'geo_extend_time_from': 'start:reflection'}, verdict={**ez84_verdict, 'policy': ''})
-    assert vt.extend_flag_sentence(ez84) == (
-        'Extend: a longer integration backward (next check: 2 kyr) would show how the record starts (σ turns back once at the start).'
-    )
-    # W34: the minimal policy never extends backward (step 5: only the record's end)
-    assert vt.extend_flag_sentence(_facts(row={'geo_extend_time_from': 'start:reflection'}, verdict=ez84_verdict)).startswith(
-        'Flag extend_time (σ turns back once at the start): no extension'
-    )
-    extend = _facts(
-        row={'geo_extend_time_from': 'half:end'}, verdict={'extend_direction': 'forward', 'extend_to_years': 1e5, 'action': 'extend'}
-    )
-    assert vt.extend_flag_sentence(extend) == (
-        'Extend: a longer integration forward would show how the record ends (a half-swing that follows the law is cut by the end).'
-    )
-    assert vt.extend_flag_sentence(_facts()) == ''
 
 
 # --------------------------------------------------------------------------------------------- C3, C4: 1:1 geometry
@@ -335,71 +287,14 @@ def test_c11_the_figure_draws_an_uncounted_run_in_the_rejected_style_with_its_ta
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------------------------- A6a, A6b: multiplet
-
-
-def test_a6a_the_12218_gap_is_where_the_composite_term_cancels():
-    """g06-2 A (12218 4M-7: episodes 1.27-48.7 and 76.2-99.8 kyr, |P|/max|P| 8.84e-5 in the gap, 0.142 / 0.195 at its
-    edges); here on the synthetic's planet, Jupiter. Not said when the gap's minimum is not below its edges."""
-    episodes = [
-        {'episode_id': 0, 'accepted': True, 't_start_yr': 1273.0, 't_end_yr': 48727.5, 'resonant_argument': '2J-1+1-2'},
-        {'episode_id': 1, 'accepted': True, 't_start_yr': 76193.0, 't_end_yr': 99849.0, 'resonant_argument': ''},
-    ]
-    row = {'sub_th_P_min_gap': 8.83793e-05, 'sub_th_P_edges': '1.273:0.412;48.73:0.142;76.19:0.195;99.85:1', 'sub_choice': 'theory'}
-    verdict = {'resonant_argument': '2J-1+1-2', 'commensurability': '2J-1'}
-    f = _facts(row=row, verdict=verdict, episodes=episodes, decisive_episode_id=0)
-    assert vt.gap_cause_line(f) == (
-        'The gap 48.7–76.2 kyr between the episodes is where the composite term cancels: |P|/max |P| falls to 8.84e-5 '
-        'there (0.142 and 0.195 at its edges) as ϖ_J − ϖ passes its cancellation phase.'
-    )
-    assert vt.gap_cause_line(_facts(row={**row, 'sub_th_P_min_gap': 0.5}, verdict=verdict, episodes=episodes)) == ''
-    line = vt.argument_line(f)
-    assert '(chosen by the multiplet theory: its center π − arg P + jβ is the flattest over the episode)' in line
-    assert line.endswith(' Other episodes: #1 76.2–99.8 kyr chose no member in its own window.')
-
-
-def test_a6b_a_composite_argument_names_no_member():
-    f = _facts(verdict={'resonant_argument': 'composite', 'commensurability': '2J-1'})
-    assert vt.argument_line(f) == (
-        'Resonant argument: composite, one resonance 2J-1 with this angle: no single member of the multiplet stands; σ '
-        'follows the moving center of the composite term P(β).'
-    )
-
-
-def test_a6a_the_cheap_list_frames_ug22_and_t8_is_a_diagnostic():
-    """g06-4 A (2003 UG22 40 kyr: +5+2 and +6+1 flatter, W/W0 0.42 / 0.45, terms 7.6e-9 / 1.8e-10 of the strongest);
-    a member flatter than the angle but strong enough (ok) or wider (W/W0 ≥ 1) is no frame; 2003 EH16's T8 scan."""
-    cheap = '10E-17+5+2:0.42:7.6e-09:E_strength;10E-17+6+1:0.45:1.8e-10:E_strength;10E-17+4+3:0.51:3.2e-07:E_strength;X:0.3:0.5:ok;Y:1.2:1e-9:E_strength'
-    f = _facts(row={'sub_cheap_list': cheap}, subresonances=None)
-    assert vt.frame_line(f) == (
-        'Members 10E-17+5+2 and 10E-17+6+1 give a flatter center (W/W0 0.42, 0.45), but their terms are 7.6e-9 and '
-        '1.8e-10 of the strongest (test E′): a frame, not a force; the center moves with the body’s own e, i, ω.'
-    )
-    row = {'sub_diag_triggers': 'T8', 'sub_diag_best': '1M-3J-1-1+0+4', 'sub_diag_would_accept': '', 'sub_diag_would_check': 'not_measured'}
-    assert vt.diagnostic_scan_line(_facts(row=row)) == (
-        'A diagnostic subresonance scan (T8) ran: its flattest member is 1M-3J-1-1+0+4, check not measured; without a '
-        'measured force it changes nothing.'
-    )
-    assert vt.diagnostic_scan_line(_facts(row={**row, 'sub_diag_triggers': ''})) == ''
-
-
 # --------------------------------------------------------------------------------------------- A2b: joint capture
 
 
 def test_a2b_both_resonances_at_once_in_the_role_the_cause_and_the_physics_row():
-    """g05-8 B: origin joint, the owner keeps its row; x closes 18 cycles (period 1200 yr, secular offset 0.12)."""
+    """g05-8 B: origin joint, the owner keeps its row."""
     row = {'own_second_capture': 'confirmed', 'own_x_cycles': 18, 'own_x_cycle_period_yr': 1200.0, 'own_x_secular_offset': 0.12}
     verdict = {'libration_origin': 'joint', 'cause_role': 'joint', 'owner': '5J+6S-2+0+0-9', 'cause_term': ''}
     f = _facts(row=row, verdict=verdict)
     assert vt.cause_line(f.v, f) == ('joint', 'also in: 5J+6S-2+0+0-9 (both resonances at once)')
-    assert vt.subtitle_role(f) == 'also in 5J+6S-2+0+0-9'
-    assert vt.joint_line(f) == (
-        'Both resonances at once: x = Ψ/u: x closes 18 cycles of its own well (period 1.2 kyr, off every secular period '
-        'by 0.12) while 5J+6S-2+0+0-9 holds φ; σ librates in this resonance too.'
-    )
-    one = _facts(row={**row, 'own_second_capture': 'one_cycle', 'own_x_cycles': 1}, verdict=verdict)
-    assert vt.joint_line(one).endswith(': not decided yet; a longer record decides.')
-    assert 'x closes 1 cycle of its own well' in vt.joint_line(one)
     assert vt.CAPTURE_WORDS['confirmed'] == 'both resonances at once'
-    assert vt.joint_line(_facts(row=row)) == ''  # origin not joint
     assert vv.rule_name('2j', leaf=True) and 'unmapped' not in vv.decided('2j') and 'unmapped' not in vv.decided('K3s')

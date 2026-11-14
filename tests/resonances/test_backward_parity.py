@@ -27,7 +27,7 @@ from resonances.resonance.analysis.secular import LongPeriodSeries  # noqa: E402
 from resonances.resonance.analysis.settings import settings_from_config  # noqa: E402
 from resonances.resonance.analysis.verdict import AngleStatus, Reason, ResonanceType, Status  # noqa: E402
 from resonances.resonance.analysis.zlk import analyse_zlk  # noqa: E402
-from resonances.resonance.classify import check_chaos  # noqa: E402
+from resonances.resonance.classify import unphysical_arrays  # noqa: E402
 from resonances.resonance.omega_free_gate import GateOutcome, evaluate_gate  # noqa: E402
 from resonances.simulation.simulation import long_period_series  # noqa: E402
 from resonances.secular import planet_modes as pm  # noqa: E402
@@ -137,7 +137,7 @@ class TestShortAndNonFiniteSeries:
     def test_a_non_finite_semi_major_axis_is_unphysical(self):
         axis = np.full(100, 2.5)
         axis[60:] = np.nan
-        assert check_chaos(SimpleNamespace(axis=axis, ecc=np.full(100, 0.1))) == (1, 'unphysical: non_finite')
+        assert unphysical_arrays(axis, np.full(100, 0.1)) == (True, 'non_finite')
 
 
 class TestSecular:

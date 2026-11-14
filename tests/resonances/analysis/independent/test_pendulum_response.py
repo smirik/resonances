@@ -682,18 +682,15 @@ G5 = np.radians(4.257 / 3600.0)
 
 
 @pytest.mark.parametrize('g, g5', [(G_BODY, G5), (-G_BODY, G5), (G5, G_BODY)])
-def test_varpi_rate_modulation_against_rotating_vectors(g, g5):
+def test_varpi_rate_range_against_rotating_vectors(g, g5):
     # e exp(i varpi) = e_f exp(i g t) + e_F exp(i g5 t); truth from the numerical derivative of the argument
     e_free, e_forced = 0.15, 0.05
     t = np.linspace(0.0, 4 * 2 * np.pi / abs(g - g5), 400001)
     vec = e_free * np.exp(1j * g * t) + e_forced * np.exp(1j * g5 * t)
     varpi_dot = np.gradient(np.unwrap(np.angle(vec)), t)
-    out = kinematics.varpi_rate_modulation(np.abs(vec), g, g5)
-    assert out[0] == pytest.approx(e_free, rel=1e-6)
-    assert out[1] == pytest.approx(e_forced, rel=1e-6)
-    assert out[2] == pytest.approx(varpi_dot.min(), rel=1e-4)
-    assert out[3] == pytest.approx(varpi_dot.max(), rel=1e-4)
-    assert out[4] == pytest.approx(2 * np.pi / abs(g - g5), rel=1e-12)
+    low, high = kinematics.varpi_rate_range(e_free, e_forced, g, g5)
+    assert low == pytest.approx(varpi_dot.min(), rel=1e-4)
+    assert high == pytest.approx(varpi_dot.max(), rel=1e-4)
 
 
 @pytest.mark.parametrize('omega_rate', [np.pi / 17954.0, -np.pi / 17954.0])

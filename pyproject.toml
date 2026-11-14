@@ -1,7 +1,7 @@
 [project]
 name = "resonances"
 version = "1.0.0"
-description = "Identification of mean-motion resonances"
+description = "Identification of mean-motion, secular and Lidov-Kozai resonances of small bodies"
 authors = [{ name = "Evgeny Smirnov", email = "smirik@gmail.com" }]
 license = { text = "MIT" }
 readme = "README.md"
@@ -39,9 +39,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "http://smirik.github.io/resonances/"
+Homepage = "https://smirik.github.io/resonances/"
 Repository = "https://github.com/smirik/resonances"
-Documentation = "http://smirik.github.io/resonances/"
+Documentation = "https://smirik.github.io/resonances/"
 
 [project.scripts]
 resonances = "resonances.cli:cli"

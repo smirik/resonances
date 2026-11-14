@@ -9,10 +9,10 @@ the member of the multiplet that librates, `cause_role`/`cause_term` the term be
 the key a statistic counts once; `analysis.mmr.roles`),
 `checks` the values of the named checks, `margins` and `decision_path` how sure the decision is
 and which comparisons made it, `rules_fired` which named rules acted on the row (`analysis.rules`).
-`status_code` is the old integer, kept for a transition period.
+`status_code` is the old integer, kept for comparison with old runs.
 
-MMR verdicts come from `analysis.mmr.decide`; secular and ZLK verdicts are, until they move to
-the same scheme, translated from their integer status by `verdict_from_status_code` (SPEC §5.7).
+MMR verdicts come from `analysis.mmr`, secular and ZLK verdicts from `analysis.secular` and `analysis.zlk`;
+every one ends with the W29 minimal policy (`analysis.policy`).
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ class Status(StrEnum):
 
 class AngleStatus(StrEnum):
     LIBRATION = 'libration'
-    EPISODIC = 'episodic'  # 'transient' before 2026-10-17 (`angle_status_from_text` reads old files)
+    EPISODIC = 'episodic'  # 'transient' before 2026-10-17
     NEAR_SEPARATRIX = 'near_separatrix'
     CIRCULATION = 'circulation'
     DRIFT = 'drift'
@@ -154,7 +154,7 @@ class Reason(StrEnum):
     DYNAMIC_LIBRATION = 'dynamic_libration'  # a measured force (L4, R0 or the directly averaged F) passes: origin dynamic
     DYNAMIC_EPISODE = 'dynamic_episode'
     # nothing measured the force and the origin is unknown: only the geometry decided (MMR leaf 5u/6; author
-    # 2026-10-26, Q3: was dynamic_libration/dynamic_episode with origin unknown, `reason_from_text` reads old files)
+    # 2026-10-26, Q3: was dynamic_libration/dynamic_episode with origin unknown)
     GEOMETRIC_LIBRATION = 'geometric_libration'
     GEOMETRIC_EPISODE = 'geometric_episode'
     SEPARATRIX_ZONE = 'separatrix_zone'
@@ -241,7 +241,7 @@ class Flag(StrEnum):
     # the accepted owner leaves open whether sigma's own term also holds Psi (`owner.second_capture`): confidence <= medium
     SECOND_CAPTURE_UNRESOLVED = 'second_capture_unresolved'
     # crossings with every cycle inside the model's separatrix zone (a column, no status; 'separatrix_chaos' before
-    # 2026-10-17, `OLD_FLAGS`)
+    # 2026-10-17)
     EPISODES_IN_SEPARATRIX_ZONE = 'episodes_in_separatrix_zone'
     # an episodic angle that left a libration at least once and came back at least once (sep_n_exits, sep_n_captures),
     # with its own force measured: a mark that names no mechanism and changes no status (W17 Q12)
@@ -262,9 +262,6 @@ class Flag(StrEnum):
     JUMP_BY_A_ONLY = 'jump_by_a_only'
     JUMP_AT_EDGE = 'jump_at_edge'  # a step of a without data on both sides to confirm it: kept, the record not cut
     JUMP_LOCATOR_ALIASED = 'jump_locator_aliased'
-    OWNER_SEARCH_SKIPPED = 'owner_search_skipped'
-    CONFIDENCE_UNCALIBRATED = 'confidence_uncalibrated'
-    PROBABLE_NEAR_SEPARATRIX = 'probable_near_separatrix'  # secular/ZLK only: the old -5
     # W28 C14 (card g01-7, rule end_arc_extend): a longer integration would resolve how a record edge ends, in
     # `Verdict.extend_direction` to `extend_to_years` (an end arc after circulation, one reflection or a clean 1:1 leg
     # or half-libration cut by the edge); changes no status and no level, whatever the action
@@ -364,8 +361,8 @@ class Verdict:
     # the orbit's type in the librating episodes, for the figure's header ('tadpole L4', 'horseshoe',
     # 'interior, asymmetric libration about 72°', 'ω libration about 90°'; `orbit_type.py`); '' without libration
     orbit_type: str = ''
-    # the calibration cell (status, angle_status, reason): author-labelled verdicts at high or certain, their errors and
-    # the Wilson 95 % interval of the accuracy (`confidence.CellRecord`); reported only, they change no level
+    # the calibration cell's columns (`confidence.CellRecord`: author-labelled verdicts at high or certain, their errors
+    # and the Wilson 95 % interval of the accuracy): empty under the W29 minimal policy, which reads no cell
     cell_n_examples: Optional[int] = None
     cell_n_errors: Optional[int] = None
     cell_accuracy_low_95: Optional[float] = None
@@ -430,7 +427,7 @@ class Verdict:
     @property
     def status_code(self) -> int:
         """The old integer status (temporary, see `status_code`)."""
-        return status_code(self.resonance_type, self.status, self.angle_status, self.reason, self.flags)
+        return status_code(self.resonance_type, self.status, self.angle_status, self.reason)
 
     @property
     def review_required(self) -> bool:
@@ -441,8 +438,8 @@ class Verdict:
     def review_reasons(self) -> list[str]:
         """Why the row is in the review queue (column `review_reasons`; empty outside it): `confidence:<level>` for
         medium/low, `action:<action>` for a spot_check/review action at no such level, `origin_unknown` for a bounded
-        angle without an established mechanism, then `cap:<cap>` for every cap and `failed:<check>` for every failed
-        support (what lowered the level); under the minimal policy `veto_thin` instead of the last two."""
+        angle without an established mechanism, then `veto_thin` when the veto's comparison was thin. The minimal policy
+        leaves no caps and no failed supports (the level is the evidence's, `policy.level`), so neither is a reason."""
         if not self.review_required:
             return []
         reasons = []
@@ -452,12 +449,8 @@ class Verdict:
             reasons.append(f'action:{self.action}')
         if _origin_unknown(self.libration_origin, self.reason):
             reasons.append(str(Reason.ORIGIN_UNKNOWN))
-        if self.policy == POLICY_MINIMAL:  # no caps, no failed supports: the level is the evidence's (`policy.level`)
-            if str(Flag.VETO_THIN) in self.flags:
-                reasons.append(str(Flag.VETO_THIN))
-            return reasons
-        reasons.extend(f'cap:{cap}' for cap in self.caps)
-        reasons.extend(f'failed:{check}' for check in self.failed_support)
+        if str(Flag.VETO_THIN) in self.flags:
+            reasons.append(str(Flag.VETO_THIN))
         return reasons
 
     def to_flat_dict(self) -> dict[str, Any]:
@@ -548,9 +541,9 @@ class Verdict:
         return cls(
             resonance_type=ResonanceType(cell_text(row.get('resonance_type'))),
             status=Status(cell_text(row.get('status'))),
-            angle_status=angle_status_from_text(cell_text(row.get('angle_status'))),
+            angle_status=AngleStatus(cell_text(row.get('angle_status'))),
             angle_subtype=AngleSubtype(cell_text(row.get('angle_subtype'))),
-            final_regime=_angle_or_text(cell_text(row.get('final_regime'))),
+            final_regime=_enum_or_text(AngleStatus, cell_text(row.get('final_regime'))),
             final_regime_start_yr=_number(row.get('final_regime_start_yr')),
             orbit_type=cell_text(row.get('orbit_type')),
             confidence=Confidence(cell_text(row.get('confidence'))),
@@ -559,11 +552,11 @@ class Verdict:
             cell_n_errors=_integer(row.get('cell_n_errors')),
             cell_accuracy_low_95=_number(row.get('cell_accuracy_low_95')),
             cell_accuracy_high_95=_number(row.get('cell_accuracy_high_95')),
-            reason=reason_from_text(cell_text(row.get('reason')), cell_text(row.get('libration_origin'))),
-            flags=flags_from_cell(row.get('flags')),
+            reason=_enum_or_text(Reason, cell_text(row.get('reason'))),
+            flags=split_list(row.get('flags')),
             thin_margins=split_list(row.get('thin_margins')),
             failed_support=split_list(row.get('failed_support')),
-            caps=flags_from_cell(row.get('caps')),
+            caps=split_list(row.get('caps')),
             action=Action(cell_text(row.get('action')) or Action.NONE),
             extend_to_years=_number(row.get('extend_to_years')),
             extend_direction=cell_text(row.get('extend_direction')),
@@ -653,48 +646,6 @@ def _boolean(value: Any) -> Optional[bool]:
     return None
 
 
-# angle_status spellings of older files -> the current value (author 2026-10-17: 'transient' -> 'episodic', so that
-# the angle's word is not the status's)
-OLD_ANGLE_STATUS = {'transient': AngleStatus.EPISODIC}
-
-
-def angle_status_from_text(text: str) -> AngleStatus:
-    """The `AngleStatus` of a saved cell, the old spelling ('transient') included."""
-    text = str(text).strip()
-    return OLD_ANGLE_STATUS.get(text) or AngleStatus(text)
-
-
-# reasons of older files -> the current value. Before 2026-10-26 (author, Q3) the geometry alone (origin unknown, MMR
-# leaf 5u/6) wrote dynamic_libration/dynamic_episode; only the origin column tells those rows from the measured ones.
-OLD_GEOMETRIC_REASONS = {'dynamic_libration': Reason.GEOMETRIC_LIBRATION, 'dynamic_episode': Reason.GEOMETRIC_EPISODE}
-
-
-def reason_from_text(text: str, origin: str = ''):
-    """The `Reason` of a saved cell (the text itself when it is no Reason), an old row's dynamic_* with origin unknown
-    read as geometric_*."""
-    text = str(text).strip()
-    if str(origin).strip() == LibrationOrigin.UNKNOWN and text in OLD_GEOMETRIC_REASONS:
-        return OLD_GEOMETRIC_REASONS[text]
-    return _enum_or_text(Reason, text)
-
-
-# flag and cap spellings of older files -> the current ones (2026-10-17: separatrix_chaos is a model-zone test, not a
-# measurement of chaos)
-OLD_FLAGS = {'separatrix_chaos': 'episodes_in_separatrix_zone'}
-
-
-def flags_from_cell(cell: Any) -> list[str]:
-    """A saved flags or caps cell (`split_list`) with the old spellings replaced (`OLD_FLAGS`)."""
-    return [OLD_FLAGS.get(item, item) for item in split_list(cell)]
-
-
-def _angle_or_text(text: str):
-    try:
-        return angle_status_from_text(text)
-    except ValueError:
-        return text
-
-
 def _enum_or_text(enum_cls, text: str):
     try:
         return enum_cls(text)
@@ -771,15 +722,14 @@ def status_code(
     status: Status,
     angle_status: AngleStatus,
     reason: Reason | str,
-    flags: Iterable[str] = (),
 ) -> int:
     """The old integer status of a verdict (DECISIONS: temporary, for consumers of the old codes).
 
     MMR (SPEC §2.2): resonant 2, transient 1, near_separatrix -3, non_resonant 0 (kinematic,
     induced, subresonance and alias included), uncertain baseline_needed -6, other uncertain -9,
-    invalid -99. Secular and ZLK (SPEC §5.7, exact inverse of `verdict_from_status_code`):
-    kinematic libration -2, near_separatrix -3 or -5 (flag probable_near_separatrix),
-    uncertain insufficient_time -4, uncertain drift -6, other uncertain -9.
+    invalid -99. Secular and ZLK (SPEC §5.7): kinematic libration -2, near_separatrix -3,
+    uncertain insufficient_time -4, uncertain drift -6, other uncertain -9 (the old -5, a near_separatrix
+    read from the old classifier's files, is produced by no current analysis).
     """
     resonance_type = ResonanceType(resonance_type)
     if resonance_type == ResonanceType.MMR:
@@ -789,109 +739,9 @@ def status_code(
     if status == Status.NON_RESONANT:
         return -2 if reason == Reason.KINEMATIC_LIBRATION else 0
     if status == Status.NEAR_SEPARATRIX:
-        return -5 if Flag.PROBABLE_NEAR_SEPARATRIX in set(flags) else -3
+        return -3
     if status == Status.UNCERTAIN:
         if reason == Reason.BASELINE_NEEDED:
             return -4 if angle_status == AngleStatus.INSUFFICIENT_TIME else -6
         return -9
     return _MMR_CODES[status]
-
-
-# old integer -> (status, angle_status, subtype, reason, origin, action or None = by confidence, keeps confidence)
-_LEGACY_TABLE = {
-    2: (Status.RESONANT, AngleStatus.LIBRATION, AngleSubtype.NONE, Reason.DYNAMIC_LIBRATION, LibrationOrigin.DYNAMIC, None, True),
-    1: (Status.TRANSIENT, AngleStatus.EPISODIC, AngleSubtype.NONE, Reason.DYNAMIC_EPISODE, LibrationOrigin.DYNAMIC, None, True),
-    0: (Status.NON_RESONANT, AngleStatus.CIRCULATION, AngleSubtype.NONE, Reason.CIRCULATION, LibrationOrigin.NONE, Action.NONE, True),
-    -2: (
-        Status.NON_RESONANT,
-        AngleStatus.LIBRATION,
-        AngleSubtype.NONE,
-        Reason.KINEMATIC_LIBRATION,
-        LibrationOrigin.KINEMATIC,
-        Action.NONE,
-        True,
-    ),
-    -3: (
-        Status.NEAR_SEPARATRIX,
-        AngleStatus.NEAR_SEPARATRIX,
-        AngleSubtype.NONE,
-        Reason.SEPARATRIX_ZONE,
-        LibrationOrigin.DYNAMIC,
-        Action.SPOT_CHECK,
-        True,
-    ),
-    -4: (
-        Status.UNCERTAIN,
-        AngleStatus.INSUFFICIENT_TIME,
-        AngleSubtype.ARC,
-        Reason.BASELINE_NEEDED,
-        LibrationOrigin.NONE,
-        Action.EXTEND,
-        False,
-    ),
-    -5: (
-        Status.NEAR_SEPARATRIX,
-        AngleStatus.NEAR_SEPARATRIX,
-        AngleSubtype.NONE,
-        Reason.SEPARATRIX_ZONE,
-        LibrationOrigin.DYNAMIC,
-        Action.REVIEW,
-        False,
-    ),
-    -6: (Status.UNCERTAIN, AngleStatus.DRIFT, AngleSubtype.NONE, Reason.BASELINE_NEEDED, LibrationOrigin.UNKNOWN, Action.EXTEND, False),
-    -9: (Status.UNCERTAIN, AngleStatus.UNDEFINED, AngleSubtype.NONE, None, LibrationOrigin.NONE, Action.EXTEND, False),
-    -99: (Status.INVALID, AngleStatus.UNDEFINED, AngleSubtype.UNPHYSICAL, Reason.UNPHYSICAL, LibrationOrigin.NONE, Action.REVIEW, False),
-}
-
-
-def verdict_from_status_code(
-    code: int,
-    resonance_type: ResonanceType | str,
-    confidence: Confidence | str | None = None,
-    checks: Optional[Mapping[str, CheckValue]] = None,
-    flags: Iterable[str] = (),
-) -> Verdict:
-    """The verdict of a secular or ZLK angle from its integer status (SPEC §5.7).
-
-    The level is the old classifier's confidence with the flag `confidence_uncalibrated`
-    (never `certain`); -5 gets level low and the flag `probable_near_separatrix`; uncertain and
-    invalid have no level. -9 is `gate_unavailable` for ZLK and `unusable_series` for secular.
-    -1 is produced by no classifier and is refused.
-    """
-    resonance_type = ResonanceType(resonance_type)
-    if resonance_type == ResonanceType.MMR:
-        raise ValueError('MMR verdicts come from the MMR analysis, not from an integer status')
-    code = int(code)
-    if code not in _LEGACY_TABLE:
-        raise ValueError(f'No verdict for status code {code}: known codes are {sorted(_LEGACY_TABLE)}')
-    status, angle_status, subtype, reason, origin, action, keeps_confidence = _LEGACY_TABLE[code]
-    if reason is None:
-        reason = Reason.GATE_UNAVAILABLE if resonance_type == ResonanceType.LIDOV_KOZAI else Reason.UNUSABLE_SERIES
-    level = Confidence(confidence or Confidence.NONE)
-    if level == Confidence.CERTAIN:
-        level = Confidence.HIGH
-    if code == -5:
-        level = Confidence.LOW
-    elif not keeps_confidence:
-        level = Confidence.NONE
-    verdict_flags = list(flags)
-    if level != Confidence.NONE and Flag.CONFIDENCE_UNCALIBRATED not in verdict_flags:
-        verdict_flags.append(str(Flag.CONFIDENCE_UNCALIBRATED))
-    if code == -5:
-        verdict_flags.append(str(Flag.PROBABLE_NEAR_SEPARATRIX))
-    if action is None:
-        action = default_action(status, reason, level)
-    return Verdict(
-        resonance_type=resonance_type,
-        status=status,
-        angle_status=angle_status,
-        angle_subtype=subtype,
-        confidence=level,
-        confidence_raw=level,
-        reason=reason,
-        flags=verdict_flags,
-        action=action,
-        libration_origin=origin,
-        origin_detail=OriginDetail.NONE,
-        checks=dict(checks or {}),
-    )

@@ -177,9 +177,9 @@ def test_the_figure_prints_the_verdict_of_the_row(tmp_path):
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
-    from resonances.plotting import combined_numbers as numbers
     from resonances.plotting.secular_plots import LONG_PERIOD_BLOCK_ORDER, draw_long_period_combined, long_period_blocks
     from resonances.resonance.analysis.zlk import analyse_zlk
+    from tests.resonances.plotting.helpers import printed_columns
 
     t = np.linspace(0.0, 1e5, 5001)
     series = LongPeriodSeries(
@@ -195,7 +195,7 @@ def test_the_figure_prints_the_verdict_of_the_row(tmp_path):
     analysis = analyse_zlk(series, SETTINGS, gate_config=SimpleNamespace(free_gate_enabled=False, free_gate_min_cycles=3.0))
     row = analysis.summary_row()
     blocks = long_period_blocks(row, analysis.verdict.decision_path, analysis.episode_rows())
-    printed = numbers.printed_columns(blocks, LONG_PERIOD_BLOCK_ORDER)
+    printed = printed_columns(blocks, LONG_PERIOD_BLOCK_ORDER)
     assert printed['status'].value == 'resonant' and printed['geo_period_cycle_yr'].column == 'geo_period_cycle_yr'
     for entry in analysis.verdict.decision_path:  # every number the decision compared is on the figure
         assert not entry.column or entry.column in printed, entry.column

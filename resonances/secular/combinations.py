@@ -46,28 +46,6 @@ class SecularCombination:
     key: Tuple[Tuple[str, int], ...]  # sorted (label, coefficient) with 'g'/'s' for the body
 
 
-def coefficient_key(resonance_or_formula) -> Tuple[Tuple[str, int], ...]:
-    """Canonical coefficient vector of an angle, the same for every spelling and for -sigma.
-
-    Labels are 'g', 's' for the body and 'g5', 's6', ... for the planets. 'g-g6+s-s6' and
-    'g+s-s6-g6' have one key; so do '-g+s+g5-s7' and 'g-s-g5+s7'.
-    """
-    from resonances.secular.secular_resonance_formula import SecularResonanceFormula
-
-    if isinstance(resonance_or_formula, str):
-        terms = SecularResonanceFormula(resonance_or_formula).terms
-    else:
-        terms = resonance_or_formula.formula.terms
-    coeffs: Dict[str, int] = {}
-    for t in terms:
-        label = t.mode if t.index is None else f"{t.mode}{t.index}"
-        coeffs[label] = coeffs.get(label, 0) + t.coefficient
-    coeffs = {label: c for label, c in coeffs.items() if c != 0}
-    lead = coeffs.get('g') or coeffs.get('s') or next((coeffs[k] for k in sorted(coeffs)), 1)
-    sign = 1 if lead > 0 else -1
-    return tuple(sorted((label, sign * c) for label, c in coeffs.items()))
-
-
 def formula_from_coefficients(p: int, q: int, planetary: Dict[str, int]) -> str:
     """'g-g6+s-s6'-style formula: the body's g, s first, then the planets in PLANETARY_MODES order."""
     parts = [(p, 'g'), (q, 's')] + [(planetary.get(label, 0), label) for label in PLANETARY_MODES]
@@ -148,7 +126,7 @@ def near_resonant(
             for i in hits:
                 planetary = {label: int(c) for label, c in zip(PLANETARY_MODES, parts[i]) if c != 0}
                 formula = formula_from_coefficients(p, q, planetary)
-                # p > 0, or p == 0 and q > 0: already the canonical sign of `coefficient_key`
+                # p > 0, or p == 0 and q > 0: already the canonical sign (the lead body coefficient positive)
                 key = tuple(sorted([(label, c) for label, c in (('g', p), ('s', q)) if c] + list(planetary.items())))
                 found.append(SecularCombination(formula, int(order[i]), float(divisor[i]), key))
     found.sort(key=lambda c: (c.order, abs(c.divisor)))

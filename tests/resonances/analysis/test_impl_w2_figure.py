@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from resonances.plotting import combined_numbers as cn  # noqa: E402
 from resonances.plotting import mmr_combined as mc  # noqa: E402
 from resonances.plotting import mmr_verdict_panel as panel  # noqa: E402
+from tests.resonances.plotting.helpers import printed_lines, printed_columns  # noqa: E402
 from resonances.plotting.style import SUBRESONANCE, OWNER  # noqa: E402
 from resonances.resonance.analysis import geometry as geo  # noqa: E402
 from resonances.resonance.analysis import pendulum as pend  # noqa: E402
@@ -237,13 +238,13 @@ class TestDuplicates:
     def test_episode_copy_of_a_record_number_is_printed_once_where_the_record_prints_it(self):
         numbers = {'rsp_force_R2_h1': 0.70214, 'ep_force_R2_h1': 0.70214, 'flt_window_t0_yr': 35.4, 'geo_window_t0_yr': 35.4}
         blocks = panel.text_blocks({}, numbers, [])
-        printed = [line for line in cn.printed_lines(blocks, panel.TEXT_BLOCKS) if line.column]
+        printed = [line for line in printed_lines(blocks, panel.TEXT_BLOCKS) if line.column]
         force = [line for line in printed if line.label == 'force_R2_h1']
         assert len(force) == 1 and force[0].column == 'rsp_force_R2_h1' and force[0].also == ('ep_force_R2_h1',)
         window = [line for line in printed if line.label == 'window_t0']
         assert len(window) == 1 and window[0].also == ('geo_window_t0_yr',)
         # every column still maps to a printed line with its value
-        columns = cn.printed_columns(blocks, panel.TEXT_BLOCKS)
+        columns = printed_columns(blocks, panel.TEXT_BLOCKS)
         assert columns['ep_force_R2_h1'].value == '0.7021' and columns['geo_window_t0_yr'].value == '35.4'
 
     def test_different_quantities_are_kept(self):
@@ -256,7 +257,7 @@ class TestDuplicates:
             'sep_flags': '',
         }
         blocks = panel.text_blocks({}, numbers, [])
-        columns = {line.column for line in cn.printed_lines(blocks, panel.TEXT_BLOCKS) if line.column}
+        columns = {line.column for line in printed_lines(blocks, panel.TEXT_BLOCKS) if line.column}
         assert set(numbers) <= columns
 
 

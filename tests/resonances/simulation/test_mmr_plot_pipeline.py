@@ -35,7 +35,7 @@ def synthetic_mmr(tmp_path, resonance='2J-1', n=4000, years=4000.0, planets=True
         integration_years=years,
         Nout=n,
     )
-    if 'plot_layout' not in config_kwargs and 'plot_subfolder_strategy' not in config_kwargs:
+    if 'plot_layout' not in config_kwargs:
         kwargs['plot_layout'] = 'flat'  # the figure paths of these tests are written for it (default confidence/status)
     kwargs.update(config_kwargs)
     sim = Simulation(**kwargs)
@@ -92,7 +92,7 @@ class TestDispatch:
             assert (folder / f'synthetic-{resonance.to_s()}-{kind}.png').exists(), kind
 
     def test_combined_goes_to_its_status_folder(self, tmp_path):
-        sim, body, resonance = synthetic_mmr(tmp_path, plots=['combined', 'portrait'], plot_subfolder_strategy='status')
+        sim, body, resonance = synthetic_mmr(tmp_path, plots=['combined', 'portrait'], plot_layout='status')
         body.statuses[resonance.to_s()] = 'transient'
         sim.data_manager.plot_body(body, sim)
         assert [p.relative_to(tmp_path).as_posix() for p in sorted(tmp_path.rglob('*.png'))] == [
@@ -198,7 +198,7 @@ class TestRegenerationAfterRestore:
         restored.data_manager.plot_body(restored_body, restored)
         assert (tmp_path / 'combined' / f'synthetic-{resonance.to_s()}-combined.png').exists()
 
-    def test_restore_ignores_a_removed_plot_kind(self, tmp_path):
+    def test_restore_refuses_a_removed_plot_kind(self, tmp_path):
         import json
 
         sim, body, _ = synthetic_mmr(tmp_path, save='all', plot=None)
@@ -208,5 +208,5 @@ class TestRegenerationAfterRestore:
         data['config']['plots'] = ['evolution', 'phase_portrait']
         path.write_text(json.dumps(data))
 
-        restored = SimulationSerializer.restore(str(path), recompute_librations=False)
-        assert restored.config.plots == ['evolution']
+        with pytest.raises(ValueError, match='Unknown plot kind'):
+            SimulationSerializer.restore(str(path), recompute_librations=False)

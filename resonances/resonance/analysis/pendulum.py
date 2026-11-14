@@ -11,7 +11,7 @@ Closed forms (M&D 1999, eqs. 8.50–8.58; scipy `ellipk(m)`/`ellipe(m)` take m =
   J / J_s = E(h) - (1 - h) K(h)  (-> pi h / 4 as h -> 0, -> 1 as h -> 1),
   r_pend(h) = min/mean rate over a revolution = (2/pi) sqrt((h - 1)/h) K(1/h).
 These hold for one harmonic only. A fitted V with more harmonics gets quadratures over a well
-(`action_ratio_in_potential`, `period_in_potential`, `half_width_in_potential`): with
+(`action_ratio_in_potential`, `period_in_potential`): with
 J(E) = (1/pi) int sqrt(2 (E - V)) d sigma over the libration loop, J_s = J at the well's own separatrix
 energy (the lower of the two maxima that bound it). V = -cos s - 0.2 cos 2s at h = 0.5: J/J_s = 0.38417 where the
 cosine formula gives 0.42361. A libration cycle's J/J_s is that of the well it occupies (the basin of its fastest
@@ -49,7 +49,7 @@ MAD_TO_SIGMA = 1.4826  # robust std of a normal distribution from its median abs
 PERMUTATION_METHOD = 'cyclic_shift'
 # Flag of a record whose crossings all fall among cycles inside the model's separatrix zone (crossings, every cycle in
 # the zone): a model-zone test, not a measurement of chaos; a column, never a status (DECISIONS 2026-10-15 evening).
-# 'separatrix_chaos' before 2026-10-17 (`verdict.OLD_FLAGS` reads old files). Same spelling as
+# 'separatrix_chaos' before 2026-10-17. Same spelling as
 # verdict.Flag.EPISODES_IN_SEPARATRIX_ZONE.
 EPISODES_IN_SEPARATRIX_ZONE = 'episodes_in_separatrix_zone'
 # directions of a change of regime (`regime_transitions`)
@@ -130,7 +130,7 @@ class ModulatedFrame:
     `strength_rel_sq` is m(t) = Omega(t)^2 / Omega_bar^2 (Omega_bar the mean of Omega over the record, so that
     <J_s> = 8 Omega_bar / pi), `well_shift_rad` the motion of the stable point sigma_s(t) - <sigma_s> (unwrapped) and
     `well_shift_rate_rad_yr` its time derivative. Energies are measured in phi = sigma - well_shift. The fixed pendulum
-    is m = 1, shift = 0 (`fixed_frame`); every function below takes frame=None for it.
+    is m = 1, shift = 0; every function below takes frame=None for it.
     """
 
     t_yr: np.ndarray
@@ -146,12 +146,6 @@ class ModulatedFrame:
             np.interp(t_yr, self.t_yr, self.well_shift_rad),
             np.interp(t_yr, self.t_yr, self.well_shift_rate_rad_yr),
         )
-
-
-def fixed_frame(t_yr: np.ndarray) -> ModulatedFrame:
-    """The unmodulated pendulum on `t_yr` (m = 1, no motion of the stable point)."""
-    t_yr = np.asarray(t_yr, dtype=float)
-    return ModulatedFrame(t_yr, np.ones_like(t_yr), np.zeros_like(t_yr), np.zeros_like(t_yr))
 
 
 def in_frame(
@@ -505,8 +499,8 @@ def small_period(period_yr, amplitude_rad):
 def half_width(omega0_rad_yr, identity_coefficient):
     """Resonance half-width in the slow variable of the COSINE pendulum: 2 omega0 / |c| (au for an MMR).
 
-    For a fitted V with more harmonics the separatrix rate is sqrt(2 (E_sep - V_min)), not 2 sqrt(V''): use
-    `half_width_in_potential` (V = -cos 2s: 2 against 4)."""
+    For a fitted V with more harmonics the separatrix rate is sqrt(2 (E_sep - V_min)) (`well_separatrix`), not
+    2 sqrt(V'') (V = -cos 2s: 2 against 4)."""
     with np.errstate(divide='ignore', invalid='ignore'):
         result = 2 * np.asarray(omega0_rad_yr, float) / abs(identity_coefficient)
     return float(result) if np.ndim(result) == 0 else result
@@ -886,25 +880,10 @@ def loop_action_through(potential: Optional[Potential], energy: float, sigma_rad
     return float(value / np.pi)
 
 
-def period_through(potential: Optional[Potential], energy: float, sigma_rad: float) -> float:
-    """Period [yr] of the libration loop of energy `energy` through `sigma_rad` (`loop_through`); nan without a loop,
-    inf on the separatrix. V = -cos s at E = -cos A: 4 K(sin^2(A/2)) (A = 90 deg: 7.416; E = 1 - 1e-8: 43.773)."""
-    return loop_through(potential, energy, sigma_rad).period_yr
-
-
 def well_count(potential: Optional[Potential]) -> int:
     """Number of minima of V over one turn (`extrema`); 0 without a potential. One harmonic: 1; V = -cos s + cos 2s: 2
     (wells at +-75.5 deg, cos s = 1/4; a barrier at 0)."""
     return extrema(potential).n_wells if potential is not None else 0
-
-
-def half_width_in_potential(potential: Potential, identity_coefficient: float) -> float:
-    """Half-width of the deepest well in the slow variable: sqrt(2 (E_sep - V_min)) / |c| (the largest |sigma_dot| on
-    the well's separatrix over |c|); = 2 Omega / |c| for one harmonic."""
-    if potential is None or identity_coefficient == 0:
-        return NAN
-    _, _, separatrix_energy = well_separatrix(potential)
-    return float(np.sqrt(2 * max(separatrix_energy - potential.v_min, 0.0)) / abs(identity_coefficient))
 
 
 def libration_period(h, omega_rad_yr):
@@ -998,8 +977,8 @@ def cycle_period(potential: Potential, h: float, sigma_fast_rad: float, found: O
     return loop_through(potential, energy, well_holding(potential, sigma_fast_rad, found), found).period_yr
 
 
-def _segments(t_yr: np.ndarray, windows: Sequence[Tuple[float, ...]]) -> Tuple[np.ndarray, np.ndarray]:
-    """(first, stop) sample indices of each window [start, end] (closed) on an increasing time grid."""
+def window_bounds(t_yr: np.ndarray, windows: Sequence[Tuple[float, ...]]) -> Tuple[np.ndarray, np.ndarray]:
+    """(first, stop) sample index of each window [start, end] (both ends included) on an increasing `t_yr`."""
     starts = np.array([w[0] for w in windows], dtype=float)
     ends = np.array([w[1] for w in windows], dtype=float)
     return np.searchsorted(t_yr, starts, side='left'), np.searchsorted(t_yr, ends, side='right')
@@ -1036,7 +1015,7 @@ class _WindowSamples:
 def _window_samples(t_yr, angle, rate, windows, settings, frame) -> Optional[_WindowSamples]:
     """The finite samples of every window with more than 2 separatrix_harmonics_max + 1 of them, in the frame."""
     t_yr = np.asarray(t_yr, dtype=float)
-    first, stop = _segments(t_yr, windows)
+    first, stop = window_bounds(t_yr, windows)
     stop = np.maximum(stop, first)
     if not len(first) or not np.any(stop > first):
         return None
@@ -1290,7 +1269,7 @@ def cycle_energies(
     if potential is None or not len(bounds):
         return []
     t_yr = np.asarray(t_yr, dtype=float)
-    first, stop = _segments(t_yr, bounds)
+    first, stop = window_bounds(t_yr, bounds)
     present = stop > first
     if not np.any(present):
         return []

@@ -31,6 +31,7 @@ each.
 ## Where to start
 
 - [Installation](install.md) and the [Quick start](quick-start.md): check one asteroid in three lines.
+- [Command line](cli.md): the `resonances` command and its options.
 - [Simulations, bodies, resonances](core.md) and [Examples](examples.md): the main objects and practical
   recipes (catalogs, clones, many bodies, restore).
 - [Configuration](config.md): every option; [Output data](output.md): every column.
@@ -42,6 +43,8 @@ each.
 ```python
 --8<-- "getting_started.py:index"
 ```
+
+What changed in 1.0.0, and how to update code written for 0.5.x: [Changelog](changelog.md).
 
 ## Citing
 

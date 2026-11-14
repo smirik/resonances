@@ -247,11 +247,6 @@ def _in_body_order(body, values) -> Optional[np.ndarray]:
     return in_body_order(values, time_order(body), len(body.times))
 
 
-def refiltered_angle(body, resonance, sim) -> np.ndarray:
-    """sigma_f of an MMR angle reproduced from the saved series (`_rerun_analysis`), in the body's row order."""
-    return _in_body_order(body, _rerun_analysis(body, resonance, sim).prep.angle_f)
-
-
 def _planet_series(sim, name: str) -> Optional[PlanetSeries]:
     """Mean longitude and semi-major axis of a planet recorded by the simulation."""
     data = sim.integration_engine.planets_data.get(name)
@@ -306,15 +301,6 @@ def _colored_path(ax, x, y, t, norm, width):
     ax.add_collection(lc)
     ax.update_datalim(points)
     ax.autoscale_view()
-
-
-def _dim_outside_focus(ax, d: MMRDiagnostics):
-    """White veil over the part of the record outside the focus; nothing if no focus."""
-    if not d.has_focus:
-        return
-    inside = d.t[d.mask]
-    ax.axvspan(d.t[0], inside[0], color='white', alpha=0.65, zorder=6, lw=0)
-    ax.axvspan(inside[-1], d.t[-1], color='white', alpha=0.65, zorder=6, lw=0)
 
 
 def draw_recurrence(ax, d: MMRDiagnostics, options: Dict[str, Any], cax=None):

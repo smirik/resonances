@@ -21,7 +21,7 @@ else from the package defaults; [Configuration](config.md) lists them all. The o
 | `integration_years` or `tmax` | 100 000 yr | the span; `tmax` is in REBOUND units (see below), negative for a backward run |
 | `integrator`, `dt` | `SABA(10,6,4)`, 1.0 | the REBOUND integrator and its step in REBOUND units; `whfast`, `ias15` (adaptive) also work |
 | `output_step` or `Nout` | $N_\text{out} = \lfloor\lvert t_\text{max}\rvert/100\rfloor$ points, i.e. a step of about 100 REBOUND units = 15.9 yr (exactly $\lvert t_\text{max}\rvert/[2\pi(N_\text{out}-1)]$ yr) | years between saved points, or the number of points; `'auto'` lets the [dry-run](dry-run.md) choose a step that folds no short-period term |
-| `save`, `plot` | `nonzero` | which (body, resonance) rows are saved and plotted, by status (below) |
+| `save`, `plot` | `review` | which (body, resonance) rows are saved and plotted, by status (below) |
 | `plots` | `['combined']` | figure kinds ([Plots](plots.md)) |
 | `name`, `save_path`, `plot_path` | `cache/<name>` | where the output goes ([Output data](output.md)) |
 | `plot_layout` | `confidence/status` | subfolders of the figures ([Examples](examples.md#output-layout)) |
@@ -104,7 +104,7 @@ alone. The time series are `body.axis`, `body.ecc`, `body.inc`, `body.Omega`, `b
 
 ## What is saved and plotted
 
-`save` and `plot` select the (body, resonance) rows by their status; the modes (`nonzero` by default, `all`,
+`save` and `plot` select the (body, resonance) rows by their status; the modes (`review` by default, `nonzero`, `all`,
 `resonant`, `candidates`, ...) are listed in [Configuration](config.md#saving-and-plotting).
 `summary.csv` always holds every row (`save_summary=True`). The files and folders are described in
 [Output data](output.md); a saved run can be read back with [`SimulationSerializer.restore`](serialization.md).

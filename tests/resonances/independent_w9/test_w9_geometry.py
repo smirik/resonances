@@ -35,6 +35,7 @@ from resonances.resonance.analysis.geometry import (
 )
 from resonances.resonance.analysis.ledger import Ledger
 from resonances.resonance.analysis.mmr import averaged_potential as av
+from tests.resonances.analysis.oracles import averaged_profile
 from resonances.resonance.analysis.mmr import context, owner
 from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.mmr.coorbital import Orbit
@@ -274,7 +275,7 @@ def neptune_1_2():
 
 def test_averaged_profile_matches_brute_force(neptune_1_2):
     body, planet, _, _ = neptune_1_2
-    sigma, profile = av.averaged_profile(body, planet, K_BODY, K_PLANET, 0.0, 256)
+    sigma, profile = averaged_profile(body, planet, K_BODY, K_PLANET, 0.0, 256)
     brute = brute_average(sigma)
     assert np.max(np.abs(profile - brute)) < 1e-6 * np.ptp(brute)
 

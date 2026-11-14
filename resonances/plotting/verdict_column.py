@@ -12,7 +12,7 @@ Every family (two-body, three-body, co-orbital, secular, ZLK) fills the same blo
     evidence    what makes the cycles / is σ the own pendulum: icon, label, value
     caveats     sentences a reader must know; 'none' when empty
     numbers     DECISIVE first, then fixed groups of labeled numbers
-    footer      the codes: status code, rules, reason/origin/veto, raw flags, the W28 tree, settings hash, docs
+    footer      the codes: status code, rules, reason/origin/veto, raw flags, settings hash, docs
 
 The builders (`verdict_column_mmr`, `verdict_column_long`) fill a `Column`; `verdict_column_draw` draws it;
 `column_text` writes it as text (the same blocks, nothing shortened: the figure may trim, the text never does).

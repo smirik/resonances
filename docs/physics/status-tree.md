@@ -15,7 +15,7 @@ angles use a shorter tree, given in [Secular and Lidov-Kozai](secular-zlk.md#geo
 
 ## Minimal policy (default) {#minimal-policy}
 
-W29, agreed with the author 2026-11-02. The tree below runs first and measures
+The tree below runs first and measures
 everything; a policy layer (`resonance/analysis/policy.py`) then re-reads the finished analysis by a few principles:
 
 1. **Status from the geometry of $\sigma_f$.** libration → `resonant`, episodic → `transient`, near_separatrix →
@@ -23,14 +23,14 @@ everything; a policy layer (`resonance/analysis/policy.py`) then re-reads the fi
    `non_resonant`/`modulated_circulation`, less → `uncertain`. insufficient_time → `uncertain`, or
    `non_resonant`/`circulation` when the record ends in circulation ($\sigma_f$ travels ≥ one own revolution after the
    last turning point of an accepted or candidate run; a secular or ZLK travel below $1 +$ `CONFIDENCE_THIN_BAND`
-   turns holds the level at medium). One own revolution is $2\pi$, for a ZLK $\omega$ too (W30:
-   the half-turn symmetry of the quadrupole's $\cos 2\omega$ is not general; ZLK runs still break at half a turn).
+   turns holds the level at medium). One own revolution is $2\pi$, for a ZLK $\omega$ too
+   (the half-turn symmetry of the quadrupole's $\cos 2\omega$ is not general; ZLK runs still break at half a turn).
    The geometry alone names no mechanism: a secular or ZLK libration is `geometric_libration`/`geometric_episode`,
    origin unknown, unless a confirmed ZLK gate makes it dynamic.
 2. **Only a measured contradiction vetoes** a bounded angle (column `veto`): an owner that induces the episode (step
    2), a kinematic origin (step 3, K2, K3s), a two-body strength from the disturbing function far below the need
    (5s; the angle's word is then circulation or drift: no run is its libration), every counted episode below 45° being
-   the forced wave its background carries (`forced_wave`, W31: at the episode's own period the envelopes of
+   the forced wave its background carries (`forced_wave`: at the episode's own period the envelopes of
    $\sigma$ and $a$ inside stay within the band the same steady wave shows within `MMR_FORCED_WAVE_REFERENCE_PERIODS`
    periods around it; a libration adds its own swing; some such episodes leave the count; 2012 KL9; runs found forced
    join the background of the others; when the slow center passes less than a revolution the drift rule decides
@@ -45,7 +45,7 @@ everything; a policy layer (`resonance/analysis/policy.py`) then re-reads the fi
    $\rho_{\max} \ge$ `ZLK_RHO_KINEMATIC_EXCLUDED`: flag `kinematic_excluded`, no cap, no extension). A veto within `CONFIDENCE_THIN_BAND` of
    its threshold still moves the status, at medium (`veto_thin`).
 3. **The level from the evidence** ([Confidence](confidence.md#minimal-policy)); no caps.
-4. **Everything else is a flag**: every W28 cap, zone, owner, subresonance and edge mark. The alias (C5) and the
+4. **Everything else is a flag**: every cap of the full tree, zone, owner, subresonance and edge mark. The alias (C5) and the
    undersampled step stay.
 5. **Extend** only for an unfinished libration at the record's end (an end-edge 1:1 leg `A1`, an end-edge
    half-swing `A2`, insufficient_time or a last counted episode at the end with fewer than
@@ -53,26 +53,23 @@ everything; a policy layer (`resonance/analysis/policy.py`) then re-reads the fi
    needed veto not measured for lack of length (flag `veto_needs_length`: MMR L4 short of force windows, a ZLK gate
    `short_window`/`planetary_residual`) whose record `pol_veto_need_yr` is within the next-check budget
    `MMR_NEXT_CHECK_SPAN_FACTOR`$\,T$ (`C`, extend to that record). Never when the record ends in circulation or the
-   level is `certain` (a certain row asks for nothing: action `none`; the author, 2026-11-05) (column
+   level is `certain` (a certain row asks for nothing: action `none`) (column
    `pol_extend_clause`). A needed veto beyond the budget keeps the flag and goes to review. The length asked for is
    the next check of the deciding period's missing cycles, at least of the baseline's estimate when that is a slow
-   swing seen in part (`base_period_source` arc_slow, b5, two_omega, modulation: its slow cycles; the author, W30
-   epext B), within `MMR_NEXT_CHECK_SPAN_FACTOR`$\,T$ (523683 2U-9: 400 kyr, three slow cycles of 112 kyr).
+   swing seen in part (`base_period_source` arc_slow, b5, two_omega, modulation: its slow cycles), within `MMR_NEXT_CHECK_SPAN_FACTOR`$\,T$ (523683 2U-9: 400 kyr, three slow cycles of 112 kyr).
 6. **Episodes**: the figure and `n_counted_episodes` show only the counted episodes; candidates are drawn faint.
    One clean 1:1 leg (G4c) is a transient of half a cycle; a half-swing between passages (G4h) is a candidate of a
    circulation; an end-edge one extends.
 7. **ZLK and secular** follow the same rules; a secular swing below the mode-phase uncertainty stays
    `uncertain`/`phase_unresolved` (review), never non_resonant.
 
-The W28 verdict of each row stays in `v2_verdict` (`status/confidence/reason/action/angle_status`); `pol_decided_by`
+The verdict of the full tree stays in `v2_verdict` (`status/confidence/reason/action/angle_status`); `pol_decided_by`
 names the step that gave the final status (`tree` when the policy kept the tree's, `;not_upheld:<leaf>` when it did
 not uphold the leaf's veto) and `pol_objection_check` the checks behind a measured objection ([Output](../output.md)).
 
-## Policy v2: the W28 tree
-
-The rest of this page is the tree itself: what `v2_verdict` reports, and what the minimal policy reads.
-
 ## The tree
+
+The rest of this page is the full tree itself: what `v2_verdict` reports, and what the minimal policy reads.
 
 ```mermaid
 flowchart TD
@@ -136,11 +133,11 @@ libration keeps its passing identity. G6 then counts only the turning points out
 center decides: one turn → the G5a arc, else `arc` or `stall` by its range. 2004 YG1 9M-10J-4 over 20 kyr: a 3° ripple
 at the turn of a 281° slow swing → `uncertain` / `insufficient_time` (`arc`), extend to 50 kyr; 2002 BG 1E-10S-1 over
 20 kyr: a 2° 735-yr ripple (identity not measured) at the one turn of a 1.68-rad slow swing → the same, extend to
-50 kyr (the slow swing's baseline, W33) (over 100 kyr its center drifts 1.6 revolutions: non_resonant).
+50 kyr (the slow swing's baseline; over 100 kyr its center drifts 1.6 revolutions: non_resonant).
 
 *A slow swing in the resonance's own well* (rule G5w, `slow_swing_in_well`, `MMR_SLOW_SWING_IN_WELL`).
 A drift needs a center that keeps going: G5a already reads one slow turn back as an arc. With two turns the record holds
-one half-swing between them, and the author's drifts of 101703 and 142694 1V+3S-7 have two turns too, so the turns
+one half-swing between them, and the labeled drifts of 101703 and 142694 1V+3S-7 have two turns too, so the turns
 alone decide nothing. The half-swing reads as part of a slow libration of this resonance, `insufficient_time` / `arc`
 (instead of `drift`, or of `few_cycles` for the fast turning points riding on it), when it obeys the resonance's
 pendulum: the identity $\dot\sigma_s = c\,(a_s - a_*)$ holds on σ and $a$ low-passed at W_c, and between the turns
@@ -189,7 +186,7 @@ $T_{0,\text{th}}$ = 112 yr, a 105-yr libration over 20 kyr → `resonant` / `lib
     `insufficient_time`, action `extend`;
   - both turns are kicks → the circulation below, with the cap `near_episode` (1991 VG: out/in 0.61 and 1.59);
     a turn that would reflect but for a zone within `CONFIDENCE_THIN_BAND` above `MMR_COORBITAL_TURN_ZONE_MAX` is no
-    kick: `uncertain / one_coorbital_leg`, review (W31, the author; 2020 FN3: zones 1.11 and 1.15 against 1.1);
+    kick: `uncertain / one_coorbital_leg`, review (2020 FN3: zones 1.11 and 1.15 against 1.1);
   - no leg at all (one reflection between passages, 2008 EZ84) → the circulation below, unchanged.
 
   The strongest outcome among the legs decides (transient > uncertain > extend > near-episode). The legs of an
@@ -227,8 +224,9 @@ $\delta a \simeq \delta\dot\sigma/|c|$. If $a$ carries less than `MMR_B1_RATIO_M
 cycle runs at a secular period of the body (the $e$-cycle $2\pi/|g - g_5|$ or the $2\omega$ cycle, within
 `MMR_KIN_PERIOD_TOL` = 0.1) while the identity and every force law fail, the bound comes from the geometry of the
 angle (its $p\varpi$ part, a secular cycle): `non_resonant / kinematic_libration`, origin `kinematic`. When the slow
-center itself follows the $\lambda$ part plus the secular part (correlation of rates ≥ `MMR_KIN_CORR_MIN` = 0.9),
-$a$ does not answer and the librating stretches are only a ripple on it (their swing below
+center itself follows the $\lambda$ part plus the secular part (correlation of rates ≥ `MMR_KIN_CORR_MIN` = 0.9,
+over at least `MMR_KIN_MIN_POINTS` = 3 independent points), $a$ does not answer (every force law fails, measured on
+at least `MMR_FORCE_MIN_WINDOWS` = 2 windows) and the librating stretches are only a ripple on it (their swing below
 `MMR_KIN_RIPPLE_SHARE_MAX` = 0.5 of the center's range), or a kinematic libration's center moves more than
 `MMR_KIN_DRIFT_SHIFT_RATIO` = 1 amplitude: `non_resonant / kinematic_drift`. If a libration slower than the record
 cannot be excluded and the center's rate is consistent with an exact commensurability (within
@@ -354,9 +352,9 @@ planet longitudes caps the level (`catalogue_longitudes`). These change the conf
 The columns `libration_origin`, `origin_detail` and `owner` are described in [Output data](../output.md); the leaf
 that decided is the column `rec_rule` of `mmr_numbers.csv` (5d/6, 5u/6, 3k2, C5, …).
 
-Older files wrote `dynamic_libration` / `dynamic_episode` also for the geometric leaf; a row with one of these
-reasons and origin `unknown` is read back as `geometric_libration` / `geometric_episode`. This renames the reason
-only; it is not a new classification.
+Files before 2026-10-26 wrote `dynamic_libration` / `dynamic_episode` also for the geometric leaf (origin
+`unknown`). This renamed the reason only; it was not a new classification. Since 1.0 the package reads only its own
+format: reclassify an older run (`restore(..., recompute_librations=True)`).
 
 ## The reported angle word
 
@@ -411,7 +409,7 @@ no edge stretch is read under them.
 Secular and Lidov-Kozai angles use their own shorter tree, without an owner, a subresonance or a force law step:
 [geometry and status](secular-zlk.md#geometry-and-status) and, for Lidov-Kozai, [the free-ω gate](secular-zlk.md#zlk-free-omega).
 A secular libration makes only a few cycles in a record, so which runs are its episodes is read as for an MMR but
-with four rules of its own (W36; IDs G2p, G2t, G2w, G2e in the [rule index](../libration-analysis.md#secular-zlk)):
+with four rules of its own (IDs G2p, G2t, G2w, G2e in the [rule index](../libration-analysis.md#secular-zlk)):
 each run of turning points takes its own prominence; a bounded run whose center turns back once is `modulated`; an
 episode that is a wave on a slower motion of the angle does not count (secular only; the slower scale decides); and
 $\sigma_f$ running a turn or more after the last turning point is an observed exit (`transient`, `final_regime`
@@ -429,7 +427,6 @@ Old runs stored one integer per angle. The column `status_code` keeps it for com
 | −2 | — | non_resonant / kinematic_libration (ZLK: the gate measured a kinematic libration) |
 | −3 | near_separatrix | near_separatrix (old files) |
 | −4 | — | uncertain / insufficient_time |
-| −5 | — | near_separatrix, read from an old file (flag `probable_near_separatrix`) |
 | −6 | uncertain / baseline_needed | uncertain / drift |
 | −9 | other uncertain | other uncertain (ZLK: gate_unavailable) |
 | −99 | invalid | invalid |

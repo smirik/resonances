@@ -456,7 +456,7 @@ def test_owner_angle_reproduces_the_true_angles():
     psi = 2 * (N_J * T_REC + 0.4) - 5 * (N_S * T_REC + 2.1) + 3 * (1.3 + VARPI_RATE * T_REC)
     for key, truth in [('2J-1+0-1', phi), ('5S-1+0-4', phi - psi)]:
         # 5S-1+0-4 = 5 lambda_S - lambda - 4 varpi = phi_o - psi (the identity of the synthetic Saturn).
-        angle = owner.owner_angle(ResonanceSpec.from_key(key), series, planet_n)
+        angle, _ = owner.owner_angle_with_residual(ResonanceSpec.from_key(key), series, planet_n)
         offset = angle - truth
         turns = np.round(offset / TWO_PI)
         assert np.all(turns == turns[0])  # unwrapped as the truth, no 2 pi slips
@@ -570,17 +570,6 @@ def test_owner_crossing_its_separatrix():
     _, _, _, own = scenario('crossing', '2J-1+0-1', 450.0)
     assert own.check == CheckValue.PASS
     assert own.accepted is None
-
-
-def test_fit_owner_on_the_true_owner():
-    series, context, prep, _ = scenario('libration', '5J-2+0-3', P_LIB_40)
-    spec = ResonanceSpec.from_key('2J-1+0-1')
-    planet_n = {'Jupiter': owner.planet_mean_motion(context, 'Jupiter')}
-    fitted = owner.fit_owner(spec, owner.owner_angle(spec, series, planet_n), prep, context, P_LIB_40, S, series=series)
-    assert fitted.spec.key == '2J-1+0-1'
-    assert fitted.r2_median > 0.95 and fitted.phi0_coherence > 0.95
-    assert fitted.psi_share < 0.01
-    assert fitted.strength_ratio < 1.0
 
 
 # ------------------------------------------------------------------------------------------------------ edge cases

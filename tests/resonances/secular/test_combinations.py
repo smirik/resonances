@@ -1,9 +1,10 @@
+from typing import Dict, Tuple
+
 import pytest
 
 from resonances.data.const import PLANETARY_FREQUENCIES, SECULAR_FORMULAS
 from resonances.secular.combinations import (
     PLANETARY_MODES,
-    coefficient_key,
     formula_from_coefficients,
     near_resonant,
 )
@@ -11,6 +12,29 @@ from resonances.secular.secular_resonance import SecularResonance
 
 F = PLANETARY_FREQUENCIES
 NO_WINDOW = {2: 1e9}
+
+
+def coefficient_key(resonance_or_formula) -> Tuple[Tuple[str, int], ...]:
+    """Canonical coefficient vector of an angle, the same for every spelling and for -sigma: the reference the keys of
+    `near_resonant` are checked against (moved out of the package, 2026-11-14: nothing there used it).
+
+    Labels are 'g', 's' for the body and 'g5', 's6', ... for the planets. 'g-g6+s-s6' and
+    'g+s-s6-g6' have one key; so do '-g+s+g5-s7' and 'g-s-g5+s7'.
+    """
+    from resonances.secular.secular_resonance_formula import SecularResonanceFormula
+
+    if isinstance(resonance_or_formula, str):
+        terms = SecularResonanceFormula(resonance_or_formula).terms
+    else:
+        terms = resonance_or_formula.formula.terms
+    coeffs: Dict[str, int] = {}
+    for t in terms:
+        label = t.mode if t.index is None else f"{t.mode}{t.index}"
+        coeffs[label] = coeffs.get(label, 0) + t.coefficient
+    coeffs = {label: c for label, c in coeffs.items() if c != 0}
+    lead = coeffs.get('g') or coeffs.get('s') or next((coeffs[k] for k in sorted(coeffs)), 1)
+    sign = 1 if lead > 0 else -1
+    return tuple(sorted((label, sign * c) for label, c in coeffs.items()))
 
 
 def _is_admissible(key):

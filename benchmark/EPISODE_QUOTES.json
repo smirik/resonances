@@ -3499,5 +3499,19 @@
         "transcript": "Codex adversarial check 2026-11-07 (not the author)"
       }
     ]
+  },
+  {
+    "case": "E118",
+    "example_id": "mmr3__485__3J-1S-1+0+0-1",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/genua-k2-2026-11-14/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "Да, Генуя явно transient. Надо дорабатывать и включать в бенч, так как важный пример, и на нём должно работать",
+        "transcript": "chat 2026-11-14 00:58 CET (after the Nesvorny & Morbidelli 1998 check)"
+      }
+    ]
   }
 ]

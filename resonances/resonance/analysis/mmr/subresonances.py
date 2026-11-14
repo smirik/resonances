@@ -74,6 +74,7 @@ import numpy as np
 from resonances.data import const
 from resonances.data.invariable_plane import to_invariable_plane
 from resonances.resonance.analysis import filtering
+from resonances.resonance.analysis.filtering import unwrapped
 from resonances.resonance.analysis.geometry import (
     Geometry,
     RejectReason,
@@ -622,10 +623,6 @@ def rate_residual(rate_rad_yr: float, tolerance_rad_yr: float) -> float:
 # --------------------------------------------------------------------------------------------- slow angles
 
 
-def _unwrap(x) -> np.ndarray:
-    return np.unwrap(np.asarray(x, dtype=float))
-
-
 def model_years_since_j2000(t_yr, epoch_jd: float):
     """Time since J2000 in the model's (Gaussian) years: t_yr (already Gaussian years from the epoch) plus the epoch's
     offset (JD - J2000) / (2 pi / k) days; an unknown epoch (nan) counts as J2000. The one conversion of the module."""
@@ -653,9 +650,9 @@ def slow_angles(series: MMRSeries, invariable: bool = False) -> Dict[str, np.nda
     angles = {}
     if invariable:
         _, node, varpi = to_invariable_plane(series.inc, series.Omega, series.omega)
-        angles['varpi'], angles['Omega'] = _unwrap(varpi), _unwrap(node)
+        angles['varpi'], angles['Omega'] = unwrapped(varpi), unwrapped(node)
     else:
-        angles['varpi'], angles['Omega'] = _unwrap(series.varpi), _unwrap(series.Omega)
+        angles['varpi'], angles['Omega'] = unwrapped(series.varpi), unwrapped(series.Omega)
     for name in spec.planets:
         planet = series.planets.get(name)
         if planet is None:
@@ -663,9 +660,9 @@ def slow_angles(series: MMRSeries, invariable: bool = False) -> Dict[str, np.nda
             angles[f'Omega:{name}'] = _mode_longitude(t, name, 's', series.regime.epoch_jd)
         elif invariable:
             _, node, varpi = to_invariable_plane(planet.inc, planet.Omega, np.asarray(planet.varpi) - np.asarray(planet.Omega))
-            angles[f'varpi:{name}'], angles[f'Omega:{name}'] = _unwrap(varpi), _unwrap(node)
+            angles[f'varpi:{name}'], angles[f'Omega:{name}'] = unwrapped(varpi), unwrapped(node)
         else:
-            angles[f'varpi:{name}'], angles[f'Omega:{name}'] = _unwrap(planet.varpi), _unwrap(planet.Omega)
+            angles[f'varpi:{name}'], angles[f'Omega:{name}'] = unwrapped(planet.varpi), unwrapped(planet.Omega)
     return angles
 
 

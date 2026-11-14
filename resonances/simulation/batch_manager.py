@@ -70,7 +70,7 @@ class BatchManager:
         # and settings; anything else is refused before a completed batch is reused.
         if existing_state and self.config.resume_enabled:
             state = existing_state
-            self._check_resume(state, batches, config_hash, body_elements)
+            self._check_resume(state, config_hash, body_elements)
         else:
             state = SimulationState.create_new(
                 simulation_name=self.config.name,
@@ -109,25 +109,13 @@ class BatchManager:
             logger.error(f"Batch execution failed: {e}")
             raise
 
-    def _check_resume(self, state: SimulationState, batches: List[List[Dict]], config_hash: str, body_elements: List[Dict]):
-        """Accept the saved state when its hash is this run's, or one of an older version's (with a warning: less is
-        checked); else ValueError (`_resume_refusal`), before any completed batch is reused."""
+    def _check_resume(self, state: SimulationState, config_hash: str, body_elements: List[Dict]):
+        """Accept the saved state when its hash is this run's; else ValueError (`_resume_refusal`), before any
+        completed batch is reused."""
         if state.config_hash == config_hash:
             return
-        if state.config_hash == self._legacy_config_hash():
-            logger.warning(
-                f"Resuming '{self.config.name}' from a state written by an older version: only tmax, Nout, the "
-                "integrator, dt, batch_threshold and secular_angle_mode are checked, and the new batches are "
-                "computed by this version"
-            )
-        elif state.config_hash == StateManager.compute_config_hash(self._get_config_dict(batches, elements=False)):
-            logger.warning(
-                f"Resuming '{self.config.name}' from a state written before the bodies' initial elements were "
-                "recorded: the settings and batch layout match, the elements cannot be checked"
-            )
-        else:
-            logger.warning("Configuration mismatch: the saved simulation_state.json is of another run")
-            raise ValueError(self._resume_refusal(state, body_elements))
+        logger.warning("Configuration mismatch: the saved simulation_state.json is of another run")
+        raise ValueError(self._resume_refusal(state, body_elements))
 
     def _handle_existing_simulation(self, state: SimulationState, simulation):
         """Log what an existing simulation_state.json says (another name, a failure, the batches done)."""
@@ -161,7 +149,7 @@ class BatchManager:
     # the hash: changing it would leave the completed batches' series where the manifest does not look.
     RESUME_DATA_FOLDERS = ('', 'data')
 
-    def _get_config_dict(self, batches: List[List[Dict]] | None = None, elements: bool = True) -> Dict[str, Any]:
+    def _get_config_dict(self, batches: List[List[Dict]] | None = None) -> Dict[str, Any]:
         """What a resumed run must share with the interrupted one, for the resume hash.
 
         The whole serialised config (date and source included: a run without date= starts at today's
@@ -169,8 +157,7 @@ class BatchManager:
         resonances, since completed batches are matched by index, and every body's initial elements as
         they were used (`clone_store.canonical_elements`: exact float reprs, with the get-orb sha256 of a
         get-orb body). The elements are what was obtained, not how: a refreshed get-orb answer, a new
-        catalogue or a Horizons re-query that returns another solution is another run. `elements=False`
-        gives the hash of the versions before the elements were included.
+        catalogue or a Horizons re-query that returns another solution is another run.
         """
         from .serializer import SimulationSerializer
 
@@ -181,11 +168,10 @@ class BatchManager:
         if config_dict.get('data_folder') in self.RESUME_DATA_FOLDERS:
             config_dict.pop('data_folder')
         if batches is not None:
-            config_dict["batches"] = [[[body["name"], [r.to_s() for r in body["resonances"]]] for body in batch] for batch in batches]
-            if elements:
-                from .clone_store import canonical_elements
+            from .clone_store import canonical_elements
 
-                config_dict["elements"] = [[canonical_elements(body["elem_or_num"]) for body in batch] for batch in batches]
+            config_dict["batches"] = [[[body["name"], [r.to_s() for r in body["resonances"]]] for body in batch] for batch in batches]
+            config_dict["elements"] = [[canonical_elements(body["elem_or_num"]) for body in batch] for batch in batches]
         return config_dict
 
     @staticmethod
@@ -226,20 +212,6 @@ class BatchManager:
             f"{where}: the date, source, bodies, their initial elements, batch layout or settings differ from the "
             f"interrupted run (a run without date= starts today). Pass the original settings, or {start_over}"
         )
-
-    def _legacy_config_hash(self) -> str:
-        """The resume hash of versions before the full-config one (simulation_state.json written by them)."""
-        config_dict = {
-            "tmax": self.config.tmax,
-            "Nout": self.config.Nout,
-            "integrator": self.config.integrator,
-            "dt": self.config.dt,
-            "batch_threshold": self.config.batch_threshold,
-            "secular_angle_mode": self.config.secular_angle_mode,
-        }
-        if self.config.solar_system_moon:
-            config_dict["solar_system_moon"] = True
-        return StateManager.compute_config_hash(config_dict)
 
     def _prepare_simulation_kwargs(self, simulation) -> Dict[str, Any]:
         """The workers' Simulation kwargs: every public config attribute, tmax (a property) and no batching."""

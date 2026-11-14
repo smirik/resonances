@@ -38,6 +38,7 @@ from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import Flag
 from resonances.simulation import dry_run as dr
 from tests.resonances.analysis.builders import make, make_episode, make_geometry, tree_and_final
+from tests.resonances.analysis.oracles import record_tables_kept
 
 S = settings_from_config()
 FLAGGED = str(Flag.SHORT_PERIOD_ALIASED)
@@ -329,11 +330,11 @@ def test_record_tables_account_bytes_over_mixed_grids_and_nested_scopes():
     with coorbital.record_tables(2000):
         for body, points in zip(bodies[:3], (32, 16, 32)):
             coorbital.table_for(body, planet, points, 1e-3)
-        assert coorbital.record_tables_kept() == 3 and coorbital._RECORD_BYTES == [1920, 2000]
+        assert record_tables_kept() == 3 and coorbital._RECORD_BYTES == [1920, 2000]
         with coorbital.record_tables(1e9):
             coorbital.table_for(bodies[3], planet, 16, 1e-3)
             assert coorbital._RECORD_BYTES == [1920, 2000]
-        assert coorbital.record_tables_kept() == 3
+        assert record_tables_kept() == 3
         assert coorbital.table_bytes(coorbital.table_for(bodies[3], planet, 16, 1e-3)) == 384
-    assert coorbital.record_tables_kept() == 0 and coorbital._RECORD_BYTES == [0, 0]
+    assert record_tables_kept() == 0 and coorbital._RECORD_BYTES == [0, 0]
     coorbital.cached_table.cache_clear()

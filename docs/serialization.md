@@ -76,8 +76,8 @@ The restore method:
 3. Loads the saved time series, periodograms, free-omega series and planets (to the last bit: the numbers are those
    the run analyzed).
 4. Sets the verdicts from `summary.csv`: `body.statuses[key]` (the status string) and `body.librations[key]` (a
-   `Verdict` rebuilt from the row's verdict columns). A summary of an older version with integer statuses is read for
-   secular and Lidov-Kozai rows (the old code is translated, `verdict_from_status_code`); its MMR rows are skipped.
+   `Verdict` rebuilt from the row's verdict columns). A row of a version before 1.0 (an integer status) is not read
+   (skipped with a warning): restore with `recompute_librations=True` to analyse its series again.
 5. With `ensembles`: rebuilds `sim.ensembles` from each manifest and results archive (the clones' names, their
    elements at the date to the bit, the stored verdict rows and thumbnails) and `sim.clone_summary` from clones.csv;
    without a manifest (SAVE off) only `sim.clone_summary`, with a warning. A simulation.json without `ensembles` (older
@@ -126,7 +126,7 @@ During the run, `simulation_state.json` in the output directory records the comp
 
 To resume, run the same script again with the same bodies, settings and `save_path`. Completed batches are skipped. A batch that was interrupted after writing some of its rows is run again and its rows in `summary.csv`, `episodes.csv`, `coherence.csv`, `mmr_numbers.csv` and `candidates.csv` are replaced, not repeated.
 
-If the hash differs, `run()` raises `ValueError` instead of mixing two runs. The usual cause is the date: without `date=` a `nasa` run starts at today's midnight, so a resume on another day must pass the original date (`date=`). With `batch_size` unset the layout depends on `n_cores`, so keep it too. The elements count as obtained, not as requested: AstDyS and MPC elements come from the cached catalog and are the same on a rerun, but a refreshed get-orb answer (`MPC_LOOKUP=file_then_api`), a new catalog or a Horizons re-query (astroquery keeps its answers a week) that returns a new orbit solution makes another run, and the error names the bodies whose elements changed. To start over, delete `simulation_state.json` (and the old files). A `simulation_state.json` of an older version is still accepted with a warning when what it covered matches: only `tmax`, `Nout`, the integrator, `dt`, `batch_threshold` and `secular_angle_mode` (the oldest), or everything above except the elements (the elements are then not checked).
+If the hash differs, `run()` raises `ValueError` instead of mixing two runs. The usual cause is the date: without `date=` a `nasa` run starts at today's midnight, so a resume on another day must pass the original date (`date=`). With `batch_size` unset the layout depends on `n_cores`, so keep it too. The elements count as obtained, not as requested: AstDyS and MPC elements come from the cached catalog and are the same on a rerun, but a refreshed get-orb answer (`MPC_LOOKUP=file_then_api`), a new catalog or a Horizons re-query (astroquery keeps its answers a week) that returns a new orbit solution makes another run, and the error names the bodies whose elements changed. To start over, delete `simulation_state.json` (and the old files). A `simulation_state.json` written by a version before 1.0 (a hash without the elements, or of only a few settings) is refused like any other mismatch.
 
 ```python
 --8<-- "resume_run.py:resume"

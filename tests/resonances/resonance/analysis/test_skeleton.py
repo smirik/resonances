@@ -24,14 +24,12 @@ from resonances.resonance.analysis.verdict import (
     AngleStatus,
     CheckValue,
     Confidence,
-    Flag,
     LibrationOrigin,
     Reason,
     ResonanceType,
     Status,
     Verdict,
     default_action,
-    verdict_from_status_code,
 )
 from resonances.simulation.config import SimulationConfig
 
@@ -108,43 +106,24 @@ def test_mmr_status_code_table(status, angle_status, reason, code):
     assert verdict.status_code == code
 
 
-# SPEC §5.7: old integer -> (status, angle_status, reason, action)
-LEGACY_TABLE = [
-    (2, Status.RESONANT, AngleStatus.LIBRATION, Reason.DYNAMIC_LIBRATION, Action.NONE),
-    (1, Status.TRANSIENT, AngleStatus.EPISODIC, Reason.DYNAMIC_EPISODE, Action.NONE),
-    (0, Status.NON_RESONANT, AngleStatus.CIRCULATION, Reason.CIRCULATION, Action.NONE),
-    (-2, Status.NON_RESONANT, AngleStatus.LIBRATION, Reason.KINEMATIC_LIBRATION, Action.NONE),
-    (-3, Status.NEAR_SEPARATRIX, AngleStatus.NEAR_SEPARATRIX, Reason.SEPARATRIX_ZONE, Action.SPOT_CHECK),
-    (-4, Status.UNCERTAIN, AngleStatus.INSUFFICIENT_TIME, Reason.BASELINE_NEEDED, Action.EXTEND),
-    (-5, Status.NEAR_SEPARATRIX, AngleStatus.NEAR_SEPARATRIX, Reason.SEPARATRIX_ZONE, Action.REVIEW),
-    (-6, Status.UNCERTAIN, AngleStatus.DRIFT, Reason.BASELINE_NEEDED, Action.EXTEND),
-    (-9, Status.UNCERTAIN, AngleStatus.UNDEFINED, Reason.GATE_UNAVAILABLE, Action.EXTEND),
-    (-99, Status.INVALID, AngleStatus.UNDEFINED, Reason.UNPHYSICAL, Action.REVIEW),
+# SPEC §5.7: (status, angle_status, reason) of a secular or ZLK verdict -> its old integer (the column status_code)
+LONG_PERIOD_CODES = [
+    (2, Status.RESONANT, AngleStatus.LIBRATION, Reason.DYNAMIC_LIBRATION),
+    (1, Status.TRANSIENT, AngleStatus.EPISODIC, Reason.DYNAMIC_EPISODE),
+    (0, Status.NON_RESONANT, AngleStatus.CIRCULATION, Reason.CIRCULATION),
+    (-2, Status.NON_RESONANT, AngleStatus.LIBRATION, Reason.KINEMATIC_LIBRATION),
+    (-3, Status.NEAR_SEPARATRIX, AngleStatus.NEAR_SEPARATRIX, Reason.SEPARATRIX_ZONE),
+    (-4, Status.UNCERTAIN, AngleStatus.INSUFFICIENT_TIME, Reason.BASELINE_NEEDED),
+    (-6, Status.UNCERTAIN, AngleStatus.DRIFT, Reason.BASELINE_NEEDED),
+    (-9, Status.UNCERTAIN, AngleStatus.UNDEFINED, Reason.GATE_UNAVAILABLE),
+    (-99, Status.INVALID, AngleStatus.UNDEFINED, Reason.UNPHYSICAL),
 ]
 
 
-@pytest.mark.parametrize('code, status, angle_status, reason, action', LEGACY_TABLE)
-def test_zlk_verdict_from_status_code_and_back(code, status, angle_status, reason, action):
-    verdict = verdict_from_status_code(code, ResonanceType.LIDOV_KOZAI, confidence='high')
-    assert (verdict.status, verdict.angle_status, verdict.reason, verdict.action) == (status, angle_status, reason, action)
-    assert verdict.status_code == code
-    if status in (Status.UNCERTAIN, Status.INVALID):
-        assert verdict.confidence == Confidence.NONE
-    else:
-        assert Flag.CONFIDENCE_UNCALIBRATED in verdict.flags
-
-
-def test_secular_status_codes_round_trip_and_differences():
-    for code in (2, 1, 0, -2, -3, -4, -5, -6, -9, -99):
-        assert verdict_from_status_code(code, 'secular', confidence='medium').status_code == code
-    assert verdict_from_status_code(-9, 'secular').reason == Reason.UNUSABLE_SERIES
-    assert verdict_from_status_code(-5, 'secular', confidence='medium').confidence == Confidence.LOW
-    assert verdict_from_status_code(-2, 'lidov_kozai').libration_origin == LibrationOrigin.KINEMATIC
-    assert verdict_from_status_code(2, 'secular', confidence='certain').confidence == Confidence.HIGH
-    with pytest.raises(ValueError):
-        verdict_from_status_code(-1, 'secular')
-    with pytest.raises(ValueError):
-        verdict_from_status_code(2, 'mmr')
+@pytest.mark.parametrize('rtype', [ResonanceType.LIDOV_KOZAI, ResonanceType.SECULAR])
+@pytest.mark.parametrize('code, status, angle_status, reason', LONG_PERIOD_CODES)
+def test_long_period_status_code_table(rtype, code, status, angle_status, reason):
+    assert Verdict(rtype, status, angle_status, reason=reason).status_code == code
 
 
 def test_default_action():

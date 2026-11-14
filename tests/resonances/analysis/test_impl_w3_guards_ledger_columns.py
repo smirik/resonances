@@ -12,7 +12,7 @@ import math
 import numpy as np
 import pytest
 
-from resonances.plotting import combined_numbers as cn
+from tests.resonances.plotting.helpers import printed_columns
 from resonances.plotting import mmr_verdict_panel as panel
 from resonances.resonance.analysis.mmr import io
 from resonances.resonance.analysis.mmr.analyse import analyse_mmr
@@ -28,7 +28,7 @@ def missing_numbers(analysis) -> list:
     episodes = analysis.episode_rows()
     constants = analysis.context.constants_rows() if analysis.context is not None else []
     blocks = panel.text_blocks(summary, numbers, analysis.verdict.decision_path, episodes, constants)
-    printed = cn.printed_columns(blocks, panel.TEXT_BLOCKS)
+    printed = printed_columns(blocks, panel.TEXT_BLOCKS)
     _, in_episode_table = panel._episode_lines(episodes, numbers.get('ep_episode_id'))
     row = {**numbers, **summary}
     problems = []

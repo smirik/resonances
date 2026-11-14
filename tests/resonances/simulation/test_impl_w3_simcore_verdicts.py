@@ -92,8 +92,8 @@ def test_coherence_is_skipped_for_a_non_resonant_mmr(tmp_path):
 
 
 def test_an_old_summary_with_integer_statuses(tmp_path):
-    """A summary.csv of the previous version: secular/ZLK integers are translated (SPEC §5.7), an MMR integer has no
-    translation and is skipped, with one warning."""
+    """A summary.csv of a version before v1.0 (integer statuses): no row is read (no back-compat reader); restore with
+    recompute_librations=True analyses the series again."""
     sim = Simulation(name='old', date='2020-01-01', save_path=str(tmp_path), plot_path=str(tmp_path))
     sim.body_manager.add_body({'a': 2.6, 'e': 0.1, 'inc': 0.1, 'Omega': 0.0, 'omega': 0.0, 'M': 0.0}, ['4J-2S-1', 'g-g6', 'LK'], name='old')
     pd.DataFrame({'name': ['old', 'old', 'old'], 'resonance': ['4J-2S-1+0+0-1', 'g-g6', 'LK'], 'status': [2, -6, -2]}).to_csv(
@@ -103,9 +103,8 @@ def test_an_old_summary_with_integer_statuses(tmp_path):
     count = SimulationSerializer.restore_statuses(sim.bodies, tmp_path / 'summary.csv')
 
     body = sim.bodies[0]
-    assert count == 2
-    assert body.statuses == {'g-g6': 'uncertain', 'LK': 'non_resonant'}
-    assert body.librations['g-g6'].status_code == -6 and body.librations['LK'].status_code == -2
+    assert count == 0
+    assert body.statuses == {} and body.librations == {}
 
 
 # --------------------------------------------------------------------------------------------- save/plot modes
@@ -329,16 +328,17 @@ def _verdict(status, origin, confidence, action, **extra):
 
 
 def test_review_columns_say_why():
-    medium = _verdict('non_resonant', '', 'medium', 'spot_check', caps=['catalogue_longitudes'], failed_support=['F'])
+    # the minimal policy leaves no caps and no failed supports: a thin veto is the last reason (`Verdict.review_reasons`)
+    medium = _verdict('non_resonant', '', 'medium', 'spot_check', flags=['veto_thin'])
     assert medium.review_required
-    assert medium.review_reasons == ['confidence:medium', 'cap:catalogue_longitudes', 'failed:F']
+    assert medium.review_reasons == ['confidence:medium', 'veto_thin']
     unknown = _verdict('uncertain', 'unknown', '', 'review', reason=Reason.ORIGIN_UNKNOWN)
     assert unknown.review_required and unknown.review_reasons == ['action:review', 'origin_unknown']
-    sure = _verdict('non_resonant', '', 'high', 'none', caps=['catalogue_longitudes'])
+    sure = _verdict('non_resonant', '', 'high', 'none', flags=['veto_thin'])
     assert not sure.review_required and sure.review_reasons == []
     row = medium.to_flat_dict()
-    assert row['review_required'] is True and row['review_reasons'] == 'confidence:medium;cap:catalogue_longitudes;failed:F'
-    # the columns follow from the others: an older file without them rebuilds the same verdict
+    assert row['review_required'] is True and row['review_reasons'] == 'confidence:medium;veto_thin'
+    # the columns follow from the others: a row without them rebuilds the same verdict
     old = {k: v for k, v in row.items() if not k.startswith('review_')}
     assert Verdict.from_flat_dict(old).review_reasons == medium.review_reasons == Verdict.from_flat_dict(row).review_reasons
 

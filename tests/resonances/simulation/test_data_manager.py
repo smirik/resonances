@@ -391,39 +391,19 @@ class TestDataManager:
         assert len(old_style_files) == 0, "Old-style separate resonance files should not be created"
 
 
-class TestPlotSubfolderStrategy:
-    """The old PLOT_SUBFOLDER_STRATEGY ('' or 'status') is read as the layout of both figure folders."""
+class TestPlotLayout:
+    """The layout of both figure folders (`plot_layout`, `plot_combined_layout`)."""
 
     def test_default_is_confidence_status(self):
         config = SimulationConfig()  # the benchmark's tree (author 2026-10-27, W24 Q8)
-        assert config.plot_subfolder_strategy is None
         assert (config.plot_layout, config.plot_combined_layout) == ('confidence/status', 'confidence/status')
         flat = SimulationConfig(plot_layout='flat')
-        assert (flat.plot_subfolder_strategy, flat.plot_layout, flat.plot_combined_layout) == (None, 'flat', 'flat')
-
-    def test_status_is_the_status_layout(self):
-        config = SimulationConfig(plot_subfolder_strategy='status')
-        assert config.plot_subfolder_strategy == 'status'
-        assert (config.plot_layout, config.plot_combined_layout) == ('status', 'status')
-
-    def test_empty_string_is_flat(self):
-        config = SimulationConfig(plot_subfolder_strategy='')
-        assert config.plot_subfolder_strategy is None
-        assert config.plot_layout == 'flat'
-
-    def test_invalid_raises_error(self):
-        with pytest.raises(ValueError, match="Invalid plot_subfolder_strategy"):
-            SimulationConfig(plot_subfolder_strategy='invalid')
-
-    def test_setting_the_old_attribute_sets_both_layouts(self):
-        config = SimulationConfig(plot_layout='confidence/status')
-        config.plot_subfolder_strategy = 'status'
-        assert (config.plot_layout, config.plot_combined_layout) == ('status', 'status')
+        assert (flat.plot_layout, flat.plot_combined_layout) == ('flat', 'flat')
 
     @pytest.mark.parametrize('status', [str(s) for s in Status] + [None])
     def test_status_folder_of_every_status(self, status, tmp_path):
-        """A body's figure folder under the old 'status' strategy: plot_path/figures/<status>; no status: unclassified."""
-        config = SimulationConfig(plot_subfolder_strategy='status', plot_path=str(tmp_path), save_path=str(tmp_path))
+        """A body's figure folder under the layout 'status': plot_path/figures/<status>; no status: unclassified."""
+        config = SimulationConfig(plot_layout='status', plot_path=str(tmp_path), save_path=str(tmp_path))
         body = Body()
         body.name = 'b'
         mmr = resonances.create_mmr('4J-2S-1')

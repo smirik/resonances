@@ -125,15 +125,6 @@ def test_term_text(term, expected):
     assert vt.term_text(term) == expected
 
 
-def test_argument_offset_of_rule_c():
-    """31935 (card g06-1): 9M-16+2+5 − 9M-16+0+7 = (2 − 0) ϖ_M + (5 − 7) ϖ = −2ϖ + 2ϖ_M; 12218 (g06-2): 4M-7+1+2 −
-    4M-7+0+3 = ϖ_M − ϖ; another commensurability has no offset."""
-    spec = ResonanceSpec.from_key
-    assert vt.argument_offset(spec('9M-16+0+7'), spec('9M-16+2+5')) == '−2ϖ + 2ϖ_M'
-    assert vt.argument_offset(spec('4M-7+0+3'), spec('4M-7+1+2')) == '−ϖ + ϖ_M'
-    assert vt.argument_offset(spec('4M-7+0+3'), spec('3M-5+0+2')) == ''
-
-
 # --------------------------------------------------------------------------------------------- cause line and steps
 
 
@@ -143,7 +134,7 @@ def test_a_forced_wave_owner_is_a_driver():
     f = _with_owner('3N-5+0+2', CauseRole.DRIVER, 0.8, OriginDetail.OWNER_FORCED_WAVE, own_owner_period_yr=4507.19)
     role, text = vt.cause_line(f.v, f)
     assert (role, text) == ('driver', 'driver: 3N-5+0+2 (circulates, P 4.51 kyr): forced wave')
-    assert 'owner:' not in text and vt.subtitle_role(f) == 'driver 3N-5+0+2'
+    assert 'owner:' not in text
     step = vt._owner_step(f)
     assert step.state == vt.StepState.LEAF
     assert step.outcome == 'driver 3N-5+0+2 circulates (P 4.51 kyr) and its forced wave drives a (R² 0.94) → non_resonant, induced'
@@ -151,14 +142,13 @@ def test_a_forced_wave_owner_is_a_driver():
 
 def test_a_librating_owner_and_an_unconfirmed_one():
     """The owner librates in the episode (HW7 5E-16+0+11, cover 0.8 ≥ 0.5); with a cover of 0.3 < 0.5 the text does not
-    confirm it: 'candidate driver' in the header, the subtitle and the step, never 'owner:'."""
+    confirm it: 'candidate driver' in the header and the step, never 'owner:'."""
     f = _with_owner('5E-16+0+11', CauseRole.OWNER, 0.8, OriginDetail.OWNER_LIBRATION)
     assert vt.cause_line(f.v, f) == ('owner', 'owner: 5E-16+0+11 (librates in the episode)')
     assert vt._owner_step(f).outcome.startswith('owner 5E-16+0+11 librates in σ’s episode and drives a (R² 0.94)')
     f = _with_owner('5E-16+0+11', CauseRole.OWNER, 0.3, OriginDetail.OWNER_LIBRATION)
     role, text = vt.cause_line(f.v, f)
     assert role == 'candidate driver' and text.startswith('candidate driver: 5E-16+0+11') and 'owner:' not in text
-    assert vt.subtitle_role(f) == 'candidate driver 5E-16+0+11'
     assert vt._owner_step(f).outcome.startswith('candidate driver 5E-16+0+11 (R² 0.94)')
 
 
@@ -172,9 +162,8 @@ def test_the_1862_control_names_a_neighbour_with_its_interval():
     step = vt._owner_step(f)
     assert step.state == vt.StepState.PASSED and step.outcome.startswith('neighbor 6E-11+0+5 (R² 0.99) librates after')
     assert step.outcome.endswith('not the cause, the tree goes on') and 'covers 0 < 0.5' in step.outcome
-    words = ' '.join((text, step.outcome, vt.driver_line(f)[0]))
+    words = ' '.join((text, step.outcome))
     assert 'owner:' not in words and 'drives a' not in words
-    assert vt.driver_line(f)[0].startswith('Candidate driver: 6E-11+0+5 (librates after the episode (13.7 kyr–17.9 kyr)')
 
 
 def test_a_neighbour_before_and_after_and_during():
@@ -196,7 +185,6 @@ def test_the_kinematic_term_takes_the_owner_slot():
     f = _facts(analysis, row)
     assert str(f.v.cause_role) == 'kinematic' and f.v.cause_term == '-1varpi'
     assert vt.cause_line(f.v, f) == ('kinematic', 'kinematic: −ϖ term; a does not follow')
-    assert vt.subtitle_role(f) == 'kinematic −ϖ'
     (owner_step,) = [step for step in vt.mmr_steps(f) if step.key == 'owner']
     assert owner_step.state == vt.StepState.NOT_NEEDED and owner_step.outcome.startswith('n/a')
     period = float(f.episodes.decisive['period_med_yr'])
@@ -211,8 +199,7 @@ def test_the_kinematic_term_takes_the_owner_slot():
 
 
 def test_rule_c_names_the_resonant_argument():
-    """Cards g06-1/g06-2 A: one resonance; the argument instead of an owner, in the header, the subtitle and the cause
-    slot with the term by which the two angles differ."""
+    """Cards g06-1/g06-2 A: one resonance; the argument instead of an owner in the header."""
     analysis, row = _kinematic()
     spec = ResonanceSpec.from_key('9M-16+0+7')
     member = make(SubresonanceCandidate, spec=ResonanceSpec.from_key('9M-16+2+5'), accepted=True, reason='')
@@ -223,24 +210,6 @@ def test_rule_c_names_the_resonant_argument():
     )  # fmt: skip
     f = _facts(replace(analysis, resonance=spec, subresonances=sub, verdict=verdict), row)
     assert vt.cause_line(f.v, f) == ('resonant argument', 'resonant argument: 9M-16+2+5 (one resonance 9M-16)')
-    assert vt.subtitle_role(f) == 'resonant argument 9M-16+2+5'
-    assert vt.argument_line(f) == (
-        'Resonant argument: 9M-16+2+5, one resonance 9M-16 with this angle; the two differ by −2ϖ + 2ϖ_M, so this '
-        'angle’s center turns with that term.'
-    )
-
-
-def test_a_weak_member_is_a_frame_not_a_force():
-    """Card g06-4 (2003 UG22 10E-17+6+1): a member test E′ rejected for its term (1e-9 of the strongest) is named as a
-    frame, not a force; nothing when a member was accepted or none was rejected on strength."""
-    analysis, row = _kinematic()
-    weak = make(SubresonanceCandidate, spec=ResonanceSpec.from_key('10E-17+6+1'), reason='E_strength', coefficient_rel=1e-9)
-    other = make(SubresonanceCandidate, spec=ResonanceSpec.from_key('10E-17+1+6'), reason='E_strength', coefficient_rel=3e-4)
-    sub = make(SubresonanceResult, candidates=[other, weak], check=CheckValue.PASS)
-    text = vt.frame_line(_facts(replace(analysis, subresonances=sub), row))
-    assert text.startswith('A steadier center of a member such as 10E-17+6+1 would be a frame, not a force: its term is 1e-9')
-    assert 'own e, i, ω' in text
-    assert vt.frame_line(_facts(replace(analysis, subresonances=replace(sub, candidates=[])), row)) == ''
 
 
 # --------------------------------------------------------------------------------------------- both resonances at once?

@@ -25,7 +25,7 @@ guards) → io.
 - `coorbital_geometry` (C2, W28, cards g01-8, g02-1/2/6, g03-1/9; pure helpers, no status, no threshold): the profile
   R~(θ) of a window's mean elements (`profile_at`, J2000 planet without saved elements; tables through `table_for`
   and the `record_tables` budget), `turn_site` (qs / tadpole_L4 / tadpole_L5 below the well's barrier, planet / l3
-  above it), `well_of` (the minima a swing holds: horseshoe, compound), `loop_da`, `da_max` (C1's arc definition:
+  above it), `well_of` (the minima a swing holds: horseshoe, compound), `da_max` (C1's arc definition:
   the top before the planet or L3 ahead; C6's zone tolerance is calibrated on it), `loop_period` (T_hs(θ_t), tadpole,
   QS; inf at a separatrix, nan when no loop joins the turns), `turn_conservation` (out/in), `TurnPhysics`,
   `leg_columns` (`cpl_*`, wired by C3) and `local_law` (`coorbital_law` on one window at its own cutoff). Trap: R~
@@ -198,7 +198,11 @@ guards) → io.
   or a ϖ-dominated angle is never by itself a second resonance or a veto; only the confirmed joint outcome says
   'both at once', and an owner never excludes an extra restoring term (hence unresolved caps, not exclusions).
 - **K2** `slow_centre_is_kinematic`: episodes that ripple a slow centre following λ + p ϖ while every force law fails
-  (`force_law_fails`, halves and multiplet) → non_resonant/kinematic_drift, graded as a drift. **K2b**
+  (every law of `force_laws`, halves and multiplet) → non_resonant/kinematic_drift, graded as a drift. Both are measurements
+  only: the force-law halves are nan below `MMR_FORCE_MIN_WINDOWS` windows (`measure_pieces`; one window was copied
+  into both halves, which K1's episode route read too), the
+  centre correlation over ≥ `MMR_KIN_MIN_POINTS` independent points (T − 2W_c)/W_c, else nan (485 Genua 3J-1S-1,
+  2026-11-14: 0.37 points and one window had vetoed a clean episode; 2897 now stops at the windows, same verdict). **K2b**
   `_kinematic_centre_moves`: a kinematic libration whose centre moves > `MMR_KIN_DRIFT_SHIFT_RATIO` × its amplitude
   goes the same way (R-KDRIFT, D10). **G4b** `centre_net_circulates`: net shift ≥ `LIBRATION_CIRCULATION_NET_REV` rev
   is circulation, also K2's word (R-NET, D14).
@@ -220,7 +224,7 @@ guards) → io.
   - R-ALIAS-A `short_period_unmeasured`: on a folding step with F direct passing and a's short-period scatter >
     `MMR_SHORT_PERIOD_A_RATIO`, a failed L4/L3 is not_measured for the tree and the level.
   - R-F `_geometry_cap` (5u/6): reasons `geometric_libration`/`geometric_episode` since 2026-10-26 (old files'
-    `dynamic_*` with origin unknown read so by `verdict.reason_from_text`); `strength_scale_only` ≤ medium when the e^q
+    `dynamic_*` with origin unknown before it); `strength_scale_only` ≤ medium when the e^q
     scale passes, `geometry_only` ≤ low otherwise.
   - R-WJ `one_cycle_energy_caps`: 1:1 on one cycle with the witness's energy R² failed → ≤ medium.
   - R-O1-OWNER `owner_librates_before`: O1 n/a where the owner librates over its background.

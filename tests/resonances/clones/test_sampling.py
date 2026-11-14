@@ -16,7 +16,7 @@ import pytest
 from scipy import stats
 
 from resonances.clones import Ensemble, OrbitSolution, parse_oef, parse_sbdb
-from resonances.clones.ensemble import clone_name, factor, parent_of
+from resonances.clones.ensemble import clone_name, factor
 
 FIXTURES = Path(__file__).resolve().parents[2] / 'fixtures' / 'clones'
 N = 20000
@@ -155,7 +155,5 @@ def test_ensemble_from_the_users_clone_list():
 
 def test_clone_names():
     assert clone_name('463', 7) == '463~c007'
-    assert parent_of('463~c007') == '463' and parent_of('2013 RZ53~c100') == '2013 RZ53'
-    assert parent_of('463') is None
     names = solution('astdys/463.eq1').sample(n=1000, seed=0, name='463').clone_names()
     assert names[0] == '463~c0001' and names[-1] == '463~c1000'

@@ -1,5 +1,5 @@
-"""W20 CS8: the baseline reads the slow time scale of an insufficient_time angle, and its text names it (F8, author
-2026-10-19: the "about N yr needed" of RB7, 3753, CG236, OM35, FA13 and KQ18 was computed from the wrong period).
+"""W20 CS8: the baseline reads the slow time scale of an insufficient_time angle (F8, author 2026-10-19: the "about N
+yr needed" of RB7, 3753, CG236, OM35, FA13 and KQ18 was computed from the wrong period).
 
 required = (LIBRATION_MIN_TURNING_POINTS / 2) P + 2 FILTER_EDGE_TRIM_CUTOFFS P_c, extend = the round value (one
 significant digit, up) >= max(required, 2 T). With the defaults 3 and 1, by hand:
@@ -13,13 +13,11 @@ significant digit, up) >= max(required, 2 T). With the defaults 3 and 1, by hand
 """
 
 import math
-import re
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 
-from resonances.plotting import verdict_text as vt
 from resonances.resonance.analysis import geometry as g
 from resonances.resonance.analysis.mmr import decide, io
 from resonances.resonance.analysis.mmr.decide import AngleDecision
@@ -151,78 +149,6 @@ def test_other_angles_keep_the_cycle():
     assert decide.baseline_period(None, _geometry((0.0, 1.0)), None, 5000.0)[:2] == (5000.0, 'b5')
 
 
-# --- the sentence ----------------------------------------------------------------------------------------------------
-
-
-class _Facts(SimpleNamespace):
-    def entry(self, name):
-        return self.path.get(name)
-
-
-def _sentence(row, path=None):
-    # v=None: no `policy` field, the v2 wording (the minimal policy's next check follows the action, W29)
-    return vt._baseline_sentence(_Facts(row=row, path=path or {}, s=S, v=None))
-
-
-def test_sentence_names_the_period_and_its_source():
-    row = {'base_required_kyr': 34.335, 'base_period_yr': 22790.0, 'base_period_source': 'two_omega', 'base_cause': ''}
-    text = _sentence(row)
-    assert text == 'Uncertain: the record is too short to decide: about 34.3 kyr needed (P = 22.8 kyr from the 2ω cycle the angle follows).'
-    row = {'base_required_kyr': 1.2621, 'base_period_yr': 767.4, 'base_period_source': 'tp_spacing', 'base_cause': ''}
-    assert 'about 1.26 kyr needed (P = 767 yr from twice the median spacing of the turning points)' in _sentence(row)
-
-
-def test_sentence_names_the_next_check():
-    """N8: the next check first; the budget clause only when it cuts the estimate (613440: 4 kyr against 200 kyr)."""
-    row = {
-        'base_required_kyr': 104.7,
-        'base_period_yr': 69800.0,
-        'base_period_source': 'stall_rate',
-        'base_cause': '',
-        'base_extend_to_years': 200000.0,
-        'extend_to_years': 4000.0,
-    }
-    assert _sentence(row) == (
-        'Uncertain: the record is too short to decide; next check: 4 kyr (at most 4 × the record; about 105 kyr '
-        'estimated from P = 69.8 kyr from one revolution at the rate of the stall).'
-    )
-    row = {
-        'base_required_kyr': 34.335,
-        'base_period_yr': 22790.0,
-        'base_period_source': 'two_omega',
-        'base_cause': '',
-        'base_extend_to_years': 40000.0,
-        'extend_to_years': 40000.0,
-    }
-    assert _sentence(row) == (
-        'Uncertain: the record is too short to decide; next check: 40 kyr (about 34.3 kyr estimated from P = 22.8 kyr '
-        'from the 2ω cycle the angle follows).'
-    )
-
-
-def test_action_names_the_next_check_of_insufficient_time_only():
-    short = SimpleNamespace(action='extend', angle_status='insufficient_time', extend_to_years=4000.0)
-    assert vt.action_sentence(short) == 'Action: extend the integration; next check: 4 kyr.'
-    drift = SimpleNamespace(action='extend', angle_status='drift', extend_to_years=40000.0)
-    assert vt.action_sentence(drift) == 'Action: extend the integration to 40 kyr.'
-
-
-def test_sentence_when_time_is_not_what_is_missing():
-    row = {
-        'base_required_kyr': 0.66,
-        'base_period_yr': 340.0,
-        'base_period_source': 'tp_spacing',
-        'base_cause': 'too_few_tp',
-        'smp_span_yr': 20000.0,
-    }
-    text = _sentence(row)
-    assert text.startswith('Uncertain, but not for lack of time: the record (20 kyr) already holds the 660 yr')
-    assert text.endswith('the run of turning points stops before a cycle closes.')
-    qs = SimpleNamespace(value=8.0, threshold=55.5, result=True)
-    text = _sentence(row, {vt.QS_STALL_ENTRY: qs})
-    assert '8 yr < 55.5 yr' in text and 'longer record would not decide' in text
-
-
 # --- the benchmark rows (independent: the slope of the saved angle or of omega) --------------------------------------
 
 KQ18 = 'mmr3__2003_KQ18__6J+2S-1+0+0-7'
@@ -272,11 +198,6 @@ def test_kq18_extends_by_its_two_omega_cycle():
     # pi / |omega_dot| over the record, outside the package (the author's report: 22.7-22.8 kyr)
     two_omega = math.pi / abs(_slope_rad_yr(series, series.omega, (series.t_yr[0], series.t_yr[-1])))
     assert row['base_period_source'] == 'two_omega' and row['base_period_yr'] == pytest.approx(two_omega, rel=0.05)
-    text = vt.explain_mmr(analysis, S, row, analysis.episode_rows()).sentences[1]
-    printed = re.search(r'next check: 40 kyr \(about ([0-9.]+) kyr estimated from P = ([0-9.]+) kyr from the 2ω cycle', text)
-    assert printed is not None, text
-    assert float(printed.group(1)) == pytest.approx(row['base_required_kyr'], abs=0.05)
-    assert float(printed.group(2)) == pytest.approx(row['base_period_yr'] / 1000, abs=0.05)
 
 
 # --- N8: the next check of an insufficient_time record (Codex, author 2026-10-24) ------------------------------------
@@ -321,8 +242,6 @@ def test_613440_asks_for_the_next_check_and_keeps_its_estimate():
     v = analysis.verdict
     assert (v.status, str(v.angle_status), str(v.action)) == (Status.UNCERTAIN, 'insufficient_time', 'extend')
     assert row['base_extend_to_years'] == 200000.0 and v.extend_to_years == 4000.0
-    assert vt.action_sentence(v) == 'Action: extend the integration; next check: 4 kyr.'
-    assert 'next check: 4 kyr (at most 4 × the record;' in vt.explain_mmr(analysis, S, row, analysis.episode_rows()).sentences[1]
 
 
 def test_extend_years_caps_insufficient_time_only():

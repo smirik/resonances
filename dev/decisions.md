@@ -33,10 +33,10 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   capture after circulation, make the angle word episodic; the ending regime goes into `final_regime`. Supersedes
   "82831 angle_status = circulation" of Oct 15.
 - **Oct 17 (author).** angle_status `transient` renamed `episodic` (the angle word no longer equals the status word);
-  old files are read through `verdict.angle_status_from_text`.
+  the package no longer reads old files (v1.0); the benchmark tools do (`bench_io.read_summary`).
 - **Oct 26 (author, W24 Q3).** Leaf 5u/6 (no force measured, origin unknown) writes `geometric_libration` /
   `geometric_episode` instead of `dynamic_*`; rows with a measured force keep `dynamic_*`. Old files: `dynamic_*`
-  with origin unknown is read as `geometric_*` (`verdict.reason_from_text`).
+  with origin unknown is read as `geometric_*` by the benchmark tools only (`bench_io.read_summary`).
 
 ## Geometry and episodes
 

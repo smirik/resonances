@@ -42,7 +42,7 @@ def _episode(times, window, record=(0.0, 1400.0)):
     values = [1.0 if i % 2 == 0 else -1.0 for i in range(len(times))]
     tp = tp_from(times, values)
     t = np.linspace(record[0], record[1], 1401)
-    return g.classify_run(0, tp, np.arange(len(times)), t, window, S)
+    return g._classify_run(0, tp, np.arange(len(times)), (t[0], t[-1]), S, tuple(window))
 
 
 def test_an_edge_without_a_missing_turning_point_is_covered():

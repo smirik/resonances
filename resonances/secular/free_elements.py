@@ -43,9 +43,9 @@ from scipy.signal import decimate, resample_poly
 from resonances.data.const import PLANETARY_FREQUENCIES
 from resonances.data.util import time_ordered
 from resonances.logger import logger
+from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN  # one turn in arcsec: arcsec/yr per cycle/yr
 from .proper_angle import non_singular_elements
 
-ARCSEC_PER_TURN = 360.0 * 3600.0  # one full turn, in arcsec; also arcsec/yr per cycle/yr
 RAD_PER_ARCSEC = 2.0 * np.pi / ARCSEC_PER_TURN
 
 # Order in which a cluster's representative is picked. This is NOT arbitrary and it is not

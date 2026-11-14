@@ -1,8 +1,9 @@
 """W3 'perf' package, owner.py: candidates as combinations of a few unwrapped series (W3-M2), the zoom spectrum of the
 reference period, the count-based unwrap check, the skip rule and F3 (the mu scale neither accepts nor rejects).
 
-The reference for the basis is the W2 path: each candidate unwrapped by its own model rate (`owner_angle_with_residual`)
-and measured at full resolution (`measure_candidate`). The synthetic body is driven by phi_o = 11 lambda_M - 20 lambda
+The reference for the basis is the W2 path: each candidate unwrapped by its own model rate (`oracles.owner_angle_reference`,
+at the frame's mean motion and varpi rate) and measured at full resolution (`measure_candidate`), its unwrap judged by
+`unwrap_ok` on that unwrap's own residual. The synthetic body is driven by phi_o = 11 lambda_M - 20 lambda
 + 9 varpi librating about pi (A = 0.5 rad, P = 1500 yr); the catalogue angle is 1V+5J-7+0+0+1.
 """
 
@@ -20,6 +21,7 @@ from resonances.resonance.analysis.mmr.preprocess import preprocess
 from resonances.resonance.analysis.mmr.sampling import analyse_sampling
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, AngleSubtype, CheckValue
+from tests.resonances.analysis.oracles import owner_angle_reference
 
 S = settings_from_config()
 WIDE = settings_from_config(mmr_owner_rate_factor=300.0)  # tens of candidates instead of one
@@ -102,9 +104,9 @@ def test_basis_measures_every_candidate_as_its_own_unwrap(record):
     frame, basis, specs, planet_n, deviations, varpi_rate = _frame_and_basis(series, prep, context, WIDE)
     assert len(specs) > 30
     for spec in specs:
-        phi, residual = owner.owner_angle_with_residual(spec, series, planet_n, frame.body_n_offset, varpi_rate)
+        phi, residual = owner_angle_reference(spec, series, planet_n, frame.body_n_offset, varpi_rate)
         ripple = sum(k * deviations[name] for name, k in zip(spec.planets, spec.planet_coefficients))
-        reference = owner.measure_candidate(spec, phi - ripple, frame, series, prep.cutoff.cutoff_yr, WIDE, None, residual)
+        reference = owner.measure_candidate(spec, phi - ripple, frame, series, prep.cutoff.cutoff_yr, WIDE)
         coefficients = basis.coefficients(spec)
         fit = owner.fit_on_frame(
             spec,
@@ -114,7 +116,7 @@ def test_basis_measures_every_candidate_as_its_own_unwrap(record):
             basis.unwrap_ok(coefficients),
             frame,
         )
-        assert fit.unwrap_ok == reference.unwrap_ok
+        assert fit.unwrap_ok == owner.unwrap_ok(residual, WIDE)
         assert fit.rate_rad_yr == pytest.approx(reference.rate_rad_yr, rel=1e-9, abs=1e-12)
         assert [r.regime for r in fit.regimes] == [r.regime for r in reference.regimes]
         for got, expected in zip(fit.regimes, reference.regimes):

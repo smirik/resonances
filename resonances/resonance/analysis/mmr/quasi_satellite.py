@@ -184,11 +184,6 @@ def turn_values(values: np.ndarray, min_reversal: float) -> List[float]:
     return turns
 
 
-def count_turns(values: np.ndarray, min_reversal: float) -> int:
-    """The number of `turn_values`."""
-    return len(turn_values(values, min_reversal))
-
-
 def _visit(t: np.ndarray, theta: np.ndarray, well, min_reversal: float) -> Tuple[int, int, List[float]]:
     """(first, last, turn values) of the stay G1q reads: the longest run of `theta` inside the well that turns there,
     else the longest run (no turn); (-1, -1, []) without one."""

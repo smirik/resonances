@@ -44,6 +44,7 @@ from resonances.plotting import verdict_column_common as vcc
 from resonances.plotting import verdict_text as vt
 from resonances.plotting.verdict_vocab import BASE_CAUSE_WORDS
 from resonances.resonance.analysis import policy as pol
+from resonances.resonance.analysis.mmr.analyse import QS_STALL_ENTRY
 from resonances.resonance.analysis.verdict import Reason
 
 MAX_SENTENCES = 5
@@ -51,7 +52,6 @@ WOULD_CHANGE = 'Would change the verdict: '
 NEEDED = 'Needed: '
 NEXT_CHECK = 'Next check: '
 NO_CHANGE = 'A longer record cannot make it resonant: '
-LAST_LINE_HEADS = (WOULD_CHANGE, NEEDED, NEXT_CHECK, NO_CHANGE)
 NOTHING_LIMITS = 'Nothing limits the confidence.'
 OPTIONAL = '\x00'  # the mark of a sentence dropped first when a row has more than MAX_SENTENCES (`_fit`)
 
@@ -771,7 +771,7 @@ def _t_kinematic_drift(m: _Mmr) -> List[str]:
 
 def _path_entry(m: _Mmr, suffix: str):
     """The decision-path entry of rule 5s whose name ends with `suffix` (it is recorded before step 5 or in the
-    branch, `verdict_text._strength_entry`), with a value; None without one."""
+    branch, as `verdict_text._strength_entry_object` reads it), with a value; None without one."""
     return next((e for e in m.v.decision_path if e.name.startswith('5s') and e.name.endswith(suffix) and vt.finite(e.value)), None)
 
 
@@ -851,7 +851,7 @@ def _t_drift_unknown(m: _Mmr) -> List[str]:
 
 def _t_baseline(m: _Mmr) -> List[str]:
     f, row = m.f, m.row
-    qs = vt._held(f, vt.QS_STALL_ENTRY)
+    qs = vt._held(f, QS_STALL_ENTRY)
     if qs:
         return [
             'The filter cutoff hides the libration: a longer record would not decide, the output step must hold the quasi-satellite period.'
@@ -1592,8 +1592,3 @@ def long_why(analysis, settings, row: Mapping[str, Any], episodes: Sequence[Mapp
     said = m.said or any('objection' in sentence or 'no verdict' in sentence for sentence in meaning)
     sentences = [_seen_long(m), *meaning, limit_sentence({**row, 'reason': m.reason}, vcc.text(m.v.confidence), said)]
     return vc.Why(_fit(sentences), would_change_long(m))
-
-
-def template_reasons(family: str) -> Tuple[str, ...]:
-    """The reasons with a template of their own (`MMR_TEMPLATES` or `LONG_TEMPLATES`)."""
-    return tuple(str(reason) for reason in (MMR_TEMPLATES if family == 'mmr' else LONG_TEMPLATES))

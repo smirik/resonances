@@ -45,8 +45,8 @@ DEG = math.pi / 180
         (np.array([0.0, 2.0, 4.0, 6.0, 4.0]), 1.0, 1),
     ],
 )
-def test_count_turns(values_deg, min_reversal_deg, expected):
-    assert qs_module.count_turns(np.radians(values_deg), math.radians(min_reversal_deg)) == expected
+def test_turn_values_count(values_deg, min_reversal_deg, expected):
+    assert len(qs_module.turn_values(np.radians(values_deg), math.radians(min_reversal_deg))) == expected
 
 
 def _flat_well(t, halfwidth_deg=20.0, period_yr=50.0):

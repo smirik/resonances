@@ -37,7 +37,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, replace
 from enum import StrEnum
-from typing import Dict, Mapping, Optional, Sequence, Tuple
+from typing import Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -633,16 +633,6 @@ class DecisiveQuantities:
     # the shape that of the episode with the most TPs
     on_decisive_episode: bool = False
     decisive_bounds: Tuple[float, float] = (NAN, NAN)  # that episode (or counterpart) clipped to the interval
-
-    def conclusions(self, settings: AnalysisSettings) -> Dict[str, Optional[bool]]:
-        """The yes/no facts the tree acts on: a full cycle exists (>= libration_min_turning_points TPs), an episode
-        exists, the turns stall, the cycles lie below the separatrix (None when not measured)."""
-        return {
-            'turning_points': self.n_tp >= settings.libration_min_turning_points,
-            'episodes': self.n_episodes >= 1,
-            'stall': self.stall,
-            'energy': bool(self.h_med < 1) if np.isfinite(self.h_med) else None,
-        }
 
 
 @dataclass(frozen=True)

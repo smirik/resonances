@@ -19,7 +19,7 @@ from resonances.mmr.mmr import MMR
 from resonances.plotting import Plotter, EccentricityVectorPlotter, CrossSpectrumPlotter, FreeOmegaPlotter, MMRPlotter, SecularPlotter
 from resonances.plotting.base import BasePlotter
 from resonances.resonance import coherence_analysis, omega_free_gate
-from resonances.resonance.analysis.verdict import CONFIDENCE_ORDER, OLD_ANGLE_STATUS, STATUS_RANK, Status, Verdict, reason_from_text
+from resonances.resonance.analysis.verdict import CONFIDENCE_ORDER, STATUS_RANK, Status, Verdict
 from resonances.secular import free_elements
 from .mmr_adapter import series_from_body
 from .serializer import SimulationSerializer
@@ -444,8 +444,7 @@ class DataManager:
         return differences
 
     def _saved_summary_row(self, body: Body, key: str):
-        """The row of (body, resonance) in summary.csv, as strings (angle_status and reason in today's spelling), or
-        None."""
+        """The row of (body, resonance) in summary.csv, as strings, or None."""
         path = Path(self.config.save_path) / 'summary.csv'
         if not path.exists() or path.stat().st_size == 0:
             return None
@@ -456,12 +455,7 @@ class DataManager:
         rows = frame[(frame['name'] == str(body.name)) & (frame['resonance'] == key)]
         if rows.empty:
             return None
-        row = rows.iloc[-1].to_dict()
-        if row.get('angle_status') in OLD_ANGLE_STATUS:
-            row['angle_status'] = str(OLD_ANGLE_STATUS[row['angle_status']])
-        if 'reason' in row:  # dynamic_* of the geometry alone before 2026-10-26 (origin unknown) -> geometric_*
-            row['reason'] = str(reason_from_text(row['reason'], row.get('libration_origin', '')))
-        return row
+        return rows.iloc[-1].to_dict()
 
     @staticmethod
     def _mmr_series(body: Body, resonance, simulation):

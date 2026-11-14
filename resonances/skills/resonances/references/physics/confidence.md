@@ -25,11 +25,11 @@ level it allows, and the level is the lowest of them):
   failed onset, a failed identity that moved nothing, a kinematic gate that pins no episode);
 - **S**, filter stability: L1 full and no decisive number changing at the cutoff ×2 (flag `filter_sensitive`;
   long-period: F full and no `filter_too_slow`).
-- **F** (MMR, W33), the angle's own force: `shown` when the force law on a (L4, the 1:1 law), the energy and
+- **F** (MMR), the angle's own force: `shown` when the force law on a (L4, the 1:1 law), the energy and
   period law (R0) or the strength (F) passes, else `none`. The identity $\dot\sigma = c\,(a - a^*)$ is no force: it
   holds for any orbit, and below a 45° half-amplitude L4 and R0 cannot tell a force from it. A resonant or
   transient MMR row with F `none` is at most `CONFIDENCE_GEOMETRY_ONLY_MAX` (low): the angle is bounded, the
-  mechanism is not shown (the author: no resonant/transient by the geometry alone; Gallardo, Coito & Badano 2016,
+  mechanism is not shown (no resonant/transient by the geometry alone; Gallardo, Coito & Badano 2016,
   p. 89, show librating angles without a dynamical effect).
 
 | status | level |
@@ -40,17 +40,16 @@ level it allows, and the level is the lowest of them):
 | non_resonant | medium with a candidate (a leg, a half-swing, a near-episode run); certain for a clear circulation (MMR: C1 and C2 full, an alias C5 and C2 full; long-period: P full and no turning point at any cutoff); else high. A secular or ZLK record too short for one cycle that the policy decides as ending in circulation with an end travel below $1 +$ `CONFIDENCE_THIN_BAND` turns is at most medium (input `end_travel`; the travel is a range of $\sigma_f$, the swing included, so 1.09 turns may still be part of a slow libration: 143662 s+g5−g8−s3) |
 
 The counts are the same for every resonance type: in units of its own period two returns of a 4-Myr secular
-libration carry the same information as two of a 500-yr one, so a long period is no reason for a lower count (W31,
-Codex review); what a long-period row lacks is said by V (a gate, the mode phases), not by N. The literature on
+libration carry the same information as two of a 500-yr one, so a long period is no reason for a lower count; what a long-period row lacks is said by V (a gate, the mode phases), not by N. The literature on
 resonance identification from integrations sets no cycle count (Nesvorný & Morbidelli 1998; Gallardo 2014; Huaman et
 al. 2017; Christou & Asher 2011): the numbers are conventions. The level never falls as N rises. Caps become flags; `confidence_raw` equals `confidence`; the calibration cell is
-not reported. The action: extend by the [extend rule](status-tree.md#minimal-policy), resample when R-ALIAS-A
-withdrew a needed check, review for uncertain or for a needed veto beyond the extend budget, then medium
+not reported. The action: extend by the [extend rule](status-tree.md#minimal-policy), resample when the alias rule
+withdrew a needed check (the output step folds a short period, `rsp_short_period_unmeasured`), review for uncertain or for a needed veto beyond the extend budget, then medium
 spot_check, low review.
 
-## Policy v2: margins and caps
+## The full tree: margins and caps
 
-The rest of this page is the W28 confidence (the tree's level, in `v2_verdict`); its margins stay columns.
+The rest of this page is the confidence of the full status tree (its level, in `v2_verdict`); its margins stay columns.
 
 ## Margins
 
@@ -173,7 +172,7 @@ when it is full the cap does not apply and the kinematic libration can reach hig
 A verdict that claims the angle's own libration (resonant, transient or near_separatrix of its own dynamics) is
 `high` only when at least one physical support of the own force passes with its full margin: the force law L4 (for a
 1:1 angle the co-orbital law, which takes L4), the potential R0 or the strength F by direct averaging. Otherwise the
-level is at most medium (`no_full_physics_support`; the author's choice of 2026-10-31,
+level is at most medium (`no_full_physics_support`,
 `MMR_HIGH_NEEDS_FULL_SUPPORT`). The zone Z and the owner search W exclude rivals and do not count as a support; when
 every physics margin is not_measured, `all_physics_not_measured` applies instead. Kinematic, induced and subresonance
 verdicts rest on other evidence and are not limited by it.

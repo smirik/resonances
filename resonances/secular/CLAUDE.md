@@ -36,7 +36,8 @@ Lidov's integrals (`lidov-kozai.md`), −2 vs −9 (`physics/status-tree.md`), t
   scope `episodes` for an episodic row demoted inside its episodes, 624: the node then may turn), the node lock
   (`zlk_node_lock*`, a flag), and the centre-scale guard (`forced_beat_centre`). `resonance/analysis/secular/slow.py`:
   the slow line of the centre (`zlk_centre_*`, `sec_centre_*`; origin `forced_direction` = arg z_forced − Ω explains it). `data/invariable_plane.py`: the exact rotation (shared with the MMR analysis; `rotate_elements`,
-  `elements_in/from_invariable_plane`, `argument_of_pericentre`, `FRAME_*`).
+  `elements_in_invariable_plane`, `FRAME_*`; the inverse rotation and omega' alone are test helpers,
+  `tests/resonances/analysis/oracles.py`).
 - `lidov_kozai/lidov_kozai_resonance.py`: `elements_in_frame` (ZLK_ANGLE_FRAME); `simulation.long_period_series` builds
   the ZLK angle from it on the analysis path, `_store_zlk_angle` writes it back to `body.angles`,
   `_build_free_elements` fits the free elements in the same frame.

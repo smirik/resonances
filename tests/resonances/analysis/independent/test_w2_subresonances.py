@@ -127,27 +127,6 @@ def test_composite_time_dependent_coefficients():
     np.testing.assert_allclose(p, [1.0, 2j, 2.0], atol=1e-12)
 
 
-def test_composite_centre_single_member_rotates_with_beta():
-    # only member j = 1 (C_1 = 1): P = e^{i beta}, c0 = pi - beta exactly, unwrapped over two turns
-    beta = np.linspace(0.0, 4 * np.pi, 801)
-    c0 = mp.composite_centre(np.array([0.0, 1.0]), np.array([0, 1]), beta)
-    np.testing.assert_allclose(np.diff(c0), -np.diff(beta), atol=1e-9)
-    assert math.remainder(c0[0] - np.pi, TWO_PI) == pytest.approx(0.0, abs=1e-9)
-
-
-def test_composite_centre_rouche_bound_is_reached():
-    # C_0 = 1, C_1 = 0.3: arg(1 + 0.3 e^{i beta}) peaks at arcsin(0.3) = 17.4576 deg (tangent from the origin),
-    # so c0 swings about pi by exactly +-arcsin(0.3) and does not wind
-    beta = np.linspace(0.0, TWO_PI, 20001)
-    c0 = mp.composite_centre(np.array([1.0, 0.3]), np.array([0, 1]), beta)
-    dev = np.array([math.remainder(x - np.pi, TWO_PI) for x in c0])
-    assert np.max(np.abs(dev)) == pytest.approx(math.asin(0.3), abs=1e-5)
-    assert abs(c0[-1] - c0[0]) < 1e-9
-    # a negative coefficient puts the centre at 0: P = -1, c0 = pi - pi = 0
-    c_neg = mp.composite_centre(np.array([-1.0]), np.array([0]), np.array([0.0, 1.0]))
-    assert math.remainder(c_neg[0], TWO_PI) == pytest.approx(0.0, abs=1e-12)
-
-
 @pytest.mark.parametrize(
     'coef, j, expected',
     [

@@ -371,7 +371,7 @@ def _measure(series, context, sampling, prep, prominence, settings, floor_well=N
     return angle, geometry, slow, response, energy
 
 
-def _episode_responses(series, prep, slow, geometry, context, sampling, energy, response: Response, settings) -> list:
+def _episode_responses(series, prep, slow, geometry, context, sampling, energy, response: Response, settings, measured=None) -> list:
     """The physics of every run (`response.analyse_episodes`) with L4, L3 and B1 judged on each librating episode, of the
     window and before the last jump of a; those go to `response.episode_responses`, and the measurement pooled over
     the episodes before the jump to `response.before_jump_response` (rule R, `response.deciding_response`). The forced
@@ -391,6 +391,7 @@ def _episode_responses(series, prep, slow, geometry, context, sampling, energy, 
         sampling=sampling,
         series=series,
         judged_ids=judged + sorted(geometry.excluded_ids),
+        measured=measured,
     )
     response.episode_responses = [p.response for p in episodes if p.episode_id in judged]
     response.before_jump_response = response_module.before_jump_response(
@@ -410,7 +411,7 @@ def _episode_responses(series, prep, slow, geometry, context, sampling, energy, 
 FORCED_WAVE, INDUCED = 'forced_wave', 'induced'  # the kinds of accepted runs `_without_episodes` takes out
 
 
-def _without_forced_waves(series, prep, slow, angle, geometry, context, sampling, energy, response, episodes, settings):
+def _without_forced_waves(series, prep, slow, angle, geometry, context, sampling, energy, response, episodes, settings, measured=None):
     """`_without_episodes` of the accepted runs that are forced waves of another argument (`decide.forced_wave_episodes`,
     W20 F6), and the unconfirmed ripples on an unfinished slow swing (`decide.ripple_waves`, W28 B6b, rule
     `ripple_on_arc`): they go to `Geometry.forced_waves`. Unchanged when there is none."""
@@ -418,15 +419,19 @@ def _without_forced_waves(series, prep, slow, angle, geometry, context, sampling
     if any(wave.ripple for wave in waves):
         geometry.rules_fired = fire(geometry.rules_fired, Rule.RIPPLE_ON_ARC)
     args = (series, prep, slow, angle, geometry, context, sampling, energy, response, episodes, settings)
-    return _without_episodes(*args, FORCED_WAVE, waves)
+    return _without_episodes(*args, FORCED_WAVE, waves, measured)
 
 
-def _without_episodes(series, prep, slow, angle, geometry, context, sampling, energy, response, episodes, settings, kind, removed):
+def _without_episodes(
+    series, prep, slow, angle, geometry, context, sampling, energy, response, episodes, settings, kind, removed, measured=None
+):
     """(geometry, response, energy, episodes) with accepted runs left out of the angle's episodes: `kind` FORCED_WAVE,
     `removed` the ForcedWave objects (F6, `Geometry.forced_waves`), or INDUCED, `removed` the ids an owner induces
     while other episodes are the row's own (A1, `Geometry.induced_ids`). The edge rule is read again on the real first
     and last episode (`geometry.refresh_edges`), and the response, the energy and the episodes' physics are measured
-    again without them (the response pieces and the decisive episode change). Unchanged when `removed` is empty."""
+    again without them (the response pieces and the decisive episode change). Unchanged when `removed` is empty.
+    `measured`: the runs' `measure_pieces` results of the earlier pass of this record analysis (same prep, context,
+    settings, spec and slow), reused where a run's inputs are unchanged (`response.episode_physics`)."""
     if not removed:
         return geometry, response, energy, episodes
     if kind == FORCED_WAVE:
@@ -435,7 +440,7 @@ def _without_episodes(series, prep, slow, angle, geometry, context, sampling, en
         geometry.induced_ids = frozenset(removed)
     geometry_module.refresh_edges(geometry, angle, settings)
     response, energy = _response_and_energy(series, prep, slow, geometry, context, sampling, settings, angle.well_model)
-    episodes = _episode_responses(series, prep, slow, geometry, context, sampling, energy, response, settings)
+    episodes = _episode_responses(series, prep, slow, geometry, context, sampling, energy, response, settings, measured)
     return geometry, response, energy, episodes
 
 
@@ -1033,13 +1038,15 @@ def _analyse_mmr(
     sampling.resample_step_yr = sampling_module.resample_step(
         sampling.safe_step_plain_yr, sampling.safe_step_pred_yr, period, sampling.step_yr, settings
     )
-    episodes = _episode_responses(series, prep, slow, geometry, context, sampling, energy, response, settings)
+    measured = {}  # the runs' force law, identity and B1 of this pass, reused by the passes without some runs
+    episodes = _episode_responses(series, prep, slow, geometry, context, sampling, energy, response, settings, measured)
     geometry, response, energy, episodes = _without_forced_waves(
-        series, prep, slow, angle, geometry, context, sampling, energy, response, episodes, settings
+        series, prep, slow, angle, geometry, context, sampling, energy, response, episodes, settings, measured
     )
     # A1: in a second pass the episodes the owner induces are no episodes of the angle
     args = (series, prep, slow, angle, geometry, context, sampling, energy, response, episodes, settings)
-    geometry, response, energy, episodes = _without_episodes(*args, INDUCED, induced.ids if induced is not None else ())
+    geometry, response, energy, episodes = _without_episodes(*args, INDUCED, induced.ids if induced is not None else (), measured)
+    del measured
     # a 1:1 angle's R0 from the law the tree reads (rule R: the witness's law carries its energy integral too)
     energy = response_module.with_coorbital_potential(
         energy, response_module.deciding_response(response, False), geometry, prep.filter_too_slow
@@ -1050,7 +1057,7 @@ def _analyse_mmr(
     angle_decision, slow_swing = _decide_angle(series, context, sampling, prep, geometry, energy, settings, ledger)
     options = (scan_subresonances, scan_owner, parent, centre_scale, quasi_satellite, subfloor)
     args = (series, context, sampling, prep, angle, geometry, prominence, angle_decision, ledger, settings, cells, options)
-    seen = []  # G2c's angles and geometries at the centre scale, for the slow scale (B10a)
+    seen = []  # the slow tracks of G2c's centre-scale geometries, for the slow scale (B10a)
     qs, qs_outcome, other_scale, rejected, subfloor_found = _other_scales(*args, induced=induced, seen=seen)
     if other_scale is not None:
         return other_scale
@@ -1194,9 +1201,6 @@ def _analyse_mmr(
     flags = _flags(sampling, prep, geometry, read, energy, strength, subresonances, owner, decision)
     flags = decide.surviving_zone_flags(flags, view.energy, margins)  # the zone flags follow the reading that survived
     lifted_caps = _mark_exit_and_capture(series, view, reported, checks, flags, caps, decision, ledger, settings)
-    # the confidence reads the tree's word (its calibration cell), not the rewrite: episodic for a union not promoted
-    union_kept = bool(union_episodic) and decision.angle_word is None
-    tree_word = str(view.angle.angle_status if union_kept else reported.angle_status)
     worded = _centre_scale_union_word(reported, union_word, decision, ledger)
     rewritten, reported = worded is not reported, worded  # geo_union_word_centre_scale: only a word it rewrote
     reported = decide.forced_wave_word(reported, decision, sampling, geometry, energy, settings, ledger)  # F6 loops: episodic
@@ -1212,13 +1216,11 @@ def _analyse_mmr(
     caps += list(edges.caps)
     flags += edges.flags
     decision.rules_fired = decision.rules_fired | edges.rules_fired
-    assessment = confidence_module.assess(
-        decision.status, tree_word, str(decision.reason), tree_margins, caps, ledger.thin_margins(), physics, cells
-    )
+    assessment = confidence_module.assess(decision.status, tree_margins, caps, ledger.thin_margins(), physics)
     decision.rules_fired = decision.rules_fired | decide.kinematic_high_rules(decision, tree_margins, physics)
     strength_waves = _strength_waves(geometry, decision, settings)  # W28 B2: marked after the verdict and its numbers
     if decision.origin == LibrationOrigin.SUBRESONANCE and member is not None and decision.status == member.status:
-        assessment = _member_confidence(member, assessment)
+        assessment = _member_confidence(member)
         unexplained_lifted = False  # the caps shown are the member's
     action, resample = _resample_action(default_action(decision.status, decision.reason, assessment.confidence), sampling)
     if decision.reason == Reason.BASELINE_NEEDED and base.cause:  # F8: P fits the record, a longer one decides nothing
@@ -1245,7 +1247,6 @@ def _analyse_mmr(
         ),
         confidence=assessment.confidence,
         confidence_raw=assessment.confidence_raw,
-        **assessment.cell_fields(),
         reason=decision.reason,
         flags=flags,
         thin_margins=assessment.thin_margins,
@@ -1343,17 +1344,16 @@ def _analyse_mmr(
 
 def _slow_scale(series, prep, geometry, kinematics, context, owner, seen, basis, settings) -> Optional[SlowScale]:
     """The slow scale of the record (B10a, W28, cards g08-7, g08-8, g05-2; `kinematics.measure_slow_scale`): the first
-    of G2c's centre-scale geometries (`seen`) with an accepted run slower than the centre's own scale
-    (`kinematics.slower_than`: a centre-scale run of a librating angle at its own period is that libration again, 6489
-    3J-1 at W_c 182 yr), else, for an angle that librates (as the status reads it, `basis`), the turns of its slow
-    centre c(t); None without either or with MMR_SLOW_SCALE_REPORT off. An owner row names the cause from A2's slow x
-    first (`SecondCapture.slow_x`)."""
+    of G2c's centre-scale tracks (`seen`, `kinematics.centre_scale_track`) with an accepted run slower than the
+    centre's own scale (`kinematics.slower_than`: a centre-scale run of a librating angle at its own period is that
+    libration again, 6489 3J-1 at W_c 182 yr), else, for an angle that librates (as the status reads it, `basis`),
+    the turns of its slow centre c(t); None without either or with MMR_SLOW_SCALE_REPORT off. An owner row names the
+    cause from A2's slow x first (`SecondCapture.slow_x`)."""
     if not settings.mmr_slow_scale_report:
         return None
     librating = basis.angle_status in decide.LIBRATING
     main = decide.decisive_period(basis, geometry) if librating else NAN
-    tracks = (kinematics_module.centre_scale_track(coarse, slow) for coarse, slow in seen)
-    track = next((track for track in tracks if kinematics_module.slower_than(track, main, settings)), None)
+    track = next((track for track in seen if kinematics_module.slower_than(track, main, settings)), None)
     if track is None and librating:
         track = kinematics_module.centre_track_slow(geometry, prep, context.identity_coefficient, settings)
     if track is None:
@@ -1546,16 +1546,15 @@ def _not_run_steps(checks: dict, subresonances, owner, settings: AnalysisSetting
         checks['check_mmr_owner'] = CheckValue.NOT_APPLICABLE
 
 
-def _member_confidence(member: Verdict, own: confidence_module.ConfidenceAssessment) -> confidence_module.ConfidenceAssessment:
+def _member_confidence(member: Verdict) -> confidence_module.ConfidenceAssessment:
     """Rule C: a catalogue row that takes the status of its accepted member (`decide.member_status`) takes the
-    member's confidence with the margins and caps that set it; the calibration cell stays the row's own."""
+    member's confidence with the margins and caps that set it."""
     return confidence_module.ConfidenceAssessment(
         Confidence(member.confidence),
         Confidence(member.confidence_raw),
         list(member.thin_margins),
         list(member.failed_support),
         list(member.caps),
-        own.cell,
     )
 
 
@@ -1600,8 +1599,8 @@ def _at_centre_scale(
     caps it at medium (`slow_scale_provisional`). 385533 7N-12: W_c 22.7 kyr, one return cycle (uncertain, 5n); at
     7.95 kyr four extrema 19.5-89.5 kyr, F by direct averaging passes: resonant, medium.
 
-    `seen` collects the angle and geometry of both scales W_c (`_decide_at_scale`), kept or not: the slow scale of
-    the fine verdict reads them (B10a, `_slow_scale`)."""
+    `seen` collects the slow tracks of both scales W_c (`_decide_at_scale`), kept or not: the slow scale of the fine
+    verdict reads them (B10a, `_slow_scale`)."""
     prominence = geometry_module.centre_prominence(record_prominence, settings)  # the centre scale reads the whole record
     first = geometry_module.centre_scale_angle(angle, geometry.period_cycle_yr, settings)
     found = _decide_at_scale(series, first, prominence, settings, cells, scan_subresonances, scan_owner, parent, seen)
@@ -1858,14 +1857,15 @@ def _decide_at_scale(series, coarse, prominence, settings, cells, scan_subresona
     floor 2003 TX9 3E+2J-10 picked up 1-7 deg loops at W_c 1.1 kyr, which failed the fixed band and cut its slow
     libration in three. The analyses run inside (the retry at the libration scale, a derived subresonance row, an
     owner-identity phi) inherit W_c and the raised floor; none runs inside a kept G2c analysis of the benchmark (W23).
-    `seen` (a list) collects (coarse, its geometry) before the covering filter: the slow scale reads its runs (B10a).
+    `seen` (a list) collects the slow track of that geometry (`kinematics.centre_scale_track`, None without an accepted
+    run) before the covering filter: the slow scale reads its runs (B10a); nothing else of the geometry is kept.
     """
     if coarse is None:
         return None
     measured = geometry_module.measure_geometry(coarse, prominence, settings)
-    if seen is not None:
-        seen.append((coarse, measured))
     episode = decide.decisive_episode(measured, settings)
+    if seen is not None:
+        seen.append(kinematics_module.centre_scale_track(coarse, measured))
     if episode is None or not all(geometry_module.covers_edges(_edges_unobserved(episode), settings)):
         return None
     at_scale = replace(settings, mmr_filter_cutoff_yr=coarse.cutoff_yr)

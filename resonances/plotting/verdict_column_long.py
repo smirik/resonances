@@ -34,6 +34,8 @@ from resonances.plotting import verdict_text as vt
 from resonances.plotting import verdict_vocab as vocab
 from resonances.resonance.analysis import policy as pol
 from resonances.resonance.analysis.secular.decide import EDGE_ARC_ENTRIES
+from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN
+from resonances.resonance.analysis.zlk.episode_ei import phase_off_deg
 
 DOCS = 'physics/secular-zlk.md'
 NOUN = {'secular': 'σ', 'zlk': 'ω'}
@@ -80,11 +82,6 @@ EPISODES_SHOWN = 4  # librating episodes listed in Key facts (the deciding one a
 
 
 # --------------------------------------------------------------------------------------------- small helpers
-
-
-def _f(row: Mapping[str, Any], column: str) -> float:
-    value = row.get(column)
-    return float(value) if vt.finite(value) else float('nan')
 
 
 def _signed(value: Any) -> str:
@@ -212,19 +209,11 @@ def _margin_subs(analysis, settings, step: str) -> List[vc.SubCheck]:
     return [_margin_sub(key, m, settings, whole) for key, m in v.margins.items() if MARGIN_STEP.get(key) == step]
 
 
-def _worst(children: Sequence[vc.SubCheck], clean: str = vc.OK) -> str:
-    icons = [child.icon for child in children]
-    for icon in (vc.FAIL, vc.MISSING, vc.THIN):
-        if icon in icons:
-            return icon
-    return clean
-
-
 def _line(number, question, answer='', numbers='', rule_id='', children=(), decides=False, quiet=False, icon=None) -> vc.CheckLine:
     if decides:
         icon = vc.DECIDES
     elif icon is None:
-        icon = _worst(children)
+        icon = common.worst(children)
     return vc.CheckLine(icon, number, question, answer, numbers, rule_id, tuple(children), decides, quiet or icon == vc.QUIET)
 
 
@@ -233,7 +222,7 @@ def _q_step(analysis, row, settings, decides: bool) -> vc.CheckLine:
         words = vt.unphysical_text(analysis, row) or 'the orbit is unphysical'
         return _line('Q', mmr.QUALITY_QUESTION, f'No: {words}; no angle is read.', decides=decides)
     children = _margin_subs(analysis, settings, 'Q')
-    span, step, cutoff = _f(row, 'smp_span_yr'), _f(row, 'smp_step_yr'), _f(row, 'flt_cutoff_yr')
+    span, step, cutoff = vt._float(row.get('smp_span_yr')), vt._float(row.get('smp_step_yr')), vt._float(row.get('flt_cutoff_yr'))
     numbers = ', '.join(
         part
         for part in (
@@ -243,7 +232,7 @@ def _q_step(analysis, row, settings, decides: bool) -> vc.CheckLine:
         )
         if part
     )
-    icon = _worst(children)
+    icon = common.worst(children)
     answer = {vc.OK: 'Yes.', vc.THIN: 'Yes, barely.', vc.MISSING: 'Not sure.', vc.FAIL: 'No.'}[icon]
     return _line('Q', mmr.QUALITY_QUESTION, answer, numbers, children=children, decides=decides)
 
@@ -256,7 +245,7 @@ def _shape_answer(analysis, row, eps: vt.Episodes, family: str) -> str:
         return 'Yes, over the whole record.'
     if angle == 'episodic':
         n = len(eps.rows)
-        return f'In part of the record: {vt._plural(n, "librating episode")}.'
+        return f'In part of the record: {vt.plural(n, "librating episode")}.'
     if angle == 'circulation':
         return 'No, it circulates.'
     if angle == 'drift':
@@ -349,7 +338,7 @@ def _secular_centre_step(analysis, row, decides: bool) -> Optional[vc.CheckLine]
         return _line('1', question, 'Not needed: the fine scale shows the libration.', icon=vc.QUIET)
     if common.text(row.get('sec_scale')) == 'centre':
         numbers = _centre_scale_numbers(entries)
-        cutoff = _f(row, 'sec_scale_cutoff_yr')
+        cutoff = vt._float(row.get('sec_scale_cutoff_yr'))
         numbers = '; '.join(p for p in (f'cutoff {vt.years(cutoff)}' if vt.finite(cutoff) else '', numbers) if p)
         return _line('1', question, 'Yes: the center scale decides.', numbers, decides=decides, icon=vc.OK)
     if entries:
@@ -360,7 +349,7 @@ def _secular_centre_step(analysis, row, decides: bool) -> Optional[vc.CheckLine]
 def _phase_step(analysis, row, decides: bool) -> Optional[vc.CheckLine]:
     """G5p: the swing against the error of the linear mode phases (None when it was not compared)."""
     entry = _entries(analysis).get('phase_uncertainty')
-    swing, spread = _f(row, 'sec_phase_swing_deg'), _f(row, 'sec_phase_uncertainty_deg')
+    swing, spread = vt._float(row.get('sec_phase_swing_deg')), vt._float(row.get('sec_phase_uncertainty_deg'))
     question = 'Is the swing larger than the error of the mode phases?'
     if entry is None and not decides:
         return None
@@ -386,7 +375,7 @@ def _gate_subs(analysis, row, settings) -> List[vc.SubCheck]:
             children.append(vc.SubCheck(vc.MISSING, 'cycles of ω for the gate', f'not measured (need ≥ {vt.fmt(cycles.threshold)})'))
     if outcome == 'confirmed':
         where = ' inside the librating episodes' if common.text(gate.detail) == 'episodes' else ''
-        free = _f(row, 'free_omega_range_deg')
+        free = vt._float(row.get('free_omega_range_deg'))
         numbers = f'range of the free ω {_deg(free)}' if vt.finite(free) and free < 360 else ''
         children.append(vc.SubCheck(vc.OK, f'the free ω librates{where}', numbers))
     elif outcome == 'kinematic':
@@ -432,9 +421,11 @@ def _no_verdict_parts(analysis, row) -> Tuple[str, str]:
     if gate is not None and common.text(gate.detail) == 'coorbital_unfitted_forcing':
         return f'the free-element model does not apply to a co-orbital of {vt._coorbital_planet(row)}', ''
     mode = common.text(row.get('zlk_gate_node_near'))
-    distance, resolution = _f(row, 'zlk_gate_node_near_d_arcsec_yr'), _f(row, 'zlk_gate_node_near_resolution_arcsec_yr')
+    distance, resolution = vt._float(row.get('zlk_gate_node_near_d_arcsec_yr')), vt._float(
+        row.get('zlk_gate_node_near_resolution_arcsec_yr')
+    )
     if outcome == 'planetary_residual' and mode and vt.finite(distance):
-        separation = _f(row, 'zlk_gate_node_separation_yr')
+        separation = vt._float(row.get('zlk_gate_node_separation_yr'))
         after = f'; they separate after {vt.years(separation)}' if vt.finite(separation) else ''
         return f'the free node is not yet separated from {mode}', f'|b_Ω − {mode}| {vt.compare(distance, "<", resolution, "″/yr")}{after}'
     if outcome == 'planetary_residual':
@@ -524,7 +515,7 @@ def _ei_step(analysis, row, settings, decides: bool) -> Optional[vc.CheckLine]:
         return _line('2', question, f'Not measured ({reason}).', icon=vc.MISSING if needed else vc.QUIET)
     parts = vt.episode_ei_parts(ei)
     tests = (
-        vt.holds(vt._phase_off_deg(ei.phase_deg, 180.0), '<=', ei.phase_tol_deg),
+        vt.holds(phase_off_deg(ei.phase_deg, 180.0), '<=', ei.phase_tol_deg),
         vt.holds(ei.coherence, '<=', -ei.min_coherence),
         vt.holds(ei.eta_h, '<=', ei.h_residual_max),
     )
@@ -553,7 +544,7 @@ def _travel_parts(analysis, row) -> Tuple[str, str, bool]:
     entries = _entries(analysis)
     travel, thin = entries.get(pol.END_TRAVEL_ENTRY), entries.get(pol.END_TRAVEL_THIN_ENTRY)
     geometry = analysis.geometry
-    t_last = _f(row, 'pol_t_last_tp_yr')
+    t_last = vt._float(row.get('pol_t_last_tp_yr'))
     start = geometry is not None and vt.finite(t_last) and t_last <= float(geometry.window[0])
     where = 'over the window (no accepted run, so no last turning point)' if start else 'after the last turning point'
     if vt.finite(t_last) and not start:
@@ -696,7 +687,7 @@ def coorbital_planet(row: Mapping[str, Any], settings) -> str:
     (`secular_plots.coorbital_planet_geometric`, the zone panel (d) draws); '' outside every zone."""
     from resonances.plotting.secular_plots import coorbital_planet_geometric
 
-    a = _f(row, 'ctx_a_med_au')
+    a = vt._float(row.get('ctx_a_med_au'))
     return coorbital_planet_geometric(a, mmr.panel.config_settings(settings)) if vt.finite(a) else ''
 
 
@@ -709,11 +700,11 @@ def _sigma_fact(analysis, row, eps: vt.Episodes, family: str) -> str:
     angle = str(v.angle_status)
     span = vt.record_span_yr(analysis)
     decisive = eps.decisive if eps.rows else None
-    centre = _f(decisive or {}, 'centre_mod_2pi_deg')
+    centre = vt._float((decisive or {}).get('centre_mod_2pi_deg'))
     centre_text = f' · center **{why.centre_text(centre)}**' if vt.finite(centre) else ''
     # the cycles the level counts (input N), the number the Why and the pill print; else the deciding episode's own
     counted = {name: state for name, state, _, _ in common.parse_inputs(row.get('pol_level_inputs'))}.get('N', '')
-    cycles = _f({'n': counted}, 'n') if counted else _f(row, 'pol_core_cycles')
+    cycles = vt._float(counted) if counted else vt._float(row.get('pol_core_cycles'))
     own = ' counted' if counted else ' in the deciding episode'
     cycles_text = f' · {vt.fmt(cycles)} cycle{"" if cycles == 1 else "s"}{own}' if vt.finite(cycles) else ''
     if angle == 'libration':
@@ -722,14 +713,14 @@ def _sigma_fact(analysis, row, eps: vt.Episodes, family: str) -> str:
         return f'librates over the whole record ({_span_words(analysis, eps, span)}){cycles_text}{centre_text}'
     if angle == 'episodic':
         n = len(eps.rows)
-        return f'librates in {vt._plural(n, "episode")} covering **{vt.percent(eps.covered_fraction())}** of {vt.years(span)}{centre_text}'
+        return f'librates in {vt.plural(n, "episode")} covering **{vt.percent(eps.covered_fraction())}** of {vt.years(span)}{centre_text}'
     if angle == 'circulation':
-        passed = _f(row, 'geo_centre_max_pass_rev')
+        passed = vt._float(row.get('geo_centre_max_pass_rev'))
         return 'circulates' + (f': its center runs {vt.fmt(passed)} turns one way in {vt.years(span)}' if vt.finite(passed) else '')
     if _unphysical(analysis):
         return 'not read (the orbit is unphysical)'
     words = _shape_answer(analysis, row, eps, family).rstrip('.')
-    travel = _f(row, 'pol_end_travel_rev')
+    travel = vt._float(row.get('pol_end_travel_rev'))
     if _decided_by(row) == pol.DECIDED_INSUFFICIENT and str(v.status) == 'non_resonant' and vt.finite(travel):
         return f'too few turning points for one cycle; σ_f spans **{vt.fmt(travel)} turns** to the end: it ends in circulation'
     return words[:1].lower() + words[1:]
@@ -761,7 +752,7 @@ def key_facts(analysis, row, episodes, frequencies, family: str, planet: str = '
         items = []
         shown = [r for r in eps.rows if vt._same_id(r.get('episode_id'), analysis.decisive_episode_id)]
         shown = (shown + [r for r in eps.rows if r not in shown])[:EPISODES_SHOWN]
-        for episode in sorted(shown, key=lambda r: _f(r, 't_start_yr')):
+        for episode in sorted(shown, key=lambda r: vt._float(r.get('t_start_yr'))):
             mark = ' ◆' if vt._same_id(episode.get('episode_id'), analysis.decisive_episode_id) else ''
             items.append(
                 f'#{vt.fmt(episode.get("episode_id"))} {vt.interval(episode.get("t_start_yr"), episode.get("t_end_yr"))} '
@@ -798,7 +789,7 @@ def _zlk_facts(analysis, row, frequencies) -> List[vc.Fact]:
         return []
     out = []
     free = _frequency(frequencies, 'g − s')
-    revolutions, extent = _f(row, 'free_omega_revolutions'), _f(row, 'free_omega_range_deg')
+    revolutions, extent = vt._float(row.get('free_omega_revolutions')), vt._float(row.get('free_omega_range_deg'))
     # the period of the mean rate g − s (the FREQUENCIES row), not a libration period of the free ω
     period = f'360°/|g − s| **{vt.years(free.period)}**' if free is not None and vt.finite(free.period) else ''
     gate = _gate(analysis)
@@ -806,7 +797,7 @@ def _zlk_facts(analysis, row, frequencies) -> List[vc.Fact]:
         # the planet's own forcing is not in the fitted basis: the split's straight line is no measurement (CLAUDE.md)
         out.append(vc.Fact('free ω (g − s)', 'not a measurement: the free-element model does not apply to a co-orbital'))
         return out
-    inside = _f(row, 'zlk_gate_free_turns_episodes_max')
+    inside = vt._float(row.get('zlk_gate_free_turns_episodes_max'))
     if vt.finite(extent) and extent >= 360 and vt.finite(revolutions):
         motion = f'**winds**: {vt.fmt(abs(revolutions))} net turns over the record'
         if _outcome(analysis) == 'confirmed' and common.text(gate.detail) == 'episodes' and vt.finite(inside):
@@ -853,13 +844,13 @@ def _secular_facts(row, frequencies) -> List[vc.Fact]:
 
 def _orbit_fact(row, family: str) -> str:
     parts = []
-    a_lo, a_hi = _f(row, 'ctx_a_min_au'), _f(row, 'ctx_a_max_au')
+    a_lo, a_hi = vt._float(row.get('ctx_a_min_au')), vt._float(row.get('ctx_a_max_au'))
     if vt.finite(a_lo) and vt.finite(a_hi):
         parts.append(f'a {_a_range(a_lo, a_hi)} au')
-    e_lo, e_hi = _f(row, 'ctx_e_min'), _f(row, 'ctx_e_max')
+    e_lo, e_hi = vt._float(row.get('ctx_e_min')), vt._float(row.get('ctx_e_max'))
     if vt.finite(e_lo) and vt.finite(e_hi):
         parts.append(f'e {vt.fmt(e_lo)}–{vt.fmt(e_hi)}')
-    i_lo, i_hi = _f(row, 'ctx_inc_min_deg'), _f(row, 'ctx_inc_max_deg')
+    i_lo, i_hi = vt._float(row.get('ctx_inc_min_deg')), vt._float(row.get('ctx_inc_max_deg'))
     if vt.finite(i_lo) and vt.finite(i_hi):
         plane = ' (invariable plane)' if family == 'zlk' and common.text(row.get('zlk_angle_frame')) in ('', 'invariable') else ''
         parts.append(f'i {vt.fmt(i_lo)}–{vt.fmt(i_hi)}°{plane}')
@@ -882,7 +873,7 @@ def _a_range(lo: float, hi: float) -> str:
 
 
 def _run_fact(row) -> str:
-    span, step, cutoff = _f(row, 'smp_span_yr'), _f(row, 'smp_step_yr'), _f(row, 'flt_cutoff_yr')
+    span, step, cutoff = vt._float(row.get('smp_span_yr')), vt._float(row.get('smp_step_yr')), vt._float(row.get('flt_cutoff_yr'))
     binding = BINDING_WORDS.get(common.text(row.get('flt_cutoff_binding')), vocab.snake_words(common.text(row.get('flt_cutoff_binding'))))
     parts = [
         vt.years(span) if vt.finite(span) else '',
@@ -1009,7 +1000,7 @@ def _secular_evidence(analysis, row, frequencies) -> vc.Evidence:
     rows = []
     span = vt.record_span_yr(analysis)
     if vt.finite(span) and span > 0 and frequencies:
-        resolution = vt.TURN_ARCSEC / span
+        resolution = ARCSEC_PER_TURN / span
         for label, period, low, high in vt._seen_periods(analysis, row, False):
             match, nearest = vt._identify(period, low, high, resolution, frequencies)
             if match:
@@ -1080,7 +1071,7 @@ LONG_CAVEATS = {
 
 def _first_episode(analysis, episodes) -> str:
     """' (from 66.4 kyr)': the start of the first librating episode (its first turning point), '' without one."""
-    starts = [_f(r, 't_start_yr') for r in _eps(analysis, episodes or ()).rows]
+    starts = [vt._float(r.get('t_start_yr')) for r in _eps(analysis, episodes or ()).rows]
     starts = [t for t in starts if vt.finite(t)]
     return f' (from {vt.years(min(starts))})' if starts else ''
 
@@ -1148,11 +1139,11 @@ def _gate_comparison(analysis, row, step: Optional[vc.CheckLine]) -> str:
     if step is None or step.number != '1' or outcome not in vt.GATE_VERDICTS:
         return ''
     parts = [f'free-ω gate: {outcome}']
-    rho, free = _f(row, 'zlk_gate_rho_max'), _f(row, 'free_omega_range_deg')
+    rho, free = vt._float(row.get('zlk_gate_rho_max')), vt._float(row.get('free_omega_range_deg'))
     if outcome == 'kinematic' and vt.finite(rho):
         parts.append(f'ρ_max {vt.fmt(rho)}')
     elif outcome == 'confirmed' and common.text(_gate(analysis).detail) == 'episodes':
-        turns = _f(row, 'zlk_gate_free_turns_episodes_max')
+        turns = vt._float(row.get('zlk_gate_free_turns_episodes_max'))
         parts.append('inside the episodes' + (f': free ω turns per cycle at most {vt.fmt(turns)}' if vt.finite(turns) else ''))
     elif outcome == 'confirmed' and vt.finite(free) and free < 360:
         parts.append(f'range of the free ω {_deg(free)}')
@@ -1267,7 +1258,7 @@ def _turn_rows(analysis, row) -> Tuple[Tuple[str, str], ...]:
     if _unfitted(analysis):
         return ()
     out = []
-    net = _f(row, 'free_omega_revolutions')
+    net = vt._float(row.get('free_omega_revolutions'))
     if vt.finite(net):
         out.append(('net turns of the free ω (record)', vt.fmt(abs(net))))
     mean = why.mean_rate_turns(analysis, row)
@@ -1390,10 +1381,10 @@ def long_column(analysis, settings, row: Mapping[str, Any], episodes: Sequence[M
     )
 
 
-def figure_parts(analysis, row=None, free_elements=None, settings=None):
-    """The column the secular/ZLK verdict figure draws and the `VerdictText` it is built from, exactly as
-    `secular_plots.draw_long_period_combined` builds them: `row` adds columns to the analysis' summary row (as the
-    figure's `row`), `free_elements` (ZLK) the body's FreeElements; `settings` default: from the configuration."""
+def figure_column(analysis, row=None, free_elements=None, settings=None) -> vc.Column:
+    """The column the secular/ZLK verdict figure draws, exactly as `secular_plots.draw_long_period_combined` builds it:
+    `row` adds columns to the analysis' summary row (as the figure's `row`), `free_elements` (ZLK) the body's
+    FreeElements; `settings` default: from the configuration. `verdict_column.column_text` writes it."""
     from resonances.plotting.mmr_verdict_panel import config_settings
     from resonances.plotting.secular_plots import long_period_frequencies
 
@@ -1402,10 +1393,4 @@ def figure_parts(analysis, row=None, free_elements=None, settings=None):
     episodes = analysis.episode_rows()
     frequencies = long_period_frequencies(analysis, summary, free_elements)
     family = 'zlk' if str(analysis.verdict.resonance_type) == 'lidov_kozai' else 'secular'
-    text = vt.explain_long_period(analysis, settings, episodes, summary, frequencies)
-    return long_column(analysis, settings, summary, episodes, frequencies, family), text
-
-
-def figure_column(analysis, row=None, free_elements=None, settings=None) -> vc.Column:
-    """The column the secular/ZLK verdict figure draws (`figure_parts`); `verdict_column.column_text` writes it."""
-    return figure_parts(analysis, row, free_elements, settings)[0]
+    return long_column(analysis, settings, summary, episodes, frequencies, family)

@@ -326,15 +326,6 @@ def centre_curvature(
     return replace(result, reason=REASON_NOT_CONVERGED) if result.reason == REASON_NONE else result
 
 
-def period_in_profile(sigma: np.ndarray, values: np.ndarray, start_rad: float) -> Tuple[float, float]:
-    """(period [yr], far turning point [rad]) of sigma_ddot = -V'(sigma) started at rest at `start_rad`
-    (`orbit_in_profile` with no kinetic energy; the far turning point is the bound that is not the start)."""
-    period, lower, upper = orbit_in_profile(sigma, values, start_rad)
-    if not np.isfinite(lower):
-        return period, NAN
-    return period, upper if abs(upper - start_rad) >= abs(lower - start_rad) else lower
-
-
 def orbit_in_profile(sigma: np.ndarray, values: np.ndarray, start_rad: float, kinetic: float = 0.0) -> Tuple[float, float, float]:
     """(period [yr], lower and upper turning point [rad]) of the orbit of sigma_ddot = -V'(sigma) that passes
     `start_rad` with the kinetic energy `kinetic` = sigma_dot^2 / 2 [rad^2/yr^2], V [rad^2/yr^2] given at increasing
@@ -634,15 +625,6 @@ def separatrix_action_in_well(sigma: np.ndarray, values: np.ndarray, middle_rad:
         return NAN
     full = _profile_loop_action(basin, basin.barrier)
     return float(full) if full > 0 else NAN
-
-
-def averaged_profile(
-    body: Ellipse, planet: Ellipse, body_coefficient: int, planet_coefficient: int, phase_rad: float, nodes_per_turn: int
-) -> Tuple[np.ndarray, np.ndarray]:
-    """(sigma [rad], <D>(sigma) [au^-1]) on the full grid sigma_m = 2 pi m / L (diagnostics and tests)."""
-    line = LineAverage(body, planet, body_coefficient, planet_coefficient, phase_rad, nodes_per_turn)
-    m = np.arange(line.nodes_per_turn)
-    return line.sigma(m), line.evaluate(m)[0]
 
 
 # --- the resonant harmonic in extended precision -------------------------------------------------------------------

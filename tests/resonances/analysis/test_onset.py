@@ -17,7 +17,7 @@ from scipy.integrate import solve_ivp
 from resonances.resonance.analysis import filtering
 from resonances.resonance.analysis.confidence import Cap
 from resonances.resonance.analysis.ledger import Ledger, Margin
-from resonances.resonance.analysis.mmr import decide
+from resonances.resonance.analysis.mmr import coorbital, decide
 from resonances.resonance.analysis.mmr import response as R
 from resonances.resonance.analysis.mmr.models import EpisodePhysics
 from resonances.resonance.analysis.settings import AnalysisSettings
@@ -131,7 +131,7 @@ def test_own_law_is_read_with_the_episodes_k_and_phi0_not_refitted(offset_deg, e
     var = K^2 (1 - cos d) of var K^2 / 2: R^2 = 1 - 2 (1 - cos d) (1, 0, -1 at 0, 60, 90 deg); a refit would give 1."""
     sigma = np.linspace(0.0, 40 * np.pi, 20001)[:-1]
     adot = 2.0 * np.sin(sigma - 0.3 - np.radians(offset_deg)) + 0.1
-    assert R.fixed_law_r2(sigma, adot, 2.0, 0.3) == pytest.approx(expected, abs=1e-6)
+    assert coorbital.fixed_scale_r2(adot, np.sin(sigma - 0.3), 2.0) == pytest.approx(expected, abs=1e-6)  # onset_own_law's
     assert R.sine_coefficients(sigma, adot)[3] == pytest.approx(1.0, abs=1e-9)
 
 

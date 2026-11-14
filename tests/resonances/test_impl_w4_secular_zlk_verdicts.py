@@ -18,7 +18,7 @@ from resonances.resonance.analysis.secular.analyse import analyse_long_period
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, Reason, ResonanceType, Status
 from resonances.resonance.analysis.zlk import analyse_zlk
-from resonances.resonance.classify import check_chaos
+from resonances.resonance.classify import unphysical_arrays
 
 SETTINGS = settings_from_config()
 NO_GATE = SimpleNamespace(free_gate_enabled=False, free_gate_min_cycles=3.0)
@@ -95,28 +95,22 @@ def test_an_mmr_has_no_long_period_analysis():
         analyse_secular(series(ResonanceType.MMR, T_SECULAR, np.zeros_like(T_SECULAR)), SETTINGS)
 
 
-# --- check_chaos (kept from test_classify.py) ---------------------------------------------------------------
-
-
-def _orbit(axis, ecc):
-    return SimpleNamespace(axis=np.asarray(axis, dtype=float), ecc=np.asarray(ecc, dtype=float))
+# --- the unphysical-orbit rule (kept from test_classify.py) ---------------------------------------------------
 
 
 @pytest.mark.parametrize(
-    'axis, ecc, flag, text',
+    'axis, ecc, expected',
     [
-        ([2.5, 2.6, 2.55], [0.1, 0.12, 0.11], 0, ''),
-        ([2.5, 2.6, 2.55], [0.1, 1.5, 0.3], 1, 'hyperbolic'),
-        ([2.5, -1.0, 2.55], [0.1, 0.2, 0.1], 1, 'negative_sma'),
-        ([2.5, 2.6, 6.0], [0.1, 0.1, 0.1], -1, 'da_final'),  # |da|/a0 = 1.4
-        ([2.5, 5.5, 2.6], [0.1, 0.1, 0.1], -1, 'da_max'),  # 1.2 at the maximum, 4% at the end
-        ([0.0, 2.5, 2.5], [0.1, 0.1, 0.1], 1, 'a0=0'),
-        ([2.5, 2.5, 4.975], [0.1, 0.1, 0.1], 0, ''),  # 99 %: not yet
+        ([2.5, 2.6, 2.55], [0.1, 0.12, 0.11], (False, 'ok')),
+        ([2.5, 2.6, 2.55], [0.1, 1.5, 0.3], (True, 'hyperbolic')),  # e > 1.3 somewhere
+        ([2.5, 2.6, 2.55], [0.1, 1.3, 0.3], (False, 'ok')),  # e = 1.3 is the limit itself
+        ([2.5, -1.0, 2.55], [0.1, 0.2, 0.1], (True, 'negative_sma')),
+        ([2.5, np.nan, 2.55], [0.1, 0.2, 0.1], (True, 'non_finite')),
+        ([2.5, 2.6, 2.55], [0.1, np.inf, 0.1], (True, 'non_finite')),
     ],
 )
-def test_check_chaos(axis, ecc, flag, text):
-    got, comment = check_chaos(_orbit(axis, ecc))
-    assert got == flag and text in comment
+def test_unphysical_arrays(axis, ecc, expected):
+    assert unphysical_arrays(np.asarray(axis, dtype=float), np.asarray(ecc, dtype=float)) == expected
 
 
 # --- test_secular_centre.py: a moving centre needs a cycle and a half -------------------------------------------

@@ -29,8 +29,7 @@ from resonances.resonance.analysis.mmr import response as R  # noqa: E402
 from resonances.resonance.analysis.mmr.decide import O1_ONSET, SCALE_OUT_OF_RANGE  # noqa: E402
 from resonances.resonance.analysis.mmr.models import DirectForceLaw, ForcedWave  # noqa: E402
 from resonances.resonance.analysis.settings import settings_from_config  # noqa: E402
-from resonances.resonance.analysis.verdict import CheckValue  # noqa: E402
-from tests.resonances.analysis.builders import make, make_energy, make_episode, make_geometry, make_response  # noqa: E402
+from tests.resonances.analysis.builders import make, make_energy, make_episode, make_geometry  # noqa: E402
 from tests.resonances.plotting.test_verdict_text_roles import _kinematic  # noqa: E402
 
 S = settings_from_config()
@@ -62,28 +61,6 @@ def _wave(episode_id, **fields):
 
 
 # --------------------------------------------------------------------------------------------- B2: forced (strength)
-
-
-def test_b2_a_5s_row_names_its_strength_marks_and_no_driver():
-    """g11-1 A (2012 KL9): the two accepted runs of a 5s row are drawn as forced (strength); the text names the ground
-    (the angle's own force cannot make that period) and says the driver is not identified. Under the minimal policy
-    (W34, 2897) (a) draws only what the status counts: the runs are not counted and (l) labels them."""
-    geometry = make_geometry(forced_waves=(_wave(0, by_strength=True), _wave(2, by_strength=True)))
-    v2 = {'policy': ''}
-    f = _facts(geometry=geometry, verdict=v2)
-    assert vt.strength_mark_sentence(f) == (
-        ' Its 2 accepted episodes are drawn as forced (strength): a period this angle’s force cannot make; the driver is ' 'not identified.'
-    )
-    one = _facts(geometry=make_geometry(forced_waves=(_wave(0, by_strength=True),)), verdict=v2)
-    assert vt.strength_mark_sentence(one).startswith(' Its accepted episode is drawn as forced (strength)')
-    assert vt.strength_mark_sentence(_facts(geometry=make_geometry(), verdict=v2)) == ''
-    minimal = {'policy': 'minimal', 'counted_episode_ids': ''}
-    assert vt.strength_mark_sentence(_facts(geometry=geometry, verdict=minimal)) == (
-        ' Its 2 accepted runs are not counted (not drawn on (a); (l) labels them forced (strength)): a period this angle’s '
-        'force cannot make; the driver is not identified.'
-    )
-    one = _facts(geometry=make_geometry(forced_waves=(_wave(0, by_strength=True),)), verdict=minimal)
-    assert vt.strength_mark_sentence(one).startswith(' Its accepted run is not counted (not drawn on (a); (l) labels it ')
 
 
 def test_b2_b6b_the_figure_labels_and_the_episode_lines_name_the_mark():
@@ -191,7 +168,6 @@ def test_b6c_g5w_reads_the_half_swing_in_the_well_and_the_orbital_period():
     assert vt.shape_rule_ids(f) == ('G5w',)
     assert vt.shown_rule(f) == 'G5w'
     assert vt._insufficient_text(f, 'arc').endswith('(cutoff 569 yr = 1.5 P_orb) → insufficient_time (arc)')
-    assert 'turns back twice' in vt.mmr_angle_sentence(f)
     synodic = _facts({**SLOW_SWING_523683, 'flt_cutoff_binding': 'synodic'}, verdict)
     assert vt.orbit_period_clause(synodic) == ''
 
@@ -283,35 +259,6 @@ def test_b8_panel_e_redraws_the_law_the_decision_measured():
     assert max(fit[2] for fit in fits) == pytest.approx(law.scale_max, abs=1e-12)
 
 
-GQ107_LINES = {  # 2005 GQ107 40M-57 (B8b; rsp_line_*)
-    'rsp_line_ids': '57 P_M = P_conj; 7M-10',
-    'rsp_line_period_yr': 107.127,
-    'rsp_line_share': 0.9326,
-    'rsp_line_share_all': 0.9317,
-    'rec_rule': '5a*',
-}
-
-
-def test_b8b_the_line_share_is_said_only_where_the_force_law_fails():
-    """g07-3 A: GQ107's ȧ is mostly the 107-yr line 57 P_M (93 %); 59358's 2.14-kyr line 13 P_N carries 44 %, the
-    lattice 83 %; nothing where L4 passes, at a kinematic leaf, or for the libration's own period."""
-    failed = {'checks': {**_kinematic()[0].verdict.checks, 'check_mmr_a_response': CheckValue.FAIL}}
-    f = _facts(GQ107_LINES, failed)
-    assert vt.line_share_line(f) == 'ȧ’s oscillation is mostly the 107 yr line 57 P_M = P_conj (7M-10): 93% of its variance.'
-    lines_59358 = {
-        'rsp_line_ids': '13 P_N = P_conj; 3N-5; 5N-8', 'rsp_line_period_yr': 2142.17, 'rsp_line_share': 0.4401,
-        'rsp_line_share_all': 0.8287, 'rec_rule': '5d/6',
-    }  # fmt: skip
-    assert vt.line_share_line(_facts(lines_59358, failed)) == (
-        'ȧ’s oscillation is mostly the 2.14 kyr line 13 P_N = P_conj (3N-5; 5N-8): 44% of its variance, the lattice lines ' 'together 83%.'
-    )
-    passed = {'checks': {**_kinematic()[0].verdict.checks, 'check_mmr_a_response': CheckValue.PASS}}
-    assert vt.line_share_line(_facts(GQ107_LINES, passed)) == ''
-    assert vt.line_share_line(_facts({**GQ107_LINES, 'rsp_line_ids': 'P_lib'}, failed)) == ''
-    assert 'Radial overlap' not in vt.line_share_line(f)  # E6's line is the orbit slot's, not repeated
-    assert vt.line_share_line(_facts({**GQ107_LINES, 'rec_rule': '3'}, failed)) == ''  # a kinematic leaf: a carries no swing
-
-
 # --------------------------------------------------------------------------------------------- B9: 5x, A-FW, EH16
 
 
@@ -328,50 +275,13 @@ def test_b9_5x_is_a_diagnostic_not_an_objection():
     assert '5x' in vt.BRANCH_LEAVES
 
 
-def test_b9_the_extension_serves_the_late_regime():
-    """g08-5 B (2003 TX9): L4 has too few windows; the last episode #0 reaches the end (from 2.21 kyr, P 3.14 kyr), so
-    extend gives it 2 force windows of 3.5 P; the failed potential stays measured."""
-    late = make_episode(episode_id=0, tp_times_yr=np.linspace(2210.0, 17910.0, 11), period_med_yr=3140.0, coverage_end_gap_p=0.1)
-    geometry = make_geometry(runs=[late], window=(0.0, 20000.0))
-    response = make_response(a_response=CheckValue.NOT_MEASURED, windows=[])
-    checks = {**_kinematic()[0].verdict.checks, 'check_mmr_potential': CheckValue.FAIL, 'check_mmr_identity': CheckValue.PASS}
-    verdict = {'status': 'uncertain', 'rules_fired': ['extend_length_limited'], 'extend_to_years': 30000.0, 'checks': checks}
-    f = _facts({'rec_rule': '5e'}, verdict, geometry=geometry, response=response)
-    assert vt.extension_line(f) == (
-        'The extension serves the late regime: 2 force windows of 3.5 P for #0 (from 2.21 kyr, P 3.14 kyr); the failed '
-        'potential stays measured, a longer record does not remove it.'
-    )
-    both = {**verdict, 'checks': {**checks, 'check_mmr_identity': CheckValue.FAIL}}
-    assert vt.extension_line(_facts({'rec_rule': '5e'}, both, geometry=geometry, response=response)).endswith(
-        'the failed identity and potential stay measured, a longer record does not remove them.'
-    )
-    assert vt.extension_line(_facts({'rec_rule': '5n'}, verdict, geometry=geometry, response=response)) == ''
-    assert vt.extension_line(_facts({'rec_rule': '5e'}, {**verdict, 'rules_fired': []}, geometry=geometry, response=response)) == ''
-
-
-def test_b9_eh16_a_suspected_kinematic_swing_with_its_shares():
-    """g06-6 A (2003 EH16: kin_swing_share 0.768 > kin_lambda_swing_share 0.457) on the synthetic's −ϖ term: a
-    suspicion with the shares, never on a resolved status or where the share does not exceed the λ part."""
-    checks = {**_kinematic()[0].verdict.checks, 'check_mmr_a_response': CheckValue.NOT_MEASURED}
-    row = {'kin_swing_share': 0.768, 'kin_lambda_swing_share': 0.457}
-    f = _facts(row, {'status': 'uncertain', 'checks': checks})
-    assert vt.kinematic_suspicion_line(f).startswith(
-        'Suspected kinematic: over the episode −ϖ spans 0.77 of σ’s swing, the λ part 0.46; the force law that would '
-        'tell it from a resonance is not measured ('
-    )
-    assert vt.kinematic_suspicion_line(_facts({**row, 'kin_swing_share': 0.3}, {'status': 'uncertain', 'checks': checks})) == ''
-    assert vt.kinematic_suspicion_line(_facts(row, {'status': 'transient', 'checks': checks})) == ''
-
-
 # --------------------------------------------------------------------------------------------- B7, B1
 
 
-def test_b7_the_slow_scale_cap_names_what_decides():
-    """g07-4 A (385533): the cap slow_scale_provisional is a LIMIT at medium whose other reading says a record of
-    5.25 P decides."""
+def test_b7_the_slow_scale_cap_is_a_limit():
+    """g07-4 A (385533): the cap slow_scale_provisional is a LIMIT at medium."""
     (row,) = vt.cap_rows(['slow_scale_provisional'], 'medium')
     assert row.is_limit and row.short_name == 'slow scale, own force untested'
-    assert 'a record ≥ 5.25 P decides' in row.alternative
 
 
 def test_b1_385266_a_forced_wave_from_its_driver_never_a_capture():
@@ -410,14 +320,9 @@ def test_59358_panel_e_draws_the_direct_law():
 
 
 @pytest.mark.benchmark
-def test_523683_and_82831_words():
-    """523683: decided at G5w with the orbital period; 82831 13M-24: its early episode is never called a capture."""
+def test_523683_words():
+    """523683: decided at G5w with the orbital period."""
     analysis, _ = _bench('mmr2__523683__2U-9+0+7')
-    text = vt.explain_mmr(analysis, S, {**analysis.numbers_row(), **analysis.summary_row()}, analysis.episode_rows())
-    assert text.decided_at.startswith('Decided at G5w') and 'orbital period' in text.steps[0].outcome
-    analysis, _ = _bench('mmr2__82831__13M-24+0+11')
-    text = vt.explain_mmr(analysis, S, {**analysis.numbers_row(), **analysis.summary_row()}, analysis.episode_rows())
-    # W34: the policy's 'flags:' bullet lists the tree's former cap exit_and_capture by its code (a flag, not a claim
-    # of capture); the prose bullets still never call the early episode a capture
-    assert any('exit_and_capture' in bullet.text for bullet in text.bullets if bullet.slot == vt.SLOT_POLICY)
-    assert not any('captur' in bullet.text for bullet in text.bullets if bullet.slot != vt.SLOT_POLICY)
+    row = {**analysis.numbers_row(), **analysis.summary_row()}
+    text = vt.explain_mmr(analysis, S, row, analysis.episode_rows())
+    assert vt.shown_rule(vt.MMRFacts(analysis, S, row, analysis.episode_rows())) == 'G5w' and 'orbital period' in text.steps[0].outcome

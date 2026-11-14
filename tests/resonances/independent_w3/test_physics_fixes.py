@@ -251,16 +251,12 @@ def test_one_harmonic_quadrature_route_matches_closed_form():
     assert pendulum.separatrix_action(pot) == pytest.approx(8 * omega / np.pi, rel=1e-6)
     assert pendulum.action_ratio_in_potential(pot, 0.5) == pytest.approx(pendulum.action_ratio(0.5), rel=1e-6)
     c = -0.04
-    assert pendulum.half_width_in_potential(pot, c) == pytest.approx(2 * omega / abs(c), rel=1e-6)
     assert pendulum.half_width(omega, c) == pytest.approx(2 * omega / abs(c), rel=1e-12)
 
 
-def test_half_width_cos2_is_not_two_sqrt_curvature():
-    # V = -cos(2 s): V'' at the well = 4 -> the cosine formula 2 sqrt(V'')/|c| = 4/|c|,
-    # but the separatrix rate is sqrt(2 (E_sep - V_min)) = sqrt(2 * 2) = 2: half-width 2/|c|.
+def test_separatrix_of_cos2_is_its_own_well():
+    # V = -cos(2 s): the well about 0 is bounded by the maxima at -pi/2 and +pi/2, E_sep = 1
     pot = pendulum.potential_from_coefficients([0.0, -1.0], [0.0, 0.0])
-    c = 0.5
-    assert pendulum.half_width_in_potential(pot, c) == pytest.approx(2 / c, rel=1e-6)
     left, right, e_sep = pendulum.well_separatrix(pot)
     assert e_sep == pytest.approx(1.0, abs=1e-9)
     assert right - left == pytest.approx(np.pi, abs=1e-6)
@@ -367,16 +363,6 @@ def test_varpi_rate_range_degenerate_cases():
     assert np.isnan(lo) and np.isnan(hi)
 
 
-def test_varpi_rate_modulation_zero_e_min_no_division_by_zero():
-    # e = |0.1 e^{i th} + 0.1| reaches 0: e_max = .2, e_min = 0 -> e_free = e_forced = .1, rate unbounded.
-    e = np.array([0.2, 0.15, 0.1, 0.0, 0.1, 0.2])
-    g, g5 = 2e-4, 2e-5
-    e_free, e_forced, lo, hi, period = kinematics.varpi_rate_modulation(e, g, g5)
-    assert e_free == pytest.approx(0.1) and e_forced == pytest.approx(0.1)
-    assert lo == -np.inf and hi == np.inf
-    assert period == pytest.approx(2 * np.pi / 1.8e-4, rel=1e-12)
-
-
 ARCSEC = np.pi / 180 / 3600
 G5 = 4.2575 * ARCSEC  # rad/yr
 G_FREE = 40.0 * ARCSEC  # rad/yr; relative period 2 pi / (35.7425") = 36 260 yr
@@ -449,7 +435,7 @@ def test_three_turning_points_centre_not_measured():
     # PHYSICS-MATH §7: TPs [2, 0, 5.9] at [0, 500, 1000]: half-cycle midpoints 1 and 2.95, one full cycle.
     t = np.arange(0.0, 1001.0)
     tp = _turning_points([0, 500, 1000], [2.0, 0.0, 5.9])
-    ep = geometry.classify_run(0, tp, np.arange(3), t, (0.0, 1000.0), SETTINGS)
+    ep = geometry._classify_run(0, tp, np.arange(3), (t[0], t[-1]), SETTINGS, (0.0, 1000.0))
     assert ep.accepted  # the >= 3 TP rule stays (author)
     assert ep.centre_estimates == 1
     assert ep.centre_stationarity == 'not_measured'
@@ -458,7 +444,7 @@ def test_three_turning_points_centre_not_measured():
 def test_five_turning_points_stationary_centre_is_measured():
     t = np.arange(0.0, 2001.0)
     tp = _turning_points([0, 500, 1000, 1500, 2000], [1.0, -1.0, 1.05, -0.95, 1.0])
-    ep = geometry.classify_run(0, tp, np.arange(5), t, (0.0, 2000.0), SETTINGS)
+    ep = geometry._classify_run(0, tp, np.arange(5), (t[0], t[-1]), SETTINGS, (0.0, 2000.0))
     assert ep.accepted and ep.shape == EpisodeShape.STATIONARY
     assert ep.centre_estimates >= 2
     assert ep.centre_stationarity not in ('not_measured', '')
@@ -471,7 +457,7 @@ def test_drifting_centre_is_not_stationary():
     values = mids + 0.5 * np.where(np.arange(n) % 2 == 0, 1.0, -1.0)
     t = np.arange(0.0, 500.0 * (n - 1) + 1)
     tp = _turning_points(500.0 * np.arange(n), values)
-    ep = geometry.classify_run(0, tp, np.arange(n), t, (0.0, t[-1]), SETTINGS)
+    ep = geometry._classify_run(0, tp, np.arange(n), (t[0], t[-1]), SETTINGS, (0.0, t[-1]))
     assert not (ep.accepted and ep.shape == EpisodeShape.STATIONARY)
 
 

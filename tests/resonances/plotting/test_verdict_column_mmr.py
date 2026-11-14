@@ -70,8 +70,8 @@ def test_words_drop_codes():
 def test_power_of_ten_and_lists():
     assert vm._power(1000.0) == '10³' and vm._power(1e6) == '10⁶'
     assert vm._power(39.5) == '39.5'
-    assert vm._and(['force law']) == 'force law'
-    assert vm._and(['force law', 'potential', 'strength']) == 'force law, potential and strength'
+    assert vt.and_list(['force law']) == 'force law'
+    assert vt.and_list(['force law', 'potential', 'strength']) == 'force law, potential and strength'
 
 
 def test_split_answer_moves_a_closing_parenthesis_to_the_numbers():
@@ -516,7 +516,7 @@ def test_every_example_holds_the_contract(example):
         assert f'decided by {analysis.numbers_row().get("pol_decided_by") or analysis.summary_row()["pol_decided_by"]}' in footer
     else:
         assert column.decided_rule in footer  # the leaf or the angle rule the footer names
-    assert 'W28 tree: ' in footer
+    assert 'W28 tree' not in footer  # not printed (the author 2026-11-14)
     # Evidence in symbols, never the ledger's ASCII names; its grey numbers never nest parentheses in parentheses
     for block in column.evidence:
         for item in block.rows:
@@ -576,9 +576,9 @@ def test_79653_transient_high_with_the_strength_scale_grey():
     assert strength.icon == vc.QUIET
     assert strength.text.startswith('strength, order of magnitude: scale only (×39.5; an objection only from ×10³')
     assert strength.numbers == ''  # the ratio is in its words; the margin's band [0.1, 10] is no bar of a scale
-    # K2's near-threshold condition is named by what it compared (the force law's R², 0.382 < 0.4), tagged K2, under 3
-    (k2,) = [child for child in _step(column, '3').children if child.rule_id == 'K2']
-    assert 'a does not answer σ, force law R²' in k2.text and '(K2)' not in k2.text and k2.numbers.startswith('0.382 < 0.4')
+    # K2 is not measured here since 2026-11-14 (one force window, 1.4 independent center points < MMR_KIN_MIN_POINTS):
+    # no K2 condition under 3 (its display: test_k2_near_threshold_condition_is_named_by_what_it_compared)
+    assert not [child for child in _step(column, '3').children if child.rule_id == 'K2']
     assert any(c.startswith('The three-body strength is known only as the scale') for c in column.caveats)
     assert _decides(column).number == '6'
     # the filter guard withdrew the zone (Z, L2 not measured; flag episodes_in_separatrix_zone gone): step 6 follows
@@ -588,6 +588,15 @@ def test_79653_transient_high_with_the_strength_scale_grey():
     step = _decides(column)
     assert step.answer.endswith('zone not measured') and step.numbers == 'withdrawn by the filter guard'
     assert 'separatrix zone' not in step.answer and 'crosses' not in step.answer
+
+
+@pytest.mark.benchmark
+def test_k2_near_threshold_condition_is_named_by_what_it_compared():
+    """1998 QA62 1V-5M+3: K2 is measured (8 force windows) and stops at the centre correlation; its force law R² 0.361
+    is within the thin band of 0.4, so step 3 names that condition by what it compared, tagged K2."""
+    _, column = _real('mmr3__1998_QA62__1V-5M+3+0+0+1')
+    (k2,) = [child for child in _step(column, '3').children if child.rule_id == 'K2']
+    assert 'a does not answer σ, force law R²' in k2.text and '(K2)' not in k2.text and k2.numbers.startswith('0.361 < 0.4')
 
 
 @pytest.mark.benchmark

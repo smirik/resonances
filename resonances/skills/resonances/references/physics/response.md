@@ -225,9 +225,8 @@ orbit-averaged angle (`MMR_COORBITAL_EDGE_TURN_ORBITS` = 3 orbits) between two r
 All four hold → a transient of one leg (≤ medium); one fails → uncertain; both turns fail → no capture, but a near
 miss (the near-episode cap). Example: 1991 VG's horseshoe leg 552–613 yr follows the Earth's law (K 2.1, energy
 passes), but its turns read out/in 0.61 and 1.59: two kicks by Earth approaches, not reflections, so the verdict is
-`non_resonant / medium` (near-episode), as the author read it; 2023 OE5's leg 586–665 yr (out/in 0.84 and
-1.20, K 1.2, energy passes) is a transient. The measurement and the reasons for its windows are in
-`dev/decisions.md`.
+`non_resonant / medium` (near-episode); 2023 OE5's leg 586–665 yr (out/in 0.84 and
+1.20, K 1.2, energy passes) is a transient.
 
 ## Energy and potential
 
@@ -327,9 +326,12 @@ three mechanisms (`origin_detail`):
 - **planetary ripple** (`planet_ripple`): the period matches a planetary inequality that survived the filter.
 
 **Kinematic drift.** Some angles show episodes that are only a ripple on a drifting center. The angle is a kinematic
-drift (rule K2, `rec_rule` 3k2) when the force law fails under every law, the largest episode swing is below
+drift (rule K2, `rec_rule` 3k2) when the force law, measured on at least `MMR_FORCE_MIN_WINDOWS` = 2 windows, fails under every law, the largest episode swing is below
 `MMR_KIN_RIPPLE_SHARE_MAX` = 0.5 of the range of the slow center, and the rate of the slow center correlates
-($\ge 0.9$) with the rate of the angle's secular part $s = \sigma - \psi_\lambda$ low-passed at the same $W_c$. A
+($\ge 0.9$) with the rate of the angle's secular part $s = \sigma - \psi_\lambda$ low-passed at the same $W_c$,
+over at least `MMR_KIN_MIN_POINTS` = 3 independent points $(T - 2W_c)/W_c$. Over a fraction of $W_c$ two smooth
+curves correlate whatever they are: (485) Genua in 3J-1S-1, a clean libration after 42 kyr of circulation, read
+15 kyr of a 42-kyr $W_c$ and one force window, and is transient, not a drift. A
 kinematic libration whose center moves by more than `MMR_KIN_DRIFT_SHIFT_RATIO` = 1 amplitude over its episode is
 read the same way. *In the output:* `check_mmr_kinematic`, `kin_*`.
 
@@ -432,7 +434,7 @@ reference period of the $\dot a$ oscillation):
 The windows are `MMR_FORCE_WINDOW_CYCLES` = 3.5 periods long at a half-window step, and two of them must fit
 between the band-pass edges ($2P$ from either end): about $9.25P$ of record. A shorter record is searched again with
 windows of `MMR_OWNER_SHORT_WINDOW_CYCLES` = 2 periods, about $7P$ of record (flag `owner_short_windows`; a multiplet
-keeps its modulation-period windows; W33: 385533 7N-12 over $8.1P$ finds no owner among 17 candidates).
+keeps its modulation-period windows; 385533 7N-12 over $8.1P$ finds no owner among 17 candidates).
 When even those do not fit, a third stage trims less: the band-pass edge error falls to its interior level $0.75P$
 from an end (measured on the order-2 band $[P/2, 2P]$; `MMR_OWNER_FITTED_EDGE_TRIM` = 0.375 $fP$), and two windows are
 fitted to the span left, each between `MMR_OWNER_FITTED_MIN_CYCLES` = 1.5 and 2 periods: about $3.75P$ of record
@@ -501,7 +503,7 @@ sinusoid passes both fits like a pendulum, only its period tells it), and $x$ cl
 1.00, no turn). The row then keeps the tree's own reading of $\sigma$ with origin `joint` (detail `joint_capture`,
 `owner` = the other resonance, role `joint`; rule `both_resonances_confirmed`), when that reading claims the
 libration; another reading stands as it is. With one cycle the row is `uncertain / baseline_needed`, origin `joint`.
-The owner's own row is untouched. No benchmark row is confirmed (2026-11-01: 45 owner rows; the bounded $x$ of nine
+The owner's own row is untouched. No benchmark row is confirmed (45 owner rows; the bounded $x$ of nine
 of them has no turn but HW7's one).
 
 Otherwise it stays unresolved and caps the confidence at medium (2001 HW7: $\ddot x$ follows $2\omega$ but also

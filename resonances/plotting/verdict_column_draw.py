@@ -92,7 +92,6 @@ GRID_MIN_WIDTH = 2.4  # a number group is at least this wide (2 groups side by s
 GROWTH_STEP_IN = 0.1  # the growth is rounded up to this
 CHECK_ICON_X, CHECK_NUMBER_X, CHECK_TEXT_X = 0.06, 0.24, 0.42
 SUB_ICON_X, SUB_TEXT_X = 0.46, 0.64
-RULED = ('why', 'confidence', 'checks', 'evidence', 'numbers', 'footer')  # blocks with a rule above
 SPLITTABLE = ('checks', 'evidence', 'numbers')
 # the second sub-column always starts with the first of these that is shown (the author, 2026-11-05: Evidence at the top
 # right on every figure, so that figures read in batches): header to Checks fill the first, Evidence to the footer the second
@@ -843,7 +842,7 @@ def _numbers(m: Measure, column: vc.Column, width: float, fit: Fit) -> List[Unit
 
 def _footer(m: Measure, column: vc.Column, width: float) -> List[Unit]:
     c = Canvas(m, width, column.header.status)
-    # a short item ('W28 tree: resonant/high', 'leaf 5d/6') never breaks inside; 'docs:' never ends a line
+    # a short item ('status 2', 'leaf 5d/6') never breaks inside; 'docs:' never ends a line
     items = [vc.plain(item) for item in column.footer]
     items = [item.replace(' ', NBSP) if len(item) <= FOOTER_GLUE_CHARS else item.replace('docs: ', 'docs:' + NBSP, 1) for item in items]
     c.paragraph(font_runs(' · '.join(items), Font(SANS, 'normal', FOOTER_PT, FAINT)), 0.0, width, FOOTER_PT)
@@ -1023,26 +1022,24 @@ def fit_layout(
 
 @dataclass(frozen=True)
 class Prepared:
-    """A column measured before its figure exists (`prepare`): the column, the text it was built from (VerdictText)
-    and the plan to draw it with."""
+    """A column measured before its figure exists (`prepare`): the column and the plan to draw it with."""
 
     column: vc.Column
-    text: Any
     fit: ColumnFit
 
 
-def prepare(column: vc.Column, text: Any, layout: VerdictFigureLayout = LAYOUT_V1) -> Tuple[VerdictFigureLayout, Prepared]:
+def prepare(column: vc.Column, layout: VerdictFigureLayout = LAYOUT_V1) -> Tuple[VerdictFigureLayout, Prepared]:
     """The layout to build the figure on (`fit_layout`, decision D8) and the column ready for `draw_prepared`; both
     figures (`mmr_combined.draw_combined`, `secular_plots.draw_long_period_combined`) call it before the figure exists."""
     grown, fit = fit_layout(column, layout)
-    return grown, Prepared(column, text, fit)
+    return grown, Prepared(column, fit)
 
 
 def draw_prepared(fig, prepared: Prepared, layout: VerdictFigureLayout) -> Dict[str, Any]:
     """Draw a `prepare`d column on the figure built on the grown `layout`: `draw_column`'s statistics with the
-    `column` and the `text` it was built from."""
+    `column`."""
     stats = draw_column(fig, prepared.column, layout, prepared.fit)
-    stats['column'], stats['text'] = prepared.column, prepared.text
+    stats['column'] = prepared.column
     return stats
 
 

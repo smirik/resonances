@@ -239,7 +239,7 @@ shortest libration. Either case sets the flag `short_period_aliased`. How much o
 $\sigma_f$ and $a_f$ depends on their amplitude, which the record cannot measure. The folded lines move
 $\sigma_f$ little, but they enter $a_f$, and the checks that read $a$ (the identity and the force law). Hence:
 
-- the W28 tree caps every record with the flag at `medium` (cap `short_period_aliased`, in `v2_verdict`); the minimal
+- the full tree caps every record with the flag at `medium` (cap `short_period_aliased`, in `v2_verdict`); the minimal
   policy keeps it as a flag only ([Confidence](confidence.md#minimal-policy));
 - **except** a plain geometric circulation (reason `circulation` or `alias` with no forced-wave runs): it reads
   neither the identity nor the force law, so the flag stays and the cap does not apply

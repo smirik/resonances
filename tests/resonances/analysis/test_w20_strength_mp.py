@@ -23,6 +23,7 @@ from scipy.integrate import quad
 
 from resonances.resonance.analysis.ledger import Ledger
 from resonances.resonance.analysis.mmr import averaged_potential as av
+from tests.resonances.analysis.oracles import averaged_profile
 from resonances.resonance.analysis.mmr import decide, io
 from resonances.resonance.analysis.mmr import strength as st
 from resonances.resonance.analysis.mmr.coorbital import Orbit
@@ -86,7 +87,7 @@ def test_seven_to_two_matches_the_first_harmonic_of_the_double_profile():
     planet = _ellipse(A_JUPITER, 0.048, inc=0.0228, omega=0.25, node=1.75)
     phase = 5 * (0.4 + 0.2)  # sigma = 2 lambda_J - 7 lambda + 5 varpi
     harmonic = av.harmonic_amplitude_mp(body, planet, -7, 2, phase, _rule())
-    sigma, values = av.averaged_profile(body, planet, -7, 2, phase, 720)
+    sigma, values = averaged_profile(body, planet, -7, 2, phase, 720)
     first = np.fft.rfft(values)[1] / len(values)  # <D> = D0 + 2|c1| cos(sigma + arg c1) + ...
     assert abs(harmonic.curvature / (2 * abs(first)) - 1) < 1e-6
     assert abs(harmonic.mean / np.mean(values) - 1) < 1e-9

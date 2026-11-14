@@ -18,7 +18,6 @@ from resonances.resonance.analysis.ledger import Ledger, LedgerEntry, Margin, Op
 from resonances.resonance.analysis.settings import conventions, settings_from_config
 from resonances.resonance.analysis.verdict import (
     ALL_CHECKS,
-    MMR_CHECKS,
     SECULAR_CHECKS,
     ZLK_CHECKS,
     Action,
@@ -41,7 +40,6 @@ from resonances.resonance.analysis.verdict import (
     lower_confidence,
     split_list,
     status_code,
-    verdict_from_status_code,
 )
 
 PHYSICS = ('L4', 'Z', 'R0')  # SPEC §7.2: the decisive physics margins of an MMR verdict
@@ -49,10 +47,6 @@ PHYSICS = ('L4', 'Z', 'R0')  # SPEC §7.2: the decisive physics margins of an MM
 
 def mv(margin, value=None, cls=MarginClass.DECISIVE):
     return MarginValue(margin=margin, value=value, margin_class=cls)
-
-
-def no_cells():
-    return conf.ConfidenceCells()
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -101,135 +95,6 @@ def test_verdict_status_code_property_matches_function():
         reason=Reason.BASELINE_NEEDED,
     )
     assert v.status_code == -6
-
-
-# ---------------------------------------------------------------------------------------------------------------------
-# verdict_from_status_code: the secular / ZLK table of SPEC §5.7
-# ---------------------------------------------------------------------------------------------------------------------
-
-LEGACY_CODES = [2, 1, 0, -2, -3, -4, -5, -6, -9, -99]
-
-# code -> (status, angle_status, reason or None when type-dependent)
-SECTION_57 = {
-    2: (Status.RESONANT, AngleStatus.LIBRATION, Reason.DYNAMIC_LIBRATION),
-    1: (Status.TRANSIENT, AngleStatus.EPISODIC, Reason.DYNAMIC_EPISODE),
-    0: (Status.NON_RESONANT, AngleStatus.CIRCULATION, Reason.CIRCULATION),
-    -2: (Status.NON_RESONANT, AngleStatus.LIBRATION, Reason.KINEMATIC_LIBRATION),
-    -3: (Status.NEAR_SEPARATRIX, AngleStatus.NEAR_SEPARATRIX, Reason.SEPARATRIX_ZONE),
-    -4: (Status.UNCERTAIN, AngleStatus.INSUFFICIENT_TIME, Reason.BASELINE_NEEDED),
-    -5: (Status.NEAR_SEPARATRIX, AngleStatus.NEAR_SEPARATRIX, Reason.SEPARATRIX_ZONE),
-    -6: (Status.UNCERTAIN, AngleStatus.DRIFT, Reason.BASELINE_NEEDED),
-    -9: (Status.UNCERTAIN, AngleStatus.UNDEFINED, None),
-    -99: (Status.INVALID, AngleStatus.UNDEFINED, Reason.UNPHYSICAL),
-}
-
-
-@pytest.mark.parametrize('rtype', [ResonanceType.SECULAR, ResonanceType.LIDOV_KOZAI])
-@pytest.mark.parametrize('code', LEGACY_CODES)
-def test_legacy_code_translation_table(rtype, code):
-    v = verdict_from_status_code(code, rtype, confidence=Confidence.MEDIUM)
-    status, angle_status, reason = SECTION_57[code]
-    assert v.resonance_type == rtype
-    assert v.status == status
-    assert v.angle_status == angle_status
-    if reason is None:
-        expected = Reason.GATE_UNAVAILABLE if rtype == ResonanceType.LIDOV_KOZAI else Reason.UNUSABLE_SERIES
-        assert v.reason == expected
-    else:
-        assert v.reason == reason
-
-
-@pytest.mark.parametrize('rtype', [ResonanceType.SECULAR, ResonanceType.LIDOV_KOZAI, 'secular', 'lidov_kozai'])
-@pytest.mark.parametrize('code', LEGACY_CODES)
-def test_legacy_code_is_exact_inverse(rtype, code):
-    # API §2.4: verdict_from_status_code and status_code are inverses on {2, 1, 0, -2, -3, -4, -5, -6, -9, -99}.
-    v = verdict_from_status_code(code, rtype, confidence=Confidence.HIGH)
-    assert v.status_code == code
-    assert status_code(rtype, v.status, v.angle_status, v.reason, v.flags) == code
-
-
-def test_legacy_minus_two_is_kinematic_origin():
-    v = verdict_from_status_code(-2, ResonanceType.LIDOV_KOZAI, confidence=Confidence.HIGH)
-    assert v.libration_origin == LibrationOrigin.KINEMATIC
-
-
-def test_legacy_minus_four_is_arc():
-    v = verdict_from_status_code(-4, ResonanceType.SECULAR, confidence=Confidence.HIGH)
-    assert v.angle_subtype == AngleSubtype.ARC
-
-
-def test_legacy_minus_five_low_and_flag_minus_three_not():
-    # -5 and -3 share status/angle/reason; only the flag (and level low) keeps them apart.
-    v5 = verdict_from_status_code(-5, ResonanceType.SECULAR, confidence=Confidence.HIGH)
-    v3 = verdict_from_status_code(-3, ResonanceType.SECULAR, confidence=Confidence.HIGH)
-    assert v5.confidence == Confidence.LOW
-    assert Flag.PROBABLE_NEAR_SEPARATRIX in v5.flags
-    assert Flag.PROBABLE_NEAR_SEPARATRIX not in v3.flags
-
-
-def test_legacy_minus_two_and_minus_nine_never_merge():
-    # CLAUDE.md: -2 is a measurement, -9 the absence of one.
-    v2 = verdict_from_status_code(-2, ResonanceType.LIDOV_KOZAI, confidence=Confidence.HIGH)
-    v9 = verdict_from_status_code(-9, ResonanceType.LIDOV_KOZAI, confidence=Confidence.HIGH)
-    assert (v2.status, v2.reason) != (v9.status, v9.reason)
-    assert v2.status_code == -2 and v9.status_code == -9
-
-
-@pytest.mark.parametrize('code', [2, 1, 0, -2, -3])
-def test_legacy_confidence_uncalibrated_and_never_certain(code):
-    v = verdict_from_status_code(code, ResonanceType.SECULAR, confidence=Confidence.CERTAIN)
-    assert v.confidence != Confidence.CERTAIN
-    assert Flag.CONFIDENCE_UNCALIBRATED in v.flags
-
-
-def test_legacy_keeps_old_level():
-    v = verdict_from_status_code(2, ResonanceType.SECULAR, confidence='medium')
-    assert v.confidence == Confidence.MEDIUM
-
-
-@pytest.mark.parametrize('code', [-4, -6, -9, -99])
-def test_legacy_uncertain_and_invalid_have_no_level(code):
-    v = verdict_from_status_code(code, ResonanceType.LIDOV_KOZAI, confidence=Confidence.HIGH)
-    assert v.confidence == Confidence.NONE
-
-
-# SPEC §5.7, column action (2 and 1 "by confidence": high -> none per §5.6)
-SECTION_57_ACTION = {
-    2: Action.NONE,
-    1: Action.NONE,
-    0: Action.NONE,
-    -2: Action.NONE,
-    -4: Action.EXTEND,
-    -5: Action.REVIEW,
-    -6: Action.EXTEND,
-    -9: Action.EXTEND,
-    -99: Action.REVIEW,
-}
-
-
-@pytest.mark.parametrize('code', sorted(SECTION_57_ACTION))
-def test_legacy_action_table(code):
-    v = verdict_from_status_code(code, ResonanceType.SECULAR, confidence=Confidence.HIGH)
-    assert v.action == SECTION_57_ACTION[code]
-
-
-def test_legacy_minus_three_spot_check_at_medium():
-    v = verdict_from_status_code(-3, ResonanceType.SECULAR, confidence=Confidence.MEDIUM)
-    assert v.action == Action.SPOT_CHECK
-
-
-def test_legacy_checks_are_kept():
-    checks = {'check_zlk_free_omega': CheckValue.PASS, 'check_zlk_ei': CheckValue.NOT_MEASURED}
-    v = verdict_from_status_code(2, ResonanceType.LIDOV_KOZAI, confidence=Confidence.HIGH, checks=checks)
-    assert v.checks['check_zlk_free_omega'] == CheckValue.PASS
-    assert v.checks['check_zlk_ei'] == CheckValue.NOT_MEASURED
-
-
-@pytest.mark.parametrize('code', [-1, 3, -7, -100])
-def test_legacy_unknown_codes_refused(code):
-    # -1 is produced by no classifier and is refused; codes outside the old set do not exist either.
-    with pytest.raises((ValueError, KeyError)):
-        verdict_from_status_code(code, ResonanceType.SECULAR, confidence=Confidence.HIGH)
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -448,16 +313,6 @@ def test_flat_dict_roundtrip_subresonance_row():
     _assert_same_verdict(v, back)
     assert back.multiplet_status == Status.RESONANT
     assert back.status_code == 0
-
-
-def test_flat_dict_roundtrip_legacy_zlk_verdict():
-    for code in LEGACY_CODES:
-        v = verdict_from_status_code(code, ResonanceType.LIDOV_KOZAI, confidence=Confidence.HIGH)
-        back = Verdict.from_flat_dict(v.to_flat_dict())
-        assert back.status_code == code
-        row = v.to_flat_dict()
-        for name in MMR_CHECKS + SECULAR_CHECKS:
-            assert row[name] == ''
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -773,58 +628,28 @@ def certain_margins():
     return {**full_physics(), 'L1': mv(Margin.FULL, 9), 'L7': mv(Margin.FULL, 0.1)}
 
 
-def test_assess_certain_is_shown_without_a_cell():
+def test_assess_certain_is_shown_without_labels():
     # author 2026-10-16 (C2, decision 7): no minimum of labels, the level from the margins and caps is shown
-    a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', certain_margins(), [], [], PHYSICS, no_cells())
+    a = conf.assess(Status.RESONANT, certain_margins(), [], [], PHYSICS)
     assert a.confidence_raw == Confidence.CERTAIN
     assert a.confidence == Confidence.CERTAIN
-    assert a.cell is None and a.cell_fields() == {}
-
-
-def test_assess_reports_the_cell_and_never_changes_the_level():
-    # a cell with errors (2 of 4) is reported, the level stays what the margins give
-    record = conf.CellRecord(n_examples=4, n_errors=2, accuracy_low_95=0.15, accuracy_high_95=0.85)
-    cells = conf.ConfidenceCells({RESONANT_CELL: record}, 'abc')
-    a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', certain_margins(), [], [], PHYSICS, cells)
-    assert a.confidence == Confidence.CERTAIN and a.cell == record
-    assert a.cell_fields() == dict(cell_n_examples=4, cell_n_errors=2, cell_accuracy_low_95=0.15, cell_accuracy_high_95=0.85)
-    margins = {**certain_margins(), 'L2': mv(Margin.THIN)}
-    a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', margins, [], [], PHYSICS, cells)
-    assert a.confidence == Confidence.HIGH and 'L2' in a.thin_margins and a.cell == record
-
-
-def test_assess_cell_must_match_all_three_fields():
-    cells = conf.ConfidenceCells({RESONANT_CELL: conf.CellRecord(100, 0)}, 'abc')
-    a = conf.assess(Status.RESONANT, 'libration', 'dynamic_episode', certain_margins(), [], [], PHYSICS, cells)
-    assert a.cell is None
 
 
 def test_assess_ledger_u_margins_make_high():
-    a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', certain_margins(), [], ['U:l1_tp'], PHYSICS, no_cells())
+    a = conf.assess(Status.RESONANT, certain_margins(), [], ['U:l1_tp'], PHYSICS)
     assert a.confidence_raw == Confidence.HIGH
     assert 'U:l1_tp' in a.thin_margins
 
 
 @pytest.mark.parametrize('status', [Status.UNCERTAIN, Status.INVALID])
 def test_assess_uncertain_invalid_no_level(status):
-    cells = conf.ConfidenceCells({(str(status), 'insufficient_time', 'baseline_needed'): conf.CellRecord(5, 0)}, 'abc')
-    a = conf.assess(status, 'insufficient_time', 'baseline_needed', certain_margins(), [], [], PHYSICS, cells)
+    a = conf.assess(status, certain_margins(), [], [], PHYSICS)
     assert a.confidence == Confidence.NONE
     assert a.confidence_raw == Confidence.NONE
-    assert a.cell is None
 
 
 def test_assess_cap_lowers_final_and_is_listed():
-    a = conf.assess(
-        Status.TRANSIENT,
-        'episodic',
-        'dynamic_episode',
-        certain_margins(),
-        [conf.Cap.EXIT_SUSPECTED],
-        [],
-        PHYSICS,
-        no_cells(),
-    )
+    a = conf.assess(Status.TRANSIENT, certain_margins(), [conf.Cap.EXIT_SUSPECTED], [], PHYSICS)
     assert a.confidence == Confidence.MEDIUM
     assert 'exit_suspected' in a.caps
     assert a.confidence_raw in (Confidence.CERTAIN, Confidence.HIGH)
@@ -832,7 +657,7 @@ def test_assess_cap_lowers_final_and_is_listed():
 
 def test_assess_support_fail_plus_onset_cap_is_low():
     margins = {**certain_margins(), 'L5': mv(Margin.FAIL, 2.0, MarginClass.SUPPORT)}
-    a = conf.assess(Status.TRANSIENT, 'episodic', 'dynamic_episode', margins, ['onset_failed'], [], PHYSICS, no_cells())
+    a = conf.assess(Status.TRANSIENT, margins, ['onset_failed'], [], PHYSICS)
     assert a.confidence_raw == Confidence.MEDIUM
     assert a.confidence == Confidence.LOW
     assert a.failed_support == ['L5']
@@ -844,7 +669,7 @@ def test_assess_two_support_fails_low():
         'L5': mv(Margin.FAIL, 2.0, MarginClass.SUPPORT),
         'C3': mv(Margin.FAIL, None, MarginClass.SUPPORT),
     }
-    a = conf.assess(Status.NON_RESONANT, 'circulation', 'circulation', margins, [], [], PHYSICS, no_cells())
+    a = conf.assess(Status.NON_RESONANT, margins, [], [], PHYSICS)
     assert a.confidence == Confidence.LOW
     assert sorted(a.failed_support) == ['C3', 'L5']
 
@@ -852,13 +677,13 @@ def test_assess_two_support_fails_low():
 def test_assess_all_physics_not_measured_at_most_medium():
     margins = {name: mv(Margin.NOT_MEASURED) for name in PHYSICS}
     margins['L1'] = mv(Margin.FULL, 9)
-    a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', margins, [], [], PHYSICS, no_cells())
+    a = conf.assess(Status.RESONANT, margins, [], [], PHYSICS)
     assert a.confidence == Confidence.MEDIUM
 
 
 def test_assess_one_physics_not_measured_stays_high():
     margins = {**certain_margins(), 'L4': mv(Margin.NOT_MEASURED)}
-    a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', margins, [], [], PHYSICS, no_cells())
+    a = conf.assess(Status.RESONANT, margins, [], [], PHYSICS)
     assert a.confidence == Confidence.HIGH
     assert 'L4' in a.thin_margins
 
@@ -896,7 +721,6 @@ def test_load_cells_reads_every_cell(tmp_path):
     assert loaded.records[('non_resonant', 'circulation', 'circulation')] == conf.CellRecord(101, 1, 0.946, 0.9983)
     empty = loaded.records[('transient', 'episodic', 'dynamic_episode')]
     assert (empty.n_examples, empty.n_errors) == (0, 0) and math.isnan(empty.accuracy_low_95)
-    assert empty.verdict_fields() == dict(cell_n_examples=0, cell_n_errors=0, cell_accuracy_low_95=None, cell_accuracy_high_95=None)
     assert conf.load_cells(str(path)).records == loaded.records  # the same file read by a string path
 
 
@@ -929,12 +753,3 @@ def test_cell_of_is_plain_strings():
     assert got == RESONANT_CELL
     assert all(type(x) is str for x in got)
     assert conf.cell_of('transient', 'episodic', 'dynamic_episode') == ('transient', 'episodic', 'dynamic_episode')
-
-
-def test_assess_with_loaded_cells_end_to_end(tmp_path):
-    path = tmp_path / 'cells.json'
-    write_cells(path, [cell('resonant', 'libration', 'dynamic_libration', 100, 1, [0.946, 0.998])])
-    a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', certain_margins(), [], [], PHYSICS, conf.load_cells(path))
-    # one error in the cell no longer removes certain: the counts are reported only
-    assert a.confidence == Confidence.CERTAIN
-    assert (a.cell.n_examples, a.cell.n_errors) == (100, 1)

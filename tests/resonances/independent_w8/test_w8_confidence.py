@@ -1,10 +1,11 @@
 """Independent tests of W8 confidence: the level without a calibration gate, the calibration columns, the orbit type,
-the subresonance degree from the catalogue, and the explanation text of the right column.
+the subresonance degree from the catalogue, and the synthetic pendulum records the classifier reads (their explanation
+text in the old right column was removed with it, 2026-11-14).
 
 Expected values are derived here, not read from the code: the level rule and the caps from docs/physics/confidence.md,
 the Wilson interval from its formula (Wilson 1927), the orbit types from the regimes of synthetic angles, the member
-counts by brute force over the d'Alembert rule, and the explanation from synthetic pendulum records whose episodes and
-periods are known by construction.
+counts by brute force over the d'Alembert rule, and the synthetic pendulum records' episodes and periods by
+construction.
 """
 
 import dataclasses
@@ -12,7 +13,6 @@ import hashlib
 import itertools
 import json
 import math
-import re
 
 import numpy as np
 import pytest
@@ -38,7 +38,6 @@ from resonances.resonance.analysis.verdict import (
     Status,
     Verdict,
 )
-from resonances.plotting.verdict_text import MMRFacts, explain_mmr, force_windows_text
 
 TWO_PI = 2 * np.pi
 Z95 = 1.959963984540054
@@ -154,9 +153,8 @@ def empty_cell_file(tmp_path, status='resonant', angle='libration', reason='dyna
 
 
 class TestAssessWithoutGate:
-    def test_certain_shown_with_no_labels_in_the_cell(self, tmp_path):
-        cells = conf.load_cells(empty_cell_file(tmp_path, n=0))
-        a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', margins(), [], [], PHYSICS, cells)
+    def test_certain_shown(self, tmp_path):
+        a = conf.assess(Status.RESONANT, margins(), [], [], PHYSICS)
         assert a.confidence == Confidence.CERTAIN
         assert a.confidence_raw == Confidence.CERTAIN
         assert not hasattr(a, 'flags')
@@ -164,54 +162,33 @@ class TestAssessWithoutGate:
     def test_certain_shown_with_an_empty_cells_file(self, tmp_path):
         cells = conf.load_cells(tmp_path / 'missing.json')
         assert len(cells.records) == 0
-        a = conf.assess(Status.NON_RESONANT, 'circulation', 'circulation', margins(), [], [], PHYSICS, cells)
+        a = conf.assess(Status.NON_RESONANT, margins(), [], [], PHYSICS)
         assert a.confidence == Confidence.CERTAIN
 
-    def test_high_shown_with_errors_in_the_cell(self, tmp_path):
-        # 2 errors in 4: the old gate (max errors) would have withheld 'high'; the level must not care.
-        cells = conf.load_cells(empty_cell_file(tmp_path, 'transient', 'episodic', 'dynamic_episode', 4, 2))
+    def test_high_shown_with_a_thin_margin(self, tmp_path):
         m = margins(L2=(Margin.THIN, MarginClass.DECISIVE))
-        a = conf.assess(Status.TRANSIENT, 'episodic', 'dynamic_episode', m, [], [], PHYSICS, cells)
+        a = conf.assess(Status.TRANSIENT, m, [], [], PHYSICS)
         assert a.confidence == Confidence.HIGH
-        assert a.cell is not None and a.cell.n_examples == 4 and a.cell.n_errors == 2
-        low, high = wilson(2, 4)
-        assert a.cell.accuracy_low_95 == pytest.approx(low, abs=1e-9)
-        assert a.cell.accuracy_high_95 == pytest.approx(high, abs=1e-9)
 
     def test_ledger_thin_item_gives_high(self, tmp_path):
-        cells = conf.load_cells(empty_cell_file(tmp_path))
-        a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', margins(), [], ['U:some_threshold'], PHYSICS, cells)
+        a = conf.assess(Status.RESONANT, margins(), [], ['U:some_threshold'], PHYSICS)
         assert a.confidence == Confidence.HIGH
         assert 'U:some_threshold' in a.thin_margins
 
     def test_caps_lower_the_shown_level_only(self, tmp_path):
-        cells = conf.load_cells(empty_cell_file(tmp_path))
-        a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', margins(), ['exit_suspected'], [], PHYSICS, cells)
+        a = conf.assess(Status.RESONANT, margins(), ['exit_suspected'], [], PHYSICS)
         assert a.confidence_raw == Confidence.CERTAIN
         assert a.confidence == Confidence.MEDIUM
 
     def test_no_physics_measured_at_most_medium(self, tmp_path):
-        cells = conf.load_cells(empty_cell_file(tmp_path))
         m = margins(**{k: (Margin.NOT_MEASURED, MarginClass.DECISIVE) for k in PHYSICS})
-        a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', m, [], [], PHYSICS, cells)
+        a = conf.assess(Status.RESONANT, m, [], [], PHYSICS)
         assert a.confidence in (Confidence.MEDIUM, Confidence.LOW)
 
     @pytest.mark.parametrize('status', [Status.UNCERTAIN, Status.INVALID])
-    def test_uncertain_and_invalid_have_no_level_and_no_cell(self, tmp_path, status):
-        cells = conf.load_cells(empty_cell_file(tmp_path, status=str(status), angle='drift', reason='x', n=10))
-        a = conf.assess(status, 'drift', 'x', margins(), [], [], PHYSICS, cells)
+    def test_uncertain_and_invalid_have_no_level(self, tmp_path, status):
+        a = conf.assess(status, margins(), [], [], PHYSICS)
         assert a.confidence == Confidence.NONE and a.confidence_raw == Confidence.NONE
-        assert a.cell is None
-        assert a.cell_fields() == {}
-
-    def test_cell_fields_are_the_verdict_columns(self, tmp_path):
-        cells = conf.load_cells(empty_cell_file(tmp_path, n=24, err=0))
-        a = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', margins(), [], [], PHYSICS, cells)
-        f = a.cell_fields()
-        assert set(f) == {'cell_n_examples', 'cell_n_errors', 'cell_accuracy_low_95', 'cell_accuracy_high_95'}
-        assert f['cell_n_examples'] == 24 and f['cell_n_errors'] == 0
-        assert f['cell_accuracy_low_95'] == pytest.approx(0.8620, abs=1e-4)  # Wilson by hand: 24/24 -> 1/(1 + z^2/24)
-        assert f['cell_accuracy_high_95'] == pytest.approx(1.0, abs=1e-9)
 
 
 class TestCellsFile:
@@ -760,26 +737,9 @@ def analysed(kind, settings):
         an = analyse_mmr(_record(kind), settings)
         row = {**an.summary_row(), **an.numbers_row()}
         episodes = an.episode_rows()
-        _CACHE[kind] = (an, row, episodes, explain_mmr(an, settings, row, episodes))
+        _CACHE[kind] = (an, row, episodes)
     return _CACHE[kind]
 
-
-def all_text(vt):
-    parts = [vt.badge, vt.subtitle, vt.arithmetic, *vt.sentences, *vt.info]
-    parts += [f'{s.title} {s.outcome}' for s in vt.steps]
-    parts += [f'{c.name} {c.detail} {c.need} {c.counts} {c.note} {c.short}' for c in vt.checks]
-    return '\n'.join(str(p) for p in parts)
-
-
-HEADS = {
-    'resonant': 'Resonant',
-    'transient': 'Transient',
-    'near_separatrix': 'Near-separatrix',
-    'non_resonant': 'Non-resonant',
-    'uncertain': 'Uncertain',
-    'invalid': 'Invalid',
-}
-BADGES = {k: v.upper() for k, v in HEADS.items()}
 
 STATUS_CASES = [
     ('resonant', Status.RESONANT),
@@ -840,13 +800,13 @@ class TestSyntheticOrbitType:
         assert analysed(kind, settings)[0].verdict.orbit_type == ''
 
     def test_summary_column(self, settings):
-        _, row, _, _ = analysed('resonant', settings)
+        _, row, _ = analysed('resonant', settings)
         assert row['orbit_type'] == 'interior, symmetric libration about 0°'
 
 
 class TestCalibrationInTheVerdict:
     def test_resonant_cell(self, settings):
-        an, row, _, vt = analysed('resonant', settings)
+        an, row, _ = analysed('resonant', settings)
         raw = json.loads(conf.PACKAGE_CELLS.read_text())
         cell = next(
             c for c in raw['cells'] if (c['status'], c['angle_status'], c['reason']) == ('resonant', 'libration', 'dynamic_libration')
@@ -854,117 +814,11 @@ class TestCalibrationInTheVerdict:
         assert cell['n_examples'] > 0  # the tree's cell holds author labels
         assert an.verdict.v2_verdict.startswith('resonant/') and '/dynamic_libration/' in an.verdict.v2_verdict
         # W34: the minimal policy blanks the cell columns (the level is its own, not the tree's calibrated one;
-        # docs/output.md, the policy columns) and the text cites no cell; was the cell's n, errors and Wilson interval
+        # docs/output.md, the policy columns); was the cell's n, errors and Wilson interval
         assert [row[k] for k in ('cell_n_examples', 'cell_n_errors', 'cell_accuracy_low_95', 'cell_accuracy_high_95')] == [None] * 4
-        assert 'author-labelled' not in all_text(vt)
 
     @pytest.mark.parametrize('kind', ['uncertain', 'invalid'])
     def test_no_cell_without_a_level(self, settings, kind):
-        _, row, _, vt = analysed(kind, settings)
+        _, row, _ = analysed(kind, settings)
         assert row['confidence'] == ''
         assert row['cell_n_examples'] is None
-        assert 'author-labelled' not in all_text(vt)
-
-
-class TestExplanationWords:
-    @pytest.mark.parametrize('kind, status', STATUS_CASES)
-    def test_badge_names_the_status_once(self, settings, kind, status):
-        an, _, _, vt = analysed(kind, settings)
-        badge = vt.badge
-        word = BADGES[str(status)]
-        assert badge.startswith(word)
-        # once in capitals; the angle_status follows in lower case even when it repeats the status (author, 10-17)
-        assert badge.count(word) == 1
-        assert badge.split(' · ')[1].split(' (')[0] == str(an.verdict.angle_status)
-        for other, other_word in BADGES.items():
-            if other != str(status) and other_word not in word:
-                assert not re.search(rf'(?<![A-Z-]){re.escape(other_word)}', badge), badge
-
-    @pytest.mark.parametrize('kind, status', STATUS_CASES)
-    def test_status_sentence(self, settings, kind, status):
-        _, _, _, vt = analysed(kind, settings)
-        head = HEADS[str(status)]
-        assert any(s.startswith(head + ':') for s in vt.sentences), vt.sentences
-
-    @pytest.mark.parametrize('kind, status', STATUS_CASES)
-    def test_confidence_word(self, settings, kind, status):
-        an, _, _, vt = analysed(kind, settings)
-        level = str(an.verdict.confidence)
-        if status in (Status.UNCERTAIN, Status.INVALID):
-            assert level == ''
-            for word in ('CERTAIN', 'HIGH', 'MEDIUM', 'LOW'):
-                assert not re.search(rf'\b{word}\b', vt.badge), vt.badge
-        else:
-            assert vt.badge.endswith(level.upper())
-            assert any(s.startswith(level.capitalize()) for s in vt.sentences), vt.sentences
-
-    def test_transient_ends_in_circulation(self, settings):
-        an, _, _, vt = analysed('transient_one', settings)
-        assert an.verdict.final_regime == 'circulation'
-        assert vt.ends == 'ends: circulation' and 'ends:' not in vt.badge
-        assert 'to the end σ circulates' in vt.sentences[0]  # the regime in plain words (W20 round F)
-
-    def test_uncertain_asks_for_a_longer_record(self, settings):
-        _, _, _, vt = analysed('uncertain', settings)
-        assert 'too short' in ' '.join(vt.sentences)
-        assert any(s.startswith('Action: extend') for s in vt.sentences)
-
-
-class TestEpisodeWording:
-    @pytest.mark.parametrize('kind', ['resonant', 'short800', 'short1000'])
-    def test_no_episode_when_one_covers_the_record(self, settings, kind):
-        an, _, episodes, vt = analysed(kind, settings)
-        accepted = [r for r in episodes if r['accepted']]
-        assert an.verdict.status == Status.RESONANT and len(accepted) == 1
-        assert 'whole record' in vt.sentences[0]
-        assert 'episode' not in all_text(vt).lower()
-
-    def test_one_partial_episode_is_not_several(self, settings):
-        _, _, _, vt = analysed('transient_one', settings)
-        assert 'separate episodes' not in ' '.join(vt.sentences)
-        assert 'whole record' not in vt.sentences[0]
-
-    def test_two_episodes_are_named(self, settings):
-        _, _, _, vt = analysed('transient_two', settings)
-        assert '2 separate episodes' in vt.sentences[0]
-
-
-# 'of one force window' when the stretch is shorter than one window; else against the span of the windows the test
-# needs ('spanned by 2 force windows of 3.5 cycles (step 0.5 window)', integration W9: TEST-DISPUTES.md)
-CYCLES = re.compile(
-    r'lasts ([\d.]+) (yr|kyr|Myr) = ([\d.]+) cycles? < ([\d.]+) '
-    r'(?:of one force window|spanned by \d+ force windows of [\d.]+ cycles \(step [\d.]+ window\)) '
-    r'\(in cycles of the mean cycle period P_cyc ([\d.]+) (yr|kyr)\)'
-)
-UNIT = {'yr': 1.0, 'kyr': 1e3, 'Myr': 1e6}
-
-
-class TestCyclesArithmetic:
-    """'lasts T = N cycles < 3.5 of one force window (cycles of P_cyc P)': N = T / P_cyc, T the libration's duration."""
-
-    @pytest.mark.parametrize('kind', ['short800', 'short1000', 'short1150'])
-    def test_cycles_equal_duration_over_period(self, settings, kind):
-        an, row, episodes, vt = analysed(kind, settings)
-        accepted = [r for r in episodes if r['accepted']]
-        longest = max(accepted, key=lambda r: r['t_end_yr'] - r['t_start_yr'])
-        duration = longest['t_end_yr'] - longest['t_start_yr']
-        period = row['geo_period_cycle_yr']
-        text = ' '.join(vt.sentences)
-        match = CYCLES.search(text)
-        assert match, text
-        t_printed = float(match.group(1)) * UNIT[match.group(2)]
-        n_printed = float(match.group(3))
-        p_printed = float(match.group(5)) * UNIT[match.group(6)]
-        assert t_printed == pytest.approx(duration, rel=5e-3)
-        assert p_printed == pytest.approx(period, rel=5e-3)
-        assert n_printed == pytest.approx(duration / period, abs=0.051)
-        assert float(match.group(4)) == settings.mmr_force_window_cycles
-        assert duration / period < settings.mmr_force_window_cycles
-        assert force_windows_text(MMRFacts(an, settings, row, episodes)) in text
-
-    def test_printed_comparison_holds_as_printed(self, settings):
-        # 1127 yr / 322 yr = 3.5 cycles: one window fits, two (5.25 cycles with the half-window step) do not
-        _, _, _, vt = analysed('short1400', settings)
-        match = CYCLES.search(' '.join(vt.sentences))
-        assert match
-        assert float(match.group(3)) < float(match.group(4)), match.group(0)

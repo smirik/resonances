@@ -96,7 +96,7 @@ again (after a restore) and got a different answer from `summary.csv`.
 
 The resonant angle $\sigma$, unwrapped: a circulation runs off upwards or downwards, a libration stays in a band.
 
-(a) shows only what the status counts (the minimal policy, W29):
+(a) shows only what the status counts (the minimal policy):
 
 - gray: the osculating angle; black: the filtered angle $\sigma_f$; red: its slowly moving center;
 - ▼ and ▲: the turning points of $\sigma_f$ (a maximum, a minimum), marked only when there are at most 80;
@@ -128,7 +128,7 @@ The resonant angle $\sigma$, unwrapped: a circulation runs off upwards or downwa
 What to look for: fills that cover the whole record are a libration; fills in part of it are episodes; faint `cand`
 fills are librations the status does not count (the EPISODES group of the right column marks them).
 
-A figure drawn from a file written before W29 (no `policy` column) keeps the older drawing, and its legend says so:
+A figure drawn from a file written by an older version (no `policy` column) keeps the older drawing, and its legend says so:
 every accepted episode is filled; accepted runs that are no libration of this angle are labeled `#3 wave` (a forced
 wave of another argument), `#3 forced (strength)` (this angle's force cannot make that period) or `#3 ripple`
 (dotted); rejected runs are a gray strip along the bottom with a letter for the reason (**T** over the top of the
@@ -559,13 +559,11 @@ name the panels that show it.
     - reason, origin, origin detail and veto;
     - the policy step that decided (`decided by tree`);
     - the flags;
-    - `W28 tree: transient/medium`: the W28 tree's verdict (column `v2_verdict`), always shown, for comparison only;
     - the settings hash;
     - the docs pages.
 
 **The panels of the `glance at` chip** come from one map, from the input that holds the level to its panels
-(`verdict_vocab.GLANCE_PANELS`). The chip names at most three letters, in panel order. The map awaits the author's
-review. A ZLK co-orbital of a planet whose modes the free elements do not fit (gate detail `coorbital_unfitted_forcing`)
+(`verdict_vocab.GLANCE_PANELS`). The chip names at most three letters, in panel order. A ZLK co-orbital of a planet whose modes the free elements do not fit (gate detail `coorbital_unfitted_forcing`)
 points V at (a), (d) instead: its free ω and free e vector are no measurement.
 
 | input that holds the level | MMR panels | secular/ZLK panels |
@@ -636,7 +634,7 @@ The figure is the same, with these differences:
 
 *(1222) Tina in the ν6 secular resonance ([Gallery](physics/gallery.md#secular-nu6)).*
 
-The page and the right column follow the MMR figure, but the time panels are fewer and **their letters differ** (since W29 (d) is $a$, before $e$).
+The page and the right column follow the MMR figure, but the time panels are fewer and **their letters differ** ((d) is $a$, before $e$).
 The header gives the span, step, number of rows, the cutoff $P_c$ and what set it, and the scale the verdict rests
 on (`fine`, or `center` when the slower center scale decided). A Lidov-Kozai figure adds the plane $\omega$, $i$ and
 $\Omega$ are measured from (`ω, i, Ω from the invariable plane`, `ZLK_ANGLE_FRAME`): (a), (a′), (f) (labeled

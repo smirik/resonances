@@ -247,15 +247,13 @@ def test_a_sensitive_record_loses_the_checks_that_read_the_changed_quantity():
     checks = {name: CheckValue.PASS for name in ('check_mmr_filter', 'check_mmr_one_pendulum', 'check_mmr_potential')}
     checks['check_mmr_onset'] = CheckValue.NOT_APPLICABLE
     margins = {m: MarginValue(Margin.FULL, 1.0, MarginClass.DECISIVE) for m in ('L5', 'R0', 'L1')}
-    flags = []
-    decide.apply_filter_sensitivity(checks, margins, compare_quantities(_quantities(), _quantities(n_tp=2, n_episodes=0), S), flags)
-    assert flags == [str(Flag.FILTER_SENSITIVE)]
+    decide.apply_filter_sensitivity(checks, margins, compare_quantities(_quantities(), _quantities(n_tp=2, n_episodes=0), S))
     assert checks['check_mmr_filter'] == checks['check_mmr_one_pendulum'] == CheckValue.NOT_MEASURED
     assert checks['check_mmr_onset'] == CheckValue.NOT_APPLICABLE and checks['check_mmr_potential'] == CheckValue.PASS
     assert margins['L5'].margin == Margin.NOT_MEASURED and margins['L5'].value == 1.0
     assert margins['R0'].margin == margins['L1'].margin == Margin.FULL
     untouched = dict(checks)
-    decide.apply_filter_sensitivity(untouched, margins, compare_quantities(_quantities(), _quantities(), S), [])
+    decide.apply_filter_sensitivity(untouched, margins, compare_quantities(_quantities(), _quantities(), S))
     assert untouched == checks
 
 
@@ -263,17 +261,13 @@ def test_a_sensitive_record_loses_the_checks_that_read_the_changed_quantity():
 
 
 def test_the_owner_search_and_the_strength_are_physics_identity_and_b1_are_not():
-    cells = conf.ConfidenceCells()
     nm, full, thin = (MarginValue(Margin(x), None, MarginClass.DECISIVE) for x in ('not_measured', 'full', 'thin'))
     small_amplitude = {'L3': full, 'L5': thin, 'L4': nm, 'R0': nm}  # identity, one pendulum, force law and R0 not measured
-    capped = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', small_amplitude, [], [], decide.PHYSICS_MARGINS, cells)
+    capped = conf.assess(Status.RESONANT, small_amplitude, [], [], decide.PHYSICS_MARGINS)
     assert str(conf.Cap.ALL_PHYSICS_NOT_MEASURED) in capped.caps and capped.confidence == Confidence.MEDIUM
     searched = dict(small_amplitude, W=full)  # the owner search ran and found no owner
-    assessed = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', searched, [], [], decide.PHYSICS_MARGINS, cells)
+    assessed = conf.assess(Status.RESONANT, searched, [], [], decide.PHYSICS_MARGINS)
     assert str(conf.Cap.ALL_PHYSICS_NOT_MEASURED) not in assessed.caps and assessed.confidence == Confidence.HIGH
     strength = dict(small_amplitude, F=thin)
-    assert (
-        conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', strength, [], [], decide.PHYSICS_MARGINS, cells).confidence
-        == Confidence.HIGH
-    )
+    assert conf.assess(Status.RESONANT, strength, [], [], decide.PHYSICS_MARGINS).confidence == Confidence.HIGH
     assert 'L3' not in decide.PHYSICS_MARGINS and 'L5' not in decide.PHYSICS_MARGINS

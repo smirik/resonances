@@ -100,7 +100,7 @@ Yukar ~6.1 Myr, Carruba et al. 2016). The $\nu_6$ librators of the benchmark (0.
 free/forced beat $2\pi/\lvert g_{\rm free} - g_6\rvert$ within 1 %: a forced oscillator, not a pendulum. No general
 lower bound on the period exists, so a filter set above a real libration's period would erase it ($G(P) = 1/[1 +
 (P_c/P)^4]$ keeps half at $P = P_c$): the slower scales are tried only where the record shows a slow motion (the center
-scale below, W36).
+scale below).
 
 The output step does not enter. The filter acts on the unwrapped angle with its trend removed and restored, so it
 cannot turn a circulation into a libration. A turning point must stand out by at least $\max(5°,\ 4r)$, where $r$ is
@@ -199,7 +199,7 @@ the center track that bracket it (or the record's edges), of range $R$:
   motion, which moves only beside it, reads the filter's leak and stays an episode (two stationary librations joined
   by a monotone transition: ≤ 0.04). 101703 g−2g6+g7: 8–19° waves of 1 Myr at the turns of the 12-Myr libration
   ($R$ = 315°, carried 0.16 and 0.12); 56700 s+s7−2s6: a 13° ripple on a 322° arc of 20 Myr (0.51), which becomes
-  `insufficient_time`, extend (the author: a slow libration we cannot see in 20 Myr);
+  `insufficient_time`, extend (possibly a slow libration longer than the 20-Myr record);
 - $R$ a turn or more (a circulation): a capture stops the circulation, a stall only slows it. The slow track $S$
   ($\sigma$ low-passed at `LIBRATION_CENTRE_CYCLES` × the episode's period) must carry the angle out of the episode's
   band beside it ($\ge A_{\max}$ over as long again before or after; an arm the record cuts below
@@ -216,7 +216,7 @@ turning point (before the first), the exit (entry) is observed, that end is not 
 angle is `episodic` and `final_regime` is a circulation from the exit. A secular angle has no orbit to average, so
 $\sigma_f$ itself is read, against the episode's mean center; the center scale is then not tried. 2012 AX10 and 33325
 in 2s − s4 − s6 over 20 Myr leave their libration near 16 Myr and run 1.9 and 1.7 turns to the end: `transient`
-(they were `resonant` before W36, the end gap of 0.8 P counting as covered). An exit that runs less than a turn stays
+(the end gap of 0.8 P does not count as covered). An exit that runs less than a turn stays
 `exit_suspected`.
 
 ??? info "Every `angle_status` rule"
@@ -335,7 +335,7 @@ for one to three cycles wherever the free radius dips just below the forced one 
 record; 0.94 turns per cycle at least): non_resonant, episodic, kinematic. The real ZLK transients of the benchmark
 have 3.0–13.7 and at most 0.04.
 
-**The gate inside the episodes** (W34, `ZLK_GATE_EPISODES`). Between its episodes an episodic $\omega$ circulates, so
+**The gate inside the episodes** (`ZLK_GATE_EPISODES`). Between its episodes an episodic $\omega$ circulates, so
 its free $\omega$ winds over the record whatever it does inside them, and the record's outcome (`kinematic`, or a
 `planetary_residual` on the winding branch: over 500 kyr some $g_j - s_k$ always lies within a width of $b_\omega$)
 says nothing about the episodes. Such a row is read inside its librating episodes with the confirmation test: in every
@@ -368,15 +368,14 @@ is 0 when $H$ is held and 1 as if $i$ were frozen. The coupling `zlk_ei_episode_
 antiphase with $e$ (within `ZLK_EI_PHASE_TOL_DEG`), the demodulated coherence is $\le -$`ZLK_EI_EPISODE_MIN_COHERENCE`
 and $\eta_H \le$ `ZLK_EI_H_RESIDUAL_MAX` (0.5, a convention: the benchmark's ZLK episodes measure at most 0.28, the
 others at least 0.58); `forced_beat` the same in phase with $K$; `none`; `not_measured` when the episode spans fewer than
-`ZLK_EI_MIN_CYCLES` = 3 periods (two independent estimators agree only by chance below that). In the W28 tree
+`ZLK_EI_MIN_CYCLES` = 3 periods (two independent estimators agree only by chance below that). In the full tree
 (`v2_verdict`) the row stays `transient` only on `zlk`, otherwise it is `uncertain` / `gate_unavailable` (−9), rule
 `zlk_gate_unconfirmed`; the minimal policy reads the same coupling as the e–i integral (below).
 373136, 3752 and 797204 over 500 kyr stay transient ($\eta_H$ 0.05–0.23 over 4.6–8 periods); 88899 over 500 kyr
 ($e$ and $i$ out of antiphase, $\eta_H$ 1.2) and 797204 over 100 kyr and 2023 RS2 (deciding episodes of 1.5 and 2.4
 periods) become uncertain. The record's coupling (`zlk_ei_coupling`) stays a column.
 
-**Under the minimal policy** (the table above is the W28 tree's, kept in `v2_verdict`; W30, the
-author 2026-11-03 after two literature reviews): the quadrupole problem, its integral thresholds ($h^2 < 3/5$, $c_1$,
+**Under the minimal policy** (the table above is the full tree's, kept in `v2_verdict`): the quadrupole problem, its integral thresholds ($h^2 < 3/5$, $c_1$,
 Kozai's 39.2°) and its half-turn symmetry hold only for a hierarchical, axisymmetric perturber, outside their domain
 for main-belt and planet-crossing asteroids (Gronchi & Milani 1999; Gallardo et al. 2012); none of them decides. The
 geometry of $\omega$ gives the status (one revolution is $2\pi$), and the physics reads two measurements on the
@@ -393,7 +392,7 @@ deciding episode:
   $\eta_H$ 1.04), otherwise they are objections. $\rho_{\max}$ is a ratio of two parts of one split, not a fact
   independent of it: 591986 refitted with g7 for the unresolved g5 gives 2.9 instead of 0.43, a planetary residual
   0.83″/yr from g5 and resonant/low with `gate_unavailable`; the default split (g5, the one the 4-Myr record resolves)
-  is kinematic (W34, Codex and Claude: no rule change).
+  is kinematic.
 
 A gate without a verdict keeps the geometry's status with the flag `gate_unavailable` at most medium, except when the
 integral holds and $\rho_{\max} \ge$ `ZLK_RHO_KINEMATIC_EXCLUDED`: the forced vector cannot hold the perihelion, so

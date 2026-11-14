@@ -172,12 +172,9 @@ def test_the_figure_says_why_the_phase_is_undefined():
     # not measured (Jupiter of the varpi_J term not saved): the old wording, no share
     _, text = _explained(_wobbling('46J-19-1-26'))
     assert text.steps[-1].outcome == 'ϖ undefined at small e (e down to 0.0425; its own scatter not measured)'  # 0.045 - r
-    # the wobble: no leaf on the phase, the cap is named. W34: under the minimal policy the cap is a flag the figure's
-    # 'flags:' line names, and the level comes from the evidence: medium -> high (non_resonant, no veto, no candidate,
-    # C1 thin so not a clear circulation); the tree's medium stays in the 'v2:' line
-    analysis, text = _explained(_wobbling())
+    # the wobble: no leaf on the phase. W34: under the minimal policy the cap is a flag, and the level comes from the
+    # evidence: medium -> high (non_resonant, no veto, no candidate, C1 thin so not a clear circulation); the tree's
+    # medium stays in v2_verdict
+    analysis, _ = _explained(_wobbling())
     assert str(analysis.verdict.confidence) == 'high' and 'jitter_low_e' in analysis.verdict.flags
     assert analysis.verdict.v2_verdict.startswith('non_resonant/medium/')
-    lines = [bullet.text for bullet in text.bullets]
-    assert any(line.startswith('flags: ') and 'jitter_low_e' in line for line in lines)
-    assert 'v2: non_resonant · medium · circulation · spot_check · circulation' in lines

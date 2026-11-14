@@ -676,19 +676,23 @@ def save_figure(fig, path: Path, dpi: float) -> None:
 # ------------------------------------------------------------------ labels and review tree
 
 
+# Spellings of the benchmark's older runs (benchmark/data/v2-w*): the package reads only its own format since v1.0
+OLD_ANGLE_STATUS = {'transient': 'episodic'}  # before 2026-10-17
+OLD_GEOMETRIC_REASONS = {'dynamic_libration': 'geometric_libration', 'dynamic_episode': 'geometric_episode'}  # before 2026-10-26
+
+
 def read_summary(path: Path) -> pd.DataFrame:
     """A run's summary.csv as strings ('' for empty cells), angle_status, final_regime and reason in the current
-    spelling: runs before 2026-10-17 wrote 'transient' for an episodic angle (`verdict.OLD_ANGLE_STATUS`), runs before
-    2026-10-26 dynamic_* for the geometry alone (origin unknown, `verdict.reason_from_text`)."""
-    from resonances.resonance.analysis.verdict import OLD_ANGLE_STATUS, reason_from_text
-
+    spelling: runs before 2026-10-17 wrote 'transient' for an episodic angle (`OLD_ANGLE_STATUS`), runs before
+    2026-10-26 dynamic_* for the geometry alone (origin unknown, `OLD_GEOMETRIC_REASONS`)."""
     frame = pd.read_csv(path, dtype=str).fillna('')
-    old = {spelling: str(value) for spelling, value in OLD_ANGLE_STATUS.items()}
     for column in ('angle_status', 'final_regime'):
         if column in frame:
-            frame[column] = frame[column].replace(old)
+            frame[column] = frame[column].replace(OLD_ANGLE_STATUS)
     if 'reason' in frame and 'libration_origin' in frame:
-        frame['reason'] = [str(reason_from_text(r, o)) for r, o in zip(frame['reason'], frame['libration_origin'])]
+        frame['reason'] = [
+            OLD_GEOMETRIC_REASONS.get(r, r) if o.strip() == 'unknown' else r for r, o in zip(frame['reason'], frame['libration_origin'])
+        ]
     return frame
 
 
@@ -705,19 +709,27 @@ def read_labels() -> pd.DataFrame:
 def upsert_labels(rows: Iterable[Dict[str, Any]]) -> pd.DataFrame:
     """Add or update rows by example_id. Machine columns are refreshed; author_bucket, claude_bucket and
     comment are never overwritten once non-empty."""
-    current = read_labels().set_index('example_id', drop=False)
+    # Plain dicts, not repeated DataFrame.at writes: those crashed pandas 2.3.3 with numpy 2.4 (bus error, 2026-11-14).
+    current = read_labels()
+    duplicated = sorted(set(current.loc[current['example_id'].duplicated(), 'example_id']))
+    if duplicated:  # one record per id below would drop the others' human labels: fix labels.csv first
+        raise ValueError(f'labels.csv has duplicate example_id values: {duplicated[:5]}')
+    columns = list(current.columns)
+    records = {r['example_id']: r for r in current.to_dict('records')}
     for row in rows:
         row = {k: ('' if v is None or (isinstance(v, float) and np.isnan(v)) else str(v)) for k, v in row.items()}
         eid = row['example_id']
-        if eid in current.index:
+        if eid in records:
+            rec = records[eid]
             for k, v in row.items():
-                if k in HUMAN_LABEL_COLUMNS and current.at[eid, k]:
+                if k in HUMAN_LABEL_COLUMNS and rec.get(k):
                     continue
-                current.at[eid, k] = v
+                if k not in columns:
+                    columns.append(k)
+                rec[k] = v
         else:
-            new = {c: row.get(c, '') for c in current.columns}
-            current.loc[eid] = new
-    out = current.reset_index(drop=True).sort_values('example_id')
+            records[eid] = {c: row.get(c, '') for c in columns}
+    out = pd.DataFrame(list(records.values()), columns=columns).fillna('').sort_values('example_id')
     tmp = LABELS.with_suffix('.csv.tmp')
     out.to_csv(tmp, index=False)
     os.replace(tmp, LABELS)

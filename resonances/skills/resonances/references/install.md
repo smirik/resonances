@@ -73,8 +73,8 @@ cell ([Examples](examples.md#clones)).
 git clone https://github.com/smirik/resonances.git
 cd resonances
 uv sync          # the package, the test tools and the documentation tools
-make test-fast   # every test of at most 1 s, about a minute on 4 processes
-make test-slow   # integrations and longer tests, about 5 minutes (Horizons over the network)
+make test-fast   # every test of at most 1 s, about 2 minutes on 4 processes
+make test-slow   # integrations and longer tests, about 10 minutes (Horizons over the network)
 make docs        # build this site (mkdocs build --strict)
 ```
 

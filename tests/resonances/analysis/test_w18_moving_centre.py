@@ -199,26 +199,26 @@ def test_no_track_without_the_planet_or_for_three_body():
 
 
 @pytest.mark.parametrize('amplitude', [0.1, 0.5, 1.5, 2.5, 3.0])
-def test_period_in_profile_is_the_pendulum_period(amplitude):
+def test_orbit_in_profile_at_rest_is_the_pendulum_period(amplitude):
     omega0 = 2 * np.pi / 150.0
     sigma = np.linspace(0.0, 2 * np.pi, S.mmr_strength_sigma_grid, endpoint=False)
     turns = np.concatenate([sigma - 2 * np.pi, sigma, sigma + 2 * np.pi])
     potential = np.tile(omega0**2 * (1 - np.cos(sigma - 1.0)), 3)
-    period, far = ap.period_in_profile(turns, potential, 1.0 + amplitude)
+    period, lower, upper = ap.orbit_in_profile(turns, potential, 1.0 + amplitude)
     assert period == pytest.approx(4 * ellipk(np.sin(amplitude / 2) ** 2) / omega0, rel=1e-5)
-    assert far == pytest.approx(1.0 - amplitude, abs=1e-4)
+    assert (lower, upper) == pytest.approx((1.0 - amplitude, 1.0 + amplitude), abs=1e-4)  # the start is the upper turn
 
 
 @pytest.mark.parametrize('start', [1.02, 0.97, 1.004])
-def test_period_in_profile_finds_a_swing_narrower_than_the_grid(start):
+def test_orbit_in_profile_finds_a_swing_narrower_than_the_grid(start):
     # Codex W18: a swing between two nodes of the 5-deg grid (V = 1 - cos(sigma - 1), omega0 = 1: T -> 2 pi), and the
     # start itself a root of V = E where V falls (never taken for the far turning point)
     sigma = np.linspace(0.0, 2 * np.pi, S.mmr_strength_sigma_grid, endpoint=False)
     turns = np.concatenate([sigma - 2 * np.pi, sigma, sigma + 2 * np.pi])
-    period, far = ap.period_in_profile(turns, np.tile(1 - np.cos(sigma - 1.0), 3), start)
+    period, lower, upper = ap.orbit_in_profile(turns, np.tile(1 - np.cos(sigma - 1.0), 3), start)
     amplitude = abs(start - 1.0)
     assert period == pytest.approx(4 * ellipk(np.sin(amplitude / 2) ** 2), rel=1e-3)  # the spline's error near the bottom
-    assert far == pytest.approx(1.0 - (start - 1.0), abs=1e-3)
+    assert (lower, upper) == pytest.approx(tuple(sorted((start, 2.0 - start))), abs=1e-3)
 
 
 @pytest.mark.parametrize('start, speed', [(1.5, 0.4), (0.2, 0.9), (1.0, 0.5), (-2.0, 0.05)])

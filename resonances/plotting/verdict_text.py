@@ -1,43 +1,28 @@
-"""The explanation of a verdict in words, for the right column of the one-page figures (layout A′).
+"""The explanation of a verdict in words: the predicates and clause functions that the right column of the one-page
+figures reads (`verdict_column_*` builders), and the `VerdictText` of an MMR verdict (`explain_mmr`), of which the
+MMR builder reads the steps, checks, physics and grey columns.
 
-Pure functions: an analysis (MMR, secular or Lidov-Kozai), its CSV rows and the settings in, a `VerdictText` out;
-nothing is drawn here and nothing feeds a status. Every number in the text is read from the analysis' own objects or
-CSV columns and every threshold from `AnalysisSettings`, so a sentence can be checked against the record
+Pure functions: an analysis (MMR, secular or Lidov-Kozai), its CSV rows and the settings in, words out; nothing is
+drawn here and nothing feeds a status. Every number in the text is read from the analysis' own objects or CSV columns
+and every threshold from `AnalysisSettings`, so a clause can be checked against the record
 (`tests/resonances/plotting/test_verdict_text.py`).
 
-What the text holds (the author's N1–N4 of 2026-10-16 and the fixes of 16b):
+What a `VerdictText` holds:
 
-- `badge`: STATUS · angle_status (subtype) · CONFIDENCE, all three always (author, 2026-10-17) — the only place the
-  status is printed; `ends`: 'ends: <final regime>' when the record ends in another regime than angle_status, drawn
-  as a tag beside the plaque, not inside it; `action` (W29, the author on q05): the row's action as an amber tag between
-  them ('→ extend to 40 kyr', `action_tag`), read from the action alone;
-- `sentences`: what the angle does, why this status (the rule that decided it, in plain words, with its numbers),
-  the confidence (what kept it from the next level, with the numbers), the action. 'Over the whole record' is said
-  when the libration covers the record; 'episode' only when there are several;
-- `steps` (cards g10-4/g10-4b, W28 E3): under the header 'Decided at <leaf>: <name> → STATUS' (`decided_at`), the
-  steps of the status tree in their fixed order, each a question '<number> · <question> [ids]' with 'Why:' and what
-  it found: step 0 the angle shape with its G rules, the branch letter on the leaf ('5d'), decided here ●, passed on ↓,
-  not run ◌ (a gap, with its reason), not needed ○ (the leaf decides without it: the owner at a kinematic leaf, 'n/a:
-  no force on a'), n/a · (the owner search is not applied to a 1:1); the steps after the leaf in one pale line;
-  `docs` names the docs pages in one footer line;
+- `steps` (cards g10-4/g10-4b, W28 E3): the steps of the status tree in their fixed order, each a question
+  '<number> · <question> [ids]' with 'Why:' and what it found: step 0 the angle shape with its G rules, the branch
+  letter on the leaf ('5d'), decided here, passed on, not run (a gap, with its reason), not needed (the leaf decides
+  without it: the owner at a kinematic leaf, 'n/a: no force on a'), n/a (the owner search is not applied to a 1:1);
 - `checks` (cards g10-4/g10-4b, g03-5, W28 E4): every margin and cap the confidence read, each 'name [id]' with what
-  was measured; a kind (`KIND_*`): the limits first (▼ LIMIT: a cap, with the failed cap-class margin it explains
-  printed inside it once, `merge_limits`; never drawn ✗), then the support margins: fail ✗, should have been measured
-  but was not ?, near its threshold ⚠, skipped by design – (gray, with the reason), the full ones ✓ in one line
-  (`full_line`), the n/a ones · in one gray line without numbers (`na_line`); K1 without a value says why
-  (kin_check_reason);
-- `arithmetic`: how the level came out, two lines: 'Support: … → HIGH' (the raw level) and 'Limits: [O1] … → LOW'
-  (`arithmetic_line`); `info`: tests measured but not read by this verdict;
-- `bold_columns` / `grey_columns`: numbers the decision compared / numbers of a test skipped by design;
-- `emphasis` (MMR, card g10-5, W28 E10): the lines of 'Numbers behind this verdict' (`number_emphasis`): DECISIVE
-  comparisons of the leaf, the LIMIT caps that set the level, a CONFLICT (an objection), an UNMEASURED decisive test;
-- `physics` (MMR, W20 CS11): A 'Is σ the own pendulum of <key>?' and B 'What makes the cycles?' (`physics_sections`),
-  every number a column (`PhysicsRow.numbers`); the columns it prints leave the numbers below it.
+  was measured; a kind (`KIND_*`): the limits first (a cap, with the failed cap-class margin it explains printed
+  inside it once, `merge_limits`), then the support margins: fail, should have been measured but was not, near its
+  threshold, skipped by design (with the reason), full, n/a; K1 without a value says why (kin_check_reason);
+- `grey_columns`: numbers of a test skipped by design, with why;
+- `physics` (W20 CS11): A 'Is σ the own pendulum of <key>?' and B 'What makes the cycles?' (`physics_sections`),
+  every number a column (`PhysicsRow.numbers`).
 
-A cap that brings the level down to medium or low names the other reading and what on the figure decides it
-(`CAP_ALTERNATIVES`, the author's q1 of 2026-10-19); the W20 ledger entries are printed in words (`LEDGER_WORDS`).
-The words (caps, reasons, flags, ledger entries, the short names of the rule ids) live in `verdict_vocab.py`; the
-subtitle names the deciding rule as 'decided: circulation (C)' (`verdict_vocab.decided`, card g10-3).
+The W20 ledger entries are printed in words (`LEDGER_WORDS`). The words (caps, reasons, flags, ledger entries, the
+short names of the rule ids) live in `verdict_vocab.py`.
 """
 
 from __future__ import annotations
@@ -49,18 +34,13 @@ from enum import StrEnum
 from fractions import Fraction
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-from resonances.plotting.verdict_vocab import (  # noqa: F401  (the registry, also read as verdict_text.<NAME>)
+from resonances.plotting.verdict_vocab import (
     snake_words,
-    BASE_CAUSE_WORDS,
-    BASE_SOURCE_WORDS,
-    CAP_ALTERNATIVES,
     CAP_MARGINS,
     CAP_PREFIX,
     CAP_WORDS,
-    CAPS,
     CHECK_WORDS,
     EI_WORDS,
-    GATE_WORDS,
     KIN_REASON_WORDS,
     LEDGER_WORDS,
     LONG_PERIOD_MARGIN_NAMES,
@@ -68,31 +48,24 @@ from resonances.plotting.verdict_vocab import (  # noqa: F401  (the registry, al
     OWNER_FLAG_WORDS,
     OWNER_REASON_WORDS,
     POTENTIAL_REASON_WORDS,
-    REGIME_MARK_WORDS,
     REGIME_PHRASES,
     REJECT_WORDS,
-    RULE_NAMES,
     SHORT_PERIOD_TITLES,
     STRENGTH_REASON_WORDS,
-    T7_WORDS,
     THEORY_WORDS,
-    CapText,
-    decided,
     long_period_id,
-    named,
     rule_name,
 )
 from resonances.resonance.analysis.confidence import CAP_CEILING, Cap
 from resonances.resonance.analysis.geometry import LEG_EDGE_START, RejectReason
 from resonances.resonance.analysis.ledger import Margin
-from resonances.resonance.analysis.mmr.analyse import CENTRE_SCALE_UNION, QS_STALL_ENTRY, SHORT_PERIOD_CAP, SHORT_PERIOD_HARMONIC
+from resonances.resonance.analysis.mmr.analyse import CENTRE_SCALE_UNION, SHORT_PERIOD_CAP, SHORT_PERIOD_HARMONIC
 from resonances.resonance.analysis.mmr.decide import (
     ALIAS_A,
     B1_AMPLITUDE,
     C5_BRANCH,
     C5_FAR,
     DIRECT_BRANCH,
-    EXTEND_LEAVES,
     F_IN_WELL,
     G4B_NET,
     G5A_ONE_REVOLUTION,
@@ -107,7 +80,6 @@ from resonances.resonance.analysis.mmr.decide import (
     LEG_SCATTER,
     LEG_TRANSIENT,
     LEG_UNCERTAIN,
-    LENGTH_FORCE_WINDOWS,
     NULL_TEST,
     O1_ONSET,
     SCALE_OUT_OF_RANGE,
@@ -122,20 +94,20 @@ from resonances.resonance.analysis.mmr.decide import (
     edge_arc_name,
     edge_monotone_name,
     force_laws,
-    force_windows_short,
     kinematic_f_applies,
-    last_episode_at_end,
     period_floor,
     strength_upper_name,
     taken_direct_law,
     taken_harmonic_law,
 )
-from resonances.resonance.analysis.mmr.models import planet_letter
+from resonances.resonance.analysis.mmr.models import PLANET_NAMES_ORDER
 from resonances.resonance.analysis.mmr.quasi_satellite import QS_FLOOR, QS_VISIT
 from resonances.resonance.analysis.orbit_type import centre_moves
 from resonances.resonance.analysis.pendulum import CycleClass, has_zone_cycle
 from resonances.resonance.analysis.rules import Rule
 from resonances.resonance.analysis.secular.decide import librating_episodes as secular_librating_episodes
+from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN
+from resonances.resonance.analysis.zlk.episode_ei import phase_off_deg
 from resonances.secular import phase_uncertainty
 from resonances.resonance.analysis.verdict import CONFIDENCE_ORDER, POLICY_MINIMAL, Flag, MarginClass
 
@@ -167,16 +139,6 @@ ICONS = {
     CheckState.NOT_APPLICABLE: '·',
 }
 CAP_ICON = '▼'
-# Steps: decided here, passed on to the next step, not run, not needed, n/a (the glyph of the checks' n/a: one glyph,
-# one meaning); a step not reached has no icon (its name is pale)
-STEP_ICONS = {
-    StepState.LEAF: '●',
-    StepState.PASSED: '↓',
-    StepState.NOT_RUN: '◌',
-    StepState.NOT_NEEDED: '○',
-    StepState.NOT_APPLICABLE: '·',
-    StepState.NOT_REACHED: '',
-}
 # The confidence block, worst first; the quiet rows (skipped by design, n/a) after the passed ones; caps come last
 STATE_ORDER = (CheckState.FAIL, CheckState.MISSING, CheckState.THIN, CheckState.PASS, CheckState.SKIPPED, CheckState.NOT_APPLICABLE)
 COUNTS_FULL, COUNTS_THIN, COUNTS_NOT_MEASURED, COUNTS_FAILED, COUNTS_NA = 'full', 'thin', 'not measured', 'failed', 'n/a'
@@ -210,34 +172,6 @@ class Step:
         text = self.question or self.title
         head = f'{self.number} · {text}' if self.number else text
         return f'{head} [{", ".join(self.ids)}]' if self.ids else head
-
-
-# The slots of the MMR explanation (cards g10-2 style (i), g10-8; W28 E8), in their drawing order: the verdict in plain
-# words, what σ does, the argument that decided, an objection that did not decide, the cause (who makes the cycles),
-# what would change the verdict (the level, its limit, the other reading, the action), the radial overlap
-SLOT_VERDICT, SLOT_SIGMA, SLOT_DECISIVE, SLOT_OBJECTION = 'verdict', 'sigma', 'decisive', 'objection'
-SLOT_CAUSE, SLOT_CHANGE, SLOT_ORBIT = 'cause', 'change', 'orbit'
-# secular and ZLK (W28 E9, cards g09-5 C, g10-8): the time scales of the record (1/T, the search window, the periods
-# seen on the angle and what they are); the slot sits after the cause
-SLOT_SCALE = 'scale'
-# the minimal policy (W29 SPEC §7): the explanation opens with four lines (`policy_block`): status · confidence · reason
-# (origin / owner); the basis of the level in words; the flags; the v2 tree's verdict
-SLOT_POLICY = 'policy'
-SLOTS = (SLOT_POLICY, SLOT_VERDICT, SLOT_SIGMA, SLOT_DECISIVE, SLOT_OBJECTION, SLOT_CAUSE, SLOT_SCALE, SLOT_CHANGE, SLOT_ORBIT)
-
-
-@dataclass
-class Bullet:
-    """One line of the slotted explanation (`mmr_bullets`, `long_period_bullets`): its slot (`SLOTS`), the text, the
-    rule/check ids it reads, and the CSV columns whose numbers it prints (secular/ZLK: those leave the numbers table for
-    a pointer, W20 CS11: no number twice). `short`: the form the compact explanation draws ('' = `text`), where a fact
-    the steps print word for word is pointed to instead of repeated (W28 FIX-plot: `candidate_driver_short`)."""
-
-    slot: str
-    text: str
-    ids: Tuple[str, ...] = ()
-    columns: Tuple[str, ...] = ()
-    short: str = ''
 
 
 # The emphasis of a number (card g10-5, W28 E10): the block 'Numbers behind this verdict' over the numbers table prints
@@ -277,11 +211,6 @@ class Emphasis:
     def columns(self) -> Tuple[str, ...]:
         return tuple(part.column for part in self.parts if part.column)
 
-    @property
-    def pointer(self) -> str:
-        """What the table prints instead of the number: '↑ decisive [B1]'."""
-        return f'↑ {self.kind} [{self.rule_id}]'
-
 
 def _shape(text: str, state: StepState = StepState.PASSED) -> Step:
     """The step 'angle shape' with its outcome (its number and G rules are set by `mmr_steps`)."""
@@ -297,7 +226,7 @@ KIND_SUPPORT, KIND_LIMIT, KIND_NA = 'support', 'limit', 'na'
 @dataclass
 class CheckRow:
     """One row of the confidence block: a margin (or one part of it), a near-threshold ledger entry, or a cap.
-    Printed as 'name [id]' (`label`) and the measurement; a limit as 'LIMIT: short name [id] → LOW' (`limit_heading`)."""
+    Printed as 'name [id]' (`label`) and the measurement."""
 
     key: str
     name: str
@@ -307,9 +236,6 @@ class CheckRow:
     counts: str = ''  # how the confidence counted it: full | thin | not measured | failed | n/a | 'cap ≤ medium'
     note: str = ''  # why it is thin or not measured (printed in the column)
     short: str = ''  # the reason in a few words, for the confidence sentence (default: note, else detail)
-    alternative: str = ''  # a cap: the other verdict the figure may show instead (`CAP_ALTERNATIVES`)
-    look: str = ''  # a cap: what on the figure decides between the two
-    said: bool = False  # the confidence sentence already names this cap's alternative
     kind: str = KIND_SUPPORT  # support | limit | na (`KIND_*`)
     rule_id: str = ''  # the printed id when it is not the key ('SZ.N'; a cap with its margin merged: the margin's id)
     short_name: str = ''  # a cap: its short name (`verdict_vocab.CAP_NAMES`); `name` then holds what the cap means
@@ -342,41 +268,13 @@ class CheckRow:
 
 @dataclass
 class VerdictText:
-    status: str
-    angle: str  # angle_status with its subtype, as the badge prints it
-    confidence: str
-    subtitle: str
-    sentences: List[str]
+    """What the MMR right column (`verdict_column_mmr.mmr_column`) reads of one verdict: the decision steps, the
+    confidence rows, the pendulum sections (A, B) and the columns printed grey with why."""
+
     steps: List[Step]
     checks: List[CheckRow]
-    arithmetic: str
-    info: List[str] = field(default_factory=list)
-    bold_columns: List[str] = field(default_factory=list)
     grey_columns: Dict[str, str] = field(default_factory=dict)
-    final_regime: str = ''  # how the record ends, when that differs from angle_status (`final_regime_text`)
     physics: List['PhysicsSection'] = field(default_factory=list)  # MMR: own pendulum (A) and what makes the cycles (B)
-    decided_at: str = ''  # the steps' header: 'Decided at 5d → 6: force measured, then judged by behaviour → TRANSIENT'
-    docs: str = ''  # one footer line: the docs pages that hold the steps, the rules and the margins (`DOCS_MMR`)
-    # MMR (cards g10-2, g10-8, W28 E8): the explanation as slotted bullets, drawn instead of `sentences`; the sentences
-    # stay the plain-paragraph form (secular and ZLK draw them until their slots come)
-    bullets: List[Bullet] = field(default_factory=list)
-    # MMR (card g10-5, W28 E10): the lines of 'Numbers behind this verdict', in the block's order (`number_emphasis`)
-    emphasis: List[Emphasis] = field(default_factory=list)
-    # W29 (the author on q05, 2026-11-02: the action belongs in the column's header): the row's action as the plaque's
-    # tag, '→ extend to 40 kyr' (`action_tag`); '' for action none
-    action: str = ''
-
-    @property
-    def badge(self) -> str:
-        """'STATUS · angle_status (subtype) · CONFIDENCE' ('TRANSIENT · episodic (recurrent) · MEDIUM'): the three
-        always, the status upper-case and hyphenated as the sentences write it; no confidence for uncertain/invalid."""
-        status = status_head(self.status).upper()  # NON-RESONANT, as the sentences below write it
-        return ' · '.join(part for part in (status, self.angle, self.confidence.upper()) if part)
-
-    @property
-    def ends(self) -> str:
-        """'ends: <final regime>' beside the plaque, or '' when the record ends in the regime of angle_status."""
-        return f'ends: {self.final_regime}' if self.final_regime else ''
 
 
 # --------------------------------------------------------------------------------------------- numbers
@@ -513,33 +411,12 @@ def status_head(status: Any) -> str:
     return str(status).replace('_', '-').capitalize()
 
 
-def _plural(n: int, word: str, plural: str = '') -> str:
-    return f'{n} {word if n == 1 else (plural or word + "s")}'
+def plural(n: int, word: str, form: str = '') -> str:
+    """'1 episode', '3 episodes'; `form` the plural when it is not `word` + 's'."""
+    return f'{n} {word if n == 1 else (form or word + "s")}'
 
 
 # ------------------------------------------------------------------------------- the minimal policy (W29 SPEC §2.3, §7)
-
-# the words of the `confidence_basis` grammar 'N=<n>(<source>);M=<m>;V=<v>;S=<s>;veto=<name|->[:thin][;F=shown|none]'
-BASIS_N_SOURCE = {
-    'episode': 'the episode',
-    'union': 'the union of episodes',
-    'cover': 'the whole record',
-    'leg': 'one 1:1 leg',
-    'member': 'of the subresonance member, not this angle',
-}
-BASIS_M_WORDS = {
-    'full': 'amplitude clear of the separatrix',
-    'thin': 'amplitude near the separatrix',
-    'not_measured': 'amplitude margin not measured',
-}
-BASIS_V_WORDS = {
-    'clean': 'objections measured, none',
-    'partial': 'objections partly measured',
-    'not_measured': 'a needed objection not measured',
-    'ambiguous': 'a measured objection',
-}
-BASIS_S_WORDS = {'full': 'filter-stable', 'thin': 'filter-sensitive'}
-BASIS_F_WORDS = {'shown': 'own force measured', 'none': 'own force not shown (geometry only)'}
 
 
 def policy_minimal(verdict) -> bool:
@@ -554,36 +431,6 @@ def tree_status(verdict) -> str:
     failed law made it resonant)."""
     first = str(getattr(verdict, 'v2_verdict', '') or '').split('/')[0] if policy_minimal(verdict) else ''
     return first or str(verdict.status)
-
-
-# why the minimal policy moved a status away from the tree's leaf, by the flag it set (first match wins)
-POLICY_MOVE_WORDS = (
-    ('strength_scale_implausible', 'three-body strength only a scale, no veto'),
-    ('measured_objection', 'measured objection, no veto'),
-    ('gate_unavailable', 'gate without a verdict, no veto'),
-    ('gate_disabled', 'gate off, no veto'),
-)
-
-
-def policy_move(verdict) -> str:
-    """'minimal policy: measured objection, no veto' when the policy moved the status away from the tree's leaf
-    (`tree_status`; without a known flag 'minimal policy: the shape decides'), else ''."""
-    if not policy_minimal(verdict) or tree_status(verdict) == str(verdict.status):
-        return ''
-    marks = set(getattr(verdict, 'flags', ()) or ())
-    why = next((words for flag, words in POLICY_MOVE_WORDS if flag in marks), '')
-    return f'minimal policy: {why or "the shape decides"}'
-
-
-def few_cycles_clause(verdict) -> str:
-    """' (N 1 < 1.5: too few cycles for medium)' when the policy's comparison N >= confidence_medium_cycles failed on a
-    low row (2026 AC4: the level fell for this, not for the unmeasured objection beside it); '' otherwise."""
-    if str(verdict.confidence) != 'low':
-        return ''
-    entry = next((e for e in verdict.decision_path or () if e.name == 'policy:N >= confidence_medium_cycles'), None)
-    if entry is None or entry.result is not False or entry.value is None:
-        return ''
-    return f' (N {fmt(entry.value)} < {fmt(entry.threshold)}: too few cycles for medium)'
 
 
 def policy_ids(text: Any) -> frozenset:
@@ -606,70 +453,10 @@ def has_mark(verdict, name: str) -> bool:
     return name in (getattr(verdict, 'caps', ()) or ()) or name in (getattr(verdict, 'flags', ()) or ())
 
 
-def _and(items: Sequence[str]) -> str:
+def and_list(items: Sequence[str]) -> str:
+    """'a', 'a and b', 'a, b and c'."""
+    items = list(items)
     return ', '.join(items[:-1]) + f' and {items[-1]}' if len(items) > 1 else ''.join(items)
-
-
-def basis_words(basis: Any) -> str:
-    """The `confidence_basis` cell in words: 'N 3.5 cycles (the episode) · amplitude clear of the separatrix · objections
-    measured, none · filter-stable · no veto'; an unknown part is printed as written; '' for an empty cell."""
-    parts = dict(item.split('=', 1) for item in str(basis or '').split(';') if '=' in item)
-    if not parts:
-        return ''
-    out = []
-    match = re.fullmatch(r'([^()]*)\(([^()]*)\)', parts.get('N', ''))
-    if match and finite(_float(match.group(1))):
-        source = BASIS_N_SOURCE.get(match.group(2), match.group(2))
-        n = _float(match.group(1))
-        out.append(f'N {fmt(n)} cycle{"" if n == 1 else "s"}' + (f' ({source})' if source not in ('', '-') else ''))
-    elif match:  # 'nan(-)': no cycles were counted (a vetoed or circulating row)
-        out.append('no cycles counted')
-    elif 'N' in parts:
-        out.append(f'N {parts["N"]}')
-    for key, words in (('M', BASIS_M_WORDS), ('V', BASIS_V_WORDS), ('S', BASIS_S_WORDS)):
-        if key in parts:
-            out.append(words.get(parts[key], f'{key} {parts[key]}'))
-    veto = parts.get('veto', '')
-    if veto:
-        name, _, thin = veto.partition(':')
-        out.append('no veto' if name in ('', '-') else f'veto {name}' + (' (thin)' if thin else ''))
-    if 'F' in parts:
-        out.append(BASIS_F_WORDS.get(parts['F'], f'F {parts["F"]}'))
-    return ' · '.join(out)
-
-
-def policy_reason_words(verdict) -> str:
-    """The reason first (SPEC §7: GK3 reads 'induced by 5M-2' before the angle word), with the origin and the owner in
-    parentheses: 'induced by 5M-2 (origin induced)', 'geometric episode (origin unknown)'."""
-    reason, owner, origin = str(verdict.reason or ''), str(getattr(verdict, 'owner', '') or ''), str(verdict.libration_origin or '')
-    words = snake_words(reason)
-    if reason == 'induced_libration' and owner:
-        words, owner = f'induced by {owner}', ''
-    extra = ' / '.join(part for part in (f'origin {origin}' if origin else '', f'owner {owner}' if owner else '') if part)
-    return words + (f' ({extra})' if extra else '')
-
-
-def policy_block(verdict) -> List['Bullet']:
-    """The four lines that open the explanation under the minimal policy (W29 SPEC §7): STATUS · CONFIDENCE · the
-    reason (origin / owner); 'basis:' the `confidence_basis` in words (with the counted episodes); 'flags:'; 'v2:' what
-    the v2 tree said (`v2_verdict`). [] for a row not under the policy."""
-    if not policy_minimal(verdict):
-        return []
-    head = ' · '.join(
-        part for part in (status_head(verdict.status).upper(), str(verdict.confidence).upper(), policy_reason_words(verdict)) if part
-    )
-    basis = basis_words(getattr(verdict, 'confidence_basis', ''))
-    counted = getattr(verdict, 'n_counted_episodes', None)
-    if counted is not None and finite(counted):
-        basis = '; '.join(part for part in (basis, _plural(int(counted), 'counted episode')) if part)
-    flags = ', '.join(str(flag) for flag in (verdict.flags or ())) or 'none'
-    v2 = ' · '.join(part for part in str(getattr(verdict, 'v2_verdict', '') or '').split('/') if part) or 'not recorded'
-    return [
-        Bullet(SLOT_POLICY, head),
-        Bullet(SLOT_POLICY, f'basis: {basis or "not recorded"}'),
-        Bullet(SLOT_POLICY, f'flags: {flags}'),
-        Bullet(SLOT_POLICY, f'v2: {v2}'),
-    ]
 
 
 def episode_accepted(row: Mapping[str, Any]) -> bool:
@@ -696,9 +483,6 @@ def _duration(row: Mapping[str, Any]) -> float:
 # --------------------------------------------------------------------------------------------- shared wording
 
 
-LOWERING_CEILINGS = ('medium', 'low')  # caps at these ceilings name their alternative in the right column
-
-
 def cap_ceiling(cap: str) -> str:
     try:
         return str(CAP_CEILING[Cap(cap)])
@@ -719,8 +503,6 @@ def cap_rows(caps: Sequence[str], level: str, whole_record: bool = False) -> Lis
         words = CAP_WORDS.get(cap, snake_words(cap))
         if cap == 'three_tp_episode' and whole_record:
             words = 'the libration over the whole record has three turning points only'
-        # q1: a cap that brings the level down to medium (or low) names the other reading; a cap at high only reports
-        alternative, look = CAP_ALTERNATIVES.get(cap, ('', '')) if cap_ceiling(cap) in LOWERING_CEILINGS else ('', '')
         short_name = rule_name(f'{CAP_PREFIX}{cap}')
         rows.append(
             CheckRow(
@@ -728,8 +510,6 @@ def cap_rows(caps: Sequence[str], level: str, whole_record: bool = False) -> Lis
                 words,
                 CheckState.FAIL,
                 counts=f'cap ≤ {cap_ceiling(cap)}',
-                alternative=alternative,
-                look=look,
                 kind=KIND_LIMIT,
                 short_name=short_name,
             )
@@ -765,40 +545,6 @@ def merge_limits(rows: Sequence[CheckRow]) -> List[CheckRow]:
     return kept
 
 
-def limit_heading(row: CheckRow, level: str) -> str:
-    """'LIMIT: earlier a-wave [O1] → LOW' for a cap that sets the shown level, '… → at most MEDIUM' for one above it;
-    'LIMIT: name [id]' for a failed cap-class margin whose cap is not on record."""
-    ceiling = row.counts.split('≤')[-1].strip() if '≤' in row.counts else ''
-    if not ceiling:
-        return f'LIMIT: {row.label}'
-    to = ceiling.upper() if ceiling == str(level) else f'at most {ceiling.upper()}'
-    return f'LIMIT: {row.label} → {to}'
-
-
-def full_line(rows: Sequence[CheckRow]) -> str:
-    """The full margins in one line (card g10-4b): 'full: one pendulum [L5]; fixed center [L6]; …' ('' for none)."""
-    return f'full: {"; ".join(row.label for row in rows)}' if rows else ''
-
-
-def na_line(rows: Sequence[CheckRow]) -> str:
-    """The n/a margins in one gray line without numbers: 'not for this record: σ̇ follows a − a* [L3], …'; those of
-    the circulation around a single leg (`AROUND_LEG`) apart: '… ; the circulation around the leg, not the leg: …'."""
-    plain = [row.label for row in rows if row.note != AROUND_LEG]
-    around = [row.label for row in rows if row.note == AROUND_LEG]
-    parts = ([f'not for this record: {", ".join(plain)}'] if plain else []) + ([f'{AROUND_LEG}: {", ".join(around)}'] if around else [])
-    return '; '.join(parts)
-
-
-def alternative_text(row: CheckRow) -> str:
-    """'if not: <the other verdict>; look at <what decides it>' of a cap row ('' without one); 'the other reading: in
-    the sentence above' when the confidence sentence already names it."""
-    if not row.alternative:
-        return ''
-    if row.said:
-        return 'if not: the other reading in the confidence sentence above'
-    return f'if not: {row.alternative}; look at {row.look}' if row.look else f'if not: {row.alternative}'
-
-
 def margin_counts(margin: Margin, margin_class: Any = None) -> str:
     if margin == Margin.FULL:
         return COUNTS_FULL
@@ -826,185 +572,13 @@ def sort_checks(rows: List[CheckRow]) -> List[CheckRow]:
     return sorted(rows, key=lambda row: (not row.is_limit, row.kind == KIND_NA, STATE_ORDER.index(row.state)))
 
 
-def _names(rows: Sequence[CheckRow], limit: int = LIST_MAX) -> str:
-    """'name (why)' for the first `limit` reasons, rows with the same reason named together ('a, b (not measured:
-    withdrawn by the filter guard)'), then 'N more'."""
-    groups: Dict[str, List[str]] = {}
-    for row in rows:
-        why = row.short or row.note or row.detail
-        if row.counts == COUNTS_NOT_MEASURED:
-            why = f'not measured: {why}' if why else 'not measured'
-        groups.setdefault(why, []).append(row.name)
-    shown = [f'{", ".join(names)} ({why})' if why else ', '.join(names) for why, names in list(groups.items())[:limit]]
-    hidden = sum(len(names) for names in list(groups.values())[limit:])
-    return '; '.join(shown) + (f'; {hidden} more' if hidden else '')
-
-
-def _bare_names(rows: Sequence[CheckRow], limit: int = LIST_MAX) -> str:
-    """The names alone (their numbers are in the check rows below the sentence), then 'N more'."""
-    return _listed([row.name for row in rows], limit)
-
-
 def _listed(items: Sequence[str], limit: int = LIST_MAX) -> str:
     """'a, b, c and 2 more': the first `limit` items, then how many are left out."""
     hidden = len(items) - limit
     return ', '.join(items[:limit]) + (f' and {hidden} more' if hidden > 0 else '')
 
 
-def calibration_note(verdict) -> str:
-    """The verdict's calibration cell (status, angle_status, reason), reported only (it changes no level): its author
-    labels, errors and the Wilson 95 % interval of the accuracy."""
-    n, errors = getattr(verdict, 'cell_n_examples', None), getattr(verdict, 'cell_n_errors', None)
-    if not finite(n):
-        return ''
-    if not n:
-        return 'Its cell (status, angle, reason) has no author-labeled verdict yet.'
-    text = f'Its cell (status, angle, reason) holds {fmt(n)} author-labeled verdicts, {fmt(errors)} wrong'
-    low, high = getattr(verdict, 'cell_accuracy_low_95', None), getattr(verdict, 'cell_accuracy_high_95', None)
-    if finite(low) and finite(high):
-        text += f' (accuracy {percent(low)}–{percent(high)}, 95%)'
-    return text + '.'
-
-
-def confidence_parts(verdict, checks: Sequence[CheckRow]) -> Tuple[str, str, str, str]:
-    """The confidence sentence in its four parts: the level and what capped it ('Medium, capped: … (number)'), what the
-    level would be without the cap ('Without the cap it would be high: …'), the other reading of a lowering cap (CS11,
-    `CAP_ALTERNATIVES`) and the calibration cell; '' for a part that does not apply. Without a cap the first part says
-    what kept the level from the next ('High: nothing failed, but …'). Marks the cap whose other reading is said."""
-    level, raw = str(verdict.confidence), str(verdict.confidence_raw)
-    if not level:
-        return '', '', '', ''
-    margins = [row for row in checks if not row.is_limit]
-    failed = [row for row in margins if row.counts == COUNTS_FAILED]
-    soft = [row for row in margins if row.counts in (COUNTS_THIN, COUNTS_NOT_MEASURED)]
-    caps = [row for row in checks if row.is_cap]
-    none_failed = 'no support test failed' if any(row.is_limit for row in checks) else 'nothing failed'
-    if failed:
-        raw_text = f'{_plural(len(failed), "support test")} failed: {_names(failed)}'
-    elif raw == 'high':
-        verb = 'is' if len(soft) == 1 else 'are'
-        raw_text = (
-            f'{none_failed}, but certain needs every margin full and {len(soft)} {verb} not: {_bare_names(soft)}'
-            if soft
-            else f'{none_failed}, but a comparison of the decision lies near its threshold'
-        )
-    else:
-        raw_text = 'every margin is full'
-    setting_caps = [row for row in caps if row.counts.split()[-1] == level]
-    head, without, other = f'{level.capitalize()}: {raw_text}.', '', ''
-    if setting_caps and level != raw:
-        first = setting_caps[0]
-        source = next((row for row in margins if row.key == CAP_MARGINS.get(first.key[4:]) and row.detail), None)
-        if first.merged and first.detail:  # the failed margin is printed inside the cap row (`merge_limits`)
-            source = first
-        rest = len(setting_caps) - 1
-        others = f' (and {rest} more cap{"s" if rest > 1 else ""} at the same level)' if rest else ''
-        number = f' ({source.detail})' if source is not None else (f' ({first.short})' if first.short else '')
-        head = f'{level.capitalize()}, capped: {first.name}{number}{others}.'
-        without = f'Without the cap it would be {raw}: {raw_text}.'
-        if first.alternative:
-            where = f'; the figure decides it in {first.look}' if first.look else ''
-            other = f'The other reading: {first.alternative}{where}.'
-            first.said = True  # its row does not repeat it
-    return head, without, other, calibration_note(verdict)
-
-
-def confidence_sentence(verdict, checks: Sequence[CheckRow]) -> str:
-    """Status → confidence: the level, what capped it, and what kept it from the next level, with the numbers. 'Nothing
-    failed' only when no limit failed either (card g03-5); with a limit on record the support margins are said apart
-    ('no support test failed')."""
-    if policy_minimal(verdict) and str(verdict.confidence):  # W29: the level is the evidence's, said in `policy_block`
-        return f'{str(verdict.confidence).capitalize()} from the evidence: {basis_words(getattr(verdict, "confidence_basis", ""))}.'
-    return ' '.join(part for part in confidence_parts(verdict, checks) if part)
-
-
-ARITHMETIC_SUPPORT, ARITHMETIC_LIMITS = 'Support: ', 'Limits: '
-
-
-def arithmetic_line(verdict, checks: Sequence[CheckRow]) -> str:
-    """How the level came out, in two lines (cards g10-4/g10-4b, g03-5): the support margins and the raw level they
-    give ('Support: no counted failures, 4 thin, 5 not measured → HIGH'; ≥ 2 failed → low, 1 → medium, thin or not
-    measured → high, all full → certain: `confidence.raw_level`), then the limits and the shown level ('Limits: earlier
-    a-wave [O1] (a-wave before/inside 0.865 ≥ 0.5) → LOW'; a limit above the shown level with its ceiling; 'none')."""
-    if not str(verdict.confidence):
-        return 'No confidence level: uncertain and invalid verdicts carry none.'
-    if policy_minimal(verdict):  # the level is the evidence's (W29 `policy.level`): no support count, no caps
-        words = basis_words(getattr(verdict, 'confidence_basis', '')) or 'not recorded'
-        return f'Level from the evidence: {words}{few_cycles_clause(verdict)} → {str(verdict.confidence).upper()}'
-    margins = [row for row in checks if not row.is_limit]
-    failed = sum(1 for row in margins if row.counts == COUNTS_FAILED)
-    thin = sum(1 for row in margins if row.counts == COUNTS_THIN)
-    unmeasured = sum(1 for row in margins if row.counts == COUNTS_NOT_MEASURED)
-    parts = [f'{failed} failed' if failed else 'no counted failures']
-    parts += [f'{thin} thin'] if thin else []
-    parts += [f'{unmeasured} {COUNTS_NOT_MEASURED}'] if unmeasured else []
-    support = ', '.join(parts) if failed or thin or unmeasured else 'every margin full'
-    level = str(verdict.confidence)
-    limits = []
-    for row in checks:
-        if not row.is_limit:
-            continue
-        item = row.label + (f' ({row.short})' if row.short else '')
-        ceiling = row.counts.split('≤')[-1].strip() if '≤' in row.counts else ''
-        limits.append(item + (f' (≤ {ceiling})' if ceiling and ceiling != level else ''))
-    return (
-        f'{ARITHMETIC_SUPPORT}{support} → {str(verdict.confidence_raw).upper()}\n'
-        f'{ARITHMETIC_LIMITS}{"; ".join(limits) or "none"} → {level.upper()}'
-    )
-
-
-def action_sentence(verdict) -> str:
-    action = str(verdict.action)
-    if action == 'extend':
-        if str(verdict.angle_status) == 'insufficient_time':  # N8: a checkpoint, the record is analysed again there
-            return f'Action: extend the integration; next check: {years(verdict.extend_to_years)}.'
-        return f'Action: extend the integration to {years(verdict.extend_to_years)}.'
-    if action == 'resample':
-        # a level held down by short_period_aliased resamples at its fold-free step (W21 A; `analyse.short_period_resample`)
-        lifts = ' (it folds no short period: lifts the cap short_period_aliased)' if _short_period_resample(verdict) else ''
-        return f'Action: rerun with an output step of {fmt(verdict.resample_step_yr)} yr{lifts}.'
-    return {'spot_check': 'Action: glance at the figure.', 'review': 'Action: review the figure and the numbers.'}.get(action, '')
-
-
-ACTION_TAGS = {'spot_check': '→ spot check', 'review': '→ review'}
-
-
-def action_tag(verdict) -> str:
-    """The action as the plaque's tag (W29, the author on q05: TX1's 'extend' was missed in the sentences): '→ extend to
-    40 kyr', '→ resample to 0.5 yr', '→ review', '→ spot check'; '' for action none. Read from the action alone: the
-    flag extend_time and extend_to_years of a row whose action is not extend print nothing here."""
-    action = str(verdict.action)
-    if action == 'extend':
-        to = getattr(verdict, 'extend_to_years', None)
-        return f'→ extend to {years(to)}' if finite(to) else '→ extend'
-    if action == 'resample':
-        step = getattr(verdict, 'resample_step_yr', None)
-        return f'→ resample to {fmt(step)} yr' if finite(step) else '→ resample'
-    return ACTION_TAGS.get(action, '')
-
-
-def _short_period_resample(verdict) -> bool:
-    """A resample of a verdict with a level whose cap short_period_aliased holds it down (alias and undersampled are
-    invalid and carry no level)."""
-    return bool(str(verdict.confidence)) and has_mark(verdict, 'short_period_aliased')
-
-
-def angle_text(verdict) -> str:
-    """angle_status as the badge prints it: 'angle_status (subtype)'."""
-    subtype = str(verdict.angle_subtype)
-    return str(verdict.angle_status) + (f' ({subtype})' if subtype else '')
-
-
-def final_regime_text(verdict) -> str:
-    """The final regime when it differs from angle_status (the tag 'ends: …' beside the plaque), else ''."""
-    final = _text(getattr(verdict, 'final_regime', ''))
-    return final if final and final != str(verdict.angle_status) else ''
-
-
 # --------------------------------------------------------------------------------------------- episodes
-
-
-STAY_MIN_TP = 7  # a rejected run named as a stay in the text: at least three cycles of its ripple (W34)
 
 
 @dataclass
@@ -1045,48 +619,6 @@ class Episodes:
         if not finite(self.span_yr) or self.span_yr <= 0:
             return float('nan')
         return sum(_duration(row) for row in self.counted) / self.span_yr
-
-    def rejected_text(self) -> str:
-        runs = self.rejected
-        if not runs:
-            return ''
-        reasons = sorted({snake_words(_text(row.get('reject_reason'))) for row in runs} - {''})
-        text = f'{_plural(len(runs), "run")} of turning points not accepted' + (f' ({", ".join(reasons)})' if reasons else '')
-        return text + self.stay_text()
-
-    def stay_text(self) -> str:
-        """The longest rejected run whose center moves, as a stay (W34, the author on 2003 TG2 100 kyr: shown apart
-        from the episode, not as one): '; the longest, 14.1–25 kyr (38 turning points), is a stay: a ±2° ripple whose
-        center moves 152°, not a libration'; '' without such a run of STAY_MIN_TP turning points."""
-        stays = [
-            row
-            for row in self.rejected
-            if _text(row.get('reject_reason')) == 'centre_moves' and finite(row.get('n_tp')) and float(row['n_tp']) >= STAY_MIN_TP
-        ]
-        if not stays:
-            return ''
-        row = max(stays, key=_duration)
-        shift = row.get('centre_shift_deg')
-        moves = f' whose center moves {fmt(abs(float(shift)))}°' if finite(shift) else ' whose center moves'
-        return (
-            f'; the longest, {years(row.get("t_start_yr"))}–{years(row.get("t_end_yr"))} ({fmt(row.get("n_tp"))} turning points), '
-            f'is a stay: a ±{fmt(row.get("half_amp_med_deg"))}° ripple{moves}, not a libration'
-        )
-
-
-def libration_numbers(row: Mapping[str, Any], centre: bool = True) -> str:
-    """'about a center at 183°: 9 turning points, period 193 yr, half-amplitude 161° (max 175°)'."""
-    parts = []
-    if centre and finite(row.get('centre_mod_2pi_deg')):
-        value = float(row['centre_mod_2pi_deg']) % 360
-        parts.append(f'about {0 if value > 359.5 else round(value):.0f}°')
-    numbers = [f'{fmt(row.get("n_tp"))} turning points', f'period {years(row.get("period_med_yr"))}']
-    if finite(row.get('half_amp_med_deg')):
-        amp = f'half-amplitude {fmt(row.get("half_amp_med_deg"))}°'
-        if finite(row.get('half_amp_max_deg')):
-            amp += f' (max {fmt(row.get("half_amp_max_deg"))}°)'
-        numbers.append(amp)
-    return (' '.join(parts) + ': ' if parts else '') + ', '.join(numbers)
 
 
 def coverage_text(row: Mapping[str, Any], settings) -> str:
@@ -1232,7 +764,7 @@ def unused_margins(f: MMRFacts) -> Dict[str, str]:
     unused = {}
     for margin_id in dict.fromkeys(m for q in sorted(f.withdrawn) for m in SENSITIVE_MARGINS.get(q, ())):
         changed = [q for q in sorted(f.withdrawn) if margin_id in SENSITIVE_MARGINS.get(q, ())]
-        listed = _and(changed)
+        listed = and_list(changed)
         verb = 'changes' if len(changed) == 1 else 'change'
         unused[margin_id] = f'withdrawn by the filter guard: at twice the filter cutoff the {listed} {verb}'
     for name in f.alias_unmeasured:
@@ -1291,7 +823,7 @@ def earlier_regime_text(f: MMRFacts) -> str:
     n = len(g.episodes_before_jump)
     return (
         f'measured only in the last regime after the jump ({years(g.regime_start_yr)}–{years(g.window[1])}), where {where}; '
-        f'{_plural(n, "episode")} before the jump {"is" if n == 1 else "are"} not measured'
+        f'{plural(n, "episode")} before the jump {"is" if n == 1 else "are"} not measured'
     )
 
 
@@ -1318,7 +850,7 @@ def measured_on(f: MMRFacts, source_field: str = 'force_source') -> str:
     pooled = getattr(response, 'before_jump_response', None)
     if source == 'before_jump' and pooled is not None:
         n = sum(1 for e in response.episode_responses if e.before_jump)
-        return f'pooled over the {_plural(n, "episode")} before the jump ({years(pooled.t_start_yr)}–{years(pooled.t_end_yr)})'
+        return f'pooled over the {plural(n, "episode")} before the jump ({years(pooled.t_start_yr)}–{years(pooled.t_end_yr)})'
     return ''
 
 
@@ -1351,7 +883,7 @@ def _force_not_measured(f: MMRFacts) -> Tuple[CheckState, str]:
         pooled = response.before_jump_response if str(response.force_source) == 'before_jump' else None
         if pooled is not None:
             return CheckState.SKIPPED, (
-                f'{_plural(len(pooled.windows), "force window")} of {fmt(s.mmr_force_window_cycles)} cycles '
+                f'{plural(len(pooled.windows), "force window")} of {fmt(s.mmr_force_window_cycles)} cycles '
                 f'(P {years(pooled.period_yr)}) < {s.mmr_force_min_windows}'
             )
         return CheckState.SKIPPED, force_windows_text(f)
@@ -1501,7 +1033,7 @@ def _skip_l2(f: MMRFacts) -> Tuple[CheckState, str]:
         if energy is None or energy.zone is None:
             return CheckState.MISSING, 'not measured; the level’s amplitude margin (M) reads the 1:1 zone, which is not measured either'
         n_zone, n_above, n_all = _zone_counts(energy)
-        above = f'{_plural(n_above, "cycle")} above a lower saddle, which this test cannot grade' if n_above else 'not graded on a 1:1'
+        above = f'{plural(n_above, "cycle")} above a lower saddle, which this test cannot grade' if n_above else 'not graded on a 1:1'
         clear = 'near' if n_zone else 'clear of'
         return (
             CheckState.SKIPPED,
@@ -1612,7 +1144,7 @@ def direct_force_text(f: MMRFacts, law, halves: str) -> str:
         f'averaged force of {spec.key} ({planet}’s real mass) at {years(law.cutoff_yr)} = {fmt(factor)} P '
         f'{years(law.cutoff_yr / factor)}{turns}: R² {compare(law.r2, ">=", s.mmr_force_r2_fail)} ({grade}), '
         f's {fmt(law.scale_min)}–{fmt(law.scale_max)} {"within" if inside else "outside"} [{fmt(lo)}, {fmt(hi)}], '
-        f'above the shifted null by {compare(law.null_gain, ">=", s.mmr_force_null_gain)}, {_plural(int(law.n_windows), "window")}; '
+        f'above the shifted null by {compare(law.null_gain, ">=", s.mmr_force_null_gain)}, {plural(int(law.n_windows), "window")}; '
         f'harmonic law {halves}'
     )
 
@@ -1745,7 +1277,7 @@ def _s_detail(f: MMRFacts, margin) -> Tuple[str, str, str]:
             note,
         )
     best = _best_candidate(sub.candidates)
-    value = f'{_plural(len(sub.candidates), "member")} scanned, none holds the center'
+    value = f'{plural(len(sub.candidates), "member")} scanned, none holds the center'
     if best is not None:
         value += f'; best {best.spec.key}: {_member_rejection(f, best)}'
     return value, f'none accepted; closest center range > {fmt(s.mmr_s_close_ratio)}× σ’s', note
@@ -1783,9 +1315,9 @@ def _w_detail(f: MMRFacts) -> Tuple[str, str]:
         return f'{owner.accepted.spec.key} {verb}: R² {fmt(owner.accepted.r2_median, 2)}', f'R² ≥ {fmt(s.mmr_w_r2_full)} and reachable'
     best = _best_candidate(owner.candidates)
     if best is None:
-        return ('no candidate', '') if not owner.n_candidates else (f'{_plural(owner.n_candidates, "candidate")}, none fits', '')
+        return ('no candidate', '') if not owner.n_candidates else (f'{plural(owner.n_candidates, "candidate")}, none fits', '')
     need = f'best R² < {fmt(s.mmr_w_r2_none)} (thin from {fmt(s.mmr_w_r2_none)}; an owner needs ≥ {fmt(s.mmr_owner_r2_min)})'
-    head = f'{_plural(owner.n_candidates, "candidate")}; best {best.spec.key}'
+    head = f'{plural(owner.n_candidates, "candidate")}; best {best.spec.key}'
     if not finite(best.r2_median) or best.r2_median < s.mmr_w_r2_none:
         return f'{head} R² {compare(best.r2_median, "<", s.mmr_w_r2_none, digits=2)}', need
     # the thin band (2013 AS27, 2897): it fits a, but no owner was accepted; why, as the owner step says it
@@ -1902,7 +1434,7 @@ def _detail_l1(f: MMRFacts, margin) -> Tuple[str, str, str]:
     if margin.margin == Margin.THIN and finite(margin.value) and margin.value < s.mmr_l1_tp_full:
         note = f'{fmt(margin.value)} < {s.mmr_l1_tp_full}: the libration is short'
     count = int(margin.value) if finite(margin.value) else 0
-    return f'{_plural(count, "turning point")} at the coarsest cutoff', f'≥ {s.mmr_l1_tp_full}', note
+    return f'{plural(count, "turning point")} at the coarsest cutoff', f'≥ {s.mmr_l1_tp_full}', note
 
 
 def _zone_counts(energy) -> Tuple[int, int, int]:
@@ -2326,14 +1858,6 @@ LEG_DISCREPANCY_WORDS = {
 # accepted runs the status does not count and that no other mark names (C11; a forced wave, an induced episode and a
 # run before the last jump of a have their own marks): their tag after '#id' on (a) and their words
 UNCOUNTED_TAGS = {RejectReason.BELOW_PERIOD_FLOOR: ' < floor', RejectReason.CENTRE_TURNS: ' center turns'}
-# geo_extend_time_from (C14, `decide.RecordEdges.sources`): what set the flag extend_time -> words ({edge}: start/end)
-EXTEND_SOURCE_WORDS = {
-    'slowdown': 'σ_f slows to {final} after circulating',
-    'reflection': 'σ turns back once at the {edge}',
-    'leg': 'a clean 1:1 leg is cut by the {edge}',
-    'half': 'a half-swing that follows the law is cut by the {edge}',
-}
-EXTEND_DIRECTIONS = {'forward': ('forward', 'ends'), 'backward': ('backward', 'starts'), 'both': ('both ways', 'starts and ends')}
 TURN_SITE_WORDS = {'planet': 'the planet’s', 'l3': 'L3’s'}
 
 
@@ -2429,17 +1953,6 @@ def single_swing_clause(f: MMRFacts) -> str:
     return {'G4c': leg_clause, 'G4h': half_libration_clause}.get(f.rule, lambda _: '')(f)
 
 
-def _single_swing_sentence(f: MMRFacts) -> str:
-    """Why a single-swing leaf gave this status: transient (one clean leg), uncertain (one leg or half-swing with a
-    discrepancy, or between passages) or uncertain/baseline_needed (cut by the record's edge: with the next check)."""
-    clause, reason = single_swing_clause(f), str(f.v.reason)
-    if reason == 'baseline_needed':
-        return f'Uncertain: {clause}; {_plain(_baseline_sentence(f), f.v.status)}'
-    if reason == 'dynamic_episode':
-        return f'Transient: {clause}. Transient, not resonant, because one leg covers part of the record only.'
-    return f'{status_head(f.v.status)}: {clause}.'
-
-
 # (rec_rule, reason) of a single-swing leaf -> the verdict in plain words ({comm}: the commensurability)
 SINGLE_SWING_LINES = {
     ('G4c', 'dynamic_episode'): 'TRANSIENT: one leg in a co-orbital well of {comm}, held by the planet’s force; no closed cycle.',
@@ -2457,57 +1970,6 @@ def _single_swing_steps(f: MMRFacts) -> List[Step]:
     text = circulation.outcome.replace('→ circulation', f'→ a circulation judged on {judged} → {f.v.angle_status}')
     leaf = Step('single', rule_name(f.rule), StepState.LEAF, f'{single_swing_clause(f)} → {tree_status(f.v)}')
     return [replace(circulation, outcome=text), leaf]
-
-
-def extend_flag_sentence(f: MMRFacts) -> str:
-    """The flag extend_time (C14, card g01-7 A: 'а нет ли возможности дать дополнительный флаг extend_time?'): 'Extend:
-    a longer integration forward (next check: 2 kyr) would show how the record ends (σ_f slows to an arc after
-    circulating; a clean 1:1 leg is cut by the end).' The next check (extend_to_years, round_up(2T)) is named only when
-    the action is not extend (the action sentence names it then); '' without the flag.
-    Under the minimal policy the sentence reads the action, never the flag alone (P5; W29 S1, 469333 7N-17 advised
-    'backward' at action spot_check): an extension is advised only when the action is extend, and only forward, for the
-    end-edge causes; a cause the action does not carry is named as a flag without advice (`MINIMAL_FLAG_ONLY`)."""
-    v = f.v
-    direction = _text(getattr(v, 'extend_direction', ''))
-    if direction not in EXTEND_DIRECTIONS:
-        return ''
-    final = {'arc': 'an arc', 'stall': 'a stall'}.get(_text(v.final_regime), 'an arc or a stall')
-    causes = []  # (edge, words)
-    for token in _text(f.row.get('geo_extend_time_from')).split(';'):
-        first, _, second = token.partition(':')
-        edge, kind = (first, second) if first in ('start', 'end') else (second, first)
-        edge = edge or {'forward': 'end', 'backward': 'start'}.get(direction, '')
-        words = EXTEND_SOURCE_WORDS.get(kind)
-        if words:
-            causes.append((edge, words.format(final=final, edge=edge or 'edge')))
-    if policy_minimal(v):
-        return _minimal_flag_sentence(str(v.action) == 'extend', causes)
-    causes = [words for _, words in causes]
-    way, ends = EXTEND_DIRECTIONS[direction]
-    check = f' (next check: {years(v.extend_to_years)})' if str(v.action) != 'extend' and finite(v.extend_to_years) else ''
-    because = f' ({"; ".join(dict.fromkeys(causes))})' if causes else ''
-    return f'Extend: a longer integration {way}{check} would show how the record {ends}{because}.'
-
-
-# the flag extend_time under the minimal policy, for causes the action does not carry (a start-edge feature, or any
-# feature of a row whose action is not extend): named, not advised (P5)
-MINIMAL_FLAG_ONLY = (
-    'Flag extend_time ({causes}): no extension; the action extends only an unfinished libration at the record’s end or '
-    'a deciding period too long for the record.'
-)
-
-
-def _minimal_flag_sentence(extend: bool, causes: Sequence[Tuple[str, str]]) -> str:
-    """extend_flag_sentence under the minimal policy: 'Extend: a longer integration forward would show how the record
-    ends (…).' for the end-edge causes of an extend row, then `MINIMAL_FLAG_ONLY` for the others; '' without causes."""
-    advised = list(dict.fromkeys(words for edge, words in causes if extend and edge == 'end'))
-    flagged = list(dict.fromkeys(words for _, words in causes if words not in advised))
-    parts = []
-    if advised:
-        parts.append(f'Extend: a longer integration forward would show how the record ends ({"; ".join(advised)}).')
-    if flagged:
-        parts.append(MINIMAL_FLAG_ONLY.format(causes='; '.join(flagged)))
-    return ' '.join(parts)
 
 
 def profile_floor_clause(f: MMRFacts) -> str:
@@ -2613,16 +2075,7 @@ def _cap_detail(f: MMRFacts, row: CheckRow) -> CheckRow:
     elif cap == 'short_period_aliased':
         row.detail = _short_period_detail(f)
         row.name, row.short = _short_period_title(f)
-        row.look = short_period_look(f.row.get('smp_fold_free_step_yr'), row.look)
     return row
-
-
-def short_period_look(fold_free_step_yr: Any, look: str) -> str:
-    """Where the cap short_period_aliased is decided, naming the output step that lifts it (smp_fold_free_step_yr, the
-    largest grid step below the record's that folds no short period; W21 A); the general words without one."""
-    if not finite(fold_free_step_yr):
-        return look
-    return f'(a): the fast spread about σ_f; a rerun at ≤ {fmt(fold_free_step_yr)} yr output step lifts this cap'
 
 
 def _short_period_title(f: MMRFacts) -> Tuple[str, str]:
@@ -2957,9 +2410,6 @@ def orbit_period_clause(f: MMRFacts) -> str:
 
 
 FORCED_WAVE_WORD = 'sigma librates in the forced-wave runs'
-# the marks of accepted runs that are no episodes of the angle and no forced wave found (W28 B2, B6b): the name of the
-# ground (the angle's strength cannot make the period: card g11-1 A) and an auxiliary interval (card g08-4 A)
-STRENGTH_MARK = 'forced (strength)'
 RIPPLE_MARK = 'unconfirmed ripple'
 
 
@@ -3025,7 +2475,7 @@ def _forced_wave_clause(f: MMRFacts) -> str:
         return ''
     line = f.row.get('geo_forced_wave_line')
     why = f'on the forced line {line} with a failed identity' if isinstance(line, str) and line else 'σ_dot against c (a − a*)'
-    return f'{_plural(int(count), "run")} of P {fmt(f.row.get("geo_forced_wave_period_yr"))} yr {why}: a forced wave'
+    return f'{plural(int(count), "run")} of P {fmt(f.row.get("geo_forced_wave_period_yr"))} yr {why}: a forced wave'
 
 
 def _circulation_steps(f: MMRFacts) -> List[Step]:
@@ -3061,7 +2511,7 @@ def _subresonance_step(f: MMRFacts) -> Step:
         return Step('sub', title, StepState.LEAF, text)
     if str(sub.check) in ('pass', 'fail'):
         best = _best_candidate(sub.candidates)
-        text = f'{_plural(len(sub.candidates), "member")} scanned, none holds the center'
+        text = f'{plural(len(sub.candidates), "member")} scanned, none holds the center'
         return Step('sub', title, StepState.PASSED, text + (f' (best {best.spec.key}: {_member_rejection(f, best)})' if best else ''))
     why = why_not_measured(f, 'S')[1]
     return Step('sub', title, StepState.NOT_RUN, why if 'no verdict' in why else f'no verdict: {why}')
@@ -3096,7 +2546,7 @@ def _owner_step(f: MMRFacts) -> Step:
         return Step('owner', title, StepState.LEAF, f'{drives} → {tree_status(v)}, induced')
     if str(owner.check) in ('pass', 'fail'):
         best = _best_candidate(owner.candidates)
-        text = f'{_plural(owner.n_candidates, "candidate")}, none drives a'
+        text = f'{plural(owner.n_candidates, "candidate")}, none drives a'
         if best is not None:
             text += f' (best {best.spec.key}: {_owner_rejection(f, best)})'
         return Step('owner', title, StepState.PASSED, text)
@@ -3275,14 +2725,6 @@ CIRCULATION_QUESTIONS = {
     'G4c': 'Is its one leg near the planet a capture?',  # W28 C6, q-4 A
     'G4h': 'Is its one half-swing the resonance’s own?',  # W28 C6, q-5 i
 }
-# the footer line (a PNG has no links): the pages and sections that hold the steps, the G rules, the margins and caps
-DOCS_MMR = (
-    'Docs: steps — physics/status-tree.md#steps-in-order; G rules — physics/geometry.md; margins and caps — '
-    'physics/confidence.md; O1 — physics/response.md; names [id] — libration-analysis.md#names'
-)
-DOCS_LONG_PERIOD = (
-    'Docs: steps — physics/secular-zlk.md; margins and caps — physics/confidence.md; names [id] — libration-analysis.md#names'
-)
 
 
 def shape_rule_ids(f: MMRFacts) -> Tuple[str, ...]:
@@ -3435,26 +2877,6 @@ def mmr_steps(f: MMRFacts) -> List[Step]:
     return collapse_after_leaf([_ask(f, step) for step in steps])
 
 
-def decided_at(rule: str, status: Any, steps: Sequence[Step], tree: Any = '', move: str = '') -> str:
-    """The header of the steps: 'Decided at 5d → 6: force measured, then judged by behavior → TRANSIENT' (rec_rule and
-    its short names, `verdict_vocab.rule_name`); without a rule (secular, ZLK), the leaf step's number and label:
-    'Decided at 1: free-ω gate → NON-RESONANT'. When the minimal policy moved the tree's status (`tree` differs from
-    `status`, `move` its words, `policy_move`): 'Decided at 5a: force law fails → UNCERTAIN; minimal policy: measured
-    objection, no veto → RESONANT'."""
-    head = status_head(status).upper()
-    if tree and str(tree) != str(status):
-        head = f'{status_head(tree).upper()}; {move or "minimal policy"} → {head}'
-    rule = str(rule or '')
-    if rule:
-        names = [rule_name(part, leaf=True) or 'unmapped rule' for part in rule.split('/')]
-        return f'Decided at {rule.replace("/", " → ")}: {", then ".join(names)} → {head}'
-    leaf = next((step for step in steps if step.state == StepState.LEAF), None)
-    if leaf is None:
-        return ''
-    where = f'{leaf.number}: ' if leaf.number else ''
-    return f'Decided at {where}{leaf.title} → {head}'
-
-
 # --- the parts of an accepted 1:1 episode in words (W28 C13, cards g03-1 A, g03-3 C, g03-8 A, g03-9 A), read from its
 # episodes.csv row (C7 `marks`, C8 `subregimes` and `residence_*`): the measured core (its first to last turning point),
 # the sub-regimes between the changes that are no boundary, the amplitude changes and kicks of a near them, and the
@@ -3462,14 +2884,6 @@ def decided_at(rule: str, status: Any, steps: Sequence[Step], tree: Any = '', mo
 
 # a well of `geometry.Episode.wells` / `SubRegime.well` (coorbital_geometry's names) in words
 WELL_WORDS = {'qs': 'quasi-satellite', 'tadpole_L4': 'tadpole L4', 'tadpole_L5': 'tadpole L5', 'horseshoe': 'horseshoe'}
-# where an inferred residence stays, by the well of the sub-regime next to it ('' or 'compound': co-orbital)
-RESIDENCE_WORDS = {
-    'qs': 'in the quasi-satellite well',
-    'tadpole_L4': 'in the L4 tadpole well',
-    'tadpole_L5': 'in the L5 tadpole well',
-    'horseshoe': 'on horseshoe orbits',
-}
-SUBREGIMES_SHOWN = 4  # the sentence names at most this many stretches: the first ones, '…' and the last with the count
 
 
 def well_words(well: Any) -> str:
@@ -3501,29 +2915,6 @@ def episode_marks(row: Mapping[str, Any]) -> List[Tuple[str, float, float]]:
     return _timed_items(row.get('marks'))
 
 
-def episode_subregimes(row: Mapping[str, Any]) -> List[Tuple[str, float, float]]:
-    """The sub-regimes of an accepted 1:1 run (episodes.csv `subregimes`, W28 C8): (well, t0, t1) [yr]."""
-    return _timed_items(row.get('subregimes'))
-
-
-def well_stretches(row: Mapping[str, Any]) -> List[Tuple[str, float, float]]:
-    """The sub-regimes with neighbors of one well joined (an amplitude change inside a well is no change of well):
-    (well, t0, t1) [yr]; the first starts and the last ends at the core's turning points (the column keeps one
-    decimal), so a span reads as the episode's ('129 yr', not '128')."""
-    out: List[Tuple[str, float, float]] = []
-    for well, t0, t1 in episode_subregimes(row):
-        if out and out[-1][0] == well:
-            out[-1] = (well, out[-1][1], t1)
-        else:
-            out.append((well, t0, t1))
-    c0 = row.get('core_t0_yr') if finite(row.get('core_t0_yr')) else row.get('t_start_yr')
-    c1 = row.get('core_t1_yr') if finite(row.get('core_t1_yr')) else row.get('t_end_yr')
-    if out and finite(c0) and finite(c1):
-        out[0] = (out[0][0], float(c0), out[0][2])
-        out[-1] = (out[-1][0], out[-1][1], float(c1))
-    return out
-
-
 def residence_sides(row: Mapping[str, Any]) -> Tuple[bool, bool]:
     """Whether the inferred residence (W28 C8) reaches before and after the measured core (its first and last turning
     points)."""
@@ -3533,114 +2924,6 @@ def residence_sides(row: Mapping[str, Any]) -> Tuple[bool, bool]:
     if not all(finite(v) for v in (r0, r1, c0, c1)):
         return False, False
     return float(r0) < float(c0), float(r1) > float(c1)
-
-
-def residence_clause(row: Mapping[str, Any]) -> str:
-    """'stays in the quasi-satellite well from 601 yr to the end (inferred, not measured)' (2020 CB 1E-1, card g03-3 C):
-    the inferred residence beyond the measured core, by side, in the well of the sub-regime next to it; a side bounded
-    by the record's edge reads 'the start' / 'the end', one bounded by a circulation its time. '' without one."""
-    before, after = residence_sides(row)
-    if not (before or after):
-        return ''
-    stretches = well_stretches(row)
-    first, last = (stretches[0][0], stretches[-1][0]) if stretches else ('', '')
-    c0 = row.get('core_t0_yr') if finite(row.get('core_t0_yr')) else row.get('t_start_yr')
-    c1 = row.get('core_t1_yr') if finite(row.get('core_t1_yr')) else row.get('t_end_yr')
-    parts = []
-    if before:
-        edge = _text(row.get('residence_bounded_by_start')) == 'edge'
-        parts.append(
-            (RESIDENCE_WORDS.get(first, 'co-orbital'), f'from {"the start" if edge else years(row.get("residence_t0_yr"))} to {years(c0)}')
-        )
-    if after:
-        edge = _text(row.get('residence_bounded_by_end')) == 'edge'
-        parts.append(
-            (RESIDENCE_WORDS.get(last, 'co-orbital'), f'from {years(c1)} to {"the end" if edge else years(row.get("residence_t1_yr"))}')
-        )
-    if len(parts) == 2 and parts[0][0] == parts[1][0]:
-        text = f'{parts[0][0]} {parts[0][1]} and {parts[1][1]}'
-    else:
-        text = ' and '.join(f'{where} {when}' for where, when in parts)
-    return f'stays {text} (inferred, not measured)'
-
-
-def subregime_clause(row: Mapping[str, Any]) -> str:
-    """'horseshoe 129–339 yr → tadpole L4 339–537 yr' (2016 JA 1E-1, card g03-2 A): the wells of an accepted 1:1 run in
-    time order with their stretches, above SUBREGIMES_SHOWN the first ones, '…' and the last with the count; '' for a
-    run of one well."""
-    stretches = well_stretches(row)
-    if len(stretches) < 2:
-        return ''
-    names = [f'{well_words(well) or "unnamed"} {interval(t0, t1)}' for well, t0, t1 in stretches]
-    if len(names) > SUBREGIMES_SHOWN:
-        names = names[: SUBREGIMES_SHOWN - 1] + [f'… {names[-1]} ({len(names)} sub-regimes)']
-    return ' → '.join(names)
-
-
-def amplitude_clause(row: Mapping[str, Any]) -> str:
-    """'its amplitude changes at ~326–446 yr and ~708–809 yr (kicks of a at ~348 yr, ~783 yr)' (2021 XO3 1V-1, card
-    g03-1 A): the transitional half-cycles of the amplitude changes and the kicks of a met there; 'kick of a at
-    ~4.69 kyr' alone when the kicks meet a change of well (2024 TY11 1M-1 20 kyr). '' without either."""
-    marks = episode_marks(row)
-    changes = [interval(t0, t1) for name, t0, t1 in marks if name == 'amplitude_change']
-    times = [f'~{years(t0)}' for name, t0, _ in marks if name == 'kick']
-    kicks = f'{"kicks" if len(times) > 1 else "kick"} of a at {", ".join(times)}' if times else ''
-    if changes:
-        text = 'its amplitude changes at ' + ' and '.join(f'~{span}' for span in changes)
-        return text + (f' ({kicks})' if kicks else '')
-    return kicks
-
-
-def coorbital_parts_clause(row: Optional[Mapping[str, Any]], residence: bool = True) -> str:
-    """The sub-regimes, the amplitude changes and kicks and (`residence`) the inferred residence of one accepted 1:1
-    run, '; '-joined; '' when it has none of them."""
-    if not row:
-        return ''
-    parts = [subregime_clause(row), amplitude_clause(row), residence_clause(row) if residence else '']
-    return '; '.join(part for part in parts if part)
-
-
-def _episodes_clause(noun: str, eps: Episodes, settings, gaps: bool = True, measured: bool = False) -> str:
-    """Where an episodic angle librates, without the final period: its one episode ('<noun> librates from … to … only
-    (x% of the record), numbers; gaps'; `measured`: a 1:1 core with an inferred residence beyond it, '<noun> librates,
-    measured, from … to … (x% of the record)', W28 C13) or its several ('… in N separate episodes covering …
-    (longest …)')."""
-    longest = eps.longest
-    if longest is None:
-        return f'{noun} librates in part of the record only'
-    span = f'{years(longest.get("t_start_yr"))}–{years(longest.get("t_end_yr"))}'
-    if len(eps.counted) == 1:
-        start, end = years(longest.get('t_start_yr')), years(longest.get('t_end_yr'))
-        text = (
-            f'{noun} librates, measured, from {start} to {end} ' if measured else f'{noun} librates from {start} to {end} only '
-        ) + f'({percent(eps.covered_fraction())} of the record), {libration_numbers(longest, centre=False)}'
-        missed = coverage_text(longest, settings) if gaps else ''  # the slotted text: step 0 prints the gaps
-        return text + (f'; {missed}' if missed else '')
-    return (
-        f'{noun} librates in {len(eps.counted)} separate episodes covering {percent(eps.covered_fraction())} of the record '
-        f'(longest {span}: {libration_numbers(longest, centre=False)})'
-    )
-
-
-def _episodic_sentence(f: MMRFacts, gaps: bool = True) -> str:
-    """The episodes of an episodic angle; of one counted 1:1 episode also its sub-regimes, amplitude changes and kicks
-    and its inferred residence (`coorbital_parts_clause`, W28 C13: 2020 CB 1E-1 '…, measured, from 443 yr to 601 yr …;
-    stays in the quasi-satellite well from 601 yr to the end (inferred, not measured)')."""
-    v, eps = f.v, f.episodes
-    single = eps.longest if len(eps.counted) == 1 else None
-    parts = coorbital_parts_clause(single) if f.coorbital else ''
-    text = _episodes_clause('σ', eps, f.s, gaps, measured=f.coorbital and single is not None and any(residence_sides(single)))
-    text += f'; {parts}' if parts else ''
-    if not eps.accepted:
-        return text + '.'
-    rejected = eps.rejected_text()
-    text += f'; {rejected}' if rejected else ''
-    if _forced_wave_word(f):
-        text += f'; those loops are {forced_wave_source(f)}, so the status reads σ as {_tree_word(f)}'
-    final = _text(v.final_regime)
-    if final and final != str(v.angle_status) and finite(v.final_regime_start_yr):
-        text += f'; from {years(v.final_regime_start_yr)} to the end {regime_phrase(final)}'
-    return text + '.'
 
 
 def forced_wave_source(f: MMRFacts) -> str:
@@ -3658,225 +2941,6 @@ def decisive_centre_moves(f: MMRFacts) -> bool:
     return finite(shift) and centre_moves(float(shift), f.s.mmr_l6_shift_full)
 
 
-def _stationary_clause(f: MMRFacts) -> str:
-    """The subtype stationary in words: the cycles' bands overlap (`geometry.centre_bands_overlap`); a fixed center only
-    when the header's test agrees (`decisive_centre_moves`), else the shift that makes the header say 'moving center'."""
-    if not decisive_centre_moves(f):
-        return ' with a fixed center'
-    shift = f.episodes.decisive.get('centre_shift_over_amp')
-    return (
-        f' with a moving center (shift / mean amplitude {compare(shift, ">", f.s.mmr_l6_shift_full)}; every cycle’s band '
-        'still overlaps the others, so the subtype is stationary)'
-    )
-
-
-def _libration_sentence(f: MMRFacts) -> str:
-    kind, decisive = union_kind(f), f.episodes.decisive or {}
-    if kind == 'centre':  # the fine episode does not cover the record: its numbers are not the whole record's
-        start, end = years(decisive.get('t_start_yr')), years(decisive.get('t_end_yr'))
-        return (
-            'σ librates over the whole record at the scale of the center: episodes without a circulation between them '
-            f'cover it there; at the fine scale the deciding episode runs {start}–{end}, {libration_numbers(decisive)}.'
-        )
-    if kind:
-        many = _union_count(f)
-        return (
-            f'σ librates over the whole record through {many} without a circulation between them (union rule); the '
-            f'deciding one {years(decisive.get("t_start_yr"))}–{years(decisive.get("t_end_yr"))}, {libration_numbers(decisive)}.'
-        )
-    centre = {
-        'modulated': ' with a modulated center',
-        'stationary': _stationary_clause(f),
-        'moving_centre': ' about the moving center of its well',
-        'regime_change': (
-            ' through a change of its 1:1 regime, without a circulation between them' if f.coorbital else regime_change_clause(f)
-        ),
-    }.get(str(f.v.angle_subtype), '')
-    regimes = _regimes_clause(f)
-    if regimes:  # the regimes clause names the episodes and ends with 'the deciding one'
-        centre = ',' if str(f.v.angle_subtype) == 'regime_change' and not f.coorbital else centre
-        return f'σ librates {regimes}{centre} {libration_numbers(f.episodes.decisive or {})}.'
-    parts = coorbital_parts_clause(f.episodes.decisive, residence=False) if f.coorbital else ''
-    if parts and str(f.v.angle_subtype) == 'regime_change':
-        # W28 C13 (card g03-1 A): one 1:1 episode whose changes are no boundary; a change of well is a change of regime,
-        # an amplitude change inside one well is not (2021 XO3 1V-1: quasi-satellite throughout)
-        several = len(well_stretches(f.episodes.decisive or {})) > 1
-        centre = ' through a change of its 1:1 regime, without a circulation,' if several else ', without a circulation,'
-    tail = f'; {parts}' if parts else ''
-    return f'σ librates over the whole record{centre} {libration_numbers(f.episodes.decisive or {})}{tail}.'
-
-
-def regime_change_clause(f: MMRFacts) -> str:
-    """The subtype regime_change of an angle that is not 1:1 (and no union rule, `union_kind`) by what made it, ending
-    with the comma before the deciding episode's numbers: several counted episodes without a circulation between them
-    (W22) ' through 3 episodes without a circulation between them; the deciding one 2.21 kyr–7.17 kyr,'; one episode
-    joined across a step or a stall of its center (W28 C16, rule regime_cut_mark, episodes.csv `marks`) ' in one
-    episode through a stall of its center (8 kyr–14.6 kyr), without a circulation,'; else ', without a circulation,'."""
-    eps, decisive = f.episodes, f.episodes.decisive or {}
-    if len(eps.counted) > 1:
-        span = f'{years(decisive.get("t_start_yr"))}–{years(decisive.get("t_end_yr"))}'
-        return f' through {len(eps.counted)} episodes without a circulation between them; the deciding one {span},'
-    marks = [
-        f'{REGIME_MARK_WORDS[name]} ({_span(t0, t1)})' for name, t0, t1 in _timed_items(decisive.get('marks')) if name in REGIME_MARK_WORDS
-    ]
-    if marks:
-        return f' in one episode through {" and ".join(marks)}, without a circulation,'
-    return ', without a circulation,'
-
-
-def _regimes_clause(f: MMRFacts) -> str:
-    """'in 2 episodes, 2.21–5.92 kyr and 7.99–17.49 kyr, cut by a step of its action (G2a); the deciding one' when a
-    confirmed jump (of a, or G2a's) cut the libration into regimes: then it does not librate 'over the whole record' as
-    one episode. '' otherwise."""
-    g = f.a.geometry
-    if g is None or not g.episodes_before_jump or not g.episodes:
-        return ''
-    runs = sorted(list(g.episodes_before_jump) + list(g.episodes), key=lambda run: run.t_start_yr)
-    spans = ' and '.join(f'{years(run.t_start_yr)}–{years(run.t_end_yr)}' for run in runs)
-    cuts = [jump for jump in g.jumps if not jump.kick]
-    how = 'a step of its action (G2a)' if cuts and all(jump.action_step for jump in cuts) else 'jumps of a'
-    return f'in {len(runs)} episodes, {spans}, cut by {how}; the deciding one'
-
-
-def _circulation_sentence(f: MMRFacts) -> str:
-    if str(f.v.angle_subtype) == 'alias':
-        return (
-            f'The output step folds σ: it turns {fmt(f.row.get("smp_step_rotation_deg_max"))}° per step, so the wrapped picture is '
-            'the step’s, not the body’s; the unwrapped angle circulates.'
-        )
-    net = _net_shift(f, G4B_NET)
-    ends = _end_clause(f)
-    if net:
-        passed = fmt(f.row.get('geo_centre_max_pass_rev'))
-        return (
-            f'σ circulates: its center advances {net} revolutions net, in steps of at most {passed} revolution with small step-backs{ends}.'
-        )
-    return f'σ circulates: its center passes {fmt(f.row.get("geo_centre_max_pass_rev"))} revolutions in one direction{ends}.'
-
-
-def _end_clause(f: MMRFacts) -> str:
-    """'; from 361 yr to the end σ_f slows to an arc (less than one revolution)': a circulation whose record ends in
-    an arc or a stall (final_regime, W28 C14 rule end_arc_extend), '' otherwise."""
-    final, start = _text(f.v.final_regime), f.v.final_regime_start_yr
-    if final not in ('arc', 'stall') or not finite(start):
-        return ''
-    return f'; from {years(start)} to the end {regime_phrase(final)}'
-
-
-ANGLE_SENTENCES = {
-    'libration': _libration_sentence,
-    'episodic': _episodic_sentence,
-    'circulation': _circulation_sentence,
-    'drift': lambda f: (
-        f'σ makes {_plural(len(f.episodes.accepted), "short librating stretch", "short librating stretches")} on a center that '
-        f'drifts {fmt(f.row.get("geo_centre_net_rev"))} rev over the record (the drift decides the word, step 3).'
-        if f.rule == '3k2'
-        else f'σ oscillates, but its center drifts over {percent(f.row.get("geo_drift_fraction"))} of the record.'
-    ),
-    'near_separatrix': lambda f: 'σ has no libration: it '
-    + ('stalls at the top of its potential' if str(f.v.angle_subtype) == 'pattern_b' else 'slips over the top')
-    + ' in each revolution.',
-    'insufficient_time': lambda f: _insufficient_sentence(f),
-}
-
-
-def _insufficient_sentence(f: MMRFacts) -> str:
-    """What σ does in an insufficient_time record: half of one slow swing in the well (G5w, B6c), part of one slow
-    swing (G5a), or too few turning points."""
-    if slow_swing_decided(f):
-        return (
-            'σ rides on a slow center that turns back twice: the record holds half of one slow swing of this resonance’s '
-            'well, too short to show the libration whole.'
-        )
-    if str(f.v.angle_subtype) == 'arc' and _slow_arc(f) is not None:
-        return (
-            'σ rides on a slow center that turns back once: the record holds part of one slow swing, too short to tell a '
-            'drift from a slow libration.'
-        )
-    return f'σ has {fmt(f.row.get("geo_n_tp"))} turning points only: the record is too short to tell a libration.'
-
-
-def _a_swing_change(row) -> str:
-    """'grew 7.16×' / 'shrank 7.16×': geo_action_step_a_ratio is the larger side's swing of a over the smaller's, the
-    larger side being the one of the larger half-amplitude (`geometry.action_step_of`), so it shrank on a step down."""
-    down = finite(row.get('geo_action_step_amp_before_deg')) and finite(row.get('geo_action_step_amp_after_deg'))
-    down = down and float(row['geo_action_step_amp_after_deg']) < float(row['geo_action_step_amp_before_deg'])
-    return f'{"shrank" if down else "grew"} {fmt(row.get("geo_action_step_a_ratio"))}×'
-
-
-def _one_potential(row) -> str:
-    """' in one potential (that of the larger swings, 2 wells: T_obs/T_pred 0.956 before, 0.959 after)': G2a test 7
-    (`geometry.regime_periods`); '' without its columns."""
-    before, after, wells = (row.get(f'geo_action_step_{key}') for key in ('law_before', 'law_after', 'shape_wells'))
-    if not (finite(before) and finite(after)):
-        return ''
-    shape = f', {_plural(int(wells), "well")}' if finite(wells) and int(wells) > 0 else ''
-    return f' in one potential (that of the larger swings{shape}: worst-cycle T_obs/T_pred {fmt(before)} before, {fmt(after)} after)'
-
-
-def _regime_periods_failure(row) -> str:
-    """'and did not cut: one potential does not hold both regimes (a cycle's period is not the loop's at the cutoff
-    0.075 x the shorter period; worst-cycle T_obs/T_pred 0.98 before, 1.61 after)': G2a test 7 failed."""
-    name, _, factor = str(row.get('geo_action_step_shape_failed') or '').partition('@')
-    where = f' at the cutoff {factor} × the shorter period' if factor else ''
-    laws = ''
-    before, after = row.get('geo_action_step_law_before'), row.get('geo_action_step_law_after')
-    if finite(before) and finite(after):
-        laws = f'; worst-cycle T_obs/T_pred {fmt(before)} before, {fmt(after)} after'
-    return f'and did not cut: one potential does not hold both regimes ({T7_WORDS.get(name, name)}{where}{laws})'
-
-
-def action_step_sentence(f: MMRFacts) -> str:
-    """G2a (`geometry.ActionStep`): 'Rule G2a cut the libration at 6.96 kyr: its half-amplitude stepped from 146° to
-    12° within one half-cycle (5.92–7.99 kyr), the swing of a shrank 7.16×, the cycle energy h by −0.541 (|Δh| > 0.1):
-    two energy levels in one potential (that of the larger swings, 2 wells: T_obs/T_pred 0.956 before, 0.959 after),
-    analyzed as regimes like a jump of a (provisional: 1 energy cycle before the step).' A step the guard withheld
-    (`geometry.STEP_WITHHELD`, `analyse._action_step_guard`): 'Rule G2a found a step of the libration at 6.93 kyr (146°
-    to 12.2°) and did not cut: the cut leaves check_mmr_strength, failed on the whole record, unmeasured, and would have
-    made it resonant/low.' '' otherwise. Every number a geo_action_step_* column."""
-    row = f.row
-    if row.get('geo_action_step_failed') == 'withheld':
-        checks = str(row.get('geo_action_step_withheld_checks') or '').replace(';', ', ')
-        return (
-            f'Rule G2a found a step of the libration at {years(row.get("geo_action_step_time_yr"))} '
-            f'({fmt(row.get("geo_action_step_amp_before_deg"))}° to {fmt(row.get("geo_action_step_amp_after_deg"))}°) and '
-            f'did not cut: the cut leaves {checks}, failed on the whole record, unmeasured, and would have made it '
-            f'{row.get("geo_action_step_withheld_verdict")}.'
-        )
-    if row.get('geo_action_step_failed') == 'regime_periods':
-        return (
-            f'Rule G2a found a step of the libration at {years(row.get("geo_action_step_time_yr"))} '
-            f'({fmt(row.get("geo_action_step_amp_before_deg"))}° to {fmt(row.get("geo_action_step_amp_after_deg"))}°) '
-            f'{_regime_periods_failure(row)}.'
-        )
-    if not (finite(row.get('geo_action_step_n_cuts')) and float(row['geo_action_step_n_cuts']) > 0):
-        return ''
-    before, after = row.get('geo_action_step_cycles_before'), row.get('geo_action_step_cycles_after')
-    provisional = ''
-    if finite(row.get('geo_action_step_provisional')) and float(row['geo_action_step_provisional']) > 0:
-        fewest, side = (before, 'before') if finite(before) and finite(after) and float(before) <= float(after) else (after, 'after')
-        provisional = f' (provisional: {_plural(int(fewest), "energy cycle")} {side} the step, {f.s.libration_jump_cycles} confirm it)'
-        if finite(row.get('geo_action_step_held_out')) and not float(row['geo_action_step_held_out']):
-            provisional = ' (provisional: one cycle of the larger swings, its period law read in sample)'
-    return (
-        f'Rule G2a cut the libration at {years(row.get("geo_action_step_time_yr"))}: its half-amplitude stepped from '
-        f'{fmt(row.get("geo_action_step_amp_before_deg"))}° to {fmt(row.get("geo_action_step_amp_after_deg"))}° within one '
-        f'half-cycle ({years(row.get("geo_action_step_t_from_yr"))}–{years(row.get("geo_action_step_t_to_yr"))}), the swing '
-        f'of a {_a_swing_change(row)}, the cycle energy h by {fmt(row.get("geo_action_step_dh"))} '
-        f'(|Δh| > {fmt(row.get("geo_action_step_dh_threshold"))}): two energy levels{_one_potential(row)}, analyzed as '
-        f'regimes like a jump of a{provisional}.'
-    )
-
-
-def mmr_angle_sentence(f: MMRFacts) -> str:
-    """What σ does over the record (the author's wording: 'over the whole record' when it covers it); at a leaf that
-    judged a circulation on one swing (G4c, G4h) the circulation it judged."""
-    if f.rule in SINGLE_LEAVES and single_swing_clause(f):
-        return _circulation_sentence(f)
-    build = ANGLE_SENTENCES.get(str(f.v.angle_status))
-    return build(f) if build else ''
-
-
 # the leaves of the branch where the force law and the potential with a are both not measured (decide.unmeasured_branch)
 BRANCH_LEAVES = ('5s', '5s*', '5o', '5x', '5n')
 STRENGTH_LEAVES = ('5s', '5s*')  # leaves of the strength that a circulation word can carry (the 5s veto, W29 §2)
@@ -3892,11 +2956,6 @@ def strength_first(f: MMRFacts) -> bool:
     one of them was measured (failed): with both not measured the branch's wording holds as before."""
     measured = any(f.checks.get(key) in ('pass', 'fail') for key in ('a_response', 'potential'))
     return f.rule == '5s' and measured and any(name.startswith(STRENGTH_FIRST) for name in f.path)
-
-
-def _strength_entry(f: MMRFacts, name: str) -> str:
-    """The 5s entry `name` as recorded by either place of the rule (before step 5 or in the branch)."""
-    return _entry_text(f, f'{STRENGTH_FIRST} {name}') or _entry_text(f, f'5s {name}')
 
 
 def _strength_entry_object(f: MMRFacts, name: str):
@@ -4025,44 +3084,6 @@ def branch_clause(f: MMRFacts) -> str:
     return build(f) if build else ''
 
 
-def _branch_sentence(f: MMRFacts) -> str:
-    """The status sentence of the branch's leaves 5s, 5s*, 5o, 5n (5s also before step 5: `strength_first`)."""
-    if strength_first(f):
-        head = f'{status_head(f.v.status)}: {branch_clause(f)}'
-        return head + ': no libration of this angle’s own force, whatever the force law and the potential with a say.'
-    text = f'{status_head(f.v.status)}: the force law and the potential with a are not measured; {branch_clause(f)}'
-    if policy_move(f.v):  # the tree's veto is not upheld (a scale, an objection): its episodes are counted
-        return text + f'; {policy_move(f.v)}, so the shape of the angle decides.'
-    if f.rule == '5s':
-        return text + ': no libration of this angle’s own force.' + strength_mark_sentence(f)
-    return text + '.'
-
-
-def strength_marked(f: MMRFacts) -> list:
-    """The accepted runs a 5s row marks forced (strength) (W28 B2, `ForcedWave.by_strength`); under the minimal policy
-    not the ones it counts again (the strength veto not upheld: 2012 KL9)."""
-    g = f.a.geometry
-    counted = policy_ids(getattr(f.v, 'counted_episode_ids', '')) if policy_minimal(f.v) else frozenset()
-    return [wave for wave in g.forced_waves if wave.by_strength and wave.episode_id not in counted] if g is not None else []
-
-
-def strength_mark_sentence(f: MMRFacts) -> str:
-    """' Its 2 accepted episodes are drawn as forced (strength): a period this angle’s force cannot make; the driver is
-    not identified.' (W28 B2, card g11-1 A: the name of the ground, not a driver found); '' without marks."""
-    marked = strength_marked(f)
-    if not marked:
-        return ''
-    n = len(marked)
-    if policy_minimal(f.v):  # W29 §7: (a) draws only what the status counts; (l) labels these runs
-        which = 'Its accepted run is' if n == 1 else f'Its {n} accepted runs are'
-        return (
-            f' {which} not counted (not drawn on (a); (l) labels {"it" if n == 1 else "them"} {STRENGTH_MARK}): a period this '
-            'angle’s force cannot make; the driver is not identified.'
-        )
-    which = 'Its accepted episode is' if n == 1 else f'Its {n} accepted episodes are'
-    return f' {which} drawn as {STRENGTH_MARK}: a period this angle’s force cannot make; the driver is not identified.'
-
-
 FORCE_WINDOWS_POINTER = 'too few force windows: step 5'
 
 
@@ -4128,116 +3149,6 @@ def origin_unknown_clauses(f: MMRFacts) -> str:
     return '; '.join(clauses)
 
 
-def _dynamic_claims(f: MMRFacts) -> str:
-    """What the force law and the potential said, as the reason for an own-dynamics verdict."""
-    s, a = f.s, f.a
-    l4, r0 = f.checks.get('a_response'), f.checks.get('potential')
-    claims = []
-    if l4 == 'pass':
-        law = 'the 1:1 force law' if f.coorbital else 'ȧ = K sin(σ − φ0)'
-        if taken_harmonic_law(a.response) is not None:
-            law = 'ȧ = Σ_k [A_k sin kσ + B_k cos kσ] + C, the force of a well that is no sinusoid'
-        if taken_direct_law(a.response) is not None:  # B8: the term's own averaged force, one scale s free
-            law = 'ȧ = s × the averaged force of the term, at the libration scale'
-        detail, need = _force_detail(f)
-        claims.append(f'a responds to σ as a pendulum ({law}: {detail}; need {need})')
-    elif l4 == 'fail' and r0 == 'pass':
-        claims.append(f'the force law fails ({_force_detail(f)[0]}), but the potential with a carries the libration')
-    elif l4 == 'fail':
-        claims.append(f'the force law fails ({_force_detail(f)[0]})')
-    if r0 == 'pass':
-        claims.append(f'the energy fits the potential built from a ({_potential_detail(f)[0]})')
-    if not claims:
-        b1 = a.response.b1_ratio if a.response is not None else None
-        direct = _direct_strength_clause(f)
-        decided = f'; {direct}' if direct else ''
-        rest = 'nothing measured contradicts a libration of this angle'
-        if f.alias_unmeasured:  # R-ALIAS-A: what failed was read as not measured, it still was measured
-            failed = ' and '.join(CHECK_WORDS[name] for name in f.alias_unmeasured)
-            rest = f'nothing else measured contradicts a libration of this angle ({failed} failed on a folded step)'
-        return (
-            f'the force law is not measured ({_why_l4(f)}){decided}; a carries the swing '
-            f'(B1 {_with_source(compare(b1, ">=", s.mmr_b1_ratio_min), f, "b1_source")}) and {rest}'
-        )
-    text = ' and '.join(claims)
-    if l4 not in ('pass', 'fail'):
-        text += f'; the force law is not measured: {_why_l4(f)}'
-    return text
-
-
-def _foreign_clauses(f: MMRFacts) -> str:
-    """'no member holds the center and no other resonance drives a (…)', '(… not triggered)'."""
-    s, sub, owner = f.s, f.a.subresonances, f.a.owner
-    foreign, not_run = [], []
-    if sub is not None and str(sub.check) == 'pass':
-        foreign.append('no member of the multiplet holds the center')
-    if owner is not None and str(owner.check) == 'pass':
-        best = _best_candidate(owner.candidates)
-        detail = ''
-        if best is not None and finite(best.r2_median) and best.r2_median >= s.mmr_w_r2_none:  # WK15: R² 0.76, refused
-            detail = f' (best of {owner.n_candidates}: {best.spec.key} {_owner_rejection(f, best)})'
-        elif best is not None:
-            detail = f' (best of {owner.n_candidates}: R² {compare(best.r2_median, "<", s.mmr_w_r2_none, digits=2)})'
-        foreign.append(f'no other resonance drives a{detail}')
-    if sub is None and not f.derived:
-        not_run.append('the subresonance scan was not triggered')
-    if owner is not None and 'owner_coorbital' in owner.flags:
-        not_run.append(COORBITAL_OWNER)
-    text = ('; ' + ' and '.join(foreign)) if foreign else ''
-    return text + (' (' + '; '.join(not_run) + ')' if not_run else '')
-
-
-def _dynamic_sentence(f: MMRFacts) -> str:
-    v = f.v
-    if f.rule == '5u/6':  # the geometry alone: origin unknown
-        text = (
-            f'{status_head(v.status)}: by the geometry alone, the force law and the potential with a are not measured and '
-            f'{branch_clause(f)}; the origin stays unknown{_foreign_clauses(f)}'
-        )
-    else:
-        text = f'{status_head(v.status)}: {_dynamic_claims(f)}{_foreign_clauses(f)}'
-    if str(v.status) == 'transient':
-        text += '. Transient, not resonant, because the libration does not cover the record'
-    elif str(v.reason) == 'separatrix_zone' and has_mark(v, 'near_separatrix_without_zone'):  # G3 without a measured zone
-        text += '. Near the separatrix by the pattern of σ; the separatrix zone is not measured'
-    elif str(v.reason) == 'separatrix_zone':
-        text += '. Near the separatrix: the cycles lie in the separatrix zone'
-    return text + '.'
-
-
-def _subresonance_sentence(f: MMRFacts) -> str:
-    """Rule C (`decide.member_status`): the members of one commensurability are one resonance, so the catalog row
-    takes the status of the member that librates (its own row); a nodal member without a row of its own leaves the
-    row non_resonant."""
-    head = status_head(f.v.status)
-    accepted = f.a.subresonances.accepted if f.a.subresonances is not None else None
-    if accepted is None:
-        return f'{head}: the subresonance {f.v.owner} was taken as the origin of the libration.'
-    coherence = compare(accepted.phi0_coherence, '>=', f.s.mmr_subresonance_phi0_coh_min)
-    found = (
-        f'the subresonance scan found the member {accepted.spec.key} of the same commensurability with a fixed center '
-        f'(φ0 coherence {coherence}), while the center of this angle moves with it'
-    )
-    own_row = any(d.resonance.key == accepted.spec.key for d in f.a.derived) or str(f.v.status) != 'non_resonant'
-    if not own_row:
-        return f'{head} for this angle: {found}; the member has no row of its own, so this angle is reported non_resonant.'
-    return f'{head}: {found}. The members of one commensurability are one resonance, so this row takes the status of {accepted.spec.key} (its own row).'
-
-
-def _induced_sentence(f: MMRFacts) -> str:
-    owner = f.a.owner
-    if identity_route(owner):
-        return (
-            f'Non-resonant for this angle: {_identity_claim(owner)}, while σ’s own three-body term would need '
-            f'{sci(f.a.strength.ratio)} × μ_i μ_j e^q; this angle only follows {f.v.owner} through the identity.'
-        )
-    r2 = owner.accepted.r2_median if owner is not None and owner.accepted is not None else None
-    fit = f'R² {compare(r2, ">=", f.s.mmr_owner_r2_min, digits=2)}'
-    if not owner_confirmed(f):  # g10-8: never 'drives a' where its regimes do not cover σ's episode
-        return f'Non-resonant for this angle: {f.v.owner} is a candidate driver of a ({fit}); this angle follows it through the identity.'
-    return f'Non-resonant for this angle: {f.v.owner} drives a ({fit}); this angle only follows it through the identity.'
-
-
 def _k2_clause(f: MMRFacts) -> str:
     """K2 (rule 3k2) in words: the slow center follows the secular part, the episodes are a ripple on it; or K2b, a
     kinematic libration whose center moves more than its amplitude."""
@@ -4253,102 +3164,6 @@ def _k2_clause(f: MMRFacts) -> str:
         f'while a does not answer σ, and the episodes are a ripple on that drift '
         f'(swing / center range {compare(share.value if share else None, "<", f.s.mmr_kin_ripple_share_max)})'
     )
-
-
-def _kinematic_sentence(f: MMRFacts) -> str:
-    if f.rule == '3k2':
-        return f'Non-resonant: {_k2_clause(f)}.'
-    b1 = f.entry(B1_AMPLITUDE)
-    if b1 is not None and b1.result is False:  # card g10-2: the pendulum argument in words
-        return (
-            'Non-resonant: a resonance reverses σ through a, so a must oscillate with σ; here a carries too little of the '
-            f'wave this libration needs (B1 {compare(b1.value, ">=", b1.threshold)}): the swing sits in the perihelion term.'
-        )
-    return 'Non-resonant: the slow angle follows p ϖ while a stays flat: the swing sits in the perihelion term.'
-
-
-def _alias_sentence(f: MMRFacts) -> str:
-    far = f.entry(C5_FAR)
-    distance = compare(far.value if far is not None else None, '>=', f.s.mmr_c5_far_ratio_min)
-    if str(f.v.status) == 'invalid':  # C5 needs both: name the one (or two) that failed (1864: far, but two branches)
-        why = []
-        if not _held(f, C5_BRANCH):
-            why.append('several alias branches of ν·Δt fit the a range (the folding is ambiguous)')
-        if far is None or far.result is not True:
-            why.append(f'⟨a⟩ lies only {distance} a-scales from a*' if far is not None else '⟨a⟩’s distance from a* is not measured')
-        elif why:
-            why.append(f'although ⟨a⟩ lies {distance} a-scales from a*')
-        return f'Invalid: {", ".join(why) or "the alias test does not pass"}: a libration hidden by the step cannot be excluded.'
-    return (
-        f'Non-resonant: one alias branch only, and ⟨a⟩ lies {distance} a-scales from a*: the body is far from this resonance, '
-        'so the folded picture is no libration.'
-    )
-
-
-def _baseline_sentence(f: MMRFacts) -> str:
-    """baseline_needed: the next check (N8: the total length of the next record, at most MMR_NEXT_CHECK_SPAN_FACTOR x
-    the record) and the time the period estimate asks for, from which period (F8); or, when time is not what is
-    missing, why (the cutoff hides a quasi-satellite libration; P already fits the record)."""
-    qs = _held(f, QS_STALL_ENTRY)
-    if qs:
-        return (
-            f'Uncertain: the cutoff hides the libration (P_QS against P_c: {compare(qs.value, "<", qs.threshold, " yr")}), '
-            'so a longer record would not decide; the step must hold the quasi-satellite cutoff.'
-        )
-    required, period = f.row.get('base_required_kyr'), f.row.get('base_period_yr')
-    source = BASE_SOURCE_WORDS.get(str(f.row.get('base_period_source') or ''), '')
-    if not finite(required):
-        return 'Uncertain: the record is too short to decide.'
-    need = years(float(required) * KYR)
-    basis = f'P = {years(period)} from {source}' if source else f'P = {years(period)}'
-    cause = str(f.row.get('base_cause') or '')
-    if cause:
-        return (
-            f'Uncertain, but not for lack of time: the record ({years(f.row.get("smp_span_yr"))}) already holds the {need} '
-            f'that {basis} needs; {BASE_CAUSE_WORDS.get(cause, snake_words(cause))}.'
-        )
-    check, estimate = f.row.get('extend_to_years'), f.row.get('base_extend_to_years')
-    if not finite(check) or (policy_minimal(f.v) and str(f.v.action) != 'extend'):  # P5: no next check the action lacks
-        return f'Uncertain: the record is too short to decide: about {need} needed ({basis}).'
-    budget = f'at most {fmt(f.s.mmr_next_check_span_factor)} × the record; ' if finite(estimate) and check < estimate else ''
-    return f'Uncertain: the record is too short to decide; next check: {years(check)} ({budget}about {need} estimated from {basis}).'
-
-
-STATUS_SENTENCES = {
-    'dynamic_libration': _dynamic_sentence,
-    'dynamic_episode': _dynamic_sentence,
-    'geometric_libration': _dynamic_sentence,  # rule 5u/6: `_dynamic_sentence` words the geometry alone
-    'geometric_episode': _dynamic_sentence,
-    'separatrix_zone': _dynamic_sentence,
-    'subresonance_librates': _subresonance_sentence,
-    'induced_libration': _induced_sentence,
-    'kinematic_libration': _kinematic_sentence,
-    'kinematic_drift': _kinematic_sentence,
-    'alias': _alias_sentence,
-    'origin_unknown': lambda f: (
-        _branch_sentence(f)
-        if f.rule in BRANCH_LEAVES
-        else f'Uncertain: {origin_unknown_clauses(f)}. σ librates, but no measurement establishes that this resonance makes it.'
-    ),
-    'implausible_strength': _branch_sentence,
-    'circulation': lambda f: 'Non-resonant: σ circulates.',
-    'no_resonant_potential': lambda f: (
-        f'Non-resonant: σ turns back at times, but the energy does not fit a potential from a ({_potential_detail(f)[0]}).'
-    ),
-    'modulated_circulation': lambda f: 'Non-resonant: σ stalls at the top of its potential in each revolution (pattern B) without a libration.',
-    'drift_mechanism_unknown': lambda f: 'Uncertain: σ oscillates about a drifting center and no tested mechanism explains the drift.',
-    'baseline_needed': _baseline_sentence,
-}
-
-
-def mmr_status_sentence(f: MMRFacts) -> str:
-    """Why this status: the rule that decided it, in plain words, with its numbers."""
-    if f.rule in SINGLE_LEAVES and single_swing_clause(f):  # W28 C6: the leg or half-swing decided
-        return _single_swing_sentence(f)
-    build = STATUS_SENTENCES.get(str(f.v.reason))
-    if build:
-        return build(f)
-    return f'{status_head(f.v.status)}: {snake_words(str(f.v.reason))}.'
 
 
 def _unexplained_lifted(f: MMRFacts) -> bool:
@@ -4380,8 +3195,8 @@ def mmr_info(f: MMRFacts, physics: Sequence[PhysicsSection]) -> List[str]:
     if 'exit_and_capture' in f.v.flags and f.a.energy is not None:
         lifted = _unexplained_lifted(f)
         out.append(
-            f'exit and capture: σ left a libration {_plural(f.a.energy.n_exits, "time")} and came back '
-            f'{_plural(f.a.energy.n_captures, "time")} (a mark; no status, no mechanism'
+            f'exit and capture: σ left a libration {plural(f.a.energy.n_exits, "time")} and came back '
+            f'{plural(f.a.energy.n_captures, "time")} (a mark; no status, no mechanism'
             + ('; lifts the cap "' + CAP_WORDS[str(Cap.TRANSIENT_UNEXPLAINED)] + '")' if lifted else ')')
         )
     spread = f.entry(SHORT_PERIOD_CAP)
@@ -4427,8 +3242,6 @@ class PhysicsRow:
     icon: str
     label: str
     text: str
-    read_by_verdict: bool = False  # a number the decision compared: bold
-    grey: bool = False  # context, not a test (legality, the σ wave): grey
     numbers: Tuple[Tuple[str, str, float], ...] = ()
     columns: Tuple[str, ...] = ()
 
@@ -4487,12 +3300,6 @@ class _Printer:
         left, right = self.num(low, scale, form), self.num(high, scale, form)
         return (left if left == right else f'{left}–{right}') + unit
 
-    def time_span(self, low: str, high: str, unit_yr: float = YEAR) -> str:
-        """Two time columns in one unit (kyr when the larger reaches 1 kyr): 'a–b kyr'."""
-        larger = max(abs(self.value(low)), abs(self.value(high))) * unit_yr
-        scale, unit = (1 / KYR, 'kyr') if larger >= KYR else (1.0, 'yr')
-        return self.span(low, high, unit_yr * scale, unit=f' {unit}')
-
     def time(self, column: str, unit_yr: float = YEAR) -> str:
         """A time column (in yr, or kyr with `unit_yr` = KYR) in yr or kyr, as `years` would print it."""
         value_yr = self.value(column) * unit_yr
@@ -4530,7 +3337,6 @@ def _direct_rows(f: MMRFacts) -> List[PhysicsRow]:
     s, strength, p = f.s, f.a.strength, _Printer(f.row)
     rows = []
     icon = _check_icon(strength.check)
-    read = 'str_ratio' in f.v_columns
     harmonic = str(strength.method) == 'direct_harmonic'
     if p.has('str_P_lib_theory_min_kyr', 'str_P_lib_theory_max_kyr'):
         window = f'{p.time("str_snap_t0_yr")}–{p.time("str_snap_t1_yr")}' if p.has('str_snap_t0_yr', 'str_snap_t1_yr') else ''
@@ -4541,7 +3347,7 @@ def _direct_rows(f: MMRFacts) -> List[PhysicsRow]:
         values = [abs(p.value('str_P_lib_theory_min_kyr')) * KYR] + ([abs(p.value('str_T_obs_yr'))] if p.has('str_T_obs_yr') else [])
         scale, unit = (1 / KYR, 'kyr') if min(values) >= KYR else (1.0, 'yr')
         theory = f'T0_th {p.span("str_P_lib_theory_min_kyr", "str_P_lib_theory_max_kyr", KYR * scale, unit=f" {unit}")}'
-        where = f' ({window}: {_plural(n, "snapshot")}{well}{e})' if window else ''
+        where = f' ({window}: {plural(n, "snapshot")}{well}{e})' if window else ''
         observed = ''
         if p.has('str_T_obs_yr'):
             # W28 E11 (g10-7): str_T_obs is T0 = P/F(A) inferred from the observed cycles, not an observed period
@@ -4563,7 +3369,7 @@ def _direct_rows(f: MMRFacts) -> List[PhysicsRow]:
         if low >= implausible:
             text += f'; ≥ {fmt(implausible)} × is implausible'
         p.show('str_ratio', 'str_ratio_min', 'str_ratio_max', 'str_implausible', 'str_mu_eff_theory_min', 'str_mu_eff_theory_max')
-        rows.append(p.take('strength', icon, 'strength', text, read_by_verdict=read))
+        rows.append(p.take('strength', icon, 'strength', text))
     if p.has('str_sep_halfwidth_min_au', 'str_sep_halfwidth_max_au', 'rsp_b1_meas_au'):
         # a pendulum's a swings at most the zone's half-width; the width goes as √μ, so the strength check's band [1/x, x]
         # on μ is √x on the width: the same tolerance, no new number
@@ -4590,7 +3396,7 @@ def _direct_rows(f: MMRFacts) -> List[PhysicsRow]:
             excluded = p.value('rsp_b5_ratio') >= 1
             ratio = p.cmp('rsp_b5_ratio', '>=', 1)
             parts.append(f'slower libration: ratio {ratio}, {"excluded" if excluded else "not excluded"}')
-        rows.append(p.take('slow', '', 'slow part', '; '.join(parts), grey=True))
+        rows.append(p.take('slow', '', 'slow part', '; '.join(parts)))
     elements = 'the planet’s saved orbit' if str(strength.planet_elements) == 'saved' else 'the planet’s mean orbit, its phase scanned'
     p.show('str_planet_elements', 'str_method')
     rows.append(
@@ -4600,7 +3406,6 @@ def _direct_rows(f: MMRFacts) -> List[PhysicsRow]:
             'assumptions',
             f'μ_req is what σ would need if these cycles were its own libration; the range spans the snapshots, not an '
             f'error bar; first-order average over a frozen 3-D orbit with {elements}',
-            grey=True,
         )
     )
     return rows
@@ -4625,8 +3430,7 @@ def _scale_rows(f: MMRFacts) -> List[PhysicsRow]:
         )
         p.show('str_divisor_kind', 'str_divisor_candidate')
     p.show('str_method', 'str_eq_legal')
-    read = 'str_ratio' in f.v_columns
-    return [p.take('scale', _check_icon(strength.check), 'strength', text, read_by_verdict=read)]
+    return [p.take('scale', _check_icon(strength.check), 'strength', text)]
 
 
 def own_pendulum_section(f: MMRFacts) -> Optional[PhysicsSection]:
@@ -4674,7 +3478,7 @@ def coorbital_law_row(f: MMRFacts) -> PhysicsRow:
         f'ȧ {verb} the 1:1 force law: K/K_th {fmt(law.scale)} (1 = {planet}’s mass; averaged direct + indirect '
         f'potential), R² {fmt(response.force_r2_h1)}/{fmt(response.force_r2_h2)} in the two halves'
     )
-    return PhysicsRow('law', _check_icon(check), 'force law', text, read_by_verdict=True)
+    return PhysicsRow('law', _check_icon(check), 'force law', text)
 
 
 # own_intervals' regime -> what the owner does there (owner.py REGIME_*)
@@ -4750,15 +3554,15 @@ def _owner_rows(f: MMRFacts) -> List[PhysicsRow]:
             + (f'; σ’s own bound L_σ {p.num("own_lever_sigma")}' if p.has('own_lever_sigma') else '')
         )
         if route == 'phase':
-            rows.append(p.take('phases', _check_icon(gain >= s.mmr_owner_phi0_coh_gain), 'phases', text, read_by_verdict=True))
+            rows.append(p.take('phases', _check_icon(gain >= s.mmr_owner_phi0_coh_gain), 'phases', text))
         else:  # accepted by another route: the phases are context
-            rows.append(p.take('phases', '', 'phases', text, grey=True))
+            rows.append(p.take('phases', '', 'phases', text))
     rows += _owner_theory_rows(f, p, forced)
     if p.has('own_sigma_wave_deg'):
         text = f'σ on sin/cos φ: {p.num("own_sigma_wave_deg")}°'
         if p.has('own_sigma_wave_R2'):
             text += f' (R² {p.num("own_sigma_wave_R2")})'
-        rows.append(p.take('sigma_wave', '', 'σ wave', text + ', ripple-corrected; measured only, nothing predicts it here', grey=True))
+        rows.append(p.take('sigma_wave', '', 'σ wave', text + ', ripple-corrected; measured only, nothing predicts it here'))
     rows += _capture_rows(f, p)
     return rows
 
@@ -4768,7 +3572,7 @@ def _owner_force_row(f: MMRFacts, p: _Printer, route: str) -> PhysicsRow:
     s = f.s
     if route == 'identity':  # the route measures nothing on a
         text = f'ȧ = K sin(φ − φ0): R² {p.num("own_R2", form=lambda v: fmt(v, 2))} (not read by the identity route)'
-        return p.take('force', '', 'force on a', text, grey=True)
+        return p.take('force', '', 'force on a', text)
     text = (
         f'ȧ = K sin(φ − φ0): R² {p.cmp("own_R2", ">=", s.mmr_owner_r2_min, digits=2)}'
         + (f', φ0 coherence {p.num("own_phi0_coherence")}' if p.has('own_phi0_coherence') else '')
@@ -4776,8 +3580,7 @@ def _owner_force_row(f: MMRFacts, p: _Printer, route: str) -> PhysicsRow:
         + (_sigma_law_note(f, p) if p.has('own_sigma_R2') else '')
     )
     p.show('own_R2_windows')
-    read = 'own_R2' in f.v_columns
-    return p.take('force', _check_icon(p.value('own_R2') >= s.mmr_owner_r2_min), 'force on a', text, read_by_verdict=read)
+    return p.take('force', _check_icon(p.value('own_R2') >= s.mmr_owner_r2_min), 'force on a', text)
 
 
 def _sigma_law_note(f: MMRFacts, p: _Printer) -> str:
@@ -4807,22 +3610,18 @@ def _identity_route_rows(f: MMRFacts, p: _Printer) -> List[PhysicsRow]:
             'of σ’s half-amplitude; the identity is exact, so this holds for nearly any φ: the rows below decide'
         )
         ok = abs(p.value('own_id_coef_dev')) <= s.mmr_owner_identity_coef_tol and p.value('own_id_resid') <= s.mmr_owner_identity_resid_max
-        rows.append(p.take('identity_fit', _check_icon(ok), 'identity', text, read_by_verdict=True))
+        rows.append(p.take('identity_fit', _check_icon(ok), 'identity', text))
     if p.has('own_id_phi_cover'):
         status = _text(f.row.get('own_id_phi_angle_status')) or 'its angle'
         text = f'φ’s own analysis: {status}, its librating episodes cover {p.cmp("own_id_phi_cover", ">=", s.mmr_owner_cover_min)} of σ’s episode'
         p.show('own_id_phi_angle_status', 'own_id_phi_span_deg', 'own_id_n_pass', 'own_id_n_analysed')
-        rows.append(
-            p.take(
-                'identity_phi', _check_icon(p.value('own_id_phi_cover') >= s.mmr_owner_cover_min), 'φ librates', text, read_by_verdict=True
-            )
-        )
+        rows.append(p.take('identity_phi', _check_icon(p.value('own_id_phi_cover') >= s.mmr_owner_cover_min), 'φ librates', text))
     if p.has('own_id_phi_str_ratio'):
         text = f'φ’s directly averaged strength passes: required / theory {p.num("own_id_phi_str_ratio")}'
         if p.has('str_ratio'):
             ratio_min = sci(s.mmr_owner_identity_ratio_min)
             text += f'; σ needs {p.num("str_ratio", form=sci)} × μ_i μ_j e^q (the route opens at {ratio_min})'
-        rows.append(p.take('identity_strength', PHYSICS_ICONS[True], 'φ strength', text, read_by_verdict=True))
+        rows.append(p.take('identity_strength', PHYSICS_ICONS[True], 'φ strength', text))
     return rows
 
 
@@ -4866,8 +3665,7 @@ def _owner_potential_row(f: MMRFacts, p: _Printer) -> PhysicsRow:
             + (f', |Δφ0| ≤ {p.num("own_phi0_diff_max_deg")}°' if p.has('own_phi0_diff_max_deg') else '')
         )
     p.show('own_pot_scale', 'own_pot_scale_worst', 'own_pot_n_windows', 'own_K_direct_au_yr', 'own_pot_min_distance_hill')
-    read = any(column in f.v_columns for column in ('own_pot_scale_worst', 'own_pot_R2'))
-    return p.take('theory', _check_icon(r2 >= s.mmr_owner_r2_min and inside), 'theory', text, read_by_verdict=read)
+    return p.take('theory', _check_icon(r2 >= s.mmr_owner_r2_min and inside), 'theory', text)
 
 
 def _own_term_row(f: MMRFacts, p: _Printer) -> PhysicsRow:
@@ -5013,13 +3811,11 @@ def _capture_rows(f: MMRFacts, p: _Printer) -> List[PhysicsRow]:
     if len(parts) == 1:
         parts.append('not measurable on the owner’s stretches over σ’s episode')
     text = '; '.join(parts) + f' → {CAPTURE_WORDS.get(verdict, verdict)}'
-    columns = ('own_psi_sweep_deg', 'own_psi_energy_R2', 'own_psi_secular_R2', 'own_psi_self_R2')
-    read = any(column in f.v_columns for column in columns)
     decided_icon = excluded or verdict == 'confirmed'
-    rows = [p.take('capture', PHYSICS_ICONS[True] if decided_icon else PHYSICS_ICONS[None], CAPTURE_LABEL, text, read_by_verdict=read)]
+    rows = [p.take('capture', PHYSICS_ICONS[True] if decided_icon else PHYSICS_ICONS[None], CAPTURE_LABEL, text)]
     slow = slow_x_line(f, p)
     if slow:
-        rows.append(p.take('slow_x', '', 'slow x', slow, grey=True))
+        rows.append(p.take('slow_x', '', 'slow x', slow))
     return rows
 
 
@@ -5031,28 +3827,13 @@ def _x_cycles_text(f: MMRFacts, p: Optional[_Printer] = None) -> str:
         return ''
     n = int(p.value('own_x_cycles'))
     p.num('own_x_cycles')
-    head = f'x closes {_plural(n, "cycle")} of its own well'
+    head = f'x closes {plural(n, "cycle")} of its own well'
     numbers = []
     if p.has('own_x_cycle_period_yr'):
         numbers.append(f'period {p.time("own_x_cycle_period_yr")}')
     if p.has('own_x_secular_offset'):
         numbers.append(f'off every secular period by {p.num("own_x_secular_offset")}')
     return head + (f' ({", ".join(numbers)})' if numbers else '')
-
-
-def joint_line(f: MMRFacts) -> str:
-    """Card g05-8 B (W28 A2b, origin joint): 'Both resonances at once: x = Ψ/u closes 18 cycles of its own well
-    (period 1.2 kyr, off every secular period by 0.12) while 5J+6S-2+0+0-9 holds φ; σ librates in this resonance too.'
-    One cycle (rule 2j): '… closes one cycle of its own well: not decided yet; a longer record decides.' ''
-    otherwise."""
-    verdict = _text(f.row.get('own_second_capture'))
-    if str(f.v.libration_origin) != 'joint' or verdict not in ('confirmed', 'one_cycle'):
-        return ''
-    cycles = _x_cycles_text(f) or 'x closes cycles of its own well'
-    owner = f' while {f.v.owner} holds φ' if f.v.owner else ''
-    if verdict == 'one_cycle':
-        return f'Both resonances at once? x = Ψ/u: {cycles}{owner}: not decided yet; a longer record decides.'
-    return f'Both resonances at once: x = Ψ/u: {cycles}{owner}; σ librates in this resonance too.'
 
 
 def cycles_section(f: MMRFacts) -> Optional[PhysicsSection]:
@@ -5069,7 +3850,7 @@ def cycles_section(f: MMRFacts) -> Optional[PhysicsSection]:
     if owner.accepted is not None:
         forced = _text(f.row.get('own_detail')) == 'owner_forced_wave'
         what = 'the forced wave' if forced else 'the libration'
-        subtitle = f'{what} of {owner.accepted.spec.key} (owner search: {_plural(owner.n_candidates, "candidate")})'
+        subtitle = f'{what} of {owner.accepted.spec.key} (owner search: {plural(owner.n_candidates, "candidate")})'
         if str(Flag.OWNER_OUTSIDE_EPISODE) in f.v.flags:
             subtitle += '; it acts outside σ’s episode, so it is not the origin'
         return PhysicsSection(title, subtitle, _owner_rows(f))
@@ -5082,7 +3863,7 @@ def cycles_section(f: MMRFacts) -> Optional[PhysicsSection]:
         return PhysicsSection(title, 'owner search without a verdict', [PhysicsRow('owner', icon, 'owner', why, columns=('own_flags',))])
     best = _best_candidate(owner.candidates)
     p = _Printer(f.row)
-    text = f'{_plural(owner.n_candidates, "candidate")}, none accepted'
+    text = f'{plural(owner.n_candidates, "candidate")}, none accepted'
     if best is not None:
         text += (
             f'; best {best.spec.key} R² {compare(best.r2_median, "<", f.s.mmr_w_r2_none, digits=2)}'
@@ -5097,11 +3878,6 @@ def physics_sections(f: MMRFacts) -> List[PhysicsSection]:
     """The physics block of the right column (R1 §3–4, R5 §5): A 'Is σ the own pendulum of <key>?' and B 'What makes
     the cycles?'. Every number comes from a column of `f.row`, every threshold from the settings; display only."""
     return [section for section in (own_pendulum_section(f), cycles_section(f)) if section is not None and section.rows]
-
-
-def physics_columns(sections: Sequence[PhysicsSection]) -> List[str]:
-    """Every column the physics block shows (the numbers below the explanation leave them out)."""
-    return list(dict.fromkeys(column for section in sections for row in section.rows for column in row.columns))
 
 
 # --- the slotted explanation (cards g10-2 style (i), g10-8, g05-1, g04-7; W28 E8)
@@ -5139,14 +3915,6 @@ def owner_confirmed(f: MMRFacts) -> bool:
     return finite(owner.cover) and owner.cover >= s.mmr_owner_cover_min
 
 
-def _owner_spans(f: MMRFacts) -> str:
-    """The owner's measured regimes that meet σ's decisive episode: '630 yr–19 kyr (librating)' (LIST_MAX)."""
-    owner, cover = f.a.owner, _decisive_cover(f)
-    t0, t1 = (cover.t0_yr, cover.t1_yr) if cover is not None else (-math.inf, math.inf)
-    spans = [(a, b, kind) for a, b, kind in owner.intervals if b >= t0 and a <= t1] or list(owner.intervals)
-    return _listed([f'{_span(a, b)} ({OWNER_REGIME_WORDS.get(str(kind), snake_words(str(kind)))})' for a, b, kind in spans])
-
-
 def neighbour_items(neighbours: str) -> List[Tuple[str, float, float, str]]:
     """(key, t0, t1, where) [yr] of the verdict's neighbors 'KEY t0–t1 before|during|after;…' (A3a); an item without
     an interval gives (key, nan, nan, '')."""
@@ -5162,13 +3930,6 @@ def neighbour_items(neighbours: str) -> List[Tuple[str, float, float, str]]:
     return items
 
 
-def _neighbour_spans(neighbours: str) -> Tuple[str, str]:
-    """(key, '1.91–5.24 kyr before, 13.6–16.9 kyr after') from the verdict's neighbors 'KEY t0–t1 before;…' [yr]."""
-    parsed = neighbour_items(neighbours)
-    key = parsed[0][0] if parsed else ''
-    return key, _listed([f'{years(t0)}–{years(t1)} {where}'.strip() for _, t0, t1, where in parsed if finite(t0)])
-
-
 def _refusal(f: MMRFacts) -> str:
     """Why the decision did not take the owner: its cover of σ's decisive episode (F7) and the P2 turns."""
     s, cover, parts = f.s, _decisive_cover(f), []
@@ -5179,52 +3940,6 @@ def _refusal(f: MMRFacts) -> str:
     if finite(turns) and turns >= s.mmr_owner_psi_turns_per_cycle_max:
         parts.append(f'Ψ/u makes {compare(turns, "<", s.mmr_owner_psi_turns_per_cycle_max)} revolutions per σ cycle')
     return '; '.join(parts)
-
-
-CANDIDATE_TAIL = 'not shown to make these cycles.'
-
-
-def driver_line(f: MMRFacts) -> Tuple[str, bool]:
-    """The cause line of an owner, driver or neighbor (card g10-8), and whether it is affirmative: 'Driven by X
-    [owner: <its regimes on the episode>]' only when `owner_confirmed`; else 'Candidate driver: X (…): not shown to make
-    these cycles' (`candidate_driver`). ('', False) when the verdict names none."""
-    role, v = str(f.v.cause_role), f.v
-    if role in ('owner', 'driver') and f.a.owner is not None and f.a.owner.accepted is not None and owner_confirmed(f):
-        return f'Driven by {v.cause_term or v.owner} [{role}: {_owner_spans(f)}].', True
-    key, detail = candidate_driver(f)
-    if not key:
-        return '', False
-    return f'Candidate driver: {key} ({detail}): {CANDIDATE_TAIL}', False
-
-
-def candidate_driver(f: MMRFacts) -> Tuple[str, str]:
-    """(key, what it does where and why the decision did not take it) of a refused owner or driver ('…; it covers 0 <
-    0.5 of σ’s decisive episode') or of a neighbor ('librates before the episode (…), outside it; …'); ('', '') for
-    none or a confirmed owner."""
-    role, v = str(f.v.cause_role), f.v
-    if role in ('owner', 'driver') and f.a.owner is not None and f.a.owner.accepted is not None:
-        if owner_confirmed(f):
-            return '', ''
-        refusal = _refusal(f)
-        return v.cause_term or v.owner, f'{_owner_spans(f)}{"; " + refusal if refusal else ""}'
-    if role == 'neighbour' and v.neighbours:
-        key = v.cause_term or _neighbour_spans(v.neighbours)[0]
-        where = neighbour_text(f)  # A3b: what it does where ('librates after the episode (…), outside it')
-        where = where[len(key) :].strip() if where.startswith(key) else where
-        refusal = _refusal(f) if f.a.owner is not None else ''
-        return key, '; '.join(part for part in (where, refusal) if part)
-    return '', ''
-
-
-def candidate_driver_short(f: MMRFacts, steps: Sequence[Step]) -> str:
-    """The compact form of the candidate-driver line (W28 FIX-plot: 2000 SF8 8M-9 and 1627 13E-33 overflowed): when
-    the owner step prints its regimes and the refusal word for word, the line points there, 'Candidate driver: X (its
-    regimes and why it was not taken: step 2): not shown to make these cycles.'; '' otherwise (the full line stays)."""
-    key, detail = candidate_driver(f)
-    owner = next((step for step in steps if step.key == 'owner'), None)
-    if not (key and detail and owner is not None and detail in owner.outcome):
-        return ''
-    return f'Candidate driver: {key} (its regimes and why it was not taken: step 2): {CANDIDATE_TAIL}'
 
 
 # --- the roles of the other resonance in the header, the steps and the text (W28 A3b; cards g04-4, g04-5, g04-6,
@@ -5295,17 +4010,6 @@ def neighbour_text(f: MMRFacts) -> str:
     return f'{key} ' + '; '.join(parts)
 
 
-def argument_offset(spec, member) -> str:
-    """The secular term by which a member of the multiplet differs from the row's angle, member − row
-    ('9M-16+2+5' − '9M-16+0+7' → '−2ϖ + 2ϖ_M'), '' when they differ by none or in their λ part."""
-    if spec.planets != member.planets or spec.planet_coefficients != member.planet_coefficients:
-        return ''
-    terms = [(member.body_varpi_coefficient - spec.body_varpi_coefficient, 'varpi')]
-    for name, mine, theirs in zip(spec.planets, spec.planet_varpi_terms, member.planet_varpi_terms):
-        terms.append((theirs - mine, f'varpi_{planet_letter(name)}'))
-    return term_text(''.join(f'{k:+d}{name}' for k, name in terms if k))
-
-
 def _driver_period(f: MMRFacts) -> str:
     """', P 4.51 kyr' from own_owner_period_yr (the driver's own period, the one the forced wave has), else ''."""
     period = f.row.get('own_owner_period_yr')
@@ -5364,163 +4068,6 @@ def cause_line(verdict, f: MMRFacts) -> Tuple[str, str]:
     if argument:
         return ROLE_ARGUMENT, argument
     return '', ''
-
-
-def subtitle_role(f: MMRFacts) -> str:
-    """The role in the subtitle: 'driver 3N-5+0+2', 'owner …', 'neighbor …', 'resonant argument …', 'kinematic −4ϖ'."""
-    v, role = f.v, str(f.v.cause_role)
-    if role == ROLE_KINEMATIC:
-        return f'{ROLE_KINEMATIC} {term_text(v.cause_term)}'.strip()
-    if role == ROLE_JOINT and (v.cause_term or v.owner):
-        return f'also in {v.cause_term or v.owner}'
-    parts = [f'{ROLE_ARGUMENT} {v.resonant_argument}' if v.resonant_argument else '']
-    if role in (ROLE_OWNER, ROLE_DRIVER, ROLE_NEIGHBOUR) and (v.cause_term or v.owner):
-        word = role if role == ROLE_NEIGHBOUR or owner_confirmed(f) else ROLE_CANDIDATE
-        parts.insert(0, f'{word} {v.cause_term or v.owner}')
-    return ' · '.join(part for part in parts if part)
-
-
-# sub_choice (A6b, `SubresonanceResult.choice`) -> how the member was chosen, in words
-CHOICE_WORDS = {
-    'theory': 'chosen by the multiplet theory: its center π − arg P + jβ is the flattest over the episode',
-    'measured': 'the flattest measured center: the multiplet theory does not apply here or does not follow',
-}
-COMPOSITE = 'composite'  # resonant_argument when no single member stands (A6b, origin_detail composite_multiplet)
-
-
-def argument_line(f: MMRFacts) -> str:
-    """Rule C in the cause slot (cards g06-1/g06-2 A: one resonance; the argument instead of an owner): 'Resonant
-    argument: 9M-16+2+5 (chosen by the multiplet theory: …), one resonance 9M-16 with this angle; the two differ by
-    −2ϖ + 2ϖ_M, so this angle’s center turns with that term.' With 'composite' (W28 A6b): no single member, σ follows
-    the moving center of the composite term. Then the other episodes' own members (episodes.csv resonant_argument, A6b
-    `episode_arguments`): '#1 76.2–99.8 kyr chose no member in its own window'. '' without a resonant argument."""
-    v = f.v
-    if not v.resonant_argument:
-        return ''
-    one = f', one resonance {v.commensurability} with this angle' if v.commensurability else ''
-    if v.resonant_argument == COMPOSITE:
-        text = (
-            f'Resonant argument: composite{one}: no single member of the multiplet stands; σ follows the moving center of '
-            'the composite term P(β).'
-        )
-        return text + _episode_arguments_text(f)
-    sub = f.a.subresonances
-    member = sub.accepted.spec if sub is not None and sub.accepted is not None else None
-    offset = argument_offset(f.a.resonance, member) if member is not None and member.key == v.resonant_argument else ''
-    turn = f'; the two differ by {offset}, so this angle’s center turns with that term' if offset else ''
-    choice = CHOICE_WORDS.get(_text(f.row.get('sub_choice')), '')
-    chosen = f' ({choice})' if choice else ''
-    return f'Resonant argument: {v.resonant_argument}{chosen}{one}{turn}.' + _episode_arguments_text(f)
-
-
-def _episode_arguments_text(f: MMRFacts) -> str:
-    """' Other episodes: #1 76.2–99.8 kyr chose no member in its own window.' (A6b: each accepted episode is scanned in
-    its own window); '' with one counted episode or rows without the column."""
-    rows = sorted(f.episodes.counted, key=lambda row: _float(row.get('t_start_yr')))
-    decisive = f.episodes.decisive or {}
-    others = [row for row in rows if 'resonant_argument' in row and not _same_id(row.get('episode_id'), decisive.get('episode_id'))]
-    if len(rows) < 2 or not others:
-        return ''
-    parts = []
-    for row in others:
-        span = f'#{fmt(row.get("episode_id"))} {interval(row.get("t_start_yr"), row.get("t_end_yr"))}'
-        key = _text(row.get('resonant_argument'))
-        parts.append(f'{span}: {key}' if key else f'{span} chose no member in its own window')
-    return f' Other episodes: {"; ".join(parts)}.'
-
-
-def gap_cause_line(f: MMRFacts) -> str:
-    """Card g06-2 A (12218 4M-7, W28 A6a; columns sub_th_P_min_gap, sub_th_P_edges): 'The gap 48.7–76.2 kyr between
-    the episodes is where the composite term cancels: |P|/max |P| falls to 8.8e-05 there (0.142 and 0.195 at its edges)
-    as ϖ_M − ϖ passes its cancellation phase.' Said for a row with a resonant argument whose counted episodes leave a
-    gap, and only when |P| in the gap falls below its value at both edges of the gap; '' otherwise."""
-    p_min = f.row.get('sub_th_P_min_gap')
-    if not f.v.resonant_argument or not finite(p_min) or f.a.resonance is None or len(f.a.resonance.planets) != 1:
-        return ''
-    rows = sorted(f.episodes.counted, key=lambda row: _float(row.get('t_start_yr')))
-    gaps = [
-        (_float(a.get('t_end_yr')), _float(b.get('t_start_yr')))
-        for a, b in zip(rows, rows[1:])
-        if _float(b.get('t_start_yr')) > _float(a.get('t_end_yr'))
-    ]
-    if not gaps:
-        return ''
-    edges = []
-    for item in _text(f.row.get('sub_th_P_edges')).split(';'):
-        t, _, value = item.partition(':')
-        if finite(t) and finite(value):
-            edges.append((float(t) * KYR, float(value)))
-    beta = f'ϖ_{planet_letter(f.a.resonance.planets[0])} − ϖ'
-    if len(gaps) > 1:
-        return f'The gaps between the episodes fall where |P|/max |P| of the composite term drops to {sci(p_min)} as {beta} turns.'
-    g0, g1 = gaps[0]
-    near = [min(edges, key=lambda e: abs(e[0] - t))[1] for t in (g0, g1)] if edges else []
-    if len(near) != 2 or not float(p_min) < min(near):
-        return ''
-    return (
-        f'The gap {interval(g0, g1)} between the episodes is where the composite term cancels: |P|/max |P| falls to '
-        f'{sci(p_min)} there ({fmt(near[0])} and {fmt(near[1])} at its edges) as {beta} passes its cancellation phase.'
-    )
-
-
-def diagnostic_scan_line(f: MMRFacts) -> str:
-    """Trigger T8 alone (W28 A6a; columns sub_diag_*): 'A diagnostic subresonance scan (T8) ran: its flattest member is
-    1M-3J-1-1+0+4, check not measured; without a measured force it changes nothing.' '' when T8 did not run it."""
-    if 'T8' not in _text(f.row.get('sub_diag_triggers')).split(';'):
-        return ''
-    accept, best = _text(f.row.get('sub_diag_would_accept')), _text(f.row.get('sub_diag_best'))
-    check = snake_words(_text(f.row.get('sub_diag_would_check')))
-    found = f'it would accept {accept}' if accept else (f'its flattest member is {best}' if best else 'no member stands out')
-    return f'A diagnostic subresonance scan (T8) ran: {found}{f", check {check}" if check else ""}; without a measured force it changes nothing.'
-
-
-def frame_line(f: MMRFacts) -> str:
-    """Card g06-4 (2003 UG22): a member of the multiplet that test E′ rejected as too weak (reason E_strength, its term
-    |C_j|/max|C| = coefficient_rel) is a frame, not a force: a steadier center of that member is the reference frame
-    turning with the body's own e, i, ω, not a resonance. Names the weakest such member when the scan ran and accepted
-    none; without a scan the cheap member list (A6a, sub_cheap_list 'key:W/W0:strength:reason') names the flattest
-    such members whose center is flatter than this angle's (W/W0 < 1): 'Members 10E-17+5+2 and 10E-17+6+1 give a
-    flatter center (W/W0 0.42, 0.45), but their terms are 7.6e-09 and 1.8e-10 of the strongest (test E′): a frame, not a
-    force; …'. ''  otherwise."""
-    sub = f.a.subresonances
-    if sub is None:
-        return _cheap_frame_line(f)
-    if sub.accepted is not None:
-        return ''
-    weak = [c for c in sub.candidates if str(c.reason) == 'E_strength' and finite(c.coefficient_rel) and not c.nodal]
-    if not weak:
-        return ''
-    member = min(weak, key=lambda c: c.coefficient_rel)
-    return (
-        f'A steadier center of a member such as {member.spec.key} would be a frame, not a force: its term is '
-        f'{sci(member.coefficient_rel)} of the strongest (test E′); the center moves with the body’s own e, i, ω.'
-    )
-
-
-FRAME_MEMBERS_MAX = 2  # members the cheap frame line names (the flattest first)
-
-
-def _cheap_frame_line(f: MMRFacts) -> str:
-    """`frame_line` from the cheap member list (no scan ran), '' without a weak member flatter than this angle."""
-    if f.v.resonant_argument:
-        return ''
-    weak = []
-    for item in _text(f.row.get('sub_cheap_list')).split(';'):
-        key, width, strength, reason = (item.split(':') + ['', '', '', ''])[:4]
-        if reason == 'E_strength' and finite(width) and finite(strength) and float(width) < 1:
-            weak.append((float(width), float(strength), key))
-    if not weak:
-        return ''
-    chosen = sorted(weak)[:FRAME_MEMBERS_MAX]
-    keys = ' and '.join(key for _, _, key in chosen)
-    widths = ', '.join(fmt(width, 2) for width, _, _ in chosen)
-    terms = ' and '.join(sci(strength) for _, strength, _ in chosen)
-    many = len(chosen) > 1
-    return (
-        f'{"Members" if many else "Member"} {keys} {"give" if many else "gives"} a flatter center (W/W0 {widths}), but '
-        f'{"their terms are" if many else "its term is"} {terms} of the strongest (test E′): a frame, not a force; the '
-        'center moves with the body’s own e, i, ω.'
-    )
 
 
 def slow_x_line(f: MMRFacts, p: Optional[_Printer] = None) -> str:
@@ -5609,7 +4156,6 @@ SECULAR_TERM_NAMES = {
 }
 SECULAR_CAUSES = ('secular_2omega', 'secular_g_gj')  # slow_cause / own_x_cause of a secular cycle
 SLOW_KINEMATIC = 'kinematic'  # slow_origin of a secular cycle whose identity fails (B10a `SlowOrigin.KINEMATIC`)
-DRIVER_MEASURED, DRIVER_CANDIDATE = 'measured', 'candidate'
 
 
 def secular_term_period(row: Mapping[str, Any], term: str) -> float:
@@ -5678,169 +4224,10 @@ def closest_secular_period(row: Mapping[str, Any], period: Any) -> Tuple[float, 
     return min(references, key=lambda item: abs(period / item[0] - 1))
 
 
-def _secular_period_words(f: MMRFacts) -> str:
-    """'its period 10.5 kyr matches the 2ω cycle π/|ω̇| = 11.3 kyr' for origin_detail secular_cycle
-    (`secular_reference`), '' otherwise."""
-    period, ref, name, _ = secular_reference(f)
-    return f'its period {years(period)} matches {name} = {years(ref)}' if name else ''
-
-
-def kinematic_cause(f: MMRFacts) -> str:
-    """The cause of a kinematic libration (card g10-2): the body's p·ϖ term and how much of σ's swing it spans on the
-    decisive episode against the λ part (kin_swing_share, kin_lambda_swing_share, A5), the secular period it matches;
-    'the swing is σ's pϖ term' only when that term spans more of the swing than the λ part (the text never asserts what
-    its numbers refute); the modulating planet is not identified."""
-    p = int(f.a.resonance.body_varpi_coefficient)
-    if not p:
-        return ''
-    term = varpi_term(p, '*' if f.a.resonance.retrograde else '')
-    if slow_kinematic(f.row, f.s.mmr_kin_period_tol):
-        return slow_kinematic_cause(f, term)
-    share, part = f.row.get('kin_swing_share'), f.row.get('kin_lambda_swing_share')
-    period = _secular_period_words(f)
-    swings = swing_words(f, term)
-    tail = ''.join(f'; {part_}' for part_ in (period, swings) if part_)
-    if not (finite(share) and finite(part)):
-        reason = _text(f.row.get('kin_k1_episode_reason'))
-        why = KIN_REASON_WORDS.get(reason, snake_words(reason)) if reason else 'not measured'
-        return f'σ’s {term} term: its share of the swing is not measured ({why}){tail}.'
-    shares = f'over the episode {term} spans {fmt(share, 2)} of σ’s swing, the λ part {fmt(part, 2)}'
-    if float(share) <= float(part):
-        return f'σ’s {term} term does not carry the swing: {shares}{tail}; what moves σ is not identified.'
-    return f'The swing is σ’s {term} term: {shares}{tail}. Which planet modulates ϖ is not identified.'
-
-
-def swing_words(f: MMRFacts, term: str) -> str:
-    """The predicted and the measured half-swing of a kinematic libration (W28 B10b, card g08-8: 'predicted 105°,
-    measured 114°'): kin_pred_swing_deg (|p| asin of the smaller over the larger of e_free, e_forced: the wobble of ϖ
-    the two secular vectors make) against the slow swing (kin_meas_swing_deg) on a K3s row, else the decisive
-    episode's median half-amplitude. '' without the prediction."""
-    predicted = f.row.get('kin_pred_swing_deg')
-    if not finite(predicted):
-        return ''
-    if slow_kinematic(f.row, f.s.mmr_kin_period_tol):
-        measured, what = f.row.get('kin_meas_swing_deg'), 'the slow swing'
-    else:
-        measured, what = (f.episodes.decisive or {}).get('half_amp_med_deg'), 'the episode’s half-amplitude'
-    head = f'the free and forced e predict ±{fmt(predicted)}° for {term}'
-    return f'{head}, {what} is ±{fmt(measured)}°' if finite(measured) else head
-
-
-def slow_kinematic_cause(f: MMRFacts, term: str) -> str:
-    """The cause of a kinematic libration on the slow scale (rule K3s, card g08-8; 37087 3J+8S-3): 'The slow swing is
-    σ’s −8ϖ term: on the slow scale (17.3 kyr–96.6 kyr, cutoff 506 yr) its period 5.69 kyr matches the e cycle
-    2π/|g − g5| = 5.70 kyr; the free and forced e predict ±96.7° for −8ϖ, the slow swing is ±124°; σ̇ = c(a − a*)
-    fails there (slope ratio 2.78, corr 0.51).' From the slow_* columns of B10a."""
-    row = f.row
-    period, ref, name, _ = secular_reference(f)
-    span = f'{years(row.get("slow_t0_yr"))}–{years(row.get("slow_t1_yr"))}'
-    head = f'The slow swing is σ’s {term} term: on the slow scale ({span}, cutoff {years(row.get("slow_cutoff_yr"))})'
-    parts = [f'{head} its period {years(period)} matches {name} = {years(ref)}' if name else head]
-    swings = swing_words(f, term)
-    if swings:
-        parts.append(swings)
-    if _text(row.get('slow_identity')) == 'fail':
-        parts.append(
-            f'σ̇ = c(a − a*) fails there (slope ratio {fmt(row.get("slow_identity_slope_ratio"))}, '
-            f'corr {fmt(row.get("slow_identity_corr"), 2)})'
-        )
-    return '; '.join(parts) + '.'
-
-
-def slow_scale_line(f: MMRFacts) -> str:
-    """The slow scale of σ's center at its cause level (W28 B10b, card g05-2: 'compute such a libration if it is there,
-    so that it shows in the right column; name the potential cause with its confidence'; columns slow_* of B10a):
-    'Slow scale: σ’s center swings by ±124° with period 5.69 kyr (13 slow cycles, 17.3 kyr–96.6 kyr): the e cycle
-    2π/|g − g5| = 5.70 kyr (identified).'; possible '…: probably …; a slow libration of another resonance is not
-    excluded.'; unknown '…: cause not identified; …'. A slow scale whose identity holds says so (a dynamic candidate;
-    no status follows). '' without a slow swing, on a K3s row (`slow_kinematic_cause` says it) and where the owner's
-    slow x already does (`slow_x_line`)."""
-    row = f.row
-    if not _text(row.get('slow_source')) or not finite(row.get('slow_halfamp_deg')):
-        return ''
-    if str(f.v.reason) == 'kinematic_libration' and slow_kinematic(row, f.s.mmr_kin_period_tol):
-        return ''
-    if _text(row.get('slow_cause_source')) == 'owner_x' and str(f.v.reason) == 'induced_libration':
-        if _text(row.get('own_x_cause_level')) in ('identified', 'possible'):
-            return ''
-    span = f'{years(row.get("slow_t0_yr"))}–{years(row.get("slow_t1_yr"))}'
-    swing = f'±{fmt(row.get("slow_halfamp_deg"))}°'
-    n = int(_float(row.get('slow_n_cycles'))) if finite(row.get('slow_n_cycles')) else 0
-    if finite(row.get('slow_period_yr')):
-        head = (
-            f'Slow scale: σ’s center swings by {swing} with period {years(row.get("slow_period_yr"))} ({_plural(n, "slow cycle")}, {span})'
-        )
-    else:
-        head = f'Slow scale: σ’s center swings by {swing} over {span} ({_plural(n, "slow cycle")}: no period)'
-    not_excluded = 'a slow libration of another resonance is not excluded'
-    holds = _text(row.get('slow_origin')) == 'dynamic_candidate'
-    if holds:
-        not_excluded = 'σ̇ = c(a − a*) holds on that scale, so a slow libration is not excluded'
-    cause, level = _text(row.get('slow_cause')), _text(row.get('slow_cause_level'))
-    if cause in SECULAR_CAUSES:
-        term, ref, _ = slow_secular_cause(row)
-        name = SECULAR_TERM_NAMES.get(term, (f'the secular cycle {term}',))[0]
-        reference = f' = {years(ref)}' if finite(ref) else ''
-        if level == 'identified':
-            return f'{head}: {name}{reference} (identified){"; " + not_excluded if holds else ""}.'
-        return f'{head}: probably {name}{reference}; {not_excluded}.'
-    if cause == 'pvarpi_term':
-        term = term_text(_signed(row.get('slow_cause_term')))
-        return f'{head}: probably σ’s {term} term (the center follows it at no secular period); {not_excluded}.'
-    return f'{head}: cause not identified; {not_excluded}.'
-
-
 def _signed(term: Any) -> str:
     """'-8varpi' as `term_text` reads it ('+8varpi' for a positive coefficient without a sign)."""
     term = _text(term)
     return term if term[:1] in '+-' else f'+{term}'
-
-
-def secular_driver_line(f: MMRFacts) -> Tuple[str, Tuple[str, ...]]:
-    """The Driver line of a kinematic libration at a secular period (W28 B10b; card g05-3, the author: show the term
-    where an owner would be): 'Driven by: secular cycle −4ϖ (the 2ω cycle π/|ω̇|, P 18.0 kyr) [measured]', first
-    under the plaque. measured: the period matches within mmr_kin_period_tol and the swing is shown to be that term's
-    (on σ's episode the margin K1e passes; on the slow scale, K3s, the cause level is identified); candidate
-    otherwise. ('', ()) for any other row."""
-    v = f.v
-    if str(v.cause_role) != ROLE_KINEMATIC or str(v.origin_detail) != 'secular_cycle':
-        return '', ()
-    period, ref, name, _ = secular_reference(f)
-    if not name:
-        return '', ()
-    p = int(f.a.resonance.body_varpi_coefficient)
-    term = term_text(v.cause_term) if v.cause_term else varpi_term(p)
-    tol = f.s.mmr_kin_period_tol
-    matches = finite(period) and finite(ref) and ref > 0 and abs(period / ref - 1) <= tol
-    if slow_kinematic(f.row, tol):
-        ids, shown = ('K3s',), _text(f.row.get('slow_cause_level')) == 'identified'
-    else:
-        k1e = f.margins.get('K1e')
-        ids, shown = ('K1e',), k1e is not None and k1e.margin in (Margin.FULL, Margin.THIN)
-    word = DRIVER_MEASURED if matches and shown else DRIVER_CANDIDATE
-    return f'Driven by: secular cycle {term} ({name}, P {years(ref)}) [{word}].', ids
-
-
-def other_resonances_line(f: MMRFacts, decisive: str) -> str:
-    """The third kind of cause line (card g10-8): 'Other resonances: not tested (<reason>)', with '; not needed: a is
-    not driven' at a kinematic leaf (`no_force_on_a`, g04-7); 'tested, none drives a (best …)' at a kinematic leaf whose
-    owner search answered. '' where the verdict names a driver, for a 1:1 or a derived row, an angle that does not
-    librate, or when the decisive sentence already says it."""
-    owner = f.a.owner
-    if str(f.v.cause_role) in ('owner', 'driver', 'neighbour') or f.derived or f.coorbital:
-        return ''
-    if owner is not None and 'owner_coorbital' in owner.flags:
-        return ''
-    if str(f.v.angle_status) not in ('libration', 'episodic') or 'no other resonance drives a' in decisive:
-        return ''
-    needed = '; not needed: a is not driven' if no_force_on_a(f) else ''
-    if owner is None or str(owner.check) not in ('pass', 'fail'):
-        return f'Other resonances: not tested ({_skip_owner(f)[1]}){needed}.'
-    if needed and owner.accepted is None:
-        best = _best_candidate(owner.candidates)
-        detail = f' (best {best.spec.key}: {_owner_rejection(f, best)})' if best is not None else ''
-        return f'Other resonances: tested, none drives a{detail}{needed}.'
-    return ''
 
 
 def info_items(f: MMRFacts, physics: Sequence[PhysicsSection]) -> List[Tuple[str, str]]:
@@ -5853,15 +4240,8 @@ def info_items(f: MMRFacts, physics: Sequence[PhysicsSection]) -> List[Tuple[str
     return items
 
 
-def objection_line(items: Sequence[Tuple[str, str]]) -> str:
-    """'Objection, not read by this verdict: identity fail; …' from the failed checks of the gray line ('' for none)."""
-    failed = [text for value, text in items if value == 'fail']
-    return f'Objection, not read by this verdict: {"; ".join(failed)}.' if failed else ''
-
-
 # where the planets' q–Q bands come from (ctx_orbit_overlap_source): a planet not saved is taken at its J2000 orbit
 ORBIT_SOURCE_WORDS = {'saved': '', 'J2000': 'planets taken at their J2000 orbits'}
-PLANET_ORDER = ('Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune')
 
 
 def orbit_line(row: Mapping[str, Any]) -> str:
@@ -5874,17 +4254,11 @@ def orbit_line(row: Mapping[str, Any]) -> str:
     words = ORBIT_SOURCE_WORDS.get(source)
     if words is None and source.startswith('saved:'):  # 'saved:Earth+Mars': the others at J2000
         saved = set(source[len('saved:') :].split('+'))
-        words = f'{", ".join(name for name in PLANET_ORDER if name not in saved)} taken at their J2000 orbits'
+        words = f'{", ".join(name for name in PLANET_NAMES_ORDER if name not in saved)} taken at their J2000 orbits'
     note = f' ({words})' if words else ''
     if overlap == 'none':
         return f'Radial overlap: none{note}.'
     return f'Radial overlap with {", ".join(overlap.split(";"))}{note}.'
-
-
-def _plain(sentence: str, status: Any) -> str:
-    """A status sentence without its head 'Non-resonant: ' (the verdict line says the status)."""
-    head = f'{status_head(status)}: '
-    return sentence[len(head) :] if sentence.startswith(head) else sentence
 
 
 def _comm(f: MMRFacts) -> str:
@@ -5925,145 +4299,6 @@ def verdict_line(f: MMRFacts) -> str:
     return build(f) if build else ''
 
 
-def cell_words(verdict) -> str:
-    """The calibration cell in a few words: 'cell: 35 author labels, 0 wrong (accuracy 90%–100%)' ('' without one)."""
-    n, errors = getattr(verdict, 'cell_n_examples', None), getattr(verdict, 'cell_n_errors', None)
-    if not finite(n):
-        return ''
-    if not n:
-        return 'Cell: no author label yet.'
-    low, high = getattr(verdict, 'cell_accuracy_low_95', None), getattr(verdict, 'cell_accuracy_high_95', None)
-    accuracy = f' (accuracy {percent(low)}–{percent(high)})' if finite(low) and finite(high) else ''
-    return f'Cell: {_plural(int(n), "author label")}, {fmt(errors)} wrong{accuracy}.'
-
-
-def change_line(verdict, checks: Sequence[CheckRow]) -> str:
-    """What would change the verdict (the slot 'change'): the level and what limits it (`confidence_parts`; 'Without
-    the cap it would be …' is the arithmetic 'Support: …' below, the other reading of the cap is its LIMIT row), the
-    calibration cell in a few words and the action."""
-    head = '' if policy_minimal(verdict) else confidence_parts(verdict, checks)[0]  # W29: the basis line says it
-    return ' '.join(part for part in (head, cell_words(verdict), action_sentence(verdict)) if part)
-
-
-def mmr_bullets(f: MMRFacts, checks: Sequence[CheckRow], items: Sequence[Tuple[str, str]], steps: Sequence[Step] = ()) -> List[Bullet]:
-    """The slotted explanation of an MMR verdict (card g10-2 style (i), g10-8): a confirmed driver first, directly
-    under the plaque ('Driven by 11J-4+0-7 [driver: …]'); then the verdict in plain words, what σ does, the decisive
-    argument (the status sentence without its head), an objection that did not decide, the cause (the kinematic term,
-    the identity σ = φ/8 + Ψ/8 of an induced row, a candidate driver, other resonances not tested), what would change
-    the verdict, and the radial overlap. Every sentence is built from the same facts as the status sentences. `steps`
-    (`mmr_steps`): a candidate driver whose regimes and refusal the owner step prints gets a short form for the
-    compact explanation (`candidate_driver_short`)."""
-    v = f.v
-    f.brief = True  # the decisive sentence points to step 5 for the force windows
-    decisive = mmr_status_sentence(f)
-    f.brief = False
-    driver, confirmed = driver_line(f)
-    out = [Bullet(SLOT_CAUSE, driver, ('W',))] if confirmed else []
-    secular, secular_ids = secular_driver_line(f)  # B10b: a kinematic libration's secular cycle where an owner would be
-    if secular:
-        out.append(Bullet(SLOT_CAUSE, secular, secular_ids))
-    out.append(Bullet(SLOT_VERDICT, verdict_line(f)))
-    episodic = str(v.angle_status) == 'episodic' and not (f.rule in SINGLE_LEAVES and single_swing_clause(f))
-    angle = _episodic_sentence(f, gaps=False) if episodic else mmr_angle_sentence(f)
-    sigma = (angle, action_step_sentence(f), not_counted_clause(f))  # W28 C11: accepted runs the status does not count
-    out.append(Bullet(SLOT_SIGMA, ' '.join(part for part in sigma if part)))
-    out.append(Bullet(SLOT_DECISIVE, _plain(decisive, v.status), (f.rule,) if f.rule else ()))
-    out.append(Bullet(SLOT_OBJECTION, objection_line(items)))
-    if str(v.reason) == 'kinematic_libration':
-        out.append(Bullet(SLOT_CAUSE, kinematic_cause(f), ('K1e',)))
-    if not confirmed:
-        out.append(Bullet(SLOT_CAUSE, driver, ('W',), short=candidate_driver_short(f, steps) if driver else ''))
-    if str(v.reason) == 'induced_libration':
-        out.append(Bullet(SLOT_CAUSE, identity_line(f)))
-        if _text(f.row.get('own_x_cause_level')) in ('identified', 'possible'):  # g05-1: the slow swing has a cause
-            out.append(Bullet(SLOT_CAUSE, slow_x_line(f)))
-    out.append(Bullet(SLOT_CAUSE, slow_scale_line(f)))  # B10b, g05-2: the slow scale at its cause level
-    out.append(Bullet(SLOT_CAUSE, joint_line(f), ('W',)))  # W28 A2b
-    out.append(Bullet(SLOT_CAUSE, argument_line(f), ('S',)))
-    out.append(Bullet(SLOT_CAUSE, gap_cause_line(f), ('S',)))  # W28 A6a: the 12218 gap
-    out.append(Bullet(SLOT_CAUSE, frame_line(f), ('S',)))
-    out.append(Bullet(SLOT_CAUSE, diagnostic_scan_line(f), ('S',)))  # W28 A6a: T8
-    out.append(Bullet(SLOT_CAUSE, line_share_line(f), ('L4',)))
-    out.append(Bullet(SLOT_CAUSE, kinematic_suspicion_line(f), ('K1',)))
-    out.append(Bullet(SLOT_CAUSE, other_resonances_line(f, decisive), ('W',)))
-    change = change_line(v, checks)
-    extension = ' '.join(part for part in (extension_line(f), extend_flag_sentence(f)) if part)  # W28 C14: extend_time
-    out.append(Bullet(SLOT_CHANGE, f'{change} {extension}' if change and extension else change or extension))
-    out.append(Bullet(SLOT_ORBIT, orbit_line(f.row)))
-    return [bullet for bullet in out if bullet.text]
-
-
-def line_share_line(f: MMRFacts) -> str:
-    """Which forced lines carry ȧ when the angle's own force law does not (W28 B8b, cards g07-3 A, g07-2 A; columns
-    rsp_line_ids, rsp_line_period_yr, rsp_line_share, rsp_line_share_all): 'ȧ’s oscillation is mostly the 107-yr line
-    57 P_M = P_conj (7M-10): 93% of its variance'. Only where the harmonic L4 fails or is thin (the direct law may
-    have lifted it), not at a kinematic leaf (a carries no swing there); never the libration's own period (P_lib) and
-    never the planets' radial overlap (E6, the orbit line)."""
-    ids, share = _text(f.row.get('rsp_line_ids')), f.row.get('rsp_line_share')
-    response, l4 = f.a.response, f.margins.get('L4')
-    weak = f.checks.get('a_response') == 'fail' or (l4 is not None and l4.margin in (Margin.THIN, Margin.FAIL))
-    if response is not None and taken_direct_law(response) is not None:
-        weak = True  # the harmonic law failed; the term's averaged force decided
-    names = [name.strip() for name in ids.split(';') if name.strip()]
-    if not (weak and names and finite(share)) or names[0] == 'P_lib' or f.rule in KINEMATIC_LEAVES:
-        return ''  # at a kinematic leaf a does not carry the swing: its lines say nothing about this angle
-    period = f.row.get('rsp_line_period_yr')
-    if names[0] == 'unidentified':
-        return f'ȧ’s oscillation is mostly an unidentified {years(period)} line: {percent(share)} of its variance.'
-    head, rest = names[0], [name for name in names[1:] if name not in ('P_lib',)]
-    also = f' ({"; ".join(rest)})' if rest else ''
-    text = f'ȧ’s oscillation is mostly the {years(period)} line {head}{also}: {percent(share)} of its variance'
-    together = f.row.get('rsp_line_share_all')
-    if finite(together) and float(together) > float(share) + 0.005:
-        text += f', the lattice lines together {percent(together)}'
-    return text + '.'
-
-
-def kinematic_suspicion_line(f: MMRFacts) -> str:
-    """An uncertain row whose swing the body's p·ϖ term spans more than the λ part does (kin_swing_share >
-    kin_lambda_swing_share, the predicate `kinematic_cause` asserts with), while the force law that would tell a
-    resonance from a kinematic swing is not measured (W28 B9, card g06-6 A: 2003 EH16): 'Suspected kinematic: over the
-    episode 3ϖ spans 0.77 of σ’s swing, the λ part 0.46; the force law is not measured (half-amplitude 28.6° < 45°)'.
-    A suspicion, not a status: '' for any other row."""
-    if str(f.v.status) != 'uncertain' or f.checks.get('a_response') in ('pass', 'fail') or f.a.resonance is None:
-        return ''
-    p = int(f.a.resonance.body_varpi_coefficient)
-    share, part = f.row.get('kin_swing_share'), f.row.get('kin_lambda_swing_share')
-    if not (p and finite(share) and finite(part) and float(share) > float(part)):
-        return ''
-    term = varpi_term(p, '*' if f.a.resonance.retrograde else '')
-    why = short_reason(_why_l4(f))
-    return (
-        f'Suspected kinematic: over the episode {term} spans {fmt(share, 2)} of σ’s swing, the λ part {fmt(part, 2)}; '
-        f'the force law that would tell it from a resonance is not measured ({why}).'
-    )
-
-
-def extension_line(f: MMRFacts) -> str:
-    """What a length-limited extension serves (W28 B9, cards g08-5 B, g08-6 A; rule extend_length_limited, A-FW of
-    `decide.force_window_extension`): 'The extension serves the late regime: 2 force windows of 3.5 P for #0 (from 2.21
-    kyr, P 3.14 kyr); the failed potential stays measured, a longer record does not remove it.' Only when that rule fired on a force-window
-    leaf (`EXTEND_LEAVES`) and L4 is short of windows (`force_windows_short`)."""
-    s, v, g = f.s, f.v, f.a.geometry
-    if str(Rule.EXTEND_LENGTH_LIMITED) not in v.rules_fired or EXTEND_LEAVES.get(f.rule) != LENGTH_FORCE_WINDOWS or g is None:
-        return ''
-    if not force_windows_short(f.a.response, s):
-        return ''
-    late = last_episode_at_end(g, s)
-    if late is None or not finite(late.period_med_yr):
-        return ''
-    windows = s.mmr_extend_force_windows
-    text = (
-        f'The extension serves the late regime: {fmt(windows)} force windows of {fmt(s.mmr_force_window_cycles)} P for '
-        f'#{late.episode_id} (from {years(late.t_start_yr)}, P {years(late.period_med_yr)})'
-    )
-    failed = [CHECK_WORDS.get(name, name) for name, value in f.checks.items() if value == 'fail' and name in ('potential', 'identity')]
-    if failed:
-        verb, pronoun = ('stays', 'it') if len(failed) == 1 else ('stay', 'them')
-        text += f'; the failed {" and ".join(failed)} {verb} measured, a longer record does not remove {pronoun}'
-    return text + '.'
-
-
 # --------------------------------------------------------------------------------------------- numbers behind the verdict
 
 # the second word of a decision-path entry that names its check ('3 B1 a carries the amplitude', '5 L4 force law R2')
@@ -6071,7 +4306,7 @@ ENTRY_IDS = ('B1', 'B5', 'K2', 'K2b', 'L3', 'L4', 'R0', 'O1', 'F')
 # an entry of a step that names no check: the step's own check ('1 subresonance …' -> S, '2 owner R2' -> W)
 STEP_ENTRY_IDS = {'1': 'S', '2': 'W', '3': 'K1'}
 # entries of a step that belong to another question than the step's check (`CAPTURE_LABEL`: both resonances at once?)
-ENTRY_PREFIX_IDS = {'2 second capture': 'capture'}
+ENTRY_PREFIX_IDS = {'2 second capture': 'capture', '3 kinematic (slow centre)': 'K2'}
 # a cap-class margin -> the column of the number its LIMIT row compares (`_detail_o1`, `_detail_b5`, `_detail_f`)
 CAP_MARGIN_COLUMNS = {'O1': 'ep_onset_ratio', 'B5': 'rsp_b5_ratio', 'F': 'str_ratio'}
 # a check that can object (`objection_line`) -> the columns of its measurement, the first ones present are printed
@@ -6234,77 +4469,32 @@ def _conflict_lines(f: MMRFacts, items: Sequence[Tuple[str, str]]) -> List[Empha
     return out
 
 
-def _outside_physics(line: Emphasis, physics: Sequence[PhysicsSection]) -> Emphasis:
-    """`line` without the numbers the physics block prints (W20 CS11: no number twice): they are named by the block's
-    title instead ('strength plausible [F]: numbers in “Is σ the own pendulum of …?” above')."""
-    titles = [
-        section.title
-        for section in physics
-        if any(part.column in row.columns for part in line.parts for row in section.rows if part.column)
-    ]
-    if not titles:
-        return line
-    kept = tuple(part for part in line.parts if not any(part.column in row.columns for section in physics for row in section.rows))
-    where = ' and '.join(f'“{title}”' for title in dict.fromkeys(titles))
-    return replace(line, parts=kept, note=' '.join(part for part in (line.note, f'(numbers in {where} above)') if part))
-
-
 def number_emphasis(
     f: MMRFacts,
     steps: Sequence[Step],
     checks: Sequence[CheckRow],
     items: Sequence[Tuple[str, str]],
-    physics: Sequence[PhysicsSection] = (),
 ) -> List[Emphasis]:
     """The lines of 'Numbers behind this verdict' (card g10-5), read from the ledger and the confidence rows the figure
     already prints: decisive comparisons, the binding caps, the objections, the decisive tests without a value; in
-    that order (`EMPHASES`). A number the physics block prints stays there (`_outside_physics`)."""
+    that order (`EMPHASES`). A number is printed wherever it is needed (D1), the physics block's ones too."""
     lines = _decisive_lines(f, steps) + _limit_lines(f, checks) + _conflict_lines(f, items)
-    lines = [_outside_physics(line, physics) for line in lines]
     return sorted(lines, key=lambda line: EMPHASES.index(line.kind))
 
 
 def explain_mmr(analysis, settings, row: Mapping[str, Any], episodes: Sequence[Mapping[str, Any]]) -> VerdictText:
-    """The explanation of one MMR verdict. `row` = summary ⋈ numbers (summary.csv over mmr_numbers.csv),
-    `episodes` = episodes.csv rows of the angle."""
+    """The steps, confidence rows, physics sections and grey columns of one MMR verdict. `row` = summary ⋈ numbers
+    (summary.csv over mmr_numbers.csv), `episodes` = episodes.csv rows of the angle."""
     f = MMRFacts(analysis, settings, row, episodes)
-    v = f.v
     checks = mmr_checks(f)
-    subtitle = ' · '.join(
-        part
-        for part in (
-            f'reason {v.reason}',
-            f'origin {v.libration_origin}' if str(v.libration_origin) else '',
-            subtitle_role(f),  # A3b: the role words (driver, owner, neighbour, resonant argument, kinematic term)
-            decided(shown_rule(f)) + (' → minimal policy' if policy_move(v) else ''),  # the tree's leaf, then the move
-        )
-        if part
-    )
     grey = {}
     if f.checks.get('a_response') == 'not_measured' or (f.margins.get('L4') is not None and f.margins['L4'].margin == Margin.NOT_MEASURED):
         why = why_not_measured(f, 'L4')[1].split(':')[0]
         grey.update({column: why for column in L4_COLUMNS})
     if f.checks.get('potential') == 'not_measured':
         grey['sep_VE_VF_agree_fraction'] = why_not_measured(f, 'R0')[1].split(':')[0]
-    head = [' '.join(part for part in (mmr_angle_sentence(f), action_step_sentence(f)) if part), mmr_status_sentence(f)]
     physics = physics_sections(f)
-    steps = mmr_steps(f)
-    items = info_items(f, physics)
-    # the figure draws `bullets`; a failed check of the grey line is an objection there and leaves the grey line
-    info = [text for value, text in items if value != 'fail']
-    text = _verdict_text(v, subtitle, head, steps, checks, info, grey, physics, mmr_angle_badge(f))
-    bullets = mmr_bullets(f, checks, items, steps)
-    for row in checks:  # the drawn text has no confidence sentence: each LIMIT row names its other reading (CS11)
-        row.said = False
-    emphasis = number_emphasis(f, steps, checks, items, physics)
-    bullets = policy_block(v) + bullets  # W29 §7: the minimal policy's four lines first
-    return replace(
-        text,
-        decided_at=decided_at(shown_rule(f), v.status, steps, tree_status(v), policy_move(v)),
-        docs=DOCS_MMR,
-        bullets=bullets,
-        emphasis=emphasis,
-    )
+    return VerdictText(mmr_steps(f), checks, grey, physics)
 
 
 def shown_rule(f: MMRFacts) -> str:
@@ -6318,37 +4508,6 @@ def shown_rule(f: MMRFacts) -> str:
         shape = [rule_id for rule_id in _base_shape_ids(f, 'insufficient_time') if rule_id.startswith('G')]
         return shape[-1] if shape else f.rule
     return f.rule
-
-
-def mmr_angle_badge(f: MMRFacts) -> str:
-    """The badge's angle word: 'libration (stationary)' says the cycles' bands overlap; when the deciding episode's
-    center moves (`decisive_centre_moves`, the header's ', moving center') it reads 'libration (stationary bands, moving
-    center)', so the badge and the header agree (2003 TX9 3E+2J-10)."""
-    if str(f.v.angle_subtype) == 'stationary' and decisive_centre_moves(f):
-        return f'{f.v.angle_status} (stationary bands, moving center)'
-    return angle_text(f.v)
-
-
-def _verdict_text(verdict, subtitle: str, head: Sequence[str], steps, checks, info, grey=None, physics=(), angle='') -> VerdictText:
-    """A `VerdictText` (MMR, secular, ZLK): the head sentences, then the confidence and the action, and the columns the
-    decision read in bold; `angle` the badge's angle word when not `angle_text`."""
-    sentences = list(head) + [confidence_sentence(verdict, checks), action_sentence(verdict)]
-    return VerdictText(
-        str(verdict.status),
-        angle or angle_text(verdict),
-        str(verdict.confidence),
-        subtitle,
-        [sentence for sentence in sentences if sentence],
-        list(steps),
-        checks,
-        arithmetic_line(verdict, checks),
-        list(info),
-        read_columns(verdict),
-        dict(grey or {}),
-        final_regime_text(verdict),
-        list(physics),
-        action=action_tag(verdict),
-    )
 
 
 # --------------------------------------------------------------------------------------------- secular and ZLK
@@ -6399,60 +4558,6 @@ def _long_period_margin_row(key: str, margin, settings, whole_record: bool) -> C
     return CheckRow(key, name, state, detail, need, counts, note, kind=margin_kind(margin), rule_id=long_period_id(key))
 
 
-def _response_words(analysis) -> str:
-    """'e responds to the angle', 'sin(i/2) responds ...' or 'e and sin(i/2) respond ...': the elements the secular angle
-    contains (`Response.variables`), which check_secular_e_response measured."""
-    response = analysis.response
-    names = {'e': 'e', 'i': 'sin(i/2)'}
-    variables = [names[name] for name in (response.variables if response is not None else ()) if name in names] or ['e']
-    return f'{" and ".join(variables)} {"responds" if len(variables) == 1 else "respond"} to the angle'
-
-
-def _long_period_angle_sentence(analysis, episodes: Episodes, settings) -> str:
-    v = analysis.verdict
-    angle = str(v.angle_status)
-    noun = _long_noun(analysis)
-    if angle == 'libration':
-        return f'{noun} librates over the whole record {libration_numbers(episodes.decisive or {})}.'
-    if angle == 'episodic':
-        return _episodes_clause(noun, episodes, settings) + '.'
-    if angle == 'circulation':
-        return f'{noun} circulates.'
-    if angle == 'drift':
-        return f'{noun} oscillates about a drifting center.'
-    if angle == 'near_separatrix':
-        return f'{noun} has no libration: it slips over the top.'
-    if angle == 'insufficient_time':
-        return f'{noun} has too few turning points for the record to tell a libration.'
-    return ''
-
-
-def _long_period_status_sentence(analysis, settings, episodes: Sequence[Mapping[str, Any]] = ()) -> str:
-    v = analysis.verdict
-    status, angle, reason = str(v.status), str(v.angle_status), str(v.reason)
-    head = status_head(status)
-    gate = getattr(analysis, 'gate', None)
-    if gate is not None and _text(gate.outcome):
-        words = GATE_WORDS.get(gate.outcome, snake_words(gate.outcome))
-        # n_cycles is the record over P_cyc of the decisive osculating scale, the gate's cycle count; not free-ω turns
-        cycles = (
-            f' ({fmt(gate.n_cycles)} cycles of the osculating ω, T / P_cyc, need ≥ {fmt(gate.min_cycles)})' if finite(gate.n_cycles) else ''
-        )
-        return f'{head}: {words}{cycles}.'
-    if reason == 'gate_unavailable':
-        return f'{head}: the free-ω gate could not run, so the Lidov-Kozai libration has no verdict.'
-    if angle == 'libration':
-        episode = Episodes(episodes, float('nan'), analysis.decisive_episode_id).decisive or {}
-        gaps = coverage_text(episode, settings).replace('it misses', 'the libration misses', 1)
-        return (
-            f'{head}: {gaps or "the libration covers the record"}; a secular status rests on the shape of the angle '
-            '(no force-law or owner test exists for it).'
-        )
-    if angle == 'episodic':
-        return f'{head}: the libration does not cover the record.'
-    return f'{head}: {snake_words(reason)}.'
-
-
 EI_TAIL = ' (says how e and i trade, not whether ω librates)'  # the record's coupling changes no status
 
 
@@ -6470,19 +4575,6 @@ def _ei_line(ei) -> str:
         f'e-i {where}: {EI_WORDS.get(ei.coupling, ei.coupling)}: i against e {ei.phase_deg:.0f}°, r {r}, '
         f'δi/δe {fmt(ei.ratio_h)} × the constant-H slope (H = √(1−e²) cos i), {fmt(ei.ratio_beat)} × the forced-beat '
         f'slope{EI_TAIL}'
-    )
-
-
-def _attribution_line(attribution, gate) -> str:
-    """The forced mode that holds a kinematic libration, or why none is named; '' when the gate is not kinematic."""
-    if gate is None or gate.outcome != 'kinematic':
-        return ''
-    if not attribution.attributed:
-        return f'forcing not attributed ({snake_words(attribution.reason)})'
-    return (
-        f'held by the forced mode {attribution.mode}: |c| {fmt(attribution.forcing_e)}, e_free/|c| '
-        f'{fmt(attribution.free_over_forcing)}, beat 2π/|b_ϖ − g| {years(attribution.beat_period_yr)} = P_cyc, node − mode '
-        f'{attribution.node_minus_mode_arcsec_yr:+.2f}″/yr ({fmt(attribution.node_minus_mode_turns)} turn)'
     )
 
 
@@ -6509,19 +4601,6 @@ def _mode_longitude(mode: str) -> str:
 CENTRE_CAUSE_ORIGINS = ('forced_beat:', 'forced_direction', 'node')
 
 
-def _centre_cause(line) -> str:
-    """The center's slow line as a cause: what its origin (`slow.zlk_centre_line`) names; '' for unexplained or none."""
-    if line is None or not finite(line.period_yr) or not str(line.origin).startswith(CENTRE_CAUSE_ORIGINS):
-        return ''
-    wave = f'The center\'s {years(line.period_yr)} wave (±{math.degrees(line.half_amp_rad):.3g}°)'
-    if line.origin.startswith('forced_beat:'):
-        small, big = line.origin.split(':', 1)[1].split('-')
-        return f'{wave} is the {small}−{big} beat of the forced vector (r {line.model_r:.2f}).'
-    if line.origin == 'forced_direction':
-        return f'{wave} follows the forced direction against the node, arg z_forced − Ω (r {line.model_r:.2f}).'
-    return f'{wave} is the node\'s own (r {line.model_r:.2f}).'
-
-
 def _node_lock_words(lock) -> str:
     """'the node is locked to g5: Ω − ϖ5 within 50–130° (1.5 cycles of 1.46 Myr)', or, for a rate within the
     resolution whose difference closes no cycle, that a lock is not resolved; '' otherwise."""
@@ -6539,84 +4618,12 @@ def _node_lock_words(lock) -> str:
     return ''
 
 
-def zlk_cause(analysis) -> Tuple[str, Tuple[str, ...]]:
-    """(the sentence naming what induces a kinematic ZLK libration, the facts it used: 'attribution', 'center',
-    'node_lock'). Only for a row whose status took the kinematic outcome (origin kinematic); from the measured columns
-    only: the attribution (`diagnostics.attribute_forcing`), the center's slow line and the node lock. Unattributed: the
-    reason, briefly. ('', ()) otherwise."""
-    zlk, gate, verdict = getattr(analysis, 'zlk', None), getattr(analysis, 'gate', None), analysis.verdict
-    if zlk is None or gate is None or gate.outcome != 'kinematic' or str(verdict.libration_origin) != 'kinematic':
-        return '', ()
-    attribution = zlk.attribution
-    if not attribution.attributed:
-        return f'Cause not attributed: {snake_words(attribution.reason)}.', ('attribution',)
-    mode, _, group = attribution.mode.partition(' ')
-    sym = _mode_longitude(mode)
-    amplitude = f'|c| {fmt(attribution.forcing_e)}' + (f', fitted for the cluster {group.strip("()")}' if group else '')
-    beat = f'the beat 2π/|b_ϖ − {mode}| {years(attribution.beat_period_yr)} = P_cyc'
-    if attribution.scope == 'episodes':
-        parts = [
-            f'Induced, inside the librating episodes, by the forced eccentricity of mode {mode} ({amplitude}), which holds ϖ '
-            f'there (median |e_free|/|e_forced| ≤ {fmt(gate.rho_episodes)} in every episode): the free vector circles it with {beat}.'
-        ]
-    else:
-        parts = [
-            f'Induced by the forced eccentricity of mode {mode} ({amplitude}), which holds ϖ: the free vector (e_free/|c| '
-            f'{fmt(attribution.free_over_forcing)}) circles it with {beat}.'
-        ]
-    used = ['attribution']
-    centre = _centre_cause(getattr(analysis, 'centre_line', None))
-    if centre:
-        parts.append(centre)
-        used.append('centre')
-    node = _node_lock_words(zlk.node_lock) if zlk.node_lock.candidate == mode else ''
-    if node:
-        parts.append(node[0].upper() + node[1:] + '.')
-        used.append('node_lock')
-    elif attribution.scope == 'episodes' and finite(attribution.node_minus_mode_arcsec_yr):
-        parts.append(
-            f'The center {sym} − Ω turns with the node: Ω̇ − {mode} {attribution.node_minus_mode_arcsec_yr:+.3g}″/yr, '
-            f'{fmt(attribution.node_minus_mode_turns)} turns over the record.'
-        )
-    return ' '.join(parts), tuple(used)
-
-
-def zlk_column_lines(analysis) -> List[str]:
-    """The measured facts of a ZLK row that change no status (e-i coupling, attribution, the center's slow line, the
-    node lock), and the slow line of a modulated secular angle; one line each, '' lines left out, and none the cause
-    sentence (`zlk_cause`) already states."""
-    lines = []
-    used = zlk_cause(analysis)[1]
-    zlk = getattr(analysis, 'zlk', None)
-    if zlk is not None:
-        lines.append(_ei_line(zlk.ei))
-        if 'attribution' not in used:
-            lines.append(_attribution_line(zlk.attribution, getattr(analysis, 'gate', None)))
-        if 'node_lock' not in used:
-            node = _node_lock_words(zlk.node_lock)
-            lines.append(f'{node} (a flag)' if node else '')
-    if 'centre' not in used:
-        lines.append(_centre_line(getattr(analysis, 'centre_line', None)))
-    return [line for line in lines if line]
-
-
 # --------------------------------------------------------------------------------------------- secular and ZLK: slots
 #
 # The slotted explanation of a secular or Lidov-Kozai verdict (W28 E9; cards g10-2 style (i), g10-8, g09-5 C, g09-3,
 # g09-6, g09-7, g10-4b): the same slots as the MMR one (`mmr_bullets`) plus the time scales (`SLOT_SCALE`). Every
-# sentence reads the verdict, the ledger or a column of the row; a number a bullet prints leaves the numbers table for
-# a pointer (`Bullet.columns`, `secular_plots.draw_long_period_explained_v1`).
+# sentence reads the verdict, the ledger or a column of the row.
 
-TURN_ARCSEC = 1296000.0  # arcsec in one turn: a rate of f arcsec/yr turns once in 1296000 / |f| yr
-# Kozai's critical inclination arccos sqrt(3/5) = 39.23 deg: the quadrupole ZLK of a body under an outer perturber on a
-# circular orbit makes omega librate only above it (Kozai 1962). A literature reference printed in the text, never a
-# test: no status reads it (inner perturbers and crossing orbits move the domain, Michel & Thomas 1996).
-PRECESSION_SENTENCE = 'Planetary periods are precession times; they are not the period of a libration.'  # card g09-5 C
-TEXT_POINTER = '↑ in the text'  # what the numbers table prints for a number a bullet prints (W20 CS11)
-# the deciding episode's numbers as `libration_numbers` prints them
-EPISODE_NUMBER_COLUMNS = ('ep_centre_mod_2pi_deg', 'ep_n_tp', 'ep_period_med_yr', 'ep_half_amp_med_deg', 'ep_half_amp_max_deg')
-OBJECTION_HEAD = 'Objection, not deciding the status: '
-RESPONSE_NAMES = {'e': 'e', 'i': 'sin(i/2)'}  # the elements of `Response.variables` in words
 GATE_DECISIVE = {
     'confirmed': 'The free ω librates too (the gate confirms it): a libration of the free elements, not only of the osculating ω.',
     'kinematic': (
@@ -6659,48 +4666,6 @@ def librating_episode_rows(analysis, episodes: Sequence[Mapping[str, Any]]) -> L
     return [row for row in accepted if any(_same_id(row.get('episode_id'), i) for i in ids)]
 
 
-def _long_noun(analysis) -> str:
-    return 'The proper angle' if str(analysis.verdict.resonance_type) == 'secular' else 'ω'
-
-
-def _decisive_row(analysis, eps: Episodes) -> Optional[Mapping[str, Any]]:
-    """The deciding episode's row when it is a librating one (its numbers are the row's ep_* columns), else None."""
-    row = eps.decisive
-    return row if row is not None and _same_id(row.get('episode_id'), analysis.decisive_episode_id) else None
-
-
-def long_period_sigma_line(analysis, eps: Episodes, others: int) -> Tuple[str, Tuple[str, ...]]:
-    """(what the angle does, the columns it prints): a libration over the record with the deciding episode's numbers;
-    an episodic angle by its librating episodes only (card g09-6: a faster run is not counted) and the deciding one;
-    a stretch too short or too small to count with its numbers; else the shape in words."""
-    v, noun = analysis.verdict, _long_noun(analysis)
-    angle = str(v.angle_status)
-    decisive = _decisive_row(analysis, eps)
-    columns = EPISODE_NUMBER_COLUMNS if decisive is not None else ()
-    if angle == 'libration':
-        return f'{noun} librates over the whole record {libration_numbers(decisive or eps.decisive or {})}.', columns
-    if angle == 'episodic':
-        shown = decisive or eps.decisive
-        if shown is None:
-            return f'{noun} librates in part of the record only.', ()
-        span = f'{years(shown.get("t_start_yr"))}–{years(shown.get("t_end_yr"))}'
-        n = len(eps.rows)
-        if n <= 1:
-            text = f'{noun} librates from {span} only ({percent(eps.covered_fraction())} of the record), {libration_numbers(shown)}'
-        else:
-            text = (
-                f'{noun} librates in {n} separate episodes covering {percent(eps.covered_fraction())} of the record; '
-                f'the deciding one {span}, {libration_numbers(shown)}'
-            )
-        if others:
-            text += f'; {_plural(others, "more accepted run")} not counted (faster than the shortest libration, or the center turns)'
-        return text + '.', columns
-    if angle == 'insufficient_time' and decisive is not None:
-        span = f'{years(decisive.get("t_start_yr"))}–{years(decisive.get("t_end_yr"))}'
-        return f'{noun} swings once, {span}: {libration_numbers(decisive)}.', columns
-    return _long_period_angle_sentence(analysis, eps, None), ()
-
-
 def _coorbital_planet(row: Mapping[str, Any]) -> str:
     """'Earth' from zlk_gate_matches 'coorbital_unfitted_forcing:Earth' ('a planet' when not named)."""
     for item in _text(row.get('zlk_gate_matches')).split(';'):
@@ -6715,7 +4680,7 @@ def _resolution_said(row: Mapping[str, Any], span_yr: float) -> bool:
     resolution = _row_float(row, 'zlk_gate_node_near_resolution_arcsec_yr')
     if not (_text(row.get('zlk_gate_node_near')) and finite(resolution) and finite(span_yr) and span_yr > 0):
         return False
-    return abs(resolution - TURN_ARCSEC / span_yr) <= 1e-3 * resolution
+    return abs(resolution - ARCSEC_PER_TURN / span_yr) <= 1e-3 * resolution
 
 
 def _node_near_sentence(row: Mapping[str, Any], span_yr: float) -> Tuple[str, Tuple[str, ...]]:
@@ -6834,67 +4799,15 @@ def long_period_decisive_line(analysis, row: Mapping[str, Any]) -> Tuple[str, Tu
     return SECULAR_DECISIVE.get(angle, f'{snake_words(str(v.reason))}.'), (), ()
 
 
-def long_period_objections(analysis, row: Mapping[str, Any]) -> str:
-    """'Objection, not deciding the status: …' (card g10-8: what did not decide moves from the gray line into the text):
-    e (or sin(i/2)) does not follow the angle; only one independent center estimate; a ZLK libration without the ZLK
-    exchange of e and i at its deciding period (unless that exchange decided, D10). '' for none."""
-    v = analysis.verdict
-    items = []
-    if str(v.checks.get('check_secular_e_response', '')) == 'fail':
-        response = analysis.response
-        names = [RESPONSE_NAMES[name] for name in (response.variables if response is not None else ()) if name in RESPONSE_NAMES]
-        names = names or ['e']
-        items.append(f'{" and ".join(names)} {"does" if len(names) == 1 else "do"} not follow the angle (the response test fails)')
-    estimates = row.get('ep_centre_estimates')
-    if str(v.angle_status) in ('libration', 'episodic', 'insufficient_time') and finite(estimates) and int(float(estimates)) == 1:
-        items.append('only one independent center estimate: one cycle cannot show that the center stands still')
-    coupling = _text(row.get('zlk_ei_coupling'))
-    episode = episode_ei_objection(analysis)
-    if episode:  # W30 D1: the deciding episode's integral is what the level read (88899 500 kyr: low)
-        items.append(episode)
-    elif (
-        str(v.resonance_type) == 'lidov_kozai'
-        and str(v.status) in ('resonant', 'transient')
-        and coupling not in ('', 'zlk', 'not_measured')
-        and 'zlk_gate_unconfirmed' not in set(v.rules_fired)
-    ):
-        items.append('no ZLK exchange of e and i at the deciding period over the record (the e-i line below)')
-    return f'{OBJECTION_HEAD}{"; ".join(items)}.' if items else ''
-
-
-def _phase_off_deg(phase: float, target: float) -> float:
-    return abs((phase - target + 180.0) % 360.0 - 180.0)
-
-
 def episode_ei_parts(ei) -> List[str]:
     """The three tests of the e-i exchange inside the deciding episode (`zlk.episode_ei`), each the way it came out:
     'i against e 262° (82° from antiphase > 45°)', 'coherence −0.777 ≤ −0.5', 'η_H 1.24 > 0.5'."""
-    off = _phase_off_deg(ei.phase_deg, 180.0)
+    off = phase_off_deg(ei.phase_deg, 180.0)
     return [
         f'i against e {ei.phase_deg:.0f}° ({compare(off, "<=", ei.phase_tol_deg, "°")} from antiphase)',
         f'coherence {compare(ei.coherence, "<=", -ei.min_coherence)}',
         f'η_H {compare(ei.eta_h, "<=", ei.h_residual_max)} (√(1−e²) cos i {"kept" if ei.eta_h <= ei.h_residual_max else "not kept"})',
     ]
-
-
-def episode_ei_objection(analysis) -> str:
-    """The objection of flag ei_integral_not_held (W30 D1, the minimal policy: V ambiguous → low): the e-i exchange of
-    the deciding librating episode with its numbers ('the e-i integral is not held in the deciding episode #1 (33.7 kyr,
-    3.04 periods): i against e 262° (…), coherence …, η_H 1.24 > 0.5: neither law; this objection sets the level'); ''
-    without the flag or the measurement. The record's e-i line is not what the level read."""
-    gate = getattr(analysis, 'gate', None)
-    ei = getattr(gate, 'episode_ei', None) if gate is not None else None
-    if not has_mark(analysis.verdict, str(Flag.EI_INTEGRAL_NOT_HELD)) or ei is None or not finite(ei.eta_h):
-        return ''
-    where = f'#{ei.episode_id} ' if ei.episode_id is not None else ''
-    periods = f', {fmt(ei.n_periods)} periods' if finite(getattr(ei, 'n_periods', None)) else ''
-    found = EI_WORDS.get(ei.coupling, ei.coupling)
-    level = ', so the level is low' if str(analysis.verdict.confidence) == 'low' else ''
-    return (
-        f'the e-i integral is not held in the deciding episode {where}(at its period {years(ei.period_yr)}{periods}): '
-        f'{", ".join(episode_ei_parts(ei))}: {found}; a measured objection{level} (the record’s e-i line below is not '
-        'what the level read)'
-    )
 
 
 def kinematic_excluded_line(analysis, settings) -> str:
@@ -6936,7 +4849,7 @@ def zlk_physics_line(analysis, row: Mapping[str, Any], turns: bool = True) -> Tu
     if not turns:  # an unphysical orbit: its free elements mean nothing
         pass
     elif finite(rate) and finite(span) and span > 0:
-        parts.append(f'The free ω (g − s) turns {fmt(abs(rate) * span / TURN_ARCSEC)} times in the record (|g − s| / (1/T)).')
+        parts.append(f'The free ω (g − s) turns {fmt(abs(rate) * span / ARCSEC_PER_TURN)} times in the record (|g − s| / (1/T)).')
     else:
         parts.append('The free ω is not measured (no free elements).')
     return ' '.join(parts), tuple(columns)
@@ -6949,9 +4862,9 @@ def _identify(period: float, low: float, high: float, resolution: float, frequen
     """(the FREQUENCIES rows a period seen on the angle is, nearest first and joined by ' or ', '' for none; the
     nearest row): a row matches when its |rate| lies in the frequency band of the period's range [low, high] widened
     by 1/T (frequencies closer than 1/T are one in the record, so all such rows are named). Display only."""
-    f = TURN_ARCSEC / period
-    f_lo = TURN_ARCSEC / high if finite(high) and high > 0 else f
-    f_hi = TURN_ARCSEC / low if finite(low) and low > 0 else f
+    f = ARCSEC_PER_TURN / period
+    f_lo = ARCSEC_PER_TURN / high if finite(high) and high > 0 else f
+    f_hi = ARCSEC_PER_TURN / low if finite(low) and low > 0 else f
     candidates = [item for item in frequencies if finite(item.rate) and item.rate]
     if not candidates:
         return '', ''
@@ -6977,57 +4890,6 @@ def _seen_periods(analysis, row: Mapping[str, Any], said: bool) -> List[Tuple[st
     if _text(row.get('sec_scale')) == 'centre' and finite(_row_float(row, 'sec_fine_period_cycle_yr')):
         out.append(('the fine scale', _row_float(row, 'sec_fine_period_cycle_yr'), float('nan'), float('nan')))
     return out
-
-
-def time_scale_line(analysis, row: Mapping[str, Any], settings, frequencies, said: bool = False) -> Tuple[str, Tuple[str, ...]]:
-    """The time scales of the record (card g09-5 C): 1/T; for a secular angle |σ̇|/(1/T), σ̇ its mean rate from the
-    free vectors and the planetary constants (the σ row of FREQUENCIES); the search window, from F × P_c (the filter
-    guard, or the type's shortest libration when longer) to one full cycle inside the record trimmed by the filter's
-    edges; the periods seen on the angle with the FREQUENCIES row they are, or 'unidentified' (`_identify`); and the
-    sentence that planetary periods are precession times. `said`: the angle's line printed the deciding period."""
-    span = record_span_yr(analysis)
-    if not (finite(span) and span > 0):
-        return '', ()
-    resolution = TURN_ARCSEC / span
-    columns = ['smp_span_yr']
-    if _resolution_said(row, span):
-        parts = [f'Time scales: T = {years(span)}, so 1/T is the resolution above']
-    else:
-        parts = [f'Time scales: the record resolves 1/T = {fmt(resolution)}″/yr (T = {years(span)})']
-    if str(analysis.verdict.resonance_type) == 'secular':
-        sigma = next((item for item in frequencies if item.name == 'σ' and finite(item.rate)), None)
-        if sigma is not None:
-            ratio = abs(sigma.rate) / resolution
-            turns = 'turns less than once' if ratio < 1 else 'turns that many times'
-            parts.append(f'|σ̇|/(1/T) = {fmt(ratio)}: the mean rate of σ {turns} in the record')
-    cutoff = analysis.angle.cutoff_yr if analysis.angle is not None else _row_float(row, 'flt_cutoff_yr')
-    if finite(cutoff):
-        floor = analysis.geometry.period_floor_yr if analysis.geometry is not None else float('nan')
-        guard = settings.filter_min_libration_cutoffs * cutoff
-        low = max(guard, floor) if finite(floor) else guard
-        high = span - 2 * settings.filter_edge_trim_cutoffs * cutoff
-        start = f'{fmt(settings.filter_min_libration_cutoffs)} P_c' if low == guard else 'the shortest libration of the type'
-        if high > low:
-            parts.append(f'search window {years(low)}–{years(high)} (from {start} to one full cycle inside the trimmed record)')
-    seen = []
-    for label, period, low, high in _seen_periods(analysis, row, said):
-        match, nearest = _identify(period, low, high, resolution, frequencies)
-        shown = f'the period of {label}' if label.endswith('(above)') else f'{years(period)} ({label})'
-        if match:
-            seen.append(f'{shown} ≈ {match}')
-        else:
-            seen.append(f'{shown}: unidentified' + (f', the nearest row is {nearest}' if nearest else ''))
-    parts.append('seen on the angle: ' + '; '.join(seen) if seen else 'no period seen on the angle')
-    return '; '.join(parts) + '. ' + PRECESSION_SENTENCE, tuple(columns)
-
-
-LONG_VERDICT_LINES = {
-    ('secular', 'resonant'): 'RESONANT: the proper angle librates over the whole record.',
-    ('secular', 'transient'): 'TRANSIENT: the proper angle librates in part of the record only.',
-    ('secular', 'non_resonant'): 'NOT IN THIS RESONANCE: the proper angle circulates.',
-    ('lidov_kozai', 'resonant'): 'RESONANT: ω and the free ω librate: a Lidov-Kozai libration over the whole record.',
-    ('lidov_kozai', 'transient'): 'TRANSIENT: ω librates as a Lidov-Kozai libration in part of the record only.',
-}
 
 
 UNPHYSICAL_DECISIVE = 'The elements of an unbound orbit are not those of an ellipse: neither the angle nor the free elements are read.'
@@ -7057,136 +4919,7 @@ def unphysical_text(analysis, row: Optional[Mapping[str, Any]] = None) -> str:
     return f'the orbit is {UNPHYSICAL_WORDS.get(reason, snake_words(reason) or "unphysical")}'
 
 
-def long_period_verdict_line(analysis, row: Optional[Mapping[str, Any]] = None) -> str:
-    """The verdict in plain words (the slot 'verdict') of a secular or Lidov-Kozai row."""
-    v = analysis.verdict
-    kind, status, reason = str(v.resonance_type), str(v.status), str(v.reason)
-    if status == 'invalid' and reason == 'unphysical':
-        return f'INVALID: the orbit is unphysical: {unphysical_text(analysis, row) or "see the record"}; no angle is read.'
-    if kind == 'lidov_kozai' and status == 'non_resonant':
-        if reason == 'kinematic_libration':
-            return 'NOT A LIDOV-KOZAI LIBRATION: ω librates, but the free ω winds.'
-        return 'NOT IN A LIDOV-KOZAI LIBRATION: ω circulates.'
-    if status == 'uncertain':
-        if str(v.angle_subtype) == 'phase_unresolved':
-            return 'UNCERTAIN: the swing is within the error of the linear mode phases.'
-        if reason == 'gate_unavailable':
-            verb = 'librates' if str(v.angle_status) == 'libration' else 'stays bounded'
-            return f'UNCERTAIN: ω {verb}, but the free-ω gate gives no verdict.'
-        return 'UNCERTAIN: the record does not decide.'
-    if kind == 'lidov_kozai' and status in ('resonant', 'transient') and (has_mark(v, 'gate_unavailable') or has_mark(v, 'gate_disabled')):
-        where = 'over the whole record' if status == 'resonant' else 'in part of the record'
-        return f'{status.upper()}: ω librates {where}; the free-ω gate gives no verdict, so it is not confirmed as Lidov-Kozai.'
-    return LONG_VERDICT_LINES.get((kind, status), f'{status_head(status).upper()}: {snake_words(reason)}.')
-
-
-def long_period_bullets(analysis, settings, episodes, row, checks, frequencies) -> List[Bullet]:
-    """The slotted explanation of a secular or Lidov-Kozai verdict (W28 E9): the verdict in plain words, what the angle
-    does (librating episodes only), the decisive argument, the objections that did not decide, the cause (ZLK: the
-    physics line and, for a kinematic libration, `zlk_cause`), the time scales, what would change the verdict and the
-    radial overlap."""
-    v = analysis.verdict
-    span = record_span_yr(analysis)
-    rows = librating_episode_rows(analysis, episodes)
-    eps = Episodes(rows, span, analysis.decisive_episode_id)
-    others = sum(1 for item in episodes if episode_accepted(item)) - len(rows)
-    sigma, sigma_columns = long_period_sigma_line(analysis, eps, others)
-    decisive, ids, decisive_columns = long_period_decisive_line(analysis, row)
-    unphysical = str(v.status) == 'invalid' and str(v.reason) == 'unphysical'
-    physics, physics_columns = zlk_physics_line(analysis, row, turns=not unphysical)
-    said = 'ep_period_med_yr' in sigma_columns
-    scale, scale_columns = time_scale_line(analysis, row, settings, frequencies, said)
-    if unphysical:  # 2010 HY22: why, and no free-ω turns or time scales of an orbit that is no ellipse
-        decisive, ids, decisive_columns = UNPHYSICAL_DECISIVE, (), ()
-        scale, scale_columns = '', ()
-    out = [
-        Bullet(SLOT_VERDICT, long_period_verdict_line(analysis, row)),
-        Bullet(SLOT_SIGMA, sigma, columns=sigma_columns),
-        Bullet(SLOT_DECISIVE, decisive, ids, columns=decisive_columns),
-        Bullet(SLOT_DECISIVE, kinematic_excluded_line(analysis, settings), ('SZ.G',)),
-        Bullet(SLOT_OBJECTION, long_period_objections(analysis, row)),
-        Bullet(SLOT_CAUSE, zlk_cause(analysis)[0]),
-        Bullet(SLOT_CAUSE, physics, columns=physics_columns),
-        Bullet(SLOT_SCALE, scale, columns=scale_columns),
-        Bullet(SLOT_CHANGE, change_line(v, checks)),
-        Bullet(SLOT_ORBIT, orbit_line(row)),
-    ]
-    return [bullet for bullet in out if bullet.text]
-
-
-def bullet_columns(text: VerdictText) -> Tuple[str, ...]:
-    """The columns whose numbers the bullets print (they leave the numbers table for `TEXT_POINTER`)."""
-    return tuple(dict.fromkeys(column for bullet in text.bullets for column in bullet.columns))
-
-
-def explain_long_period(
-    analysis, settings, episodes: Sequence[Mapping[str, Any]], row: Optional[Mapping[str, Any]] = None, frequencies=None
-) -> VerdictText:
-    """The explanation of a secular or Lidov-Kozai verdict (`LongPeriodAnalysis`); `episodes` = its episodes.csv rows,
-    `row` its summary row with the caller's extra columns (default: the analysis' own), `frequencies` the rows of the
-    figure's FREQUENCIES table (`secular_plots.long_period_frequencies`; default: built from `row`). The figure draws
-    the slotted `bullets` (W28 E9); `sentences` stay the paragraph form."""
-    v = analysis.verdict
-    row = dict(row) if row is not None else analysis.summary_row()
-    if frequencies is None:
-        from resonances.plotting.secular_plots import long_period_frequencies
-
-        frequencies = long_period_frequencies(analysis, row)
-    span = record_span_yr(analysis)
-    eps = Episodes(librating_episode_rows(analysis, episodes), span, analysis.decisive_episode_id)
-    whole = str(v.angle_status) == 'libration'
-    checks = []
-    if str(v.confidence):
-        margins = [_long_period_margin_row(key, margin, settings, whole) for key, margin in v.margins.items()]
-        checks = confidence_rows(v, settings, margins, whole)
-    path = {entry.name: entry for entry in v.decision_path}
-    steps = []
-    count = path.get('librating_episodes')
-    shape = (
-        f'{_plural(int(count.value), "librating stretch", "librating stretches")}'
-        if count is not None and finite(count.value)
-        else 'the angle'
-    )
-    if whole:
-        shape = 'the angle librates over the whole record'
-    steps.append(replace(_shape(f'{shape} → {v.angle_status}'), number='0', question='Angle shape'))
-    gate = getattr(analysis, 'gate', None)
-    if gate is not None and _text(gate.outcome) in GATE_VERDICTS:
-        steps.append(Step('gate', 'free-ω gate', StepState.LEAF, f'{gate.outcome} → {tree_status(v)}', '1', *GATE_STEP))
-    else:
-        if gate is not None and _text(gate.outcome):  # the gate ran without a verdict, or does not apply: the shape decides
-            words = f'{snake_words(gate.outcome)}: no verdict, the shape decides'
-            steps.append(Step('gate', 'free-ω gate', StepState.PASSED, words, '1', *GATE_STEP))
-        outcome = f'{v.angle_status} → {tree_status(v)} (the shape of the angle decides)'
-        steps.append(Step('leaf', 'the angle’s shape', StepState.LEAF, outcome, str(len(steps)), *SHAPE_LEAF_STEP))
-    bullets = long_period_bullets(analysis, settings, episodes, row, checks, frequencies)
-    info = []
-    value = str(v.checks.get('check_secular_e_response', ''))
-    if value == 'pass':  # a failed response is an objection in the bullets (card g10-8) and leaves the grey line
-        info.append(f'{_response_words(analysis)}: {value} (a column only)')
-    elif value == 'fail' and not bullets:
-        info.append(f'{_response_words(analysis)}: {value} (a column only)')
-    info += zlk_column_lines(analysis)
-    head = [
-        long_period_sigma_line(analysis, eps, 0)[0],
-        _long_period_status_sentence(analysis, settings, episodes),
-        zlk_cause(analysis)[0],
-    ]
-    subtitle = f'reason {v.reason}' + (f' · origin {v.libration_origin}' if str(v.libration_origin) else '')
-    text = _verdict_text(v, subtitle, head, steps, checks, info)
-    for check in checks:  # the drawn text has no confidence sentence: each LIMIT row names its other reading (CS11)
-        check.said = False
-    bullets = policy_block(v) + bullets  # W29 §7: the minimal policy's four lines first
-    return replace(text, decided_at=decided_at('', v.status, steps, tree_status(v), policy_move(v)), docs=DOCS_LONG_PERIOD, bullets=bullets)
-
-
 # (question, why, ids) of the leaf of a secular or Lidov-Kozai row: the free-ω gate (ZLK), else the angle's shape
 # the gate outcomes that decide a ZLK row's status (`secular.decide`); any other one leaves it to the angle's shape (555527:
 # not_applicable was printed as 'Decided at 1: free-ω gate')
 GATE_VERDICTS = ('confirmed', 'kinematic')
-GATE_STEP = (
-    'Does the free ω librate too?',
-    'an osculating ω also librates with a forced eccentricity; only a librating free ω is the ZLK libration.',
-    ('SZ.G',),
-)
-SHAPE_LEAF_STEP = ('The angle’s shape decides', 'the status of a secular angle is that of its shape.', ())

@@ -65,6 +65,7 @@ from resonances.resonance.analysis.pendulum import (
     excursion,
     half_width,
     small_period,
+    window_bounds,
 )
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import CheckValue
@@ -392,13 +393,6 @@ def identity_wave(
 # --- L4 force law -------------------------------------------------------------------------------
 
 
-def window_bounds(t_yr: np.ndarray, windows: Sequence[Tuple[float, float]]) -> Tuple[np.ndarray, np.ndarray]:
-    """(first, stop) sample index of each window [start, end] (both ends included) on an increasing `t_yr`."""
-    starts = np.array([w[0] for w in windows], dtype=float)
-    ends = np.array([w[1] for w in windows], dtype=float)
-    return np.searchsorted(t_yr, starts, side='left'), np.searchsorted(t_yr, ends, side='right')
-
-
 def _cumulative(values: np.ndarray) -> np.ndarray:
     """Running sums with a leading 0: the sum over samples [i, j) is out[j] - out[i]."""
     running = np.empty(len(values) + 1)
@@ -712,11 +706,14 @@ def harmonic_fits(
     if not n_windows:
         return np.zeros((0, m)), np.zeros(0), np.zeros(0)
     finite = _finite(angle, target)
+    shift = float(np.mean(target[finite])) if np.any(finite) else 0.0  # over the whole record
+    first, stop = window_bounds(t_yr, windows)
+    # no window reads past the last stop: the running sums of the samples before it are the same prefix sums
+    end = int(np.max(stop))
+    finite, angle, target = finite[:end], angle[:end], target[:end]
     weight = finite.astype(float)
-    shift = float(np.mean(target[finite])) if np.any(finite) else 0.0
     y = np.where(finite, target - shift, 0.0)
     columns = list((_harmonic_design(np.where(finite, angle, 0.0), n) * weight[:, None]).T) + [weight]
-    first, stop = window_bounds(t_yr, windows)
 
     def sums(values: np.ndarray) -> np.ndarray:
         running = _cumulative(values)
@@ -1693,7 +1690,9 @@ def measure_pieces(
         else:
             line = NAN
     windows, multiplet = force.windows, force.multiplet
-    r2_h1, r2_h2 = _halves(windows)
+    # two halves need mmr_force_min_windows windows: below that one window would be copied into both (L4 is not measured
+    # there either), and a reader of the halves (K1's episode route, K2) would take it for two (485 Genua 3J-1S-1)
+    r2_h1, r2_h2 = _halves(windows) if len(windows) >= settings.mmr_force_min_windows else (NAN, NAN)
     phi0, phi0_coherence, phi0_dev = phase_spread(windows)
     eps = multiplet.eps if multiplet is not None else ()
     phase_tol = phase_tolerance(eps, _phase_sigma(windows, t, adot_force, force_cutoff), np.radians(settings.mmr_force_phase_tol_deg))
@@ -2078,6 +2077,24 @@ def _varpi_offset(slow: Optional[SlowComponents], t_yr: np.ndarray, planet_rate_
     return np.interp(t_yr, np.asarray(slow.t_yr, float), varpi) - planet_rate_rad_yr * t_yr
 
 
+def _offset_and_rate(slow: SlowComponents, t_yr: np.ndarray, planet_rate_rad_yr: float) -> Tuple[Optional[np.ndarray], float]:
+    """(`_varpi_offset`, |its linear rate| [rad/yr]) on `t_yr`; the same for every episode and piece of a record, so
+    remembered inside its `filtering.record_memo` (the offset read-only there)."""
+
+    def compute():
+        offset = _varpi_offset(slow, t_yr, planet_rate_rad_yr)
+        if offset is None:
+            return None, NAN
+        return offset, (abs(np.polyfit(t_yr, offset, 1)[0]) if len(t_yr) > 1 else NAN)
+
+    def fresh(result):
+        return (result[0],) if result[0] is not None else ()
+
+    if not np.isfinite(planet_rate_rad_yr):
+        return None, NAN
+    return filtering.memoised('multiplet_offset', (slow, t_yr), (float(planet_rate_rad_yr),), compute, fresh)
+
+
 def _best_multiplet(
     t_yr: np.ndarray,
     angle_f: np.ndarray,
@@ -2104,10 +2121,11 @@ def _best_multiplet(
     for name, planet_p in zip(spec.planets, planet_varpi):
         rate = context.planet_varpi_rate_rad_yr.get(name, NAN)
         harmonics = multiplet_harmonics(spec.body_varpi_coefficient, planet_p)
-        offset = _varpi_offset(slow, t_yr, rate)
-        if offset is None or len(harmonics) < 2:
+        if len(harmonics) < 2:
             continue
-        nu = abs(np.polyfit(t_yr, offset, 1)[0]) if len(t_yr) > 1 else NAN
+        offset, nu = _offset_and_rate(slow, t_yr, rate)
+        if offset is None:
+            continue
         modulation = TWO_PI / nu if np.isfinite(nu) and nu > 0 else NAN
         length = np.nanmax([modulation, force_window_yr]) if np.isfinite(modulation) or np.isfinite(force_window_yr) else NAN
         windows = []
@@ -2753,15 +2771,6 @@ def onset_coherence(
     return r2_bg, float(np.degrees(gap))
 
 
-def fixed_law_r2(angle: np.ndarray, adot: np.ndarray, force_au_yr: float, phi0_rad: float) -> float:
-    """O1l for a harmonic law: R^2 of adot = K sin(angle - phi0) + C with K and phi0 given and only C free (the law of
-    `ForceWindow`, read on another stretch); nan below MIN_FIT_SAMPLES finite samples."""
-    angle, adot = np.asarray(angle, float), np.asarray(adot, float)
-    if not (np.isfinite(force_au_yr) and np.isfinite(phi0_rad)):
-        return NAN
-    return coorbital_module.fixed_scale_r2(adot, np.sin(angle - phi0_rad), force_au_yr)
-
-
 def onset_own_law(
     t_yr: np.ndarray,
     model_adot: np.ndarray,
@@ -2869,6 +2878,18 @@ def _onset(t, a_f, run: Episode, period_med: float, guard, settings: AnalysisSet
     return bands, short, background, bounds, clear
 
 
+def _pieces_key(run: Episode, judge: Optional[ResponseJudge], guard: Optional[JumpGuard]) -> tuple:
+    """Everything of `run`, `judge` and `guard` that `episode_physics` hands `measure_pieces` (the pieces, period,
+    amplitudes and cycle edges come from the turning points, the well shift from accepted/frame/well/start/end; the
+    run's well is compared by identity beside the key): equal keys within one pass's prep, context, settings, spec
+    and slow give the same measurement. Not for a 1:1 angle (its law reads the sampling and the body's tables)."""
+    judged = None if judge is None else (bool(judge.aliased), bool(judge.too_slow))
+    guarded = None if guard is None else (guard.times_yr, guard.half_widths_yr) + filtering.value_key(guard.tau_yr)
+    numbers = filtering.value_key(run.tp_times_yr, run.tp_values_rad, float(run.t_start_yr), float(run.t_end_yr))
+    flags = (run.episode_id, bool(run.before_last_jump), int(run.n_tp), bool(run.accepted), str(getattr(run, 'frame', '')))
+    return numbers + flags + (judged, guarded)
+
+
 def episode_physics(
     run: Episode,
     prep: Preprocessed,
@@ -2881,12 +2902,14 @@ def episode_physics(
     guard: Optional[JumpGuard] = None,
     accepted: Sequence[Episode] = (),
     circulates: Optional[Callable[[Episode, Episode], bool]] = None,
+    measured: Optional[dict] = None,
 ) -> EpisodePhysics:
     """The pendulum, energy and response numbers of one run of turning points (accepted or rejected); `judge` (a
     librating episode, rule R) adds the check values of its force law, identity and B1 (`measure_pieces`). `guard`
     (the confirmed jumps of a) keeps the force law and the onset stretches off them (`jump_zones`, `onset_clear`).
     `accepted` (the angle's accepted episodes) and `circulates` (a full turn between two of them) keep them out of
-    O1's background (`onset_group`); without `circulates` the background is the 2P before the run."""
+    O1's background (`onset_group`); without `circulates` the background is the 2P before the run. `measured`: the
+    `measure_pieces` results of an earlier pass with the same prep, context, settings, spec and slow (`_pieces_key`)."""
     t = np.asarray(prep.t_yr, float)
     c = context.identity_coefficient
     k = strength_module.body_coefficient(context, spec)
@@ -2934,24 +2957,31 @@ def episode_physics(
                     classes.append(CycleClass(cls))
 
     pieces = [(start, end)] if np.isfinite(start) else []
-    response = measure_pieces(
-        prep,
-        context,
-        settings,
-        pieces,
-        period_med,
-        (amp_max, amp_med),
-        times[::2],
-        judge=judge,
-        spec=spec,
-        slow=slow,
-        filtered=(angle_f, rate_f, a_f, adot_f, smoothing),
-        episode_id=run.episode_id,
-        before_jump=bool(run.before_last_jump),
-        n_tp=run.n_tp,
-        guard=guard,
-        angle_shift=well_shift(t, [run]),
-    )
+    key = _pieces_key(run, judge, guard) if measured is not None and (spec is None or law_planet(spec) is None) else None
+    earlier = measured.get(key) if key is not None else None
+    if earlier is not None and earlier[0] is getattr(run, 'well', None):
+        response = earlier[1]
+    else:
+        response = measure_pieces(
+            prep,
+            context,
+            settings,
+            pieces,
+            period_med,
+            (amp_max, amp_med),
+            times[::2],
+            judge=judge,
+            spec=spec,
+            slow=slow,
+            filtered=(angle_f, rate_f, a_f, adot_f, smoothing),
+            episode_id=run.episode_id,
+            before_jump=bool(run.before_last_jump),
+            n_tp=run.n_tp,
+            guard=guard,
+            angle_shift=well_shift(t, [run]),
+        )
+        if key is not None:
+            measured[key] = (getattr(run, 'well', None), response)
 
     def finite_stat(values, function):
         values = [v for v in values if np.isfinite(v)]
@@ -3007,6 +3037,7 @@ def analyse_episodes(
     sampling: Optional[Sampling] = None,
     series: Optional[MMRSeries] = None,
     judged_ids: Sequence[int] = (),
+    measured: Optional[dict] = None,
 ) -> List[EpisodePhysics]:
     """Per episode (accepted or rejected): T0 = P/F(A) per amplitude regime, omega0 (period and peak rate), half-width
     2 omega0/|c|, predicted and measured a excursion, mu_eff, onset bands, h and J/J_s range and zone class, force law and
@@ -3019,7 +3050,9 @@ def analyse_episodes(
     episodes, rule R) are judged with `sampling` and `series`: L4, L3 and B1 with the filter guard at their own period.
     The confirmed jumps of a in `geometry` guard the force law and the onset stretches (`JumpGuard`); its accepted
     runs but the forced waves stay out of every run's onset background (`onset_group`, a full turn of sigma_f between
-    two of them: `geometry.gap_circulates`).
+    two of them: `geometry.gap_circulates`). `measured` (a dict kept by the caller over the passes of one record
+    analysis, `analyse._without_episodes`): a run whose force law, identity and B1 an earlier pass measured with the
+    same inputs reuses them (`episode_physics`).
     """
     judged = set(judged_ids) if sampling is not None else set()
     guard = JumpGuard.from_geometry(geometry)
@@ -3042,6 +3075,7 @@ def analyse_episodes(
             guard,
             accepted,
             circulates,
+            measured,
         )
         for run in geometry.runs
     ]

@@ -74,16 +74,14 @@ def test_caps_and_calibration_cells(tmp_path):
     assert set(loaded.records) == {(c['status'], c['angle_status'], c['reason']) for c in cells}
     assert loaded.sha == conf.file_sha(path)
     full = {'L1': _m('full')}
-    certain = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', full, [], [], ('L4',), loaded)
-    assert certain.confidence == Confidence.CERTAIN and certain.cell.n_examples == 120
-    # 40 labels: the level is shown all the same (author 2026-10-16), the cell only reported
-    few = conf.assess(Status.TRANSIENT, 'episodic', 'dynamic_episode', full, [], [], ('L4',), loaded)
-    assert few.confidence == Confidence.CERTAIN and (few.cell.n_examples, few.cell.n_errors) == (40, 0)
-    high = conf.assess(Status.TRANSIENT, 'episodic', 'dynamic_episode', {'L1': _m('thin')}, [], [], (), loaded)
+    # the cells never change a level (author 2026-10-16): the level is the margins' alone
+    assert conf.assess(Status.RESONANT, full, [], [], ('L4',)).confidence == Confidence.CERTAIN
+    assert conf.assess(Status.TRANSIENT, full, [], [], ('L4',)).confidence == Confidence.CERTAIN
+    high = conf.assess(Status.TRANSIENT, {'L1': _m('thin')}, [], [], ())
     assert high.confidence == Confidence.HIGH
-    by_u = conf.assess(Status.RESONANT, 'libration', 'dynamic_libration', full, [], ['U:x'], (), loaded)
+    by_u = conf.assess(Status.RESONANT, full, [], ['U:x'], ())
     assert by_u.confidence_raw == Confidence.HIGH and by_u.thin_margins == ['U:x']
-    none = conf.assess(Status.UNCERTAIN, 'drift', 'drift_mechanism_unknown', full, [], [], (), loaded)
+    none = conf.assess(Status.UNCERTAIN, full, [], [], ())
     assert none.confidence == Confidence.NONE == none.confidence_raw
 
 

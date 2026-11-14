@@ -39,7 +39,7 @@ from typing import Mapping, Optional, Tuple
 import numpy as np
 
 from resonances.resonance.analysis.filtering import lowpass_or_none
-from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN, CentreLine
+from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN, CentreLine, within_rayleigh
 
 NAN = float('nan')
 GRID_OVERSAMPLING = 10  # frequency grid step = 1 / (this x span)
@@ -79,13 +79,6 @@ def measure_line(track, settings, prefix: str) -> CentreLine:
     span = float(t[-1] - t[0])
     period, amplitude = strongest_line(t, centre, float(track.window_yr), span / settings.zlk_centre_min_cycles)
     return CentreLine(prefix, period_yr=period, half_amp_rad=amplitude)
-
-
-def _within_rayleigh(period_yr: float, other_yr: float, resolution_arcsec_yr: float) -> bool:
-    """Whether two periods are one line at this record's resolution: |f1 - f2| < 1296000 / T [arcsec/yr]."""
-    if not (np.isfinite(period_yr) and np.isfinite(other_yr) and period_yr > 0 and other_yr > 0):
-        return False
-    return abs(ARCSEC_PER_TURN / period_yr - ARCSEC_PER_TURN / other_yr) < resolution_arcsec_yr
 
 
 TREND_DEGREE = 2  # the centre and a model are compared less a quadratic trend: what is slower than the record
@@ -139,7 +132,7 @@ def forced_beat_model(track, t_series: np.ndarray, elements, period_yr: float, s
         return None
     candidate = None
     for label, beat in elements.forced_beats().items():
-        if not _within_rayleigh(period_yr, beat, elements.resolution):
+        if not within_rayleigh(period_yr, beat, elements.resolution):
             continue
         small, big = label.split('-')
         rate = elements.basis_e[big] * 2 * np.pi / ARCSEC_PER_TURN
@@ -192,7 +185,7 @@ def secular_centre_line(track, forced_waves_yr: Mapping[str, float], span_yr: fl
         return line
     resolution = ARCSEC_PER_TURN / span_yr if span_yr > 0 else NAN
     match: Optional[str] = next(
-        (label for label, wave in forced_waves_yr.items() if _within_rayleigh(line.period_yr, wave, resolution)), None
+        (label for label, wave in forced_waves_yr.items() if within_rayleigh(line.period_yr, wave, resolution)), None
     )
     line.origin = f'forced_wave:{match}' if match else 'unexplained'
     return line

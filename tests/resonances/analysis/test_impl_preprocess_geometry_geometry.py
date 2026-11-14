@@ -65,7 +65,7 @@ def test_period_amplitude_midpoint_by_hand():
     tp = tp_from([0.0, 5.0, 11.0, 15.0], [1.0, -0.5, 1.5, 0.1])
     assert g.full_periods(tp) == pytest.approx([11.0, 10.0])
     assert g.half_amplitudes(tp) == pytest.approx([0.75, 1.0, 0.7])
-    assert g.midpoints(tp) == pytest.approx([0.25, 0.5, 0.8])
+    assert g.midpoint_values(tp.values_rad) == pytest.approx([0.25, 0.5, 0.8])
 
 
 def test_split_runs_on_gap_top_and_midpoint_jump():
@@ -83,9 +83,9 @@ def test_split_runs_on_gap_top_and_midpoint_jump():
 def test_short_runs_rejected_with_reason():
     tp = tp_from([0, 10, 20, 30, 40, 50], [1, -1, 1, 7.5, 5.5, 7.5])
     t = np.arange(0, 60, 1.0)
-    first = g.classify_run(0, tp, np.array([0, 1]), t, (0, 59), S)
+    first = g._classify_run(0, tp, np.array([0, 1]), (t[0], t[-1]), S, (0, 59))
     assert not first.accepted and first.reject_reason == g.RejectReason.TOO_FEW_TP
-    second = g.classify_run(1, tp, np.array([2]), t, (0, 59), S)
+    second = g._classify_run(1, tp, np.array([2]), (t[0], t[-1]), S, (0, 59))
     assert second.reject_reason == g.RejectReason.OVER_THE_TOP
 
 

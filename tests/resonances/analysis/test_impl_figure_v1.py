@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from resonances.plotting import combined_numbers as cn  # noqa: E402
 from resonances.plotting import mmr_combined as mc  # noqa: E402
 from resonances.plotting import mmr_verdict_panel as panel  # noqa: E402
+from tests.resonances.plotting.helpers import printed_lines  # noqa: E402
 from resonances.resonance.analysis import geometry as geo  # noqa: E402
 from resonances.resonance.analysis import pendulum as pend  # noqa: E402
 from resonances.resonance.analysis.ledger import Ledger  # noqa: E402
@@ -400,7 +401,7 @@ class TestTextBlocks:
     def test_every_number_equals_its_column(self):
         _, summary, numbers, blocks = self.blocks()
         row = {**numbers, **summary}
-        printed = {line.column: line for line in cn.printed_lines(blocks, panel.TEXT_BLOCKS) if line.column and line.label}
+        printed = {line.column: line for line in printed_lines(blocks, panel.TEXT_BLOCKS) if line.column and line.label}
         for column, value in row.items():
             # rules_fired (W28 F1) and the review queue (W28 E1) are review columns the figure does not print
             if (
@@ -481,7 +482,7 @@ class TestPlacement:
         assert placement.font_pt < mc.LAYOUT_V1.text_font_pt
         cells = [cell.label for column in placement.columns for row in column for cell in row.cells]
         assert all(f'extra_{i:03d}' in cells for i in range(600))
-        stats = cn.place_blocks(blocks, mc.LAYOUT_V1, panel.TEXT_BLOCKS)
+        stats = cn._stats(placement)
         assert stats['overflow'] == 0 and max(stats[f'column_{i}'] for i in (1, 2, 3)) <= stats['capacity']
 
 
@@ -568,19 +569,11 @@ class TestFigure:
         }
         assert colours == {'✓': '#1b7837', '✗': '#b2182b', '~': '#e08214'}
 
-    def test_stamp_is_printed_and_plotter_saves(self, tmp_path):
+    def test_stamp_is_printed(self):
         analysis, series = libration_case()
-        summary, numbers, episodes, constants = rows_of(analysis)
-        analysis.summary_row = lambda: summary
-        analysis.numbers_row = lambda: numbers
-        analysis.episode_rows = lambda: episodes
-        analysis.context.constants_rows = lambda: constants
-        plotter = mc.VerdictFigurePlotter(analysis, series)
-        fig = plotter.plot(stamp='recomputed != summary')
+        fig = mc.draw_combined(analysis, series, stamp='recomputed != summary', rows=rows_of(analysis))
         assert 'recomputed != summary' in _texts(fig)
-        plotter.save(tmp_path / 'v1.png')
-        plotter.close()
-        assert (tmp_path / 'v1.png').stat().st_size > 0
+        plt.close(fig)
 
     def test_plaque_and_final_regime_tag(self):
         """The status word on a plaque in the status colour (the right column's header, 2026-11-04, decision D4), the

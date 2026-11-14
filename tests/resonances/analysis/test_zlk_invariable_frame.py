@@ -21,13 +21,12 @@ from resonances.body import Body
 from resonances.data.invariable_plane import (
     FRAME_ECLIPTIC,
     FRAME_INVARIABLE,
-    argument_of_pericentre,
-    elements_from_invariable_plane,
     elements_in_invariable_plane,
     inclination_to_invariable_plane,
 )
 from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance, elements_in_frame
 from resonances.resonance.analysis.rules import Rule
+from tests.resonances.analysis.oracles import argument_of_pericentre, elements_from_invariable_plane
 from resonances.resonance.analysis.settings import settings_from_config
 from resonances.resonance.analysis.verdict import AngleStatus, Status
 from resonances.resonance.analysis.zlk import analyse_zlk, diagnostics

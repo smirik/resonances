@@ -29,6 +29,13 @@ MMR_ONLY_COLUMNS = ('regime_start_yr', 'geo_n_revolutions', 'geo_rate_a_corr')
 ARCSEC_PER_TURN = 1296000.0  # a rate of f arcsec/yr turns once in 1296000 / f yr
 
 
+def within_rayleigh(period_yr: float, other_yr: float, resolution_arcsec_yr: float) -> bool:
+    """Whether two periods are one line at this record's resolution: |f1 - f2| < 1296000 / T [arcsec/yr]."""
+    if not (np.isfinite(period_yr) and np.isfinite(other_yr) and period_yr > 0 and other_yr > 0):
+        return False
+    return abs(ARCSEC_PER_TURN / period_yr - ARCSEC_PER_TURN / other_yr) < resolution_arcsec_yr
+
+
 @dataclass(frozen=True)
 class AngleTerm:
     """One term of a secular angle: `coefficient` x (the body's varpi or Omega when `index` is None, else the

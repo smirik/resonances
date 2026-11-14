@@ -138,7 +138,7 @@ def make_column(scale: int = 1, status: str = 'transient', level: str = 'high', 
             'leaf 5d/6 · angle rule G5w',
             'reason dynamic_episode',
             'flags filter_sensitive',
-            'W28 tree: transient/medium',
+            'settings 1a2b3c4d5e',
             'docs: physics/status-tree.md',
         ),
         decided_rule='L2',
@@ -654,17 +654,17 @@ def test_widths_are_measured_once_for_every_measure():
     assert d.Measure(240).width(text, font) == pytest.approx(first, rel=0.05)  # another dpi: its own entry, same inches
 
 
-def test_a_prepared_column_draws_with_its_column_and_text():
-    """`prepare` grows the layout as `fit_layout` does; `draw_prepared` draws with that plan and hands back the column
-    and the text it was built from."""
+def test_a_prepared_column_draws_with_its_column():
+    """`prepare` grows the layout as `fit_layout` does; `draw_prepared` draws with that plan and hands back the
+    column."""
     column = make_column(2)
-    grown, prepared = d.prepare(column, 'the text', LAYOUT_V1)
+    grown, prepared = d.prepare(column, LAYOUT_V1)
     expected_layout, expected_fit = d.fit_layout(column, LAYOUT_V1)
     assert grown == expected_layout and prepared.fit == expected_fit
     fig = plt.figure(figsize=grown.size, dpi=grown.dpi)
     try:
         stats = d.draw_prepared(fig, prepared, grown)
-        assert stats['column'] is column and stats['text'] == 'the text'
+        assert stats['column'] is column
         assert stats['grown_in'] == pytest.approx(expected_fit.grown_in) and stats['overflow'] == expected_fit.overflow
     finally:
         plt.close(fig)

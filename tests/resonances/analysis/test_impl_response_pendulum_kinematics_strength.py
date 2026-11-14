@@ -22,14 +22,13 @@ ARCSEC = np.pi / 180 / 3600
 NAN = float('nan')
 
 
-def test_varpi_rate_modulation_21514():
+def test_varpi_rate_range_21514():
+    # 21514: e between 0.151 and 0.256, so e_free = 0.2035 and e_forced = 0.0525 (the larger radius free)
     g5 = 4.257 * ARCSEC
     g = g5 + 49.24 * ARCSEC
-    e = np.array([0.151, 0.2, 0.256])
-    e_free, e_forced, low, high, period = kin.varpi_rate_modulation(e, g, g5)
-    assert (e_free, e_forced) == pytest.approx((0.2035, 0.0525))
+    e_free, e_forced = 0.2035, 0.0525
+    low, high = kin.varpi_rate_range(e_free, e_forced, g, g5)
     assert (low / ARCSEC, high / ARCSEC) == pytest.approx((43.4, 70.6), abs=0.1)
-    assert period == pytest.approx(2 * np.pi / (49.24 * ARCSEC))
     # the same extremes from the formula evaluated over theta (independent of the closed-form ends)
     theta = np.linspace(0, 2 * np.pi, 3601)
     rate = g5 + (g - g5) * (e_free**2 + e_free * e_forced * np.cos(theta)) / (

@@ -322,7 +322,7 @@ def level_inputs(
     travel_thin: bool = False,
 ) -> Tuple[LevelInput, ...]:
     """Each input `level` (or the table's fixed level, `_final_level`) reads, with the highest level it allows; the
-    row's level is the lowest ceiling (`lowest_ceiling`). Pure: it explains the level and never sets it (the tests
+    row's level is the lowest ceiling (CONFIDENCE_ORDER). Pure: it explains the level and never sets it (the tests
     check it against `level` and `_final_level` over a grid of evidence). uncertain and invalid: () (no level).
 
     resonant, transient   N (below CONFIDENCE_MEDIUM_CYCLES low, below _HIGH_ medium, below _CERTAIN_ high), core
@@ -397,11 +397,6 @@ def _librating_inputs(ev: Evidence, settings: AnalysisSettings, v_ceiling: dict)
 
 def _number(value: float) -> str:
     return f'{value:.3g}' if math.isfinite(value) else 'nan'
-
-
-def lowest_ceiling(inputs: Sequence[LevelInput]) -> Confidence:
-    """The level the inputs allow: their lowest ceiling (CONFIDENCE_ORDER); none without an input."""
-    return max((entry.ceiling for entry in inputs), key=CONFIDENCE_ORDER.index, default=Confidence.NONE)
 
 
 def level_inputs_text(inputs: Sequence[LevelInput]) -> str:
@@ -640,7 +635,6 @@ def _write(
         flags.append(str(Flag.VETO_THIN))
     v.flags = list(dict.fromkeys(str(flag) for flag in flags))
     v.caps, v.failed_support = [], []
-    v.cell_n_examples = v.cell_n_errors = v.cell_accuracy_low_95 = v.cell_accuracy_high_95 = None
     v.status, v.reason, v.libration_origin = Status(outcome.status), outcome.reason, outcome.origin
     v.origin_detail = outcome.origin_detail
     if outcome.angle_status is not None:
@@ -1275,12 +1269,17 @@ def _mmr_margin(analysis) -> str:
     return {Margin.FULL: M_FULL, Margin.THIN: M_THIN}.get(l2.margin, M_NOT_MEASURED)
 
 
+def _decisive_or_longest(episodes: List[Episode], decisive_id) -> Episode:
+    """The decisive episode among `episodes`, else the one with the most turning points (`episodes` not empty)."""
+    return next((e for e in episodes if e.episode_id == decisive_id), None) or max(episodes, key=lambda e: e.n_tp)
+
+
 def _counted_cycles(episodes: List[Episode], decisive_id, status: Status, settings: AnalysisSettings) -> Tuple[float, str]:
     """(N, basis): a covering libration -> its episode ('cover'); a resonant row over several episodes (regime change,
     union) -> their sum ('union'); a transient -> the decisive episode ('episode', else the longest)."""
     if not episodes:
         return NAN, ''
-    decisive = next((e for e in episodes if e.episode_id == decisive_id), None) or max(episodes, key=lambda e: e.n_tp)
+    decisive = _decisive_or_longest(episodes, decisive_id)
     if status == Status.RESONANT:
         if all(covers_edges(decisive, settings)) or len(episodes) == 1:
             return episode_cycles(decisive, settings), N_COVER
@@ -1850,7 +1849,7 @@ def _finish_long(analysis, outcome: _Outcome, settings: AnalysisSettings, ledger
     seen = {'entry_seen': entry_seen, 'exit_seen': exit_seen}
     n, basis = NAN, ''
     if episodes:
-        decisive = next((e for e in episodes if e.episode_id == analysis.decisive_episode_id), None) or max(episodes, key=lambda e: e.n_tp)
+        decisive = _decisive_or_longest(episodes, analysis.decisive_episode_id)
         n = episode_cycles(decisive, settings, **seen)
         basis = N_COVER if v.angle_status == AngleStatus.LIBRATION else N_EPISODE
     period = outcome.period_dec_yr if outcome.period_dec_yr is not None else float(analysis.decisive_period_yr)

@@ -41,9 +41,10 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.highlight
   - pymdownx.inlinehilite
-  # Code examples are included from the scripts that docs/examples/run_all.py runs (`--8<-- "file.py:section"`)
+  # Code examples are included from the scripts that docs/examples/run_all.py runs (`--8<-- "file.py:section"`);
+  # the repository root holds CHANGELOG.md (docs/changelog.md includes it)
   - pymdownx.snippets:
-      base_path: [docs/examples]
+      base_path: [docs/examples, .]
       check_paths: true
   - pymdownx.superfences:
       custom_fences:
@@ -76,6 +77,7 @@ nav:
   - Getting started:
       - Installation: install.md
       - Quick start: quick-start.md
+      - Command line: cli.md
       - Simulations, bodies, resonances: core.md
       - Examples: examples.md
       - Using with AI agents: agents.md
@@ -106,4 +108,5 @@ nav:
       - Rule index: libration-analysis.md
       - Benchmark: benchmark.md
       - References: references.md
+      - Changelog: changelog.md
   - About: about.md

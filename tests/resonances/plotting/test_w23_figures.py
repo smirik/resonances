@@ -148,15 +148,6 @@ def test_an_s_term_figure_draws_the_inclination_response():
     plt.close(fig)
 
 
-def test_the_secular_info_line_names_the_measured_element():
-    from resonances.plotting import verdict_text as vt
-
-    analysis = analyse_secular(_s_term_series(), S)
-    assert vt._response_words(analysis) == 'sin(i/2) responds to the angle'
-    analysis.response.variables = ('e', 'i')
-    assert vt._response_words(analysis) == 'e and sin(i/2) respond to the angle'
-
-
 @pytest.mark.benchmark
 def test_591986_zlk_labels_of_the_bottom_row_do_not_collide():
     """591986 ZLK: the y label of (i) ('e_free sin ω_free') was printed over the color bar's 't, kyr'."""

@@ -452,14 +452,14 @@ def test_vii_an_impulsive_drop_of_the_amplitude_cuts_the_run_at_the_transitional
 
 
 def test_vii_the_period_of_a_loop_in_whichever_well_holds_it():
-    """`pendulum.period_through`: V = -cos s (Omega = 1) at E = -cos A takes 4 K(sin^2(A/2)) (A = 90 deg: 7.4163, the
+    """`pendulum.loop_through(...).period_yr`: V = -cos s (Omega = 1) at E = -cos A takes 4 K(sin^2(A/2)) (A = 90 deg: 7.4163, the
     deepest well's `period_in_potential` too). V = -cos s + cos 2s: V' = sin s (1 - 4 cos s), wells at cos s = 1/4
     (+-75.52 deg) with V'' = cos s - 4 cos 2s = 1/4 + 7/2 = 3.75, so a small loop in either well takes 2 pi / sqrt(3.75)
     = 3.2446; above the barrier at 0 (V = 0) one loop holds both wells, above V(pi) = 2 nothing librates (nan), and
     where V > E nothing moves (nan)."""
     cosine = pendulum_module.potential_from_coefficients([-1.0], [0.0])
-    assert pendulum_module.period_through(cosine, -math.cos(math.pi / 2), 0.0) == pytest.approx(7.416298709205, rel=1e-9)
-    assert pendulum_module.period_through(cosine, -math.cos(math.pi / 2), 0.0) == pytest.approx(
+    assert pendulum_module.loop_through(cosine, -math.cos(math.pi / 2), 0.0).period_yr == pytest.approx(7.416298709205, rel=1e-9)
+    assert pendulum_module.loop_through(cosine, -math.cos(math.pi / 2), 0.0).period_yr == pytest.approx(
         pendulum_module.period_in_potential(cosine, 0.5), rel=1e-9
     )
     double = pendulum_module.potential_from_coefficients([-1.0, 1.0], [0.0, 0.0])
@@ -467,11 +467,11 @@ def test_vii_the_period_of_a_loop_in_whichever_well_holds_it():
     bottom = float(double.value(np.array([well]))[0])
     small = 2 * math.pi / math.sqrt(3.75)
     for centre in (well, -well):
-        assert pendulum_module.period_through(double, bottom + 1e-6, centre) == pytest.approx(small, rel=1e-4)
-    both = pendulum_module.period_through(double, 0.5, well)
-    assert both > small and both == pytest.approx(pendulum_module.period_through(double, 0.5, -well), rel=1e-9)
-    assert math.isnan(pendulum_module.period_through(double, 2.5, 0.0))  # circulates
-    assert math.isnan(pendulum_module.period_through(double, bottom + 1e-6, math.pi))  # V(pi) = 2 > E
+        assert pendulum_module.loop_through(double, bottom + 1e-6, centre).period_yr == pytest.approx(small, rel=1e-4)
+    both = pendulum_module.loop_through(double, 0.5, well).period_yr
+    assert both > small and both == pytest.approx(pendulum_module.loop_through(double, 0.5, -well).period_yr, rel=1e-9)
+    assert math.isnan(pendulum_module.loop_through(double, 2.5, 0.0).period_yr)  # circulates
+    assert math.isnan(pendulum_module.loop_through(double, bottom + 1e-6, math.pi).period_yr)  # V(pi) = 2 > E
     assert pendulum_module.well_count(double) == 2 and pendulum_module.well_count(cosine) == 1
 
 
@@ -513,8 +513,8 @@ def test_vii_a_kick_into_the_second_well_of_a_double_well_cuts():
     the run is cut at the kick at every cutoff of the list."""
     t, sigma, rate, kick, potential = double_well_record()
     assert pendulum_module.well_count(potential) == 2
-    small = pendulum_module.period_through(potential, potential.v_min + 0.19 * potential.depth, math.radians(298.0))
-    large = pendulum_module.period_through(potential, potential.v_min + 0.7 * potential.depth, math.radians(68.0))
+    small = pendulum_module.loop_through(potential, potential.v_min + 0.19 * potential.depth, math.radians(298.0)).period_yr
+    large = pendulum_module.loop_through(potential, potential.v_min + 0.7 * potential.depth, math.radians(68.0)).period_yr
     assert (large, small) == pytest.approx((1192.3, 829.3), abs=0.5)
     angle = filtered(t, sigma, CUTOFF_STEP, rate=rate, smooth=False)
     geometry = finished(angle, lambda m: 0.7 if m < kick else 0.19)
@@ -784,7 +784,7 @@ def test_vii_one_disjoint_cycle_of_the_larger_swings_reads_in_sample_and_is_prov
     assert step.cuts and step.provisional and not step.shape_held_out and step.shape_cycles_before == 1
 
 
-def test_vii_period_through_brackets_turning_points_between_the_extrema(monkeypatch):
+def test_vii_loop_through_brackets_turning_points_between_the_extrema(monkeypatch):
     """`pendulum.loop_through` finds each turning point between two extrema of V (`pendulum.extrema`, the roots of a
     polynomial in e^{i sigma}): near a separatrix, where V = E only in a hair's breadth around the top, a 0.5-deg grid
     saw none (nan). V = -cos s at E = 1 - 1e-8: the exact 4 K(m), m = (1 + E) / 2 (mpmath, 40 digits) is 43.77283;
@@ -797,9 +797,9 @@ def test_vii_period_through_brackets_turning_points_between_the_extrema(monkeypa
     energy = 1 - 1e-8
     exact = float(4 * mp.ellipk((1 + mp.mpf(energy)) / 2))
     assert exact == pytest.approx(43.77283, abs=1e-5)
-    assert pendulum_module.period_through(cosine, energy, 0.00123) == pytest.approx(exact, rel=1e-8)
+    assert pendulum_module.loop_through(cosine, energy, 0.00123).period_yr == pytest.approx(exact, rel=1e-8)
     assert pendulum_module.loop_through(cosine, 1.0, 0.3).reason == pendulum_module.LOOP_SEPARATRIX
-    assert math.isinf(pendulum_module.period_through(cosine, 1.0, 0.3))
+    assert math.isinf(pendulum_module.loop_through(cosine, 1.0, 0.3).period_yr)
     double = pendulum_module.potential_from_coefficients([-1.0, 1.0], [0.0, 0.0])
     energy = -1e-7
     e = mp.mpf(energy)
@@ -841,7 +841,7 @@ def test_r0_reads_a_cycle_in_the_well_that_holds_it():
     deepest = pendulum_module.period_in_potential(potential, cycle.h)
     assert deepest == pytest.approx(8.4653, abs=1e-3)
     two = pendulum_module.potential_from_coefficients([-1.0, 0.6], [-0.25, 0.0])
-    loops = [pendulum_module.period_through(two, two.v_min + 0.19 * two.depth, math.radians(x)) for x in (68.0, 298.0)]
+    loops = [pendulum_module.loop_through(two, two.v_min + 0.19 * two.depth, math.radians(x)).period_yr for x in (68.0, 298.0)]
     assert loops[0] == pytest.approx(loops[1], rel=1e-10) and loops[0] * 1000.0 / TWO_PI == pytest.approx(829.30, abs=0.01)
     single = pendulum_module.potential_from_coefficients([-1.0, -0.2], [0.1, 0.0])
     assert pendulum_module.well_count(single) == 1

@@ -1,4 +1,5 @@
-"""W4 status: `geometry.prominent_peaks` selects the same maxima as `scipy.signal.find_peaks(x, prominence=p)`.
+"""W4 status: the maxima of `geometry.extrema(x).above(p)` (what `find_turning_points` reads) are the maxima of
+`scipy.signal.find_peaks(x, prominence=p)`.
 
 The fast path measures prominences on the skeleton of local extrema with a monotone stack (W3 left
 `find_turning_points` at ~19 s of 27 on a 10^6-point record). The reference is scipy's own sample-by-sample
@@ -12,7 +13,12 @@ import numpy as np
 import pytest
 from scipy import signal
 
-from resonances.resonance.analysis.geometry import find_turning_points, prominent_peaks
+from resonances.resonance.analysis.geometry import extrema, find_turning_points
+
+
+def prominent_peaks(x, prominence):
+    """The maxima of x (any numeric dtype) that `find_turning_points` takes at this prominence."""
+    return extrema(np.asarray(x, dtype=float)).above(prominence)[0]
 
 
 def scipy_peaks(x, prominence):

@@ -184,17 +184,8 @@ def _config_or(config, key: str, default: str) -> str:
     return config.get(key) if config.has(key) else default
 
 
-# The figures' subfolders when neither PLOT_LAYOUT nor the old PLOT_SUBFOLDER_STRATEGY is set (the benchmark's tree)
+# The figures' subfolders when PLOT_LAYOUT is not set (the benchmark's tree)
 DEFAULT_PLOT_LAYOUT = 'confidence/status'
-
-
-def _legacy_layout(strategy) -> str:
-    """The layout of the old PLOT_SUBFOLDER_STRATEGY ('' / None: flat, 'status': by status)."""
-    if strategy in (None, '', 'flat'):
-        return 'flat'
-    if strategy != 'status':
-        raise ValueError(f"Invalid plot_subfolder_strategy: {strategy}. Valid values are None or 'status' (or use plot_layout).")
-    return 'status'
 
 
 class SimulationConfig:
@@ -381,14 +372,10 @@ class SimulationConfig:
         self.plot_combined_folder = layout.folder_setting(
             kwargs.get('plot_combined_folder', _config_or(c, 'PLOT_COMBINED_FOLDER', 'combined'))
         )
-        # plot_layout, else the old name plot_subfolder_strategy ('' or 'status'), else PLOT_LAYOUT, else the old key
-        # when it is set, else DEFAULT_PLOT_LAYOUT (author 2026-10-27, W24 Q8)
+        # plot_layout, else PLOT_LAYOUT, else DEFAULT_PLOT_LAYOUT (author 2026-10-27, W24 Q8)
         plot_layout = kwargs.get('plot_layout')
-        if plot_layout is None and 'plot_subfolder_strategy' in kwargs:
-            plot_layout = _legacy_layout(kwargs['plot_subfolder_strategy'])
         if plot_layout is None:
-            legacy = _config_or(c, 'PLOT_SUBFOLDER_STRATEGY', '')
-            plot_layout = _config_or(c, 'PLOT_LAYOUT', '') or (_legacy_layout(legacy) if legacy else DEFAULT_PLOT_LAYOUT)
+            plot_layout = _config_or(c, 'PLOT_LAYOUT', '') or DEFAULT_PLOT_LAYOUT
         self.plot_layout = layout.layout_name(layout.parse_layout(plot_layout))
         combined_layout = kwargs.get('plot_combined_layout', _config_or(c, 'PLOT_COMBINED_LAYOUT', ''))
         self.plot_combined_layout = layout.layout_name(layout.parse_layout(combined_layout or self.plot_layout))
@@ -425,16 +412,6 @@ class SimulationConfig:
         if plot_options is None and c.has('PLOT_OPTIONS') and c.get('PLOT_OPTIONS', '').strip():
             plot_options = json.loads(c.get('PLOT_OPTIONS'))
         self.plot_options = resolve_plot_options(plot_options)
-
-    @property
-    def plot_subfolder_strategy(self):
-        """The old name of the layout: 'status' when the figures are split by status alone, else None."""
-        return 'status' if self.plot_layout == 'status' else None
-
-    @plot_subfolder_strategy.setter
-    def plot_subfolder_strategy(self, value):
-        """Setting the old name sets both layouts ('status' or None/'')."""
-        self.plot_layout = self.plot_combined_layout = layout.layout_name(layout.parse_layout(_legacy_layout(value)))
 
     def _verify_existing_path(self, path):
         """

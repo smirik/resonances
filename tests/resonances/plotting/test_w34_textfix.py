@@ -1,6 +1,6 @@
 """W34 text fixes of the right column (no status changes): the words of the verdict figure that disagreed with the
-numbers they print (the W34 text fix, items A2–A12 without A10, and the W28 Codex defects S5, S8, S9; A1, A10 and the
-flag words C reached only the old, undrawn engine and were dropped).
+numbers they print (the W34 text fix, items A2–A12 without A4 and A10, and the W28 Codex defects S5, S8, S9; A1, A4,
+A10, the flag words C and the S4 objection reached only the old engine and were removed with it, 2026-11-14).
 
 Every expected string is worked out by hand from the numbers given (the benchmark rows they come from are named;
 their own tests are in the benchmark-marked tests of test_verdict_text.py)."""
@@ -18,7 +18,6 @@ import pytest  # noqa: E402
 
 from resonances.plotting import verdict_text as vt  # noqa: E402
 from resonances.resonance.analysis.ledger import LedgerEntry, Margin, Op  # noqa: E402
-from resonances.resonance.analysis.mmr.decide import C5_BRANCH, C5_FAR  # noqa: E402
 from resonances.resonance.analysis.pendulum import CycleClass, EnergyAnalysis  # noqa: E402
 from resonances.resonance.analysis.secular.models import EpisodeCoupling  # noqa: E402
 from resonances.resonance.analysis.settings import settings_from_config  # noqa: E402
@@ -115,32 +114,6 @@ def test_the_decisive_line_names_what_the_comparison_found():
     assert vt.decisive_name(_named_facts(), 'F') == vt.rule_name('F')
 
 
-# --------------------------------------------------------------------------------------------- A4: the alias
-
-
-def _entry(name, value=None, threshold=None, result=None, op=Op.GE):
-    return LedgerEntry(name, value=value, op=op, threshold=threshold, result=result)
-
-
-def _alias_facts(far_value, far_ok, branch_ok, status='invalid'):
-    path = {C5_FAR: _entry(C5_FAR, far_value, 3.0, far_ok), C5_BRANCH: _entry(C5_BRANCH, 1.0, 1.0, branch_ok, Op.EQ)}
-    return SimpleNamespace(v=SimpleNamespace(status=status), s=S, path=path, entry=path.get)
-
-
-def test_the_alias_says_which_part_failed():
-    """1864 51M-50 (invalid): ⟨a⟩ is 14.4 a-scales from a* (far: passes), but several branches fit: the old text read
-    'or ⟨a⟩ near a* (14.4 ≥ 3 a-scales)', as if 14.4 were near."""
-    assert vt._alias_sentence(_alias_facts(14.4, True, False)) == (
-        'Invalid: several alias branches of ν·Δt fit the a range (the folding is ambiguous), although ⟨a⟩ lies 14.4 ≥ 3 '
-        'a-scales from a*: a libration hidden by the step cannot be excluded.'
-    )
-    assert vt._alias_sentence(_alias_facts(1.2, False, True)) == (
-        'Invalid: ⟨a⟩ lies only 1.2 < 3 a-scales from a*: a libration hidden by the step cannot be excluded.'
-    )
-    both = vt._alias_sentence(_alias_facts(1.2, False, False))
-    assert both.startswith('Invalid: several alias branches') and '⟨a⟩ lies only 1.2 < 3' in both
-
-
 # --------------------------------------------------------------------------------------------- A5, A6: L2
 
 
@@ -224,15 +197,6 @@ def test_the_episode_ei_tests_as_they_came_out():
         'coherence -0.777 ≤ -0.5',
         'η_H 1.24 > 0.5 (√(1−e²) cos i not kept)',
     ]
-    gate = SimpleNamespace(episode_ei=ei, rho_max=13.27)
-    analysis = SimpleNamespace(verdict=SimpleNamespace(flags=['ei_integral_not_held'], caps=[], confidence='low'), gate=gate)
-    assert vt.episode_ei_objection(analysis) == (
-        'the e-i integral is not held in the deciding episode #1 (at its period 33.7 kyr, 3.04 periods): i against e 262° '
-        '(81.9° > 45° from antiphase), coherence -0.777 ≤ -0.5, η_H 1.24 > 0.5 (√(1−e²) cos i not kept): neither law; '
-        'a measured objection, so the level is low (the record’s e-i line below is not what the level read)'
-    )
-    analysis.verdict.flags = []
-    assert vt.episode_ei_objection(analysis) == ''
 
 
 def test_kinematic_excluded_says_why_the_level_holds():
@@ -324,18 +288,19 @@ def _leg_row(key, state=vt.CheckState.THIN):
 
 def test_a_single_leg_capture_does_not_read_the_circulation_margins():
     """2024 XP16, 2023 OE5, 2025 YU11 (G4c, transient) (S8): C1–C4 measure the circulation around the leg; they go to
-    the gray n/a line with that note, C5 (the sampling) stays."""
+    n/a with that note, C5 (the sampling) stays."""
     f = SimpleNamespace(v=SimpleNamespace(policy='minimal', status='transient'), rule='G4c')
     rows = vt._around_leg(f, [_leg_row(key) for key in ('C1', 'C2', 'C3', 'C4', 'C5')])
     assert [row.kind for row in rows] == [vt.KIND_NA] * 4 + [vt.KIND_SUPPORT]
-    assert vt.na_line([row for row in rows if row.kind == vt.KIND_NA]) == (
-        'the circulation around the leg, not the leg: center passes ≥ 10 rev [C1], no turning points at any cutoff [C2], '
-        'dσ/dt smooth (one sign, no stalls) [C3], a-wave as a circulation predicts [C4]'
-    )
+    assert all(row.note == vt.AROUND_LEG for row in rows[:4]) and vt.AROUND_LEG == 'the circulation around the leg, not the leg'
+    assert [row.label for row in rows[:4]] == [
+        'center passes ≥ 10 rev [C1]',
+        'no turning points at any cutoff [C2]',
+        'dσ/dt smooth (one sign, no stalls) [C3]',
+        'a-wave as a circulation predicts [C4]',
+    ]
     f.v.status = 'non_resonant'  # the circulation leaf: they are its support
     assert {row.kind for row in vt._around_leg(f, [_leg_row('C1')])} == {vt.KIND_SUPPORT}
-    plain = vt.CheckRow('L3', 'σ̇ follows a − a*', vt.CheckState.NOT_APPLICABLE, kind=vt.KIND_NA)
-    assert vt.na_line([plain]) == 'not for this record: σ̇ follows a − a* [L3]'
 
 
 def test_filter_too_slow_is_said_where_it_is_the_cause():
@@ -372,20 +337,25 @@ def _mmr_text(example: str, derived: str = ''):
     return analysis, vt.explain_mmr(analysis, S, {**numbers_row, **summary}, episodes)
 
 
-def _slot(text, slot):
-    return ' | '.join(bullet.text for bullet in text.bullets if bullet.slot == slot)
+def _emphasis(example: str, rule_id: str, derived: str = ''):
+    """The 'Numbers behind' line of `rule_id` as the MMR column builds it (`verdict_column_mmr.mmr_column`)."""
+    from resonances.plotting.mmr_combined import figure_rows
 
-
-def _emphasis(text, rule_id):
-    return next(item for item in text.emphasis if item.rule_id == rule_id)
+    analysis, text = _mmr_text(example, derived)
+    summary, numbers_row, episodes, _ = figure_rows(analysis)
+    f = vt.MMRFacts(analysis, S, {**numbers_row, **summary}, episodes)
+    lines = vt.number_emphasis(f, text.steps, text.checks, vt.info_items(f, text.physics))
+    return next(item for item in lines if item.rule_id == rule_id)
 
 
 @pytest.mark.benchmark
 def test_79653_prints_k2_once_and_r0_as_decisive():
+    """K2 is printed at most once; on 79653 it is not measured since 2026-11-14 (one force window, 1.4 independent
+    center points), so it is not printed at all, and R0 still decides."""
     analysis, text = _mmr_text('mmr3__79653__3M+3J-7+0+0+1')
     k2 = [row for row in text.checks if 'perihelion term (K2)' in row.name]
-    assert len(k2) == 1
-    r0 = _emphasis(text, 'R0')
+    assert len(k2) <= 1
+    r0 = _emphasis('mmr3__79653__3M+3J-7+0+0+1', 'R0')
     assert r0.kind == vt.EMPHASIS_DECISIVE and 'inside episode #0' in r0.parts[0].text
 
 
@@ -400,8 +370,7 @@ def test_79653_prints_k2_once_and_r0_as_decisive():
     ],
 )
 def test_the_decisive_label_names_the_accepted_member_or_owner(example, derived, rule_id, name):
-    _, text = _mmr_text(example, derived)
-    assert _emphasis(text, rule_id).name == name
+    assert _emphasis(example, rule_id, derived).name == name
 
 
 @pytest.mark.benchmark
@@ -409,20 +378,11 @@ def test_2897_the_strength_leaf_and_its_numbers():
     analysis, text = _mmr_text('mmr2__2897__35S-4+0-31')
     leaf = next(step for step in text.steps if step.state == vt.StepState.LEAF)
     assert leaf.number == '5s' and leaf.ids == ('L4', 'R0', 'F') and 'would need 9.63e35 × the strength' in leaf.outcome
-    assert _emphasis(text, 'F').name == vt.STRENGTH_FAILED_NAME
-    assert not any(item.rule_id == 'G1c' for item in text.emphasis)
-    decisive = _slot(text, vt.SLOT_DECISIVE)
-    assert 'not counted (not drawn on (a); (l) labels them forced (strength))' in decisive and 'drawn as' not in decisive
-    printed = ' '.join([decisive] + [row.text for section in text.physics for row in section.rows])
+    assert _emphasis('mmr2__2897__35S-4+0-31', 'F').name == vt.STRENGTH_FAILED_NAME
+    printed = ' '.join(row.text for section in text.physics for row in section.rows)
     assert not re.search(r'\d \d{3} \d{3} \d{3}', printed)  # no number of 1e9 or more in full
     w = next(row for row in text.checks if row.key == 'W')
     assert 'R² 0.97 ≥ 0.7, but its phase φ0 does not hold' in w.detail
-
-
-@pytest.mark.benchmark
-def test_1864_alias_says_several_branches():
-    _, text = _mmr_text('mmr2__1864__51M-50+0-1')
-    assert _slot(text, vt.SLOT_DECISIVE).startswith('several alias branches of ν·Δt fit the a range (the folding is ambiguous), although')
 
 
 @pytest.mark.benchmark
@@ -438,7 +398,6 @@ def test_a_coorbital_l2_row_says_m_reads_the_zone(example):
     _, text = _mmr_text(example)
     l2 = next(row for row in text.checks if row.key == 'L2')
     assert 'reads the 1:1 zone instead' in l2.note and l2.note.endswith('cycles in it → clear of the separatrix')
-    assert 'amplitude clear of the separatrix' in _slot(text, vt.SLOT_POLICY)
 
 
 @pytest.mark.benchmark
@@ -453,7 +412,6 @@ def test_hw7_150kyr_capture_window_and_spans():
     _, text = _mmr_text('mmr3__2001_HW7__5J+6S-2+0+0-9__150kyr')
     capture = next(row.text for section in text.physics for row in section.rows if row.label == vt.CAPTURE_LABEL)
     assert 'over both stretches of the owner' in capture and 'over the whole window, not inside one stretch' in capture
-    assert '140 kyr–140 kyr' not in _slot(text, vt.SLOT_CAUSE) and '139.5–140.4 kyr' in _slot(text, vt.SLOT_CAUSE)
 
 
 @pytest.mark.benchmark
@@ -465,7 +423,6 @@ def test_xp16_leg_does_not_read_the_circulation_margins():
 
 @pytest.mark.benchmark
 def test_ac4_says_the_filter_is_too_slow():
-    _, text = _mmr_text('coorbital__2026_AC4__1E-1+0+0')
-    r0 = _emphasis(text, 'R0')
+    r0 = _emphasis('coorbital__2026_AC4__1E-1+0+0', 'R0')
     assert r0.kind == vt.EMPHASIS_UNMEASURED and 'the filter is too slow for the period' in r0.note
-    assert 'force window' in _emphasis(text, 'L4').note
+    assert 'force window' in _emphasis('coorbital__2026_AC4__1E-1+0+0', 'L4').note

@@ -321,8 +321,8 @@ or more librating episodes).
   from the last turning point to the end of the record and moves monotonically there. The edge is then not covered,
   there is no `exit_suspected`, and `final_regime` is a circulation from the exit. The same holds for an entry at the
   start of the record. The center-scale pass (G2c) does not look for a slower libration behind such an arc. A secular
-  or ZLK angle has no orbit to average: there $\sigma_f$ itself is read (since W36,
-  [Secular and ZLK](secular-zlk.md)).
+  or ZLK angle has no orbit to average: there $\sigma_f$ itself is read
+  ([Secular and ZLK](secular-zlk.md)).
 
 2017 UM52 in 1E−1 ([Gallery](gallery.md#transient-exit)) is a horseshoe that exits at 949 yr: its averaged angle then
 runs 1.97 turns monotonically, so the exit is observed and the verdict is `transient`.
@@ -460,8 +460,8 @@ measured and the floor is used.
   $d(J/J_s)/dh = (V_\text{max} - V_\text{min})\,P/(2\pi J_s)$ ($\mathsf K(h)/2$ for one harmonic);
 - a rotation is **above** if $h\,m - z\,\sigma_h > h_\text{hi}$;
 - a libration above the lower saddle of its well in a potential of several wells is **not measured**
-  (`not_measured`): its loop encloses both wells and has no single-well $J/J_s$ (W25,
-  [The resonant pendulum](pendulum.md#the-pendulum)); it is neither deep nor in the zone;
+  (`not_measured`): its loop encloses both wells and has no single-well $J/J_s$
+  ([The resonant pendulum](pendulum.md#the-pendulum)); it is neither deep nor in the zone;
 - every other cycle is in the **zone**; a cycle within one $\sigma$ of an edge sets `zone_edge_cycle`.
 
 $J/J_s$ is the action of the cycle's own loop over the separatrix action of the well it occupies (the basin of its
@@ -485,7 +485,7 @@ $J/\langle J_s\rangle \ge J_\text{lo}$, deep if all are measured and below it, a
 a turning point above the barrier of a profile of several wells is not measured, and none is when a profile on the
 record's grid fails (the mean is then unknown). This uses no $\sigma_h$. Actions are compared, not energies:
 $J/J_s = 0.5$ lies at $h = 0.581$ for $V = -\cos\sigma$ and at $h = 0.628$ for $V = -\cos\sigma - 0.2\cos2\sigma$,
-so an energy mapped from $J_\text{lo}$ through the fitted potential misreads a profile of another shape (before W25).
+so an energy mapped from $J_\text{lo}$ through the fitted potential misreads a profile of another shape.
 $h_\text{TP}$ is still reported (`sep_h_avgpot_*`, beside `sep_J_avgpot_*`). The zone and the classes are diagnostics
 of the fitted model, not a measurement of N-body chaos. The same $\sigma_h$ enters the jump and action-step tests above.
 
@@ -588,5 +588,5 @@ may keep their loops ([The reported angle word](status-tree.md#the-reported-angl
 
 So `angle_status` describes what $\sigma$ does, and `status` says whether that is this resonance. A body can be
 `non_resonant` with `angle_status = libration` ([Gallery](gallery.md#kinematic-libration)), or `resonant` at `low` with
-a measured objection that does not decide ([Gallery](gallery.md#measured-objection); `uncertain` in the W28 tree,
+a measured objection that does not decide ([Gallery](gallery.md#measured-objection); `uncertain` in the full tree,
 `v2_verdict`).

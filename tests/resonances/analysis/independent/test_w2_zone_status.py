@@ -1039,11 +1039,10 @@ FULL_LIBRATION = {
     'L3': _m(Margin.FULL, MarginClass.SUPPORT),
     'L5': _m(Margin.FULL, MarginClass.SUPPORT),
 }
-NO_CELLS = conf.ConfidenceCells()
 
 
-def _assess(margins, caps=(), status=Status.RESONANT, angle='libration', reason='dynamic_libration', cells=NO_CELLS):
-    return conf.assess(status, angle, reason, margins, list(caps), [], decide.PHYSICS_MARGINS, cells)
+def _assess(margins, caps=(), status=Status.RESONANT):
+    return conf.assess(status, margins, list(caps), [], decide.PHYSICS_MARGINS)
 
 
 def test_r2_libration_thin_l2_stays_high():
@@ -1063,7 +1062,7 @@ def test_all_full_without_a_cell_is_certain():
 
 def test_episodes_in_separatrix_zone_transient_is_medium():
     """DECISIONS 2026-10-15 evening: 52356 -> transient/medium + flag."""
-    a = _assess(FULL_LIBRATION, caps=['episodes_in_separatrix_zone'], status=Status.TRANSIENT, angle='episodic', reason='dynamic_episode')
+    a = _assess(FULL_LIBRATION, caps=['episodes_in_separatrix_zone'], status=Status.TRANSIENT)
     assert a.confidence == Confidence.MEDIUM
 
 
@@ -1088,9 +1087,9 @@ def test_one_support_fail_medium_two_low():
     assert _assess(two).confidence == Confidence.LOW
 
 
-def test_cells_from_settings_are_reported_and_never_gate(tmp_path):
-    """Author 2026-10-16 (C2, decision 7) replaces DELTA 13(d): the cells file is read from CONFIDENCE_CELLS and
-    reported; any number of examples and errors leaves the level the margins give."""
+def test_cells_from_settings_are_read_and_never_gate(tmp_path):
+    """Author 2026-10-16 (C2, decision 7) replaces DELTA 13(d): the cells file is read from CONFIDENCE_CELLS (its sha
+    goes to the output); any number of examples and errors leaves the level the margins give."""
     path = tmp_path / 'cells.json'
     rows = [
         dict(status='resonant', angle_status='libration', reason='dynamic_libration', n_examples=100, n_errors=0),
@@ -1104,13 +1103,12 @@ def test_cells_from_settings_are_reported_and_never_gate(tmp_path):
         ('transient', 'episodic', 'dynamic_episode'): (120, 1),
         ('non_resonant', 'circulation', 'circulation'): (99, 0),
     }
-    a = _assess(FULL_LIBRATION, cells=cells)
-    assert a.confidence == Confidence.CERTAIN and a.cell.n_examples == 100
-    b = _assess(FULL_LIBRATION, status=Status.TRANSIENT, angle='episodic', reason='dynamic_episode', cells=cells)
-    assert b.confidence == Confidence.CERTAIN and (b.cell.n_examples, b.cell.n_errors) == (120, 1)
+    assert cells.sha == conf.file_sha(path)
+    assert _assess(FULL_LIBRATION).confidence == Confidence.CERTAIN
+    assert _assess(FULL_LIBRATION, status=Status.TRANSIENT).confidence == Confidence.CERTAIN
 
 
 @pytest.mark.parametrize('status', [Status.UNCERTAIN, Status.INVALID])
 def test_uncertain_and_invalid_have_no_level(status):
-    a = _assess(FULL_LIBRATION, status=status, angle='drift', reason='drift_mechanism_unknown')
+    a = _assess(FULL_LIBRATION, status=status)
     assert a.confidence == Confidence.NONE and a.confidence_raw == Confidence.NONE

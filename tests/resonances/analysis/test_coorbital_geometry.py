@@ -23,6 +23,7 @@ from resonances.resonance.analysis.mmr.context import build_context
 from resonances.resonance.analysis.mmr.models import MMRSeries, Regime, ResonanceSpec
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import CheckValue
+from tests.resonances.analysis.oracles import record_tables_kept
 
 SETTINGS = AnalysisSettings()
 CIRCULAR = co.Orbit(0.0, 0.0, 0.0, 0.0)
@@ -134,14 +135,6 @@ def test_well_of_names_the_minima_the_swing_holds(earth, eccentric):
 # --- da: the energy integral ---------------------------------------------------------------------------------------
 
 
-def test_loop_da_at_l3_is_the_horseshoe_closed_form(earth):
-    """|da| at L3 of the loop that turns at 2.9 deg: sqrt((4/3) mu (H(theta_t) - H(pi))) (M&D eq. 3.178, a_P = 1)."""
-    turn = np.radians(2.9)
-    expected = np.sqrt(4.0 / 3.0 * MU_EARTH * (closed_h(turn) - closed_h(np.pi)))
-    assert float(cg.loop_da(earth, turn, np.pi)) == pytest.approx(expected, rel=1e-3)
-    assert np.isnan(cg.loop_da(earth, np.radians(60), np.pi))  # L3 is above a small tadpole's level
-
-
 def test_da_max_below_the_l3_top_is_the_closed_form(earth):
     """A tadpole moving from 90 deg towards a turn at 150 deg: the top ahead is L3 (R~ = 1.5), so
     da_max(90 deg) = a_P sqrt((8/3) mu (R~(pi) - R~(90 deg))) = sqrt((4/3) mu (H(pi) - H(90 deg)))."""
@@ -161,7 +154,8 @@ def test_da_max_of_a_horseshoe_turn_reaches_the_planet_top(eccentric):
     theta = np.radians(90.0)
     limit = float(cg.da_max(eccentric, np.radians(30.0), theta))
     assert limit == pytest.approx(np.sqrt(8.0 / 3.0 * MU_EARTH * (top - float(eccentric.potential(theta)))), rel=1e-4)
-    below = float(cg.loop_da(eccentric, np.radians(30.0), theta))
+    # the loop that turns at 30 deg, |da(90 deg)| = a_P sqrt((8/3) mu (R~(30 deg) - R~(90 deg))) (a_P = 1), is reversed
+    below = np.sqrt(8.0 / 3.0 * MU_EARTH * (float(eccentric.potential(np.radians(30.0))) - float(eccentric.potential(theta))))
     assert below / limit < 1
 
 
@@ -342,9 +336,9 @@ def test_profile_at_uses_the_window_and_the_planets_orbit():
     assert profile.table.planet.e == pytest.approx(j2000[0])  # J2000 without saved elements
     saved = {'e': np.full(t.size, 0.02), 'inc': np.zeros(t.size), 'Omega': np.zeros(t.size), 'varpi': np.full(t.size, 1.0)}
     with co.record_tables(1e6):
-        kept = co.record_tables_kept()
+        kept = record_tables_kept()
         profile = cg.profile_at(t, e, 0.01, 0.2, 0.3, 60.0, 90.0, 'Earth', MU_EARTH, N_EARTH, SETTINGS, saved)
-        assert co.record_tables_kept() == kept + 1  # the record's table budget holds it
+        assert record_tables_kept() == kept + 1  # the record's table budget holds it
     assert profile.table.planet.e == pytest.approx(0.02) and profile.table.planet.omega == pytest.approx(1.0)
     assert cg.profile_at(t, e, 0.01, 0.2, 0.3, 200.0, 300.0, 'Earth', MU_EARTH, N_EARTH, SETTINGS) is None
     assert cg.profile_at(t, e, 0.01, 0.2, 0.3, 60.0, 90.0, 'Earth', 0.0, N_EARTH, SETTINGS) is None

@@ -115,6 +115,11 @@ Things that cost a session hours. Each says what happens and what to do instead.
   until W28 (D1): the split ran on the raw grid, the aliased 11.86-yr term wound the free ϖ by whole turns and made
   555527 a certain kinematic libration. `decimation_steps` now ends with the leftover as a polyphase pass; check the
   product of the steps, not only that each step is small.
+- **Memo scope and keys (perf, 2026-11-14):** a result reused across passes is keyed by the values that determine it
+  (`filtering.value_key`, `response._pieces_key`) or held in a dict local to one `_analyse_mmr` call; an
+  identity-keyed record memo with many entries keeps the nested passes' preps (tens of N-arrays each) alive. Cutting
+  arrays at the last window stop before a running sum (`harmonic_fits`) keeps the prefix sums bit-identical; cutting
+  the start would not.
 - **Output step count:** `nout_for_step = ceil(span/step) + 1`; plain rounding gave Nout = 1 for a 1-yr auto run.
 - **Lyapunov times** come from MEGNO or log-shadow growth slopes, not t/(2Y) at one plateau; a MEGNO plateau near 5
   does not prove sustained chaos.

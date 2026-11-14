@@ -1,5 +1,21 @@
 # Status on 2026-11-08
 
+## Dead-code cleanup (2026-11-14, analysis + simulation; plotting in a parallel pass)
+
+The author's rule: code used only by tests goes, unless a test of live code needs it as an oracle or fixture builder;
+then it lives in `tests/resonances/analysis/oracles.py`, and a thin wrapper is dropped for the function the package
+calls. Removed: geometry wrappers (`classify_run`, `visible_edge`, `_visible_edge`, `prominent_peaks`,
+`_prominent_extrema`, `midpoints`), superseded formulas (`varpi_rate_modulation`, `force_law_fails`,
+`half_width_in_potential`, `period_through`, `fixed_law_r2`, `period_in_profile`, `composite_centre`, `count_turns`,
+`loop_da`, `owner_angle`, `fit_owner`), `classify.util` (`check_chaos`, `is_unphysical_orbit`, `merge_intervals`),
+`butter_lowpass_filter`, the calibration-cell lookup (`assess` takes status, margins, caps, U items, physics), the
+back-compat readers (integer statuses, old spellings, legacy resume hashes, removed plot kinds,
+`PLOT_SUBFOLDER_STRATEGY`) and parameters no caller passed. Moved to the oracles: `fixed_frame`,
+`owner_angle_reference`, `lowest_ceiling`, `record_tables_kept`, `averaged_profile`, `elements_from_invariable_plane`,
+`argument_of_pericentre`. Reclassification of 42 MMR/co-orbital + 30 secular/ZLK examples byte-identical. Kept:
+`PolicyResult.policy`/`Verdict.policy` (plotting reads them; a column), `load_cells` (the sha column),
+`mode_phase_ranges` (the builder of `data/mode_phase_uncertainty.json`), the old-flat-run lookup of restore.
+
 ## W36 (2026-11-07/08, merged into v1.0.0): secular episodes
 
 The author's review of the pairs secular wave 1 (20 Myr, SABA) → fixes F1–F5 + the four-square bottom row
@@ -50,7 +66,7 @@ its episode (79653). In order (one agent at a time where they share files):
 2. dead output: `caps` (always empty), `confidence_raw` (= confidence), `cell_*` and the calibration cells
    (`CONFIDENCE_CELLS`, `resonances/data/confidence_cells.json`, `benchmark/tools/calibrate.py`);
 3. back-compat: readers of pre-W29 files (`verdict_from_status_code`, `angle_status_from_text`, `reason_from_text`,
-   the figure's pre-W29 path, old summary columns);
+   the figure's pre-W29 path, old summary columns) — the package readers removed 2026-11-14 (the cleanup below);
 4. 2016 JA over 5 kyr (rerun `__5kyr`, regime C), then the author's look;
 5. R0's scale (a V_F period check, Codex W34) — measure first;
 6. computed three-body strength: a research task (Morbidelli ch. 10 averaging), to plan with the author.
@@ -62,8 +78,9 @@ The right column of both verdict figures is the ten-block model `plotting/verdic
 docs/reading-figures.md#the-right-column; decisions `dev/decisions.md` Figures, Nov 4; log `benchmark/DECISIONS.md`
 2026-11-04 (3)). The figure grows downward when the column needs it (D8). Open: the D5 panel map
 (`verdict_vocab.GLANCE_PANELS`) awaits the author's review; D10's V_F period law (`sep_VF_period_law_med`) is not yet a
-line of the Numbers block; the old column engine (`verdict_text` bullets, `policy_block`, `combined_numbers.draw_explained`,
-`secular_plots.draw_long_period_explained_v1`) is no longer drawn and goes in the pre-merge cleanup.
+line of the Numbers block. The old column engine (`combined_numbers.draw_explained`, `explained_lines`,
+`secular_plots.draw_long_period_explained_v1`) was removed on 2026-11-14, and with it, the same day, the text only it
+drew (`verdict_text` sentences, bullets, policy block, arithmetic, plaque, `explain_long_period`) and its tests.
 
 ## Cleanup after W34 (2026-11-04)
 
@@ -73,8 +90,7 @@ tree tests read `v2_verdict` / `builders.tree_and_final`; end-to-end ones take t
 veto no longer fails `check_zlk_free_omega`; `pol_core_cycles` column. Open (author): the 591986 g7 representative
 gives resonant/low + gate_unavailable (the minimal rule); the minimal figure shows former caps only as flag codes.
 Untracked deletion candidates (await the author): `tmp/.../w34/cleanup/delete-benchmark-runs.txt` (86 run folders,
-1.2 GB), `delete-tmp-binaries.txt` (599 npz/pkl/pickle/npy files, 5.9 GB). Still before main: back-compat readers
-(old summary files: `verdict_from_status_code`, `angle_status_from_text`, `reason_from_text`, the pre-W29 figure path),
+1.2 GB), `delete-tmp-binaries.txt` (599 npz/pkl/pickle/npy files, 5.9 GB). Still before main: the pre-W29 figure path (plotting),
 dead columns under the policy (`caps` always empty, `confidence_raw` = `confidence`, `cell_*` blank, the calibration
 cells), `ZLK_EPISODIC_NO_VERDICT` (tree only), and the deferred list of the W34 page.
 

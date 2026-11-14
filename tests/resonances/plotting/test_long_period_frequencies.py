@@ -152,14 +152,3 @@ def test_secular_rows_give_the_angle_rate_and_the_forced_waves():
     # ORBIT: a's median and range (2.73 -/+ 0.002 au)
     assert row['ctx_a_med_au'] == pytest.approx(2.73, abs=1e-4)
     assert (row['ctx_a_min_au'], row['ctx_a_max_au']) == pytest.approx((2.728, 2.732), abs=1e-5)
-
-
-def test_the_table_stays_in_one_number_column(zlk):
-    """The rows of the block are one unbreakable item of the explained column: the column header is never separated
-    from the rows it names (combined_numbers._items)."""
-    from resonances.plotting import combined_numbers as numbers
-
-    analysis, row, elements = zlk
-    lines = long_period_frequency_lines(analysis, row, elements)
-    items = numbers._items(numbers._number_rows(lines, width=3.0, size=8.0))
-    assert len(items) == 1 and sum(1 for kind, _, _ in items[0] if kind in ('line', 'cont')) == len(lines)

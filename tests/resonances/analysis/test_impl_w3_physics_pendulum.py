@@ -82,13 +82,11 @@ def test_asymmetric_well_uses_its_own_lower_barrier():
         assert pend.action_ratio_in_potential(potential, h) == pytest.approx(_brute_force_ratio(potential, h), abs=1e-5)
 
 
-def test_half_width_of_a_multi_harmonic_well():
+def test_half_width_is_the_cosine_formula():
     double = pend.potential_from_coefficients([0.0, -1.0], [0.0, 0.0])  # V = -cos 2s: depth 2, V'' = 4 at the well
     assert double.omega_rad_yr == pytest.approx(2.0)
-    assert pend.half_width_in_potential(double, 1.0) == pytest.approx(2.0)
-    assert pend.half_width(double.omega_rad_yr, 1.0) == pytest.approx(4.0)  # the cosine formula does not apply
+    assert pend.half_width(double.omega_rad_yr, 1.0) == pytest.approx(4.0)  # 2 sqrt(V'') / |c|, not the well's 2
     cosine = pend.potential_from_coefficients([-0.25], [0.0])  # Omega = 0.5: 2 Omega / |c| = 2 with c = 0.5
-    assert pend.half_width_in_potential(cosine, -0.5) == pytest.approx(2.0)
     assert pend.half_width(cosine.omega_rad_yr, -0.5) == pytest.approx(2.0)
 
 

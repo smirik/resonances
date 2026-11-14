@@ -10,10 +10,11 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
 - `verdict`: string `Status` (resonant, transient, near_separatrix, non_resonant, uncertain, invalid) /
   `AngleStatus`/`Reason`, `libration_origin` + `origin_detail` + the roles of the other resonance (`owner`,
   `neighbours`, `resonant_argument`, `cause_role`, `cause_term`, `commensurability`; MMR only, `mmr/roles.py`), `final_regime` (how the record ends),
-  `status_code` (a column for comparison with old runs; `verdict_from_status_code` only converts old integer summary
-  files). `angle_status` describes the whole record: librating episodes followed by another regime, or a capture after
-  one, are `episodic`. Old files: `angle_status_from_text` (angle `transient` → `episodic`, 2026-10-17), `reason_from_text`
-  (`dynamic_*` with origin unknown → `geometric_*`, 2026-10-26). `not_measured` is never `fail`.
+  `status_code` (a column for comparison with old runs). `angle_status` describes the whole record: librating
+  episodes followed by another regime, or a capture after one, are `episodic`. Since v1.0 the package reads only its
+  own format: no reader of older spellings (angle `transient`, `dynamic_*` with origin unknown, `separatrix_chaos`) or
+  integer statuses; the benchmark tools still read the old runs of benchmark/data (`bench_io.read_summary`).
+  `review_reasons` lists no caps or failed supports (the minimal policy leaves none). `not_measured` is never `fail`.
 - `ledger`: every decisive comparison with its margin U. It feeds the CSV columns, the right column of the figure,
   the verdict text and the confidence; the decision path and the printed numbers must come from it, not be recomputed.
 - `settings`: `AnalysisSettings` holds every threshold. Fields = `SimulationConfig` attributes = lower-case `.env.dist`
@@ -23,12 +24,17 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   without a source returns the dataclass defaults, so environment variables do not reach the MMR reclassification
   (`benchmark/tools/reclassify.py`); the secular/ZLK one builds a `Simulation` and does read the configuration.
 - `filtering` (`resonance/analysis/filtering.py`): Butterworth in second-order sections, forward-backward (never (b, a) form). W23 memo: `record_memo` /
-  `memoised` memoise `band_pass` and `response.smoothed_series` per `analyse_mmr` record (2 entries, keyed by object
-  identity plus scalars, read-only arrays; never unscoped: a session-wide memo raised one worker from 1280 to 2084 MB).
+  `memoised` memoise `band_pass` (6 entries: the owner search returns to earlier (x, P)), `response.smoothed_series`
+  and the multiplet law's varpi offset (`response._offset_and_rate`) per `analyse_mmr` record (2 entries, keyed by
+  object identity plus scalars, read-only arrays; never unscoped: a session-wide memo raised one worker from 1280 to
+  2084 MB); `zone.numeric_zone` by the values of its inputs (`value_key`: the second pass integrates the same model).
+  The pass without forced waves (or induced runs) reuses each run's `measure_pieces` through a dict local to one
+  `_analyse_mmr` call (`measured`, `response._pieces_key`; not 1:1): an identity-keyed record memo there would keep
+  the nested G2c passes' preps alive.
   `LOW_MEMORY_ALLOCATOR` (`config.low_memory_allocator`, `worker_allocator`: `MallocLargeCache=0` for spawned workers
   on macOS).
 - `pendulum` (`resonance/analysis/pendulum.py`): the potential, energies and periods. W24 review: `extrema` (exact, roots of z^N V'(z)),
-  `loop_through`/`period_through` (turning points bracketed between extrema; at the separatrix → inf),
+  `loop_through` (turning points bracketed between extrema, its `period_yr`; at the separatrix → inf),
   `well_holding`, `cycle_period`: R0's period law reads each cycle in the well that holds its fastest sample (one
   well: the old law; two harmonics: every loop of one energy has one period in either well, so only a cycle below its
   well's bottom changes). For a multi-harmonic V the action J and J_s come from quadratures in the selected well; the
@@ -78,9 +84,10 @@ is certain, Q18), `PolicyResult` (counted and candidate episodes)
 - `confidence` (the W28 tree's level, in `v2_verdict`; the policy overrides it): the level from margins and caps; `certain` is shown. certain needs every applicable margin full; high
   allows thin or unmeasured evidence but no failed support, and (W28 q-2 b, MMR own dynamics) at least one physical
   support passing with its full margin (else cap `no_full_physics_support`); one failed support → medium, two → low; nothing physical
-  measured and explicit caps limit it; uncertain/invalid have no level. The calibration cell's author-label counts are
-  only reported (`cell_*`, `resonances/data/confidence_cells.json`, rebuilt by `benchmark/tools/calibrate.py`); they
-  never cap a level. Every cap down to medium or low names its alternative (`verdict_text.CAP_ALTERNATIVES`).
+  measured and explicit caps limit it; uncertain/invalid have no level. The calibration cells
+  (`resonances/data/confidence_cells.json`, rebuilt by `benchmark/tools/calibrate.py`) never cap a level and are not
+  looked up any more (2026-11-14: the minimal policy blanked `cell_*`); a run records only the file's sha
+  (`confidence_cells_sha`, `load_cells`). A cap is worded in `verdict_vocab.CAPS`.
 - `rules` (W28, cards s-4, g10-3): `Rule` (a StrEnum named by meaning), `RULES` (`RuleInfo`: doc id, `pending` until
   the owner work package writes it; title; since), `rules_since`, `fire`, `ordered`. Every W28 rule name is
   pre-registered; a work package only calls `fire` where its rule acts. Column `rules_fired` (contract below).

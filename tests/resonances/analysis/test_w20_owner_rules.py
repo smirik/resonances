@@ -17,6 +17,7 @@ from resonances.data import const
 from resonances.resonance.analysis import filtering
 from resonances.resonance.analysis.ledger import Ledger
 from resonances.resonance.analysis.mmr import averaged_potential as averaging
+from tests.resonances.analysis.oracles import averaged_profile
 from resonances.resonance.analysis.mmr import decide, owner, owner_potential
 from resonances.resonance.analysis.mmr.coorbital import Orbit
 from resonances.resonance.analysis.mmr.models import (
@@ -325,7 +326,7 @@ def _potential_record():
     lam = (phi - lambda_j - varpi) / -2.0  # phi = lambda_J - 2 lambda + varpi
     body = averaging.Ellipse(a0, Orbit(e, inc, varpi - node, node))
     planet = averaging.Ellipse(a_j, Orbit(e_j, inc_j, varpi_j - node_j, node_j))
-    grid, values = averaging.averaged_profile(body, planet, -2, 1, (-2 + 1) * varpi, 1440)
+    grid, values = averaged_profile(body, planet, -2, 1, (-2 + 1) * varpi, 1440)
     slope = np.gradient(np.concatenate([values[-2:], values, values[:2]]), np.concatenate([grid[-2:] - TWO_PI, grid, grid[:2] + TWO_PI]))[
         2:-2
     ]

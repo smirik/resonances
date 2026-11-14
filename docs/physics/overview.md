@@ -44,7 +44,7 @@ The verdict answers two separate questions:
 | `orbit_type` | `tadpole L4`, `horseshoe`, `interior, symmetric libration about 0°`, … | the header of the figure; descriptive, decides nothing |
 | `reason` | e.g. `dynamic_libration`, `kinematic_libration`, `alias` | the one main explanation of the status ([every reason](status-tree.md#every-reason)) |
 | `libration_origin` | `dynamic`, `induced`, `subresonance`, `kinematic`, `joint`, `unknown` | who makes the bounded oscillation (`joint`: both resonances at once, measured) |
-| `origin_detail` | `varpi_term`, `secular_cycle`, `planet_ripple`, `owner_libration`, `owner_forced_wave`, `fixed_subresonance`, `composite_multiplet`, `free_omega_winds`, `joint_capture` | the concrete cause ([Is it this resonance?](response.md)) |
+| `origin_detail` | `varpi_term`, `secular_cycle`, `planet_ripple`, `owner_libration`, `owner_forced_wave`, `fixed_subresonance`, `composite_multiplet`, `free_omega_winds`, `joint_capture`, `forced_wave_background` (every counted episode is the forced wave its background carries and the slow center passes a revolution: non-resonant, veto `forced_wave`) | the concrete cause ([Is it this resonance?](response.md)) |
 | `owner` | e.g. `11M-20+0+9` | the resonance that carries the oscillation (induced, subresonance), or the partner of a joint capture |
 | `confidence`, `confidence_raw` | `certain`, `high`, `medium`, `low` | how well the evidence supports the status, after and before the caps ([Confidence](confidence.md)); empty for `uncertain` and `invalid` |
 | `action` | `none`, `spot_check`, `review`, `extend`, `resample` | what to do next with this body ([Actions](confidence.md#actions)) |

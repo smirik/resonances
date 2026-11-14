@@ -37,11 +37,6 @@ def filter_angle(angle, sim_config: SimulationConfig):
     raise ValueError(f"Unknown angle filter '{filter_name}'.")
 
 
-def butter_lowpass_filter(data, cutoff, fs, order, nyq):
-    b, a = _butter_coefficients(cutoff, nyq, order)
-    return signal.filtfilt(b, a, data, method="gust")
-
-
 # ============================================================================
 # Optional helpers (NOT used internally)
 # ============================================================================

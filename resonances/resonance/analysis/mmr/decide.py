@@ -144,6 +144,7 @@ from resonances.resonance.analysis.geometry import (
     covers_edges,
     episode_eligibility as geometry_eligibility,
     half_amplitudes,
+    interior_turn_times,
     run_of,
     short_runs,
     window_step_limit_yr,
@@ -1154,7 +1155,7 @@ def edge_monotone_name(kind: str) -> str:
 def _covers_edge(ledger: Ledger, episode: Episode, edge: str, settings: AnalysisSettings, geometry: Optional[Geometry] = None) -> bool:
     """`geometry.covers_edges` for one edge ('start' or 'end'), on the ledger: not when the exit (entry) beyond the
     episode is observed (the edge rule: the orbit-averaged raw angle runs >= libration_edge_arc_rev turns away and
-    monotonically, `geometry._visible_edge`); else the gap from the record edge within
+    monotonically, `geometry._edge_reading`); else the gap from the record edge within
     libration_coverage_periods periods, else no turning point missed at the analysis window's edge (that gap not longer
     than the longest TP-to-TP step of the episode, nor than libration_coverage_periods periods:
     `geometry.window_step_limit_yr`) and the stretch the trim hides within libration_coverage_periods."""
@@ -1282,14 +1283,6 @@ def interior_turns(geometry: Geometry) -> int:
     edges of the analysis window: nearer, the low-pass of the centre bends at the edge (2003 UG22 8M-4S-7: a 'turn' at
     185 yr of 20 kyr, W_c = 660 yr)."""
     return len(interior_turn_times(geometry))
-
-
-def interior_turn_times(geometry: Geometry) -> np.ndarray:
-    """The times [yr] of the turns counted by `interior_turns`, in order."""
-    centre = geometry.centre
-    times = np.sort(np.asarray(centre.turns.times_yr, dtype=float))
-    start, end = geometry.window
-    return times[(times - start > centre.window_yr) & (end - times > centre.window_yr)]
 
 
 def _g5a(geometry: Geometry, ledger: Ledger) -> bool:
@@ -1740,10 +1733,6 @@ def secular_period_offset(period_cycle_yr: float, kinematics: Optional[Kinematic
     return min(offsets) if offsets else float('nan')
 
 
-def _measured_below(value: float, threshold: float) -> bool:
-    return is_finite(value) and value < threshold
-
-
 def episode_cycle_is_kinematic(
     kinematics: Optional[Kinematics], response: Optional[Response], period_cycle_yr: float, settings: AnalysisSettings
 ) -> bool:
@@ -1788,12 +1777,6 @@ def taken_harmonic_law(response: Optional[Response]) -> Optional[HarmonicLaw]:
     return law if law is not None and law.taken and response.force_law == LAW_HARMONIC else None
 
 
-def force_law_fails(response: Response, settings: AnalysisSettings) -> bool:
-    """a does not carry sigma: every law of `force_laws` measured below mmr_force_r2_fail ("fails under both laws");
-    a missing number leaves it open."""
-    return all(_measured_below(value, settings.mmr_force_r2_fail) for _, value, _ in force_laws(response))
-
-
 def decisive_period(angle: AngleDecision, geometry: Optional[Geometry]) -> float:
     """The period of the cycle the episode tests read [yr]: the decisive episode's own (`status_basis`, so under G1e
     the episode before the jump), else P_cyc. P_cyc is the median over every accepted run and may mix in another
@@ -1825,8 +1808,8 @@ def slow_centre_is_kinematic(
 ) -> bool:
     """K2, the kinematic drift of the slow centre (W20, author 2026-10-19; 21028 7E-10M-6+0+0+9): the slow centre
     follows the uniform lambda part plus the secular part of the angle (`Kinematics.centre_corr_rate` >=
-    mmr_kin_corr_min, `kinematics.slow_centre_kinematics`), a does not answer sigma (`force_law_fails`: below
-    mmr_force_r2_fail in both halves and under the multiplet law; 2897 35S-4 with a multiplet R^2 of 0.50 is not
+    mmr_kin_corr_min, `kinematics.slow_centre_kinematics`), a does not answer sigma (every law of `force_laws`
+    below mmr_force_r2_fail: both halves and the multiplet law; 2897 35S-4 with a multiplet R^2 of 0.50 is not
     kinematic) and the episodes are a ripple on that drift: their largest swing stays below mmr_kin_ripple_share_max x
     the centre's range (`ripple_share`). A Hilda's centre follows the forced varpi too (153 3J-2: corr 0.98), but its
     force law holds and its swing is the centre's whole range (0.95). A missing number leaves it open. The decision and
@@ -1900,8 +1883,9 @@ def _slow_centre_route(
     ledger: Ledger,
 ) -> bool:
     """K2's comparisons into `ledger`, in order, stopping at the first that does not hold: the force law (a does not
-    answer: the premise, and the comparison that stops a dynamic libration first), the ripple share, the centre against
-    the secular part. Returns the route's verdict."""
+    answer: the premise, and the comparison that stops a dynamic libration first; the halves are nan below
+    mmr_force_min_windows windows, `response.measure_pieces`), the ripple share, the centre against the secular part.
+    Returns the route's verdict."""
     corr = kinematics.centre_corr_rate if kinematics is not None else None
     if response is None or not is_finite(corr):
         return False
@@ -2047,12 +2031,12 @@ def _harmonic_law_entries(law: HarmonicLaw, settings: AnalysisSettings, ledger: 
     ledger.compare_setting(HARMONIC_HALVES, law.oos_r2, Op.GE, settings, 'mmr_force_r2_fail', '', 'rsp_force_harm_oos')
 
 
-def _no_dynamics(angle: AngleDecision, rule: str, flags: Optional[List[str]] = None) -> StatusDecision:
+def _no_dynamics(angle: AngleDecision, rule: str) -> StatusDecision:
     """5a/5e: the force law and the potential with a do not show the angle's own dynamics."""
     if angle.angle_status == AngleStatus.NEAR_SEPARATRIX:
         reason = Reason.MODULATED_CIRCULATION if angle.subtype == AngleSubtype.PATTERN_B else Reason.NO_RESONANT_POTENTIAL
-        return StatusDecision(Status.NON_RESONANT, reason, LibrationOrigin.NONE, '', '', flags=list(flags or []), rule=rule)
-    return _unknown(rule, flags)
+        return StatusDecision(Status.NON_RESONANT, reason, LibrationOrigin.NONE, '', '', rule=rule)
+    return _unknown(rule)
 
 
 def _contaminated(response: Response, settings: AnalysisSettings, ledger: Ledger) -> StatusDecision:
@@ -3070,7 +3054,6 @@ def next_check(estimate_yr: float, span_yr: float, settings: AnalysisSettings) -
 # thresholds: each is read from the measurement's own reason (`force_windows_short`, the leaf 5n itself).
 LENGTH_FORCE_WINDOWS = 'force_windows'  # L4 not_measured with fewer than mmr_force_min_windows windows
 LENGTH_CYCLES = 'independent_cycles'  # 5n: fewer than libration_centre_min_estimates independent cycles
-LENGTH_LIMITED = frozenset({LENGTH_FORCE_WINDOWS, LENGTH_CYCLES})
 # The uncertain leaves where nothing measured the angle's own force, and the not-measured check that decides each:
 # 5e (R0 failed, L4 missing: TX9), 5g (the identity fails, the force law that would tell a kinematic cycle is missing:
 # 2003 EH16), 5x (the scale out of range, nothing measured: 79653), 5n (one independent cycle: 2003 ND). The objection
@@ -4275,13 +4258,11 @@ def _unmeasure(checks: Dict[str, CheckValue], margins: Dict[str, MarginValue], q
             checks[name] = CheckValue.NOT_MEASURED
 
 
-def apply_filter_sensitivity(
-    checks: Dict[str, CheckValue], margins: Dict[str, MarginValue], sensitivity, flags: Optional[List[str]] = None, keep=()
-) -> None:
+def apply_filter_sensitivity(checks: Dict[str, CheckValue], margins: Dict[str, MarginValue], sensitivity, keep=()) -> None:
     """DELTA 13a, in place: when a decisive number changes at the cutoff x2 (`preprocess.filter_sensitivity`),
     check_mmr_filter and the checks and margins that read the changed quantity become not_measured
-    (`preprocess.SENSITIVE_CHECKS`, `SENSITIVE_MARGINS`; a not_applicable one stays), and `flags` gets
-    filter_sensitive. When nothing could be compared (`sensitivity.sensitive` None: no x2 series or no common
+    (`preprocess.SENSITIVE_CHECKS`, `SENSITIVE_MARGINS`; a not_applicable one stays; the flag filter_sensitive is
+    set where the comparison is made, `analyse`). When nothing could be compared (`sensitivity.sensitive` None: no x2 series or no common
     interval) the filter dependence is not checked: check_mmr_filter is not_measured and L8 at most thin (a far
     circulation's not_applicable L8 as well: only its step part is not graded).
     Here the guard sets how far the verdict can be trusted (confidence); the passed checks the tree itself reads were
@@ -4298,8 +4279,6 @@ def apply_filter_sensitivity(
         return
     if not sensitivity.sensitive:
         return
-    if flags is not None and str(Flag.FILTER_SENSITIVE) not in flags:
-        flags.append(str(Flag.FILTER_SENSITIVE))
     if 'check_mmr_filter' in checks and checks['check_mmr_filter'] != CheckValue.NOT_APPLICABLE:
         checks['check_mmr_filter'] = CheckValue.NOT_MEASURED
     _unmeasure(checks, margins, sensitivity.changed, keep)

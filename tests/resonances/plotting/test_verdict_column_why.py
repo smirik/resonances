@@ -76,13 +76,15 @@ LONG_OCCURRING = (
 
 def test_every_reason_has_an_mmr_template():
     """Every Reason value has an MMR template of its own (the occurring ones and the live code's others)."""
-    assert set(MMR_OCCURRING) <= set(why.template_reasons('mmr'))
-    assert {str(reason) for reason in Reason} <= set(why.template_reasons('mmr'))
+    templates = {str(reason) for reason in why.MMR_TEMPLATES}
+    assert set(MMR_OCCURRING) <= templates
+    assert {str(reason) for reason in Reason} <= templates
 
 
 def test_every_occurring_long_period_reason_has_a_template():
-    assert set(LONG_OCCURRING) <= set(why.template_reasons('long'))
-    assert {'gate_unavailable', 'modulated_circulation', 'drift_mechanism_unknown'} <= set(why.template_reasons('long'))
+    templates = {str(reason) for reason in why.LONG_TEMPLATES}
+    assert set(LONG_OCCURRING) <= templates
+    assert {'gate_unavailable', 'modulated_circulation', 'drift_mechanism_unknown'} <= templates
 
 
 @pytest.mark.parametrize(
@@ -427,7 +429,7 @@ def _check_form(w: vc.Why):
     assert 2 <= len(w.sentences) <= why.MAX_SENTENCES
     for sentence in w.sentences + ((w.would_change,) if w.would_change else ()):
         assert sentence.endswith('.') and not _codes(vc.plain(sentence)), sentence
-    assert not w.would_change or w.would_change.startswith(why.LAST_LINE_HEADS)
+    assert not w.would_change or w.would_change.startswith((why.WOULD_CHANGE, why.NEEDED, why.NEXT_CHECK, why.NO_CHANGE))
     column = vc.Column('mmr2', vc.Header('resonant', 'certain', vc.Chip('none', '')), vc.Subtitle('', ''), why=w)
     assert [p for p in vc.problems(column) if p.startswith('why')] == []
 

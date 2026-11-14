@@ -403,13 +403,13 @@ class TestResumeHash:
         with pytest.raises(ValueError, match='Cannot resume'):
             sim.batch_manager.execute_batches(sim, sim.bodies, np.linspace(0, 10, 5))
 
-    def test_a_state_of_the_previous_version_is_resumed_with_a_warning(self, tmp_path, caplog):
+    def test_a_state_of_an_older_version_is_refused(self, tmp_path):
         import hashlib
 
         sim = Simulation(name='resume', date='2020-01-01', save_path=str(tmp_path), plot_path=str(tmp_path), batch_size=2)
         for name in ('a', 'b', 'c'):
             sim.body_manager.add_body(ELEMENTS, [LIB], name=name)
-        # The hash the previous version wrote (its BatchManager._get_config_dict), rebuilt here by hand
+        # The hash an older version wrote (its BatchManager._get_config_dict), rebuilt here by hand: no back-compat
         c = sim.config
         legacy = {'tmax': c.tmax, 'Nout': c.Nout, 'integrator': c.integrator, 'dt': c.dt}
         legacy.update({'batch_threshold': c.batch_threshold, 'secular_angle_mode': c.secular_angle_mode})
@@ -419,9 +419,8 @@ class TestResumeHash:
         state.mark_batch_complete(1, ['c'])
         sim.batch_manager.state_manager.save_state(state)
 
-        with caplog.at_level('WARNING'):
+        with pytest.raises(ValueError, match='Cannot resume'):
             sim.batch_manager.execute_batches(sim, sim.bodies, np.linspace(0, 10, 5))
-        assert any('older version' in r.getMessage() for r in caplog.records)
 
 
 class TestResumeElements:
@@ -498,20 +497,6 @@ class TestResumeElements:
         assert self._run(self._sim(tmp_path, self.OLD), monkeypatch, stop_after=0) == [0]
         assert self._run(self._sim(tmp_path, dict(self.OLD)), monkeypatch) == [1]
         assert not (tmp_path / 'simulation_state.json').exists()
-
-    def test_a_state_written_before_the_elements_were_recorded_is_resumed_with_a_warning(self, tmp_path, monkeypatch, caplog):
-        sim = self._sim(tmp_path, self.OLD)
-        manager = sim.batch_manager
-        # The hash of the version before this one: config and batch layout (names, resonances), no elements
-        previous = StateManager.compute_config_hash(manager._get_config_dict(manager.create_batches(sim.bodies), elements=False))
-        state = SimulationState.create_new('resume', 3, 2, 100, 1, previous)
-        state.mark_batch_complete(0, ['API-only', 'b'])
-        manager.state_manager.save_state(state)
-        assert StateManager(str(tmp_path), 'resume').load_state().body_elements is None
-
-        with caplog.at_level('WARNING'):
-            assert self._run(sim, monkeypatch) == [1]
-        assert any('cannot be checked' in r.getMessage() for r in caplog.records)
 
 
 class TestSafeMode:

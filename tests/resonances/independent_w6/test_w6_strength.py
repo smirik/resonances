@@ -19,6 +19,7 @@ import pytest
 from scipy.optimize import minimize_scalar
 
 from resonances.resonance.analysis.mmr import averaged_potential as ap
+from tests.resonances.analysis.oracles import averaged_profile
 from resonances.resonance.analysis.mmr import kinematics as kin
 from resonances.resonance.analysis.mmr import strength as st
 from resonances.resonance.analysis.mmr.coorbital import Orbit
@@ -111,7 +112,7 @@ PLANET_3D = (1.0, 0.048, math.radians(1.3), 4.8, 1.75)
 def test_profile_matches_brute_force_3d(k, kp, phase):
     body = BODY_3D if k == -1 else (0.62 if k == -2 else 0.70, 0.12, math.radians(8.0), 0.9, 0.4)
     L = 120
-    sigma, values = ap.averaged_profile(_ellipse(body), _ellipse(PLANET_3D), k, kp, phase, L)
+    sigma, values = averaged_profile(_ellipse(body), _ellipse(PLANET_3D), k, kp, phase, L)
     assert len(sigma) == L and len(values) == L
     assert np.allclose(np.mod(sigma, TWO_PI), np.arange(L) * TWO_PI / L, atol=1e-12)
     for m in (0, 17, 45, 77, 101):
@@ -396,17 +397,6 @@ def test_varpi_rate_range_hand_formula_and_sampling():
     assert rate.max() == pytest.approx(got[1], rel=1e-3)
     assert kin.varpi_rate_range(0.03, 0.03, G_FREE, G5) == (-math.inf, math.inf)
     assert kin.varpi_rate_range(0.0, 0.03, G_FREE, G5) == pytest.approx((G5, G5))
-
-
-def test_varpi_rate_modulation_from_modulus():
-    A, B = 0.05, 0.0286
-    t = np.linspace(0.0, 30_000.0, 30001)
-    e = np.abs(_two_vectors(t, A, G_FREE, B, G5))
-    e_free, e_forced, lo, hi, period = kin.varpi_rate_modulation(e, G_FREE, G5)
-    assert e_free == pytest.approx(A, rel=1e-4)
-    assert e_forced == pytest.approx(B, rel=1e-4)
-    assert period == pytest.approx(TWO_PI / (G_FREE - G5), rel=1e-9)
-    assert (lo, hi) == pytest.approx(kin.varpi_rate_range(A, B, G_FREE, G5), rel=1e-3)
 
 
 def _vector_series(z, t):

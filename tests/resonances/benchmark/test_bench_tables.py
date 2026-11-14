@@ -63,3 +63,43 @@ def test_unknown_buckets_and_the_reverse_spelling():
         'near-separatrix',
         'resonant',
     ]
+
+
+# --- upsert_labels (rewritten on plain dicts 2026-11-14: repeated DataFrame.at writes crashed pandas 2.3.3) ----------
+
+
+def _labels(tmp_path, monkeypatch, text):
+    path = tmp_path / 'labels.csv'
+    path.write_text(text)
+    monkeypatch.setattr(bio, 'LABELS', path)
+    return path
+
+
+def test_upsert_keeps_human_labels_refreshes_machine_ones_and_adds_rows(tmp_path, monkeypatch):
+    head = ','.join(bio.LABEL_COLUMNS)
+    path = _labels(tmp_path, monkeypatch, f'{head}\nb,c2,mmr2,transient,low,resonant,,kept\na,c1,mmr3,resonant,high,,,\n')
+    bio.upsert_labels(
+        [
+            {'example_id': 'b', 'proposed_bucket': 'resonant', 'author_bucket': 'transient', 'comment': 'new'},
+            {'example_id': 'a', 'author_bucket': 'transient', 'confidence': None},
+            {'example_id': 'c', 'candidate_id': 'c3', 'rtype': 'coorbital', 'not_a_column': 'x'},
+        ]
+    )
+    rows = {r['example_id']: r for r in bio.read_labels().to_dict('records')}
+    assert list(rows) == ['a', 'b', 'c']  # sorted by id
+    # b: a machine column refreshed, the human ones kept once non-empty
+    assert (rows['b']['proposed_bucket'], rows['b']['author_bucket'], rows['b']['comment']) == ('resonant', 'resonant', 'kept')
+    # a: an empty human column is filled, None becomes empty
+    assert (rows['a']['author_bucket'], rows['a']['confidence']) == ('transient', '')
+    # c: a new row gets the existing columns only
+    assert rows['c']['rtype'] == 'coorbital' and 'not_a_column' not in rows['c']
+    assert path.read_text().splitlines()[0] == head
+
+
+def test_upsert_refuses_duplicate_ids(tmp_path, monkeypatch):
+    head = ','.join(bio.LABEL_COLUMNS)
+    path = _labels(tmp_path, monkeypatch, f'{head}\nx,c1,mmr2,resonant,high,resonant,,human\nx,c1,mmr2,,,,,\n')
+    before = path.read_text()
+    with pytest.raises(ValueError, match='duplicate example_id'):
+        bio.upsert_labels([])
+    assert path.read_text() == before

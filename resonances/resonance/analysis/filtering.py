@@ -7,6 +7,7 @@ linear trend is removed (and the trend is put back). Times in years, uniformly s
 
 from __future__ import annotations
 
+import hashlib
 from collections import OrderedDict
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
@@ -24,13 +25,17 @@ NAN = float('nan')
 # Two cover the repeats (37087: response_series 206 of 212 calls repeated, band_pass 203 of 211); each entry holds
 # up to four N-arrays, so the store stays per record and small (W23 P2: unscoped, 88710_c3 rose 1280 -> 2084 MB).
 RECORD_MEMO_ENTRIES = 2
+# `band_pass` keeps more: the owner search returns to an earlier (series, P) after others (37087 1 Myr: 40 of its
+# recomputations were of a pair already filtered); each entry holds one N-array.
+BAND_PASS_MEMO_ENTRIES = 6
 
 _RECORD_MEMO: Optional[Dict[str, OrderedDict]] = None  # the memo of the record analysed now (`record_memo`)
 
 
 @contextmanager
 def record_memo():
-    """Remember the last RECORD_MEMO_ENTRIES results of `memoised` calls (`band_pass`, `response.smoothed_series`)
+    """Remember the last RECORD_MEMO_ENTRIES results of `memoised` calls (`response.smoothed_series`; `band_pass`
+    BAND_PASS_MEMO_ENTRIES)
     until the analysis of one record ends (re-entrant: the nested passes of the record use the outer memo). The episode
     physics asks again for the same filtered series run after run (the runs' median periods repeat on a uniform grid)
     and the second episode pass after the forced waves repeats them all; the memo returns the arrays it computed, made
@@ -46,10 +51,18 @@ def record_memo():
         _RECORD_MEMO = None
 
 
-def memoised(name: str, objects: Sequence[Any], scalars: Tuple, compute: Callable[[], Any], fresh: Callable[[Any], Sequence]):
+def memoised(
+    name: str,
+    objects: Sequence[Any],
+    scalars: Tuple,
+    compute: Callable[[], Any],
+    fresh: Callable[[Any], Sequence],
+    entries: int = RECORD_MEMO_ENTRIES,
+):
     """`compute()`, remembered inside `record_memo` under `name` by the identity of `objects` (kept alive with the
     entry, so an id is not reused) and the values `scalars`; outside a memo scope it is computed every time. `fresh`
-    names the arrays of a result that `compute` created (they are made read-only when stored)."""
+    names the arrays of a result that `compute` created (they are made read-only when stored); `entries` results of
+    `name` are kept (the least recently used goes first)."""
     if _RECORD_MEMO is None:
         return compute()
     store = _RECORD_MEMO.setdefault(name, OrderedDict())
@@ -62,9 +75,20 @@ def memoised(name: str, objects: Sequence[Any], scalars: Tuple, compute: Callabl
     for array in fresh(value):
         array.flags.writeable = False
     store[key] = (tuple(objects), value)
-    while len(store) > RECORD_MEMO_ENTRIES:
+    while len(store) > entries:
         store.popitem(last=False)
     return value
+
+
+def value_key(*values) -> Tuple[bytes, ...]:
+    """A memo key of arrays and numbers by their values (dtype, shape and bytes digested; a float by its bytes, so nan
+    matches nan), for a result that depends only on them (`memoised` keys objects by identity)."""
+    key = []
+    for value in values:
+        array = np.ascontiguousarray(np.asarray(value))
+        digest = hashlib.blake2b(array.view(np.uint8).reshape(-1), digest_size=20).digest()
+        key.append(array.dtype.str.encode() + repr(array.shape).encode() + digest)
+    return tuple(key)
 
 
 def butterworth_gain(period_yr, cutoff_yr: float, order: int, step_yr: Optional[float] = None):
@@ -179,7 +203,7 @@ def band_pass(t_yr: np.ndarray, values: np.ndarray, period_yr: float, factor: fl
         return low - lowpass(t_yr, values, period_yr * factor, filter_order)
 
     scalars = (float(period_yr), float(factor), int(filter_order))
-    return memoised('band_pass', (t_yr, values), scalars, compute, lambda band: (band,))
+    return memoised('band_pass', (t_yr, values), scalars, compute, lambda band: (band,), BAND_PASS_MEMO_ENTRIES)
 
 
 def lowpass_with(t_yr: np.ndarray, series: np.ndarray, cutoff_yr: float, settings: AnalysisSettings) -> np.ndarray:
@@ -193,6 +217,11 @@ def lowpass_or_none(t_yr: np.ndarray, series: np.ndarray, cutoff_yr: float, sett
         return lowpass_with(t_yr, series, cutoff_yr, settings)
     except ValueError:
         return None
+
+
+def unwrapped(angles) -> np.ndarray:
+    """`np.unwrap` of the angles as floats [rad]."""
+    return np.unwrap(np.asarray(angles, dtype=float))
 
 
 def is_finite(value) -> bool:

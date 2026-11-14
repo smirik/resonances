@@ -25,6 +25,8 @@ import numpy as np
 from matplotlib.colors import Normalize
 
 from resonances.data.util import time_ordered
+from resonances.resonance.analysis.mmr.models import PLANET_NAMES_ORDER
+from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN
 from resonances.secular.free_elements import RAD_PER_ARCSEC, rate
 from resonances.secular.proper_angle import inclination_from_invariable_plane, inclination_from_vector, reduced_vectors
 from .base import DiagnosticPlotter, time_unit
@@ -662,9 +664,6 @@ def _draw_element(ax, frame, layout, values, letter, label, fmt):
     _style_axis(ax, letter, label, layout)
 
 
-PLANET_ORDER = ('Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune')
-
-
 def hill_half_width(planet: str, hill_factor: float) -> float:
     """The co-orbital zone's half-width in units of a_P: hill_factor x (m_P / 3 M_sun)^(1/3) (ZLK_COORBITAL_HILL_FACTOR;
     0.030 for the Earth at the default 3)."""
@@ -683,7 +682,7 @@ def coorbital_planet_geometric(a_med: float, settings) -> str:
     if a_med is None or not np.isfinite(a_med) or a_med <= 0:
         return ''
     factor = settings.zlk_coorbital_hill_factor
-    for planet in PLANET_ORDER:
+    for planet in PLANET_NAMES_ORDER:
         if abs(a_med / PLANETS_AXIS[planet] - 1.0) < hill_half_width(planet, factor):
             return planet
     return ''
@@ -1287,9 +1286,9 @@ def draw_long_period_combined(
         layout = panels_layout(layout)
     elif explained:  # the column is measured first: the figure grows down when it needs (decision D8)
         from resonances.plotting.verdict_column_draw import prepare
-        from resonances.plotting.verdict_column_long import figure_parts
+        from resonances.plotting.verdict_column_long import figure_column
 
-        layout, prepared = prepare(*figure_parts(analysis, row, free_elements, settings), layout)
+        layout, prepared = prepare(figure_column(analysis, row, free_elements, settings), layout)
     fig = plt.figure(figsize=layout.size, dpi=layout.dpi)
     if not panels:
         _draw_header(fig, analysis, layout, stamp)
@@ -1335,36 +1334,6 @@ def draw_long_period_combined(
     return fig
 
 
-# The numbers of the explained column of a secular/ZLK figure, most important first (a group with no value is left out)
-LONG_PERIOD_EXPLAINED_GROUPS = (
-    (
-        'LIBRATION (deciding episode)',
-        (
-            'ep_centre_mod_2pi_deg',
-            'ep_n_tp',
-            'ep_period_med_yr',
-            'ep_half_amp_med_deg',
-            'ep_half_amp_max_deg',
-            'ep_centre_estimates',
-            'ep_coverage_start_gap_P',
-            'ep_coverage_end_gap_P',
-            'geo_n_tp',
-            'geo_period_cycle_yr',
-            'geo_centre_max_pass_rev',
-            'geo_drift_fraction',
-        ),
-    ),
-    (
-        'SCALE, FILTER',
-        ('sec_scale', 'sec_scale_cutoff_yr', 'flt_cutoff_yr', 'flt_cutoff_binding', 'sec_fine_n_tp', 'sec_fine_period_cycle_yr'),
-    ),
-    ('FREE-ω GATE', ('zlk_gate', 'zlk_gate_n_cycles', 'zlk_gate_min_cycles', 'zlk_gate_period_yr', 'zlk_gate_rho_max', 'zlk_ei_coupling')),
-    ('RESPONSE OF e AND i (a column)', ('rsp_variables', 'rsp_e_R2', 'rsp_i_R2')),
-    ('ORBIT', ('ctx_a_med_au', 'ctx_a_min_au', 'ctx_a_max_au', 'ctx_e_min', 'ctx_e_max', 'ctx_inc_min_deg', 'ctx_inc_max_deg')),
-    ('RECORD', ('smp_span_yr', 'smp_step_yr', 'flags', 'status_code', 'settings_hash', 'confidence_cells_sha')),
-)
-LONG_PERIOD_EXPLAINED_PREFIXES = ('ep_', 'geo_', 'sec_', 'flt_', 'zlk_', 'rsp_', 'ctx_', 'smp_')
-TURN_ARCSEC = 1296000.0  # a rate of f arcsec/yr turns once in 1296000 / |f| yr
 FREQUENCY_GROUP = 'FREQUENCIES (″/yr; period = 360°/|f|)'
 FREQUENCY_MODES_SHOWN = ('g5', 'g6', 's6')  # Jupiter's and Saturn's modes: always listed (as in the MMR figure)
 FREQUENCY_BEAT_MODES = 2  # ZLK: g - g_j of the fitted forced modes with the largest |c_j|, and their mutual beat
@@ -1387,8 +1356,7 @@ def _rate_text(value: float, constant: bool = False) -> str:
 @dataclass(frozen=True)
 class Frequency:
     """One row of FREQUENCIES: its name ('g5 Jup', 'g − g6', 'σ'), the rate [arcsec/yr], the period [yr] (360°/|rate|
-    unless given: a beat's own), a note, and how the rate prints (`constant`: 4 decimals; `rate_text`: instead). The
-    explanation identifies the periods seen on the angle against these rows (`verdict_text.time_scale_line`)."""
+    unless given: a beat's own), a note, and how the rate prints (`constant`: 4 decimals; `rate_text`: instead)."""
 
     name: str
     rate: float
@@ -1401,7 +1369,7 @@ class Frequency:
 def _frequency_line(name: str, rate: float, note: str = '', period: Optional[float] = None, constant=False, rate_text=None):
     """One row of FREQUENCIES (`Frequency`); the period is 360°/|rate| unless given."""
     if period is None:
-        period = TURN_ARCSEC / abs(rate) if np.isfinite(rate) and rate else float('nan')
+        period = ARCSEC_PER_TURN / abs(rate) if np.isfinite(rate) and rate else float('nan')
     return Frequency(name, rate, period, note, constant, rate_text)
 
 
@@ -1412,7 +1380,7 @@ def frequency_number_line(item: Frequency):
 
     rate_text = item.rate_text if item.rate_text is not None else _rate_text(item.rate, item.constant)
     text = f'{item.name:<8}{rate_text:>9} {years(item.period):>9}' + (f'  {item.note}' if item.note else '')
-    return NumberLine('numbers', '', text, group=FREQUENCY_GROUP, keep=True)
+    return NumberLine('numbers', '', text, group=FREQUENCY_GROUP)
 
 
 def _mode_name(label: str) -> str:
@@ -1533,39 +1501,5 @@ def long_period_frequency_lines(analysis, row, free_elements=None, frequencies=N
     from resonances.plotting.combined_numbers import NumberLine
 
     amplitude = '  |c|' if str(analysis.series.resonance_type) == 'lidov_kozai' else ''
-    header = NumberLine('numbers', '', f'{"":<8}{"arcsec/yr":>9} {"period":>9}{amplitude}', group=FREQUENCY_GROUP, keep=True)
+    header = NumberLine('numbers', '', f'{"":<8}{"arcsec/yr":>9} {"period":>9}{amplitude}', group=FREQUENCY_GROUP)
     return [header, *(frequency_number_line(item) for item in items)]
-
-
-def point_to_text(lines, columns) -> list:
-    """W20 CS11 (no number twice): a table line whose column (or one it stands for, `also`) a bullet of the explanation
-    prints keeps its label and prints `verdict_text.TEXT_POINTER` ('↑ in the text') instead of its number."""
-    from resonances.plotting.combined_numbers import replace_line
-    from resonances.plotting.verdict_text import TEXT_POINTER
-
-    printed = set(columns)
-    return [
-        replace_line(line, value=TEXT_POINTER, unit='') if line.label and printed & {line.column, *line.also} else line for line in lines
-    ]
-
-
-def draw_long_period_explained_v1(fig, analysis, summary, layout, settings=None, free_elements=None):
-    """The former explained right column (`verdict_text.explain_long_period`, layout A′); no longer drawn by the
-    figure, kept until the cleanup."""
-    from resonances.plotting import combined_numbers as numbers
-    from resonances.plotting.mmr_verdict_panel import config_settings, explained_episode_lines, short_hashes
-    from resonances.plotting.verdict_text import bullet_columns, explain_long_period
-
-    episodes = analysis.episode_rows()
-    frequencies = long_period_frequencies(analysis, summary, free_elements)
-    text = explain_long_period(analysis, config_settings(settings), episodes, summary, frequencies)
-    row = short_hashes(dict(summary))
-    lines = explained_episode_lines(episodes, row.get('ep_episode_id'))
-    for title, columns in LONG_PERIOD_EXPLAINED_GROUPS:
-        lines += numbers.group_lines(row, ((title, columns),), LONG_PERIOD_EXPLAINED_PREFIXES, text.bold_columns, text.grey_columns)
-        if title == 'SCALE, FILTER':
-            lines += long_period_frequency_lines(analysis, summary, frequencies=frequencies)
-    lines = point_to_text(lines, bullet_columns(text))
-    stats = numbers.draw_explained(fig, text, lines, layout)
-    stats['text'] = text
-    return stats

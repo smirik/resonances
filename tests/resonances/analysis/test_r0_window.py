@@ -16,6 +16,7 @@ from resonances.resonance.analysis.rules import Rule
 from resonances.resonance.analysis.settings import AnalysisSettings
 from resonances.resonance.analysis.verdict import CheckValue
 from tests.resonances.analysis.builders import make_geometry, make_turning_points
+from tests.resonances.analysis.oracles import fixed_frame
 
 S = AnalysisSettings()
 OMEGA2 = (2 * np.pi / 1000.0) ** 2  # a 1000-yr small period [rad^2/yr^2]
@@ -89,7 +90,7 @@ def test_moving_well_needs_its_own_acceleration_in_the_force():
     acceleration = pendulum.frame_acceleration(frame, t)
     assert acceleration == pytest.approx(np.full_like(t, alpha), rel=1e-9)
     assert pendulum.frame_acceleration(None, t) is None
-    assert pendulum.frame_acceleration(pendulum.fixed_frame(t), t) is None
+    assert pendulum.frame_acceleration(fixed_frame(t), t) is None
     a_dot = -OMEGA2 * np.sin(phi) / C_IDENTITY
     window = (0.0, float(t[argrelextrema(phi, np.less)[0][0]]))
     args = (t, phi + shift, phi_rate + alpha * t, a_dot, window, frame, C_IDENTITY, S, True)

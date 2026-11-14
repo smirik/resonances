@@ -16,7 +16,7 @@ import pytest
 from scipy.integrate import solve_ivp
 
 from resonances.data import const
-from resonances.resonance.analysis.geometry import TurningPoints, classify_run, find_episodes
+from resonances.resonance.analysis.geometry import TurningPoints, _classify_run, find_episodes
 from resonances.resonance.analysis.ledger import Ledger
 from resonances.resonance.analysis.mmr import averaged_potential as ap
 from resonances.resonance.analysis.mmr import strength as strength_module
@@ -484,7 +484,7 @@ def test_slow_last_half_cycle_is_cut_off_the_episode(settings):
     """GQ107: 12 regular TPs, a 13th after a half-cycle 2.07 x the median (its full period only (1 + 2.07)/2 = 1.54 x).
     With b = 0.127 rad per half-cycle: 13 TPs give 1.2 - 10 b < 0 (centre moves), 12 give 1.2 - 9 b > 0 (stationary)."""
     tp, t, window = _turning_points([HALF] * 11 + [2.07 * HALF], drift=0.127, last_extra=1.0)
-    whole = classify_run(0, tp, np.arange(13), t, window, settings)
+    whole = _classify_run(0, tp, np.arange(13), (t[0], t[-1]), settings, tuple(window))
     assert not whole.accepted and str(whole.reject_reason) == 'centre_moves'
     episodes = find_episodes(t, tp, window, settings)
     assert _summary(episodes) == [(0, True, '', 12), (1, False, 'edge', 1)]
@@ -501,7 +501,7 @@ def test_uniform_drift_is_not_accepted_on_a_shorter_piece(settings):
     """A uniform drift b = 0.2 with slow half-cycles at both ends: one cut per side leaves 11 TPs, 1.2 - 8 b < 0; a
     5-TP piece of the same drift would pass (1.2 - 2 b > 0), so only a single cut per side keeps the drift out."""
     tp, t, window = _turning_points([2.5 * HALF] + [HALF] * 10 + [2.5 * HALF], drift=0.2)
-    assert classify_run(0, tp, np.arange(4, 9), t, window, settings).accepted  # what an iterated trim would reach
+    assert _classify_run(0, tp, np.arange(4, 9), (t[0], t[-1]), settings, tuple(window)).accepted  # what an iterated trim would reach
     episodes = find_episodes(t, tp, window, settings)
     assert not any(e.accepted for e in episodes)
 

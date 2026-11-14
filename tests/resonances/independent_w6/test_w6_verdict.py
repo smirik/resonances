@@ -60,7 +60,7 @@ def _episode(times, window):
         kinds=kinds,
         prominence_rad=np.radians(1.0),
     )
-    return G.classify_run(0, tp, np.arange(len(times)), RECORD_T, window, SETTINGS)
+    return G._classify_run(0, tp, np.arange(len(times)), (RECORD_T[0], RECORD_T[-1]), SETTINGS, tuple(window))
 
 
 def _expected_cover(times, window, record=(0.0, 10000.0), coverage=1.0):

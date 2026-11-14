@@ -212,7 +212,5 @@ def test_real_coorbitals(example_id, expected):
     tree, analysis = tree_and_final(io.load_series(example_id), S)
     assert analysis.verdict.orbit_type == expected
     assert analysis.summary_row()['orbit_type'] == expected
-    # the cell of resonant/libration/dynamic_libration is reported from the package file: by the W28 tree (W34: the
-    # minimal policy reports no cell, cell_* blank)
-    assert tree.verdict.cell_n_examples is not None and tree.verdict.cell_n_examples > 0
-    assert analysis.verdict.cell_n_examples is None
+    # the calibration cells are not looked up (2026-11-14): cell_* blank in the tree and in the final verdict
+    assert tree.verdict.cell_n_examples is None and analysis.verdict.cell_n_examples is None

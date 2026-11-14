@@ -2,9 +2,8 @@
 `combined.numbers`).
 
 Explained (default): the ten blocks of `verdict_column` (built by `verdict_column_mmr`, drawn by
-`verdict_column_draw.draw_prepared` from `mmr_combined.draw_right_column`; the redesign of 2026-11-04).
-`explained_lines` (the older 'Numbers behind this verdict' and table, drawn by `combined_numbers.draw_explained`) is
-no longer drawn; kept until the cleanup.
+`verdict_column_draw.draw_prepared` from `mmr_combined.draw_right_column`; the redesign of 2026-11-04); this module
+gives it the episode, subresonance and period lines (`explained_episode_lines`, `ranked_members_lines`, `period_lines`).
 
 All: every number of the decision as text, below. The engine (cells, units, block assembly, column placement,
 drawing) is shared with the secular/ZLK figure in `combined_numbers`; this module holds the MMR blocks and tables.
@@ -38,6 +37,7 @@ import math
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from resonances.resonance.analysis.ledger import LedgerEntry
+from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN
 from resonances.resonance.analysis.verdict import MMR_CHECKS
 
 from . import combined_numbers as numbers
@@ -68,7 +68,7 @@ from .combined_numbers import (  # noqa: F401  (re-exported: the API of this mod
 )
 from .style import VerdictFigureLayout
 from .verdict_vocab import snake_words
-from .verdict_text import episode_accepted, episode_marks, fmt, interval, physics_columns, residence_sides, years
+from .verdict_text import episode_accepted, episode_marks, fmt, interval, residence_sides, years
 
 NOT_RUN_NO_TRIGGER = 'not run: no trigger'
 NOT_RUN_NO_DATA = 'not run: data missing'
@@ -618,159 +618,9 @@ def draw_text(fig, blocks: Dict[str, TextBlock], layout: VerdictFigureLayout) ->
 
 # --------------------------------------------------------------------------------------------- explained column (A′)
 
-# The numbers of the explained column, most important first (the author's N3); a group with no value is left out.
-# Everything else stays in summary.csv / mmr_numbers.csv and in the 'all' form of the column.
-EXPLAINED_GROUPS = (
-    (
-        'LIBRATION (deciding episode)',
-        (
-            'ep_centre_mod_2pi_deg',
-            'ep_n_tp',
-            'ep_period_med_yr',
-            'ep_half_amp_med_deg',
-            'ep_half_amp_max_deg',
-            'ep_centre_shift_over_amp',
-            'ep_coverage_start_gap_P',
-            'ep_coverage_end_gap_P',
-            'geo_n_tp',
-            'geo_period_cycle_yr',
-            'geo_centre_window_yr',
-            'geo_centre_max_pass_rev',
-            'geo_drift_fraction',
-            'geo_final_circulation_P',
-            'geo_n_slips',
-            'geo_n_revolutions',
-            'geo_pattern_b_detected',
-            'geo_n_episodes_before_jump',
-        ),
-    ),
-    (
-        'RESPONSE OF a',
-        (
-            'rsp_identity_slope_ratio',
-            'rsp_identity_corr',
-            'rsp_b1_ratio',
-            'rsp_force_law',
-            'rsp_force_window_yr',
-            'rsp_force_n_windows',
-            'rsp_force_R2_h1',
-            'rsp_force_R2_h2',
-            'rsp_force_phi0_deg',
-            'rsp_phi0_max_dev_deg',
-            'rsp_phi0_tol_deg',
-            'rsp_coorb_regime',
-            'rsp_coorb_K_over_K_theory',
-            'rsp_coorb_energy_R2',
-            'rsp_omega0_ratio',
-            'rsp_b5_ratio',
-        ),
-    ),
-    (
-        'PENDULUM, ENERGY, ZONE',
-        # labelled in words with their source (`combined_numbers.COLUMN_LABELS`, W28 E11): T0 is inferred from the
-        # observed cycles, never a theory; the min/max and lo/hi pairs print as one range (`RANGE_LABELS`)
-        (
-            'ep_T0_min_kyr',
-            'ep_T0_max_kyr',
-            'ep_half_width_au',
-            'ep_mu_eff',
-            'sep_h_med',
-            'sep_zone_method',
-            'sep_zone_h_lo',
-            'sep_zone_h_hi',
-            'sep_VE_R2',
-            'sep_period_law_med',
-            'sep_VE_VF_agree_fraction',
-            'sep_mechanism',
-        ),
-    ),
-    (
-        'SUBRESONANCES, OWNER',
-        (
-            'sub_triggers',
-            'sub_n_scanned',
-            'sub_best',
-            'sub_best_phi0_coherence',
-            'sub_accepted',
-            'sub_theory_measured',
-            'sub_flags',
-            'own_name',
-            'own_n_candidates',
-            'own_flags',
-        ),
-    ),
-    (
-        'RESONANCE, RATES',
-        (
-            'ctx_order',
-            'ctx_a_res_nominal_au',
-            'ctx_a_star_au',
-            'ctx_a_mean_au',
-            'ctx_delta_a_au',
-            'ctx_a_from_mean_longitude_rate_au',
-            'ctx_c_rad_yr_au',
-            'ctx_rate_expected_deg_yr',
-            'ctx_rate_measured_deg_yr',
-        ),
-    ),
-    (
-        'STEP, ALIAS, FILTER',
-        (
-            'smp_step_yr',
-            'smp_n_rows',
-            'smp_verdict',
-            'smp_step_rotation_deg_max',
-            'smp_unwrap_resid_p99_deg',
-            'smp_far_ratio',
-            'flt_cutoff_yr',
-            'flt_cutoff_binding',
-            'flt_gain_at_pcyc',
-            'flt_filter_too_slow',
-            'flt_sensitive_quantities',
-            'flt_withdrawn_before_tree',
-            'rsp_response_cutoff_yr',
-        ),
-    ),
-    (
-        'STRENGTH',
-        # CS11: the numbers are in the physics block ('Is σ the own pendulum'), not repeated here
-        ('str_method', 'str_n_consistent', 'str_n_evaluations', 'str_planet_elements', 'str_not_measured_reason'),
-    ),
-    (
-        'KINEMATICS',
-        (
-            'kin_corr_rate',
-            'kin_e_free',
-            'kin_e_forced',
-            'kin_modulation_period_kyr',
-            'kin_two_omega_period_yr',
-            'kin_pred_swing_deg',  # W28 B10b: the half-swing p varpi predicts against the measured one
-            'kin_meas_swing_deg',
-        ),
-    ),
-    (
-        # W28 B10b (cards g08-7, g05-2): the slow scale of the centre and its cause with a level (B10a); a row without
-        # a slow scale prints none of them (a group with no value is left out)
-        'SLOW SCALE',
-        (
-            'slow_period_yr',  # slow_n_cycles is 0 on every row without a slow scale: in the text only
-            'slow_halfamp_deg',
-            'slow_cutoff_yr',
-            'slow_identity',
-            'slow_secular_period_yr',
-            'slow_secular_term',
-            'slow_origin',
-            'slow_cause_level',
-        ),
-    ),
-    ('ORBIT', ORBIT_COLUMNS[:-1]),
-    ('RECORD', ('flags', 'status_code', 'rec_rule', 'settings_hash', 'confidence_cells_sha')),  # caps, thin: in CONFIDENCE
-)
-EXPLAINED_PREFIXES = ('ep_', 'geo_', 'rsp_', 'sep_', 'sub_', 'own_', 'ctx_', 'smp_', 'flt_', 'str_', 'kin_', 'rec_')
 REJECTED_ROWS_MAX = 4  # rejected runs listed one by one in the explained column (the longest)
 MARKS_SHOWN = 3  # the changes of a 1:1 run that are no boundary listed under it (W28 C13), the first ones, then '…'
 MARK_WORDS = {'well_change': 'well', 'amplitude_change': 'amplitude', 'kick': 'kick'}
-HASH_CHARS = 10
 # constants.csv rows of planetary terms -> their name on the figure
 TERM_NAMES = {
     'great_inequality': 'great ineq. 2J−5S',
@@ -780,7 +630,6 @@ TERM_NAMES = {
     'uranus_neptune_1_2': 'U–N 1:2',
 }
 SECULAR_MODES_SHOWN = (('g', 'Jupiter'), ('g', 'Saturn'), ('s', 'Saturn'))  # g5, g6, s6: always listed
-ARCSEC_PER_TURN = 1296000.0
 
 
 def _period_from_rate(rate_arcsec_yr: Any) -> float:
@@ -973,19 +822,6 @@ def ranked_members_lines(row: Mapping[str, Any], group: str) -> List[NumberLine]
     return lines
 
 
-def _without(groups, columns) -> tuple:
-    """EXPLAINED_GROUPS without the columns the physics block prints (no number twice)."""
-    return tuple((title, tuple(c for c in group if c not in columns)) for title, group in groups)
-
-
-def short_hashes(row: Dict[str, Any]) -> Dict[str, Any]:
-    """`row` with its settings_hash and confidence_cells_sha cut to HASH_CHARS (the explained columns print them so)."""
-    for column in ('settings_hash', 'confidence_cells_sha'):
-        if not missing(row.get(column)):
-            row[column] = str(row[column])[:HASH_CHARS]
-    return row
-
-
 def config_settings(settings=None):
     """`settings`, else the AnalysisSettings of the configuration (an error when it cannot be read)."""
     if settings is not None:
@@ -993,28 +829,3 @@ def config_settings(settings=None):
     from resonances.resonance.analysis.settings import settings_from_config
 
     return settings_from_config()
-
-
-def explained_lines(
-    summary: Mapping[str, Any],
-    numbers_row: Mapping[str, Any],
-    episodes: Sequence[Mapping[str, Any]],
-    constants: Sequence[Mapping[str, Any]],
-    text,
-) -> List[NumberLine]:
-    """The numbers of the explained column: 'Numbers behind this verdict' first (card g10-5, W28 E10: the lines of
-    `text.emphasis`, drawn framed above the table), then the episodes, then EXPLAINED_GROUPS with the characteristic
-    periods after the resonance, bold = compared by the decision, gray = of a test skipped by design (`text`:
-    VerdictText). A number the block prints becomes a pointer in the table when drawn ('↑ decisive [B1]', W20 CS11: no
-    number twice; `combined_numbers.point_to_block`)."""
-    row = short_hashes({**numbers_row, **summary})
-    block = numbers.behind_lines(getattr(text, 'emphasis', ()), EXPLAINED_PREFIXES)
-    lines = explained_episode_lines(episodes, row.get('ep_episode_id'))
-    shown = set(physics_columns(getattr(text, 'physics', ())))
-    for title, columns in _without(EXPLAINED_GROUPS, shown):
-        lines += numbers.group_lines(row, ((title, columns),), EXPLAINED_PREFIXES, text.bold_columns, text.grey_columns)
-        if title == 'SUBRESONANCES, OWNER':
-            lines += ranked_members_lines(row, title)
-        if title == 'RESONANCE, RATES':
-            lines += period_lines(row, constants)
-    return block + lines  # `numbers.draw_explained` turns the table rows of the block's numbers into pointers

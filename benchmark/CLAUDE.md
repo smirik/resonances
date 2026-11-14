@@ -24,10 +24,11 @@ overridable by `RESONANCES_BENCHMARK_DATA`) and the runs' package output stay ou
   Claude's reading, not labels. Empty from `v2-w24-tx9b` to `v2-w26-final`; 32 rows after W28; 109 since W29
   (`v2-w29-final`, 2026-11-02: minimal_policy 100, a label against a minimal rule the author accepted by default,
   each reason naming the rule and the RESULTS question; old_verdict 5; open_question 4); empty at W35; W36 test-first: 4 secular rows
-  `unreviewed`, each naming the fix expected to clear it).
-- `EPISODE_EXPECTATIONS.csv`: 171 episode cases (E100-E105: the author's episode notes of 2026-11-02; E107-E117 and C55-C60:
-  his review of the pairs secular wave 1, 2026-11-07; C61: Codex's reading of 455327 g-s-g5+s6, the W36 F2 guard) from the
-  author's history (tier A 73 his words, B 35 a review he accepted, C 63 old verdicts or provisional readings), checks
+  `unreviewed`, each naming the fix expected to clear it; empty again after W37, 2026-11-14).
+- `EPISODE_EXPECTATIONS.csv`: 172 episode cases (E100-E105: the author's episode notes of 2026-11-02; E107-E117 and C55-C60:
+  his review of the pairs secular wave 1, 2026-11-07; C61: Codex's reading of 455327 g-s-g5+s6, the W36 F2 guard; E118: 485 Genua
+  3J-1S-1, the author 2026-11-14) from the
+  author's history (tier A 74 his words, B 35 a review he accepted, C 63 old verdicts or provisional readings), checks
   as JSON ops of `benchmark/tools/episode_expectations.py`, verbatim quotes with file:line in `benchmark/EPISODE_QUOTES.json`;
   `known_fail`/`known_reason` are Claude's reading (W28: only E67, 2007 VU6, the edge-turn threshold; W29: 13 more
   where the minimal policy counts differently, e.g. a vetoed episode is a candidate, not counted). W28 F3

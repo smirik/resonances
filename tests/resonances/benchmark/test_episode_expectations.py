@@ -47,7 +47,8 @@ def test_the_cases_are_well_formed():
     # C14: C54 (2022 BB2, flag extend_time, tier C); W29 (2026-11-02 review page): E100-E105 (no episodes / at most one)
     # W36 (the author's review of the pairs secular wave 1, 2026-11-07): E107-E117 (A/B), C55-C60 (Codex/Claude, tier C)
     # W36 F2 guard: C61 (455327 g-s-g5+s6, Codex, tier C: the episode the local prominence lost)
-    assert len(names) == len(set(names)) == 171
+    # 2026-11-14: E118 (485 Genua 3J-1S-1, the author: transient; K2 needs a measured force law)
+    assert len(names) == len(set(names)) == 172
     assert {case.tier for case in CASES} <= set(ee.TIERS)
     assert {case.scope for case in CASES} <= set(ee.SCOPES)
     for case in CASES:

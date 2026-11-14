@@ -61,8 +61,8 @@ print(summary[['name', 'resonance', 'status', 'angle_status', 'confidence', 'rea
 
 ## The figure
 
-For every row selected by the `plot` mode (by default `nonzero`: everything except a `non_resonant` angle that
-nothing bounds, such as a plain circulation) a one-page figure is
+For every row selected by the `plot` mode (by default `review`: everything except a confident `non_resonant` angle that
+nothing bounds, such as a plain circulation; doubtful negatives are kept for review) a one-page figure is
 saved in `<save_path>/combined/<confidence>/<status>/`: the angle, the semi-major axis and the pendulum's energy
 in time on the left, and the verdict with every number behind it on the right. This is Lola over 100 000 years at a
 1-year output step:

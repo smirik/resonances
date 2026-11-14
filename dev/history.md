@@ -74,6 +74,8 @@ confidence, author_verdict), measured by `benchmark/tools/known_disagreements.py
 | v2-w23 | Oct 26 | 94/94 | 87/87 | 60/60 | 202/202 | 5 rows changed vs w22 |
 | v2-w24-g2a-fix | Oct 27 | 104/104 | 88/88 | 61/61 | 202/202 | secular/ZLK author verdicts 14/14 |
 | v2-w24-tx9b | Oct 27 | 0 disagreements | | | | TX9 uncertain, accepted |
+| v2-w37-k2b | Nov 14 | 232/232 | 190/190 | 178/178 | 151/151 | 485 Genua added; K2 needs a measured force law and enough centre points; Genua labelled transient/high (the author) |
+| v2-w37-clean | Nov 14 | 232/232 | 190/190 | 178/178 | 151/151 | dead code, back-compat readers and the unprinted verdict text removed; outputs identical to v2-w37-k2b |
 
 The denominators change because labels were added and relabelled; a run agreeing with every label is not an accuracy
 estimate (see [pitfalls.md](pitfalls.md), statistics).

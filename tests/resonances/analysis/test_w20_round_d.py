@@ -214,17 +214,17 @@ def test_624_is_judged_by_its_strength():
 
 
 @pytest.mark.benchmark
-def test_129772_keeps_its_word_and_385266_its_calibration_cell():
+def test_129772_keeps_its_word_and_385266_its_forced_wave_word():
     """Review C #5: the rewrite touches circulation and drift words only (129772 4N-7 stays insufficient_time/arc under
-    G6); review C #9: the confidence reads the tree's word, so 385266's cell is the circulation's, not blank."""
+    G6); 385266 keeps the episodic word with the circulation's reason. The calibration cells are not looked up any more
+    (2026-11-14), so cell_* stays blank."""
     v = _analysis('mmr2__129772__4N-7+0+3').verdict
     assert (str(v.angle_status), str(v.angle_subtype), str(v.reason)) == ('insufficient_time', 'arc', 'baseline_needed')
     _analysis_needs('mmr2__385266__16N-27+0+11')
     tree, final = tree_and_final(io.load_series('mmr2__385266__16N-27+0+11'), S)
     w = final.verdict
     assert str(w.angle_status) == 'episodic' and str(w.reason) == 'circulation'
-    # the cell is the W28 tree's (W34: the minimal policy reports none)
-    assert tree.verdict.cell_n_examples is not None and tree.verdict.cell_n_examples > 0
+    assert tree.verdict.cell_n_examples is None and w.cell_n_examples is None
     assert 'forced wave about' in w.orbit_type and 'libration' not in w.orbit_type
 
 
@@ -277,21 +277,6 @@ def test_the_owner_rejection_prints_the_bar_that_rejected():
 
     candidate = SimpleNamespace(r2_median=0.57, reason='r2_low')
     assert vt._owner_rejection(SimpleNamespace(s=S), candidate) == 'R² 0.57 < 0.7'
-
-
-def test_a_long_group_header_wraps_and_stays_with_its_lines():
-    """The EPISODES header of a forced-wave row (55 characters) in a 2.2-in column at 8 pt: the header is drawn at
-    8.3 pt, 2.2 x 72 / (0.602 x 8.3) = 31.7 -> 31 characters a line, so it takes two rows, kept with its first lines."""
-    from resonances.plotting import combined_numbers as cn
-
-    group = 'EPISODES (2 accepted (2 forced waves), 3 rejected runs)'
-    lines = [cn.NumberLine('numbers', '', f'#{i} 56.6 kyr-68.3 kyr 7 TP', group=group) for i in range(3)]
-    rows = cn._number_rows(lines, 2.2, 8.0)
-    assert [kind for kind, *_ in rows[:3]] == ['group', 'group_cont', 'line']
-    assert all(len(text) <= 31 for kind, text, _ in rows if kind.startswith('group'))
-    assert ' '.join(text.strip() for kind, text, _ in rows if kind.startswith('group')) == group
-    first = cn._items(rows)[0]
-    assert [kind for kind, *_ in first] == ['group', 'group_cont', 'line', 'line']
 
 
 def test_symlog_decade_labels_do_not_overlap():

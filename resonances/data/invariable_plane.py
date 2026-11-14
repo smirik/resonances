@@ -55,19 +55,6 @@ def elements_in_invariable_plane(inc, Omega, omega) -> Tuple[np.ndarray, np.ndar
     return rotate_elements(inc, Omega, omega, rotation_to_invariable())
 
 
-def elements_from_invariable_plane(inc, Omega, omega) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """The inverse of `elements_in_invariable_plane`: ecliptic (inc, Omega, omega) [rad] of orbits given in the frame
-    of the invariable plane (the transposed rotation)."""
-    return rotate_elements(inc, Omega, omega, rotation_to_invariable().T)
-
-
-def argument_of_pericentre(inc, Omega, omega) -> np.ndarray:
-    """omega' [rad, (-pi, pi]] from the invariable plane of orbits given by ecliptic (inc, Omega, omega): the angle of
-    the Lidov-Kozai row (ZLK_ANGLE_FRAME = invariable). From the ecliptic a node of an orbit tilted by about the plane's
-    own 1.58 deg or less librates about the plane's node instead of turning, and omega with it (555527)."""
-    return elements_in_invariable_plane(inc, Omega, omega)[2]
-
-
 def to_invariable_plane(inc, Omega, omega) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """(inc', Omega', varpi') [rad] of orbits given by ecliptic (inc, Omega, omega), measured from the invariable plane:
     the angular momentum and the perihelion direction are rotated; varpi' = Omega' + omega'."""

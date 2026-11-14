@@ -8,7 +8,7 @@
   numbers for the benchmark rows (W17 Q3 codex-fix/small_divisor_envelopes.csv).
 - near_separatrix of the geometry (G3) without a measured zone: confidence <= medium (564160 3N-4).
 - The directed transitions of `pendulum.regime_transitions`, the mark exit_and_capture and the rename of
-  separatrix_chaos to episodes_in_separatrix_zone (old files still read).
+  separatrix_chaos to episodes_in_separatrix_zone.
 
 Expected values come from the constructions (hand-computed rates, ratios and moments) or from the W17 reports, not
 from the package.
@@ -190,9 +190,7 @@ def test_nothing_measured_keeps_the_geometry_with_origin_unknown_and_at_most_low
     assert decision.reason == Reason.GEOMETRIC_LIBRATION  # only the geometry decided (author 2026-10-26, Q3)
     # every margin full and the owner search measured (W full): the cap geometry_only still holds the level at low
     margins = {key: MarginValue(Margin.FULL, 1.0, MarginClass.DECISIVE) for key in ('L1', 'L2', 'L6', 'L7', 'W')}
-    assessment = conf.assess(
-        decision.status, 'libration', 'geometric_libration', margins, decision.caps, [], ('L4', 'R0', 'W'), conf.ConfidenceCells()
-    )
+    assessment = conf.assess(decision.status, margins, decision.caps, [], ('L4', 'R0', 'W'))
     assert (assessment.confidence_raw, assessment.confidence) == (Confidence.CERTAIN, Confidence.LOW)
     assert decide.own_dynamics_claimed(decision)
 
@@ -533,9 +531,9 @@ def test_33128_keeps_the_cap_with_the_convention_off():
 # --- the rename ---------------------------------------------------------------------------------------------------
 
 
-def test_old_summary_files_with_separatrix_chaos_still_read():
+def test_the_renamed_zone_flag_reads_back():
     row = Verdict(ResonanceType.MMR, Status.TRANSIENT, AngleStatus.EPISODIC, confidence=Confidence.MEDIUM).to_flat_dict()
-    row.update(flags='separatrix_chaos;zone_eq_only', caps='separatrix_chaos;three_tp_episode', angle_status='transient')
+    row.update(flags='episodes_in_separatrix_zone;zone_eq_only', caps='episodes_in_separatrix_zone;three_tp_episode')
     verdict = Verdict.from_flat_dict(row)
     assert verdict.flags == ['episodes_in_separatrix_zone', 'zone_eq_only']
     assert verdict.caps == ['episodes_in_separatrix_zone', 'three_tp_episode']

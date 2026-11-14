@@ -262,7 +262,6 @@ def test_433_text_names_the_owner_and_the_route():
     text = vt.explain_mmr(analysis, S, row, analysis.episode_rows())
     owner_step = next(step for step in text.steps if step.title == '2. owner')
     assert '47M-44+0-3' in owner_step.outcome and 'identity route' in owner_step.outcome
-    assert any('47M-44+0-3' in sentence and 'identity route' in sentence for sentence in text.sentences)
     facts = vt.MMRFacts(analysis, S, row, analysis.episode_rows())
     rows = [r for section in vt.physics_sections(facts) for r in section.rows]
     owner_row = next(r for r in rows if r.key == 'owner')

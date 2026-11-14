@@ -16,7 +16,7 @@ theta_dot = -(3/2) n (a - a_P) / a_P, reads
 
 M&D eqs. 3.178-3.179 (p. 105) for e = i = 0, where R~ = 1 / (2 |sin(theta/2)|) - cos theta = H / 2 + 1. A turning
 point (da = 0) at theta_t fixes the constant: the loop through it has |da(theta)| = a_P sqrt((8/3) mu (R~(theta_t) -
-R~(theta))) (`loop_da`), at L3 the closed form sqrt((4/3) mu (H(theta_t) - H(pi))) of a horseshoe. The potential
+R~(theta))), at L3 the closed form sqrt((4/3) mu (H(theta_t) - H(pi))) of a horseshoe. The potential
 reverses a body that moves towards theta_t only while its level stays below the highest R~ ahead, before the body
 reaches the planet (theta = 0) or L3 (pi): `da_max` is the largest |da| at theta that it still reverses there (the
 W28 C1 study measured |da| / da_max <= 1.04 on 95 % of the turns of confirmed cycles). A reversal by the potential
@@ -264,15 +264,6 @@ def well_of(profile: CoorbitalProfile, centre_rad: float, half_amplitude_rad: fl
     else:
         name = WELL_HORSESHOE
     return Well(name, tuple(x.theta_rad for x in inside))
-
-
-def loop_da(profile: CoorbitalProfile, theta_turn_rad: float, theta_rad) -> np.ndarray:
-    """|a - a_P| [au] at `theta_rad` on the loop that turns at theta_turn (eq. 1 of the module docstring):
-    a_P sqrt((8/3) mu (R~(theta_turn) - R~(theta))); nan where R~(theta) is above the turn's level (not on the loop).
-    At L3 for a horseshoe turn: the closed form a_P sqrt((4/3) mu (H(theta_t) - H(pi))) of M&D eq. 3.178."""
-    excess = float(profile.potential(theta_turn_rad)) - profile.potential(theta_rad)
-    with np.errstate(invalid='ignore'):
-        return profile.a_planet_au * np.sqrt(np.where(excess >= 0, ENERGY_FACTOR * profile.planet_mass * excess, NAN))
 
 
 def da_max(profile: CoorbitalProfile, theta_turn_rad: float, theta_rad) -> np.ndarray:
@@ -612,7 +603,6 @@ FLOOR_SOURCE_LAW = 'law_not_positive'  # the local 1:1 law has K / K_theory <= 0
 FLOOR_SOURCE_NO_PROFILE = 'no_profile'
 REFLECTION_SITES = (SITE_PLANET, SITE_L3)
 LOOP_PAIRS_MAX = 9  # numerical (cost): the loop period of a run is the median over this many of its turn pairs
-RUN_FLOOR_COLUMNS = RUN_FLOOR_COLUMNS = LEG_COLUMNS + ('cpl_turn_sites', 'cpl_law_K_over_K_theory', 'cpl_floor_yr', 'cpl_floor_source')
 
 
 @dataclass
@@ -626,7 +616,7 @@ class CoorbitalRunFloor:
     the force that reverses it is the planet's. Any other run (a turn inside a tadpole or quasi-satellite well, no loop
     between its turns such as 2022 AP1's 148 / 186 deg about L3, or no positive law) has no floor of its own and keeps
     the angle's (the tadpole floor; the QS well of G1q keeps its own, `mmr.decide.period_floor`). The reading's columns
-    (`RUN_FLOOR_COLUMNS`: the C2 leg columns of its first and last turn, the sites, K and the floor) go to
+    (the C2 leg columns of its first and last turn, `cpl_turn_sites`, `cpl_law_K_over_K_theory`, `cpl_floor_yr`, `cpl_floor_source`) go to
     episodes.csv for every run of >= 2 TPs.
 
     Why: the tadpole floor P / sqrt(27 mu / 4) / 2 is the shortest tadpole libration, but a horseshoe that turns close to

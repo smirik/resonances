@@ -70,7 +70,7 @@ from matplotlib import patheffects
 from matplotlib.ticker import FuncFormatter, NullLocator, ScalarFormatter
 
 from resonances.plotting import verdict_text
-from resonances.plotting.base import BasePlotter, time_unit
+from resonances.plotting.base import time_unit
 from resonances.plotting.mmr_verdict_panel import (  # noqa: F401  (re-exported: the API of this module)
     TEXT_BLOCKS,
     NumberLine,
@@ -3741,9 +3741,9 @@ def prepare_column(analysis: MMRAnalysis, rows, layout: VerdictFigureLayout = LA
     `style.COLUMN_MAX_GROWTH_IN` (`verdict_column_draw.prepare`, decision D8); the left panels keep their geometry at
     the top."""
     from resonances.plotting.verdict_column_draw import prepare
-    from resonances.plotting.verdict_column_mmr import figure_parts
+    from resonances.plotting.verdict_column_mmr import figure_column
 
-    return prepare(*figure_parts(analysis, rows, settings), layout)
+    return prepare(figure_column(analysis, rows, settings), layout)
 
 
 def draw_right_column(fig, analysis: MMRAnalysis, rows, layout: VerdictFigureLayout, options=None, prepared=None) -> Dict[str, Any]:
@@ -3757,18 +3757,3 @@ def draw_right_column(fig, analysis: MMRAnalysis, rows, layout: VerdictFigureLay
         summary, numbers, episodes, constants = rows
         return draw_text(fig, text_blocks(summary, numbers, analysis.verdict.decision_path, episodes, constants), layout)
     return draw_prepared(fig, prepared, layout)
-
-
-class VerdictFigurePlotter(BasePlotter):
-    """Draws, saves and closes the combined v2 figure of one angle (and of a derived subresonance row)."""
-
-    def __init__(self, analysis: MMRAnalysis, series: MMRSeries, layout: VerdictFigureLayout = LAYOUT_V1, options=None):
-        self.analysis = analysis
-        self.series = series
-        self.layout = layout
-        self.options = options
-
-    def plot(self, stamp: Optional[str] = None):
-        """Draw the figure (kept in `self.figure`)."""
-        self._figure = draw_combined(self.analysis, self.series, self.layout, stamp, options=self.options)
-        return self._figure

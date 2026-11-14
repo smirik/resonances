@@ -3,7 +3,7 @@ docs/physics/confidence.md caps; docs/output.md `flags`, `sep_`):
 
 - the near_separatrix cap: a near_separatrix of the geometry (G3) whose zone is not measured is at most medium;
 - the counts of exits and captures and the mark exit_and_capture on a pendulum with one slip and a separate exit;
-- the flag/cap separatrix_chaos of old files read back as episodes_in_separatrix_zone.
+- the flag/cap is written as episodes_in_separatrix_zone, never under its old name separatrix_chaos.
 
 The pendulum records are integrated here; the reference counts come from the integrated angle itself (its passages
 over the top, sigma = pi mod 2 pi), not from the package's turning points.
@@ -13,7 +13,6 @@ import dataclasses
 import functools
 
 import numpy as np
-import pandas as pd
 import pytest
 from scipy.integrate import solve_ivp
 
@@ -22,8 +21,7 @@ from resonances.resonance.analysis.mmr.analyse import analyse_mmr
 from resonances.resonance.analysis.mmr.context import table_mean_motion
 from resonances.resonance.analysis.mmr.models import MMRSeries, PlanetSeries, Regime, ResonanceSpec
 from resonances.resonance.analysis.settings import AnalysisSettings
-from resonances.resonance.analysis.verdict import Confidence, Verdict
-from resonances.simulation.serializer import SimulationSerializer
+from resonances.resonance.analysis.verdict import Confidence
 
 SETTINGS = AnalysisSettings()
 P0_YR = 400.0  # small-amplitude period of the 3J-1 pendulum
@@ -233,46 +231,7 @@ def test_aliased_step_withholds_the_mark_but_not_the_counts():
 
 
 # --------------------------------------------------------------------------------------------------------------------
-# separatrix_chaos in old files
-
-
-# the verdict columns of 52356 5J-2S-2+0+0-1 in benchmark/data/v2-w16r/summary.csv (written before the rename), with
-# the angle_status of files before 2026-10-17 ('transient')
-OLD_ROW = {
-    'name': '52356',
-    'resonance': '5J-2S-2+0+0-1',
-    'resonance_type': 'mmr',
-    'status': 'transient',
-    'angle_status': 'transient',
-    'angle_subtype': 'recurrent',
-    'confidence': 'medium',
-    'confidence_raw': 'high',
-    'reason': 'dynamic_episode',
-    'flags': 'separatrix_chaos;zone_eq_only',
-    'caps': 'separatrix_chaos',
-    'libration_origin': 'dynamic',
-    'status_code': '1',
-    'thin_margins': 'L2;L4',
-    'failed_support': '',
-    'check_mmr_separatrix_zone': 'pass',
-}
-
-
-def test_old_summary_row_is_read_under_the_new_names(tmp_path):
-    path = tmp_path / 'summary.csv'
-    pd.DataFrame([OLD_ROW]).to_csv(path, index=False)
-    frame = SimulationSerializer._summary_frame(path)
-    row = frame.to_dict('records')[0]
-    verdict = SimulationSerializer._verdict_of_row(row, row['resonance'], True)
-    assert verdict.flags == ['episodes_in_separatrix_zone', 'zone_eq_only']
-    assert verdict.caps == ['episodes_in_separatrix_zone']
-    assert str(verdict.angle_status) == 'episodic'
-    # the cap keeps its medium ceiling (author 2026-10-16, 52356)
-    assert str(confidence.apply_caps(verdict.confidence_raw, verdict.caps)) == 'medium'
-    # and is written back under the new name only
-    rewritten = verdict.to_flat_dict()
-    assert 'separatrix_chaos' not in rewritten['flags'] + rewritten['caps']
-    assert Verdict.from_flat_dict(rewritten).caps == verdict.caps
+# the old name separatrix_chaos is never written
 
 
 def test_new_records_never_write_the_old_name():

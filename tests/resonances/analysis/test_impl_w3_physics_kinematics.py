@@ -67,8 +67,6 @@ def test_a_record_shorter_than_one_modulation_cycle():
 
 def test_e_through_zero_and_degenerate_vectors():
     # e_min = 0 (e_free = e_forced): varpi undefined at e = 0, its rate unbounded; never a ZeroDivisionError
-    e_free, e_forced, low, high, period = kin.varpi_rate_modulation(np.array([0.0, 0.1, 0.2]), 1.0, 0.0)
-    assert (e_free, e_forced) == (0.1, 0.1) and (low, high) == (-np.inf, np.inf) and period == pytest.approx(2 * np.pi)
     assert kin.varpi_rate_range(0.1, 0.1, 1.0, 0.0) == (-np.inf, np.inf)
     # a forced vector alone turns at g5 whatever g; nothing at all: undefined
     assert kin.varpi_rate_range(0.0, 0.2, np.nan, 0.3) == (0.3, 0.3)

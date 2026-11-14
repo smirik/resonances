@@ -94,13 +94,9 @@ def test_composite_of_a_single_term_and_its_winding():
     beta = np.linspace(0, 2 * np.pi, 9)
     coefficients, js = np.array([0.0, 0.0, 2.0]), np.array([0, 1, 2])
     np.testing.assert_allclose(multiplet.composite(coefficients, js, beta), 2.0 * np.exp(2j * beta), atol=1e-12)
-    # pi - arg(C e^{2 i beta}) = pi - 2 beta, unwrapped
-    np.testing.assert_allclose(multiplet.composite_centre(coefficients, js, beta), np.pi - 2 * beta, atol=1e-9)
     assert multiplet.winding_number(coefficients, js) == 2
     assert multiplet.rouche_holds(np.array([0.2, 0.3, 1.0]), js, 2)
     assert not multiplet.rouche_holds(np.array([0.5, 0.6, 1.0]), js, 2)
-    # a negative coefficient puts the centre at 0 instead of pi
-    np.testing.assert_allclose(np.mod(multiplet.composite_centre(np.array([-1.0]), np.array([0]), beta), 2 * np.pi), 0.0, atol=1e-9)
 
 
 @pytest.mark.parametrize(

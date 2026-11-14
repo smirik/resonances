@@ -154,11 +154,11 @@ def test_an_exit_the_filter_hides_is_read_on_the_averaged_angle():
     top = np.pi + math.radians(60.0)
     averaged = np.where(t <= 1000.0, top, top - 2 * np.pi / 150.0 * (t - 1000.0))
     hidden = np.minimum(np.abs(averaged - np.pi), np.pi - 0.1) * np.sign(averaged - np.pi) + np.pi
-    event = g._visible_edge(t, hidden, averaged, _edge_episode(), 'exit', (0.0, 1200.0), S, averaged)
+    event = g._edge_reading(t, hidden, averaged, _edge_episode(), 'exit', (0.0, 1200.0), S, averaged)[0]
     assert event is not None and event.observed and not event.suspected and event.raw_monotonic
     assert event.raw_arc_rad == pytest.approx(200.0 / 150.0 * 2 * np.pi, rel=1e-6)
     assert event.time_yr == pytest.approx(1100.0, abs=1.0)
-    assert g._visible_edge(t, hidden, averaged, _edge_episode(), 'exit', (0.0, 1200.0), S) is None  # rule off: no crossing
+    assert g._edge_reading(t, hidden, averaged, _edge_episode(), 'exit', (0.0, 1200.0), S)[0] is None  # rule off: no crossing
 
 
 def test_a_reversal_before_the_crossing_is_no_observed_exit():
@@ -170,7 +170,7 @@ def test_a_reversal_before_the_crossing_is_no_observed_exit():
     down = top - math.radians(100.0) * (t - 1000.0) / 600.0
     up = top - math.radians(100.0) + 2 * np.pi / 150.0 * (t - 1600.0)
     averaged = np.where(t <= 1000.0, top, np.where(t <= 1600.0, down, up))
-    event = g._visible_edge(t, averaged, averaged, _edge_episode(), 'exit', (0.0, 2000.0), S, averaged)
+    event = g._edge_reading(t, averaged, averaged, _edge_episode(), 'exit', (0.0, 2000.0), S, averaged)[0]
     assert event is not None and not event.observed and not event.raw_monotonic
     assert event.raw_arc_rad == pytest.approx(math.radians(960.0 - 100.0), rel=1e-6)
     # sigma crosses pi + pi (above the centre) at 1600 + (180 + 40) / 360 x 150 = 1691.7 yr: 308 yr = 0.62 P left

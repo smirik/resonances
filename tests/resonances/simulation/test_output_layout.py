@@ -90,13 +90,10 @@ def test_defaults_of_the_package():
     assert config.data_path == f'{config.save_path}/data'
 
 
-def test_the_old_env_key_is_read_when_no_layout_is_set(monkeypatch):
+def test_the_layout_keys_of_the_environment(monkeypatch):
     monkeypatch.setitem(package_config.config, 'PLOT_LAYOUT', '')
-    monkeypatch.setitem(package_config.config, 'PLOT_SUBFOLDER_STRATEGY', '')
-    assert SimulationConfig().plot_layout == 'confidence/status'  # neither key: the default
-    monkeypatch.setitem(package_config.config, 'PLOT_SUBFOLDER_STRATEGY', 'flat')
-    assert SimulationConfig().plot_layout == 'flat'
-    monkeypatch.setitem(package_config.config, 'PLOT_SUBFOLDER_STRATEGY', 'status')
+    assert SimulationConfig().plot_layout == 'confidence/status'  # no key: the default
+    monkeypatch.setitem(package_config.config, 'PLOT_LAYOUT', 'status')
     assert SimulationConfig().plot_layout == 'status'
     monkeypatch.setitem(package_config.config, 'PLOT_LAYOUT', 'confidence/status')
     config = SimulationConfig()
@@ -104,7 +101,7 @@ def test_the_old_env_key_is_read_when_no_layout_is_set(monkeypatch):
     monkeypatch.setitem(package_config.config, 'PLOT_COMBINED_LAYOUT', 'type')
     assert SimulationConfig().plot_combined_layout == 'type'
     # an explicit argument wins over the environment
-    assert SimulationConfig(plot_subfolder_strategy='').plot_layout == 'flat'
+    assert SimulationConfig(plot_layout='flat').plot_layout == 'flat'
 
 
 # --------------------------------------------------------------------------- figures of a run, every preset
@@ -235,12 +232,11 @@ def test_restore_of_a_run_saved_before_the_data_folder(tmp_path):
     saved['config'].pop('data_folder')
     for key in ('plot_layout', 'plot_combined_layout', 'plot_figures_folder', 'plot_combined_folder'):
         saved['config'].pop(key)
-    saved['config']['plot_subfolder_strategy'] = 'status'
     for files in ({k: v for k, v in saved['simulation']['data_files'].items() if k != 'bodies'}, saved['simulation']['data_files']):
         saved['simulation']['data_files'] = files
         path.write_text(json.dumps(saved))
         sim = SimulationSerializer.restore(str(path), recompute_librations=True)
-        assert sim.config.data_folder == 'data' and sim.config.plot_layout == 'status'
+        assert sim.config.data_folder == 'data' and sim.config.plot_layout == 'confidence/status'
         assert sim.bodies[0].statuses[LIB] == 'resonant'
         assert LIB in sim.bodies[0].angles and LIB in sim.bodies[0].periodogram_frequency
 

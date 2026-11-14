@@ -12,9 +12,10 @@ support margins may fail and each failure lowers the level, cap margins limit th
     low     — two or more failed support margins
   confidence = min(raw, caps): the level shown (certain included). uncertain and invalid: no level.
 
-The calibration cell (status, angle_status, reason) of a verdict is only reported: its author-label counts in the
-cells file (n_examples, n_errors and the Wilson 95 % interval of the accuracy, `CellRecord`) go to summary.csv next
-to the level and never change it (author, 2026-10-16: the current labels are enough, show the real levels now).
+The calibration cells file (benchmark/tools/calibrate.py: the author-label counts of each (status, angle_status,
+reason) cell, `cell_of`) never changes a level (author, 2026-10-16: the current labels are enough, show the real levels
+now). A run records its sha256 (`confidence_cells_sha`); the `cell_*` columns stay empty under the W29 minimal policy,
+which shows the level the evidence earns.
 
 Every applicable not_measured margin counts as thin (a check that could not be made is not a pass).
 
@@ -43,8 +44,6 @@ from resonances.resonance.analysis.verdict import (
     MarginClass,
     MarginValue,
     Status,
-    angle_status_from_text,
-    finite_or_none,
     lower_confidence,
 )
 
@@ -188,23 +187,13 @@ CAP_CEILING = {
 
 @dataclass(frozen=True)
 class CellRecord:
-    """The author-label record of one calibration cell, reported next to the level (it changes no level):
-    labelled verdicts of the cell at confidence high or certain, their errors, the Wilson 95 % interval of the
-    accuracy (nan without examples)."""
+    """The author-label record of one calibration cell: labelled verdicts of the cell at confidence high or certain,
+    their errors, the Wilson 95 % interval of the accuracy (nan without examples)."""
 
     n_examples: int
     n_errors: int
     accuracy_low_95: float = NAN
     accuracy_high_95: float = NAN
-
-    def verdict_fields(self) -> dict:
-        """The `cell_*` fields of a Verdict."""
-        return dict(
-            cell_n_examples=self.n_examples,
-            cell_n_errors=self.n_errors,
-            cell_accuracy_low_95=finite_or_none(self.accuracy_low_95),
-            cell_accuracy_high_95=finite_or_none(self.accuracy_high_95),
-        )
 
 
 @dataclass(frozen=True)
@@ -224,11 +213,6 @@ class ConfidenceAssessment:
     thin_margins: List[str] = field(default_factory=list)  # margin ids and U:<name>
     failed_support: List[str] = field(default_factory=list)
     caps: List[str] = field(default_factory=list)
-    cell: Optional[CellRecord] = None  # the verdict's calibration cell, reported only
-
-    def cell_fields(self) -> dict:
-        """The `cell_*` fields of the Verdict (empty without a cell)."""
-        return self.cell.verdict_fields() if self.cell is not None else {}
 
 
 def file_sha(path: Path) -> str:
@@ -240,13 +224,13 @@ def file_sha(path: Path) -> str:
 def load_cells(path: Optional[str | Path] = None) -> ConfidenceCells:
     """Read the cells file ({"version": 1, "cells": [{"status", "angle_status", "reason", "n_examples", "n_errors",
     "accuracy_95": [low, high]}]}, written by benchmark/tools/calibrate.py). '' or None = the package file; a missing
-    file gives no cells. An older file's angle_status 'transient' is read as 'episodic'."""
+    file gives no cells."""
     path = Path(path) if path else PACKAGE_CELLS
     entries = json.loads(path.read_text()).get('cells', []) if path.exists() else []
     records = {}
     for entry in entries:
         low, high = entry.get('accuracy_95') or (NAN, NAN)
-        records[cell_of(entry['status'], angle_status_from_text(entry['angle_status']), entry['reason'])] = CellRecord(
+        records[cell_of(entry['status'], entry['angle_status'], entry['reason'])] = CellRecord(
             int(entry.get('n_examples', 0)), int(entry.get('n_errors', 0)), float(low), float(high)
         )
     return ConfidenceCells(records, file_sha(path))
@@ -311,17 +295,14 @@ def cap_binds(confidence: Confidence | str, confidence_raw: Confidence | str, ca
 
 def assess(
     status: Status,
-    angle_status: str,
-    reason: str,
     margins: Mapping[str, MarginValue],
     caps: Iterable[Cap | str],
     ledger_thin: Sequence[str],
     physics_margins: Sequence[str],
-    cells: ConfidenceCells,
 ) -> ConfidenceAssessment:
     """The full confidence of a verdict: raw level, caps, the U margins from the ledger (`ledger_thin`
-    are 'U:<name>' items, added to thin margins); the shown level is min(raw, caps). The cell's record in `cells`
-    is attached for the output only. uncertain and invalid get Confidence.NONE for both levels and no cell."""
+    are 'U:<name>' items, added to thin margins); the shown level is min(raw, caps). uncertain and invalid get
+    Confidence.NONE for both levels."""
     level, thin, failed, all_physics_missing = raw_level(margins, physics_margins)
     thin = thin + [item for item in ledger_thin if item not in thin]
     if level == Confidence.CERTAIN and thin:
@@ -331,5 +312,4 @@ def assess(
         caps.append(str(Cap.ALL_PHYSICS_NOT_MEASURED))
     if status in (Status.UNCERTAIN, Status.INVALID):
         return ConfidenceAssessment(Confidence.NONE, Confidence.NONE, thin, failed, caps)
-    cell = cells.records.get(cell_of(status, angle_status, reason))
-    return ConfidenceAssessment(apply_caps(level, caps), level, thin, failed, caps, cell)
+    return ConfidenceAssessment(apply_caps(level, caps), level, thin, failed, caps)

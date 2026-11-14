@@ -21,6 +21,7 @@ import pytest
 from scipy import integrate
 
 from resonances.resonance.analysis.mmr import averaged_potential as ap
+from tests.resonances.analysis.oracles import averaged_profile
 from resonances.resonance.analysis.mmr import io, kinematics as kin, multiplet
 from resonances.resonance.analysis.mmr import strength as st
 from resonances.resonance.analysis.mmr.coorbital import Orbit
@@ -59,7 +60,7 @@ def test_two_to_one_first_harmonic_is_the_laplace_coefficient():
     assert f27 == pytest.approx(-1.19049, abs=1e-5)  # M&D Table 8.5
     for e in (0.001, 0.01):
         body = ap.Ellipse(alpha, Orbit(e, 0.0, 0.0, 0.0))
-        sigma, profile = ap.averaged_profile(body, ap.Ellipse(1.0, CIRCLE), -1, 2, 0.0, 720)  # sigma = 2 lambda_P - lambda - varpi
+        sigma, profile = averaged_profile(body, ap.Ellipse(1.0, CIRCLE), -1, 2, 0.0, 720)  # sigma = 2 lambda_P - lambda - varpi
         first = np.mean(profile * np.exp(-1j * sigma))
         assert first.real == pytest.approx(f27 * e / 2, rel=2e-4 + 2 * e)  # + e^3 terms of the same harmonic
         # f27 < 0: the stable centre is sigma = 0, the curvature -> |f27| e as e -> 0 (the e^2 cos 2 sigma term is O(e))
@@ -73,7 +74,7 @@ def test_planar_first_harmonic_matches_the_multiplet_code_with_an_eccentric_plan
     a, e, planet_e, beta = 0.48, 0.15, 0.05, 1.0
     body = ap.Ellipse(a, Orbit(e, 0.0, 0.0, 0.0))
     planet = ap.Ellipse(1.0, Orbit(planet_e, 0.0, beta, 0.0))
-    sigma, profile = ap.averaged_profile(body, planet, -1, 3, 0.0, 720)
+    sigma, profile = averaged_profile(body, planet, -1, 3, 0.0, 720)
     mine = np.mean(profile * np.exp(-1j * sigma))
     theirs = multiplet._first_harmonic(3, -1, a, 1.0, e, planet_e, 1.0, np.array([beta]))[0]
     assert mine == pytest.approx(theirs, rel=1e-9)

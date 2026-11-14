@@ -29,6 +29,7 @@ from scipy import optimize
 
 from resonances.data.const import PLANETARY_FREQUENCIES
 from resonances.resonance.analysis import filtering
+from resonances.resonance.analysis.filtering import unwrapped
 from resonances.resonance.analysis.geometry import Geometry
 from resonances.resonance.analysis.mmr.context import ARCSEC_TO_RAD, linear_slope, planet_frequency
 from resonances.resonance.analysis.mmr.models import (
@@ -62,10 +63,6 @@ BRACKET_FRACTION = 0.1
 ROUND_OFF = float(np.sqrt(np.finfo(float).eps))  # a remainder below this fraction of |z| is round-off
 
 
-def _unwrap(x: np.ndarray) -> np.ndarray:
-    return np.unwrap(np.asarray(x, dtype=float))
-
-
 def _on_grid(t_yr: np.ndarray, t_source: np.ndarray, values: np.ndarray) -> np.ndarray:
     values = np.asarray(values, dtype=float)
     return values if len(values) == len(t_yr) else np.interp(t_yr, np.asarray(t_source, float), values)
@@ -79,19 +76,19 @@ def lambda_part(series: MMRSeries, angle_unwrapped: np.ndarray, settings: Option
     skipped (their term is then a straight line in psi; the caller may remove its rate)."""
     spec = series.resonance
     t = np.asarray(series.t_yr, float)
-    varpi = _unwrap(series.varpi) if settings is None else body_varpi_slow_unwrap(series, settings)[0]
+    varpi = unwrapped(series.varpi) if settings is None else body_varpi_slow_unwrap(series, settings)[0]
     psi = np.asarray(angle_unwrapped, dtype=float) - spec.body_varpi_coefficient * varpi
     if spec.body_node_coefficient:
-        psi = psi - spec.body_node_coefficient * _unwrap(series.Omega)
+        psi = psi - spec.body_node_coefficient * unwrapped(series.Omega)
     node_coefficients = spec.planet_node_coefficients or (0,) * len(spec.planets)
     for name, p_planet, v_planet in zip(spec.planets, spec.planet_varpi_terms, node_coefficients):
         planet = series.planets.get(name)
         if planet is None:
             continue
         if p_planet:
-            psi = psi - p_planet * _on_grid(t, planet.t_yr, _unwrap(planet.varpi))
+            psi = psi - p_planet * _on_grid(t, planet.t_yr, unwrapped(planet.varpi))
         if v_planet:
-            psi = psi - v_planet * _on_grid(t, planet.t_yr, _unwrap(planet.Omega))
+            psi = psi - v_planet * _on_grid(t, planet.t_yr, unwrapped(planet.Omega))
     return psi
 
 
@@ -104,7 +101,7 @@ def cancellation(
         return NAN, NAN, NAN, NAN, NAN
     slope, intercept = np.polyfit(t_yr, psi_lambda, 1)
     rms = float(np.sqrt(np.mean((psi_lambda - (slope * t_yr + intercept)) ** 2)))
-    p_rate = varpi_coefficient * np.gradient(_unwrap(varpi_slow), t_yr)
+    p_rate = varpi_coefficient * np.gradient(unwrapped(varpi_slow), t_yr)
     return float(slope), rms, float(np.mean(p_rate)), float(np.min(p_rate)), float(np.max(p_rate))
 
 
@@ -122,7 +119,7 @@ def kinematic_correlations(slow: SlowComponents, varpi_coefficient: int) -> Tupl
         return NAN, NAN
     full_t = np.asarray(slow.t_yr, float)
     sigma_rate = np.gradient(np.asarray(slow.angle_slow, float), full_t)
-    p_varpi = varpi_coefficient * _unwrap(slow.varpi_slow)
+    p_varpi = varpi_coefficient * unwrapped(slow.varpi_slow)
     p_rate = np.gradient(p_varpi, full_t)
     mask = _slow_window(slow)
     if np.count_nonzero(mask) < MIN_POINTS:
@@ -157,24 +154,6 @@ def _modulation_period(g_free_rad_yr: float, g5_rad_yr: float) -> float:
     if not np.isfinite(difference):
         return NAN
     return float(TWO_PI / difference) if difference > 0 else np.inf
-
-
-def varpi_rate_modulation(e: np.ndarray, g_body_rad_yr: float, g5_rad_yr: float) -> Tuple[float, float, float, float, float]:
-    """From e alone: e_free = (e_max + e_min)/2, e_forced = (e_max - e_min)/2, predicted varpi_dot min/max [rad/yr],
-    period 2pi/|g - g5| [yr].
-
-    e cannot tell which radius is free (|z| is symmetric in the swap): this form assumes the free one is the larger,
-    i.e. that `g_body_rad_yr` is the free frequency and varpi turns at it on average. When the forced term dominates
-    (varpi turns at g5) it is wrong; `free_forced_split` reads the branch from the vector (what analyse_kinematics uses).
-    e_min = 0 gives the unbounded range of `varpi_rate_range`, never a division by zero."""
-    e = np.asarray(e, dtype=float)
-    e = e[np.isfinite(e)]
-    if not len(e):
-        return NAN, NAN, NAN, NAN, NAN
-    e_free = float((e.max() + e.min()) / 2)
-    e_forced = float((e.max() - e.min()) / 2)
-    low, high = varpi_rate_range(e_free, e_forced, g_body_rad_yr, g5_rad_yr)
-    return e_free, e_forced, low, high, _modulation_period(g_body_rad_yr, g5_rad_yr)
 
 
 def _free_rate(t_yr: np.ndarray, free: np.ndarray) -> float:
@@ -242,7 +221,7 @@ def short_period_vector(series: MMRSeries, cutoff_yr: float, settings: AnalysisS
 def two_omega_cycle(t_yr: np.ndarray, omega: np.ndarray, e_slow: np.ndarray) -> Tuple[float, float]:
     """(pi / |omega_dot| [yr], corr(e_slow, cos 2 omega)): the kinematic mechanism of 285637."""
     t_yr, e_slow = np.asarray(t_yr, float), np.asarray(e_slow, float)
-    omega = _unwrap(omega)
+    omega = unwrapped(omega)
     if len(t_yr) < MIN_POINTS:
         return NAN, NAN
     rate = float(np.polyfit(t_yr, omega, 1)[0])
@@ -270,7 +249,7 @@ def secular_mode_term(planet: str) -> str:
 def secular_varpi_terms(t_yr: np.ndarray, varpi: np.ndarray) -> Dict[str, np.ndarray]:
     """{'g-g5': varpi - g5 t, ...} [rad] of the body's unwrapped varpi against each giant planet's mode (the constant
     phase left out, block comment above)."""
-    t, varpi = np.asarray(t_yr, float), _unwrap(varpi)
+    t, varpi = np.asarray(t_yr, float), unwrapped(varpi)
     return {secular_mode_term(name): varpi - planet_frequency(name, 'g') * t for name in SECULAR_MODE_PLANETS}
 
 
@@ -306,7 +285,7 @@ def secular_forcing_terms(
     phase are a low polynomial in t and fit any slow trend. The rate is the least-squares slope of theta over the
     samples given."""
     t, y = np.asarray(t_yr, float), np.asarray(y, float)
-    phases = {SECULAR_2OMEGA: 2 * _unwrap(omega)}
+    phases = {SECULAR_2OMEGA: 2 * unwrapped(omega)}
     phases.update({name: np.asarray(theta, float) for name, theta in varpi_terms.items()})
     result = {}
     for name, theta in phases.items():
@@ -401,7 +380,9 @@ def slow_centre_kinematics(
     slow centre). The model of the centre is the uniform lambda part plus s: its rate is a constant plus s_dot, so the
     correlation and the slope read the secular part alone, and the intercept should be the lambda part's own rate
     (21028 7E-10M-6+9: corr 0.998, slope 1.015, intercept -0.0300 deg/yr against -0.0292 deg/yr). nan without a
-    centre, a low-pass at W_c or three samples."""
+    centre, a low-pass at W_c or three samples, and nan with fewer than mmr_kin_min_points independent points
+    ((window - 2 W_c) / W_c, K1's guard): over a fraction of W_c two smooth curves correlate whatever they are (485 Genua
+    3J-1S-1: 15 kyr of a 42-kyr W_c right after a capture, corr 0.98 at slope 35)."""
     centre = geometry.centre
     t_c = np.asarray(centre.t_yr, float)
     if len(t_c) < MIN_POINTS or not (np.isfinite(centre.window_yr) and centre.window_yr > 0):
@@ -412,6 +393,8 @@ def slow_centre_kinematics(
     if secular_f is None:
         return NAN, NAN, NAN
     start, end = geometry.window
+    if (end - start - 2 * centre.window_yr) / centre.window_yr < settings.mmr_kin_min_points:
+        return NAN, NAN, NAN
     inside = (t_c - start > centre.window_yr) & (end - t_c > centre.window_yr)
     if np.count_nonzero(inside) < MIN_POINTS:
         return NAN, NAN, NAN
@@ -555,7 +538,7 @@ def analyse_kinematics(
         in_slow = (slow_t >= prep.window[0]) & (slow_t <= prep.window[1])
     mask = (t >= slow_t[in_slow][0]) & (t <= slow_t[in_slow][-1]) if np.any(in_slow) else np.zeros(len(t), dtype=bool)
     psi = lambda_part(series, prep.angle_unwrapped, settings)
-    varpi_slow_on_t = np.interp(t, slow_t, _unwrap(slow.varpi_slow))
+    varpi_slow_on_t = np.interp(t, slow_t, unwrapped(slow.varpi_slow))
     psi_rate, psi_rms, p_rate, p_rate_min, p_rate_max = cancellation(t[mask], psi[mask], p, varpi_slow_on_t[mask])
     psi_rate -= _missing_planet_rate(series, context.planet_varpi_rate_rad_yr)
     with np.errstate(divide='ignore', invalid='ignore'):
@@ -568,7 +551,7 @@ def analyse_kinematics(
     e_free, e_forced, g_free = free_forced_split(t[split], e_vector[split], varpi_vector[split], g5)
     varpi_min, varpi_max = varpi_rate_range(e_free, e_forced, g_free, g5)
     modulation = _modulation_period(g_free, g5)
-    omega_on_slow = np.interp(slow_t, np.asarray(series.t_yr, float), _unwrap(series.omega))
+    omega_on_slow = np.interp(slow_t, np.asarray(series.t_yr, float), unwrapped(series.omega))
     two_omega, e_cos = two_omega_cycle(slow_t[in_slow], omega_on_slow[in_slow], np.asarray(slow.e_slow, float)[in_slow])
 
     n_independent = max(end - start, 0.0) / slow.window_yr if slow.window_yr > 0 else NAN
@@ -679,7 +662,7 @@ def _in_spans(t_yr: np.ndarray, spans: Sequence[Tuple[float, float]]) -> np.ndar
 def secular_phases_on(series: MMRSeries, t_yr: np.ndarray) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
     """(omega unwrapped, {'g-g5': varpi - g5 t, ...}) of the body on the grid `t_yr` (as `owner.secular_phases`)."""
     t, source = np.asarray(t_yr, float), np.asarray(series.t_yr, float)
-    omega, varpi = _unwrap(series.omega), _unwrap(series.varpi)
+    omega, varpi = unwrapped(series.omega), unwrapped(series.varpi)
     if len(source) != len(t) or not np.array_equal(source, t):
         omega, varpi = np.interp(t, source, omega), np.interp(t, source, varpi)
     return omega, secular_varpi_terms(t, varpi)

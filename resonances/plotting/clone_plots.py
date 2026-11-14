@@ -14,8 +14,8 @@ import numpy as np
 
 from .base import BasePlotter, time_unit
 from .style import STATUS_COLOURS
+from .verdict_vocab import ALL_STATUSES
 
-STATUS_ORDER = ('resonant', 'transient', 'near_separatrix', 'non_resonant', 'uncertain', 'invalid')
 NO_VERDICT = '#bbbbbb'
 
 
@@ -106,7 +106,7 @@ class EnsemblePlotter(BasePlotter):
     def _status_vs_axis(self, ax, members, nominal_a0, nominal_status, a_star, half_width):
         from matplotlib.ticker import MaxNLocator
 
-        position = {status: i for i, status in enumerate(STATUS_ORDER)}
+        position = {status: i for i, status in enumerate(ALL_STATUSES)}
         values = np.array([m['a0'] for m in members], dtype=float)
         finite = values[np.isfinite(values)]
         # a around a reference value, so a cloud of 1e-9 AU and a* 1e-4 AU away both read
@@ -127,9 +127,9 @@ class EnsemblePlotter(BasePlotter):
                 for edge in (a_star - half_width, a_star + half_width):
                     ax.axvline(edge - reference, color='#2c7bb6', ls='--', lw=1.0)
                 ax.plot([], [], color='#2c7bb6', ls='--', label='a_res +- half-width (clones\' episodes)')
-        ax.set_yticks(range(len(STATUS_ORDER)))
-        ax.set_yticklabels(STATUS_ORDER)
-        ax.set_ylim(-0.6, len(STATUS_ORDER) - 0.4)
+        ax.set_yticks(range(len(ALL_STATUSES)))
+        ax.set_yticklabels(ALL_STATUSES)
+        ax.set_ylim(-0.6, len(ALL_STATUSES) - 0.4)
         ax.xaxis.set_major_locator(MaxNLocator(4))
         ax.ticklabel_format(axis='x', style='sci', scilimits=(-3, 3), useOffset=False)
         ax.set_xlabel(f'initial a - {reference:.8f} [AU] (osculating, at the run date)')
@@ -138,22 +138,22 @@ class EnsemblePlotter(BasePlotter):
             ax.legend(loc='best', fontsize=8)
 
     def _shares(self, ax, row, nominal_status):
-        shares = np.array([row.get(f'f_{s}', np.nan) for s in STATUS_ORDER], dtype=float)
-        low = np.array([row.get(f'f_{s}_lo', np.nan) for s in STATUS_ORDER], dtype=float)
-        high = np.array([row.get(f'f_{s}_hi', np.nan) for s in STATUS_ORDER], dtype=float)
-        y = np.arange(len(STATUS_ORDER))
+        shares = np.array([row.get(f'f_{s}', np.nan) for s in ALL_STATUSES], dtype=float)
+        low = np.array([row.get(f'f_{s}_lo', np.nan) for s in ALL_STATUSES], dtype=float)
+        high = np.array([row.get(f'f_{s}_hi', np.nan) for s in ALL_STATUSES], dtype=float)
+        y = np.arange(len(ALL_STATUSES))
         values = np.nan_to_num(shares)
-        ax.barh(y, values, color=[self._colour(s) for s in STATUS_ORDER], alpha=0.85)
+        ax.barh(y, values, color=[self._colour(s) for s in ALL_STATUSES], alpha=0.85)
         # clipped at 0: at 0/N or N/N a bound equals the share up to round-off
         errors = np.clip(np.vstack([np.nan_to_num(values - low), np.nan_to_num(high - values)]), 0.0, None)
         ax.errorbar(values, y, xerr=errors, fmt='none', ecolor='black', capsize=3, lw=1)
         for yi, value in zip(y, values):
             ax.text(min(value, 1.0) + 0.02, yi, f'{100 * value:.0f} %', va='center', fontsize=8)
-        if nominal_status in STATUS_ORDER:
-            ax.plot(-0.04, STATUS_ORDER.index(nominal_status), '*', ms=12, color='black', clip_on=False)
+        if nominal_status in ALL_STATUSES:
+            ax.plot(-0.04, ALL_STATUSES.index(nominal_status), '*', ms=12, color='black', clip_on=False)
         ax.set_yticks(y)
-        ax.set_yticklabels(STATUS_ORDER)
+        ax.set_yticklabels(ALL_STATUSES)
         ax.set_xlim(0, 1.15)
-        ax.set_ylim(-0.6, len(STATUS_ORDER) - 0.4)
+        ax.set_ylim(-0.6, len(ALL_STATUSES) - 0.4)
         ax.set_xlabel('share of clones (bars: Wilson 95 %)')
         ax.set_title('(c) status shares (* nominal)')

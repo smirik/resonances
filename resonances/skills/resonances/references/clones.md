@@ -226,7 +226,7 @@ those would bias the shares, and each clone costs as much analysis as the nomina
 Not done: a clone's own series are not reclassified by a restore; no line-of-variations sampling or statistical ranging
 for orbits too weak for a Gaussian; no weighted ensembles.
 
-No shortcut that gives every clone the nominal's verdict without classifying it (author 2026-10-28). A small spread of
+No shortcut that gives every clone the nominal's verdict without classifying it. A small spread of
 the cloud in a does not certify that every clone shares the nominal's verdict: chaos inside a resonance separates
 clones of any spread over a long enough span (33128 6N-7 librates with a Lyapunov time of about 4 kyr), the classifier
 has thresholds a tiny difference can cross, and a nominal from another source can lie off its own cloud

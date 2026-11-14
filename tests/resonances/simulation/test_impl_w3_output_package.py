@@ -31,7 +31,8 @@ from resonances.resonance.analysis.verdict import (  # noqa: E402
     Status,
     Verdict,
     AngleStatus,
-    verdict_from_status_code,
+    Confidence,
+    Reason,
 )
 from resonances.simulation import data_manager as data_manager_module  # noqa: E402
 from resonances.simulation.data_manager import DataManager  # noqa: E402
@@ -67,7 +68,7 @@ def synthetic(tmp_path, circulate=False, n=4000, years=4000.0, name='synthetic',
         integration_years=years,
         Nout=n,
     )
-    if 'plot_layout' not in config and 'plot_subfolder_strategy' not in config:
+    if 'plot_layout' not in config:
         kwargs['plot_layout'] = 'flat'  # the figure paths of these tests are written for it (default confidence/status)
     kwargs.update(config)
     sim = Simulation(**kwargs)
@@ -188,7 +189,7 @@ def test_should_save_reads_the_origin_of_the_verdict(tmp_path):
 
 @pytest.mark.parametrize('status', ALL_STATUSES)
 def test_status_folder_is_the_status_string(tmp_path, status):
-    sim = synthetic(tmp_path, plot_subfolder_strategy='status')
+    sim = synthetic(tmp_path, plot_layout='status')
     body = sim.bodies[0]
     body.statuses[KEY] = status
     assert sim.data_manager.figure_folder(body, body.resonances()[0], combined=True) == f'{tmp_path}/combined/{status}'
@@ -202,7 +203,7 @@ def test_status_folder_is_the_status_string(tmp_path, status):
 def run(tmp_path_factory):
     """A librating body (with a derived subresonance row) and a circulating one, saved with their figures."""
     tmp_path = tmp_path_factory.mktemp('w3_output_run')
-    sim = synthetic(tmp_path, plot='all', plots=['combined', 'portrait'], plot_subfolder_strategy='status')
+    sim = synthetic(tmp_path, plot='all', plots=['combined', 'portrait'], plot_layout='status')
     add_synthetic_body(sim, 4000, True, 'circulator')
     analysed(sim)
     librator, circulator = sim.bodies
@@ -338,7 +339,15 @@ def test_a_zlk_row_carries_its_verdict_and_classifier_numbers(tmp_path):
     body = sim.bodies[-1]
     lk = body.resonances()[0]
     key = lk.to_s()
-    verdict = verdict_from_status_code(-2, 'lidov_kozai', 'high', checks={'check_zlk_free_omega': CheckValue.FAIL})
+    verdict = Verdict(
+        ResonanceType.LIDOV_KOZAI,
+        Status.NON_RESONANT,
+        AngleStatus.LIBRATION,
+        confidence=Confidence.HIGH,
+        reason=Reason.KINEMATIC_LIBRATION,
+        libration_origin=LibrationOrigin.KINEMATIC,
+        checks={'check_zlk_free_omega': CheckValue.FAIL},
+    )
     body.librations[key], body.statuses[key] = verdict, str(verdict.status)
     body.classifier_numbers[key] = {'flt_cutoff_yr': 4000.0, 'geo_n_tp': 7, 'zlk_gate_outcome': 'kinematic'}
     summary = sim.data_manager.get_simulation_summary(sim.bodies)
@@ -362,7 +371,7 @@ def test_a_verdict_read_back_from_summary_is_not_rewritten(tmp_path):
     sim.body_manager.add_body({'a': 2.5, 'e': 0.2, 'inc': 0.5, 'Omega': 0.0, 'omega': 1.0, 'M': 0.0}, 'LK', name='zlk')
     body = sim.bodies[-1]
     key = body.resonances()[0].to_s()
-    body.librations[key] = verdict_from_status_code(-9, 'lidov_kozai')
+    body.librations[key] = Verdict(ResonanceType.LIDOV_KOZAI, Status.UNCERTAIN, AngleStatus.UNDEFINED, reason=Reason.GATE_UNAVAILABLE)
     body.statuses[key] = 'uncertain'
     assert not DataManager._in_memory(body, key)
     assert sim.data_manager._classified([body]) == ([], set())

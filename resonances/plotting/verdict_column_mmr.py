@@ -63,7 +63,6 @@ CHECK_ICONS = {
     vt.CheckState.SKIPPED: vc.QUIET,
     vt.CheckState.NOT_APPLICABLE: vc.QUIET,
 }
-WORST_FIRST = (vc.FAIL, vc.MISSING, vc.THIN, vc.OK)
 # the policy's deciding step (`pol_decided_by`) as a question and its answer ('{status}' the status word in colour)
 # (keyed on `policy.DECIDED_*`, a veto on `DECIDED_VETO` + its name)
 POLICY_QUESTIONS = {
@@ -172,20 +171,7 @@ def symbols(text: str) -> str:
     return _SIGNED.sub(lambda m: ' − ' if m.group(1) == '-' else ' + ', text)
 
 
-def _status_word(status: Any) -> str:
-    return STATUS_IN_WORDS.get(str(status), vv.snake_words(str(status)))
-
-
-def _and(items: Sequence[str]) -> str:
-    items = list(items)
-    return ', '.join(items[:-1]) + ' and ' + items[-1] if len(items) > 1 else ''.join(items)
-
-
 _NUMBER_WORDS = {2: 'two', 3: 'three', 4: 'four', 5: 'five'}
-
-
-def _plural(n: int, word: str) -> str:
-    return f'{n} {word if n == 1 else word + "s"}'
 
 
 def family_of(analysis) -> str:
@@ -242,12 +228,12 @@ def _force_clause(f: vt.MMRFacts, row: Mapping[str, Any]) -> str:
     own force is not measured'."""
     shown = shown_words(f, row)
     if shown:
-        return f'; own force shown by the {_and(shown)} only'
+        return f'; own force shown by the {vt.and_list(shown)} only'
     objections = why.objection_checks(row)
     if objections:
         words_ = [common.OBJECTION_WORDS.get(c, vv.snake_words(c)) for c in objections]
         who = 'a check objects' if len(words_) == 1 else f'{_NUMBER_WORDS.get(len(words_), len(words_))} checks object'
-        return f', but {who}: {_and(words_)}'
+        return f', but {who}: {vt.and_list(words_)}'
     return '; its own force is not measured'
 
 
@@ -255,7 +241,7 @@ def subtype_words(f: vt.MMRFacts, row: Mapping[str, Any]) -> str:
     """The subtype of the verdict in words, by its reason (and origin_detail for a forced wave, D6)."""
     v, reason = f.v, str(f.v.reason)
     n = _counted(f)
-    episodes = f'in {_plural(n, "episode")}' if n else 'in part of the record'
+    episodes = f'in {vt.plural(n, "episode")}' if n else 'in part of the record'
     if reason == 'dynamic_libration':
         return 'its own libration over the whole record'
     if reason == 'dynamic_episode':
@@ -321,7 +307,7 @@ def subtitle(f: vt.MMRFacts, row: Mapping[str, Any], checks: Sequence[vc.CheckLi
     detail = [type_words(f.a.resonance), _decided_words(decides, f)]
     shown = shown_words(f, row)
     if shown and str(f.v.status) in LIBRATING:
-        detail.append(f'own force shown by the {_and(shown)}')
+        detail.append(f'own force shown by the {vt.and_list(shown)}')
     return vc.Subtitle(title, ' · '.join(part for part in detail if part))
 
 
@@ -360,7 +346,7 @@ def _sigma_fact(f: vt.MMRFacts, row: Mapping[str, Any]) -> str:
         head = f'librates in **{vt.percent(share)}** of {span}' if vt.finite(share) and span else 'librates'
         parts = [head]
         if n > 1:
-            parts.append(_plural(n, 'episode'))
+            parts.append(vt.plural(n, 'episode'))
         final = common.text(f.v.final_regime)
         if final:
             parts.append(f'ends in **{final}**')
@@ -615,14 +601,6 @@ def _nest_number(check: vt.CheckRow) -> str:
     return NEST.get(rule_id, NEST.get(check.key, '0'))
 
 
-def _worst(children: Sequence[vc.SubCheck], read: Sequence[str] = ()) -> str:
-    """The step's icon: the worst of its sub-checks; with `read` (the ids the step's answer reads), a ? only from those:
-    a gap the answer did not need is no gap of the step (2017 UM52: O1 cannot be measured when the libration starts the
-    record, while the own-force answer stands on L4 and R0)."""
-    icons = [child.icon for child in children if not read or child.icon != vc.MISSING or child.rule_id in read]
-    return next((icon for icon in WORST_FIRST if icon in icons), vc.OK)
-
-
 def _split_answer(outcome: str) -> Tuple[str, str]:
     """An outcome as (answer, numbers): a closing parenthesis at the end moves to the gray numbers."""
     text = words(outcome).strip()
@@ -645,7 +623,7 @@ def _policy_decided(row: Mapping[str, Any]) -> str:
 def _policy_line(f: vt.MMRFacts, decided: str) -> vc.CheckLine:
     step = decided.split(';')[0]
     question, answer = POLICY_QUESTIONS.get(step, ('What does the policy decide?', '→ {status}'))
-    status = f'!!{_status_word(f.v.status)}!!'
+    status = f'!!{vt.status_head(f.v.status).lower()}!!'
     numbers_ = ''
     if step == pol.DECIDED_OBJECTION:
         numbers_ = '; '.join(common.OBJECTION_WORDS.get(c, c) for c in why.objection_checks(f.row))
@@ -680,7 +658,7 @@ def _step_line(f, step: vt.Step, children: Tuple[vc.SubCheck, ...], decided: str
             # does not arise, a step not needed (–), not a gap (?) on a resonant/certain row (1921 2J-1)
             return vc.CheckLine(vc.QUIET, number, question, answer, numbers_, rule_id, children, quiet=True)
         return vc.CheckLine(vc.MISSING, number, question, answer, numbers_, rule_id, children)
-    icon = _worst(children, step.ids) if children else vc.OK
+    icon = common.worst(children, step.ids) if children else vc.OK
     return vc.CheckLine(icon, number, question, _unread_failure(answer, icon, step, children), numbers_, rule_id, children)
 
 
@@ -699,7 +677,7 @@ def _overruled_icon(f: vt.MMRFacts, step: vt.Step, children: Sequence[vc.SubChec
         if not any(result == 'pass' for result in results):
             return vc.MISSING
         return vc.QUIET
-    worst = _worst(children, step.ids) if children else vc.OK
+    worst = common.worst(children, step.ids) if children else vc.OK
     return worst if worst != vc.OK else vc.QUIET
 
 
@@ -709,7 +687,7 @@ def _unread_failure(answer: str, icon: str, step: vt.Step, children: Sequence[vc
     if icon != vc.FAIL or any(child.icon == vc.FAIL and child.rule_id in step.ids for child in children):
         return answer
     named = [vc.plain(child.text).split(':')[0] for child in children if child.icon == vc.FAIL]
-    return f'{answer}; but {_and(named)} (below)' if named else answer
+    return f'{answer}; but {vt.and_list(named)} (below)' if named else answer
 
 
 def _quality_line(f: vt.MMRFacts, row: Mapping[str, Any], children: List[vc.SubCheck]) -> vc.CheckLine:
@@ -719,7 +697,7 @@ def _quality_line(f: vt.MMRFacts, row: Mapping[str, Any], children: List[vc.SubC
         children.append(vc.SubCheck(vc.THIN, 'filter-sensitive: a deciding number changes at cutoff ×2', words(changed)))
     if 'short_period_aliased' in flags:
         children.append(vc.SubCheck(vc.THIN, 'the output step folds short periods'))
-    worst = _worst(children) if children else vc.OK
+    worst = common.worst(children) if children else vc.OK
     reserved = [vc.plain(c.text).split(':')[0] for c in children if c.icon in (vc.FAIL, vc.MISSING, vc.THIN)]
     # the reservations in their failed words (`_reading_name`): 'Partly: the output step is too coarse for σ', never
     # 'Yes, but the output step resolves σ'; a failed sub-check makes it 'No'
@@ -775,7 +753,7 @@ def checks(
     if decided:
         lines.append(_policy_line(f, decided))
     if not any(line.decides for line in lines):  # the contract's one ◆, without inventing a rule
-        answer = f'none recorded in the decision path → !!{_status_word(f.v.status)}!!'
+        answer = f'none recorded in the decision path → !!{vt.status_head(f.v.status).lower()}!!'
         lines.append(vc.CheckLine(vc.DECIDES, UNRECORDED_NUMBER, UNRECORDED_QUESTION, answer, decides=True))
     rule = POLICY_NUMBER if decided else vt.shown_rule(f)
     return tuple(lines), rule
@@ -1126,7 +1104,7 @@ def unread_caveats(f: vt.MMRFacts, row: Mapping[str, Any], text: vt.VerdictText,
         if status == 'uncertain':
             because = 'the row has no level, and the status rests on another step'
         elif shown:
-            because = f'the own force is shown by the {_and(shown)}'
+            because = f'the own force is shown by the {vt.and_list(shown)}'
         else:
             because = 'the policy reads only the objections it names'
         numbers_ = f' [[{words(detail)}]]' if detail else ''
@@ -1451,16 +1429,13 @@ def mmr_column(
     row: Mapping[str, Any],
     episodes: Sequence[Mapping[str, Any]],
     constants: Sequence[Mapping[str, Any]] = (),
-    family: str = '',
-    text: Optional[vt.VerdictText] = None,
 ) -> vc.Column:
     """The right column of one MMR verdict. `row` = summary ⋈ numbers ({**numbers_row, **summary_row}), `episodes` =
-    episodes.csv rows of the angle, `constants` = constants.csv rows (the reference periods), `family` = mmr2, mmr3 or
-    coorbital ('' = from the analysis), `text` = its `verdict_text.explain_mmr` when the caller has it already."""
-    family = family or family_of(analysis)
+    episodes.csv rows of the angle, `constants` = constants.csv rows (the reference periods)."""
+    family = family_of(analysis)
+    text = vt.explain_mmr(analysis, settings, row, episodes)
     f = vt.MMRFacts(analysis, settings, row, episodes)
-    text = text if text is not None else vt.explain_mmr(analysis, settings, row, episodes)
-    # the emphasis without the physics block's exclusion: D1, a number is printed wherever it is needed
+    # D1: a number is printed wherever it is needed (the physics block's ones too)
     emphasis = vt.number_emphasis(f, text.steps, text.checks, vt.info_items(f, text.physics))
     conf = confidence(f, row)
     header = common.header(f.v, row, family, conf)
@@ -1483,21 +1458,14 @@ def mmr_column(
     )
 
 
-def figure_parts(analysis, rows=None, settings=None) -> Tuple[vc.Column, vt.VerdictText]:
-    """The column the MMR verdict figure draws and the `VerdictText` it is built from, exactly as
-    `mmr_combined.draw_combined` builds them: `rows` = (summary, numbers, episodes, constants) as read from the CSV
-    files, by default the analysis' own (`mmr_combined.figure_rows`); `settings` default: from the configuration."""
+def figure_column(analysis, rows=None, settings=None) -> vc.Column:
+    """The column the MMR verdict figure draws, exactly as `mmr_combined.draw_combined` builds it: `rows` = (summary,
+    numbers, episodes, constants) as read from the CSV files, by default the analysis' own (`mmr_combined.figure_rows`);
+    `settings` default: from the configuration. `verdict_column.column_text` writes it as text."""
     if rows is None:
         from resonances.plotting.mmr_combined import figure_rows
 
         rows = figure_rows(analysis)
     summary, numbers_row, episodes, constants = rows
     settings = panel.config_settings(settings)
-    row = {**numbers_row, **summary}
-    text = vt.explain_mmr(analysis, settings, row, episodes)
-    return mmr_column(analysis, settings, row, episodes, constants, text=text), text
-
-
-def figure_column(analysis, rows=None, settings=None) -> vc.Column:
-    """The column the MMR verdict figure draws (`figure_parts`); `verdict_column.column_text` writes it as text."""
-    return figure_parts(analysis, rows, settings)[0]
+    return mmr_column(analysis, settings, {**numbers_row, **summary}, episodes, constants)

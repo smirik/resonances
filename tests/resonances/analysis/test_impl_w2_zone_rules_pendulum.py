@@ -11,6 +11,7 @@ from scipy.integrate import solve_ivp
 from resonances.resonance.analysis import pendulum
 from resonances.resonance.analysis.pendulum import CycleClass, CycleEnergy, EnergyAnalysis, Zone, ZoneMethod
 from resonances.resonance.analysis.settings import settings_from_config
+from tests.resonances.analysis.oracles import fixed_frame
 
 S = settings_from_config()
 OMEGA = 2 * np.pi / 300.0
@@ -45,10 +46,10 @@ def test_fixed_frame_is_the_unmodulated_pendulum():
     bounds = cycles_of(t, sigma)
     windows = [(a, b) for a, b, _ in bounds]
     plain, _ = pendulum.fit_potential_from_rate(t, sigma, rate, windows, S)
-    framed, _ = pendulum.fit_potential_from_rate(t, sigma, rate, windows, S, frame=pendulum.fixed_frame(t))
+    framed, _ = pendulum.fit_potential_from_rate(t, sigma, rate, windows, S, frame=fixed_frame(t))
     assert framed.cos_coeffs == pytest.approx(plain.cos_coeffs) and framed.sin_coeffs == pytest.approx(plain.sin_coeffs)
     first = pendulum.cycle_energies(t, sigma, rate, bounds, plain)
-    second = pendulum.cycle_energies(t, sigma, rate, bounds, plain, frame=pendulum.fixed_frame(t))
+    second = pendulum.cycle_energies(t, sigma, rate, bounds, plain, frame=fixed_frame(t))
     assert [c.h for c in first] == pytest.approx([c.h for c in second])
     assert all(c.h_mean == pytest.approx(c.h) and c.strength_rel_sq == pytest.approx(1.0) for c in second)
 

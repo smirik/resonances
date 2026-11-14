@@ -182,7 +182,6 @@ CAP_NAMES: Dict[str, str] = {
 }
 CAP_PREFIX = 'cap:'
 RULE_NAMES.update({f'{CAP_PREFIX}{cap}': name for cap, name in CAP_NAMES.items()})
-NAME_MAX = 40  # characters of a short name: the column is about 60 wide, and the id follows
 UNMAPPED = 'unmapped check'  # an id without a name is printed as such, never guessed (Codex, card g10-3)
 LONG_PERIOD_PREFIX = 'SZ.'
 
@@ -234,226 +233,84 @@ def decided(rec_rule: str) -> str:
 
 @dataclass(frozen=True)
 class CapText:
-    """How the explained column speaks of a cap: what it means (`words`), the other verdict the record may hold and
-    what on the figure decides between the two (`alternative`, `decides`; author 2026-10-19 q1: medium is a spot check,
-    so a cap that lowers the level names the alternative and where to look; the panel letters are those of the
-    combined figure, `mmr_combined.PANELS`), and the margin whose number explains it (`margin`, printed with the cap
-    in the confidence sentence)."""
+    """How the column speaks of a cap: what it means (`words`) and the margin whose number explains it (`margin`)."""
 
     words: str
-    alternative: str = ''
-    decides: str = ''
     margin: str = ''
 
 
-# One row per cap (every cap of `confidence.Cap` has an alternative: tested); CAP_WORDS, CAP_ALTERNATIVES and
-# CAP_MARGINS are views of it
+# One row per cap of `confidence.Cap`; CAP_WORDS and CAP_MARGINS are views of it
 CAPS = {
-    'three_tp_episode': CapText(
-        'the libration rests on three turning points only',
-        'no libration yet (insufficient_time): three turning points are one cycle',
-        '(a): whether σ_f closes a second cycle about the same center',
-        margin='N',
-    ),
-    'exit_suspected': CapText(
-        'the angle seems to leave the resonance at the end',
-        'the libration goes on past the end of the record (or σ leaves for good)',
-        '(a) and (i) at the right edge: whether σ_f turns back once more or runs a full revolution after the last turn',
-    ),
-    'entry_suspected': CapText(
-        'the angle seems to enter the resonance at the start',
-        'the libration started before the record (or σ is captured only here)',
-        '(a) and (i) at the left edge: whether σ_f runs a full revolution before the first turn',
-    ),
-    'transient_unexplained': CapText(
-        'no mechanism explains the transitions',
-        'near_separatrix: σ wanders across the separatrix without a capture or an escape',
-        '(h): h of the cycles next to each transition against the zone and h = 1; (c): the slips',
-    ),
-    'one_return_cycle': CapText(
-        'the libration is one cycle closed by its phase return (two turning points)',
-        'no libration yet (insufficient_time): a half-swing that happened to come back',
-        '(a): the one cycle between its two turning points; σ_f must cross the return level back at the rate it left',
-    ),
-    'force_law_disagrees': CapText(
-        'the force law fails while the potential holds',
-        'uncertain (origin unknown): the potential holds while ȧ does not follow sin σ',
-        '(e): ȧ against R sin(σ_f − φ0) per window and the R² of the halves',
-    ),
-    'slow_libration_not_excluded': CapText(
-        'a slower libration is not excluded',
-        'a slower libration of σ about a moving center (the verdict of the slow scale)',
-        '(i): whether the slow center of σ_f turns back inside the record',
-        margin='B5',
-    ),
-    'planets_missing': CapText(
-        'the planets were not saved: no subresonance scan',
-        'non_resonant: a member of the multiplet holds the center (subresonance)',
-        '(j) has no members to draw: rerun with the planets saved',
-    ),
-    'owner_search_skipped': CapText(
-        'the owner search was switched off',
-        'non_resonant: another resonance drives a (induced)',
-        '(b) and (j) draw no owner: rerun with the owner search on',
-    ),
-    'catalogue_longitudes': CapText(
-        'the owner search used catalog planet longitudes (approximate)',
-        'another owner, or none, with the true longitudes of the planets',
-        "(b): the owner's angle against σ; rerun with the planets saved",
-    ),
-    'nodal_subresonance_candidate': CapText(
-        'a nodal member may carry the libration',
-        'non_resonant: a nodal member of the multiplet holds the center',
-        "(j): the nodal member's center against σ's",
-    ),
-    'subresonance_tie': CapText(
-        'the member was chosen by its order only',
-        'another member of the same order holds the center',
-        '(j): the centers of the tied members, the flatter one owns the libration',
-    ),
-    'subresonance_t6_only': CapText(
-        'the scan ran on the theory trigger alone',
-        'no member holds the center: σ itself librates',
-        "(j): whether the member's center is flatter than σ's",
-    ),
-    'subresonance_theory_unconfirmed': CapText(
-        'the multiplet theory does not confirm the member',
-        'σ itself, or another member, holds the center',
-        "(j): the member's center against the multiplet theory's line",
-    ),
-    'subresonance_undetermined': CapText(
-        'the members cannot be told apart (ϖ_P − ϖ librates)',
-        'another member of the multiplet holds the center (they move together while ϖ_P − ϖ librates)',
-        '(j): the members whose centers stay flat with σ',
-    ),
-    'jitter_low_e': CapText(
-        'the p·ϖ term wobbles by more than 45° at short periods (osculating)',
-        'invalid (undefined phase): ϖ itself is undefined at small e',
-        '(b): the spread of the osculating σ about σ_f',
-    ),
-    'all_physics_not_measured': CapText(
-        'none of force law, potential, zone, owner and strength could be measured',
-        'uncertain: nothing measured shows this angle’s own force',
-        '(e) and (h) have no force law or energy to read: only the shape of σ in (a) decides',
-    ),
-    'zone_not_measured': CapText(
-        'the separatrix zone was not measured',
-        'near_separatrix: the cycles may sit in the separatrix zone',
-        '(h): h of each cycle against h = 1',
-    ),
-    'l2_without_zone': CapText(
-        'the amplitude exceeds the thin band without a measured zone',
-        'near_separatrix: the large swings may cross the separatrix',
-        '(h): h of the widest cycles against h = 1',
-        margin='L2',
-    ),
-    'onset_failed': CapText(  # B4 (cards g03-4 A, g03-5 A): only a coherent, in-phase wave the own law does not explain
+    'three_tp_episode': CapText('the libration rests on three turning points only', margin='N'),
+    'exit_suspected': CapText('the angle seems to leave the resonance at the end'),
+    'entry_suspected': CapText('the angle seems to enter the resonance at the start'),
+    'transient_unexplained': CapText('no mechanism explains the transitions'),
+    'one_return_cycle': CapText('the libration is one cycle closed by its phase return (two turning points)'),
+    'force_law_disagrees': CapText('the force law fails while the potential holds'),
+    'slow_libration_not_excluded': CapText('a slower libration is not excluded', margin='B5'),
+    'planets_missing': CapText('the planets were not saved: no subresonance scan'),
+    'owner_search_skipped': CapText('the owner search was switched off'),
+    'catalogue_longitudes': CapText('the owner search used catalog planet longitudes (approximate)'),
+    'nodal_subresonance_candidate': CapText('a nodal member may carry the libration'),
+    'subresonance_tie': CapText('the member was chosen by its order only'),
+    'subresonance_t6_only': CapText('the scan ran on the theory trigger alone'),
+    'subresonance_theory_unconfirmed': CapText('the multiplet theory does not confirm the member'),
+    'subresonance_undetermined': CapText('the members cannot be told apart (ϖ_P − ϖ librates)'),
+    'jitter_low_e': CapText('the p·ϖ term wobbles by more than 45° at short periods (osculating)'),
+    'all_physics_not_measured': CapText('none of force law, potential, zone, owner and strength could be measured'),
+    'zone_not_measured': CapText('the separatrix zone was not measured'),
+    'l2_without_zone': CapText('the amplitude exceeds the thin band without a measured zone', margin='L2'),
+    'onset_failed': CapText(
         'a coherent a-wave at this period was already there before the episode and continues into it in phase; '
         "this resonance's own force does not explain it",
-        'non_resonant: σ rides an a-wave of another origin that began before the episode',
-        '(d): the a-wave before the episode against the one inside it',
         margin='O1',
     ),
-    'no_full_physics_support': CapText(  # q-2 b, author 2026-10-31
-        'no physical support (force law or 1:1 law, potential, strength) passes with its full margin',
-        "the oscillation is not this angle's own: thin evidence fits another origin as well",
-        '(e) and (h): the force law and the energy fit, each only thin',
-    ),
-    'force_law_theory_only': CapText(  # W28 B8, card g07-2 A
+    'no_full_physics_support': CapText('no physical support (force law or 1:1 law, potential, strength) passes with its full margin'),
+    'force_law_theory_only': CapText(
         "ȧ follows only the planet's averaged force of this term at the libration scale (theory, one fitted scale); "
         'the harmonic force law itself fails',
-        "uncertain (origin unknown): the slow ȧ fits the theory, but a rival force hidden by the smoothing is not excluded",
-        '(e): the averaged force of the term against ȧ, both smoothed at the libration scale',
         margin='L4',
     ),
-    'one_coorbital_leg': CapText(  # W28 C6, leaf G4c, q-4 A
+    'one_coorbital_leg': CapText(
         'the capture rests on one leg between two passages: a clean swing of one co-orbital well whose local 1:1 law, '
-        'energy integral and two reflecting turns pass, but no closed cycle',
-        'uncertain: half a cycle that the planet happened to reverse twice, no capture',
-        '(a): the leg between its two turns; (e) the local 1:1 law on the leg; (h) |a - a_P| before and after each turn',
+        'energy integral and two reflecting turns pass, but no closed cycle'
     ),
-    'record_ends_unresolved': CapText(  # W28 C14, card g01-7 A, rule end_arc_extend
+    'record_ends_unresolved': CapText(
         'after circulating, σ_f slows down at the end: since its last revolution it has stayed longer than that '
-        'revolution took without completing another, and the slow center does not turn back',
-        'a capture at the end of the record (an episode beyond it): the slowdown is the start of a libration',
-        '(a) at the right edge: σ_f after its last full revolution; a longer integration forward (flag extend_time) decides',
+        'revolution took without completing another, and the slow center does not turn back'
     ),
-    'slow_scale_provisional': CapText(  # W28 B7, card g07-4 A
+    'slow_scale_provisional': CapText(
         'the slow libration was read at a shorter cutoff of the scale ladder; the force law (L4) and the potential '
         'with a (R0) are not measured there: only the theoretical strength supports it',
-        'L4 untested; a record ≥ 5.25 P decides (with fewer cycles the libration may still be another origin)',
-        '(a): the slow σ_f at the ladder cutoff; (e) has no force-law windows yet',
         margin='L4',
     ),
     'episodes_in_separatrix_zone': CapText(
-        (
-            "every cycle lies in the model's separatrix zone and the angle crosses it: the edges of the librating "
-            "stretches may be the zone's own crossings, not a capture or an escape"
-        ),
-        'near_separatrix: the edges of the librating stretches are crossings of the zone, not a capture or an escape',
-        '(h): h of the cycles at each edge inside the blue band',
+        "every cycle lies in the model's separatrix zone and the angle crosses it: the edges of the librating "
+        "stretches may be the zone's own crossings, not a capture or an escape"
     ),
-    'near_separatrix_without_zone': CapText(
-        'the pattern alone places σ at the separatrix: the zone was not measured',
-        'non_resonant circulation, or a libration close to the separatrix',
-        '(c): the slips; (h): h near 1',
-    ),
-    'geometry_only': CapText(
-        "neither the force law, the potential with a nor the strength measures this angle's own force",
-        'uncertain: only the shape of σ says libration',
-        '(e) and (h): no force law and no energy were measured',
-    ),
+    'near_separatrix_without_zone': CapText('the pattern alone places σ at the separatrix: the zone was not measured'),
+    'geometry_only': CapText("neither the force law, the potential with a nor the strength measures this angle's own force"),
     'strength_scale_only': CapText(
         "neither the force law nor the potential with a measures this angle's own force; only the order-of-magnitude strength scale (μ_i μ_j e^q) agrees",
-        'uncertain: the scale agrees by an order of magnitude only, the angle’s own force is not computed',
-        '(e) and (h): no force law and no energy were measured; the physics block: μ_req against μ_i μ_j e^q',
         margin='F',
     ),
-    'implausible_strength': CapText(
-        "the verdict rests on the strength's order of magnitude, not on the angle's dynamics",
-        'a libration whose force the first-order average misses',
-        'the physics block: μ_req against μ_th, and whether a forced wave explains the cycles',
-    ),
-    'episode_before_jump': CapText(
-        'the librations precede a jump of a; their potential and zone were not measured',
-        'the libration ended with the jump of a: the episodes belong to the earlier regime',
-        '(a) and (d): the episodes before the hatched jump (their energy is not measured)',
-    ),
-    'episode_force_law_mixed': CapText(
-        'the force law holds on one librating episode and fails on another',
-        'only the witness episode librates in this resonance, the others carry another force',
-        '(e): R² of the halves per episode',
-    ),
-    'near_episode': CapText(
-        'one more turning point would make a librating episode',
-        'transient: one more turning point would make a librating episode',
-        '(a): the gray run with most turning points',
-    ),
+    'implausible_strength': CapText("the verdict rests on the strength's order of magnitude, not on the angle's dynamics"),
+    'episode_before_jump': CapText('the librations precede a jump of a; their potential and zone were not measured'),
+    'episode_force_law_mixed': CapText('the force law holds on one librating episode and fails on another'),
+    'near_episode': CapText('one more turning point would make a librating episode'),
     'short_period_aliased': CapText(
-        'the output step folds short-period terms into slow ones (Δt ≥ P_orb/2 or P_syn/2, or a harmonic folded slower than the period floor)',
-        'the turning points are partly the step’s: short-period terms folded into σ_f and a_f',
-        '(a): the fast spread about σ_f; a rerun at a step that folds no short period decides',
+        'the output step folds short-period terms into slow ones (Δt ≥ P_orb/2 or P_syn/2, or a harmonic folded slower than the period floor)'
     ),
-    'one_cycle_energy_not_conserved': CapText(
-        'the 1:1 libration is one cycle and its energy integral fails',
-        'no co-orbital libration yet: the one cycle may be a passage, not motion in the averaged well',
-        '(h): the energy of the cycle against the averaged potential; a longer record with a second cycle decides',
-    ),
+    'one_cycle_energy_not_conserved': CapText('the 1:1 libration is one cycle and its energy integral fails'),
     'action_step_provisional': CapText(
         'the libration was cut at a step of its action (G2a) with one energy cycle on a side, or with one cycle of the larger '
-        'swings, whose period law is then read in sample',
-        'one libration over the whole window: the step is a large modulation, not two energy levels',
-        '(a): the half-amplitudes on each side of the dotted cut; (h): h of the cycles before and after it',
+        'swings, whose period law is then read in sample'
     ),
     'second_capture_unresolved': CapText(
-        'both resonances at once? is not ruled out: x = Ψ/u neither swept 180° without a potential nor followed the ' 'secular cycle alone',
-        'two resonances at once: σ is held by its own term as well (resonant, not only induced)',
-        '(j): Ψ/u = σ − (v/u) φ — a sweep of 180° or more that follows no potential, or ẍ that follows the secular '
-        'cycle and not sin x, excludes it',
+        'both resonances at once? is not ruled out: x = Ψ/u neither swept 180° without a potential nor followed the ' 'secular cycle alone'
     ),
 }
 CAP_WORDS = {cap: text.words for cap, text in CAPS.items() if text.words}
-CAP_ALTERNATIVES = {cap: (text.alternative, text.decides) for cap, text in CAPS.items() if text.alternative}
 CAP_MARGINS = {cap: text.margin for cap, text in CAPS.items() if text.margin}
 # the cap short_period_aliased named by the condition that fired (`_cap_detail`; the analysis' `short_period_trigger`)
 SHORT_PERIOD_TITLES = {
@@ -593,28 +450,6 @@ OWNER_REASON_WORDS = {
     'potential_scale_out': 'its averaged potential needs a scale outside the band',
     'potential_unconfirmed': 'the averaged force disagrees with the fit',
 }
-# G2a test 7's sub-tests (`geometry.T7_*`) in words: why one potential does not hold both regimes
-T7_WORDS = {
-    'isochronous': 'both regimes keep one period, as a forced wave would (the period law cannot tell)',
-    'shape': 'V of the larger swings explains too little of their σ̇²',
-    'covered': 'the smaller swings leave the range the larger ones sampled',
-    'no_loop': 'a cycle has no loop of its energy in V',
-    'period_law': 'a cycle\'s period is not the loop\'s',
-    'turning_points': 'a cycle swings off the turning points of its loop',
-    'energy_drift': 'a side\'s energy does not stay put',
-    'wells_unstable': 'V\'s wells change with the shape cutoff',
-}
-# base_period_source -> where the period P of the baseline comes from (`decide.baseline_period`)
-BASE_SOURCE_WORDS = {
-    'tp_spacing': 'twice the median spacing of the turning points',
-    'arc_slow': 'twice the longest stretch of the slow center without a turn',
-    'two_omega': 'the 2ω cycle the angle follows',
-    'modulation': 'the e-cycle 2π/|g − g5| the angle follows',
-    'stall_rate': 'one revolution at the rate of the stall',
-    'stall_force': 'the shortest libration period the force bound of the stall allows',
-    'cycle': 'the measured cycle',
-    'b5': 'the shortest libration period B5 allows',
-}
 # base_cause -> what is missing when the record already holds the time P needs
 BASE_CAUSE_WORDS = {
     'too_few_tp': 'the run of turning points stops before a cycle closes',
@@ -645,11 +480,6 @@ POTENTIAL_REASON_WORDS = {
     'not_converged': 'the averaged potential did not converge',
     'close_approach': 'the body comes too close to the planet',
     'no_windows': 'no window to evaluate it in',
-}
-GATE_WORDS = {
-    'confirmed': 'the free ω librates too: a confirmed Lidov-Kozai libration',
-    'kinematic': 'the free ω winds, so the osculating libration is that of the forced eccentricity: kinematic',
-    'no_verdict': 'the gate gave no verdict',
 }
 EI_WORDS = {'zlk': 'ZLK (antiphase, constant H)', 'forced_beat': 'forced beat (in phase)', 'none': 'neither law'}
 
@@ -730,12 +560,6 @@ ANGLE_SUBTYPE_WORDS = {
     'undefined_phase': 'the phase is not defined',
 }
 
-# the marks of rule regime_cut_mark (W28 C16, q-5 i; `geometry.MARK_CENTRE_STEP`, `MARK_STALL`, episodes.csv `marks`):
-# one episode of an angle that is not 1:1 joined across a step or a stall of its centre (`verdict_text.regime_change_clause`)
-REGIME_MARK_WORDS = {
-    'centre_step': 'a step of its center',
-    'stall': 'a stall of its center',
-}
 
 # The panels of the chip 'glance at (…)' (decision D5, 2026-11-04; the author reviews the map once): for each input of
 # the level that holds it (`policy.level_inputs` names), the panels that show it. MMR letters: docs/reading-figures.md

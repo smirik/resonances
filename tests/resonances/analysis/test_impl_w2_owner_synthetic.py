@@ -321,7 +321,7 @@ def test_owner_angle_matches_the_constructed_one(induced):
     series, _, context, _ = induced
     spec = ResonanceSpec.from_key('11M-20+0+9')
     planet_n = {'Mars': owner.planet_mean_motion(context, 'Mars')}
-    phi = owner.owner_angle(spec, series, planet_n)
+    phi, _ = owner.owner_angle_with_residual(spec, series, planet_n)
     expected = math.pi + AMPLITUDE * np.sin(TWO_PI / P_LIB * series.t_yr)
     offset = np.round((phi[0] - expected[0]) / TWO_PI) * TWO_PI  # the unwrap starts at the wrapped value
     assert np.max(np.abs(phi - offset - expected)) < 1e-6

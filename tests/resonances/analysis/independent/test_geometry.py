@@ -294,7 +294,7 @@ def test_periods_amplitudes_midpoints_by_hand():
     tp = make_tp([0, 5, 10, 15, 20], [1, -1, 1.2, -0.8, 1])
     np.testing.assert_allclose(geo.full_periods(tp), [10, 10, 10])
     np.testing.assert_allclose(geo.half_amplitudes(tp), [1.0, 1.1, 1.0, 0.9])
-    np.testing.assert_allclose(geo.midpoints(tp), [0.0, 0.1, 0.2, 0.1], atol=1e-12)
+    np.testing.assert_allclose(geo.midpoint_values(tp.values_rad), [0.0, 0.1, 0.2, 0.1], atol=1e-12)
 
 
 def test_exactly_three_turning_points_give_one_full_period():
@@ -419,7 +419,7 @@ def test_exactly_three_turning_points_make_an_episode(settings):
     assert len(tp) == 3
     runs = geo.split_runs(tp, settings)
     assert len(runs) == 1 and len(runs[0]) == 3
-    ep = geo.classify_run(0, tp, runs[0], t, (0.0, 1500.0), settings)
+    ep = geo._classify_run(0, tp, runs[0], (t[0], t[-1]), settings, (0.0, 1500.0))
     assert ep.accepted and ep.n_tp == 3
     assert ep.period_med_yr == pytest.approx(1000.0, abs=1.0)
     assert ep.coverage_start_gap_p == pytest.approx(0.25, abs=0.01)
@@ -711,7 +711,7 @@ def test_visible_exit_after_the_last_episode(settings):
     sigma = _exit_series(t)
     tp = geo.find_turning_points(t, sigma, 1 * DEG, (0.0, 6000.0))
     ep = [e for e in geo.find_episodes(t, tp, (0.0, 6000.0), settings) if e.accepted][-1]
-    edge = geo.visible_edge(t, sigma, sigma, ep, 'exit', settings)
+    edge = geo._edge_reading(t, sigma, sigma, ep, 'exit', (t[0], t[-1]), settings)[0]
     assert edge is not None and edge.kind == 'exit'
     assert edge.time_yr == pytest.approx(5000.0 + np.pi / 0.01, abs=30.0)
     # max |sigma - c| = 0.01 x 1000 = 10 rad -> beyond = 10 - pi
@@ -727,7 +727,7 @@ def test_visible_exit_near_the_end_is_suspected(settings):
     sigma = _exit_series(t)
     tp = geo.find_turning_points(t, sigma, 1 * DEG, (0.0, 5350.0))
     ep = [e for e in geo.find_episodes(t, tp, (0.0, 5350.0), settings) if e.accepted][-1]
-    edge = geo.visible_edge(t, sigma, sigma, ep, 'exit', settings)
+    edge = geo._edge_reading(t, sigma, sigma, ep, 'exit', (t[0], t[-1]), settings)[0]
     assert edge is not None
     assert edge.remaining_periods < 1.0  # (5350 - 5314) / 100 = 0.36
     assert edge.suspected
@@ -739,7 +739,7 @@ def test_visible_entry_mirrors_the_exit(settings):
     sigma = np.where(t < 1000.0, 0.01 * (t - 1000.0), sine(t - 1000.0, 100.0, 0.5))
     tp = geo.find_turning_points(t, sigma, 1 * DEG, (0.0, 6000.0))
     ep = [e for e in geo.find_episodes(t, tp, (0.0, 6000.0), settings) if e.accepted][0]
-    edge = geo.visible_edge(t, sigma, sigma, ep, 'entry', settings)
+    edge = geo._edge_reading(t, sigma, sigma, ep, 'entry', (t[0], t[-1]), settings)[0]
     assert edge is not None and edge.kind == 'entry'
     assert edge.time_yr == pytest.approx(1000.0 - np.pi / 0.01, abs=30.0)
     assert edge.remaining_periods == pytest.approx(6.86, abs=0.35)
@@ -751,8 +751,8 @@ def test_no_exit_for_a_steady_libration(settings):
     sigma = sine(t, 100.0, 0.5)
     tp = geo.find_turning_points(t, sigma, 1 * DEG, (0.0, 5000.0))
     ep = geo.find_episodes(t, tp, (0.0, 5000.0), settings)[0]
-    assert geo.visible_edge(t, sigma, sigma, ep, 'exit', settings) is None
-    assert geo.visible_edge(t, sigma, sigma, ep, 'entry', settings) is None
+    assert geo._edge_reading(t, sigma, sigma, ep, 'exit', (t[0], t[-1]), settings)[0] is None
+    assert geo._edge_reading(t, sigma, sigma, ep, 'entry', (t[0], t[-1]), settings)[0] is None
 
 
 # ----------------------------------------------------------------------------------------------

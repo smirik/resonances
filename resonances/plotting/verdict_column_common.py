@@ -278,6 +278,17 @@ def unnest(text: str, outer: bool = False) -> str:
     return ''.join(out)
 
 
+WORST_FIRST = (vc.FAIL, vc.MISSING, vc.THIN, vc.OK)
+
+
+def worst(children: Sequence[vc.SubCheck], read: Sequence[str] = ()) -> str:
+    """A step's icon: the worst of its sub-checks (✓ when none is worse); with `read` (the ids the step's answer
+    reads), a ? only from those: a gap the answer did not need is no gap of the step (2017 UM52: O1 cannot be measured
+    when the libration starts the record, while the own-force answer stands on L4 and R0)."""
+    icons = [child.icon for child in children if not read or child.icon != vc.MISSING or child.rule_id in read]
+    return next((icon for icon in WORST_FIRST if icon in icons), vc.OK)
+
+
 _PANELS = re.compile(r'^[a-m]′?(?:, [a-m]′?)*$')  # '(j)', '(e, h)': panel letters keep their parentheses
 _CODE_IN_TEXT = re.compile(r'\s*\((?:[A-Z]{1,2}\d+[a-z]?)\)')  # '(K2)': a rule id inside a sub-check's words
 
@@ -359,8 +370,8 @@ def header(verdict, row: Mapping[str, Any], family: str, confidence_block: vc.Co
 
 
 def footer(verdict, row: Mapping[str, Any], docs: str = '') -> Tuple[str, ...]:
-    """The raw codes, smallest last: status code, the leaf and the angle rule, reason/origin/veto, flags, the W28 tree's
-    verdict (decision D2: always, no agrees/differs word), the policy's deciding step, settings hash, docs."""
+    """The raw codes, smallest last: status code, the leaf and the angle rule, reason/origin/veto, the policy's deciding
+    step, flags, settings hash, docs."""
     items: List[str] = [f'status {getattr(verdict, "status_code", "")}']
     rule, angle_rule = text(row.get('rec_rule')), text(row.get('geo_angle_rule'))
     if rule:
@@ -375,9 +386,6 @@ def footer(verdict, row: Mapping[str, Any], docs: str = '') -> Tuple[str, ...]:
     items += [f'{key} {value}' for key, value in codes.items() if value and value != 'none']
     flags = [str(flag) for flag in (getattr(verdict, 'flags', ()) or ())]
     items.append('flags ' + (', '.join(flags) if flags else 'none'))
-    v2 = '/'.join(part for part in text(getattr(verdict, 'v2_verdict', '')).split('/')[:2] if part)
-    if v2:
-        items.append(f'W28 tree: {v2}')
     settings_hash = text(row.get('settings_hash'))
     if settings_hash:
         items.append(f'settings {settings_hash[:10]}')

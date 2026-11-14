@@ -70,7 +70,7 @@ The checks that ask whether $a$ answers $\sigma$ as the pendulum of this resonan
 | Z | the separatrix zone and the cycle classes; `sep_mechanism` of the crossings | `MMR_ZONE_*`, `SEPARATRIX_*` | [separatrix zone](physics/geometry.md#the-separatrix-zone) | `mmr/zone.py` |
 | B1 | the amplitude of $a$ against the one the libration needs (`check_mmr_a_amplitude`) | `MMR_B1_*` | [amplitude of a](physics/response.md#amplitude-of-a) | `mmr/response.py` |
 | K1 | kinematic libration: $\sigma$ follows $p\varpi$ or a secular cycle (`check_mmr_kinematic`) | `MMR_KIN_*` | [kinematic origins](physics/response.md#kinematic-origins) | `mmr/kinematics.py` |
-| K2 | kinematic drift of the slow center under a ripple of episodes (`rec_rule` 3k2) | `MMR_KIN_RIPPLE_SHARE_MAX`, `MMR_KIN_DRIFT_SHIFT_RATIO`, `MMR_KINEMATIC_DRIFT_WORD` | [kinematic origins](physics/response.md#kinematic-origins) | `mmr/decide.py` |
+| K2 | kinematic drift of the slow center under a ripple of episodes (`rec_rule` 3k2) | `MMR_KIN_RIPPLE_SHARE_MAX`, `MMR_KIN_DRIFT_SHIFT_RATIO`, `MMR_KINEMATIC_DRIFT_WORD`, `MMR_KIN_MIN_POINTS`, `MMR_FORCE_MIN_WINDOWS` | [kinematic origins](physics/response.md#kinematic-origins) | `mmr/decide.py` |
 | B5 | a libration slower than the record excluded by the center's rate | `MMR_B5_*` | [kinematic origins](physics/response.md#kinematic-origins) | `mmr/response.py` (`slow_libration_check`) |
 | F6 | an episode that is a forced wave of another argument, removed from the episodes | `MMR_FORCED_WAVE_LINE_ALONE`, `MMR_FORCE_CONTAMINATION` | [runs and episodes](physics/geometry.md#runs-and-episodes) | `mmr/response.py`, `mmr/decide.py` (`forced_wave_word`) |
 | F6r | a ripple below 45° whose identity fails, on an unfinished slow swing (the center turns back once or twice within a turn), is set aside before G2; G5a/G6 read the slow center (rule `ripple_on_arc`) | `MMR_RIPPLE_ON_ARC`, `MMR_A_RESPONSE_MIN_AMP_DEG` | [steps](physics/status-tree.md#steps-in-order) | `mmr/decide.py` (`ripple_waves`, `_g6_ripple`) |
@@ -117,7 +117,7 @@ The filter guard (×2) and the folded-short-period rule are on [From the integra
 ## Secular and Lidov-Kozai {#secular-zlk}
 
 Their shorter tree is on [Secular and Lidov-Kozai](physics/secular-zlk.md#geometry-and-status); the G rules G2z, G5s
-and G5p above are theirs. The rules that decide which runs of a secular or ZLK angle are its episodes (W36), and those
+and G5p above are theirs. The rules that decide which runs of a secular or ZLK angle are its episodes, and those
 that act on the frame, the free elements and the gate:
 
 | ID | meaning | settings | physics | code |
@@ -131,7 +131,7 @@ that act on the frame, the free elements and the gate:
 | ZF | a Lidov-Kozai $\omega$, $i$, $\Omega$, the free elements and the $e$–$i$ coupling are measured from the invariable plane by an exact rotation; rule `zlk_invariable_frame` marks a row whose ecliptic and invariable $\omega$ part by a whole turn or more (`zlk_frame_shift_turns`) | `ZLK_ANGLE_FRAME` | [the frame](physics/secular-zlk.md#the-lidov-kozai-angle) | `data/invariable_plane.py`, `zlk/analyse.py` |
 | FE | the free elements: every decimation factor is filtered, a remainder no pass of ≤ 10 divides by a last polyphase pass (rule `free_resample_remainder`) | `FREE_ELEMENTS_SAMPLING_YEARS` | [resampling](free-elements.md#resampling) | `secular/free_elements.py` (`decimation_steps`, `_resample`) |
 | SZ.G | the free-$\omega$ gate: confirmed, kinematic or no verdict; a co-orbital of a planet whose modes the split does not fit gets no verdict (`coorbital_unfitted_forcing`) whatever its bounded $\omega$, an episodic one included (rule `zlk_coorbital_episodic`) | `FREE_GATE_*`, `ZLK_COORBITAL_HILL_FACTOR` | [the gate](physics/secular-zlk.md#zlk-free-omega), [where it stops](free-elements.md#where-the-method-stops-working) | `secular/decide.py` (`decide_status`) |
-| SZ.ei | an episodic $\omega$ without a gate verdict (the W28 tree, `v2_verdict`): `transient` only when $e$ and $i$ trade as a ZLK cycle at the deciding episode's period (`zlk_ei_episode_coupling` = `zlk`), else `uncertain` / `gate_unavailable` (−9) (rule `zlk_gate_unconfirmed`) | `ZLK_EI_MIN_CYCLES`, `ZLK_EI_PHASE_TOL_DEG`, `ZLK_EI_EPISODE_MIN_COHERENCE`, `ZLK_EI_H_RESIDUAL_MAX` | [the gate](physics/secular-zlk.md#zlk-free-omega) | `secular/decide.py` |
+| SZ.ei | an episodic $\omega$ without a gate verdict (the full tree, `v2_verdict`): `transient` only when $e$ and $i$ trade as a ZLK cycle at the deciding episode's period (`zlk_ei_episode_coupling` = `zlk`), else `uncertain` / `gate_unavailable` (−9) (rule `zlk_gate_unconfirmed`) | `ZLK_EI_MIN_CYCLES`, `ZLK_EI_PHASE_TOL_DEG`, `ZLK_EI_EPISODE_MIN_COHERENCE`, `ZLK_EI_H_RESIDUAL_MAX` | [the gate](physics/secular-zlk.md#zlk-free-omega) | `secular/decide.py` |
 
 ## Confidence and action {#confidence}
 
