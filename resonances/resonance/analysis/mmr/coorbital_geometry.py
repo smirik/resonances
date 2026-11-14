@@ -606,6 +606,9 @@ FLOOR_SOURCE_QS_LOOP = 'qs_loop'
 # such a run whose loop floor cannot change its decision (not below the QS floor, or the run not faster than the QS
 # floor): the QS floor holds and the costly law guard is not fitted (2010 CG236: 5 s on its 1-kyr QS run)
 FLOOR_SOURCE_QS_MOOT = 'qs_loop_moot'
+# rule coorbital_pair_loop_floor: a run with a turn that is no reflection (or a pair without a loop) whose reflecting
+# pairs, both turns >= MMR_COORBITAL_MIN_TURN_HILL from the planet, give a loop and whose own 1:1 force law passes
+FLOOR_SOURCE_PAIR_LOOP = 'pair_loop'
 REFLECTION_SITES = (SITE_PLANET, SITE_L3)
 LOOP_PAIRS_MAX = 9  # numerical (cost): the loop period of a run is the median over this many of its turn pairs
 
@@ -700,6 +703,54 @@ class CoorbitalRunFloor:
         centre = float(np.mean(midpoint_values(values)) % TWO_PI)
         return bool(self.floor_well.holds_span(float(times[0]), float(times[-1]), [centre]))
 
+    def _pair_loop_floor(self, profile, times, theta, sites, half: float, columns: Dict[str, object]):
+        """Rule coorbital_pair_loop_floor (MMR_COORBITAL_PAIR_LOOP_FLOOR; the author 2026-11-14, 2003 YN107: the
+        designers' amin07h with Codex's witness): the floor of a run that has a turn which is no reflection, or a pair
+        of turns no loop joins, and would otherwise keep the angle's tadpole floor. Its reflecting pairs (both turns at
+        a planet or l3 site, a planet turn >= mmr_coorbital_min_turn_hill Hill radii from the planet in longitude:
+        closer, the averaged problem no longer holds) give the median loop (at most LOOP_PAIRS_MAX evenly spread pairs,
+        finite loops only); the floor is mmr_coorbital_qs_loop_factor x it (0.7: the loop is a prediction at the run's
+        own amplitude, as for the QS run floor; 0.5 let a synthetic wave faster than the planet's force through), at
+        most the tadpole floor (it only relaxes the fallback: uncapped, 2025 XN6's mixed run got 200 yr from one
+        horseshoe pair), and only when the run's own local 1:1 law (the run +- one median half-cycle, at the angle's
+        cutoff) has K > 0 and passes the force check in full (`coorbital.force_check`: R^2 >= mmr_force_r2_full in both
+        halves, K / K_theory within mmr_coorbital_scale_ratio_max): the run's floor is uncertain, so the planet's force
+        must be seen moving it. (floor, setting, FLOOR_SOURCE_PAIR_LOOP, columns) or None (the fallback stays)."""
+        from resonances.resonance.analysis.mmr.preprocess import coorbital_inputs, coorbital_planet, libration_period_floor
+
+        settings = self.settings
+        if not settings.mmr_coorbital_pair_loop_floor or not self.record:
+            return None
+        planet = coorbital_planet(self.series.resonance)
+        inputs = coorbital_inputs(self.series, self.context, planet) if planet is not None else None
+        if inputs is None:
+            return None
+        limit = float(settings.mmr_coorbital_min_turn_hill) * float((inputs[0] / 3.0) ** (1.0 / 3.0))
+        wrapped = np.mod(np.asarray(theta, dtype=float), TWO_PI)
+        distance = np.minimum(wrapped, TWO_PI - wrapped)
+        ok = [site in REFLECTION_SITES and (site != SITE_PLANET or d >= limit) for site, d in zip(sites, distance)]
+        reflecting = [i for i in range(len(theta) - 1) if ok[i] and ok[i + 1]]
+        if not reflecting:
+            return None
+        chosen = np.unique(np.linspace(0, len(reflecting) - 1, min(len(reflecting), LOOP_PAIRS_MAX)).round().astype(int))
+        loops = [loop_period(profile, theta[reflecting[k] : reflecting[k] + 2]) for k in chosen]
+        loops = [x for x in loops if np.isfinite(x) and x > 0]
+        if not loops:
+            return None
+        law = local_law(self.record, (float(times[0]) - half, float(times[-1]) + half), self.cutoff_yr, settings)
+        if law is None:
+            return None
+        columns.update(cpl_law_K_over_K_theory=float(law.scale), cpl_law_R2=float(law.r2))
+        passes = law.force_check == coorbital_module.CheckValue.PASS and not law.force_thin
+        if not (np.isfinite(law.scale) and law.scale > 0 and passes):
+            return None
+        floor, setting = float(settings.mmr_coorbital_qs_loop_factor * np.median(loops)), 'mmr_coorbital_qs_loop_factor'
+        tadpole, tadpole_setting = libration_period_floor(self.series.resonance, self.context, settings)
+        if tadpole_setting == 'mmr_coorbital_period_floor_factor' and np.isfinite(tadpole) and tadpole < floor:
+            floor, setting = float(tadpole), tadpole_setting
+        columns.update(cpl_floor_yr=floor, cpl_floor_source=FLOOR_SOURCE_PAIR_LOOP)
+        return floor, setting, FLOOR_SOURCE_PAIR_LOOP, columns
+
     def __call__(self, run):
         from resonances.resonance.analysis.geometry import RunFloor, run_key  # geometry does not import this module
 
@@ -739,12 +790,11 @@ class CoorbitalRunFloor:
         entry, exit_ = (turn_physics(profile, self.t_yr, theta_all, self.a_averaged, float(turn_t[i]), (near, far)) for i in (0, -1))
         columns.update(leg_columns(entry, exit_, loop))
         columns['cpl_turn_sites'] = ';'.join(sites)
-        if not own_loop:
-            columns['cpl_floor_source'] = FLOOR_SOURCE_NOT_REFLECTION
-            return NAN, '', FLOOR_SOURCE_NOT_REFLECTION, columns
-        if not (np.isfinite(loop) and loop > 0):
-            columns['cpl_floor_source'] = FLOOR_SOURCE_NO_LOOP
-            return NAN, '', FLOOR_SOURCE_NO_LOOP, columns
+        if not own_loop or not (np.isfinite(loop) and loop > 0):
+            fallback = FLOOR_SOURCE_NOT_REFLECTION if not own_loop else FLOOR_SOURCE_NO_LOOP
+            columns['cpl_floor_source'] = fallback
+            pair = self._pair_loop_floor(profile, times, theta, sites, half, columns)
+            return pair if pair is not None else (NAN, '', fallback, columns)
         if not reflections and self._qs_floor_moot(times, loop):
             columns['cpl_floor_source'] = FLOOR_SOURCE_QS_MOOT
             return NAN, '', FLOOR_SOURCE_QS_MOOT, columns

@@ -382,8 +382,19 @@ class AnalysisSettings:
         'rule coorbital_qs_run_floor: the floor of a quasi-satellite run is this x the loop through its own turns, a '
         'prediction at its own amplitude (no margin for extrapolating from P(0), as MMR_COORBITAL_PERIOD_FLOOR_FACTOR has): '
         'counted QS runs read P / loop 0.84-1.05, synthetic oscillations faster than the Earth\'s force allows 0.54-0.65 '
-        '(a sine at 0.76 is not separated)',
+        '(a sine at 0.76 is not separated); also the factor of rule coorbital_pair_loop_floor (MMR_COORBITAL_PAIR_LOOP_FLOOR)',
         convention=True,
+    )
+    mmr_coorbital_pair_loop_floor: bool = _setting(
+        True,
+        'MMR_COORBITAL_PAIR_LOOP_FLOOR',
+        'bool',
+        'rule coorbital_pair_loop_floor (the author 2026-11-14, 2003 YN107; needs MMR_COORBITAL_PROFILE_FLOOR): a 1:1 run '
+        'with a turn that is no reflection on a top (or a pair of turns no loop joins), which keeps the tadpole floor '
+        'otherwise, has the floor MMR_COORBITAL_QS_LOOP_FACTOR x the median loop of its reflecting pairs whose turns are '
+        'both >= MMR_COORBITAL_MIN_TURN_HILL Hill radii from the planet, at most the tadpole floor, when its own local '
+        '1:1 law has K / K_theory > 0 and passes the force check in full (MMR_FORCE_R2_FULL in both halves, '
+        'MMR_COORBITAL_SCALE_RATIO_MAX). False = the tadpole floor for such a run',
     )
     mmr_coorbital_coverage_audit: bool = _setting(
         True,

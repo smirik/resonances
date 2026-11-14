@@ -78,6 +78,15 @@ guards) → io.
   A counted run below the QS floor is faster than 2 P_c (P_c = QS floor / 2), so its gain is < 0.94 and it can be
   `filter_too_slow` (2010 JK1; YORP c046 at G = 0.913 is just above the 0.911 thin limit), as any such libration;
   a re-run at the lower cutoff was not done (a new pass, open in dev/status.md).
+- **Pair-loop floor, rule `coorbital_pair_loop_floor`** (`CoorbitalRunFloor._pair_loop_floor`, `FLOOR_SOURCE_PAIR_LOOP`;
+  `decide.run_floor_acts`; `MMR_COORBITAL_PAIR_LOOP_FLOOR`; the author 2026-11-14 on 2003 YN107: amin07h + Codex's
+  witness): a run that falls back (not_reflection, no_loop) gets MMR_COORBITAL_QS_LOOP_FACTOR x the median loop of
+  its reflecting pairs (both turns planet/l3, a planet turn >= MMR_COORBITAL_MIN_TURN_HILL r_H in longitude), capped
+  by the tadpole floor (`preprocess.libration_period_floor`), only when the run's local law has K > 0 and a full force
+  pass (`force_check` PASS, not thin). Why each part: 0.5 let the skeptic's fast c032-geometry wave (P/loop 0.5) pass;
+  turns inside 3 r_H gave RD2 c075 a 40-yr floor; the cap stops 2025 XN6's mixed run from getting 200 yr; the witness
+  is Codex's (a floor-uncertain run counts only when the planet's force is seen moving it). G1f reads it too
+  (`preprocess._coorbital_profile_floor` takes any finite floor). Moves (264 co-orbitals): see dev/decisions.md.
 - **1:1 coverage audit** (`coverage_audit.py`, `analyse._coverage_audit`; `MMR_COORBITAL_COVERAGE_AUDIT`,
   `MMR_COORBITAL_AUDIT_*`): the only step after the policy, prograde 1:1 only, flags and aud_* columns, never a
   status. Layer I `floor_contradiction` (flag floor_above_own_loop, no threshold): an accepted below_period_floor run

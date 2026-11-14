@@ -236,3 +236,66 @@ def test_near_episode_within_the_thin_band_of_the_floor(ratio, counted, coorbita
     else:
         geometry = make_geometry(runs=[run], period_floor_yr=floor, period_floor_setting='mmr_libration_period_min_yr')
     assert decide.near_episode_tp(geometry, SETTINGS) == counted
+
+
+# --- rule coorbital_pair_loop_floor: a run with a turn that is no reflection -------------------------------------------
+
+
+def mixed_run(t, theta, turns):
+    """Three horseshoe turns at the planet's top and a fourth turning point read half-way between the third turn and
+    the next (theta ~ 130 deg there, below L3's top: a tadpole site, a turn that is no reflection; 2003 YN107 c032's
+    planet -> qs pair is of this kind). [times]"""
+    return np.append(turns[:3], 0.5 * (turns[2] + turns[3]))
+
+
+def test_a_turn_that_is_no_reflection_takes_the_floor_of_the_reflecting_pairs(earth):
+    """2003 YN107 (the author 2026-11-14): the run kept the tadpole floor (111 yr) for one turn that is no reflection.
+    Now its reflecting pairs (both turns 2.5 deg from the Earth, >= 3 r_H = 1.72 deg) give 0.7 x T_hs(2.5 deg) (quad),
+    since its own force law is the planet's (K / K_theory ~ 1, R^2 above MMR_FORCE_R2_FULL); the switch off keeps the
+    fallback."""
+    mu, n, eps, _ = earth
+    t, theta, a, turns = horseshoe_track(mu, n, eps, 2.5, 400.0)
+    run = mixed_run(t, theta, turns)
+    floor, setting, source, columns = run_floor_of(t, theta, a, run)
+    reference = quad_horseshoe_period(mu, n, np.radians(2.5), eps)
+    assert columns['cpl_turn_sites'].split(';')[:3] == ['planet'] * 3 and 'tadpole' in columns['cpl_turn_sites']
+    assert source == cg.FLOOR_SOURCE_PAIR_LOOP and setting == 'mmr_coorbital_qs_loop_factor'
+    assert floor == pytest.approx(SETTINGS.mmr_coorbital_qs_loop_factor * reference, rel=5e-3)
+    assert columns['cpl_law_K_over_K_theory'] == pytest.approx(1.0, abs=0.15)
+    assert columns['cpl_law_R2'] >= SETTINGS.mmr_force_r2_full
+    off = AnalysisSettings(mmr_coorbital_pair_loop_floor=False)
+    series = earth_series(t, theta, a)
+    model = cg.coorbital_run_floor(series, build_context(series, off), t, -theta, float(t[1] - t[0]), 10.0, off)
+    reading = model.read(run, np.interp(run, t, -theta))
+    assert reading[2] == cg.FLOOR_SOURCE_NOT_REFLECTION and np.isnan(reading[0])
+
+
+def test_a_pair_loop_floor_is_at_most_the_tadpole_floor(earth):
+    """Turns 15 deg from the Earth: 0.7 x T_hs(15 deg) (quad) is above the tadpole floor P / sqrt(27 mu / 4) / 2, which
+    caps it (the rule only relaxes the fallback)."""
+    mu, n, eps, _ = earth
+    t, theta, a, turns = horseshoe_track(mu, n, eps, 15.0, 1400.0)
+    floor, setting, source, _ = run_floor_of(t, theta, a, mixed_run(t, theta, turns))
+    tadpole_floor = FACTOR * (2 * np.pi / n) / np.sqrt(27 * mu / 4)
+    assert SETTINGS.mmr_coorbital_qs_loop_factor * quad_horseshoe_period(mu, n, np.radians(15.0), eps) > tadpole_floor
+    assert source == cg.FLOOR_SOURCE_PAIR_LOOP and setting == 'mmr_coorbital_period_floor_factor'
+    assert floor == pytest.approx(tadpole_floor, rel=1e-6)
+
+
+def test_a_pair_loop_floor_needs_the_planets_force(earth):
+    """The same run with a's swing reversed (K < 0) or a held fixed (no force at all): no floor of its own."""
+    mu, n, eps, _ = earth
+    t, theta, a, turns = horseshoe_track(mu, n, eps, 2.5, 400.0)
+    a_planet = (co.GM_SUN / n**2) ** (1.0 / 3.0)
+    for wrong in (2 * a_planet - a, np.full(t.size, a_planet)):
+        floor, _, source, _ = run_floor_of(t, theta, wrong, mixed_run(t, theta, turns))
+        assert source == cg.FLOOR_SOURCE_NOT_REFLECTION and np.isnan(floor)
+
+
+def test_a_planet_turn_inside_three_hill_radii_is_no_reflecting_pair(earth):
+    """Turns 1.2 deg from the Earth (< 3 r_H = 1.72 deg): an encounter, no averaged loop; the mixed run keeps the
+    tadpole floor."""
+    mu, n, eps, _ = earth
+    t, theta, a, turns = horseshoe_track(mu, n, eps, 1.2, 300.0)
+    floor, _, source, _ = run_floor_of(t, theta, a, mixed_run(t, theta, turns))
+    assert source == cg.FLOOR_SOURCE_NOT_REFLECTION and np.isnan(floor)

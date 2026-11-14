@@ -54,6 +54,7 @@ class Rule(StrEnum):
     # co-orbitals
     COORBITAL_FLOOR_PROFILE = 'coorbital_floor_profile'
     COORBITAL_QS_RUN_FLOOR = 'coorbital_qs_run_floor'
+    COORBITAL_PAIR_LOOP_FLOOR = 'coorbital_pair_loop_floor'
     COORBITAL_EDGE_TURN = 'coorbital_edge_turn'
     QS_TRIGGER = 'qs_trigger'
     COORBITAL_LEG = 'coorbital_leg'
@@ -119,6 +120,9 @@ RULES: dict[Rule, RuleInfo] = {
     Rule.SUBRESONANCE_T8: _w28('S', 'subresonance scan triggered by T8 (A6a)'),
     Rule.COORBITAL_FLOOR_PROFILE: _w28('G2', "1:1 period floor from the resonance's own profile (C3)"),
     Rule.COORBITAL_QS_RUN_FLOOR: RuleInfo('G1q', "1:1 quasi-satellite run's floor from the loop through its own turns (G1q pass)", 'W38'),
+    Rule.COORBITAL_PAIR_LOOP_FLOOR: RuleInfo(
+        'G2', "1:1 run with a non-reflecting turn: its floor from its reflecting pairs' loop, its own force law passing", 'W38'
+    ),
     Rule.COORBITAL_EDGE_TURN: _w28('G2', '1:1 edge turning point from the orbit-averaged raw angle closed a cycle (C4)'),
     Rule.QS_TRIGGER: _w28('G1q', 'G1q quasi-satellite pass triggered at the lower visit length (C5)'),
     Rule.COORBITAL_LEG: _w28('G4c', '1:1 single-leg branch G4c decided (C6)'),

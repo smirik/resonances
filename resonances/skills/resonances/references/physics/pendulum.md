@@ -311,7 +311,13 @@ for extrapolating from $P(0)$; it is not below the period the pass's filter keep
 A run slower than the QS floor but faster than $2P_c$ is `filter_too_slow`, as any such libration. A horseshoe that turns close to the planet is faster than a
 tadpole as well: a run whose turns all reflect on a top (below) has the floor 0.5 $T$ of the loop through its own
 turns, when its local law has $K/K_\text{th} > 0$ (`MMR_COORBITAL_PROFILE_FLOOR`, rule `coorbital_floor_profile`;
-2003 YN107: 103 yr against a 119-yr loop and a 111-yr tadpole floor). The fastest such loop of a physical horseshoe,
+2003 YN107: 103 yr against a 119-yr loop and a 111-yr tadpole floor). A run with a turn that is no reflection (a
+turn inside a well, a pair no loop joins) has the floor 0.7 $T$ of the median loop of its reflecting pairs whose turns
+are both at least `MMR_COORBITAL_MIN_TURN_HILL` Hill radii from the planet, at most the tadpole floor, and only when
+its own local 1:1 law passes the force check in full (`MMR_COORBITAL_PAIR_LOOP_FLOOR`, rule
+`coorbital_pair_loop_floor`; 2003 YN107 c032: a horseshoe → quasi-satellite → horseshoe run of $P$ = 105 yr whose
+reflecting pairs loop in 105 and 129 yr, floor 82 yr, $K/K_\text{th}$ 1.18). Without that force its floor stays the
+tadpole floor: a wave the planet does not drive is no loop of this potential. The fastest such loop of a physical horseshoe,
 turning `MMR_COORBITAL_MIN_TURN_HILL` = 3 Hill radii $a_P(\mu/3)^{1/3}$ from the planet (closer the averaged problem
 does not hold), sets what the prominence counts as fast ([signal](signal.md)).
 

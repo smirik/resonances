@@ -170,7 +170,7 @@ from resonances.resonance.analysis.mmr.models import (
 )
 from resonances.resonance.analysis.mmr import response as response_module
 from resonances.resonance.analysis.mmr.forced_lines import RESOLUTION
-from resonances.resonance.analysis.mmr.coorbital_geometry import FLOOR_SOURCE_QS_LOOP
+from resonances.resonance.analysis.mmr.coorbital_geometry import FLOOR_SOURCE_PAIR_LOOP, FLOOR_SOURCE_QS_LOOP
 from resonances.resonance.analysis.mmr.kinematics import K1E_NO_VARPI, K1E_RETROGRADE
 from resonances.resonance.analysis.mmr.response import LAW_DIRECT, LAW_HARMONIC
 from resonances.resonance.analysis.mmr.owner import (
@@ -424,8 +424,9 @@ def run_floor_acts(geometry: Geometry, settings: AnalysisSettings) -> Tuple[rule
     """The rules whose run floor (`Geometry.run_floor`) changes what the angle's floor would decide for a run: an
     accepted run passes one floor and not the other, or a short run the near-episode test (`near_episode_floor`) only
     by one of them. A reflection run's floor (source profile_loop) is compared with the tadpole floor (rule
-    coorbital_floor_profile); a QS-loop run inside the G1q pass's well (source qs_loop) with the QS floor (rule
-    coorbital_qs_run_floor). () when none acts."""
+    coorbital_floor_profile), a run with a non-reflecting turn (source pair_loop) too (rule coorbital_pair_loop_floor);
+    a QS-loop run inside the G1q pass's well (source qs_loop) with the QS floor (rule coorbital_qs_run_floor). () when
+    none acts."""
     acted = []
     well = geometry.floor_well
     for run in geometry.runs:
@@ -445,7 +446,15 @@ def run_floor_acts(geometry: Geometry, settings: AnalysisSettings) -> Tuple[rule
         period = run.period_med_yr if run.accepted else 2 * float(np.median(np.diff(run.tp_times_yr)))
         band = 1.0 if run.accepted else 1.0 - settings.confidence_thin_band
         if is_finite(period) and (period >= own_floor * band) != (period >= default * band):
-            acted.append(rules_module.Rule.COORBITAL_QS_RUN_FLOOR if qs_loop else rules_module.Rule.COORBITAL_FLOOR_PROFILE)
+            acted.append(
+                rules_module.Rule.COORBITAL_QS_RUN_FLOOR
+                if qs_loop
+                else (
+                    rules_module.Rule.COORBITAL_PAIR_LOOP_FLOOR
+                    if own.source == FLOOR_SOURCE_PAIR_LOOP
+                    else rules_module.Rule.COORBITAL_FLOOR_PROFILE
+                )
+            )
     return tuple(dict.fromkeys(acted))
 
 
