@@ -29,7 +29,7 @@ User docs: `docs/output.md`, `docs/dry-run.md`, `docs/serialization.md`, `docs/c
   status strings: `resonant` = resonant + transient; `candidates` adds near_separatrix and uncertain; `extended` adds
   non_resonant with a libration origin; `nonzero` = everything except non_resonant without an origin; `review`, the
   default of SAVE and PLOT = nonzero plus the review queue `verdict.needs_review`). Save, the release of unplotted
-  arrays, plot and the ensemble figure all read `DataManager._selection_inputs` (status, origin, action, confidence). Default figure layout `DEFAULT_PLOT_LAYOUT` = `confidence/status` (author 2026-10-27); `PLOTS=combined`.
+  arrays, plot and the ensemble figure all read `DataManager._selection_inputs` (status, origin, action, confidence, flags: a `verdict.REVIEW_FLAGS` flag selects a row for `review`). Default figure layout `DEFAULT_PLOT_LAYOUT` = `confidence/status` (author 2026-10-27); `PLOTS=combined`.
 - `simulation/data_manager.py`: summary.csv (string statuses, verdict + ledger columns, every type), episodes.csv (MMR, secular,
   ZLK), mmr_numbers/candidates/constants CSVs, coherence.csv — tables at the top of save_path; series CSVs in
   `DATA_FOLDER` (`data/`), figures in `PLOT_FIGURES_FOLDER` (`figures/`) and `PLOT_COMBINED_FOLDER` (`combined/`),

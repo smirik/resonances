@@ -292,6 +292,27 @@ def test_review_selects_nonzero_and_the_doubtful_negatives(row, expected):
         assert status_selected(mode, *fields) == status_selected(mode, status, origin), mode
 
 
+def test_an_audit_flag_puts_a_certain_negative_in_review_only():
+    """The 1:1 coverage audit's flags (verdict.REVIEW_FLAGS) select a non_resonant/certain row in review, as a list or
+    as the ';'-joined column; another flag does not, and no other mode reads flags. The DataManager passes the
+    verdict's flags (`_selection_inputs`)."""
+    fields = ('non_resonant', '', 'none', 'certain')
+    assert not status_selected('review', *fields)
+    for flags in (['uncovered_bounded_run'], 'jump_at_edge;floor_above_own_loop'):
+        assert status_selected('review', *fields, flags)
+        assert not status_selected('nonzero', *fields, flags) and not status_selected('negative', *fields, flags)
+    assert not status_selected('review', *fields, 'jump_at_edge')
+    from resonances.body import Body
+
+    body = Body()
+    body.name = 'audit'
+    key = '1E-1+0+0'
+    body.statuses[key] = 'non_resonant'
+    body.librations[key] = _verdict('non_resonant', '', 'certain', 'none', flags=['uncovered_bounded_run'])
+    assert DataManager._selection_inputs(body, key) == ('non_resonant', '', 'none', 'certain', 'uncovered_bounded_run')
+    assert DataManager._process_status('non_resonant', 'review', *DataManager._selection_inputs(body, key)[1:])
+
+
 def test_review_without_a_level_is_nonzero():
     """A caller that passes no level and no action: review selects what nonzero does."""
     for status, origin in ROWS:

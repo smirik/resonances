@@ -134,7 +134,7 @@ references/output.md; every value: references/physics/overview.md and references
 | `veto`, `n_cycles`, `n_counted_episodes`, `counted_episode_ids`, `candidate_episode_ids` | minimal policy: the measured physics that made a bounded angle non_resonant (`owner`, `kinematic`, `forced_wave`, `strength`, `zlk_kinematic`, `zlk_free_e`; '' none), the complete cycles N behind the level, the counted episodes and the candidates (episodes.csv `counted`, `candidate`) |
 | `action` | `none`, `spot_check` (look at the figure), `review`, `extend` (to `extend_to_years`), `resample` (at `resample_step_yr`) |
 | `rules_fired` | the named rules that acted on the row (a cut, a join, a cap, an outcome), even when the status stayed; each has a row id in references/libration-analysis.md (`frame_join` → G2q). A flag list, never a status |
-| `review_required`, `review_reasons` | the review queue: rows a human should look at (medium/low level, a spot_check/review action, origin unknown) and why (`confidence:`, `action:`, `origin_unknown`, `veto_thin`); no status reads it |
+| `review_required`, `review_reasons` | the review queue: rows a human should look at (medium/low level, a spot_check/review action, origin unknown, a 1:1 coverage-audit flag) and why (`confidence:`, `action:`, `origin_unknown`, `veto_thin`, `uncovered_bounded_run`, `floor_above_own_loop`); no status reads it |
 
 **The minimal policy** (the W28 tree's verdict is kept in `v2_verdict`;
 references/physics/status-tree.md, references/physics/confidence.md). The status is the geometry of σ_f: bounded over
@@ -315,6 +315,12 @@ Distinctions that matter when you report:
 - **Stale MMR catalog.** A log warning "MMR catalog ... was built with other settings" means the cached
   `cache/mmr-*.csv` (paths relative to the working directory) has other `MATRIX_*` limits or planets. Delete it (or
   `TwoBodyMatrix.load(reload=True)`) before trusting `find`.
+- **The ends of the record are not classified.** About one filter cutoff at each end is trimmed: an episode under
+  way at the epoch whose turns fall there is not counted, and the status describes the record, not the state at the
+  epoch. For the present state put the epoch at least one cutoff inside the record (integrate backward too).
+- **1:1 audit flags.** `uncovered_bounded_run` (a bounded stretch of the averaged angle no counted episode covers,
+  `aud_unc_*`) and `floor_above_own_loop` (a floor above the loop through the turns of the run it rejects) change no
+  status: open the figure (hatched strip in (a)) before you report such a row as non-resonant.
 - **Today's date.** A `nasa` run without `date=` starts at today's midnight: two days give two runs, and a resume on
   another day fails its hash.
 - **MPC epochs.** Rows at another epoch than the run's date are integrated to it (`MPC_EPOCH_POLICY=propagate`, with

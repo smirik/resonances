@@ -32,7 +32,7 @@ Pure: arrays in, no Body/Simulation.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -48,8 +48,31 @@ FLOOR_SETTING = 'mmr_coorbital_period_floor_factor'
 QS_VISIT = 'G1q the orbit-averaged angle stays in the quasi-satellite well'
 QS_FLOOR = 'G1q quasi-satellite floor from the averaged potential'
 QS_TURN = 'G1q the orbit-averaged angle turns inside the quasi-satellite well'
+QS_RUN_FLOOR = "G1q the QS floor is above the in-well run's own loop floor (the lower one holds)"
 # geo_qs_pass: what the rule did
 PASS_KEPT, PASS_REJECTED, PASS_RESAMPLE = 'kept', 'rejected', 'resample'
+# geo_qs_reject: why a pass was rejected, read on its best in-well run (`analyse.qs_rejection`); besides these a run the
+# geometry did not accept gives 'not_accepted:<reject_reason>' and an accepted one its `ineligible_reason`
+# (below_period_floor, centre_turns, before_last_jump, forced_wave, induced)
+REJECT_NO_TP, REJECT_NO_RUN_IN_WELL, REJECT_KEEPS_OUTSIDE = 'no_turning_points', 'no_run_in_well', 'keeps_outside'
+# the best in-well run of a rejected pass (the longest run the well holds, else the longest run)
+REJECTION_NUMBERS = (
+    'geo_qs_run_t0_yr',
+    'geo_qs_run_t1_yr',
+    'geo_qs_run_n_tp',
+    'geo_qs_run_period_yr',
+    'geo_qs_run_half_amp_deg',
+    'geo_qs_run_floor_yr',
+    'geo_qs_run_loop_yr',
+    'geo_qs_run_K_over_K_theory',
+    'geo_qs_run_R2',
+)
+REJECTION_TEXTS = ('geo_qs_reject', 'geo_qs_run_floor_source')
+
+
+def rejection_none() -> Dict[str, object]:
+    """The rejection columns of a pass that was not rejected (or not run): nan and ''."""
+    return {**{name: NAN for name in REJECTION_NUMBERS}, **{name: '' for name in REJECTION_TEXTS}}
 
 
 @dataclass(frozen=True)
@@ -71,6 +94,7 @@ class QuasiSatellite:
     well_share: float = 0.0  # mmr_coorbital_qs_well_share (`geometry.FloorWell.min_share`)
     visit_turns: int = 0  # reversals of the orbit-averaged theta during that stay (>= mmr_tp_prominence_floor_deg)
     visit_loop_yr: float = NAN  # the loop of the averaged potential through the stay's turns (nan: none, not measured)
+    rejection: Tuple[Tuple[str, object], ...] = ()  # why a rejected pass failed (`rejection_none` names), reporting only
 
     @property
     def period_min_yr(self) -> float:
@@ -265,9 +289,12 @@ def columns(found: Optional[QuasiSatellite], outcome: str = '') -> dict:
     """`flt_qs_period_yr` (P_QS,min), `flt_qs_floor_yr`, `flt_qs_cutoff_yr`, `geo_qs_visit_yr`, `geo_qs_visit_needed_yr`,
     `geo_qs_visit_turns`, `geo_qs_visit_loop_yr`, `geo_qs_n_outside_episodes` (filled by the kept pass), `geo_qs_pass`
     (kept / rejected / resample, empty when the rule did not run); nan and empty without a well, and for an angle that
-    librates over the record at the first pass or an aliased step (the well is not measured there)."""
+    librates over the record at the first pass or an aliased step (the well is not measured there). A rejected pass
+    adds why (`geo_qs_reject`) and its best in-well run (`geo_qs_run_*`, `QuasiSatellite.rejection`), reporting only."""
+    rejection = {**rejection_none(), **dict(found.rejection)} if found is not None else rejection_none()
     if found is None:
         return {
+            **rejection,
             'flt_qs_period_yr': NAN,
             'flt_qs_floor_yr': NAN,
             'flt_qs_cutoff_yr': NAN,
@@ -279,6 +306,7 @@ def columns(found: Optional[QuasiSatellite], outcome: str = '') -> dict:
             'geo_qs_pass': outcome,
         }
     return {
+        **rejection,
         'flt_qs_period_yr': found.period_min_yr,
         'flt_qs_floor_yr': found.floor_yr,
         'flt_qs_cutoff_yr': found.cutoff_yr,

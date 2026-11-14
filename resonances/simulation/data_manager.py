@@ -113,8 +113,8 @@ class DataManager:
 
     def should_save_body(self, body: Body, resonance):
         """Check if body data of this resonance should be saved (`config.status_selected` on the verdict's fields)."""
-        status, origin, action, confidence = self._selection_inputs(body, resonance.to_s())
-        return self._process_status(status, self.config.save, origin, action, confidence)
+        status, origin, action, confidence, flags = self._selection_inputs(body, resonance.to_s())
+        return self._process_status(status, self.config.save, origin, action, confidence, flags)
 
     def should_plot_body(self, body: Body, resonance):
         """Check if the figures of this body-resonance pair should be drawn.
@@ -125,24 +125,25 @@ class DataManager:
         """
         if self.config.plot is not None and getattr(resonance, 'type', None) in getattr(self.config, 'plot_always', []):
             return True
-        status, origin, action, confidence = self._selection_inputs(body, resonance.to_s())
-        return self._process_status(status, self.config.plot, origin, action, confidence)
+        status, origin, action, confidence, flags = self._selection_inputs(body, resonance.to_s())
+        return self._process_status(status, self.config.plot, origin, action, confidence, flags)
 
     @staticmethod
     def _selection_inputs(body: Body, key: str):
-        """(status, libration origin, action, confidence) of a row, what `status_selected` reads: the status string
-        and the verdict's fields ('' without a verdict). After a restore without recomputation the verdict is the one
-        rebuilt from summary.csv, so the selection is the run's."""
+        """(status, libration origin, action, confidence, flags) of a row, what `status_selected` reads: the status
+        string and the verdict's fields ('' without a verdict; flags ';'-joined). After a restore without recomputation
+        the verdict is the one rebuilt from summary.csv, so the selection is the run's."""
         verdict = getattr(body, 'librations', {}).get(key)
         if not isinstance(verdict, Verdict):
-            return body.statuses.get(key), '', '', ''
-        return body.statuses.get(key), str(verdict.libration_origin), str(verdict.action), str(verdict.confidence)
+            return body.statuses.get(key), '', '', '', ''
+        flags = ';'.join(str(flag) for flag in verdict.flags)
+        return body.statuses.get(key), str(verdict.libration_origin), str(verdict.action), str(verdict.confidence), flags
 
     @staticmethod
-    def _process_status(status, mode, origin: str = '', action: str = '', confidence: str = '') -> bool:
+    def _process_status(status, mode, origin: str = '', action: str = '', confidence: str = '', flags='') -> bool:
         """Whether a row with these verdict fields is saved/plotted under `mode` (SPEC §11.5, `config.status_selected`)."""
         _refuse_integer_status(status)
-        return status_selected(mode, status, origin, action, confidence)
+        return status_selected(mode, status, origin, action, confidence, flags)
 
     def log_selection(self, bodies) -> None:
         """Log the run's rows by status x confidence, the review queue (`Verdict.review_required`) and how many rows
@@ -151,7 +152,7 @@ class DataManager:
         cells, total, queue, saved, plotted, saved_nonzero = Counter(), 0, 0, 0, 0, 0
         for body in bodies:
             for resonance in body.resonances():
-                status, origin, action, confidence = self._selection_inputs(body, resonance.to_s())
+                status, origin, action, confidence, flags = self._selection_inputs(body, resonance.to_s())
                 verdict = getattr(body, 'librations', {}).get(resonance.to_s())
                 if not isinstance(verdict, Verdict):
                     continue
@@ -160,7 +161,7 @@ class DataManager:
                 queue += verdict.review_required
                 saved += self.should_save_body(body, resonance)
                 plotted += self.should_plot_body(body, resonance)
-                saved_nonzero += status_selected(SavePlotMode.NONZERO, status, origin, action, confidence)
+                saved_nonzero += status_selected(SavePlotMode.NONZERO, status, origin, action, confidence, flags)
         if not total:
             return
         status_order = [str(s) for s in STATUS_RANK]

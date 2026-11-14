@@ -1,5 +1,26 @@
 # Status on 2026-11-08
 
+## QS run floor and the 1:1 coverage audit (2026-11-14, worktree `qs-missed-episodes`, uncommitted)
+
+Rule `coorbital_qs_run_floor` (`MMR_COORBITAL_QS_RUN_FLOOR`) and the audit (`MMR_COORBITAL_COVERAGE_AUDIT`): see
+`resonance/analysis/mmr/CLAUDE.md`; measurements in
+`experiments/2026-11-earth-coorbitals/rosengren/claude/followup/implement/CHANGES.md`. `make test-benchmark` not run
+yet (another session's pytest); expected moves there: 2010 JK1 non_resonant/high → transient/low (one 25-yr QS
+cycle), 2015 YA gains its 51-121-yr QS episode; 2022 YG and 2025 DQ are not reached (mixed qs/planet turns) and keep
+the flag `floor_above_own_loop`. Open for the author:
+
+1. Guard of `qs_loop`: K/K_th > 0 plus the period test P >= 0.7 x the run's own loop (`MMR_COORBITAL_QS_LOOP_FACTOR`,
+   after review 2's negative controls). `force_check == pass` would not help: its band [1/3, 3] holds the 3x-force
+   loop (K 2.68).
+2. Audit flags: review only (implemented, minimal policy) or also a cap on a certain/high non_resonant row?
+3. 2022 YG (CS5): its 35-482-yr QS run is still rejected (mixed turns); widen the rule to a run whose QS part has
+   its own loop, or keep CS5?
+4. Which YORP clones and sweep cases go into the benchmark (c046, c087, 2015 YA, 2025 DQ, 2020 FN3, 2015 SO2)?
+5. 2010 JK1 becomes transient/low on one 25-yr QS cycle (P/loop 0.87; floor 0.7 x 28.9 = 20.2 yr, above the pass
+   cutoff 16.3 yr), against the author's label non-resonant (candidates c0441): accept and list it, or not? It is
+   `filter_too_slow` (G(25.1 yr) = 0.85). A re-run at P_c = own floor / 2 instead (review 1) is a new pass, not done.
+6. Clone rows: `PLOT=review` does not see the audit flags of clones (`clone_store.ROW_FIELDS`, schema change).
+
 ## Dead-code cleanup (2026-11-14, analysis + simulation; plotting in a parallel pass)
 
 The author's rule: code used only by tests goes, unless a test of live code needs it as an oracle or fixture builder;

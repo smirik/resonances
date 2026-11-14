@@ -58,6 +58,12 @@ Things that cost a session hours. Each says what happens and what to do instead.
 
 ## Numerics
 
+- **A small-amplitude period is no lower bound in a well whose period falls with the amplitude.** The QS floor
+  0.5 P_QS(0) of G1q rejected a real 11-TP quasi-satellite (54509 YORP c046: 50 yr against 55.7 yr): the low-e QS
+  well softens towards its barrier (112 yr at 1°, 49.9 yr at 26°; the W4 e = 0.2 well 90.6 yr at 0°, 40.8 yr at 22°).
+  The floor of such a run is 0.7 x the loop through its own turns (rule `coorbital_qs_run_floor`; not 0.5: the loop is
+  already the prediction at its amplitude, and 0.5 counts oscillations twice as fast as the Earth's force allows); the audit flag
+  `floor_above_own_loop` catches the cases the rule does not reach (mixed qs/planet turns).
 - **Butterworth in (b, a) form breaks** at normalized cutoffs ≲ 1e-3 (errors near 1e11 at 1-yr output); analysis v2
   uses second-order sections. The body-level `resonance/filtering.filter_angle` (the filtered series of the figures)
   still uses (b, a) with `filtfilt`: keep it out of decisions. The digital filtfilt gain uses tan(π dt/P), not the continuous approximation.

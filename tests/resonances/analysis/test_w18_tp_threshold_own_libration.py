@@ -253,3 +253,51 @@ def test_as27_4e_9s_5_is_induced_by_31_36(as27):
     assert str(verdict.status) == 'non_resonant'
     assert str(verdict.libration_origin) == 'induced'
     assert verdict.owner == '31E-36+0+5'
+
+
+# ------------------------------------------------------------------ the G1q pass: a QS run's own floor (coorbital_qs_run_floor)
+
+QS_CUTOFF_YR, QS_REFERENCE_YR, QS_STEP_YR = 27.8, 55.7, 0.25  # YORP's QS pass: P_c and the fast reference (the QS floor)
+
+
+def _qs_residual(period_yr, run_floor_of):
+    """Half-amplitude [deg] of the 50-yr line left in sigma_f - lowpass(sigma, P_ref) - image for a 25-deg sine of
+    `period_yr` over 400 yr (the independent Butterworth makes sigma_f), and the image itself."""
+    t = np.arange(0.0, 400.0 + QS_STEP_YR / 2, QS_STEP_YR)
+    sigma = np.radians(HALF_AMP_DEG) * np.sin(2 * np.pi * t / period_yr)
+    angle_f = _lowpass(sigma, QS_CUTOFF_YR, QS_STEP_YR)
+    window = (t[0] + QS_CUTOFF_YR, t[-1] - QS_CUTOFF_YR)
+    image = g.libration_image(
+        t, angle_f, window, QS_CUTOFF_YR, QS_REFERENCE_YR, np.radians(S.mmr_tp_prominence_floor_deg), S, run_floor_of=run_floor_of
+    )
+    residual = angle_f - _lowpass(sigma, QS_REFERENCE_YR, QS_STEP_YR) - image
+    keep = (t > 120.0) & (t < 280.0)  # inside the run, beyond the image's edge spread
+    return _amplitude_at(t, residual, period_yr, 1e6, keep), image
+
+
+def test_a_qs_run_below_the_reference_keeps_its_band_without_its_own_floor():
+    """A 50-yr QS loop under the 55.7-yr reference is no libration run of the image: the full band G(50; 27.8) -
+    G(50; 55.7) of its swing stays in the residual (the YORP c046 pass: prominence 44.8 deg, 2 TPs)."""
+    left, image = _qs_residual(50.0, None)
+    band = _gain(50.0, QS_CUTOFF_YR, QS_STEP_YR) - _gain(50.0, QS_REFERENCE_YR, QS_STEP_YR)
+    assert not np.any(image)
+    assert left == pytest.approx(band * HALF_AMP_DEG, rel=0.03)
+
+
+def test_a_qs_run_at_its_own_loop_floor_is_taken_out_of_the_residual():
+    """With a run floor of 25 yr (half its loop) the 50-yr run is a libration of the image: what stays is the steady
+    sine's (G(50; P_c) - G(50; P_ref)) (1 - G(50; P_c)) of the swing, from the filter gains; the two filters of the
+    image stay at the reference."""
+    left, image = _qs_residual(50.0, lambda times, values: 25.0)
+    gain_c = _gain(50.0, QS_CUTOFF_YR, QS_STEP_YR)
+    expected = (gain_c - _gain(50.0, QS_REFERENCE_YR, QS_STEP_YR)) * (1 - gain_c) * HALF_AMP_DEG
+    assert np.any(image)
+    assert left == pytest.approx(expected, abs=0.1 * expected + 0.05)
+
+
+def test_a_wave_faster_than_its_run_floor_keeps_its_image():
+    """A 20-yr wave with the same 25-yr run floor is still faster than its floor: no image, its band stays."""
+    left, image = _qs_residual(20.0, lambda times, values: 25.0)
+    assert not np.any(image)
+    band = _gain(20.0, QS_CUTOFF_YR, QS_STEP_YR) - _gain(20.0, QS_REFERENCE_YR, QS_STEP_YR)
+    assert left == pytest.approx(band * HALF_AMP_DEG, rel=0.05)

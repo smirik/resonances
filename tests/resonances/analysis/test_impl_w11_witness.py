@@ -57,7 +57,7 @@ def analysed_cut_line(series):
     from resonances.resonance.analysis.mmr import analyse as analyse_module
 
     patch = pytest.MonkeyPatch()
-    patch.setattr(analyse_module, 'libration_image', lambda prep, floor, settings: np.zeros(len(prep.t_yr)))
+    patch.setattr(analyse_module, 'libration_image', lambda prep, floor, settings, run_floor=None: np.zeros(len(prep.t_yr)))
     try:
         return analyse_module.analyse_mmr(series, S)
     finally:

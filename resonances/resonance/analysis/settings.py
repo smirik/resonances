@@ -352,6 +352,73 @@ class AnalysisSettings:
         'need its own table of the averaged potential (2010 CG236 over 20 kyr: 3774 blocks of 5.3 yr, 45 s; 1000 blocks of 20 '
         'yr fail its energy integral, R^2 0.11)',
     )
+    mmr_coorbital_qs_run_floor: bool = _setting(
+        True,
+        'MMR_COORBITAL_QS_RUN_FLOOR',
+        'bool',
+        'rule coorbital_qs_run_floor (G1q pass only; needs MMR_COORBITAL_PROFILE_FLOOR and MMR_COORBITAL_QS_FLOOR): a run '
+        'inside the quasi-satellite well whose turning points (on the orbit-averaged angle) all lie in that well has the '
+        'floor min(the QS floor, MMR_COORBITAL_QS_LOOP_FACTOR x the loop of the averaged potential through its own '
+        'turns, not below the period the pass filter keeps at gain MMR_L8_GAIN_FAIL), when its local 1:1 law has '
+        'K / K_theory > 0, and the libration image of the TP prominence reads the same floor: the low-e QS well softens '
+        'towards its barrier, so the small-amplitude P_QS is no lower bound (54509 YORP: 112 yr at 1 deg, 49.9 yr at 26 '
+        'deg; a 50-yr QS run of 11 TPs was below the 55.7-yr QS floor). False = the QS floor for every run in the well',
+    )
+    mmr_coorbital_qs_loop_factor: float = _setting(
+        0.7,
+        'MMR_COORBITAL_QS_LOOP_FACTOR',
+        'float',
+        'rule coorbital_qs_run_floor: the floor of a quasi-satellite run is this x the loop through its own turns, a '
+        'prediction at its own amplitude (no margin for extrapolating from P(0), as MMR_COORBITAL_PERIOD_FLOOR_FACTOR has): '
+        'counted QS runs read P / loop 0.84-1.05, synthetic oscillations faster than the Earth\'s force allows 0.54-0.65 '
+        '(a sine at 0.76 is not separated)',
+        convention=True,
+    )
+    mmr_coorbital_coverage_audit: bool = _setting(
+        True,
+        'MMR_COORBITAL_COVERAGE_AUDIT',
+        'bool',
+        'the 1:1 coverage audit after the policy (prograde 1:1 only; flags and columns, never a status): flag '
+        'floor_above_own_loop when a floor exceeds the loop of the averaged potential through the turns of the run it '
+        'rejects, flag uncovered_bounded_run when the orbit-averaged angle holds a bounded run of '
+        '>= MMR_COORBITAL_AUDIT_MIN_HALF_CYCLES half-cycles inside the window that no counted episode or span covers; both '
+        'enter review_reasons (columns aud_*). False = neither',
+    )
+    mmr_coorbital_audit_min_swing_deg: float = _setting(
+        10.0,
+        'MMR_COORBITAL_AUDIT_MIN_SWING_DEG',
+        'float',
+        'coverage audit: a turning point of the orbit-averaged angle needs a reversal of at least max(this, '
+        'MMR_COORBITAL_AUDIT_NOISE_FACTOR x its noise) (at 20 deg the 17-deg QS swing of 2015 SO2 is missed; 5 deg '
+        'changes the Earth survey by 1 %)',
+        unit='deg',
+        convention=True,
+    )
+    mmr_coorbital_audit_noise_factor: float = _setting(
+        5.0,
+        'MMR_COORBITAL_AUDIT_NOISE_FACTOR',
+        'float',
+        'coverage audit: the reversal of a turning point is at least this x the noise 1.4826 MAD of the averaged angle '
+        'less its own average over the same window (the jitter the average leaves; the survey sweep\'s value)',
+        convention=True,
+    )
+    mmr_coorbital_audit_centre_tol: float = _setting(
+        0.5,
+        'MMR_COORBITAL_AUDIT_CENTRE_TOL',
+        'float',
+        'coverage audit: in a bounded run every turn returns near the one two half-cycles before, |x_(i+2) - x_i| <= 2 '
+        'x this x the smaller neighbouring half-amplitude (Earth survey: 0.3 -> 450, 0.8 -> 479 stretches, 453 at 0.5)',
+        convention=True,
+    )
+    mmr_coorbital_audit_min_half_cycles: int = _setting(
+        4,
+        'MMR_COORBITAL_AUDIT_MIN_HALF_CYCLES',
+        'int',
+        'coverage audit: a bounded run (and a missed stretch of it) has at least this many consecutive half-cycles: 4 is '
+        'the smallest count at which the centre test is defined (two maxima and two minima); fewer inside the window is '
+        'an edge stretch (columns only)',
+        convention=True,
+    )
     mmr_filter_guard_tp_abs: int = _setting(
         2,
         'MMR_FILTER_GUARD_TP_ABS',
@@ -2715,6 +2782,7 @@ ORDERED_OR_EQUAL = (
 # Fractions and correlations that must lie in [0, 1]
 UNIT_INTERVAL = (
     'mmr_scale_tp_time_tol',
+    'mmr_coorbital_qs_loop_factor',  # a floor above the run's own loop would reject the loop itself
     'zlk_ei_min_band_r',
     'zlk_ei_band_halfwidth',
     'zlk_ei_episode_min_coherence',
@@ -2770,6 +2838,10 @@ UNIT_INTERVAL = (
 # Factors and ratios that must be strictly positive
 POSITIVE = (
     'mmr_coorbital_leg_cutoff_orbits',  # a leg's cutoff must drop the orbital ripple
+    'mmr_coorbital_qs_loop_factor',
+    'mmr_coorbital_audit_min_swing_deg',
+    'mmr_coorbital_audit_noise_factor',
+    'mmr_coorbital_audit_centre_tol',
     'mmr_o1_phase_gap_max_deg',
     'mmr_owner_psi_turns_per_cycle_max',
     'mmr_owner_x_min_cycles',
@@ -2870,6 +2942,7 @@ def _check_ranges(values: dict, kinds: dict) -> None:
             raise ValueError(f'{name} must lie in [0, 1], got {value}')
     minimum = {
         'libration_min_turning_points': 2,
+        'mmr_coorbital_audit_min_half_cycles': 4,  # the centre test needs two maxima and two minima
         'filter_order': 1,
         'mmr_coorbital_grid_points': 4,  # a periodic grid needs a few points
         'mmr_coorbital_scale_ratio_max': 1.0,  # the band [1/x, x] is empty below 1

@@ -57,6 +57,14 @@ A body can therefore be `non_resonant` while `angle_status = libration`: the ang
 this resonance. The origins of such a *kinematic* or *induced* libration are explained in
 [Is it this resonance?](response.md). Every column of the output files is listed in [Output data](../output.md).
 
+!!! warning "Limitation: the ends of the record"
+    The classifier reads the record without its ends: about one filter cutoff ($P_c$ × `FILTER_EDGE_TRIM_CUTOFFS`)
+    at each end, where the filter spreads. An episode under way at the start or at the end of the record whose
+    turning points fall in that trimmed stretch is not counted, so the status describes the record, not the state at
+    the epoch (2022 YG: its present quasi-satellite, about 16–134 yr, is mostly inside the 55-yr trim at the start).
+    To classify the state at a date, put that date at least one cutoff inside the record (integrate backward and
+    forward). For a 1:1 angle the coverage audit counts such stretches in `aud_edge_half_cycles` ([Output](../output.md)).
+
 ## The pipeline
 
 ```mermaid

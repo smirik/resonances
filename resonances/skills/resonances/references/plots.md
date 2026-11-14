@@ -90,6 +90,8 @@ dashed outline, the candidates `cand`; no rejected run and no gray strip (`mmr_c
 titled `(l) episodes, counted solid` and the numbers count `N accepted, M counted`. A 1:1 circulation judged on one leg or a non-1:1 half-swing between
 passages (leaves G4c, G4h), the flag `extend_time`, the 1:1 profile floor and a turn read in the edge trim are said in
 the right column ([reading the figures](reading-figures.md#the-right-column)).
+The 1:1 coverage audit's longest uncovered stretch (`aud_unc_t0_yr`–`aud_unc_t1_yr`) is a hatched gray strip `xx`
+at the foot of (a), labeled `bounded, not counted (audit)` (`mmr_combined.shade_audit`; flag `uncovered_bounded_run`).
 One 1:1 episode in parts: (a) brackets its sub-regimes over the panel, named by their well
 (`mmr_combined.draw_subregime_brackets`, `run_label_items`; overlapping names merge, `merge_label_items`), and hatches
 its inferred residence beyond the fill lighter, `--`, labeled `inferred` (`residence_pieces`, `shade_residences`;

@@ -170,6 +170,7 @@ from resonances.resonance.analysis.mmr.models import (
 )
 from resonances.resonance.analysis.mmr import response as response_module
 from resonances.resonance.analysis.mmr.forced_lines import RESOLUTION
+from resonances.resonance.analysis.mmr.coorbital_geometry import FLOOR_SOURCE_QS_LOOP
 from resonances.resonance.analysis.mmr.kinematics import K1E_NO_VARPI, K1E_RETROGRADE
 from resonances.resonance.analysis.mmr.response import LAW_DIRECT, LAW_HARMONIC
 from resonances.resonance.analysis.mmr.owner import (
@@ -392,40 +393,60 @@ def period_floor(geometry: Geometry, settings: AnalysisSettings, episode=None) -
     """The shortest libration period of the angle [yr] and its setting: the one the preprocessing derived
     (geometry.period_floor_yr: a co-orbital's own, `preprocess.libration_period_floor`), else mmr_libration_period_min_yr.
     With `episode` (a run):
-    - inside a floor well (`geometry.FloorWell`: the 1:1 quasi-satellite pass, G1q): the angle's (the QS) floor;
+    - inside a floor well (`geometry.FloorWell`: the 1:1 quasi-satellite pass, G1q): the angle's (the QS) floor, or
+      min(it, the run's own) when its turns all lie in the QS well and the loop through them gives a floor (source
+      qs_loop, rule coorbital_qs_run_floor: the small-amplitude P_QS is no lower bound in a well whose period falls
+      with the amplitude). One-sided for a given geometry only: a run eligible at the QS floor stays eligible here, but
+      the same floor lowers the libration image's share of the fast residual, so the prominence and the runs can be
+      cut again (17 Earth benchmark cases and 260 co-orbital examples: no kept G1q pass lost; nothing guarantees it);
     - with a floor of its own (`Geometry.run_floor`: a 1:1 run whose turns reflect on the planet's or L3's top, the
       loop through them, rule coorbital_floor_profile, W28 C3): that floor;
     - outside a floor well: the well's outside floor (the tadpole floor)."""
     well = geometry.floor_well
-    if episode is not None and not (well is not None and well.holds(episode)):
+    in_well = episode is not None and well is not None and well.holds(episode)
+    if episode is not None and not in_well:
         own = geometry.run_floor(episode)
-        if own is not None and own.holds:
+        if own is not None and own.holds and own.source != FLOOR_SOURCE_QS_LOOP:  # a QS loop floor holds in the well only
             return float(own.floor_yr), own.setting
         if well is not None:
             return float(well.outside_floor_yr), well.outside_setting
     floor, setting = geometry.period_floor_yr, geometry.period_floor_setting
+    if in_well and is_finite(floor) and setting:
+        own = geometry.run_floor(episode)
+        if own is not None and own.holds and own.source == FLOOR_SOURCE_QS_LOOP and own.floor_yr < floor:
+            return float(own.floor_yr), own.setting
     if is_finite(floor) and setting:
         return float(floor), setting
     return float(settings.mmr_libration_period_min_yr), 'mmr_libration_period_min_yr'
 
 
-def run_floor_acts(geometry: Geometry, settings: AnalysisSettings) -> bool:
-    """A run's own floor (`Geometry.run_floor`, rule coorbital_floor_profile) changes what the angle's floor would
-    decide for it: an accepted run passes one floor and not the other, or a short run the near-episode test
-    (`near_episode_floor`) only by one of them."""
+def run_floor_acts(geometry: Geometry, settings: AnalysisSettings) -> Tuple[rules_module.Rule, ...]:
+    """The rules whose run floor (`Geometry.run_floor`) changes what the angle's floor would decide for a run: an
+    accepted run passes one floor and not the other, or a short run the near-episode test (`near_episode_floor`) only
+    by one of them. A reflection run's floor (source profile_loop) is compared with the tadpole floor (rule
+    coorbital_floor_profile); a QS-loop run inside the G1q pass's well (source qs_loop) with the QS floor (rule
+    coorbital_qs_run_floor). () when none acts."""
+    acted = []
+    well = geometry.floor_well
     for run in geometry.runs:
         own = geometry.run_floor(run)
         if own is None or not own.holds or len(run.tp_times_yr) < 2:
             continue
-        well = geometry.floor_well
-        default = float(well.outside_floor_yr) if well is not None else float(geometry.period_floor_yr)
+        qs_loop = own.source == FLOOR_SOURCE_QS_LOOP and well is not None and well.holds(run)
+        if own.source == FLOOR_SOURCE_QS_LOOP and not qs_loop:
+            continue  # a QS-loop reading outside the well is no floor of that run (`period_floor`)
+        if qs_loop:
+            default, own_floor = float(geometry.period_floor_yr), min(float(own.floor_yr), float(geometry.period_floor_yr))
+        else:
+            default = float(well.outside_floor_yr) if well is not None else float(geometry.period_floor_yr)
+            own_floor = float(own.floor_yr)
         if not is_finite(default):
             continue
         period = run.period_med_yr if run.accepted else 2 * float(np.median(np.diff(run.tp_times_yr)))
         band = 1.0 if run.accepted else 1.0 - settings.confidence_thin_band
-        if is_finite(period) and (period >= own.floor_yr * band) != (period >= default * band):
-            return True
-    return False
+        if is_finite(period) and (period >= own_floor * band) != (period >= default * band):
+            acted.append(rules_module.Rule.COORBITAL_QS_RUN_FLOOR if qs_loop else rules_module.Rule.COORBITAL_FLOOR_PROFILE)
+    return tuple(dict.fromkeys(acted))
 
 
 def _eligible_floor(geometry: Geometry, settings: AnalysisSettings, episode) -> float:

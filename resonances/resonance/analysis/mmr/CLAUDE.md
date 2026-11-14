@@ -56,6 +56,40 @@ guards) → io.
   out): measured, T_hs(3 r_H) alone is above the tadpole floor everywhere (Jupiter 235 vs 74 yr), so it would raise
   every 1:1 prominence. The near-episode needs the floor x (1 - CONFIDENCE_THIN_BAND), for every MMR. The cutoff is
   unchanged. `preprocess.profile_period_floor` has the same 1:1 branch for one episode. Moves: see dev/decisions.md.
+- **QS run floor, rule `coorbital_qs_run_floor`** (`CoorbitalRunFloor.qs_pass`, `FLOOR_SOURCE_QS_LOOP`,
+  `floor_of`; `analyse._run_floor_model` (one model per pass, built before the prominence), `_image_floor_of`,
+  `geometry.libration_image(run_floor_of=)`; `decide.period_floor`, `run_floor_acts` (returns the rules that acted);
+  ledger `quasi_satellite.QS_RUN_FLOOR`; `MMR_COORBITAL_QS_RUN_FLOOR`): only in the G1q pass (`qs_pass`, set when the
+  model is built with a floor well) a run whose turns are all `qs` sites and which the well holds
+  (`FloorWell.holds_span` in `read`) gets MMR_COORBITAL_QS_LOOP_FACTOR (0.7) x its own loop (median over its pairs,
+  the same K > 0 guard), not below the period the pass filter keeps at MMR_L8_GAIN_FAIL (`qs_gain_floor_yr`, P_c);
+  the floor is min(QS floor, that); the libration image reads only that qs_loop floor (`floor_of`: nan for
+  profile_loop and any other reading, so image and decision read the same floor) for runs below the fast reference
+  (its two filters stay at the reference). 0.7, not the 0.5 of P(0): the loop is the prediction at the run's own
+  amplitude (counted runs P/loop 0.84-1.05); with 0.5 synthetic sines and a 3x-force loop at P/loop 0.54-0.65 counted
+  (K up to 2.7, inside the force band, so neither K > 0 nor force_check separates them). One-sided only for a fixed
+  geometry: the lower image re-cuts the runs (`decide.period_floor`). Why: the low-e QS well softens towards its barrier, P(0) is no lower bound (YORP c046: 11-TP QS
+  run of 50.1 yr, loop 48.3 yr, QS floor 55.7 yr; without the image change the pass had 44.8 deg prominence and 2
+  TPs). The first pass and G1f (`preprocess._coorbital_profile_floor`) never set `qs_pass`. Mixed qs/planet turns
+  (2022 YG, 2025 DQ: a QS run whose last turn is a horseshoe reflection) stay not_reflection: Layer I flags them.
+  A rejected pass writes `geo_qs_reject` and its best in-well run `geo_qs_run_*` (`analyse.qs_rejection`, reporting).
+  A counted run below the QS floor is faster than 2 P_c (P_c = QS floor / 2), so its gain is < 0.94 and it can be
+  `filter_too_slow` (2010 JK1; YORP c046 at G = 0.913 is just above the 0.911 thin limit), as any such libration;
+  a re-run at the lower cutoff was not done (a new pass, open in dev/status.md).
+- **1:1 coverage audit** (`coverage_audit.py`, `analyse._coverage_audit`; `MMR_COORBITAL_COVERAGE_AUDIT`,
+  `MMR_COORBITAL_AUDIT_*`): the only step after the policy, prograde 1:1 only, flags and aud_* columns, never a
+  status. Layer I `floor_contradiction` (flag floor_above_own_loop, no threshold): an accepted below_period_floor run
+  whose floor exceeds its loop (median over its pairs; a not_reflection run: its first pair's, kept for cost), or a G1q pass rejected for a floor reason
+  (`FLOOR_REJECTIONS`: not keeps_outside, not not_accepted:*) whose stay's loop (>= 2 turns) is below the QS floor. Layer II
+  `audit` (flag uncovered_bounded_run): hysteresis turning points of the raw angle averaged over
+  MMR_COORBITAL_EDGE_TURN_ORBITS orbits, bounded runs by the centre test, uncovered half-cycles by midpoint against
+  the policy's counted episodes and spans, missed stretches inside the window (edge stretches: columns only). The
+  noise is MAD of the averaged angle less its own average (the sweep's), not MAD(raw - averaged), which holds the
+  orbit's own terms. Layer II flags only a missed stretch whose local law passes `force_check` (not thin; at most
+  AUDIT_LAW_STRETCHES_MAX fits): the pairwise centre test alone lets a slow drift (0.5 deg/yr under a 25-yr wave) and
+  2016 JA (R^2 0.46) through. Not measured: a step >= half the 3-orbit window, non-finite samples. Both flags are
+  `verdict.REVIEW_FLAGS`: review_required at any level, SAVE/PLOT=review (nominal rows only: `clone_store.ROW_FIELDS`
+  keeps no flags, a schema change).
 - **W28 C6 single legs, leaves G4c / G4h** (`coorbital_geometry.CoorbitalWells.single_legs`, `leg_topology`;
   `geometry.SingleLeg`/`LegTurn`/`coorbital_single_legs`, `HalfLibration`/`half_librations`/`harmonic_half_test`;
   `decide._g4c`, `leg_outcome`, `deciding_leg`, `leg_scatters`, `structural_near_episode`, `_g4h`,

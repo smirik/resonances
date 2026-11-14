@@ -79,6 +79,7 @@ from resonances.resonance.analysis.rules import Rule, fire
 from resonances.resonance.analysis.mmr import background_wave as background_wave_module
 from resonances.resonance.analysis.mmr import centre_track as centre_track_module
 from resonances.resonance.analysis.mmr import context as context_module, coorbital as coorbital_module, coorbital_geometry
+from resonances.resonance.analysis.mmr import coverage_audit as coverage_audit_module
 from resonances.resonance.analysis.mmr import decide, kinematics as kinematics_module, owner as owner_module
 from resonances.resonance.analysis.mmr import owner_identity
 from resonances.resonance.analysis.mmr import preprocess as preprocess_module, response as response_module
@@ -178,7 +179,7 @@ def _energy(series, prep, slow, geometry, response, context, sampling, settings,
     return zone_module.analyse_separatrix(series, prep, slow, geometry, response, context, settings, full_well)
 
 
-def fast_part(prep: Preprocessed, settings: AnalysisSettings) -> Optional[np.ndarray]:
+def fast_part(prep: Preprocessed, settings: AnalysisSettings, run_floor=None) -> Optional[np.ndarray]:
     """|sigma_f - lowpass(sigma, P_floor) - image of the libration| [rad], what sigma_f holds faster than any libration
     of the angle (P_floor: `preprocess.fast_reference`, the floor `preprocess.libration_period_floor`, for a 1:1 angle
     the shortest floor any of its runs can get, W28 C3: a horseshoe turning near the planet is faster than the tadpole
@@ -189,7 +190,9 @@ def fast_part(prep: Preprocessed, settings: AnalysisSettings) -> Optional[np.nda
     its swing in sigma_f - lowpass(sigma, P_floor) (0.44 at 150 yr, P_c = 75 yr), and that image of the libration
     itself raised the threshold to 4 x 0.44 A, about its own swing 2 A (2013 AS27 31E-36+0+5: 48.9 deg, a libration
     of 260 TPs cut into 19 runs). The image of each libration run through the same two filters
-    (`libration_image`) is taken out first; a wave faster than P_floor is no libration run and stays."""
+    (`libration_image`) is taken out first; a wave faster than P_floor is no libration run and stays. `run_floor`: the
+    1:1 model of the G1q pass (`CoorbitalRunFloor` with qs_pass), whose QS runs below P_floor keep their image when
+    they reach their own loop floor (rule coorbital_qs_run_floor)."""
     period = preprocess_module.fast_reference(prep, settings)
     if period <= prep.cutoff.cutoff_yr:
         return None
@@ -197,7 +200,7 @@ def fast_part(prep: Preprocessed, settings: AnalysisSettings) -> Optional[np.nda
     slow = filtering.lowpass_or_none(t, prep.angle_clean, period, settings)
     if slow is None:
         return None
-    return np.abs(np.asarray(prep.angle_f, float) - slow - libration_image(prep, period, settings))
+    return np.abs(np.asarray(prep.angle_f, float) - slow - libration_image(prep, period, settings, run_floor))
 
 
 # the period floor that is a convention (MMR_LIBRATION_PERIOD_MIN_YR, 150 yr) and so read with its thin band (W31); a
@@ -205,9 +208,15 @@ def fast_part(prep: Preprocessed, settings: AnalysisSettings) -> Optional[np.nda
 CONVENTION_FLOOR = 'mmr_libration_period_min_yr'
 
 
-def libration_image(prep: Preprocessed, period_floor_yr: float, settings: AnalysisSettings) -> np.ndarray:
+def _image_floor_of(run_floor):
+    """The per-run floor the libration image reads (`geometry.libration_image`, `run_floor_of`): the 1:1 model's
+    `floor_of` in the G1q pass (rule coorbital_qs_run_floor), None anywhere else (the first pass, every other angle)."""
+    return run_floor.floor_of if run_floor is not None and getattr(run_floor, 'qs_pass', False) else None
+
+
+def libration_image(prep: Preprocessed, period_floor_yr: float, settings: AnalysisSettings, run_floor=None) -> np.ndarray:
     """`geometry.libration_image` of sigma_f with the turning points at mmr_tp_prominence_floor_deg (the shared rule,
-    also the secular/ZLK prominence's)."""
+    also the secular/ZLK prominence's); `run_floor` as in `fast_part`."""
     return geometry_module.libration_image(
         prep.t_yr,
         prep.angle_f,
@@ -217,34 +226,40 @@ def libration_image(prep: Preprocessed, period_floor_yr: float, settings: Analys
         math.radians(settings.mmr_tp_prominence_floor_deg),
         settings,
         floor_band=settings.confidence_thin_band if prep.period_floor_basis == CONVENTION_FLOOR else 0.0,
+        run_floor_of=_image_floor_of(run_floor),
     )
 
 
 def fast_residual(
-    prep: Preprocessed, settings: AnalysisSettings, own: Optional[np.ndarray] = None, part: Optional[np.ndarray] = None
+    prep: Preprocessed,
+    settings: AnalysisSettings,
+    own: Optional[np.ndarray] = None,
+    part: Optional[np.ndarray] = None,
+    run_floor=None,
 ) -> float:
     """Half-amplitude of what sigma_f holds faster than any libration of the angle [rad]: the 95th percentile of
     `fast_part` in the window (and in the samples `own`, a regime between jumps of a, when given; `part`: `fast_part`
     computed already). A forced wave of a nearby commensurability that the cutoff lets through (52356: 121 yr, 23240:
-    115 yr) makes turning points of up to twice this; 0 when the bound is off or cannot be formed."""
+    115 yr) makes turning points of up to twice this; 0 when the bound is off or cannot be formed. `run_floor` as in
+    `fast_part`."""
     inside = filtering.window_mask(np.asarray(prep.t_yr, float), prep.window)
     if own is not None:
         inside &= own
-    part = fast_part(prep, settings) if part is None and np.any(inside) else part
+    part = fast_part(prep, settings, run_floor) if part is None and np.any(inside) else part
     if part is None or not np.any(inside):
         return 0.0
     return float(np.percentile(part[inside], FAST_RESIDUAL_PERCENTILE))
 
 
-def _prominence(prep: Preprocessed, settings: AnalysisSettings, fast_residual_rad: Optional[float] = None) -> float:
+def _prominence(prep: Preprocessed, settings: AnalysisSettings, fast_residual_rad: Optional[float] = None, run_floor=None) -> float:
     """TP prominence: the floor, or mmr_tp_ripple_factor x the larger of the unremoved planetary ripple and the
-    fast residual (`fast_residual`, computed here when not given)."""
-    fast = fast_residual(prep, settings) if fast_residual_rad is None else fast_residual_rad
+    fast residual (`fast_residual`, computed here when not given; `run_floor` as in `fast_part`)."""
+    fast = fast_residual(prep, settings, run_floor=run_floor) if fast_residual_rad is None else fast_residual_rad
     ripple = max(prep.unremoved_ripple_rad, fast)
     return geometry_module.turning_prominence(math.radians(settings.mmr_tp_prominence_floor_deg), settings.mmr_tp_ripple_factor, ripple)
 
 
-def regime_prominence(prep: Preprocessed, settings: AnalysisSettings) -> geometry_module.LocalProminence:
+def regime_prominence(prep: Preprocessed, settings: AnalysisSettings, run_floor=None) -> geometry_module.LocalProminence:
     """The TP prominence of a stretch from the mask of its own samples: a regime between jumps of a
     (`geometry.finish_geometry`) or a run of provisional turning points found at the floor `mmr_tp_prominence_floor_deg`
     (`geometry.local_thresholds`). `_prominence` with the fast residual measured on those samples only; the unremoved
@@ -257,7 +272,7 @@ def regime_prominence(prep: Preprocessed, settings: AnalysisSettings) -> geometr
     must span at least P_f (one cycle of the slowest wave the residual holds). A shorter regime has no measurement of
     its own: NaN, and the geometry keeps the record's prominence there (54 of the UG22 regimes are shorter than P_f).
     A run's ends are where its oscillation starts and stops, so they are trimmed the same way (2001 PG14 33S-2+0-31:
-    10.0 deg on the run at 0.35-2.8 kyr against 21.0 deg of the record)."""
+    10.0 deg on the run at 0.35-2.8 kyr against 21.0 deg of the record). `run_floor` as in `fast_part`."""
     t = np.asarray(prep.t_yr, float)
     window = filtering.window_mask(t, prep.window)
     floor = preprocess_module.fast_reference(prep, settings)  # the slowest wave the fast part holds (`fast_part`)
@@ -275,7 +290,7 @@ def regime_prominence(prep: Preprocessed, settings: AnalysisSettings) -> geometr
         if not np.any(supported) or np.ptp(t[supported]) < floor:
             return NAN
         if not cache:
-            cache.append(fast_part(prep, settings))
+            cache.append(fast_part(prep, settings, run_floor))
         part = cache[0]
         return _prominence(prep, settings, fast_residual(prep, settings, supported, part) if part is not None else 0.0)
 
@@ -331,25 +346,24 @@ def _response_and_energy(series, prep, slow, geometry, context, sampling, settin
     return response, _energy(series, prep, slow, geometry, response, context, sampling, settings, well)
 
 
-def _measure(series, context, sampling, prep, prominence, settings, floor_well=None):
+def _measure(series, context, sampling, prep, prominence, settings, floor_well=None, run_floor=None):
     """Geometry, slow parts, response and energy; measured again on the last regime after a jump of a. Every run of
     turning points and every regime between jumps is selected at its own prominence (`regime_prominence`). A two-body
     angle with its planet saved carries the track of its moving well (`centre_track`): a run whose centre moves is
     tested again in psi = sigma - c(t) (`geometry._classify_run`), its force law is fitted there and R0 reads the
-    full well's periods. `floor_well`: the quasi-satellite well of the G1q pass (`geometry.FloorWell`)."""
+    full well's periods. `floor_well`: the quasi-satellite well of the G1q pass (`geometry.FloorWell`); `run_floor`: the
+    1:1 run-floor model of this pass (`_run_floor_model`), built here when not given."""
     well = centre_track_module.build(series, context, settings, prep.cutoff.cutoff_yr)
     coorbital = response_module.law_planet(series.resonance) is not None
     angle = preprocess_module.filtered_angle(prep, context, sampling.step_yr, coorbital, settings.libration_regime_cuts, floor_well)
-    # a 1:1 run whose turns reflect on a top of the averaged potential has its own floor (W28 C3, `CoorbitalRunFloor`)
-    run_floor = coorbital_geometry.coorbital_run_floor(
-        series, context, prep.t_yr, prep.angle_clean, context.orbital_period_yr, prep.cutoff.cutoff_yr, settings
-    )
+    if run_floor is None:
+        run_floor = _run_floor_model(series, context, prep, settings, floor_well)
     # the turning point the filter's edge trim hides, read on the orbit-averaged raw 1:1 angle (W28 C4)
     edge_turn = coorbital_geometry.coorbital_edge_turn(series, context, prep.t_yr, prep.angle_clean, context.orbital_period_yr, settings)
     # a 1:1 episode ends only at a separatrix; its changes of well and amplitude are annotations (W28 C7)
     wells = coorbital_geometry.coorbital_wells(series, context, settings)
     angle = replace(angle, well_model=well, run_floor=run_floor, edge_turn=edge_turn, coorbital_wells=wells)
-    local = regime_prominence(prep, settings)
+    local = regime_prominence(prep, settings, run_floor)
     geometry = geometry_module.measure_geometry(angle, prominence, settings, local)
     prep.filter_too_slow, prep.gain_at_period_cycle = preprocess_module.filter_guard(
         geometry.period_cycle_yr, prep.cutoff.cutoff_yr, settings, sampling.step_yr
@@ -366,9 +380,28 @@ def _measure(series, context, sampling, prep, prominence, settings, floor_well=N
         )
         slow = preprocess_module.slow_components(series, prep, geometry.period_cycle_yr, settings)
         response, energy = _response_and_energy(series, prep, slow, geometry, context, sampling, settings, well)
-    if decide.run_floor_acts(geometry, settings):
-        geometry.rules_fired = fire(geometry.rules_fired, Rule.COORBITAL_FLOOR_PROFILE)
+    for rule in decide.run_floor_acts(geometry, settings):
+        geometry.rules_fired = fire(geometry.rules_fired, rule)
     return angle, geometry, slow, response, energy
+
+
+def _run_floor_model(series, context, prep, settings, floor_well=None):
+    """The 1:1 run-floor model of one pass (`coorbital_geometry.CoorbitalRunFloor`, None for another angle): a run whose
+    turns reflect on a top of the averaged potential has its own floor (W28 C3); in the G1q pass (`floor_well` given)
+    a run of quasi-satellite turns too (rule coorbital_qs_run_floor). One model per pass, built before the prominence,
+    so the libration image and the geometry read the same floors from one cache."""
+    return coorbital_geometry.coorbital_run_floor(
+        series,
+        context,
+        prep.t_yr,
+        prep.angle_clean,
+        context.orbital_period_yr,
+        prep.cutoff.cutoff_yr,
+        settings,
+        qs_pass=floor_well is not None,
+        qs_floor_yr=prep.period_floor_yr if floor_well is not None else NAN,
+        floor_well=floor_well,
+    )
 
 
 def _episode_responses(series, prep, slow, geometry, context, sampling, energy, response: Response, settings, measured=None) -> list:
@@ -882,11 +915,123 @@ def analyse_mmr(
 
     W29: the outermost call ends with the policy layer (`policy.apply_mmr`: the minimal policy re-reads the finished
     analysis); a pass inside a record's analysis (a derived row,
-    the centre scale, an owner's identity) returns the raw v2 analysis, which the outermost call's layer reads."""
+    the centre scale, an owner's identity) returns the raw v2 analysis, which the outermost call's layer reads. After
+    the policy only the 1:1 coverage audit runs (`coverage_audit`, flags and aud_* columns, never a status)."""
     options = (scan_subresonances, scan_owner, parent, centre_scale, quasi_satellite, subfloor)
     if _ACTION_STEP_CUTS.get() is not None:  # a pass inside a record's analysis: no policy, the outermost call applies it
         return _analyse_mmr_record(series, settings, cells, *options)
-    return policy_module.apply_mmr(_analyse_mmr_record(series, settings, cells, *options), settings)
+    analysis = policy_module.apply_mmr(_analyse_mmr_record(series, settings, cells, *options), settings)
+    _coverage_audit(series, analysis, settings)
+    return analysis
+
+
+def _coverage_audit(series: MMRSeries, analysis: MMRAnalysis, settings: AnalysisSettings) -> None:
+    """The 1:1 coverage audit after the policy (`coverage_audit`; prograde 1:1 only, MMR_COORBITAL_COVERAGE_AUDIT):
+    flags floor_above_own_loop (Layer I) and uncovered_bounded_run (Layer II) into the verdict's flags (they enter
+    `review_reasons`), the aud_* columns into mmr_numbers.csv. Changes no status, level, cap or action."""
+    analysis.extra_columns.update(coverage_audit_module.empty_columns())
+    geometry, prep, context = analysis.geometry, analysis.prep, analysis.context
+    if not settings.mmr_coorbital_coverage_audit or preprocess_module.coorbital_planet(series.resonance) is None:
+        return
+    if geometry is None or prep is None or context is None or analysis.verdict.status == Status.INVALID:
+        return
+    reader = _AuditReader(series, analysis, settings)
+    columns = analysis.extra_columns
+    found = coverage_audit_module.audit(
+        prep.t_yr,
+        prep.angle_unwrapped,
+        context.orbital_period_yr,
+        tuple(prep.window),
+        reader.counted_spans(),
+        settings,
+        reader.well_of,
+        reader.law_of,
+        reader.overlap_of,
+    )
+    columns.update(found.columns)
+    contradiction = coverage_audit_module.floor_contradiction(reader.accepted_floors(), columns)
+    flags = [found.flag] if found.flag else []
+    if contradiction is not None:
+        columns.update(aud_floor_above_loop=contradiction.where, aud_floor_yr=contradiction.floor_yr, aud_loop_yr=contradiction.loop_yr)
+        flags.append(coverage_audit_module.FLAG_FLOOR_ABOVE_LOOP)
+    if flags:
+        analysis.verdict.flags = list(dict.fromkeys(list(analysis.verdict.flags) + flags))
+
+
+class _AuditReader:
+    """What the coverage audit reads of a finished 1:1 analysis: the counted spans, the well, the local law and the
+    classifier's reason for a stretch, and the floors of the accepted runs (`_coverage_audit`). Reporting only."""
+
+    def __init__(self, series: MMRSeries, analysis: MMRAnalysis, settings: AnalysisSettings):
+        self.series, self.analysis, self.settings = series, analysis, settings
+        self.geometry, self.prep, self.context = analysis.geometry, analysis.prep, analysis.context
+        self.eligibility = decide.episode_eligibility(self.geometry, settings)
+
+    def counted_spans(self) -> List[Tuple[float, float]]:
+        """The policy's counted episodes and spans [yr] (`PolicyResult`)."""
+        policy = self.analysis.policy
+        if policy is None:
+            return []
+        counted = set(policy.counted_episode_ids)
+        spans = [(r.t_start_yr, r.t_end_yr) for r in self.geometry.runs if r.episode_id in counted]
+        return spans + [tuple(span) for span in policy.counted_spans_yr]
+
+    def well_of(self, stretch) -> str:
+        """The well of the averaged potential that holds the stretch's swing (`coorbital_geometry.well_of`)."""
+        profile = coorbital_geometry.series_profile(self.series, self.context, stretch.t0_yr, stretch.t1_yr, self.settings)
+        if profile is None:
+            return ''
+        centre = float(coorbital_geometry.theta_of(np.array([stretch.centre_rad]), self.series.resonance.body_coefficient)[0])
+        return coorbital_geometry.well_of(profile, float(np.mod(centre, 2 * np.pi)), stretch.half_amp_rad).name
+
+    def law_of(self, stretch) -> Tuple[float, float, str]:
+        """(K / K_theory, R^2, force check) of the 1:1 law on the stretch +- one half-cycle, at the cutoff a floor of
+        its own period sets (factor x P / FILTER_MIN_LIBRATION_CUTOFFS: the filter keeps the stretch's swing). The check
+        is the law's own `coorbital.force_check` (pass, thin, fail, not_measured): Layer II flags only a stretch it
+        passes, not thin (`coverage_audit.audit`)."""
+        s = self.settings
+        record = coorbital_geometry.series_input(self.series, self.context, self.prep.angle_clean)
+        if record is None:
+            return NAN, NAN, coverage_audit_module.LAW_NOT_MEASURED
+        cutoff = min(self.prep.cutoff.cutoff_yr, s.mmr_coorbital_period_floor_factor * stretch.period_yr / s.filter_min_libration_cutoffs)
+        half = stretch.period_yr / 2
+        law = coorbital_geometry.local_law(record, (stretch.t0_yr - half, stretch.t1_yr + half), cutoff, s)
+        if law is None:
+            return NAN, NAN, coverage_audit_module.LAW_NOT_MEASURED
+        check = coverage_audit_module.LAW_THIN if law.force_check == CheckValue.PASS and law.force_thin else str(law.force_check)
+        return float(law.scale), float(law.r2), check
+
+    def overlap_of(self, stretch) -> str:
+        """Why the classifier did not count the stretch: the reject or ineligible reason of the run that overlaps it
+        most, else why the G1q pass was rejected, else no_run."""
+
+        def overlap(run) -> float:
+            return min(run.t_end_yr, stretch.t1_yr) - max(run.t_start_yr, stretch.t0_yr)
+
+        runs = [r for r in self.geometry.runs if len(r.tp_times_yr) >= 2 and overlap(r) > 0]
+        columns = self.analysis.extra_columns
+        if runs:
+            run = max(runs, key=overlap)
+            if not run.accepted:
+                return str(run.reject_reason)
+            return str(self.eligibility.get(run.episode_id, '')) or coverage_audit_module.OVERLAP_NOT_COUNTED
+        if str(columns.get('geo_qs_pass', '') or '') == quasi_satellite_module.PASS_REJECTED:
+            return f"{coverage_audit_module.OVERLAP_QS_REJECTED}:{columns.get('geo_qs_reject', '')}"
+        return coverage_audit_module.OVERLAP_NO_RUN
+
+    def accepted_floors(self) -> List[Tuple[object, str, float, float]]:
+        """(episode_id, ineligible_reason, floor, loop) of every accepted run with a floor reading: the loop is the
+        median over its turn pairs, or for a run without a loop floor of its own (not_reflection: mixed sites, or QS
+        turns outside the G1q pass) the loop of its first turn pair (`CoorbitalRunFloor.read`, cost; 2015 YA without the
+        rule: 66.1 yr against P 69.3 yr)."""
+        out = []
+        for run in self.geometry.runs:
+            reading = self.geometry.run_floor(run)
+            if run.accepted and reading is not None:
+                loop = float(dict(reading.columns).get('cpl_loop_period_yr', NAN))
+                floor = decide.period_floor(self.geometry, self.settings, run)[0]
+                out.append((run.episode_id, str(self.eligibility.get(run.episode_id, '')), floor, loop))
+        return out
 
 
 def _analyse_mmr_record(
@@ -1028,9 +1173,10 @@ def _analyse_mmr(
 
     # G1f: the pass at the floor of the angle's own averaged potential (the flag above keeps the angle's own floor)
     prep = preprocess_module.preprocess(series, context, sampling, settings, subfloor.period_floor if subfloor else floor, block)
-    fast = fast_residual(prep, settings)
+    run_floor = _run_floor_model(series, context, prep, settings, floor_well)
+    fast = fast_residual(prep, settings, run_floor=run_floor)
     prominence = _prominence(prep, settings, fast)
-    angle, geometry, slow, response, energy = _measure(series, context, sampling, prep, prominence, settings, floor_well)
+    angle, geometry, slow, response, energy = _measure(series, context, sampling, prep, prominence, settings, floor_well, run_floor)
     period = geometry.period_cycle_yr
     sampling.aliased_lines_yr = sampling_module.aliased_lines(
         context.synodic_periods_yr, sampling.step_yr, period, settings.mmr_aliased_line_harmonics, settings.mmr_aliased_line_band_factor
@@ -1925,7 +2071,9 @@ def _other_scales(
     qs = None
     if angle_decision.angle_status != AngleStatus.LIBRATION and sampling.verdict not in response_module.ALIASED:
         qs = quasi_satellite_module.measure(series, context, prep, sampling.step_yr, settings)
-    second, outcome = _quasi_satellite_pass(series, qs, angle_decision, geometry, settings, cells, scan_subresonances, scan_owner, parent)
+    second, outcome, qs = _quasi_satellite_pass(
+        series, qs, angle_decision, geometry, settings, cells, scan_subresonances, scan_owner, parent
+    )
     if second is not None:
         return qs, outcome, second, {}, {}
     sub_args = (series, context, sampling, prep, geometry, angle_decision, settings, cells, scan_subresonances, scan_owner, parent)
@@ -2079,22 +2227,23 @@ def _subfloor_pass(
 
 def _quasi_satellite_pass(
     series, qs, angle_decision, geometry, settings, cells, scan_subresonances, scan_owner, parent
-) -> Tuple[Optional[MMRAnalysis], str]:
+) -> Tuple[Optional[MMRAnalysis], str, object]:
     """G1q (`quasi_satellite`): (the analysis at the quasi-satellite floor, 'kept') when the angle has a quasi-satellite
     well (`qs`), no libration over the record at the first pass (`geometry`, `angle_decision`), visits the well long
     enough, that floor is below the tadpole floor, and the pass at it holds a librating episode centred in the well and
     keeps as many librating episodes outside the well as the first pass (the short cutoff leaves the planet's wiggles
     in a horseshoe, whose cycle closed by its return at P_c may not close there: 2019 GF1); else (None, outcome): ''
-    when the rule does not fire, 'resample' when the step cannot hold its cutoff, 'rejected' when the pass fails.
+    when the rule does not fire, 'resample' when the step cannot hold its cutoff, 'rejected' when the pass fails; the
+    third item is `qs`, which on a rejected pass carries why (`QuasiSatellite.rejection`, `qs_rejection`).
     The trigger (W28 C5, rule qs_trigger, fired on the first pass's geometry whenever the pass runs): a stay of
     mmr_coorbital_qs_trigger_periods x P_QS in the well holding a turn of the averaged angle (`QuasiSatellite.turns`)."""
     if qs is None or angle_decision.angle_status == AngleStatus.LIBRATION:
-        return None, ''
+        return None, '', qs
     scratch = Ledger.from_settings(settings)
     if not (qs.visits(settings, scratch) and qs.turns(scratch) and qs.lowers_floor(scratch)):
-        return None, ''
+        return None, '', qs
     if not qs.realizable:
-        return None, quasi_satellite_module.PASS_RESAMPLE
+        return None, quasi_satellite_module.PASS_RESAMPLE, qs
     geometry.rules_fired = fire(geometry.rules_fired, Rule.QS_TRIGGER)
     second = analyse_mmr(
         series,
@@ -2112,15 +2261,78 @@ def _quasi_satellite_pass(
     outside = len([e for e in found if not well.holds(e)]) + _kept_in_regime_change(found, first_outside, well)
     before = len(first_outside)
     if not any(well.holds(e) for e in found) or not qs.keeps_outside(outside, before, Ledger.from_settings(settings)):
-        return None, quasi_satellite_module.PASS_REJECTED
+        rejection = qs_rejection(second.geometry, well, found, settings)
+        return None, quasi_satellite_module.PASS_REJECTED, replace(qs, rejection=tuple(rejection.items()))
     ledger = Ledger.from_settings(settings)
     # the turn after the floor: the first two entries stay the visit and the floor (verdict_text reads them)
     entries = [qs.visits(settings, ledger), qs.lowers_floor(ledger), qs.turns(ledger), qs.keeps_outside(outside, before, ledger)]
+    entries += _qs_run_floor_entries(second.geometry, well, found, ledger, settings)
     second.verdict.decision_path = entries + list(second.verdict.decision_path)
     second.verdict.rules_fired = decide.rules_fired(geometry, second.verdict.rules_fired)  # the first pass's rules acted too
     second.extra_columns.update(quasi_satellite_module.columns(qs, quasi_satellite_module.PASS_KEPT))
     second.extra_columns['geo_qs_n_outside_episodes'] = float(outside)
-    return second, quasi_satellite_module.PASS_KEPT
+    return second, quasi_satellite_module.PASS_KEPT, qs
+
+
+def qs_rejection(geometry: Optional[Geometry], well, found: List[geometry_module.Episode], settings: AnalysisSettings) -> dict:
+    """Why a G1q pass was rejected (reporting only; first-pass row columns `geo_qs_reject`, `geo_qs_run_*`): read on its
+    best in-well run (the longest run of >= 2 TPs the well holds, else the longest run): no_turning_points (no such
+    run), keeps_outside (an in-well librating episode was found, the pass lost an outside one), no_run_in_well, else
+    the run's `ineligible_reason` (below_period_floor, centre_turns, before_last_jump, ...) or, for a run the geometry
+    did not accept, 'not_accepted:<reject_reason>'. The run's floor (`decide.period_floor`) and its own reading
+    (`cpl_*`: source, loop, K / K_theory, R^2) name the failing sub-test."""
+    columns = quasi_satellite_module.rejection_none()
+    runs = [r for r in (geometry.runs if geometry is not None else ()) if len(r.tp_times_yr) >= 2]
+    if not runs:
+        columns['geo_qs_reject'] = quasi_satellite_module.REJECT_NO_TP
+        return columns
+    inside = [r for r in runs if well.holds(r)]
+    run = max(inside or runs, key=lambda r: (r.t_end_yr - r.t_start_yr, len(r.tp_times_yr)))
+    if any(well.holds(e) for e in found):
+        reason = quasi_satellite_module.REJECT_KEEPS_OUTSIDE
+    elif not inside:
+        reason = quasi_satellite_module.REJECT_NO_RUN_IN_WELL
+    elif not run.accepted:
+        reason = f'not_accepted:{run.reject_reason}'
+    else:
+        reason = str(decide.episode_eligibility(geometry, settings).get(run.episode_id, ''))
+    reading = dict(geometry.run_floor(run).columns) if geometry.run_floor(run) is not None else {}
+    columns.update(
+        geo_qs_reject=reason,
+        geo_qs_run_t0_yr=float(run.t_start_yr),
+        geo_qs_run_t1_yr=float(run.t_end_yr),
+        geo_qs_run_n_tp=float(len(run.tp_times_yr)),
+        geo_qs_run_period_yr=float(run.period_med_yr) if run.accepted else 2 * float(np.median(np.diff(run.tp_times_yr))),
+        geo_qs_run_half_amp_deg=math.degrees(run.half_amp_med_rad) if is_finite(run.half_amp_med_rad) else NAN,
+        geo_qs_run_floor_yr=float(decide.period_floor(geometry, settings, run)[0]),
+        geo_qs_run_floor_source=str(reading.get('cpl_floor_source', '')),
+        geo_qs_run_loop_yr=float(reading.get('cpl_loop_period_yr', NAN)),
+        geo_qs_run_K_over_K_theory=float(reading.get('cpl_law_K_over_K_theory', NAN)),
+        geo_qs_run_R2=float(reading.get('cpl_law_R2', NAN)),
+    )
+    return columns
+
+
+def _qs_run_floor_entries(geometry: Optional[Geometry], well, found, ledger: Ledger, settings: AnalysisSettings) -> list:
+    """The ledger entry of rule coorbital_qs_run_floor on a kept G1q pass: the QS floor (column flt_qs_floor_yr) above
+    the first in-well librating episode's own loop floor, when that episode reads one (source qs_loop); after G1q's own
+    entries (verdict_text reads the first two)."""
+    if geometry is None:
+        return []
+    for episode in found:
+        own = geometry.run_floor(episode)
+        if well.holds(episode) and own is not None and own.holds and own.source == coorbital_geometry.FLOOR_SOURCE_QS_LOOP:
+            entry = ledger.compare(
+                quasi_satellite_module.QS_RUN_FLOOR,
+                float(geometry.period_floor_yr),
+                Op.GT,
+                float(own.floor_yr),
+                'yr',
+                'flt_qs_floor_yr',
+                setting=own.setting,
+            )
+            return [entry]
+    return []
 
 
 def _kept_in_regime_change(found: List[geometry_module.Episode], outside: List[geometry_module.Episode], well) -> int:

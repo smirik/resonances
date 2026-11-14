@@ -197,6 +197,22 @@ def test_c3_the_profile_floor_names_the_loop_and_both_floors():
     assert vt.profile_floor_clause(_facts(row=row, episodes=episodes, verdict={'rules_fired': []})) == ''
 
 
+def test_the_qs_run_floor_names_the_loop_and_the_qs_floor():
+    """Rule coorbital_qs_run_floor (YORP c046): loop 50.5 yr through its QS turns, floor 0.7 x 50.5 = 35.35 yr, QS floor
+    55.66 yr; only when the rule acted; a profile_loop row is not this rule's."""
+    episodes = [
+        {'episode_id': 0, 'cpl_floor_source': 'profile_loop', 'cpl_floor_yr': 59.4, 'cpl_loop_period_yr': 118.7},
+        {'episode_id': 1, 'cpl_floor_source': 'qs_loop', 'cpl_floor_yr': 35.35, 'cpl_loop_period_yr': 50.5},
+    ]
+    row = {'flt_qs_floor_yr': 55.66}
+    f = _facts(row=row, episodes=episodes, verdict={'rules_fired': ['coorbital_qs_run_floor']}, decisive_episode_id=1)
+    assert vt.qs_run_floor_clause(f) == (
+        '1:1 floor of #1: its turns all lie in the quasi-satellite well; the loop through them takes 50.5 yr, so its own '
+        'floor is 35.4 yr (the QS floor 55.7 yr)'
+    )
+    assert vt.qs_run_floor_clause(_facts(row=row, episodes=episodes, verdict={'rules_fired': []})) == ''
+
+
 def test_c4_the_edge_turn_is_read_on_the_averaged_angle_and_only_closes_the_cycle():
     """g02-2 A (2006 BZ147): the exit turn at 960.47 yr, planet top, out/in 0.895, a crosses a_P."""
     turn = EdgeTurn('exit', 0, 960.47, 0.0, -1, 3.1, site='planet', out_in=0.895, a_crosses=True, outcome='closes')

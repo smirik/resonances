@@ -299,7 +299,14 @@ tadpole period $P_\text{orb}/\sqrt{27\mu/4}$ (Jupiter 148 yr, Earth 222 yr). A q
 from the same averaged potential: $\omega_{QS}^2 = 3\mu n^2\tilde R''(\theta_c)$ in the well about 0. When the
 orbit-averaged angle turns inside that well during a stay of at least one loop of the averaged potential through its
 own turns (`MMR_COORBITAL_QS_TRIGGER_PERIODS`) and the first pass found no libration, the record is analyzed again
-with the floor 0.5 $P_{QS}$, $P_{QS} = 2\pi/\omega_{QS}$ (`MMR_COORBITAL_QS_FLOOR`, rule G1q). A horseshoe that turns close to the planet is faster than a
+with the floor 0.5 $P_{QS}$, $P_{QS} = 2\pi/\omega_{QS}$ (`MMR_COORBITAL_QS_FLOOR`, rule G1q). $P_{QS}$ is the period at
+the bottom of the well, and a low-$e$ quasi-satellite well softens towards its barrier: the period falls with the
+amplitude (54509 YORP: 112 yr at 1°, 49.9 yr at 26°), so in that pass a run whose turns all lie in the well has the
+floor min(0.5 $P_{QS}$, 0.7 $T$ of the loop through its own turns), read by the prominence too
+(`MMR_COORBITAL_QS_RUN_FLOOR`, `MMR_COORBITAL_QS_LOOP_FACTOR`, rule `coorbital_qs_run_floor`; an 11-TP loop of 50 yr against a 55.7-yr floor). That
+loop is the prediction at the run's own amplitude (counted runs: $P/T$ = 0.84–1.05), so the factor carries no margin
+for extrapolating from $P(0)$; it is not below the period the pass's filter keeps at gain `MMR_L8_GAIN_FAIL` ($P_c$).
+A run slower than the QS floor but faster than $2P_c$ is `filter_too_slow`, as any such libration. A horseshoe that turns close to the planet is faster than a
 tadpole as well: a run whose turns all reflect on a top (below) has the floor 0.5 $T$ of the loop through its own
 turns, when its local law has $K/K_\text{th} > 0$ (`MMR_COORBITAL_PROFILE_FLOOR`, rule `coorbital_floor_profile`;
 2003 YN107: 103 yr against a 119-yr loop and a 111-yr tadpole floor). The fastest such loop of a physical horseshoe,

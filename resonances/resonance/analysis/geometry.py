@@ -899,15 +899,20 @@ class FloorWell:
         episode of several wells (`Episode.several_wells`, a 1:1 libration whose well changes, W28 C7) holds the well when
         one of its full-cycle centres lies in it: its shortest libration is the one in that well (164207 1E-1: a
         quasi-satellite of 70-yr cycles, then a horseshoe, in one episode)."""
-        inside = (self.t_yr >= episode.t_start_yr) & (self.t_yr <= episode.t_end_yr)
+        centres = np.array([episode.centre_mod_2pi_rad])
+        if episode.several_wells:
+            centres = np.append(centres, cycle_centres(episode.tp_times_yr, episode.tp_values_rad)[1])
+        return self.holds_span(episode.t_start_yr, episode.t_end_yr, centres)
+
+    def holds_span(self, t_start_yr: float, t_end_yr: float, centres_rad) -> bool:
+        """`holds` on a span [yr] and its centre(s) [rad]: one of them within the well's median half-width of its median
+        centre over the span (MMR: also a run's turning points before it is an episode, `CoorbitalRunFloor.read`)."""
+        inside = (self.t_yr >= t_start_yr) & (self.t_yr <= t_end_yr)
         centre, halfwidth = self.centre_rad[inside], self.halfwidth_rad[inside]
         finite = np.isfinite(centre) & np.isfinite(halfwidth)
         if not np.any(finite) or np.count_nonzero(finite) < self.min_share * len(finite):
             return False
-        centres = np.array([episode.centre_mod_2pi_rad])
-        if episode.several_wells:
-            centres = np.append(centres, cycle_centres(episode.tp_times_yr, episode.tp_values_rad)[1])
-        offset = np.mod(centres - float(np.median(centre[finite])) + np.pi, TWO_PI) - np.pi
+        offset = np.mod(np.asarray(centres_rad, dtype=float) - float(np.median(centre[finite])) + np.pi, TWO_PI) - np.pi
         return bool(np.any(np.abs(offset) < float(np.median(halfwidth[finite]))))
 
 
@@ -1716,9 +1721,16 @@ def libration_image(
     floor_prominence_rad: float,
     settings: AnalysisSettings,
     floor_band: float = 0.0,
+    run_floor_of: Optional[Callable[[np.ndarray, np.ndarray], float]] = None,
 ) -> np.ndarray:
     """lowpass(x, P_c) - lowpass(x, P_floor) on the samples of every libration run, 0 elsewhere [rad, signed]: what
     the run's own oscillation x leaves in `fast_part`.
+
+    `run_floor_of` (TP times [yr], TP values [rad]) -> the run's own floor [yr] or nan: a run below P_floor is a
+    libration when it reaches min(P_floor, its own floor) (MMR: a quasi-satellite run inside the well of the G1q pass,
+    whose floor is the loop through its own turns, rule coorbital_qs_run_floor; nan for every other run, so the image
+    reads the floor the decision reads); the two filters stay at P_floor, the split `fast_part` makes. Called only
+    for runs below P_floor.
 
     The runs are those `geometry.local_thresholds` selects at its own prominence: the turning points of sigma_f at the
     floor mmr_tp_prominence_floor_deg split by `geometry.split_runs`, of >= libration_min_turning_points TPs. A run is
@@ -1750,7 +1762,12 @@ def libration_image(
         periods = times[2:] - times[:-2]
         # a conventional floor: a run within `floor_band` below it is no faster wave (W31, 2001 WK15: 142.9 yr / 150)
         floor = period_floor_yr * (1.0 - floor_band)
-        if len(run) < settings.libration_min_turning_points or not len(periods) or float(np.median(periods)) < floor:
+        if len(run) < settings.libration_min_turning_points or not len(periods):
+            continue
+        if float(np.median(periods)) < floor and run_floor_of is not None:
+            own = run_floor_of(np.asarray(turning.times_yr, float)[run], np.asarray(turning.values_rad, float)[run])
+            floor = min(floor, own) if np.isfinite(own) and own > 0 else floor
+        if float(np.median(periods)) < floor:
             continue
         index = np.asarray(turning.indices, int)[run]
         lo, hi = max(int(index[0]) - margin, 0), min(int(index[-1]) + margin, len(t) - 1)

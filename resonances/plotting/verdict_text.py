@@ -1822,7 +1822,7 @@ def rule_clauses(f: MMRFacts) -> str:
     """'; '-joined clauses of the geometry rules on this record (the scale of the center, quasi-satellite floor, phase
     return, edges, the 1:1 profile floor and a turn read in the edge trim)."""
     parts = [centre_scale_clause(f), quasi_satellite_clause(f), subfloor_clause(f), return_clause(f)] + edge_clauses(f)
-    parts += [profile_floor_clause(f), edge_turn_clause(f)]  # W28 C3, C4 (1:1 only)
+    parts += [profile_floor_clause(f), qs_run_floor_clause(f), edge_turn_clause(f)]  # W28 C3, C4, W38 (1:1 only)
     return '; '.join(part for part in parts if part)
 
 
@@ -1995,6 +1995,25 @@ def profile_floor_clause(f: MMRFacts) -> str:
     )
 
 
+def qs_run_floor_clause(f: MMRFacts) -> str:
+    """Rule coorbital_qs_run_floor (G1q pass; episodes.csv cpl_*): '1:1 floor of #1: its turns all lie in the
+    quasi-satellite well; the loop through them takes 50.5 yr, so its own floor is 35.4 yr (the QS floor 55.7 yr)'.
+    The deciding episode's, else the first qs_loop run; '' when the rule did not act."""
+    if str(Rule.COORBITAL_QS_RUN_FLOOR) not in f.v.rules_fired:
+        return ''
+    rows = [row for row in f.episodes.rows if _text(row.get('cpl_floor_source')) == 'qs_loop' and finite(row.get('cpl_floor_yr'))]
+    if not rows:
+        return ''
+    decisive = f.episodes.decisive or {}
+    row = next((r for r in rows if _same_id(r.get('episode_id'), decisive.get('episode_id'))), rows[0])
+    qs_floor = f.row.get('flt_qs_floor_yr')
+    return (
+        f'1:1 floor of #{fmt(row.get("episode_id"))}: its turns all lie in the quasi-satellite well; the loop through '
+        f'them takes {years(row.get("cpl_loop_period_yr"))}, so its own floor is {years(row.get("cpl_floor_yr"))}'
+        + (f' (the QS floor {years(qs_floor)})' if finite(qs_floor) else '')
+    )
+
+
 def edge_turn_clause(f: MMRFacts) -> str:
     """Rule coorbital_edge_turn (C4, card g02-2 A): 'the turn at 960 yr lies in the filter’s edge trim: read on σ
     averaged over 3 orbits, a reflection on the planet’s top (out/in 0.9, a crosses a_P); it only closes the cycle'.
@@ -2028,7 +2047,11 @@ def _run_floor(f: MMRFacts, row: Mapping[str, Any]) -> float:
         return period_floor(g, f.s, run)[0]
     if _text(row.get('cpl_floor_source')) == 'profile_loop' and finite(row.get('cpl_floor_yr')):
         return float(row['cpl_floor_yr'])
-    return _float(f.row.get('flt_period_floor_yr'))
+    floor = _float(f.row.get('flt_period_floor_yr'))
+    # coorbital_qs_run_floor: a qs_loop reading exists only for a run inside the G1q well (`CoorbitalRunFloor.read`)
+    if _text(row.get('cpl_floor_source')) == 'qs_loop' and finite(row.get('cpl_floor_yr')):
+        return min(float(row['cpl_floor_yr']), floor) if finite(floor) else float(row['cpl_floor_yr'])
+    return floor
 
 
 def uncounted_rows(rows: Sequence[Mapping[str, Any]]) -> List[Mapping[str, Any]]:

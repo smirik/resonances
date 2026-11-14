@@ -63,12 +63,13 @@ NEGATIVE_STATUSES = frozenset({'near_separatrix', 'uncertain', 'invalid'})
 NON_RESONANT = 'non_resonant'
 
 
-def status_selected(mode, status, libration_origin: str = '', action: str = '', confidence: str = '') -> bool:
+def status_selected(mode, status, libration_origin: str = '', action: str = '', confidence: str = '', flags='') -> bool:
     """Whether a row with this status string (and libration origin) is saved/plotted under `mode`.
 
     `status` None (no verdict) is selected by `all` only. `libration_origin` is the verdict's
     (kinematic, induced, subresonance, dynamic, unknown, or '' when nothing is bounded). `action` and `confidence`
-    are read by `review` only (`verdict.needs_review`); without them `review` selects what `nonzero` does.
+    are read by `review` only (`verdict.needs_review`); without them `review` selects what `nonzero` does. `flags` (a
+    list or the ';'-joined column) too: a REVIEW_FLAGS flag (the 1:1 coverage audit) puts a row in `review`.
     Every caller (save, the release of unplotted arrays, plot, the ensemble figure) passes the same verdict fields.
     """
     mode = _normalize_mode(mode)
@@ -88,7 +89,7 @@ def status_selected(mode, status, libration_origin: str = '', action: str = '', 
     if mode == SavePlotMode.NONZERO:
         return status != NON_RESONANT or origin != ''
     if mode == SavePlotMode.REVIEW:
-        return status != NON_RESONANT or origin != '' or needs_review(confidence, action, origin)
+        return status != NON_RESONANT or origin != '' or needs_review(confidence, action, origin, flags=flags)
     if mode == SavePlotMode.NEGATIVE:
         return status in NEGATIVE_STATUSES
     return False

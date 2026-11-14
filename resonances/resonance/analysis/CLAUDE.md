@@ -57,8 +57,9 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   its N by held-out prediction (`fit_window_potential`, `SEPARATRIX_HOLDOUT_GAIN`; σ-only R0 keeps the in-sample
   gain); `with_slow_check`/`agree_fraction` count eligible windows only (none: not_measured). A free constant on the
   visited arc is worse than either alone (BG41 0.25, many passing rows fail): never combine them.
-- `policy` (W29; docs/physics/status-tree.md#minimal-policy; the `v2` switch was removed in W34): the last step
-  of `analyse_mmr` (outermost call only: an inner pass returns the raw v2 analysis; derived rows first, then the
+- `policy` (W29; docs/physics/status-tree.md#minimal-policy; the `v2` switch was removed in W34): the last step that
+  decides in `analyse_mmr` (after it only the 1:1 coverage audit, `mmr/coverage_audit.py`: flags and `aud_*` columns,
+  `verdict.REVIEW_FLAGS` put the row in the review queue; never a status) (outermost call only: an inner pass returns the raw v2 analysis; derived rows first, then the
   catalogue row, then the multiplet status), `analyse_secular` and `analyse_zlk` (after its columns). It re-reads the
   finished v2 analysis: status from the geometry (`LEAVES`/`HANDLERS` map every `rec_rule` of `mmr.decide`; a new
   leaf needs a mapping, `test_policy_mapping` fails otherwise; the single 1:1 legs are read only on G4c and rule C,

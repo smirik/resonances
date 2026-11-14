@@ -601,6 +601,11 @@ FLOOR_SOURCE_NOT_REFLECTION = 'not_reflection'  # a turn inside a well (tadpole,
 FLOOR_SOURCE_NO_LOOP = 'no_loop'  # no loop of the potential joins its turns (a top between them, a separatrix)
 FLOOR_SOURCE_LAW = 'law_not_positive'  # the local 1:1 law has K / K_theory <= 0 or cannot be fitted on the run
 FLOOR_SOURCE_NO_PROFILE = 'no_profile'
+# rule coorbital_qs_run_floor (G1q pass only): factor x the loop through the run's own turns, every one in the QS well
+FLOOR_SOURCE_QS_LOOP = 'qs_loop'
+# such a run whose loop floor cannot change its decision (not below the QS floor, or the run not faster than the QS
+# floor): the QS floor holds and the costly law guard is not fitted (2010 CG236: 5 s on its 1-kyr QS run)
+FLOOR_SOURCE_QS_MOOT = 'qs_loop_moot'
 REFLECTION_SITES = (SITE_PLANET, SITE_L3)
 LOOP_PAIRS_MAX = 9  # numerical (cost): the loop period of a run is the median over this many of its turn pairs
 
@@ -616,8 +621,23 @@ class CoorbitalRunFloor:
     the force that reverses it is the planet's. Any other run (a turn inside a tadpole or quasi-satellite well, no loop
     between its turns such as 2022 AP1's 148 / 186 deg about L3, or no positive law) has no floor of its own and keeps
     the angle's (the tadpole floor; the QS well of G1q keeps its own, `mmr.decide.period_floor`). The reading's columns
-    (the C2 leg columns of its first and last turn, `cpl_turn_sites`, `cpl_law_K_over_K_theory`, `cpl_floor_yr`, `cpl_floor_source`) go to
+    (the C2 leg columns of its first and last turn, `cpl_turn_sites`, `cpl_law_K_over_K_theory`, `cpl_law_R2`, `cpl_floor_yr`, `cpl_floor_source`) go to
     episodes.csv for every run of >= 2 TPs.
+
+    Rule coorbital_qs_run_floor (`qs_pass`, the model of the G1q pass only, MMR_COORBITAL_QS_RUN_FLOOR): a run whose
+    turns all lie inside the quasi-satellite well (`turn_site` qs) gets the floor factor x the loop through its own
+    turns (median over its pairs, the same law guard) when the run also lies in the pass's well (`floor_well`), source
+    FLOOR_SOURCE_QS_LOOP; `decide.period_floor` takes min(the QS floor, this floor). The floor is
+    mmr_coorbital_qs_loop_factor x the loop (`qs_loop_floor`), not below the period the pass's filter keeps at gain
+    mmr_l8_gain_fail. Why: the QS floor is factor x the small-amplitude P_QS, the period at the bottom of the well,
+    and the low-e QS well softens towards its barrier (the period falls with the amplitude: 54509 YORP 112 yr at 1 deg,
+    49.9 yr at 26 deg), so P(0) is no lower bound there. The loop through the run's own turns is a prediction at the
+    run's own amplitude (counted QS runs: P / loop 0.84-1.05), so its factor needs no margin for extrapolating from
+    P(0): a run faster than 0.7 of it is not moved by the Earth's force (synthetic sine and 3x-force loops at P / loop
+    0.54-0.65, K / K_theory up to 2.7, which the law guard K > 0 and the force band [1/3, 3] both pass). Mixed qs/planet
+    turns stay not_reflection; the first pass and G1f never read this branch. A QS run whose loop floor could not
+    change the decision (not below `qs_floor_yr`, or the run not faster than it) is FLOOR_SOURCE_QS_MOOT, without the
+    law fit (its cost: 5 s on 2010 CG236's 1-kyr run).
 
     Why: the tadpole floor P / sqrt(27 mu / 4) / 2 is the shortest tadpole libration, but a horseshoe that turns close to
     the planet is faster (2003 YN107: a closed 103-yr cycle turning 2 deg from the Earth, loop 119 yr, under the 111-yr
@@ -634,6 +654,51 @@ class CoorbitalRunFloor:
     cutoff_yr: float
     settings: AnalysisSettings
     cache: Dict[tuple, object] = field(default_factory=dict)  # run_key -> RunFloor
+    qs_pass: bool = False  # the model of the G1q pass: a run of QS turns gets its own loop floor (coorbital_qs_run_floor)
+    qs_floor_yr: float = NAN  # the pass's QS floor: a QS loop floor that cannot go below it is moot (FLOOR_SOURCE_QS_MOOT)
+    floor_well: Optional[object] = None  # the G1q pass's `geometry.FloorWell`: a qs_loop run lies in it (None: not read)
+    floors: Dict[tuple, float] = field(default_factory=dict)  # TP times -> floor, the libration image's (`floor_of`)
+
+    def floor_of(self, tp_times_yr, tp_values_rad) -> float:
+        """The qs_loop floor [yr] of the run through these turning points (`read`), nan for any other reading: the
+        per-run floor the libration image of the G1q pass reads (`geometry.libration_image`, `run_floor_of`). Only a
+        qs_loop floor, which `read` gives inside the pass's well only: there the decision reads min(QS floor, it), and
+        it reads no profile_loop floor inside the well (`decide.period_floor`), so the image and the decision read the
+        same floor of every run."""
+        key = tuple(np.round(np.asarray(tp_times_yr, dtype=float), 6))
+        if key not in self.floors:
+            floor, _, source, _ = self.read(tp_times_yr, tp_values_rad)
+            self.floors[key] = float(floor) if source == FLOOR_SOURCE_QS_LOOP else NAN
+        return self.floors[key]
+
+    def qs_loop_floor(self, loop_yr: float) -> Tuple[float, str]:
+        """(floor [yr], its setting) of a quasi-satellite run whose loop through its own turns takes `loop_yr`:
+        mmr_coorbital_qs_loop_factor x the loop, but not below the period at which the pass's own filter keeps gain
+        mmr_l8_gain_fail (`qs_gain_floor_yr`: P_c for N = 2 at 0.5; a faster run is mostly erased by the filter, L8
+        fails, its turning points are no measurement of its motion)."""
+        own = float(self.settings.mmr_coorbital_qs_loop_factor * loop_yr)
+        gain = qs_gain_floor_yr(self.cutoff_yr, self.settings)
+        return (own, 'mmr_coorbital_qs_loop_factor') if not own < gain else (gain, 'mmr_l8_gain_fail')
+
+    def _qs_floor_moot(self, tp_times_yr: np.ndarray, loop_yr: float) -> bool:
+        """A QS run's loop floor cannot change what the QS floor decides: the floor (`qs_loop_floor`) would not be below
+        the QS floor, or the run (median full period t_i+2 - t_i, two TPs: twice the half-cycle; the same TPs and the
+        same formula as the decision's `Episode.period_med_yr`) is not faster than the QS floor."""
+        if not np.isfinite(self.qs_floor_yr):
+            return False
+        times = np.asarray(tp_times_yr, dtype=float)
+        period = float(np.median(times[2:] - times[:-2])) if len(times) >= 3 else 2 * float(np.median(np.diff(times)))
+        return bool(self.qs_loop_floor(loop_yr)[0] >= self.qs_floor_yr or period >= self.qs_floor_yr)
+
+    def _in_floor_well(self, times: np.ndarray, values: np.ndarray) -> bool:
+        """The run of these TPs lies in the pass's well (`FloorWell.holds_span` on its mean midpoint, as `holds` reads
+        an episode); True without a well (a caller that reads the turns only)."""
+        if self.floor_well is None:
+            return True
+        from resonances.resonance.analysis.geometry import midpoint_values  # geometry does not import this module
+
+        centre = float(np.mean(midpoint_values(values)) % TWO_PI)
+        return bool(self.floor_well.holds_span(float(times[0]), float(times[-1]), [centre]))
 
     def __call__(self, run):
         from resonances.resonance.analysis.geometry import RunFloor, run_key  # geometry does not import this module
@@ -647,7 +712,9 @@ class CoorbitalRunFloor:
     def read(self, tp_times_yr, tp_values_rad) -> Tuple[float, str, str, Dict[str, object]]:
         """(floor [yr] or nan, its setting, source FLOOR_SOURCE_*, columns) of one run's turning points."""
         columns: Dict[str, object] = {name: ('' if name in LEG_TEXT_COLUMNS else NAN) for name in LEG_COLUMNS}
-        columns.update(cpl_turn_sites='', cpl_law_K_over_K_theory=NAN, cpl_floor_yr=NAN, cpl_floor_source=FLOOR_SOURCE_NO_PROFILE)
+        columns.update(
+            cpl_turn_sites='', cpl_law_K_over_K_theory=NAN, cpl_law_R2=NAN, cpl_floor_yr=NAN, cpl_floor_source=FLOOR_SOURCE_NO_PROFILE
+        )
         times, values = np.asarray(tp_times_yr, dtype=float), np.asarray(tp_values_rad, dtype=float)
         turn_t, turn_sigma = averaged_turns(self.t_yr, self.averaged, times, values)
         if len(times) < 2 or not np.all(np.isfinite(turn_sigma)):
@@ -658,9 +725,12 @@ class CoorbitalRunFloor:
         theta = theta_of(turn_sigma, self.body_coefficient)
         sites = [turn_site(profile, x) for x in theta]
         reflections = all(site in REFLECTION_SITES for site in sites)
+        # rule coorbital_qs_run_floor: in the G1q pass a run whose every turn lies in the QS well has a loop of its own
+        quasi_satellite = self.qs_pass and all(site == SITE_QS for site in sites) and self._in_floor_well(times, values)
+        own_loop = reflections or quasi_satellite
         # the loops of its consecutive pairs: at most LOOP_PAIRS_MAX of them, evenly spread (a 20-kyr QS run has
-        # 5000 turns); the first pair alone where the run is no reflection (a column only)
-        pairs = np.unique(np.linspace(0, len(theta) - 2, min(len(theta) - 1, LOOP_PAIRS_MAX if reflections else 1)).round().astype(int))
+        # 5000 turns); the first pair alone where the run has no loop floor (a column only)
+        pairs = np.unique(np.linspace(0, len(theta) - 2, min(len(theta) - 1, LOOP_PAIRS_MAX if own_loop else 1)).round().astype(int))
         loops = [loop_period(profile, theta[i : i + 2]) for i in pairs]
         loop = float(np.median(loops)) if np.all(np.isfinite(loops)) else NAN
         half = float(np.median(np.diff(times)))
@@ -669,12 +739,15 @@ class CoorbitalRunFloor:
         entry, exit_ = (turn_physics(profile, self.t_yr, theta_all, self.a_averaged, float(turn_t[i]), (near, far)) for i in (0, -1))
         columns.update(leg_columns(entry, exit_, loop))
         columns['cpl_turn_sites'] = ';'.join(sites)
-        if not reflections:
+        if not own_loop:
             columns['cpl_floor_source'] = FLOOR_SOURCE_NOT_REFLECTION
             return NAN, '', FLOOR_SOURCE_NOT_REFLECTION, columns
         if not (np.isfinite(loop) and loop > 0):
             columns['cpl_floor_source'] = FLOOR_SOURCE_NO_LOOP
             return NAN, '', FLOOR_SOURCE_NO_LOOP, columns
+        if not reflections and self._qs_floor_moot(times, loop):
+            columns['cpl_floor_source'] = FLOOR_SOURCE_QS_MOOT
+            return NAN, '', FLOOR_SOURCE_QS_MOOT, columns
         law = (
             local_law(self.record, (float(times[0]) - half, float(times[-1]) + half), self.cutoff_yr, self.settings)
             if self.record
@@ -682,20 +755,40 @@ class CoorbitalRunFloor:
         )
         scale = float(law.scale) if law is not None else NAN
         columns['cpl_law_K_over_K_theory'] = scale
+        columns['cpl_law_R2'] = float(law.r2) if law is not None else NAN
         if not (np.isfinite(scale) and scale > 0):
             columns['cpl_floor_source'] = FLOOR_SOURCE_LAW
             return NAN, '', FLOOR_SOURCE_LAW, columns
-        floor = float(self.settings.mmr_coorbital_period_floor_factor * loop)
-        columns.update(cpl_floor_yr=floor, cpl_floor_source=FLOOR_SOURCE_LOOP)
-        return floor, 'mmr_coorbital_period_floor_factor', FLOOR_SOURCE_LOOP, columns
+        if reflections:
+            floor, setting, source = (
+                float(self.settings.mmr_coorbital_period_floor_factor * loop),
+                'mmr_coorbital_period_floor_factor',
+                FLOOR_SOURCE_LOOP,
+            )
+        else:
+            (floor, setting), source = self.qs_loop_floor(loop), FLOOR_SOURCE_QS_LOOP
+        columns.update(cpl_floor_yr=floor, cpl_floor_source=source)
+        return floor, setting, source, columns
 
 
 def coorbital_run_floor(
-    series, context, t_yr, raw_sigma, orbit_period_yr: float, cutoff_yr: float, settings
+    series,
+    context,
+    t_yr,
+    raw_sigma,
+    orbit_period_yr: float,
+    cutoff_yr: float,
+    settings,
+    qs_pass: bool = False,
+    qs_floor_yr: float = NAN,
+    floor_well=None,
 ) -> Optional[CoorbitalRunFloor]:
     """The `CoorbitalRunFloor` of a prograde 1:1 record (None for another angle, without the planet's mass and mean
     motion, or with MMR_COORBITAL_PROFILE_FLOOR off): the averaged angle and a over one orbital period (the edge rule's
-    `geometry.orbit_averaged`), the record input of the local law."""
+    `geometry.orbit_averaged`), the record input of the local law. `qs_pass`: the model of the G1q pass, whose runs of
+    quasi-satellite turns get their own loop floor (rule coorbital_qs_run_floor, MMR_COORBITAL_QS_RUN_FLOOR);
+    `qs_floor_yr` its QS floor (nan: every such run is read in full); `floor_well` its `geometry.FloorWell` (a qs_loop
+    run lies in it; None: the turns alone decide)."""
     from resonances.resonance.analysis.geometry import orbit_averaged
     from resonances.resonance.analysis.mmr.preprocess import coorbital_inputs, coorbital_planet  # see `series_profile`
 
@@ -713,7 +806,20 @@ def coorbital_run_floor(
         record=series_input(series, context, raw_sigma),
         cutoff_yr=float(cutoff_yr),
         settings=settings,
+        qs_pass=bool(qs_pass and settings.mmr_coorbital_qs_run_floor),
+        qs_floor_yr=float(qs_floor_yr),
+        floor_well=floor_well,
     )
+
+
+def qs_gain_floor_yr(cutoff_yr: float, settings: AnalysisSettings) -> float:
+    """The period [yr] at which the analog Butterworth low-pass at `cutoff_yr` (order N = filter_order) keeps gain
+    mmr_l8_gain_fail: G(P) = 1 / (1 + (P_c / P)^2N), so P = P_c (1 / G - 1)^(-1 / 2N) (P_c at G = 0.5): the lowest
+    floor of a quasi-satellite run (`CoorbitalRunFloor.qs_loop_floor`); nan without a cutoff."""
+    gain = float(settings.mmr_l8_gain_fail)
+    if not (np.isfinite(cutoff_yr) and cutoff_yr > 0 and 0 < gain < 1):
+        return NAN
+    return float(cutoff_yr * (1.0 / gain - 1.0) ** (-1.0 / (2 * settings.filter_order)))
 
 
 FASTEST_CACHE_SIZE = 64  # numerical: profiles whose fastest horseshoe is kept (`fast_reference_yr`)

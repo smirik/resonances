@@ -603,6 +603,9 @@ The figure is the same, with these differences:
 - the header names the regime (`tadpole L4`, `horseshoe`, `quasi-satellite`, `compound (horseshoe ↔ quasi-satellite)`),
   or for one episode in several wells `orbit: …`, the wells of its sub-regimes in time order (`orbit: horseshoe →
   tadpole L4`, 2016 JA; more than four are shortened with `…` and their count; summary `geo_orbit_type_sequence`);
+- (a) holds a hatched gray strip at its foot labeled `bounded, not counted (audit)` where the coverage audit found a
+  bounded run of the orbit-averaged angle that no counted episode covers (flag `uncovered_bounded_run`, columns
+  `aud_unc_*`; the row is in the review queue, its status unchanged);
 - (a) brackets the sub-regimes and hatches the inferred residence, and (d) marks the kicks of $a$ (above). The
   EPISODES group of the right column lists the stay under the episode (`stay start–end (inferred)`) and the marks
   (`well 339 yr`, `amplitude 326–446 yr`, `kick 4.69 kyr`);

@@ -1176,6 +1176,7 @@ def _shade_episodes(ax, frame: _Frame, layout: VerdictFigureLayout):
     geometry = frame.analysis.geometry
     if geometry is None:
         return
+    shade_audit(ax, frame.analysis.extra_columns, frame.times, layout)
     marks = policy_marks(frame.analysis)
     if marks is not None:
         _shade_policy_episodes(ax, frame, layout, marks)
@@ -1198,6 +1199,36 @@ def _shade_episodes(ax, frame: _Frame, layout: VerdictFigureLayout):
     for run in geometry.runs:
         if run.episode_id in labelled:
             draw_run_labels(ax, run, spans[run.episode_id], pieces.get(run.episode_id, ()), frame, layout, forced.get(run.episode_id, ''))
+
+
+# the 1:1 coverage audit (`mmr.coverage_audit`, flag uncovered_bounded_run): the longest bounded stretch of the
+# orbit-averaged angle that no counted episode covers, a hatched gray strip at the foot of (a)
+AUDIT_GID, AUDIT_HATCH, AUDIT_LABEL = 'audit_uncovered', 'xx', 'bounded, not counted (audit)'
+
+
+def shade_audit(ax, columns: Mapping[str, Any], times, layout: VerdictFigureLayout) -> None:
+    """The audit's uncovered stretch (aud_unc_t0_yr, aud_unc_t1_yr) as a hatched gray strip under the episodes' fills,
+    labelled AUDIT_LABEL; nothing without one (`aud_n_uncovered` 0 or nan)."""
+    count = columns.get('aud_n_uncovered')
+    t0, t1 = columns.get('aud_unc_t0_yr'), columns.get('aud_unc_t1_yr')
+    if not (isinstance(count, (int, float)) and np.isfinite(count) and count >= 1):
+        return
+    if not (isinstance(t0, (int, float)) and isinstance(t1, (int, float)) and np.isfinite(t0) and np.isfinite(t1)):
+        return
+    x0, x1 = (float(x) for x in times(np.array([t0, t1])))
+    ax.axvspan(x0, x1, ymin=0, ymax=REJECTED_STRIP, facecolor='none', edgecolor=REJECTED, hatch=AUDIT_HATCH, lw=0, zorder=0, gid=AUDIT_GID)
+    ax.text(
+        (x0 + x1) / 2,
+        REJECTED_STRIP / 2,
+        AUDIT_LABEL,
+        transform=ax.get_xaxis_transform(),
+        ha='center',
+        va='center',
+        fontsize=layout.font_note_pt - 0.5,
+        color=REJECTED,
+        zorder=8,
+        gid=AUDIT_GID,
+    )
 
 
 def _shade_policy_episodes(ax, frame: _Frame, layout: VerdictFigureLayout, marks: PolicyMarks) -> None:

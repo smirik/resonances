@@ -283,6 +283,11 @@ class Flag(StrEnum):
     VETO_THIN = 'veto_thin'  # the veto's deciding comparison lies within CONFIDENCE_THIN_BAND of its threshold
     VETO_NEEDS_LENGTH = 'veto_needs_length'  # a needed veto was not measured for lack of length (pol_veto_need_yr)
     POLICY_UNKNOWN_LEAF = 'policy_unknown_leaf'  # a v2 leaf the policy has no mapping for: the geometry's status
+    # the 1:1 coverage audit after the policy (`mmr.coverage_audit`; review only, never a status): a bounded run of the
+    # orbit-averaged angle inside the window that no counted episode covers, and a floor above the loop of the
+    # averaged potential through the turns of the run it rejects
+    UNCOVERED_BOUNDED_RUN = 'uncovered_bounded_run'
+    FLOOR_ABOVE_OWN_LOOP = 'floor_above_own_loop'
 
 
 # the `policy` column of a verdict the W29 minimal policy layer wrote (`analysis.policy`)
@@ -432,13 +437,14 @@ class Verdict:
     @property
     def review_required(self) -> bool:
         """Whether the row is in the review queue (`needs_review`; column `review_required`). Changes no status."""
-        return needs_review(self.confidence, self.action, self.libration_origin, self.reason)
+        return needs_review(self.confidence, self.action, self.libration_origin, self.reason, self.flags)
 
     @property
     def review_reasons(self) -> list[str]:
         """Why the row is in the review queue (column `review_reasons`; empty outside it): `confidence:<level>` for
         medium/low, `action:<action>` for a spot_check/review action at no such level, `origin_unknown` for a bounded
-        angle without an established mechanism, then `veto_thin` when the veto's comparison was thin. The minimal policy
+        angle without an established mechanism, then `veto_thin` when the veto's comparison was thin, then each
+        `REVIEW_FLAGS` flag (the 1:1 coverage audit: uncovered_bounded_run, floor_above_own_loop). The minimal policy
         leaves no caps and no failed supports (the level is the evidence's, `policy.level`), so neither is a reason."""
         if not self.review_required:
             return []
@@ -451,6 +457,7 @@ class Verdict:
             reasons.append(str(Reason.ORIGIN_UNKNOWN))
         if str(Flag.VETO_THIN) in self.flags:
             reasons.append(str(Flag.VETO_THIN))
+        reasons += [flag for flag in REVIEW_FLAGS if flag in self.flags]
         return reasons
 
     def to_flat_dict(self) -> dict[str, Any]:
@@ -692,19 +699,25 @@ def default_action(status: Status, reason: Reason | str, confidence: Confidence)
 # The review queue (W28 g10-1b; the author's q1 of 19.10: medium = spot check, low = review)
 REVIEW_LEVELS = frozenset({str(Confidence.MEDIUM), str(Confidence.LOW)})
 REVIEW_ACTIONS = frozenset({str(Action.SPOT_CHECK), str(Action.REVIEW)})
+# flags that put a row in the queue whatever its level (the 1:1 coverage audit; in this order in review_reasons)
+REVIEW_FLAGS = (str(Flag.UNCOVERED_BOUNDED_RUN), str(Flag.FLOOR_ABOVE_OWN_LOOP))
 
 
 def _origin_unknown(libration_origin: Any, reason: Any) -> bool:
     return str(libration_origin or '') == LibrationOrigin.UNKNOWN or str(reason or '') == Reason.ORIGIN_UNKNOWN
 
 
-def needs_review(confidence: Any, action: Any = '', libration_origin: Any = '', reason: Any = '') -> bool:
+def needs_review(confidence: Any, action: Any = '', libration_origin: Any = '', reason: Any = '', flags: Any = ()) -> bool:
     """Whether a human should look at a row (the review queue, column `review_required`, `SavePlotMode.REVIEW`): its
-    level is medium or low, its action is spot_check or review, or it has a bounded angle whose origin is not
-    established. The level decides on its own (a medium row whose action became resample stays in the queue); the
-    action adds the rows without a level (invalid, uncertain origin_unknown). Plain strings are accepted (a clone's
-    row in a results archive has no action). Changes no status."""
+    level is medium or low, its action is spot_check or review, it has a bounded angle whose origin is not
+    established, or it carries a `REVIEW_FLAGS` flag (the 1:1 coverage audit). The level decides on its own (a medium
+    row whose action became resample stays in the queue); the action adds the rows without a level (invalid,
+    uncertain origin_unknown). Plain strings are accepted (a clone's row in a results archive has no action; `flags`
+    a list or the ';'-joined column). Changes no status."""
     if str(confidence or '') in REVIEW_LEVELS or str(action or '') in REVIEW_ACTIONS:
+        return True
+    present = set(flags.split(';') if isinstance(flags, str) else (str(flag) for flag in flags or ()))
+    if any(flag in present for flag in REVIEW_FLAGS):
         return True
     return _origin_unknown(libration_origin, reason)
 
