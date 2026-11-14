@@ -1,9 +1,10 @@
 """W29 minimal policy: the extend predicate on synthetic sigma_f arrays (spec §5, PRINCIPLES §5). Expected by hand:
 an unfinished libration at the record's end (fewer than CONFIDENCE_HIGH_CYCLES = 3 cycles in the last episode) extends;
-five cycles do not; a record whose sigma_f turns a whole revolution after its last accepted or candidate turning point is
-decided now, whatever came before; a period longer than 2 T / 3 extends; a needed veto not measured for lack of length
-(L4 short of force windows, a ZLK gate short of cycles) extends when the record it needs is within the next-check budget
-MMR_NEXT_CHECK_SPAN_FACTOR x T = 4 T (clause C, the author W29 Q5), goes to review beyond it."""
+five cycles do not; a record whose sigma_f turns a whole revolution after its last turning point (of any run, accepted
+or rejected, or candidate span; a run past the window's end counts at that end) is decided now, whatever came before; a
+period longer than 2 T / 3 extends; a needed veto not measured for lack of length (L4 short of force windows, a ZLK
+gate short of cycles) extends when the record it needs is within the next-check budget MMR_NEXT_CHECK_SPAN_FACTOR x T =
+4 T (clause C, the author W29 Q5), goes to review beyond it."""
 
 import numpy as np
 import pytest
@@ -113,21 +114,63 @@ def test_a_start_edge_leg_with_circulation_at_the_end_does_not_extend():
     assert (v.status, v.action, v.pol_extend_clause) == (Status.NON_RESONANT, Action.SPOT_CHECK, '')
 
 
-def test_rejected_noise_near_the_end_does_not_bound_it():
-    # an accepted episode at 400-1400 yr, rejected 2-TP noise runs near the end; sigma_f circulates after 1400 yr
-    times = 400.0 + np.arange(6) * 200.0
-    accepted = make_episode(
-        6, episode_id=0, tp_times_yr=times, period_med_yr=PERIOD, half_amp_max_rad=0.5, coverage_start_gap_p=1.5, coverage_end_gap_p=9.0
-    )
-    noise = make_episode(2, episode_id=1, tp_times_yr=np.array([3800.0, 3850.0]), accepted=False)
-    sigma = np.where(T < times[-1], 0.5 * np.sin(2 * np.pi * T / PERIOD), 2 * np.pi * 6 * (T - times[-1]) / (SPAN - times[-1]))
-    geometry = make_geometry(window=(0.0, SPAN), runs=[accepted, noise], turning_points=make_turning_points(list(times) + [3800.0, 3850.0]))
+def end_reading(runs, sigma, times, spans=()):
+    """(t_last, end travel) of a transient row with these runs and sigma_f (`policy._mmr_t_last`, its travel)."""
+    geometry = make_geometry(window=(0.0, SPAN), runs=runs, turning_points=make_turning_points(times))
     verdict = make_verdict(Status.TRANSIENT, AngleStatus.EPISODIC, reason=Reason.DYNAMIC_EPISODE)
     v = policy.apply_mmr(
         make_mmr_analysis(verdict, geometry, '5d/6', span_yr=SPAN, prep=prep(sigma), decisive_episode_id=0), MINIMAL
     ).verdict
-    assert v.pol_t_last_tp_yr == pytest.approx(times[-1])
+    return v, policy._mmr_t_last(geometry, spans)
+
+
+def accepted_episode(times):
+    return make_episode(
+        len(times),
+        episode_id=0,
+        tp_times_yr=times,
+        period_med_yr=PERIOD,
+        half_amp_max_rad=0.5,
+        coverage_start_gap_p=1.5,
+        coverage_end_gap_p=9.0,
+    )
+
+
+def test_circulation_after_the_last_turning_point_ends_the_record():
+    # an accepted episode at 400-1400 yr; sigma_f then circulates six turns to the end without turning back
+    times = 400.0 + np.arange(6) * 200.0
+    sigma = np.where(T < times[-1], 0.5 * np.sin(2 * np.pi * T / PERIOD), 2 * np.pi * 6 * (T - times[-1]) / (SPAN - times[-1]))
+    v, t_last = end_reading([accepted_episode(times)], sigma, list(times))
+    assert v.pol_t_last_tp_yr == pytest.approx(times[-1]) == t_last
     assert v.pol_end_travel_rev >= 1 and v.action != Action.EXTEND
+
+
+def test_a_rejected_run_near_the_end_is_a_turn_of_the_record():
+    """The author 2026-11-14 ("V1 + clip"): the turning points of a rejected run are resolved reversals of sigma_f, not
+    raw wiggles: a rejected 2-TP run at 3800-3850 yr bounds the end (only accepted runs counted before, and the record
+    read as ending in circulation from 1400 yr: 2015 TG24, 2015 WZ12, 2019 JX1)."""
+    times = 400.0 + np.arange(6) * 200.0
+    rejected = make_episode(2, episode_id=1, tp_times_yr=np.array([3800.0, 3850.0]), accepted=False)
+    sigma = np.where(T < times[-1], 0.5 * np.sin(2 * np.pi * T / PERIOD), 0.0)
+    v, t_last = end_reading([accepted_episode(times), rejected], sigma, list(times) + [3800.0, 3850.0])
+    assert t_last == pytest.approx(3850.0) and v.pol_t_last_tp_yr == pytest.approx(3850.0)
+    assert v.pol_end_travel_rev < 1
+
+
+def test_a_run_past_the_window_end_counts_at_the_window_end():
+    """A run that starts in the window and ends past it (a turn read in the filter's trim, 2019 DJ1: 834.7-986.7 yr
+    against a window end of 944.4 yr) was dropped whole; now it counts at the window's end (no travel left), and so
+    does a candidate span past it. A run wholly beyond the window does not count."""
+    window = (0.0, 944.4)
+    run = make_episode(3, episode_id=0, tp_times_yr=np.array([834.7, 910.0, 986.7]))
+    beyond = make_episode(2, episode_id=1, tp_times_yr=np.array([950.0, 990.0]), accepted=False)
+    geometry = make_geometry(window=window, runs=[run, beyond])
+    assert policy._mmr_t_last(geometry, ()) == pytest.approx(944.4)
+    early = make_episode(3, episode_id=0, tp_times_yr=np.array([100.0, 150.0, 200.0]))
+    geometry = make_geometry(window=window, runs=[early, beyond])
+    assert policy._mmr_t_last(geometry, ()) == pytest.approx(200.0)
+    assert policy._mmr_t_last(geometry, [(900.0, 1000.0)]) == pytest.approx(944.4)
+    assert policy._mmr_t_last(make_geometry(window=window, runs=[beyond]), ()) == pytest.approx(0.0)  # the window's start
 
 
 def short_of_force_windows():

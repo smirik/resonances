@@ -243,6 +243,8 @@ disagreement page (`tmp/.../w30/disagreements/`).
   drifts towards L3 without crossing it: one episode 445–926 yr) and 2026 SZ2 high → certain; both are unreviewed rows
   of `KNOWN_DISAGREEMENTS.csv`. A drift that stays inside the co-orbital sector is an episode by g03-1; is that what he
   wants for BB2's end arc?
+- The end witness of the secular/ZLK `policy.apply_long_period` still reads accepted runs only (the MMR one reads any
+  run since 2026-11-14, "V1 + clip"): measure it separately or leave it (PROPOSAL B7; 143662 non_resonant 2026-11-08).
 
 ## Next steps (agreed order)
 

@@ -25,11 +25,13 @@ overridable by `RESONANCES_BENCHMARK_DATA`) and the runs' package output stay ou
   (`v2-w29-final`, 2026-11-02: minimal_policy 100, a label against a minimal rule the author accepted by default,
   each reason naming the rule and the RESULTS question; old_verdict 5; open_question 4); empty at W35; W36 test-first: 4 secular rows
   `unreviewed`, each naming the fix expected to clear it; empty again after W37, 2026-11-14; 4 co-orbital rows `unreviewed`
-  the same day, test-first: the Earth co-orbital clones' status labels, each naming the pending co-orbital fix).
+  the same day, test-first: the Earth co-orbital clones' status labels, each naming the pending co-orbital fix; cleared
+  by the three co-orbital fixes, which left 2 new `unreviewed` rows: 2022 BB2 status, 2026 SZ2 confidence).
 - `EPISODE_EXPECTATIONS.csv`: 176 episode cases (E100-E105: the author's episode notes of 2026-11-02; E107-E117 and C55-C60:
   his review of the pairs secular wave 1, 2026-11-07; C61: Codex's reading of 455327 g-s-g5+s6, the W36 F2 guard; E118: 485 Genua
   3J-1S-1, the author 2026-11-14; E119-E122: Earth co-orbital clones 2003 YN107 c027/c032 and 2024 JR16 c005/c010, the
-  author 2026-11-14, `known_fail` test-first) from the
+  author 2026-11-14, `known_fail` test-first, cleared the same day by rules coorbital_well_core and
+  coorbital_pair_loop_floor) from the
   author's history (tier A 78 his words, B 35 a review he accepted, C 63 old verdicts or provisional readings), checks
   as JSON ops of `benchmark/tools/episode_expectations.py`, verbatim quotes with file:line in `benchmark/EPISODE_QUOTES.json`;
   `known_fail`/`known_reason` are Claude's reading (W28: only E67, 2007 VU6, the edge-turn threshold; W29: 13 more

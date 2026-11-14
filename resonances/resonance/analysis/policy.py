@@ -765,13 +765,18 @@ def mmr_librating(geometry: Optional[Geometry], settings: AnalysisSettings) -> L
     return mmr_decide.librating_episodes(geometry, settings) + mmr_decide.librating_episodes(geometry, settings, before_jump=True)
 
 
-def _mmr_t_last(geometry: Geometry, candidate_spans: Sequence[Tuple[float, float]], near_runs: Sequence[Episode]) -> float:
-    """The last turning point of an accepted or candidate run inside the window (the window's start without one)."""
+def _mmr_t_last(geometry: Geometry, candidate_spans: Sequence[Tuple[float, float]]) -> float:
+    """The witness of the record's end (the author 2026-11-14, the skeptic's "V1 + clip"): the last turning point in
+    the analysis window of any run of the angle, accepted or rejected (its turning points are the resolved,
+    prominence-selected reversals of sigma_f, not raw wiggles: a rejected libration is no missing turn), or the end of a
+    candidate span (a G4c leg, a held half-swing). An item that starts inside the window and ends past its end (an edge
+    turn read in the filter's trim, an edge leg) counts at the window's end: the record ends inside it. The window's
+    start without one. Only accepted runs were read before: 2015 TG24, 2015 WZ12 and 2019 JX1 read as ending in
+    circulation after a bounded rejected run, and 2006 BZ147 / 2019 DJ1 lost their accepted run that ends in the trim."""
     lo, hi = geometry.window
-    times = [run.t_end_yr for run in geometry.runs if run.accepted and run.n_tp]
-    times += [t1 for _, t1 in candidate_spans] + [run.t_end_yr for run in near_runs]
-    inside = [t for t in times if lo <= t <= hi]
-    return float(max(inside)) if inside else float(lo)
+    items = [(run.t_start_yr, run.t_end_yr) for run in geometry.runs if run.n_tp] + list(candidate_spans)
+    ends = [min(float(t1), hi) for t0, t1 in items if t0 <= hi and t1 >= lo]
+    return float(max(ends)) if ends else float(lo)
 
 
 def _near_runs(geometry: Geometry, analysis, settings: AnalysisSettings) -> List[Episode]:
@@ -1298,11 +1303,11 @@ def _apply_mmr_row(analysis, settings: AnalysisSettings, member: Optional[Verdic
     legs = _legs(geometry, settings) if rule in LEG_RULES else ([], None, False, False)
     held = _held_halves(geometry, settings)
     near = _near_runs(geometry, analysis, settings) if geometry is not None else []
-    # the end of the record: the last turning point of an accepted or candidate run, sigma_f's travel after it
+    # the end of the record: the last turning point of any run or candidate span (`_mmr_t_last`), sigma_f's travel after it
     end = EndReading()
     if geometry is not None:
         spans = [(leg.t0_yr, leg.t1_yr) for leg, outcome in legs[0] if outcome] + [(h.t0_yr, h.t1_yr) for h in held]
-        t_last = _mmr_t_last(geometry, spans, near)
+        t_last = _mmr_t_last(geometry, spans)
         travel = edge_travel_rev(prep.t_yr, prep.angle_f, t_last, geometry.window[1], geometry.window) if prep is not None else NAN
         ledger.compare('policy:end travel after the last turning point < 1 rev', travel, Op.LT, 1.0, 'rev', 'pol_end_travel_rev')
         end = EndReading(t_last, travel)

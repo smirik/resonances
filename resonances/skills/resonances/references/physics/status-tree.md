@@ -24,8 +24,9 @@ everything; a policy layer (`resonance/analysis/policy.py`) then re-reads the fi
    `near_separatrix`, circulation → `non_resonant`. A drift whose slow center passes ≥ one own revolution →
    `non_resonant`/`modulated_circulation`, less → `uncertain`. insufficient_time → `uncertain`, or
    `non_resonant`/`circulation` when the record ends in circulation ($\sigma_f$ travels ≥ one own revolution after the
-   last turning point of an accepted or candidate run; a secular or ZLK travel below $1 +$ `CONFIDENCE_THIN_BAND`
-   turns holds the level at medium). One own revolution is $2\pi$, for a ZLK $\omega$ too
+   last turning point of an accepted or candidate run; for an MMR, of any run, accepted or rejected, or candidate span
+   in the window, one that runs past the window's end counting at that end; a secular or ZLK travel below
+   $1 +$ `CONFIDENCE_THIN_BAND` turns holds the level at medium). One own revolution is $2\pi$, for a ZLK $\omega$ too
    (the half-turn symmetry of the quadrupole's $\cos 2\omega$ is not general; ZLK runs still break at half a turn).
    The geometry alone names no mechanism: a secular or ZLK libration is `geometric_libration`/`geometric_episode`,
    origin unknown, unless a confirmed ZLK gate makes it dynamic.
