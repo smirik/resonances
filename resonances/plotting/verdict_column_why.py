@@ -1476,8 +1476,8 @@ def _t_long_circulation(m: _Long) -> List[str]:
 
 def _ends_in_circulation(m: _Long) -> str:
     """A row the policy decided as too short that ends in circulation (`policy._insufficient`, W36 F5): σ_f's range from
-    the last turning point (`policy._mmr_t_last` for an MMR: of any run or candidate span in the window; else the
-    window's start) to the end, `pol_end_travel_rev`."""
+    the last turning point (`policy._end_witness`: of any run or (MMR) candidate span in the window, a trailing stall
+    dropped; else the window's start) to the end, `pol_end_travel_rev`."""
     travel, t_last = m.row.get('pol_end_travel_rev'), m.row.get('pol_t_last_tp_yr')
     geometry = m.a.geometry
     start = geometry is not None and vt.finite(t_last) and float(t_last) <= float(geometry.window[0])

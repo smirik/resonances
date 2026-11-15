@@ -45,6 +45,7 @@ from resonances.resonance.analysis.geometry import (
     Geometry,
     covers_edges,
     edge_travel_rev,
+    last_reversal_yr,
     run_of,
     short_runs,
 )
@@ -765,18 +766,23 @@ def mmr_librating(geometry: Optional[Geometry], settings: AnalysisSettings) -> L
     return mmr_decide.librating_episodes(geometry, settings) + mmr_decide.librating_episodes(geometry, settings, before_jump=True)
 
 
-def _mmr_t_last(geometry: Geometry, candidate_spans: Sequence[Tuple[float, float]]) -> float:
-    """The witness of the record's end (the author 2026-11-14, the skeptic's "V1 + clip"): the last turning point in
-    the analysis window of any run of the angle, accepted or rejected (its turning points are the resolved,
-    prominence-selected reversals of sigma_f, not raw wiggles: a rejected libration is no missing turn), or the end of a
-    candidate span (a G4c leg, a held half-swing). An item that starts inside the window and ends past its end (an edge
-    turn read in the filter's trim, an edge leg) counts at the window's end: the record ends inside it. The window's
-    start without one. Only accepted runs were read before: 2015 TG24, 2015 WZ12 and 2019 JX1 read as ending in
-    circulation after a bounded rejected run, and 2006 BZ147 / 2019 DJ1 lost their accepted run that ends in the trim."""
+def _end_witness(geometry: Geometry, t_yr, angle_f, candidate_spans: Sequence[Tuple[float, float]] = ()) -> float:
+    """The witness of the record's end (the author 2026-11-14, the skeptic's "V1 + clip"; MMR, secular and ZLK alike,
+    the author 2026-11-15): the last turning point in the analysis window of any run of the angle, accepted or
+    rejected (its turning points are the resolved, prominence-selected reversals of sigma_f, not raw wiggles: a
+    rejected libration is no missing turn), or the end of a candidate span (a G4c leg, a held half-swing). An item that
+    starts inside the window and ends past its end (an edge turn read in the filter's trim, an edge leg) counts at the
+    window's end: the record ends inside it. Trailing turning points that only stall a circulation are no reversal
+    (`last_reversal_yr`: 143662 s+g5-g8-s3 stays non_resonant). The window's start without one. Only accepted runs
+    were read before: 2015 TG24, 2015 WZ12 and 2019 JX1 read as ending in circulation after a bounded rejected run,
+    and 2006 BZ147 / 2019 DJ1 lost their accepted run that ends in the trim."""
     lo, hi = geometry.window
-    items = [(run.t_start_yr, run.t_end_yr) for run in geometry.runs if run.n_tp] + list(candidate_spans)
-    ends = [min(float(t1), hi) for t0, t1 in items if t0 <= hi and t1 >= lo]
-    return float(max(ends)) if ends else float(lo)
+    runs = [min(float(run.t_end_yr), hi) for run in geometry.runs if run.n_tp and run.t_start_yr <= hi and run.t_end_yr >= lo]
+    t_run = max(runs) if runs else float(lo)
+    if runs and t_run < hi:
+        t_run = last_reversal_yr(geometry.turning_points, t_yr, angle_f, t_run, geometry.window)
+    spans = [min(float(t1), hi) for t0, t1 in candidate_spans if t0 <= hi and t1 >= lo]
+    return float(max([t_run] + spans))
 
 
 def _near_runs(geometry: Geometry, analysis, settings: AnalysisSettings) -> List[Episode]:
@@ -1307,7 +1313,7 @@ def _apply_mmr_row(analysis, settings: AnalysisSettings, member: Optional[Verdic
     end = EndReading()
     if geometry is not None:
         spans = [(leg.t0_yr, leg.t1_yr) for leg, outcome in legs[0] if outcome] + [(h.t0_yr, h.t1_yr) for h in held]
-        t_last = _mmr_t_last(geometry, spans)
+        t_last = _end_witness(geometry, prep.t_yr, prep.angle_f, spans) if prep is not None else NAN
         travel = edge_travel_rev(prep.t_yr, prep.angle_f, t_last, geometry.window[1], geometry.window) if prep is not None else NAN
         ledger.compare('policy:end travel after the last turning point < 1 rev', travel, Op.LT, 1.0, 'rev', 'pol_end_travel_rev')
         end = EndReading(t_last, travel)
@@ -1546,9 +1552,8 @@ def apply_long_period(analysis, settings: AnalysisSettings):
         outcome = _keep(v)
         end = EndReading()
     else:
-        lo, hi = geometry.window
-        times = [run.t_end_yr for run in geometry.runs if run.accepted and run.n_tp and lo <= run.t_end_yr <= hi]
-        t_last = float(max(times)) if times else float(lo)
+        hi = geometry.window[1]
+        t_last = _end_witness(geometry, angle.t_yr, angle.angle_f) if angle is not None else NAN
         travel = edge_travel_rev(angle.t_yr, angle.angle_f, t_last, hi, geometry.window, revolution) if angle is not None else NAN
         ledger.compare(END_TRAVEL_ENTRY, travel, Op.LT, 1.0, 'rev', 'pol_end_travel_rev')
         end = EndReading(t_last, travel)

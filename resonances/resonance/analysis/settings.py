@@ -392,9 +392,19 @@ class AnalysisSettings:
         'rule coorbital_pair_loop_floor (the author 2026-11-14, 2003 YN107; needs MMR_COORBITAL_PROFILE_FLOOR): a 1:1 run '
         'with a turn that is no reflection on a top (or a pair of turns no loop joins), which keeps the tadpole floor '
         'otherwise, has the floor MMR_COORBITAL_QS_LOOP_FACTOR x the median loop of its reflecting pairs whose turns are '
-        'both >= MMR_COORBITAL_MIN_TURN_HILL Hill radii from the planet, at most the tadpole floor, when its own local '
+        'both >= MMR_COORBITAL_PAIR_LOOP_MIN_HILL Hill radii from the planet, at most the tadpole floor, when its own local '
         '1:1 law has K / K_theory > 0 and passes the force check in full (MMR_FORCE_R2_FULL in both halves, '
         'MMR_COORBITAL_SCALE_RATIO_MAX). False = the tadpole floor for such a run',
+    )
+    mmr_coorbital_pair_loop_min_hill: float = _setting(
+        1.0,
+        'MMR_COORBITAL_PAIR_LOOP_MIN_HILL',
+        'float',
+        'rule coorbital_pair_loop_floor: the closest a turn of a reflecting pair may lie to the planet, in Hill radii a_P '
+        '(mu / 3)^(1/3) in longitude: the Hill sphere, inside which the planet, not the Sun, holds the body. The pair-loop '
+        'floor asks for the run\'s own 1:1 law in full, so the measured force, not the averaging margin of '
+        'MMR_COORBITAL_MIN_TURN_HILL, keeps out an encounter (the author 2026-11-15, 2022 RD2 c075: a horseshoe of five '
+        'turns at 0.2-2.2 Hill radii, |delta a| kept at each, loops through its turns 81 yr against 76 yr observed)',
     )
     mmr_coorbital_coverage_audit: bool = _setting(
         True,

@@ -313,7 +313,8 @@ tadpole as well: a run whose turns all reflect on a top (below) has the floor 0.
 turns, when its local law has $K/K_\text{th} > 0$ (`MMR_COORBITAL_PROFILE_FLOOR`, rule `coorbital_floor_profile`;
 2003 YN107: 103 yr against a 119-yr loop and a 111-yr tadpole floor). A run with a turn that is no reflection (a
 turn inside a well, a pair no loop joins) has the floor 0.7 $T$ of the median loop of its reflecting pairs whose turns
-are both at least `MMR_COORBITAL_MIN_TURN_HILL` Hill radii from the planet, at most the tadpole floor, and only when
+are both outside the Hill sphere (`MMR_COORBITAL_PAIR_LOOP_MIN_HILL` = 1 Hill radius; 2022 RD2 c075: a horseshoe
+of turns 1–2 Hill radii from the Earth, $P$ = 74.5 yr, floor 56 yr), at most the tadpole floor, and only when
 its own local 1:1 law passes the force check in full (`MMR_COORBITAL_PAIR_LOOP_FLOOR`, rule
 `coorbital_pair_loop_floor`; 2003 YN107 c032: a horseshoe → quasi-satellite → horseshoe run of $P$ = 105 yr whose
 reflecting pairs loop in 105 and 129 yr, floor 82 yr, $K/K_\text{th}$ 1.18). Without that force its floor stays the

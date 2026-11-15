@@ -3739,6 +3739,31 @@ def harmonic_half_test(
     return r2(first), r2(second), bool(acceleration(lo_rad) > 0 and acceleration(hi_rad) < 0)
 
 
+def last_reversal_yr(tp: TurningPoints, t_yr: np.ndarray, angle_f: np.ndarray, t_last: float, window: Tuple[float, float]) -> float:
+    """The last turning point at or before `t_last` that is a reversal of sigma_f and not a stall of a circulation:
+    the last two turning points are dropped, repeatedly, while the swing between them closes no cycle with either
+    neighbouring one-way pass, the one before (from the turning point before, or the window's start: a lower bound) and
+    the travel after them to the window's end (`closure_ratios`: half-swings that differ more than threefold). A slow
+    circulation that stalls and turns back a little leaves such a pair (143662 s+g5-g8-s3: 110 deg down, 20 deg back,
+    330 deg down over 20 Myr). `t_last` itself when it is no turning point of `tp` (a turn read in the filter's trim);
+    the window's start when every turning point is dropped."""
+    lo, hi = float(window[0]), float(window[1])
+    times = np.asarray(tp.times_yr, dtype=float)
+    keep = (times >= lo) & (times <= t_last)
+    times, values = times[keep], np.asarray(tp.values_rad, dtype=float)[keep]
+    n = len(times)
+    if not n or not np.isclose(times[-1], t_last):
+        return float(t_last)
+    while n >= 2:
+        swing = abs(values[n - 1] - values[n - 2])
+        before = abs(values[n - 2] - values[n - 3]) if n >= 3 else edge_travel_rev(t_yr, angle_f, lo, times[n - 2], window, 1.0)
+        after = edge_travel_rev(t_yr, angle_f, times[n - 1], hi, window, 1.0)
+        if not (3.0 * swing < before and 3.0 * swing < after):
+            break
+        n -= 2
+    return float(times[n - 1]) if n else lo
+
+
 def edge_travel_rev(
     t_yr: np.ndarray, angle_f: np.ndarray, t_from: float, t_to: float, window: Tuple[float, float], rev: float = TWO_PI
 ) -> float:

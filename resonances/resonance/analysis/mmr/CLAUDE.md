@@ -81,10 +81,12 @@ guards) → io.
 - **Pair-loop floor, rule `coorbital_pair_loop_floor`** (`CoorbitalRunFloor._pair_loop_floor`, `FLOOR_SOURCE_PAIR_LOOP`;
   `decide.run_floor_acts`; `MMR_COORBITAL_PAIR_LOOP_FLOOR`; the author 2026-11-14 on 2003 YN107: amin07h + Codex's
   witness): a run that falls back (not_reflection, no_loop) gets MMR_COORBITAL_QS_LOOP_FACTOR x the median loop of
-  its reflecting pairs (both turns planet/l3, a planet turn >= MMR_COORBITAL_MIN_TURN_HILL r_H in longitude), capped
+  its reflecting pairs (both turns planet/l3, a planet turn >= MMR_COORBITAL_PAIR_LOOP_MIN_HILL r_H in longitude), capped
   by the tadpole floor (`preprocess.libration_period_floor`), only when the run's local law has K > 0 and a full force
   pass (`force_check` PASS, not thin). Why each part: 0.5 let the skeptic's fast c032-geometry wave (P/loop 0.5) pass;
-  turns inside 3 r_H gave RD2 c075 a 40-yr floor; the cap stops 2025 XN6's mixed run from getting 200 yr; the witness
+  the Hill limit is the Hill sphere (1 r_H), not the averaging margin 3 r_H of MMR_COORBITAL_MIN_TURN_HILL: the author
+  2026-11-15 and both reviewers read 2022 RD2 c075 (turns 1-2 r_H, |delta a| kept, loops 81 yr against 76 yr
+  observed, its own law passing) as a horseshoe episode; fast waves turning at 1-3 r_H stay rejected; the cap stops 2025 XN6's mixed run from getting 200 yr; the witness
   is Codex's (a floor-uncertain run counts only when the planet's force is seen moving it). G1f reads it too
   (`preprocess._coorbital_profile_floor` takes any finite floor). Moves (264 co-orbitals): see dev/decisions.md.
 - **1:1 coverage audit** (`coverage_audit.py`, `analyse._coverage_audit`; `MMR_COORBITAL_COVERAGE_AUDIT`,

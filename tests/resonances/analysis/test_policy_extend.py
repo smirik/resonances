@@ -115,13 +115,13 @@ def test_a_start_edge_leg_with_circulation_at_the_end_does_not_extend():
 
 
 def end_reading(runs, sigma, times, spans=()):
-    """(t_last, end travel) of a transient row with these runs and sigma_f (`policy._mmr_t_last`, its travel)."""
+    """(t_last, end travel) of a transient row with these runs and sigma_f (`policy._end_witness`, its travel)."""
     geometry = make_geometry(window=(0.0, SPAN), runs=runs, turning_points=make_turning_points(times))
     verdict = make_verdict(Status.TRANSIENT, AngleStatus.EPISODIC, reason=Reason.DYNAMIC_EPISODE)
     v = policy.apply_mmr(
         make_mmr_analysis(verdict, geometry, '5d/6', span_yr=SPAN, prep=prep(sigma), decisive_episode_id=0), MINIMAL
     ).verdict
-    return v, policy._mmr_t_last(geometry, spans)
+    return v, policy._end_witness(geometry, T, sigma, spans)
 
 
 def accepted_episode(times):
@@ -165,12 +165,42 @@ def test_a_run_past_the_window_end_counts_at_the_window_end():
     run = make_episode(3, episode_id=0, tp_times_yr=np.array([834.7, 910.0, 986.7]))
     beyond = make_episode(2, episode_id=1, tp_times_yr=np.array([950.0, 990.0]), accepted=False)
     geometry = make_geometry(window=window, runs=[run, beyond])
-    assert policy._mmr_t_last(geometry, ()) == pytest.approx(944.4)
+    assert policy._end_witness(geometry, T, np.zeros_like(T), ()) == pytest.approx(944.4)
     early = make_episode(3, episode_id=0, tp_times_yr=np.array([100.0, 150.0, 200.0]))
     geometry = make_geometry(window=window, runs=[early, beyond])
-    assert policy._mmr_t_last(geometry, ()) == pytest.approx(200.0)
-    assert policy._mmr_t_last(geometry, [(900.0, 1000.0)]) == pytest.approx(944.4)
-    assert policy._mmr_t_last(make_geometry(window=window, runs=[beyond]), ()) == pytest.approx(0.0)  # the window's start
+    assert policy._end_witness(geometry, T, np.zeros_like(T), ()) == pytest.approx(200.0)
+    assert policy._end_witness(geometry, T, np.zeros_like(T), [(900.0, 1000.0)]) == pytest.approx(944.4)
+    assert policy._end_witness(make_geometry(window=window, runs=[beyond]), T, np.zeros_like(T), ()) == pytest.approx(
+        0.0
+    )  # the window's start
+
+
+def stalled_circulation(back_deg):
+    """sigma_f falls 150 deg over 0-2000 yr, turns back `back_deg` until 2200 yr, then falls 330 deg to the end: the
+    geometry with its two turning points as one rejected run."""
+    down = np.radians(-150.0) * T / 2000.0
+    back = np.radians(-150.0) + np.radians(back_deg) * (T - 2000.0) / 200.0
+    late = np.radians(-150.0 + back_deg) - np.radians(330.0) * (T - 2200.0) / (SPAN - 2200.0)
+    sigma = np.where(T < 2000.0, down, np.where(T < 2200.0, back, late))
+    times = [2000.0, 2200.0]
+    values = np.interp(times, T, sigma)
+    run = make_episode(2, episode_id=0, tp_times_yr=np.array(times), accepted=False)
+    return make_geometry(window=(0.0, SPAN), runs=[run], turning_points=make_turning_points(times, values)), sigma
+
+
+def test_a_stall_of_a_circulation_is_no_reversal():
+    """The author 2026-11-15 (143662 s+g5-g8-s3 is non-resonant): two turning points whose swing is less than a third
+    of the passes on both sides close no cycle with either (`geometry.closure_ratios`): 20 deg back between 150 and 330
+    deg down is a stall, the witness falls back to the window's start and sigma_f's 460-deg range is a circulation.
+    60 deg back is more than a third of 150: a reversal, the witness stays at 2200 yr (330 deg < 1 turn after it)."""
+    geometry, sigma = stalled_circulation(20.0)
+    t_last = policy._end_witness(geometry, T, sigma)
+    assert t_last == pytest.approx(0.0)
+    assert g.edge_travel_rev(T, sigma, t_last, SPAN, geometry.window) == pytest.approx(460.0 / 360.0, abs=1e-3)
+    geometry, sigma = stalled_circulation(60.0)
+    t_last = policy._end_witness(geometry, T, sigma)
+    assert t_last == pytest.approx(2200.0)
+    assert g.edge_travel_rev(T, sigma, t_last, SPAN, geometry.window) == pytest.approx(330.0 / 360.0, abs=1e-3)
 
 
 def short_of_force_windows():

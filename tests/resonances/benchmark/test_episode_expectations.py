@@ -72,8 +72,9 @@ def test_the_cases_are_well_formed():
     # (165548: medium, not low) and E117 (455327 s-s3) stayed known failures; the author accepted the package's reading
     # of all three on 2026-11-08 (transient; medium; the episode 9.20-10.84 Myr), so they pass: no known failure left
     # 2026-11-14 test-first: the four clone cases fail on the unchanged classifier (YN107: a horseshoe run below the
-    # period floor, not counted; JR16: the 1:1 run rejected centre_moves); the co-orbital fix is expected to clear them
-    assert [case.case for case in CASES if case.known_fail] == ['E119', 'E120', 'E121', 'E122']
+    # period floor, not counted; JR16: the 1:1 run rejected centre_moves); the pair-loop floor and the well core cleared
+    # them (qs-missed-episodes): no known failure left
+    assert [case.case for case in CASES if case.known_fail] == []
 
 
 def test_every_quote_is_verbatim_at_its_line():

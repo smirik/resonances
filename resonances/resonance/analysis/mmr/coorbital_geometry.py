@@ -707,11 +707,12 @@ class CoorbitalRunFloor:
         """Rule coorbital_pair_loop_floor (MMR_COORBITAL_PAIR_LOOP_FLOOR; the author 2026-11-14, 2003 YN107: the
         designers' amin07h with Codex's witness): the floor of a run that has a turn which is no reflection, or a pair
         of turns no loop joins, and would otherwise keep the angle's tadpole floor. Its reflecting pairs (both turns at
-        a planet or l3 site, a planet turn >= mmr_coorbital_min_turn_hill Hill radii from the planet in longitude:
-        closer, the averaged problem no longer holds) give the median loop (at most LOOP_PAIRS_MAX evenly spread pairs,
-        finite loops only); the floor is mmr_coorbital_qs_loop_factor x it (0.7: the loop is a prediction at the run's
-        own amplitude, as for the QS run floor; 0.5 let a synthetic wave faster than the planet's force through), at
-        most the tadpole floor (it only relaxes the fallback: uncapped, 2025 XN6's mixed run got 200 yr from one
+        a planet or l3 site, a planet turn >= mmr_coorbital_pair_loop_min_hill Hill radii from the planet in longitude:
+        inside the Hill sphere the planet holds the body; the run's own law in full keeps out the encounters between
+        it and the averaging margin mmr_coorbital_min_turn_hill, author 2026-11-15, 2022 RD2 c075) give the median
+        loop (at most LOOP_PAIRS_MAX evenly spread pairs, finite loops only); the floor is
+        mmr_coorbital_qs_loop_factor x it (0.7: the loop is a prediction at the run's own amplitude, as for the QS run
+        floor; 0.5 let a synthetic wave faster than the planet's force through), at most the tadpole floor (it only relaxes the fallback: uncapped, 2025 XN6's mixed run got 200 yr from one
         horseshoe pair), and only when the run's own local 1:1 law (the run +- one median half-cycle, at the angle's
         cutoff) has K > 0 and passes the force check in full (`coorbital.force_check`: R^2 >= mmr_force_r2_full in both
         halves, K / K_theory within mmr_coorbital_scale_ratio_max): the run's floor is uncertain, so the planet's force
@@ -725,7 +726,7 @@ class CoorbitalRunFloor:
         inputs = coorbital_inputs(self.series, self.context, planet) if planet is not None else None
         if inputs is None:
             return None
-        limit = float(settings.mmr_coorbital_min_turn_hill) * float((inputs[0] / 3.0) ** (1.0 / 3.0))
+        limit = float(settings.mmr_coorbital_pair_loop_min_hill) * float((inputs[0] / 3.0) ** (1.0 / 3.0))
         wrapped = np.mod(np.asarray(theta, dtype=float), TWO_PI)
         distance = np.minimum(wrapped, TWO_PI - wrapped)
         ok = [site in REFLECTION_SITES and (site != SITE_PLANET or d >= limit) for site, d in zip(sites, distance)]

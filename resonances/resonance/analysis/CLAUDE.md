@@ -67,10 +67,10 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   not upheld, also as Episode rows for N: `_countable`; a status the policy moves re-reads the header's orbit type), non_resonant only by a measured veto (owner, kinematic,
   strength two-body, ZLK kinematic or free e < forced e; thin -> medium + `veto_thin`; a secular/ZLK insufficient_time
   angle that ends in circulation by an end travel below 1 + `CONFIDENCE_THIN_BAND` turns -> non_resonant at most
-  medium, `_travel_thin`, input `end_travel`, W36 F5: the travel is a range with the swing in it; the MMR end witness
-  `_mmr_t_last`, the author 2026-11-14 "V1 + clip": the last TP of any run, accepted or rejected, or candidate span in
-  the window, one past the window's end clipped to it; the secular/ZLK analogue in `apply_long_period` still reads
-  accepted runs only, left for the author), the level `policy.level` from
+  medium, `_travel_thin`, input `end_travel`, W36 F5: the travel is a range with the swing in it; the end witness
+  `_end_witness`, MMR, secular and ZLK alike, the author 2026-11-14 "V1 + clip" and 2026-11-15: the last TP of any
+  run, accepted or rejected, or (MMR) candidate span in the window, one past the window's end clipped to it, trailing
+  TP pairs that only stall a circulation dropped, `geometry.last_reversal_yr`: 143662 s+g5-g8-s3 stays non_resonant), the level `policy.level` from
   N/M/V/S/F (N < `CONFIDENCE_MEDIUM_CYCLES` low; W33 F: an MMR row with none of L4, R0, F passing is at most
   `CONFIDENCE_GEOMETRY_ONLY_MAX`, the identity is no force; S = L1 full and no `filter_sensitive`; a subresonance parent's N is
   `(member)`; no caps: every cap becomes a flag, `confidence_raw = confidence`, `cell_*` blank, `review_reasons` without

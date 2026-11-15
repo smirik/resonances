@@ -93,14 +93,14 @@ def horseshoe_track(mu, n, eps, turn_deg, span_yr, step_yr=0.05):
     return t, theta, a_planet * (1.0 - (2.0 / 3.0) * rate / n), np.asarray(run.t_events[0])
 
 
-def run_floor_of(t, theta, a, turns_yr, cutoff_yr=10.0):
+def run_floor_of(t, theta, a, turns_yr, settings=SETTINGS, cutoff_yr=10.0):
     """The package's `CoorbitalRunFloor` reading of the run of turning points at `turns_yr` (sigma = -theta). The
     synthetic track has no orbital wiggle, so it is averaged over one step (none): a 1-yr mean moves a turn 3.7 deg
     from the planet out by ~0.2 deg (theta_ddot / 24 yr^2), +3 % on T_hs."""
     series = earth_series(t, theta, a)
-    context = build_context(series, SETTINGS)
+    context = build_context(series, settings)
     sigma = -theta
-    model = cg.coorbital_run_floor(series, context, t, sigma, float(t[1] - t[0]), cutoff_yr, SETTINGS)
+    model = cg.coorbital_run_floor(series, context, t, sigma, float(t[1] - t[0]), cutoff_yr, settings)
     values = np.interp(turns_yr, t, sigma)
     return model.read(turns_yr, values)
 
@@ -292,10 +292,19 @@ def test_a_pair_loop_floor_needs_the_planets_force(earth):
         assert source == cg.FLOOR_SOURCE_NOT_REFLECTION and np.isnan(floor)
 
 
-def test_a_planet_turn_inside_three_hill_radii_is_no_reflecting_pair(earth):
-    """Turns 1.2 deg from the Earth (< 3 r_H = 1.72 deg): an encounter, no averaged loop; the mixed run keeps the
-    tadpole floor."""
+def test_a_planet_turn_inside_the_hill_sphere_is_no_reflecting_pair(earth):
+    """MMR_COORBITAL_PAIR_LOOP_MIN_HILL = 1 (the author 2026-11-15, 2022 RD2 c075): turns 1.2 deg from the Earth
+    (2.1 r_H, r_H = 0.573 deg; inside the averaging margin 3 r_H of MMR_COORBITAL_MIN_TURN_HILL) still give the
+    reflecting pairs' floor 0.7 x T_hs(1.2 deg) (quad), the run's own law passing in full; turns 0.45 deg away
+    (0.8 r_H, inside the Hill sphere: the planet holds the body) give none, and the mixed run keeps the tadpole floor,
+    as the 1.2-deg turns do with the limit at 3 r_H."""
     mu, n, eps, _ = earth
     t, theta, a, turns = horseshoe_track(mu, n, eps, 1.2, 300.0)
+    floor, setting, source, columns = run_floor_of(t, theta, a, mixed_run(t, theta, turns))
+    assert source == cg.FLOOR_SOURCE_PAIR_LOOP and setting == 'mmr_coorbital_qs_loop_factor'
+    assert floor == pytest.approx(SETTINGS.mmr_coorbital_qs_loop_factor * quad_horseshoe_period(mu, n, np.radians(1.2), eps), rel=5e-3)
+    floor, _, source, _ = run_floor_of(t, theta, a, mixed_run(t, theta, turns), AnalysisSettings(mmr_coorbital_pair_loop_min_hill=3.0))
+    assert source == cg.FLOOR_SOURCE_NOT_REFLECTION and np.isnan(floor)
+    t, theta, a, turns = horseshoe_track(mu, n, eps, 0.45, 300.0)
     floor, _, source, _ = run_floor_of(t, theta, a, mixed_run(t, theta, turns))
     assert source == cg.FLOOR_SOURCE_NOT_REFLECTION and np.isnan(floor)

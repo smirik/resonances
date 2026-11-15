@@ -565,10 +565,10 @@ def test_secular_main_zone_has_no_origin(example):
     assert 'origin' not in main.lower()
 
 
-@pytest.mark.parametrize('k, b, thin', [(0.95, 0.9, True), (0.90, 1.3, False)])
+@pytest.mark.parametrize('k, b, thin', [(1.25, 1.5, True), (1.35, 1.6, False)])
 def test_a_short_record_decided_by_the_policy_shows_step_p(k, b, thin):
     """W36 F5 (143662 s+g5−g8−s3): the policy, not the tree, decided a too-short record that ends in circulation
-    (`pol_decided_by` insufficient_time). ◆ moves to P with MMR's question and the end travel σ_f spans (1.04 and 1.11
+    (`pol_decided_by` insufficient_time). ◆ moves to P with MMR's question and the end travel σ_f spans (1.05 and 1.14
     turns by hand, `test_secular_thin_end_travel`); the shape's 'Not yet' stays, overruled; a thin travel says at most
     medium."""
     from tests.resonances.analysis.test_secular_thin_end_travel import short_record_series
@@ -584,9 +584,9 @@ def test_a_short_record_decided_by_the_policy_shows_step_p(k, b, thin):
     answer, numbers = vc.plain(line.answer), vc.plain(line.numbers)
     assert answer.startswith('No, but σ_f ends in circulation → non-resonant')
     assert ('at most medium' in answer) == thin
-    travel = '1.04' if thin else '1.11'
+    travel = '1.05' if thin else '1.14'
     assert numbers.startswith(f'σ_f spans {travel} turns ≥ 1 turn over the window')
-    assert ('thin: 1.04 turns < 1.1 turns' in numbers) == thin
+    assert ('thin: 1.05 turns < 1.1 turns' in numbers) == thin
     shape = next(line for line in column.checks if line.number == '0')
     assert not shape.decides and shape.answer == 'Not yet: fewer turning points than one cycle needs; the policy decides at step P.'
     assert 'decided by the policy' in column.subtitle.detail and 'rule P' in column.footer

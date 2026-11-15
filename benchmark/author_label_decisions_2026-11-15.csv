@@ -1,0 +1,3 @@
+example_id,status,confidence,angle_status,source
+coorbital__2010_JK1__1E-1+0+0,transient,low,,"author:2026-11-15 (answers page, the QS run floor: «2010 JK1 - согласен с transient/low»; «1 цикл подковы с 3 поворотами - да, transient / low»)"
+coorbital__2026_SZ2__1V-1+0+0,resonant,certain,,"author:2026-11-15 (answers page, rule coorbital_well_core: «2026 SZ2 - согласен с certain»)"
