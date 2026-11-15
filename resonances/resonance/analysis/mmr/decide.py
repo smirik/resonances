@@ -212,6 +212,12 @@ from resonances.resonance.analysis.verdict import (
     margin_of_check,
 )
 
+# the rule a run's own 1:1 floor fires when it changes the decision (`run_floor_acts`); a profile loop otherwise
+FLOOR_RULES = {
+    FLOOR_SOURCE_QS_LOOP: rules_module.Rule.COORBITAL_QS_RUN_FLOOR,
+    FLOOR_SOURCE_PAIR_LOOP: rules_module.Rule.COORBITAL_PAIR_LOOP_FLOOR,
+}
+
 # Margin ids of SPEC §7.1 and their class; R0 is the potential with a (a decisive physics margin)
 MARGIN_CLASSES = {
     'L1': MarginClass.DECISIVE,
@@ -446,15 +452,7 @@ def run_floor_acts(geometry: Geometry, settings: AnalysisSettings) -> Tuple[rule
         period = run.period_med_yr if run.accepted else 2 * float(np.median(np.diff(run.tp_times_yr)))
         band = 1.0 if run.accepted else 1.0 - settings.confidence_thin_band
         if is_finite(period) and (period >= own_floor * band) != (period >= default * band):
-            acted.append(
-                rules_module.Rule.COORBITAL_QS_RUN_FLOOR
-                if qs_loop
-                else (
-                    rules_module.Rule.COORBITAL_PAIR_LOOP_FLOOR
-                    if own.source == FLOOR_SOURCE_PAIR_LOOP
-                    else rules_module.Rule.COORBITAL_FLOOR_PROFILE
-                )
-            )
+            acted.append(FLOOR_RULES.get(own.source, rules_module.Rule.COORBITAL_FLOOR_PROFILE))
     return tuple(dict.fromkeys(acted))
 
 

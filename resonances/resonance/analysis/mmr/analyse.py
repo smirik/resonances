@@ -125,6 +125,7 @@ from resonances.resonance.analysis.verdict import (
 
 NAN = float('nan')
 BYTES_PER_MB = 1e6
+_UNSET = object()  # `regime_prominence`: no fast_part given
 FAST_RESIDUAL_PERCENTILE = 95  # the peak of a modulated wave without its rare outliers
 VERDICT_FLAGS = frozenset(str(flag) for flag in Flag)
 # the G2a cuts made anywhere in the analysis of one record (`_finish`); None outside `analyse_mmr`, whose outermost call
@@ -211,7 +212,7 @@ CONVENTION_FLOOR = 'mmr_libration_period_min_yr'
 def _image_floor_of(run_floor):
     """The per-run floor the libration image reads (`geometry.libration_image`, `run_floor_of`): the 1:1 model's
     `floor_of` in the G1q pass (rule coorbital_qs_run_floor), None anywhere else (the first pass, every other angle)."""
-    return run_floor.floor_of if run_floor is not None and getattr(run_floor, 'qs_pass', False) else None
+    return run_floor.floor_of if run_floor is not None and run_floor.qs_pass else None
 
 
 def libration_image(prep: Preprocessed, period_floor_yr: float, settings: AnalysisSettings, run_floor=None) -> np.ndarray:
@@ -251,15 +252,15 @@ def fast_residual(
     return float(np.percentile(part[inside], FAST_RESIDUAL_PERCENTILE))
 
 
-def _prominence(prep: Preprocessed, settings: AnalysisSettings, fast_residual_rad: Optional[float] = None, run_floor=None) -> float:
+def _prominence(prep: Preprocessed, settings: AnalysisSettings, fast_residual_rad: Optional[float] = None) -> float:
     """TP prominence: the floor, or mmr_tp_ripple_factor x the larger of the unremoved planetary ripple and the
-    fast residual (`fast_residual`, computed here when not given; `run_floor` as in `fast_part`)."""
-    fast = fast_residual(prep, settings, run_floor=run_floor) if fast_residual_rad is None else fast_residual_rad
+    fast residual (`fast_residual`, computed here when not given)."""
+    fast = fast_residual(prep, settings) if fast_residual_rad is None else fast_residual_rad
     ripple = max(prep.unremoved_ripple_rad, fast)
     return geometry_module.turning_prominence(math.radians(settings.mmr_tp_prominence_floor_deg), settings.mmr_tp_ripple_factor, ripple)
 
 
-def regime_prominence(prep: Preprocessed, settings: AnalysisSettings, run_floor=None) -> geometry_module.LocalProminence:
+def regime_prominence(prep: Preprocessed, settings: AnalysisSettings, run_floor=None, part=_UNSET) -> geometry_module.LocalProminence:
     """The TP prominence of a stretch from the mask of its own samples: a regime between jumps of a
     (`geometry.finish_geometry`) or a run of provisional turning points found at the floor `mmr_tp_prominence_floor_deg`
     (`geometry.local_thresholds`). `_prominence` with the fast residual measured on those samples only; the unremoved
@@ -272,12 +273,13 @@ def regime_prominence(prep: Preprocessed, settings: AnalysisSettings, run_floor=
     must span at least P_f (one cycle of the slowest wave the residual holds). A shorter regime has no measurement of
     its own: NaN, and the geometry keeps the record's prominence there (54 of the UG22 regimes are shorter than P_f).
     A run's ends are where its oscillation starts and stops, so they are trimmed the same way (2001 PG14 33S-2+0-31:
-    10.0 deg on the run at 0.35-2.8 kyr against 21.0 deg of the record). `run_floor` as in `fast_part`."""
+    10.0 deg on the run at 0.35-2.8 kyr against 21.0 deg of the record). `run_floor` as in `fast_part`; `part`: `fast_part`
+    of the pass when computed already (None included), else computed at the first regime that needs it."""
     t = np.asarray(prep.t_yr, float)
     window = filtering.window_mask(t, prep.window)
     floor = preprocess_module.fast_reference(prep, settings)  # the slowest wave the fast part holds (`fast_part`)
     margin = settings.filter_edge_trim_cutoffs * floor
-    cache: List[Optional[np.ndarray]] = []
+    cache: List[Optional[np.ndarray]] = [] if part is _UNSET else [part]
 
     def prominence(own: np.ndarray) -> float:
         samples = np.flatnonzero(own)
@@ -346,24 +348,28 @@ def _response_and_energy(series, prep, slow, geometry, context, sampling, settin
     return response, _energy(series, prep, slow, geometry, response, context, sampling, settings, well)
 
 
-def _measure(series, context, sampling, prep, prominence, settings, floor_well=None, run_floor=None):
+def _pass_fast(prep: Preprocessed, settings: AnalysisSettings, run_floor) -> Tuple[Optional[np.ndarray], float]:
+    """The pass's `fast_part` (read again by `regime_prominence`) and its `fast_residual` (0 without a part)."""
+    part = fast_part(prep, settings, run_floor)
+    return part, (fast_residual(prep, settings, part=part) if part is not None else 0.0)
+
+
+def _measure(series, context, sampling, prep, prominence, settings, floor_well, run_floor, part):
     """Geometry, slow parts, response and energy; measured again on the last regime after a jump of a. Every run of
     turning points and every regime between jumps is selected at its own prominence (`regime_prominence`). A two-body
     angle with its planet saved carries the track of its moving well (`centre_track`): a run whose centre moves is
     tested again in psi = sigma - c(t) (`geometry._classify_run`), its force law is fitted there and R0 reads the
     full well's periods. `floor_well`: the quasi-satellite well of the G1q pass (`geometry.FloorWell`); `run_floor`: the
-    1:1 run-floor model of this pass (`_run_floor_model`), built here when not given."""
+    1:1 run-floor model of this pass (`_run_floor_model`); `part`: the pass's `fast_part`."""
     well = centre_track_module.build(series, context, settings, prep.cutoff.cutoff_yr)
     coorbital = response_module.law_planet(series.resonance) is not None
     angle = preprocess_module.filtered_angle(prep, context, sampling.step_yr, coorbital, settings.libration_regime_cuts, floor_well)
-    if run_floor is None:
-        run_floor = _run_floor_model(series, context, prep, settings, floor_well)
     # the turning point the filter's edge trim hides, read on the orbit-averaged raw 1:1 angle (W28 C4)
     edge_turn = coorbital_geometry.coorbital_edge_turn(series, context, prep.t_yr, prep.angle_clean, context.orbital_period_yr, settings)
     # a 1:1 episode ends only at a separatrix; its changes of well and amplitude are annotations (W28 C7)
     wells = coorbital_geometry.coorbital_wells(series, context, settings)
     angle = replace(angle, well_model=well, run_floor=run_floor, edge_turn=edge_turn, coorbital_wells=wells)
-    local = regime_prominence(prep, settings, run_floor)
+    local = regime_prominence(prep, settings, run_floor, part)
     geometry = geometry_module.measure_geometry(angle, prominence, settings, local)
     prep.filter_too_slow, prep.gain_at_period_cycle = preprocess_module.filter_guard(
         geometry.period_cycle_yr, prep.cutoff.cutoff_yr, settings, sampling.step_yr
@@ -382,6 +388,8 @@ def _measure(series, context, sampling, prep, prominence, settings, floor_well=N
         response, energy = _response_and_energy(series, prep, slow, geometry, context, sampling, settings, well)
     for rule in decide.run_floor_acts(geometry, settings):
         geometry.rules_fired = fire(geometry.rules_fired, rule)
+    if run_floor is not None:
+        run_floor.release()  # the pass is measured: its law models (record-length arrays) are no longer read
     return angle, geometry, slow, response, energy
 
 
@@ -1174,9 +1182,10 @@ def _analyse_mmr(
     # G1f: the pass at the floor of the angle's own averaged potential (the flag above keeps the angle's own floor)
     prep = preprocess_module.preprocess(series, context, sampling, settings, subfloor.period_floor if subfloor else floor, block)
     run_floor = _run_floor_model(series, context, prep, settings, floor_well)
-    fast = fast_residual(prep, settings, run_floor=run_floor)
+    part, fast = _pass_fast(prep, settings, run_floor)
     prominence = _prominence(prep, settings, fast)
-    angle, geometry, slow, response, energy = _measure(series, context, sampling, prep, prominence, settings, floor_well, run_floor)
+    angle, geometry, slow, response, energy = _measure(series, context, sampling, prep, prominence, settings, floor_well, run_floor, part)
+    del part
     period = geometry.period_cycle_yr
     sampling.aliased_lines_yr = sampling_module.aliased_lines(
         context.synodic_periods_yr, sampling.step_yr, period, settings.mmr_aliased_line_harmonics, settings.mmr_aliased_line_band_factor
@@ -2296,7 +2305,8 @@ def qs_rejection(geometry: Optional[Geometry], well, found: List[geometry_module
         reason = f'not_accepted:{run.reject_reason}'
     else:
         reason = str(decide.episode_eligibility(geometry, settings).get(run.episode_id, ''))
-    reading = dict(geometry.run_floor(run).columns) if geometry.run_floor(run) is not None else {}
+    own = geometry.run_floor(run)
+    reading = dict(own.columns) if own is not None else {}
     columns.update(
         geo_qs_reject=reason,
         geo_qs_run_t0_yr=float(run.t_start_yr),

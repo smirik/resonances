@@ -422,6 +422,9 @@ class Verdict:
     pol_extend_clause: str = ''
     pol_veto_need_yr: float = math.nan
     pol_core_cycles: float = math.nan  # (n_TP - 1) / 2 of the decisive episode: the observed cycles certain needs
+    # the record's time inside the counted episodes [yr] and its share of the record (`policy.libration_time`)
+    lib_time_yr: Optional[float] = None
+    lib_share: Optional[float] = None
     # each input the level read with the highest level it allows (`policy.level_inputs`, 'N:4.12>=3:certain;M:thin:high'),
     # the policy step that decided the status ('tree' when it kept the tree's; `policy.DECIDED_*`) and the checks whose
     # measured objection made V ambiguous (`policy.OBJECTION_*`, ';'-joined)
@@ -524,6 +527,8 @@ class Verdict:
                 # inf: no record up to ZLK_EXTEND_MAX_YR resolves the veto (written, not blank: blank is "no length named")
                 'pol_veto_need_yr': math.inf if self.pol_veto_need_yr == math.inf else finite_or_none(self.pol_veto_need_yr),
                 'pol_core_cycles': finite_or_none(self.pol_core_cycles),
+                'lib_time_yr': self.lib_time_yr,
+                'lib_share': self.lib_share,
                 'pol_level_inputs': self.pol_level_inputs,
                 'pol_decided_by': self.pol_decided_by,
                 'pol_objection_check': self.pol_objection_check,
@@ -598,6 +603,8 @@ class Verdict:
             pol_extend_clause=cell_text(row['pol_extend_clause']),
             pol_veto_need_yr=_nan_number(row['pol_veto_need_yr']),
             pol_core_cycles=_nan_number(row['pol_core_cycles']),
+            lib_time_yr=_number(row['lib_time_yr']),
+            lib_share=_number(row['lib_share']),
             pol_level_inputs=cell_text(row['pol_level_inputs']),
             pol_decided_by=cell_text(row['pol_decided_by']),
             pol_objection_check=cell_text(row['pol_objection_check']),

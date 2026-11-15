@@ -198,7 +198,11 @@ class EdgeTurn:
 
 def run_key(run: 'Episode') -> Tuple[float, ...]:
     """A run's identity across geometries of one angle: its TP times [yr] (runs are rebuilt with new ids)."""
-    return tuple(round(float(x), 6) for x in np.asarray(run.tp_times_yr, dtype=float))
+    return times_key(run.tp_times_yr)
+
+
+def times_key(tp_times_yr) -> Tuple[float, ...]:
+    return tuple(round(float(x), 6) for x in np.asarray(tp_times_yr, dtype=float))
 
 
 class RejectReason(StrEnum):
@@ -925,7 +929,7 @@ class FloorWell:
     def holds_span(self, t_start_yr: float, t_end_yr: float, centres_rad) -> bool:
         """`holds` on a span [yr] and its centre(s) [rad]: one of them within the well's median half-width of its median
         centre over the span (MMR: also a run's turning points before it is an episode, `CoorbitalRunFloor.read`)."""
-        inside = (self.t_yr >= t_start_yr) & (self.t_yr <= t_end_yr)
+        inside = slice(np.searchsorted(self.t_yr, t_start_yr, 'left'), np.searchsorted(self.t_yr, t_end_yr, 'right'))  # t_yr sorted
         centre, halfwidth = self.centre_rad[inside], self.halfwidth_rad[inside]
         finite = np.isfinite(centre) & np.isfinite(halfwidth)
         if not np.any(finite) or np.count_nonzero(finite) < self.min_share * len(finite):
@@ -3164,6 +3168,14 @@ def _accept_in_wells(episode: Episode, model: Optional[WellsModel], settings: An
     names = cycle_wells(model, episode.tp_times_yr, episode.tp_values_rad, episode.tp_prominence_rad)
     if not names or not all(names):
         return None
+    return _moving_centre_libration(episode)
+
+
+def _moving_centre_libration(episode: Episode) -> Optional[Episode]:
+    """A `centre_moves` run that closes a cycle and whose full-cycle centres stay within one turn, accepted as one
+    libration of moving centre (shape REGIME_CHANGE, frame sigma, centre stationarity not measured); None otherwise."""
+    if episode.reject_reason != RejectReason.CENTRE_MOVES or not episode.closed_cycles:
+        return None
     _, mids, _ = cycle_centres(episode.tp_times_yr, episode.tp_values_rad)
     if not (len(mids) and np.ptp(mids) < TWO_PI):
         return None
@@ -3369,21 +3381,8 @@ def _continued_core(
     (shape REGIME_CHANGE, frame sigma, centre stationarity not measured) when it closes a cycle and its full-cycle
     centres stay within a turn. None otherwise."""
     piece = _classify_run(episode_id, tp, run, record, settings, window)
-    if not piece.accepted:
-        if piece.reject_reason != RejectReason.CENTRE_MOVES or not piece.closed_cycles:
-            return None
-        _, mids, _ = cycle_centres(piece.tp_times_yr, piece.tp_values_rad)
-        if not (len(mids) and np.ptp(mids) < TWO_PI):
-            return None
-        piece = replace(
-            piece,
-            accepted=True,
-            shape=EpisodeShape.REGIME_CHANGE,
-            reject_reason=RejectReason.NONE,
-            frame=FRAME_SIGMA,
-            centre_stationarity=str(CheckValue.NOT_MEASURED),
-        )
-    return replace(piece, held_core=(float(core_yr[0]), float(core_yr[1])))
+    piece = piece if piece.accepted else _moving_centre_libration(piece)
+    return replace(piece, held_core=(float(core_yr[0]), float(core_yr[1]))) if piece is not None else None
 
 
 def _half_cycle_circulates(angle: 'FilteredAngle', t0_yr: float, t1_yr: float, averaged: np.ndarray) -> bool:

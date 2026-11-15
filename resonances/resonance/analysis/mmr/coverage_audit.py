@@ -50,13 +50,14 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 
 from resonances.resonance.analysis.mmr.quasi_satellite import PASS_REJECTED, REJECT_NO_RUN_IN_WELL, REJECT_NO_TP
+from resonances.resonance.analysis.pendulum import MAD_TO_SIGMA
 from resonances.resonance.analysis.settings import AnalysisSettings
+from resonances.resonance.analysis.verdict import Flag
 
 NAN = float('nan')
 TWO_PI = 2.0 * np.pi
-MAD_SCALE = 1.4826  # MAD -> sigma of a normal distribution
-FLAG_UNCOVERED = 'uncovered_bounded_run'
-FLAG_FLOOR_ABOVE_LOOP = 'floor_above_own_loop'
+FLAG_UNCOVERED = str(Flag.UNCOVERED_BOUNDED_RUN)
+FLAG_FLOOR_ABOVE_LOOP = str(Flag.FLOOR_ABOVE_OWN_LOOP)
 # aud_unc_overlap_reason without an overlapping run of the classifier
 OVERLAP_NO_RUN = 'no_run'
 OVERLAP_QS_REJECTED = 'qs_pass_rejected'
@@ -121,14 +122,12 @@ class Stretch:
 class CoverageAudit:
     """What `audit` found: the bounded runs, the missed stretches inside the window (longest first), those whose
     force law passes (`confirmed`; every missed one without a `law_of`), the uncovered half-cycles of edge stretches,
-    the hysteresis and noise, and the columns; `flag` the word for verdict.flags."""
+    and the columns (the hysteresis and noise among them); `flag` the word for verdict.flags."""
 
     runs: List[Stretch] = field(default_factory=list)
     missed: List[Stretch] = field(default_factory=list)
     confirmed: List[Stretch] = field(default_factory=list)
     edge_half_cycles: int = 0
-    noise_rad: float = NAN
-    swing_rad: float = NAN
     columns: Dict[str, object] = field(default_factory=empty_columns)
 
     @property
@@ -245,9 +244,8 @@ def audit(
     averaged = orbit_averaged(t, raw, width)
     jitter = averaged - orbit_averaged(t, averaged, width)
     jitter = jitter[np.isfinite(jitter)]
-    noise = MAD_SCALE * float(np.median(np.abs(jitter - np.median(jitter)))) if len(jitter) else 0.0
+    noise = MAD_TO_SIGMA * float(np.median(np.abs(jitter - np.median(jitter)))) if len(jitter) else 0.0
     h = max(math.radians(settings.mmr_coorbital_audit_min_swing_deg), settings.mmr_coorbital_audit_noise_factor * noise)
-    result.noise_rad, result.swing_rad = noise, h
     turns = hysteresis_turns(averaged, h)
     minimum = int(settings.mmr_coorbital_audit_min_half_cycles)
     columns.update(aud_noise_deg=math.degrees(noise), aud_swing_deg=math.degrees(h), aud_n_bounded_runs=0.0)
@@ -331,7 +329,7 @@ def floor_contradiction(runs: Sequence[Tuple[object, str, float, float]], qs_col
     found = [
         FloorContradiction(f'run:{episode_id}', float(floor), float(loop))
         for episode_id, reason, floor, loop in runs
-        if reason == 'below_period_floor' and np.isfinite(loop) and loop > 0 and np.isfinite(floor) and floor > loop
+        if reason == REJECT_BELOW_FLOOR and np.isfinite(loop) and loop > 0 and np.isfinite(floor) and floor > loop
     ]
     if found:
         return max(found, key=lambda c: c.floor_yr / c.loop_yr)

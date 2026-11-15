@@ -52,6 +52,7 @@ from resonances.resonance.analysis.geometry import (
 from resonances.resonance.analysis.ledger import Ledger, LedgerEntry, Margin, Op
 from resonances.resonance.analysis import orbit_type as orbit_type_module
 from resonances.resonance.analysis.mmr import decide as mmr_decide
+from resonances.resonance.analysis.mmr.owner import connected_blocks
 from resonances.resonance.analysis.mmr.strength import DIRECT_METHODS
 from resonances.resonance.analysis.pendulum import has_zone_cycle
 from resonances.resonance.analysis.secular import decide as secular_decide
@@ -675,6 +676,26 @@ def decided_by(outcome: _Outcome, tree_status: Status | str, tree_reason: Reason
     if step == DECIDED_TREE and not kept:
         step = DECIDED_GEOMETRY  # a moved status always names its step; a handler that names none read the geometry
     return join_list([step] + ([NOT_UPHELD + outcome.not_upheld] if outcome.not_upheld else []))
+
+
+def libration_time(
+    geometry: Optional[Geometry], outcome: _Outcome, record: Tuple[float, float], settings
+) -> Tuple[Optional[float], Optional[float]]:
+    """(`lib_time_yr`, `lib_share`): the record's time inside the counted episodes and its share of the record; (None,
+    None) without one. The union of the counted runs, each from its first to its last turning point, carried to a
+    record edge it covers (`covers_edges`), and of the counted spans (a 1:1 leg, a held half-swing)."""
+    t0, t1 = record
+    intervals = list(outcome.counted_spans)
+    for run in geometry.runs if geometry is not None else []:
+        if run.episode_id in outcome.counted:
+            start, end = covers_edges(run, settings)
+            intervals.append((t0 if start else run.t_start_yr, t1 if end else run.t_end_yr))
+    clipped = [(max(float(a), t0), min(float(b), t1), '') for a, b in intervals]
+    blocks = connected_blocks([piece for piece in clipped if piece[1] > piece[0]])
+    if not blocks or not t1 > t0:
+        return None, None
+    total = sum(b - a for a, b in blocks)
+    return total, total / (t1 - t0)
 
 
 def _span_tag(outcome: _Outcome) -> str:
@@ -1309,7 +1330,7 @@ def _apply_mmr_row(analysis, settings: AnalysisSettings, member: Optional[Verdic
     legs = _legs(geometry, settings) if rule in LEG_RULES else ([], None, False, False)
     held = _held_halves(geometry, settings)
     near = _near_runs(geometry, analysis, settings) if geometry is not None else []
-    # the end of the record: the last turning point of any run or candidate span (`_mmr_t_last`), sigma_f's travel after it
+    # the end of the record: the last turning point of any run or candidate span (`_end_witness`), sigma_f's travel after it
     end = EndReading()
     if geometry is not None:
         spans = [(leg.t0_yr, leg.t1_yr) for leg, outcome in legs[0] if outcome] + [(h.t0_yr, h.t1_yr) for h in held]
@@ -1439,6 +1460,10 @@ def _finish_mmr(analysis, outcome: _Outcome, settings, ledger, end: EndReading, 
     moved = Status(outcome.status) != v.status
     inputs = level_inputs(status, ev, settings, outcome.level, outcome.veto_thin)
     _write(v, outcome, ev, confidence, action, end, clause, extend_to, resample, veto_need, ledger, inputs, objections)
+    if analysis.prep is not None:
+        v.lib_time_yr, v.lib_share = libration_time(
+            geometry, outcome, (float(analysis.prep.t_yr[0]), float(analysis.prep.t_yr[-1])), settings
+        )
     if outcome.veto == VETO_FORCED_WAVE:  # the roles (A3a): a kinematic cause, the steady wave of the background
         v.cause_role, v.cause_term, v.owner = 'kinematic', FORCED_WAVE_TERM, ''
     if moved:
@@ -1940,6 +1965,8 @@ def _finish_long(analysis, outcome: _Outcome, settings: AnalysisSettings, ledger
     inputs = level_inputs(status, ev, settings, None, outcome.veto_thin, outcome.travel_thin)
     objections = outcome.objections if ev.veto_state == V_AMBIGUOUS else []
     _write(v, outcome, ev, confidence, action, end, clause, extend_to, None, veto_need, ledger, inputs, objections)
+    t_yr = analysis.series.t_yr
+    v.lib_time_yr, v.lib_share = libration_time(geometry, outcome, (float(t_yr[0]), float(t_yr[-1])), settings)
     analysis.policy = _result(outcome, ev, action, clause, inputs)  # a long-period outcome has no spans
 
 

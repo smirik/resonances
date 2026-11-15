@@ -833,13 +833,14 @@ def fixed_scale_r2(target: np.ndarray, model: np.ndarray, scale: float) -> float
     return 1 - float(np.var(target - scale * model[mask])) / total
 
 
-def coorbital_law(data: CoorbitalInput, settings: AnalysisSettings) -> CoorbitalLaw:
-    """The force law (1) and the energy integral (2) of a 1:1 angle on the response pieces (module docstring)."""
+def coorbital_law(data: CoorbitalInput, settings: AnalysisSettings, model: Optional[LawModel] = None) -> CoorbitalLaw:
+    """The force law (1) and the energy integral (2) of a 1:1 angle on the response pieces (module docstring);
+    `model`: `law_model(data)` when already built (it does not read the mask or the pieces)."""
     t = np.asarray(data.t_yr, dtype=float)
     sign = 1 if data.body_coefficient > 0 else -1
     n = float(data.planet_mean_motion_rad_yr)
     a_planet = (GM_SUN / n**2) ** (1.0 / 3.0) if n > 0 else NAN
-    model = law_model(data, settings)
+    model = model if model is not None else law_model(data, settings)
     theta, model_adot, model_v, n_tables = model.theta, model.adot, model.potential, model.n_tables
     mask = np.asarray(data.mask, dtype=bool)
     adot = np.asarray(data.adot, dtype=float)

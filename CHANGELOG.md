@@ -127,10 +127,17 @@ Code and scripts written for 0.5.x must be updated for these changes:
 - **Agent skill.** `resonances skill install [--user] [--path DIR] [--force]` installs instructions for coding
   agents (how to set up runs and read the verdicts) into `.claude/skills/resonances`
   ([Using with AI agents](https://smirik.github.io/resonances/agents/)).
+- **Time in libration.** `summary.csv` columns `lib_time_yr` and `lib_share`: the years of the record inside the
+  counted episodes and their share of the record.
+- **Short co-orbital episodes.** A quasi-satellite or horseshoe run shorter than the tadpole period floor counts when
+  its own loops and its own 1:1 force law support it (`MMR_COORBITAL_QS_LOOP_FACTOR`,
+  `MMR_COORBITAL_PAIR_LOOP_FLOOR`, `MMR_COORBITAL_PAIR_LOOP_MIN_HILL`); a 1:1 run whose late cycles leave the well
+  keeps its well-holding core and ends only at a separatrix crossing. The record's end is read from the last turning
+  point of any run, for mean-motion, secular and Lidov-Kozai angles alike.
 - **Settings for every threshold.** Each threshold of the analysis has an `.env` key and a line in
   [Configuration](https://smirik.github.io/resonances/config/). Thresholds that are conventions are marked as
   such.
-- **A benchmark** of 827 real integrations, part of them with visual labels, on which the thresholds are tested
+- **A benchmark** of 833 real integrations, part of them with visual labels, on which the thresholds are tested
   ([Benchmark](https://smirik.github.io/resonances/benchmark/)).
 
 ### Changed

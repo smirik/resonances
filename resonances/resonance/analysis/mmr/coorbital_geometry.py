@@ -530,33 +530,34 @@ def series_profile(series, context, t0_yr: float, t1_yr: float, settings: Analys
 
 
 def local_law(
-    record: CoorbitalInput, window_yr: Tuple[float, float], cutoff_yr: float, settings: AnalysisSettings
+    record: CoorbitalInput, window_yr: Tuple[float, float], cutoff_yr: float, settings: AnalysisSettings, memo: Optional[dict] = None
 ) -> Optional[CoorbitalLaw]:
     """The 1:1 force law and energy integral (`coorbital.coorbital_law`, its own force_check and energy_check) on one
     window: a of the record low-passed at `cutoff_yr` and differentiated, the model through the same low-pass, the
     elements in blocks of the cutoff, one energy over the window (a leg conserves it). `record` holds the record's
     unfiltered angle, a and elements (its mask, pieces, a_dot, cutoffs and cycle edges are replaced). None when the
     cutoff is not longer than two steps, the window (clipped to the record) is shorter than the cutoff (less than one
-    filtered period: no fit) or the filter fails."""
+    filtered period: no fit) or the filter fails. `memo` (cutoff -> (a_dot, `coorbital.law_model`)): the caller's cache
+    for many windows of one record; the model reads every sample, the window only masks the fit."""
     t = np.asarray(record.t_yr, dtype=float)
     if len(t) < 2 or not (np.isfinite(cutoff_yr) and cutoff_yr > 2 * float(np.median(np.diff(t)))):
         return None
     lo, hi = max(float(window_yr[0]), float(t[0])), min(float(window_yr[1]), float(t[-1]))
     if not hi - lo >= cutoff_yr:
         return None
-    a_f = filtering.lowpass_or_none(t, np.asarray(record.a, dtype=float), cutoff_yr, settings)
-    if a_f is None:
-        return None
-    data = replace(
-        record,
-        adot=filtering.time_derivative(t, a_f),
-        mask=(t >= lo) & (t <= hi),
-        pieces=((lo, hi),),
-        cutoffs_yr=(float(cutoff_yr),),
-        cycle_edges_yr=(),
-        block_yr=float(cutoff_yr),
-    )
-    return coorbital_module.coorbital_law(data, settings)
+    cached = memo.get(float(cutoff_yr)) if memo is not None else None
+    data = replace(record, cutoffs_yr=(float(cutoff_yr),), cycle_edges_yr=(), block_yr=float(cutoff_yr))
+    if cached is None:
+        a_f = filtering.lowpass_or_none(t, np.asarray(record.a, dtype=float), cutoff_yr, settings)
+        if a_f is None:
+            return None
+        adot = filtering.time_derivative(t, a_f)
+        cached = (adot, coorbital_module.law_model(replace(data, adot=adot), settings))
+        if memo is not None:
+            memo[float(cutoff_yr)] = cached
+    adot, model = cached
+    data = replace(data, adot=adot, mask=(t >= lo) & (t <= hi), pieces=((lo, hi),))
+    return coorbital_module.coorbital_law(data, settings, model)
 
 
 def series_input(series, context, angle: np.ndarray) -> Optional[CoorbitalInput]:
@@ -657,10 +658,11 @@ class CoorbitalRunFloor:
     cutoff_yr: float
     settings: AnalysisSettings
     cache: Dict[tuple, object] = field(default_factory=dict)  # run_key -> RunFloor
+    # cutoff -> the whole-record law model of `local_law` (memo); `release` frees it once the pass is measured
+    laws: Dict[float, tuple] = field(default_factory=dict)
     qs_pass: bool = False  # the model of the G1q pass: a run of QS turns gets its own loop floor (coorbital_qs_run_floor)
     qs_floor_yr: float = NAN  # the pass's QS floor: a QS loop floor that cannot go below it is moot (FLOOR_SOURCE_QS_MOOT)
     floor_well: Optional[object] = None  # the G1q pass's `geometry.FloorWell`: a qs_loop run lies in it (None: not read)
-    floors: Dict[tuple, float] = field(default_factory=dict)  # TP times -> floor, the libration image's (`floor_of`)
 
     def floor_of(self, tp_times_yr, tp_values_rad) -> float:
         """The qs_loop floor [yr] of the run through these turning points (`read`), nan for any other reading: the
@@ -668,11 +670,8 @@ class CoorbitalRunFloor:
         qs_loop floor, which `read` gives inside the pass's well only: there the decision reads min(QS floor, it), and
         it reads no profile_loop floor inside the well (`decide.period_floor`), so the image and the decision read the
         same floor of every run."""
-        key = tuple(np.round(np.asarray(tp_times_yr, dtype=float), 6))
-        if key not in self.floors:
-            floor, _, source, _ = self.read(tp_times_yr, tp_values_rad)
-            self.floors[key] = float(floor) if source == FLOOR_SOURCE_QS_LOOP else NAN
-        return self.floors[key]
+        reading = self._cached(tp_times_yr, tp_values_rad)
+        return float(reading.floor_yr) if reading.source == FLOOR_SOURCE_QS_LOOP else NAN
 
     def qs_loop_floor(self, loop_yr: float) -> Tuple[float, str]:
         """(floor [yr], its setting) of a quasi-satellite run whose loop through its own turns takes `loop_yr`:
@@ -704,19 +703,20 @@ class CoorbitalRunFloor:
         return bool(self.floor_well.holds_span(float(times[0]), float(times[-1]), [centre]))
 
     def _pair_loop_floor(self, profile, times, theta, sites, half: float, columns: Dict[str, object]):
-        """Rule coorbital_pair_loop_floor (MMR_COORBITAL_PAIR_LOOP_FLOOR; the author 2026-11-14, 2003 YN107: the
-        designers' amin07h with Codex's witness): the floor of a run that has a turn which is no reflection, or a pair
-        of turns no loop joins, and would otherwise keep the angle's tadpole floor. Its reflecting pairs (both turns at
-        a planet or l3 site, a planet turn >= mmr_coorbital_pair_loop_min_hill Hill radii from the planet in longitude:
-        inside the Hill sphere the planet holds the body; the run's own law in full keeps out the encounters between
-        it and the averaging margin mmr_coorbital_min_turn_hill, author 2026-11-15, 2022 RD2 c075) give the median
-        loop (at most LOOP_PAIRS_MAX evenly spread pairs, finite loops only); the floor is
-        mmr_coorbital_qs_loop_factor x it (0.7: the loop is a prediction at the run's own amplitude, as for the QS run
-        floor; 0.5 let a synthetic wave faster than the planet's force through), at most the tadpole floor (it only relaxes the fallback: uncapped, 2025 XN6's mixed run got 200 yr from one
-        horseshoe pair), and only when the run's own local 1:1 law (the run +- one median half-cycle, at the angle's
-        cutoff) has K > 0 and passes the force check in full (`coorbital.force_check`: R^2 >= mmr_force_r2_full in both
-        halves, K / K_theory within mmr_coorbital_scale_ratio_max): the run's floor is uncertain, so the planet's force
-        must be seen moving it. (floor, setting, FLOOR_SOURCE_PAIR_LOOP, columns) or None (the fallback stays)."""
+        """Rule coorbital_pair_loop_floor (MMR_COORBITAL_PAIR_LOOP_FLOOR; the author 2026-11-14, 2003 YN107: the designers' amin07h
+        with Codex's witness): the floor of a run that has a turn which is no reflection, or a pair of turns no loop
+        joins, and would otherwise keep the angle's tadpole floor. Its reflecting pairs (both turns at a planet or l3
+        site, a planet turn >= mmr_coorbital_pair_loop_min_hill Hill radii from the planet in longitude: inside the Hill
+        sphere the planet holds the body; the run's own law in full keeps out the encounters between it and the
+        averaging margin mmr_coorbital_min_turn_hill, author 2026-11-15, 2022 RD2 c075) give the median loop (at most
+        LOOP_PAIRS_MAX evenly spread pairs, finite loops only); the floor is mmr_coorbital_qs_loop_factor x it (0.7: the
+        loop is a prediction at the run's own amplitude, as for the QS run floor; 0.5 let a synthetic wave faster than
+        the planet's force through), at most the tadpole floor (it only relaxes the fallback: uncapped, 2025 XN6's mixed
+        run got 200 yr from one horseshoe pair), and only when the run's own local 1:1 law (the run +- one median
+        half-cycle, at the angle's cutoff) has K > 0 and passes the force check in full (`coorbital.force_check`: R^2 >=
+        mmr_force_r2_full in both halves, K / K_theory within mmr_coorbital_scale_ratio_max): the run's floor is
+        uncertain, so the planet's force must be seen moving it. (floor, setting, FLOOR_SOURCE_PAIR_LOOP, columns) or
+        None (the fallback stays)."""
         from resonances.resonance.analysis.mmr.preprocess import coorbital_inputs, coorbital_planet, libration_period_floor
 
         settings = self.settings
@@ -726,19 +726,18 @@ class CoorbitalRunFloor:
         inputs = coorbital_inputs(self.series, self.context, planet) if planet is not None else None
         if inputs is None:
             return None
-        limit = float(settings.mmr_coorbital_pair_loop_min_hill) * float((inputs[0] / 3.0) ** (1.0 / 3.0))
+        limit = coorbital_module.hill_softening(inputs[0], settings.mmr_coorbital_pair_loop_min_hill)
         wrapped = np.mod(np.asarray(theta, dtype=float), TWO_PI)
         distance = np.minimum(wrapped, TWO_PI - wrapped)
         ok = [site in REFLECTION_SITES and (site != SITE_PLANET or d >= limit) for site, d in zip(sites, distance)]
         reflecting = [i for i in range(len(theta) - 1) if ok[i] and ok[i + 1]]
         if not reflecting:
             return None
-        chosen = np.unique(np.linspace(0, len(reflecting) - 1, min(len(reflecting), LOOP_PAIRS_MAX)).round().astype(int))
-        loops = [loop_period(profile, theta[reflecting[k] : reflecting[k] + 2]) for k in chosen]
+        loops = [loop_period(profile, theta[reflecting[k] : reflecting[k] + 2]) for k in _spread(len(reflecting), LOOP_PAIRS_MAX)]
         loops = [x for x in loops if np.isfinite(x) and x > 0]
         if not loops:
             return None
-        law = local_law(self.record, (float(times[0]) - half, float(times[-1]) + half), self.cutoff_yr, settings)
+        law = local_law(self.record, (float(times[0]) - half, float(times[-1]) + half), self.cutoff_yr, settings, self.laws)
         if law is None:
             return None
         columns.update(cpl_law_K_over_K_theory=float(law.scale), cpl_law_R2=float(law.r2))
@@ -753,11 +752,19 @@ class CoorbitalRunFloor:
         return floor, setting, FLOOR_SOURCE_PAIR_LOOP, columns
 
     def __call__(self, run):
-        from resonances.resonance.analysis.geometry import RunFloor, run_key  # geometry does not import this module
+        return self._cached(run.tp_times_yr, run.tp_values_rad)
 
-        key = run_key(run)
+    def release(self) -> None:
+        """Free the law models (record-length arrays); the readings stay cached."""
+        self.laws.clear()
+
+    def _cached(self, tp_times_yr, tp_values_rad):
+        """The `RunFloor` of `read`, once per run (`geometry.times_key`) for the geometry and the libration image alike."""
+        from resonances.resonance.analysis.geometry import RunFloor, times_key  # geometry does not import this module
+
+        key = times_key(tp_times_yr)
         if key not in self.cache:
-            floor, setting, source, columns = self.read(run.tp_times_yr, run.tp_values_rad)
+            floor, setting, source, columns = self.read(tp_times_yr, tp_values_rad)
             self.cache[key] = RunFloor(floor, setting, source, tuple(columns.items()))
         return self.cache[key]
 
@@ -782,7 +789,7 @@ class CoorbitalRunFloor:
         own_loop = reflections or quasi_satellite
         # the loops of its consecutive pairs: at most LOOP_PAIRS_MAX of them, evenly spread (a 20-kyr QS run has
         # 5000 turns); the first pair alone where the run has no loop floor (a column only)
-        pairs = np.unique(np.linspace(0, len(theta) - 2, min(len(theta) - 1, LOOP_PAIRS_MAX if own_loop else 1)).round().astype(int))
+        pairs = _spread(len(theta) - 1, LOOP_PAIRS_MAX if own_loop else 1)
         loops = [loop_period(profile, theta[i : i + 2]) for i in pairs]
         loop = float(np.median(loops)) if np.all(np.isfinite(loops)) else NAN
         half = float(np.median(np.diff(times)))
@@ -800,7 +807,7 @@ class CoorbitalRunFloor:
             columns['cpl_floor_source'] = FLOOR_SOURCE_QS_MOOT
             return NAN, '', FLOOR_SOURCE_QS_MOOT, columns
         law = (
-            local_law(self.record, (float(times[0]) - half, float(times[-1]) + half), self.cutoff_yr, self.settings)
+            local_law(self.record, (float(times[0]) - half, float(times[-1]) + half), self.cutoff_yr, self.settings, self.laws)
             if self.record
             else None
         )
@@ -820,6 +827,11 @@ class CoorbitalRunFloor:
             (floor, setting), source = self.qs_loop_floor(loop), FLOOR_SOURCE_QS_LOOP
         columns.update(cpl_floor_yr=floor, cpl_floor_source=source)
         return floor, setting, source, columns
+
+
+def _spread(n: int, at_most: int) -> np.ndarray:
+    """At most `at_most` of the indices 0 .. n - 1, evenly spread (both ends kept when at_most >= 2)."""
+    return np.unique(np.linspace(0, n - 1, min(n, at_most)).round().astype(int))
 
 
 def coorbital_run_floor(

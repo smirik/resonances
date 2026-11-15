@@ -15,11 +15,11 @@ saved, the planets. Nothing is integrated to classify it again.
 |---|---|
 | two-body MMR (`mmr2`) | 289 |
 | three-body MMR (`mmr3`) | 178 |
-| co-orbital (`coorbital`) | 264 |
+| co-orbital (`coorbital`) | 265 |
 | secular | 64 |
 | Lidov-Kozai (`zlk`) | 37 |
 
-The 731 MMR and co-orbital examples cover 600 bodies, from near-Earth space to the trans-Neptunian region.
+The 732 MMR and co-orbital examples cover 601 bodies, from near-Earth space to the trans-Neptunian region.
 
 `benchmark/candidates.csv` is the working catalog (the visual verdict where one was given, the sources),
 `benchmark/labels.csv` the labels, `benchmark/DECISIONS.md` the decisions on disputed cases. Labels proposed by a
@@ -51,30 +51,28 @@ figures are drawn elsewhere by `make docs-figures` (see [Gallery](physics/galler
    confidence where given) and with the unambiguous verdicts of `candidates.csv` must be listed in
    `benchmark/KNOWN_DISAGREEMENTS.csv`. A new disagreement, a listed one that now agrees, and a listed one whose values
    changed all fail the gate. The list's category and reason are explanations, not labels.
-2. **Episodes.** `benchmark/EPISODE_EXPECTATIONS.csv` holds 176 cases of episodes named in the visual review, each
+2. **Episodes.** `benchmark/EPISODE_EXPECTATIONS.csv` holds 177 cases of episodes named in the visual review, each
    with machine checks ("one accepted episode covers the record", "no episode in 39.5–40.2 kyr") and the reviewer's
-   verbatim words in `benchmark/EPISODE_QUOTES.json`. Tiers: A, the reviewer's own words (78 cases); B, a reading the
+   verbatim words in `benchmark/EPISODE_QUOTES.json`. Tiers: A, the reviewer's own words (79 cases); B, a reading the
    reviewer accepted (35); C, old verdicts
    or provisional readings (63); D, analogies (none at present). A failing A or B case that is not flagged `known_fail` fails the gate, and so does a flagged
-   case that passes; C and D are only printed. Four cases are flagged `known_fail`: the Earth co-orbital clones added on
-   2026-11-14 (2003 YN107 c027 and c032, 2024 JR16 c005 and c010), labeled before the fix they need; every other A and B
-   case passes (14 of the 63 C cases fail and are printed only).
+   case that passes; C and D are only printed. No case is flagged `known_fail`: all A and B cases pass (15 of the 63 C cases fail and are printed only).
 
 ## Current agreement
 
-Run `v2-w37-clean` (MMR and co-orbital, 2026-11-14) with `v2-w37-clean-secular-zlk` (secular and ZLK, 2026-11-14),
-settings hash `3d1ef11de54f`, checked by `known_disagreements.py` against the labels of 2026-11-14:
+Run `v2-qs-final` (MMR and co-orbital, 2026-11-15, settings hash `553e42ee7dc6`) with `v2-w37-clean-secular-zlk`
+(secular and ZLK, 2026-11-14; the shared end-of-record witness since then leaves its verdicts unchanged), checked by
+`known_disagreements.py` against the labels of 2026-11-15:
 
 | field | agree / labeled |
 |---|---|
-| status | 232 / 232 |
-| angle_status | 190 / 190 |
-| confidence | 178 / 178 |
-| the verdicts in candidates.csv | 151 / 151 |
+| status | 238 / 238 |
+| angle_status | 188 / 188 |
+| confidence | 181 / 181 |
+| the verdicts in candidates.csv | 150 / 150 |
 | secular and ZLK: status / angle_status / confidence / verdicts | 53 / 53, 22 / 22, 38 / 38, 8 / 8 |
 
-The run predates the four clone labels of 2026-11-14 (2003 YN107 c027 and c032 transient, 2024 JR16 c005 and c010
-resonant); they are listed as known disagreements until the co-orbital fix they need. Labeled examples are a minority of the benchmark, and the labels are themselves revised when a figure is read again; the numbers say that the rules
+No disagreement is listed. Labeled examples are a minority of the benchmark, and the labels are themselves revised when a figure is read again; the numbers say that the rules
 reproduce today's labels, not that they are right on unlabelled bodies.
 
 ## Synthetic tests

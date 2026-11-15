@@ -3569,5 +3569,19 @@
         "transcript": "chat 2026-11-14 (on the combined figures A = current code of followup/combined-yn107 and combined-jr16)"
       }
     ]
+  },
+  {
+    "case": "E123",
+    "example_id": "coorbital__2022_RD2_c075__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/coorbital-clones-2026-11-15/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "2022 rd2 c075 - не уверен, мне кажется, что эпизод в начале всё равно надо выделять обязательно.",
+        "transcript": "chat 2026-11-15 (answers page of qs-missed-episodes, followup/answers/q2_rd2_b_*.png)"
+      }
+    ]
   }
 ]
