@@ -73,7 +73,7 @@ publish-docs:
 
 publish-test:
 	uv build
-	uv publish --index-url https://test.pypi.org/legacy/
+	uv publish --publish-url https://test.pypi.org/legacy/
 
 publish:
 	uv build

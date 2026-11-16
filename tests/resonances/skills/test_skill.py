@@ -136,6 +136,7 @@ def test_cli_user_install_respects_home(tmp_path, monkeypatch):
     home = tmp_path / 'home'
     home.mkdir()
     monkeypatch.setenv('HOME', str(home))
+    monkeypatch.setenv('USERPROFILE', str(home))  # Path.home() on Windows
     monkeypatch.chdir(tmp_path)
     result = CliRunner().invoke(cli, ['skill', 'install', '--user'])
     assert result.exit_code == 0, result.output
