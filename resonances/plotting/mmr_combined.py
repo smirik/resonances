@@ -117,7 +117,7 @@ from resonances.plotting.style import (  # noqa: F401
 from resonances.resonance import oscillations as osc
 from resonances.data.const import GAUSSIAN_YEAR_DAYS
 from resonances.resonance.analysis.filtering import circular_mean, is_finite, lowpass, lowpass_or_none
-from resonances.resonance.analysis.geometry import MARK_AMPLITUDE_CHANGE, RejectReason, wrap_pi
+from resonances.resonance.analysis.geometry import MARK_AMPLITUDE_CHANGE, wrap_pi
 from resonances.resonance.analysis.geometry import well_shift
 from resonances.resonance.analysis.mmr import response as response_module
 from resonances.resonance.analysis.mmr.decide import taken_direct_law, taken_harmonic_law
@@ -161,12 +161,6 @@ EPISODE_LABEL_MIN_PX = 30  # '#id' above an episode only when its fill is at lea
 EPISODE_LABEL_PAD = 0.03  # '#id' sits this fraction of the panel's height above its top edge (clear of the data)
 REJECT_LETTER_MIN_PX = 8
 REJECTED_STRIP = 0.14  # height of the rejected-runs strip, fraction of the panel
-REJECT_LETTERS = {
-    RejectReason.OVER_THE_TOP: 'T',
-    RejectReason.TOO_FEW_TP: 'F',
-    RejectReason.CENTRE_MOVES: 'C',
-    RejectReason.NO_CLOSED_CYCLE: 'O',
-}
 JUMP_MERGE_FRACTION = 0.01  # jumps of a closer than this share of the record are one band
 JUMP_LABEL_PAD_PT = 0.5  # white box around an 'N jumps of a' label [pt]
 PANEL_LETTER_X = 0.004  # the panel letter's left edge, axes fraction
@@ -287,10 +281,10 @@ PANELS = (
 
 LEGEND = (
     'Gray osculating, black filtered (pale: edge); ▲▼: off axis; (c), (d), (h) values right.',
-    '(a) red: center; ▼▲ turns; fill #id: episode (to an edge it covers, else ±P/4 past its turns; / before the last '
-    'jump of a, \\ induced; #id wave / forced (strength) / ripple (dotted): not σ’s); gray strip: rejected run (T over '
-    'the top, F few TPs, C center moves, O no closed cycle; gray #id < floor: not counted); dotted/hatched: '
-    'a jumps; × exit; 1:1: ⊓ sub-regime, hatched – inferred stay.',
+    '(a) red: center; ▼▲ turns; fill #id: counted episode (to an edge it covers, pale in the filter trim, else ±P/4 past '
+    'its turns; / before the last jump of a, \\ induced; #id wave / ripple: not σ’s); leg: a counted 1:1 leg; faint '
+    'dashed cand: candidate, not counted; other runs not drawn; dotted/hatched: a jumps; × exit; 1:1: ⊓ sub-regime, '
+    'hatched – inferred stay.',
     '(b) σ mod 360°; purple dashed: owner, orange dash-dot: subresonance; ▼: window of (b′).',
     '(c) dσ/dt / 2ω₀, symlog; red σ̇ = 0; blue dashed ±2ω₀ (thin: theory); dotted ν(λ̇); ○ slips.',
     '(d) a: light gray osculating, mid gray a_f, black slow a; dotted a*, cyan dashed a_res; blue band ±Δa; red dots: '
@@ -303,19 +297,6 @@ LEGEND = (
     '(k) whole record, color: time; (l) episodes, ≤ 12 cycles, dashed past turns; +: center.',
 )
 # the line of (a) under the minimal policy (W29 SPEC §7): only counted episodes are filled, candidates faint
-LEGEND_POLICY_A = (
-    '(a) red: center; ▼▲ turns; fill #id: counted episode (to an edge it covers, pale in the filter trim, else ±P/4 past '
-    'its turns; / before the last jump of a, \\ induced; #id wave / ripple: not σ’s); leg: a counted 1:1 leg; faint '
-    'dashed cand: candidate, not counted; other runs not drawn; dotted/hatched: a jumps; × exit; 1:1: ⊓ sub-regime, '
-    'hatched – inferred stay.'
-)
-
-
-def legend_lines(analysis) -> Tuple[str, ...]:
-    """LEGEND, with the line of (a) of the minimal policy when the row is under it (`policy_marks`)."""
-    if policy_marks(analysis) is None:
-        return LEGEND
-    return LEGEND[:1] + (LEGEND_POLICY_A,) + LEGEND[2:]
 
 
 # --------------------------------------------------------------------------------------------- helpers
@@ -658,94 +639,6 @@ def induced_episode_ids(analysis: MMRAnalysis) -> frozenset:
     return frozenset(ids)
 
 
-def shade_runs(
-    ax,
-    runs,
-    accepted_ids,
-    colours: Mapping[int, str],
-    times,
-    px_per_unit: float,
-    layout: VerdictFigureLayout,
-    spans: Optional[Mapping[int, Tuple[float, float]]] = None,
-    forced_ids: Collection[int] = (),
-    induced_ids: Collection[int] = (),
-    uncounted: Optional[Mapping[int, str]] = None,
-    labelled: Collection[int] = (),
-):
-    """Accepted episodes as a colored fill (hatched '////' when before the last jump of a, '\\\\' when another
-    resonance induces it, `induced_ids`, `INDUCED_HATCH`; dotted for an unconfirmed ripple, `RIPPLE_HATCH`) over their
-    `spans` (yr, `episode_spans`; first to last turning point without) with '#id' just above the panel's top edge when
-    wide enough (`ax` is the top panel: the label never covers the data or the panel letter; '#id wave' for a forced
-    wave, '#id forced (strength)', '#id ripple': `forced_ids`, a collection (' wave') or id -> label (`wave_labels`),
-    none an episode of the angle), the other runs as a gray strip at the bottom with the letter of their rejection
-    reason (`REJECT_LETTERS`). An accepted run the status does not count (`uncounted`: id -> tag, `uncounted_tags`;
-    W28 C11, card g02-9 A: below the period floor, the center turns) is drawn like a rejected run, over its turning
-    points, with its gray tag '#0 < floor' above the panel instead of an episode's fill. The runs in `labeled` get no
-    '#id' here: `draw_run_labels` writes it with their sub-regimes and residence (W28 C13)."""
-    spans = spans or {}
-    uncounted = uncounted or {}
-    labels = dict(forced_ids) if isinstance(forced_ids, Mapping) else {i: FORCED_WAVE_LABEL for i in forced_ids}
-    for run in runs:
-        own = (run.t_start_yr, run.t_end_yr)
-        start, end = (float(times(v)) for v in (spans.get(run.episode_id, own) if run.episode_id in accepted_ids else own))
-        width_px = (end - start) * px_per_unit
-        middle = 0.5 * (start + end)
-        if run.episode_id in accepted_ids and run.episode_id in uncounted:
-            start, end = (float(times(v)) for v in own)
-            ax.axvspan(start, end, ymin=0, ymax=REJECTED_STRIP, facecolor=REJECTED, alpha=REJECTED_ALPHA, lw=0, zorder=0)
-            if (end - start) * px_per_unit >= REJECT_LETTER_MIN_PX:
-                ax.text(
-                    0.5 * (start + end),
-                    1 + EPISODE_LABEL_PAD,
-                    f'#{run.episode_id}{uncounted[run.episode_id]}',
-                    transform=ax.get_xaxis_transform(),
-                    ha='center',
-                    va='bottom',
-                    fontsize=layout.font_note_pt,
-                    color=REJECTED,
-                    clip_on=False,
-                    zorder=8,
-                )
-        elif run.episode_id in accepted_ids:
-            colour = colours.get(run.episode_id, EPISODE_COLOURS[0])
-            hatches = [EPISODE_BEFORE_JUMP_HATCH] if getattr(run, 'before_last_jump', False) else []
-            hatches += [INDUCED_HATCH] if run.episode_id in induced_ids else []
-            hatches += [RIPPLE_HATCH] if labels.get(run.episode_id) == RIPPLE_LABEL else []
-            ax.axvspan(start, end, facecolor=colour, alpha=EPISODE_ALPHA, lw=0, zorder=0)
-            for hatch in hatches:
-                ax.axvspan(start, end, facecolor='none', edgecolor=colour, hatch=hatch, alpha=0.5, lw=0, zorder=0)
-            if width_px >= EPISODE_LABEL_MIN_PX and run.episode_id not in labelled:
-                ax.text(
-                    middle,
-                    1 + EPISODE_LABEL_PAD,
-                    f'#{run.episode_id}' + labels.get(run.episode_id, ''),
-                    transform=ax.get_xaxis_transform(),
-                    ha='center',
-                    va='bottom',
-                    fontsize=layout.font_note_pt,
-                    color=colour,
-                    fontweight='bold',
-                    clip_on=False,
-                    zorder=8,
-                )
-        else:
-            ax.axvspan(start, end, ymin=0, ymax=REJECTED_STRIP, facecolor=REJECTED, alpha=REJECTED_ALPHA, lw=0, zorder=0)
-            letter = REJECT_LETTERS.get(getattr(run, 'reject_reason', RejectReason.NONE), '')
-            if letter and width_px >= REJECT_LETTER_MIN_PX:
-                ax.text(
-                    middle,
-                    0.5 * REJECTED_STRIP,
-                    letter,
-                    transform=ax.get_xaxis_transform(),
-                    ha='center',
-                    va='center',
-                    fontsize=layout.font_note_pt - 0.5,
-                    color=INK,
-                    fontweight='bold',
-                    zorder=8,
-                )
-
-
 @dataclass(frozen=True)
 class PolicyMarks:
     """What (a) draws under the minimal policy (`policy_marks`): the counted and candidate episode ids, and the spans
@@ -757,11 +650,11 @@ class PolicyMarks:
     candidate_spans: Tuple[Tuple[float, float], ...] = ()
 
 
-def policy_marks(analysis) -> Optional[PolicyMarks]:
-    """The episodes the minimal policy counts and its candidates (W29 SPEC §3.3), or None when the row is not under it
-    (`policy` '': an inner pass or a verdict built by hand, (a) is drawn without marks). Read from the analysis'
+def policy_marks(analysis) -> PolicyMarks:
+    """The episodes the minimal policy counts and its candidates (W29 SPEC §3.3), read from the analysis'
     `PolicyResult` (`analysis.policy`), else from its verdict's `counted_episode_ids`/`candidate_episode_ids` (a stored
-    verdict: the figure re-run path, §7), where a leg or a half-swing has no span and is not drawn."""
+    verdict: the figure re-run path, §7), where a leg or a half-swing has no span and is not drawn. Every analysis the
+    package draws ends with the policy: one without it (an inner pass, a verdict built by hand) is a ValueError."""
     result = getattr(analysis, 'policy', None)
     if result is not None and str(getattr(result, 'policy', '')) == verdict_text.POLICY_MINIMAL:
         return PolicyMarks(
@@ -772,7 +665,9 @@ def policy_marks(analysis) -> Optional[PolicyMarks]:
         )
     verdict = getattr(analysis, 'verdict', None)
     if verdict is None or not verdict_text.policy_minimal(verdict):
-        return None
+        raise ValueError(
+            'the figure needs an analysis that ends with the minimal policy (an inner pass or a verdict built by hand has none)'
+        )
     return PolicyMarks(
         verdict_text.policy_ids(getattr(verdict, 'counted_episode_ids', '')),
         verdict_text.policy_ids(getattr(verdict, 'candidate_episode_ids', '')),
@@ -1160,45 +1055,13 @@ def wave_labels(geometry) -> Dict[int, str]:
     return out
 
 
-def uncounted_tags(geometry) -> Dict[int, str]:
-    """episode id -> the tag after '#id' of an accepted run the status does not count and no other mark names
-    (`Geometry.eligibility_reason`: below the period floor ' < floor', the center turns ' center turns'; W28 C11,
-    `verdict_text.UNCOUNTED_TAGS`)."""
-    out = {}
-    for run in getattr(geometry, 'runs', ()) or ():
-        reason = geometry.eligibility_reason(run) if run.accepted else None
-        if reason in verdict_text.UNCOUNTED_TAGS:
-            out[run.episode_id] = verdict_text.UNCOUNTED_TAGS[reason]
-    return out
-
-
 def _shade_episodes(ax, frame: _Frame, layout: VerdictFigureLayout):
-    geometry = frame.analysis.geometry
-    if geometry is None:
+    """(a): the audit's uncovered stretch (`shade_audit`), then the episodes the minimal policy counts and its
+    candidates (`_shade_policy_episodes`)."""
+    if frame.analysis.geometry is None:
         return
     shade_audit(ax, frame.analysis.extra_columns, frame.times, layout)
-    marks = policy_marks(frame.analysis)
-    if marks is not None:
-        _shade_policy_episodes(ax, frame, layout, marks)
-        return
-    accepted = {run.episode_id for run in geometry.runs if run.accepted}
-    spans = episode_spans(geometry.runs, (float(frame.t[0]), float(frame.t[-1])), frame.settings)
-    forced = wave_labels(geometry)
-    induced = induced_episode_ids(frame.analysis)
-    uncounted = uncounted_tags(geometry)
-    pieces = residence_pieces(geometry.runs, spans, (float(frame.t[0]), float(frame.t[-1])), skip=uncounted)
-    bracketed = [
-        run for run in geometry.runs if run.accepted and run.episode_id not in uncounted and len(getattr(run, 'subregimes', ())) >= 2
-    ]
-    labelled = set(pieces) | {run.episode_id for run in bracketed}
-    shade_runs(
-        ax, geometry.runs, accepted, frame.colours, frame.times, frame.px_per_unit, layout, spans, forced, induced, uncounted, labelled
-    )
-    shade_residences(ax, pieces, frame.colours, frame.times)
-    draw_subregime_brackets(ax, bracketed, frame.colours, frame.times, frame.px_per_unit)
-    for run in geometry.runs:
-        if run.episode_id in labelled:
-            draw_run_labels(ax, run, spans[run.episode_id], pieces.get(run.episode_id, ()), frame, layout, forced.get(run.episode_id, ''))
+    _shade_policy_episodes(ax, frame, layout, policy_marks(frame.analysis))
 
 
 # the 1:1 coverage audit (`mmr.coverage_audit`, flag uncovered_bounded_run): the longest bounded stretch of the
@@ -1265,17 +1128,15 @@ def _shade_policy_episodes(ax, frame: _Frame, layout: VerdictFigureLayout, marks
             draw_run_labels(ax, run, spans[run.episode_id], pieces.get(run.episode_id, ()), frame, layout, forced.get(run.episode_id, ''))
 
 
-def residence_pieces(
-    runs, spans: Mapping[int, Tuple[float, float]], record: Tuple[float, float], skip: Collection[int] = ()
-) -> Dict[int, List[Tuple[float, float]]]:
+def residence_pieces(runs, spans: Mapping[int, Tuple[float, float]], record: Tuple[float, float]) -> Dict[int, List[Tuple[float, float]]]:
     """episode id -> the stretches [yr] of its inferred residence (`Episode.residence`, W28 C8) beyond its fill
     (`spans`, `episode_spans`): before and after it, never past the record's edges nor into the fill of a neighboring
-    accepted run; none for a run in `skip` (not counted) or without a residence beyond its fill."""
+    accepted run; none for a run without a residence beyond its fill."""
     ordered = sorted((run for run in runs if run.accepted and run.episode_id in spans), key=lambda run: run.t_start_yr)
     out: Dict[int, List[Tuple[float, float]]] = {}
     for i, run in enumerate(ordered):
         residence = getattr(run, 'residence', None)
-        if residence is None or run.episode_id in skip:
+        if residence is None:
             continue
         fill0, fill1 = spans[run.episode_id]
         low = spans[ordered[i - 1].episode_id][1] if i > 0 else record[0]
@@ -3313,10 +3174,9 @@ def _episodes_window_low(geometry, runs, t, angle) -> float:
     return _circular_mean(values) - np.pi
 
 
-def _portrait_episodes(accepted, counted: Optional[frozenset] = None) -> list:
-    """The PORTRAIT_MAX_EPISODES longest accepted runs, in time order (the episodes of (l)); with the minimal
-    policy's `counted` ids its counted episodes first."""
-    counted = counted or frozenset()
+def _portrait_episodes(accepted, counted: frozenset) -> list:
+    """The PORTRAIT_MAX_EPISODES longest accepted runs, in time order (the episodes of (l)), the minimal policy's
+    `counted` ones first."""
     longest = sorted(accepted, key=lambda run: (run.episode_id not in counted, run.t_start_yr - run.t_end_yr))
     return sorted(longest[:PORTRAIT_MAX_EPISODES], key=lambda run: run.t_start_yr)
 
@@ -3339,7 +3199,7 @@ def portrait_window_low(analysis: MMRAnalysis) -> Optional[float]:
     if accepted:
         t, angle = np.asarray(prep.t_yr, dtype=float), np.asarray(prep.angle_f, dtype=float)
         marks = policy_marks(analysis)
-        return _episodes_window_low(geometry, _portrait_episodes(accepted, marks.counted if marks is not None else None), t, angle)
+        return _episodes_window_low(geometry, _portrait_episodes(accepted, marks.counted), t, angle)
     t = np.asarray(prep.t_yr, dtype=float)
     mask = (t >= prep.window[0]) & (t <= prep.window[1])
     return _window_low(geometry.centre.centre_rad if geometry is not None else np.asarray(prep.angle_f)[mask])
@@ -3413,14 +3273,14 @@ def draw_episode_portrait(
     """(l) the accepted episodes only: sigma_f against sigma_dot at the response cutoff, the PORTRAIT_MAX_EPISODES
     longest, each over its fill span of (a) inside the window of (k) (`portrait_span`, `portrait_pieces`): whole or,
     when it holds more, PORTRAIT_MAX_CYCLES of its cycles (`portrait_cycles`), the stretches beyond its first and last
-    turning point dashed; one color per episode (the colors of (a)); a forced wave is labeled '#id wave', a run the
-    status does not count '#id < floor', as on (a); the label's times are the turning points'. `low`: the lower edge of the 360-degree window [rad]
+    turning point dashed; one color per episode (the colors of (a)); a forced wave is labeled '#id wave', as on (a);
+    the label's times are the turning points'. `low`: the lower edge of the 360-degree window [rad]
     (`portrait_window_low`, shared with (k)); default: around the episodes. `settings`/`record`: as for
-    `episode_spans` (the figure passes its own). Under the minimal policy (`policy_marks`) the counted episodes come
-    first and solid; an accepted run it does not count is dashed, '#id cand' or '#id not counted' (138537). `letter`:
+    `episode_spans` (the figure passes its own). The episodes the minimal policy counts (`policy_marks`) come first and
+    solid; an accepted run it does not count is dashed, '#id cand' or '#id not counted' (138537). `letter`:
     the panel's letter (the 'panels' figure re-letters the bottom row)."""
     marks = policy_marks(analysis)
-    _bottom_title(ax, f'({letter}) accepted episodes' if marks is None else f'({letter}) episodes, counted solid', layout)
+    _bottom_title(ax, f'({letter}) episodes, counted solid', layout)
     prep, geometry = analysis.prep, analysis.geometry
     if _aliased(analysis):
         _empty(ax, _alias_reason(analysis), layout, crossed=True)
@@ -3433,10 +3293,9 @@ def draw_episode_portrait(
         _empty(ax, 'no accepted episode', layout)
         return
     colours = episode_colours(geometry.runs)
-    chosen = _portrait_episodes(accepted, marks.counted if marks is not None else None)
+    chosen = _portrait_episodes(accepted, marks.counted)
     waves = wave_labels(geometry)  # '#id wave', 'forced (strength)', 'ripple', as on (a): no episode of the angle
     induced = induced_episode_ids(analysis)  # '#id induced', hatched on (a)
-    uncounted = uncounted_tags(geometry)  # '#id < floor', grey on (a): the status does not count it (W28 C11)
     t = np.asarray(prep.t_yr, dtype=float)
     rate = _rate(prep) * PER_KYR
     angle = np.asarray(prep.angle_f, dtype=float)
@@ -3446,12 +3305,10 @@ def draw_episode_portrait(
     shown = []
     for run in chosen:
         colour = colours.get(run.episode_id, EPISODE_COLOURS[0])
-        counted = marks is not None and run.episode_id in marks.counted
+        counted = run.episode_id in marks.counted
         label = f'#{run.episode_id}' + ('' if counted else waves.get(run.episode_id, ''))
         label += INDUCED_LABEL if run.episode_id in induced else ''
-        if marks is None:
-            label += uncounted.get(run.episode_id, '')
-        elif counted or run.episode_id not in waves:  # a wave's label already says it is not the angle's
+        if counted or run.episode_id not in waves:  # a wave's label already says it is not the angle's
             label += _policy_tag(run.episode_id, marks)
         label += f' {run.t_start_yr / divisor:.4g}–{run.t_end_yr / divisor:.4g} {unit}'
         label += ' (before jump)' if run.before_last_jump else ''
@@ -3462,8 +3319,7 @@ def draw_episode_portrait(
             x = np.degrees(_wrap_window(angle[mask], low))
             y = rate[mask].copy()
             y[1:][np.abs(np.diff(x)) > 180] = np.nan
-            faint = marks is not None and run.episode_id not in marks.counted
-            look = PORTRAIT_EXTENSION_STYLE if extended or faint else PORTRAIT_CORE_STYLE
+            look = PORTRAIT_EXTENSION_STYLE if extended or not counted else PORTRAIT_CORE_STYLE
             ax.plot(x, y, color=colour, label=label if n == labelled else None, rasterized=True, **look)
             if n == 0 and len(x):
                 ax.plot(x[:1], y[:1], 'o', ms=3, color=colour)
@@ -3759,7 +3615,7 @@ def draw_combined(
     if panels:
         fig.text_stats = {}
         return fig
-    draw_legend(fig, layout, legend_lines(analysis), rect=legend_rect(layout, third_slot_free=warning is not None), warning=warning)
+    draw_legend(fig, layout, LEGEND, rect=legend_rect(layout, third_slot_free=warning is not None), warning=warning)
     width, height = layout.size
     fig.add_artist(plt.Line2D([layout.separator_x / width] * 2, [0.3 / height, (height - 0.2) / height], color='#dddddd', lw=0.8))
     fig.text_stats = draw_right_column(fig, analysis, (summary, numbers, episodes, constants), layout, options, prepared)

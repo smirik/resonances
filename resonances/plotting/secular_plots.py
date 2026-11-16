@@ -235,9 +235,9 @@ LONG_PERIOD_PANELS = (
 )
 LONG_PERIOD_LEGEND = (
     '(a) gray band: raw σ; black: σ_f at the scale the verdict rests on (P_c, or the center scale W_c); thin gray: σ_f at '
-    'P_c when the center scale decided; red: center; ▼▲ turning points; colored fill #id: librating episodes (to the record edge they '
-    'cover, else ± P/4 beyond the turns); gray strip: other runs, letter = reason (T over the top, F too few turning points, C center moves, '
-    'O no closed cycle).',
+    'P_c when the center scale decided; red: center; ▼▲ turning points; colored fill #id: counted episodes (to the record '
+    'edge they cover, pale in the filter trim, else ± P/4 beyond the turns); faint dashed cand: a candidate, not counted; '
+    'other runs are not drawn (episodes.csv lists them).',
     '(b) gray dots: osculating σ; black: σ_f.  (c) dσ_f/dt, red: σ̇ = 0; pale dashed ends of (c), (g): the filter\'s edge '
     'spread, not analyzed.  (d, e, f) gray band: osculating a, e, i; black: filtered at P_c, min – max; (d) a co-orbital: '
     "dashed the planet's a, dotted the Hill-zone edges (± ZLK_COORBITAL_HILL_FACTOR r_H).",
@@ -252,13 +252,6 @@ LONG_PERIOD_LEGEND = (
     'filter\'s window, R = √(2(1 − √(1 − e_f²))) (an angle of Ω alone: R = √(2√(1 − e_f²)(1 − cos i_f))); color: time; '
     'red +: the origin, which a libration does not go round and a circulation does. (l) the same over each episode of '
     '(a), in its color: ○ its start, dashed beyond its first and last turning point and for a candidate.',
-)
-# the line of (a) under the minimal policy (W29 SPEC §7): only the counted episodes are filled, the candidates faint
-LONG_PERIOD_LEGEND_POLICY_A = (
-    '(a) gray band: raw σ; black: σ_f at the scale the verdict rests on (P_c, or the center scale W_c); thin gray: σ_f at '
-    'P_c when the center scale decided; red: center; ▼▲ turning points; colored fill #id: counted episodes (to the record '
-    'edge they cover, pale in the filter trim, else ± P/4 beyond the turns); faint dashed cand: a candidate, not counted; '
-    'other runs are not drawn (episodes.csv lists them).'
 )
 # (a′) of a ZLK row whose libration is induced (`forcing_panel_drawn`), drawn under (a); other rows keep eight panels
 FORCING_PANEL = ('a′', 'omega_f with the forced direction against the node and the dominant mode\'s longitude against it')
@@ -426,8 +419,8 @@ def _mark_turns(ax, frame, tp, scale=np.degrees, centre: bool = False):
 
 
 def _draw_angle(ax, frame, layout):
-    from resonances.plotting.mmr_combined import _raw, _style_axis, angle_view, episode_spans, outlier_markers, policy_marks
-    from resonances.plotting.mmr_combined import shade_policy_runs, shade_runs
+    from resonances.plotting.mmr_combined import _raw, _style_axis, angle_view, outlier_markers, policy_marks
+    from resonances.plotting.mmr_combined import shade_policy_runs
 
     analysis = frame.analysis
     _raw(ax, frame.x, np.degrees(analysis.series.angle))
@@ -435,15 +428,9 @@ def _draw_angle(ax, frame, layout):
     if geometry is not None:
         colours = episode_colour_map(analysis)
         record = (float(frame.t_yr[0]), float(frame.t_yr[-1]))
-        marks = policy_marks(analysis)
-        if marks is not None:  # the minimal policy (W29 SPEC §7): counted episodes, candidates faint, nothing else
-            window = tuple(angle.window) if angle is not None else record
-            shade_policy_runs(
-                ax, geometry.runs, marks, colours, frame.times, frame.px_per_unit(layout), layout, record, window, frame.settings
-            )
-        else:
-            spans = episode_spans(geometry.runs, record, frame.settings)
-            shade_runs(ax, geometry.runs, set(colours), colours, frame.times, frame.px_per_unit(layout), layout, spans)
+        window = tuple(angle.window) if angle is not None else record
+        marks = policy_marks(analysis)  # the minimal policy (W29 SPEC §7): counted episodes, candidates faint, nothing else
+        shade_policy_runs(ax, geometry.runs, marks, colours, frame.times, frame.px_per_unit(layout), layout, record, window, frame.settings)
     if analysis.fine_geometry is not None and analysis.cutoff is not None:
         fine = _filtered(analysis, analysis.series.angle)
         if fine is not None:
@@ -934,10 +921,9 @@ def _draw_charlier(ax, frame, layout, norm, charlier: Charlier, letter: str):
 
 
 def portrait_episodes(analysis, settings=None) -> tuple:
-    """The episodes of (l) and how to draw them: (runs, their fill spans [yr] as in (a), colors, policy marks or None).
-    Under the minimal policy the counted episodes and the candidates (as (a) draws them), else the librating ones
-    (`decide.librating_episodes`); the PORTRAIT_MAX_EPISODES longest (counted first), in time order. `settings`: the
-    coverage rule of the fill (`mc.episode_spans`), as in (a)."""
+    """The episodes of (l) and how to draw them: (runs, their fill spans [yr] as in (a), colors, policy marks).
+    The episodes the minimal policy counts and its candidates (as (a) draws them), the PORTRAIT_MAX_EPISODES longest
+    (counted first), in time order. `settings`: the coverage rule of the fill (`mc.episode_spans`), as in (a)."""
     from resonances.plotting.mmr_combined import _portrait_episodes, episode_spans, policy_marks
 
     geometry = analysis.geometry
@@ -945,13 +931,9 @@ def portrait_episodes(analysis, settings=None) -> tuple:
         return [], {}, {}, None
     marks = policy_marks(analysis)
     record = (float(analysis.series.t_yr[0]), float(analysis.series.t_yr[-1]))
-    if marks is not None:
-        runs = [run for run in geometry.runs if run.episode_id in marks.counted or run.episode_id in marks.candidates]
-        spans = episode_spans(runs, record, settings)
-    else:
-        runs = list(_librating(analysis))
-        spans = episode_spans(geometry.runs, record, settings)
-    chosen = _portrait_episodes(runs, marks.counted if marks is not None else None)
+    runs = [run for run in geometry.runs if run.episode_id in marks.counted or run.episode_id in marks.candidates]
+    chosen = _portrait_episodes(runs, marks.counted)
+    spans = episode_spans(runs, record, settings)
     return chosen, spans, episode_colour_map(analysis), marks
 
 
@@ -971,10 +953,9 @@ def _draw_charlier_episodes(ax, frame, layout, charlier: Charlier, letter: str, 
     t = charlier.t_yr
     window = tuple(frame.analysis.angle.window)
     for run in runs:
-        colour = colours.get(run.episode_id, REJECTED if marks is not None else EPISODE_COLOURS[0])
-        counted = marks is None or run.episode_id in marks.counted
-        tag = _policy_tag(run.episode_id, marks) if marks is not None else ''
-        label = f'#{run.episode_id}{tag}'
+        colour = colours.get(run.episode_id, REJECTED)
+        counted = run.episode_id in marks.counted
+        label = f'#{run.episode_id}{_policy_tag(run.episode_id, marks)}'
         if timed:
             label += f' {frame.times(run.t_start_yr):.3g}–{frame.times(run.t_end_yr):.3g} {frame.unit}'
         pieces = portrait_pieces(run, portrait_span(run, spans, window), tp.times_yr, tp.kinds)
@@ -1155,11 +1136,9 @@ def _draw_header(fig, analysis, layout, stamp):
         )
 
 
-def long_period_legend(forcing: bool = False, policy: bool = False) -> tuple:
-    """LONG_PERIOD_LEGEND, with the line of (a′) after (a) when `forcing`, and (a)'s line of the minimal policy when
-    `policy` (`mmr_combined.policy_marks`)."""
-    legend = ((LONG_PERIOD_LEGEND_POLICY_A,) if policy else LONG_PERIOD_LEGEND[:1]) + LONG_PERIOD_LEGEND[1:]
-    return legend[:1] + (FORCING_LEGEND,) + legend[1:] if forcing else legend
+def long_period_legend(forcing: bool = False) -> tuple:
+    """LONG_PERIOD_LEGEND, with the line of (a′) after (a) when `forcing`."""
+    return LONG_PERIOD_LEGEND[:1] + (FORCING_LEGEND,) + LONG_PERIOD_LEGEND[1:] if forcing else LONG_PERIOD_LEGEND
 
 
 # The bottom row of the secular/ZLK figure (W36, the author 2026-11-07): four squares (i)-(l), a little smaller than the
@@ -1214,9 +1193,9 @@ def legend_columns(lines, n: int = LONG_PERIOD_LEGEND_COLUMNS, chars: int = 100)
     return best
 
 
-def _draw_legend(fig, layout, forcing: bool = False, policy: bool = False) -> float:
+def _draw_legend(fig, layout, forcing: bool = False) -> float:
     """The legend in `layout.legend` (the band under the bottom row, `long_period_layout`), in LONG_PERIOD_LEGEND_COLUMNS
-    columns (`legend_columns`, balanced at the font tried); with `forcing` the line of (a′), with `policy` (a)'s line of the minimal policy. The font
+    columns (`legend_columns`, balanced at the font tried); with `forcing` the line of (a′). The font
     shrinks (to `mc.LEGEND_MIN_FONT_PT`) until every column fits the band. Returns the font size used."""
     import textwrap
 
@@ -1227,7 +1206,7 @@ def _draw_legend(fig, layout, forcing: bool = False, policy: bool = False) -> fl
     top = y + h
     renderer = fig.canvas.get_renderer()
     fig.text(x / width, top / height, 'Legend', fontsize=layout.font_legend_pt + 1.5, fontweight='bold', va='top')
-    lines = long_period_legend(forcing, policy)
+    lines = long_period_legend(forcing)
     gap = LONG_PERIOD_LEGEND_GAP_IN
     column_w = (w - gap * (LONG_PERIOD_LEGEND_COLUMNS - 1)) / LONG_PERIOD_LEGEND_COLUMNS
     font = layout.font_legend_pt
@@ -1319,9 +1298,7 @@ def draw_long_period_combined(
     if panels:
         fig.text_stats = {}
         return fig
-    from resonances.plotting.mmr_combined import policy_marks
-
-    _draw_legend(fig, layout, forcing, policy_marks(analysis) is not None)
+    _draw_legend(fig, layout, forcing)
     fig.add_artist(plt.Line2D([layout.separator_x / width] * 2, [0.3 / height, (height - 0.2) / height], color='#dddddd', lw=0.8))
     if not explained:
         constants = [replace(line, block='constants') for line in long_period_frequency_lines(analysis, summary, free_elements)]

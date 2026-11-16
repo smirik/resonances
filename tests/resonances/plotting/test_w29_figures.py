@@ -209,11 +209,12 @@ def test_a_counted_episode_to_a_covered_edge_is_pale_in_the_filter_trim():
 
 def test_policy_marks_from_a_stored_verdict_and_without_a_policy():
     """The figure re-run path (§7): without a PolicyResult the marks come from the verdict's id cells; 'leg' and 'half'
-    have no episode row. A verdict the policy did not write (`policy` '') has no marks."""
+    have no episode row. An analysis the policy did not finish (`policy` '': an inner pass) cannot be drawn."""
     analysis = _zlk(2.5)
     analysis.policy = None
     analysis.verdict.policy = ''
-    assert mc.policy_marks(analysis) is None
+    with pytest.raises(ValueError, match='minimal policy'):
+        mc.policy_marks(analysis)
     analysis.verdict.policy = 'minimal'
     analysis.verdict.counted_episode_ids = '3;leg'
     analysis.verdict.candidate_episode_ids = '1;half;7'
@@ -224,9 +225,10 @@ def test_policy_marks_from_a_stored_verdict_and_without_a_policy():
 
 def test_the_legend_of_a_follows_the_policy():
     assert sp.long_period_legend() == sp.LONG_PERIOD_LEGEND
-    legend = sp.long_period_legend(forcing=True, policy=True)
-    assert legend[0] == sp.LONG_PERIOD_LEGEND_POLICY_A and legend[1] == sp.FORCING_LEGEND and 'cand' in legend[0]
+    legend = sp.long_period_legend(forcing=True)
+    assert legend[0] == sp.LONG_PERIOD_LEGEND[0] and legend[1] == sp.FORCING_LEGEND and 'cand' in legend[0]
     assert legend[2:] == sp.LONG_PERIOD_LEGEND[1:]
+    assert 'cand' in mc.LEGEND[1] and 'other runs not drawn' in mc.LEGEND[1]
 
 
 # ------------------------------------------------------------------------------------------------- the right column

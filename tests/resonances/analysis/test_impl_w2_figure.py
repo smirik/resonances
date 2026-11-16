@@ -29,7 +29,9 @@ from resonances.resonance.analysis import pendulum as pend  # noqa: E402
 from resonances.resonance.analysis.filtering import lowpass  # noqa: E402
 from resonances.resonance.analysis.ledger import Ledger  # noqa: E402
 from resonances.resonance.analysis.mmr import models as m  # noqa: E402
+from resonances.resonance.analysis.policy import PolicyResult  # noqa: E402
 from resonances.resonance.analysis.verdict import (  # noqa: E402
+    POLICY_MINIMAL,
     AngleStatus,
     CheckValue,
     Confidence,
@@ -184,6 +186,7 @@ def analysis_of(series, sigma0):
         verdict=verdict,
         settings_hash='0123456789ab',
         confidence_cells_sha='',
+        policy=PolicyResult(POLICY_MINIMAL),  # no run: the minimal policy counts nothing
     )
 
 
@@ -441,7 +444,7 @@ class TestFigure:
         texts = _texts(fig)
         for letter in 'abcdefghij':
             assert f'({letter})' in texts
-        assert '(k) phase portrait, whole record' in texts and '(l) accepted episodes' in texts and '(m) FAIR' in texts
+        assert '(k) phase portrait, whole record' in texts and '(l) episodes, counted solid' in texts and '(m) FAIR' in texts
         analysis.prep = analysis.geometry = None  # an undefined record: same rectangles
         empty = _draw(analysis, series)
         assert np.allclose([ax.get_position().bounds for ax in empty.axes[:n]], expected)

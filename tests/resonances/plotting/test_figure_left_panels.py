@@ -37,7 +37,6 @@ from matplotlib.colors import to_hex, to_rgb  # noqa: E402
 
 from resonances.plotting import mmr_combined as mc  # noqa: E402
 from resonances.plotting import style  # noqa: E402
-from resonances.resonance.analysis.geometry import RejectReason  # noqa: E402
 from resonances.resonance.analysis.mmr.models import ResonanceSpec  # noqa: E402
 
 LAYOUT = mc.LAYOUT_V1
@@ -376,22 +375,6 @@ def test_h_view_spans_a_circulation_and_a_deep_libration():
 # --------------------------------------------------------------------------------------------- (a), (j) texts
 
 
-def test_rejected_runs_carry_the_letter_of_their_reason():
-    runs = [
-        SimpleNamespace(episode_id=0, t_start_yr=0.0, t_end_yr=4000.0, accepted=True, before_last_jump=False),
-        SimpleNamespace(episode_id=1, t_start_yr=4000.0, t_end_yr=6000.0, accepted=False, reject_reason=RejectReason.OVER_THE_TOP),
-        SimpleNamespace(episode_id=2, t_start_yr=6000.0, t_end_yr=8000.0, accepted=False, reject_reason=RejectReason.TOO_FEW_TP),
-        SimpleNamespace(episode_id=3, t_start_yr=8000.0, t_end_yr=9990.0, accepted=False, reject_reason=RejectReason.CENTRE_MOVES),
-        SimpleNamespace(episode_id=4, t_start_yr=9990.0, t_end_yr=10000.0, accepted=False, reject_reason=RejectReason.CENTRE_MOVES),
-    ]
-    ax = _axis()
-    px_per_kyr = LAYOUT.panels[2] * LAYOUT.dpi / 10.0
-    mc.shade_runs(ax, runs, {0}, {0: style.EPISODE_COLOURS[0]}, lambda v: np.asarray(v) / 1e3, px_per_kyr, LAYOUT)
-    assert _texts(ax) == ['#0', 'T', 'F', 'C']  # the last run is 1.2 px wide: no letter
-    label = ax.texts[0]
-    assert label.get_position()[1] > 1 and label.get_va() == 'bottom'  # '#id' above the top edge, clear of the data
-
-
 def test_edge_marker_sits_just_inside_the_edge():
     ax = _axis()
     mc.edge_marker(ax, 0.5, True, style.MODEL)
@@ -541,14 +524,6 @@ def test_the_fill_stops_halfway_to_a_neighbouring_run():
     spans = mc.episode_spans([run, before], (0.0, 5000.0), SETTINGS)
     assert spans[1] == (pytest.approx(950.0), pytest.approx(2200.0))
     assert spans[0] == (pytest.approx(0.0), pytest.approx(950.0))  # covers the start; ends halfway to the next run
-
-
-def test_shade_runs_fills_the_given_span():
-    run = _coverage_run(0, 70.7, 883.0, 193.3, 0.3656, 0.607)
-    ax = _axis()
-    mc.shade_runs(ax, [run], {0}, {0: style.EPISODE_COLOURS[0]}, lambda v: np.asarray(v), 1.0, LAYOUT, {0: (0.0, 1000.0)})
-    patch = ax.patches[0]
-    assert patch.get_x() == pytest.approx(0.0) and patch.get_x() + patch.get_width() == pytest.approx(1000.0)
 
 
 @pytest.mark.parametrize('max_pass_rad, shaded', [(0.68, False), (4.974 * 2 * math.pi, True), (2 * math.pi, True), (float('nan'), False)])

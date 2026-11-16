@@ -19,19 +19,13 @@ import matplotlib
 
 matplotlib.use('Agg')
 
-import matplotlib.pyplot as plt  # noqa: E402
-import pytest  # noqa: E402
-from matplotlib.colors import to_rgba  # noqa: E402
-
-from resonances.plotting import mmr_combined as mc  # noqa: E402
 from resonances.plotting import mmr_verdict_panel as vp  # noqa: E402
 from resonances.plotting import verdict_text as vt  # noqa: E402
 from resonances.plotting import verdict_vocab as vv  # noqa: E402
-from resonances.plotting.style import LAYOUT_V1, REJECTED  # noqa: E402
-from resonances.resonance.analysis.geometry import EdgeTurn, HalfLibration, LegTurn, RejectReason, SingleLeg  # noqa: E402
+from resonances.resonance.analysis.geometry import EdgeTurn, HalfLibration, LegTurn, SingleLeg  # noqa: E402
 from resonances.resonance.analysis.mmr import decide  # noqa: E402
 from resonances.resonance.analysis.settings import settings_from_config  # noqa: E402
-from tests.resonances.analysis.builders import make_episode, make_geometry  # noqa: E402
+from tests.resonances.analysis.builders import make_geometry  # noqa: E402
 from tests.resonances.plotting.test_verdict_text_roles import _kinematic  # noqa: E402
 
 S = settings_from_config()
@@ -277,30 +271,6 @@ def test_c11_a_run_below_the_floor_is_not_counted_in_the_words_and_the_episode_l
     assert lines[0].group == 'EPISODES (1 accepted, 0 counted, 2 rejected runs)'
     assert lines[0].value.endswith(': not counted: below the period floor') and lines[0].style == 'grey'
     assert vp._episode_text(AP1_EPISODES[0]).endswith(' not counted: below the period floor')
-
-
-def test_c11_the_figure_draws_an_uncounted_run_in_the_rejected_style_with_its_tag():
-    """g02-9 A: on (a) the run is a gray strip at the bottom (the rejected style) with '#0 < floor' in gray above the
-    panel, and no episode fill; a counted run keeps its colored fill and bold '#1'."""
-    floor_run = make_episode(2, episode_id=0, tp_times_yr=[262.8, 299.4], period_med_yr=74.0)
-    counted = make_episode(3, episode_id=1, tp_times_yr=[500.0, 560.0, 620.0], period_med_yr=120.0)
-    geometry = make_geometry(coorbital=True, runs=[floor_run, counted])
-    geometry.eligibility = {0: RejectReason.BELOW_PERIOD_FLOOR, 1: RejectReason.NONE}
-    tags = mc.uncounted_tags(geometry)
-    assert tags == {0: ' < floor'}
-    fig, ax = plt.subplots()
-    ax.set_xlim(0, 1000)
-    mc.shade_runs(ax, geometry.runs, {0, 1}, {0: 'C0', 1: 'C1'}, lambda t: t, 1.0, LAYOUT_V1, uncounted=tags)
-    spans = [(p.get_x(), p.get_x() + p.get_width(), p.get_facecolor()) for p in ax.patches]
-    grey = [span for span in spans if span[2] == to_rgba(REJECTED, mc.REJECTED_ALPHA)]
-    assert len(grey) == 1 and grey[0][:2] == pytest.approx((262.8, 299.4))
-    strip = next(p for p in ax.patches if p.get_facecolor() == to_rgba(REJECTED, mc.REJECTED_ALPHA))
-    assert strip.get_y() + strip.get_height() == pytest.approx(mc.REJECTED_STRIP)  # axes-fraction height of the strip
-    texts = {t.get_text(): t for t in ax.texts}
-    assert set(texts) == {'#0 < floor', '#1'}
-    assert texts['#0 < floor'].get_color() == REJECTED and texts['#0 < floor'].get_fontweight() != 'bold'
-    assert texts['#1'].get_fontweight() == 'bold'
-    plt.close(fig)
 
 
 # --------------------------------------------------------------------------------------------- A2b: joint capture

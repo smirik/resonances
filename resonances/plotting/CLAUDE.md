@@ -222,7 +222,9 @@ figure shows updates both and reruns `make docs-figures`. Every rule below was d
   leg 'leg', candidates faint and dashed 'cand' (`fill_candidate`), no grey strip; (l) puts the counted episodes first,
   solid, the others dashed '#id cand'/'#id not counted' (`_policy_tag`); the EPISODES block counts the policy's
   `counted` (`mmr_verdict_panel._counted_text`); a counted strength run is no ' forced (strength)'; the legend's (a) line follows
-  (`legend_lines`, `long_period_legend`). Without a policy, nothing changes. Numbers ≥ `SCI_FROM`
+  (`LEGEND[1]`, `LONG_PERIOD_LEGEND[0]`). Every drawn analysis ends with the policy: one without it (an inner pass, a
+  verdict built by hand) is a ValueError of `policy_marks`; the old drawing of every accepted and rejected run (grey
+  strip, reason letters, '#id < floor') was removed on 2026-11-16. Numbers ≥ `SCI_FROM`
   (1e6) print as '9.63e35'. The standalone MMR panels' re-run (`mmr_plots._rerun_analysis`) carries the stored verdict, or re-runs with the scans on.
 
 ## Known defects (open)

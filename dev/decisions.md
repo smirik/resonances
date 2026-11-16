@@ -502,6 +502,10 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   Ω-only angle, low-passed at the decisive cutoff; R = sqrt(2(1 − sqrt(1 − e²))), Carruba, Aljbaae & Winter 2016
   Fig. 3B), (l) the same per accepted episode in the colours of (a). The legend moved to a band under the row; the
   paper figure drops empty squares and re-letters from (i). Both are for reading only: nothing in them feeds a status.
+- 2026-11-16 (the author's go, pre-merge cleanup): panel (a) and (l) lost their drawing without the minimal policy
+  (every accepted run filled, rejected runs as a grey strip with the reason letter T/F/C/O, '#id < floor'). Every
+  analysis the package draws ends with the policy (`policy_marks` raises otherwise); 217 benchmark figures (one MMR
+  example per kind of verdict and every secular/ZLK example) were pixel-identical before and after.
 
 ## Benchmark and process
 

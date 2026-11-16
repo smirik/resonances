@@ -76,7 +76,6 @@ def test_residence_pieces_lie_beyond_the_fill_and_stop_at_a_neighbour():
     pieces = mc.residence_pieces([a, b], spans, (0.0, 5000.0))
     assert pieces[0] == [(500.0, pytest.approx(800.0)), (pytest.approx(2200.0), pytest.approx(2900.0))]
     assert pieces[1] == [(pytest.approx(3600.0), 4800.0)]
-    assert mc.residence_pieces([a, b], spans, (0.0, 5000.0), skip={0, 1}) == {}  # not counted: no residence drawn
     # a residence inside the fill and none at all draw nothing; the fill itself never moves (nor does (l), which reads it)
     inside = _run(0, 1000.0, 2000.0, 800.0, residence=_residence(1000.0, 2000.0))
     assert mc.residence_pieces([inside], mc.episode_spans([inside], (0.0, 5000.0), SETTINGS), (0.0, 5000.0)) == {}

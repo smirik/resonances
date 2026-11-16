@@ -64,19 +64,21 @@ def _wave(episode_id, **fields):
 
 
 def test_b2_b6b_the_figure_labels_and_the_episode_lines_name_the_mark():
-    """(a)/(l) label '#id forced (strength)' and '#id ripple' (dotted fill), '#id wave' for F6; the legend names all
-    three; the numbers' episode lines print the route's words."""
+    """(a)/(l) label '#id forced (strength)' and '#id ripple' (dotted fill), '#id wave' for F6; the legend names wave
+    and ripple; the numbers' episode lines print the route's words."""
     geometry = make_geometry(forced_waves=(_wave(0, by_strength=True), _wave(1, ripple=True), _wave(2, on_line=True)))
     assert mc.wave_labels(geometry) == {0: ' forced (strength)', 1: ' ripple', 2: ' wave'}
     runs = [make_episode(episode_id=i, tp_times_yr=np.array([0.0, 400.0, 800.0]) + 1000.0 * i) for i in range(3)]
     fig, ax = plt.subplots()
-    mc.shade_runs(ax, runs, {0, 1, 2}, {}, lambda t: np.asarray(t), 1.0, mc.LAYOUT_V1, forced_ids=mc.wave_labels(geometry))
+    marks = mc.PolicyMarks(frozenset({0, 1, 2}))
+    record = (0.0, 3000.0)
+    mc.shade_policy_runs(ax, runs, marks, {}, lambda t: np.asarray(t), 1.0, mc.LAYOUT_V1, record, record, labels=mc.wave_labels(geometry))
     texts = sorted(text.get_text() for text in ax.texts)
     assert texts == ['#0 forced (strength)', '#1 ripple', '#2 wave']
     assert any(patch.get_hatch() == mc.RIPPLE_HATCH for patch in ax.patches)
     plt.close(fig)
     legend = ' '.join(mc.LEGEND)
-    assert 'forced (strength)' in legend and 'ripple (dotted)' in legend
+    assert '#id wave / ripple' in legend  # a counted strength run is the angle's episode: no ' forced (strength)' on (a)
     episodes = [
         {'episode_id': 0, 'accepted': True, 'forced_wave': 'strength', 't_start_yr': 8600.0, 't_end_yr': 9240.0},
         {'episode_id': 1, 'accepted': True, 'forced_wave': 'unconfirmed_ripple', 't_start_yr': 13468.0, 't_end_yr': 14894.0},

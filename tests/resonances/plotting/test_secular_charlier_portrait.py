@@ -25,7 +25,7 @@ from matplotlib.colors import to_hex  # noqa: E402
 
 from resonances.plotting import secular_plots as sp  # noqa: E402
 from resonances.resonance.analysis.secular import LongPeriodSeries  # noqa: E402
-from resonances.resonance.analysis.secular.analyse import analyse_long_period  # noqa: E402
+from resonances.resonance.analysis.secular.analyse import analyse_secular  # noqa: E402
 from resonances.resonance.analysis.settings import settings_from_config  # noqa: E402
 from resonances.resonance.analysis.verdict import ResonanceType  # noqa: E402
 
@@ -60,7 +60,7 @@ def _series(circulating: bool = False) -> LongPeriodSeries:
 
 @pytest.fixture(scope='module')
 def librating():
-    return analyse_long_period(_series(), SETTINGS)
+    return analyse_secular(_series(), SETTINGS)
 
 
 def _titles(fig):
@@ -126,7 +126,7 @@ def test_the_legend_has_its_own_band_under_the_squares(librating):
 
 
 def test_a_record_without_an_episode_leaves_l_out_of_the_paper_figure():
-    analysis = analyse_long_period(_series(circulating=True), SETTINGS)
+    analysis = analyse_secular(_series(circulating=True), SETTINGS)
     assert not sp.portrait_episodes(analysis, SETTINGS)[0]
     full = sp.draw_long_period_combined(analysis, settings=SETTINGS)
     paper = sp.draw_long_period_combined(analysis, settings=SETTINGS, options=PAPER)
@@ -157,7 +157,7 @@ def test_the_longest_legend_fits_its_band_above_the_floor_font():
     layout = sp.long_period_layout()
     fig = plt.figure(figsize=layout.size, dpi=layout.dpi)
     try:
-        font = sp._draw_legend(fig, layout, forcing=True, policy=True)
+        font = sp._draw_legend(fig, layout, forcing=True)
         fig.canvas.draw()
         renderer = fig.canvas.get_renderer()
         columns = [text for text in fig.texts if text.get_text() != 'Legend']

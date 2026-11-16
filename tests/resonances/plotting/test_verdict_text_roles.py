@@ -281,7 +281,8 @@ def test_induced_episodes_are_hatched_apart_from_the_jump_hatch():
         make_episode(episode_id=3, tp_times_yr=np.array([950.0, 970.0, 990.0])),
     ]
     fig, ax = plt.subplots()
-    mc.shade_runs(ax, runs, {1, 2, 3}, {}, lambda t: np.asarray(t), 1.0, mc.LAYOUT_V1, induced_ids={1, 2})
+    marks = mc.PolicyMarks(frozenset({1, 2, 3}))
+    mc.shade_policy_runs(ax, runs, marks, {}, lambda t: np.asarray(t), 1.0, mc.LAYOUT_V1, (0.0, 1000.0), (0.0, 1000.0), induced_ids={1, 2})
     hatches = [patch.get_hatch() for patch in ax.patches if patch.get_hatch()]
     plt.close(fig)
     assert sorted(hatches) == sorted([mc.INDUCED_HATCH, mc.EPISODE_BEFORE_JUMP_HATCH, mc.INDUCED_HATCH])

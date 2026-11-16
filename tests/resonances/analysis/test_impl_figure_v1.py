@@ -23,6 +23,8 @@ from resonances.resonance.analysis import geometry as geo  # noqa: E402
 from resonances.resonance.analysis import pendulum as pend  # noqa: E402
 from resonances.resonance.analysis.ledger import Ledger  # noqa: E402
 from resonances.resonance.analysis.mmr import models as m  # noqa: E402
+from resonances.resonance.analysis.policy import PolicyResult  # noqa: E402
+from resonances.resonance.analysis.verdict import POLICY_MINIMAL  # noqa: E402
 from resonances.resonance.analysis.verdict import (  # noqa: E402
     AngleStatus,
     AngleSubtype,
@@ -236,6 +238,7 @@ def libration_case():
         verdict=verdict,
         settings_hash='0123456789ab',
         confidence_cells_sha='',
+        policy=PolicyResult(POLICY_MINIMAL, frozenset({1})),  # the minimal policy counts the accepted episode
     )
     return analysis, series
 
@@ -295,6 +298,7 @@ def circulation_case():
         verdict=verdict,
         settings_hash='0123456789ab',
         confidence_cells_sha='',
+        policy=PolicyResult(POLICY_MINIMAL),
     )
     return analysis, series
 
