@@ -5,7 +5,7 @@ authors:
     given-names: Evgeny
     orcid: https://orcid.org/0000-0001-8264-8668
 title: "resonances python package"
-version: 1.0.0
+version: 1.0.1
 identifiers:
   - type: doi
     value: 10.1016/j.ascom.2023.100707

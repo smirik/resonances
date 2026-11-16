@@ -4,6 +4,19 @@ All notable changes to `resonances` are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-11-16
+
+### Fixed
+
+- Requires `rebound<5`. REBOUND 5 (released after 1.0.0) renamed the particle `hash` to `name` and does not read the
+  archives REBOUND 4 wrote, so with it a fresh install of 1.0.0 failed on the first integration.
+
+### Changed
+
+- Requires Python 3.11.5 or newer (the security fixes of `soupsieve`, which astroquery uses, need it).
+- The development dependencies are updated for security fixes (pillow, tornado, cryptography, urllib3, black and
+  others); the code is formatted with black 26.
+
 ## [1.0.0] - 2026-11-16
 
 The first stable release, and a large one: changes since 0.5.0. One libration analysis now classifies mean-motion,
@@ -158,5 +171,6 @@ Code and scripts written for 0.5.x must be updated for these changes:
 
 See "Changes before 1.0.0" in the [README](https://github.com/smirik/resonances#changes-before-100).
 
+[1.0.1]: https://github.com/smirik/resonances/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/smirik/resonances/compare/v0.5.0...v1.0.0
 [0.5.0]: https://github.com/smirik/resonances/releases/tag/v0.5.0

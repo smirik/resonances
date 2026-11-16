@@ -1,11 +1,11 @@
 [project]
 name = "resonances"
-version = "1.0.0"
+version = "1.0.1"
 description = "Identification of mean-motion, secular and Lidov-Kozai resonances of small bodies"
 authors = [{ name = "Evgeny Smirnov", email = "smirik@gmail.com" }]
 license = { text = "MIT" }
 readme = "README.md"
-requires-python = ">=3.11, <4"
+requires-python = ">=3.11.5, <4"
 keywords = ["astronomy", "nbody", "resonance", "mmr"]
 classifiers = [
     'Development Status :: 4 - Beta',
@@ -27,7 +27,7 @@ dependencies = [
     # Astronomy specific
     "astropy>=7.1.0",
     "astroquery>=0.4.10",
-    "rebound>=4.4.8",
+    "rebound>=4.4.8,<5",  # rebound 5 renamed Particle hash to name and reads no rebound 4 archive
     "astdys>=1.0.2",
     # Utilities
     "tqdm>=4.67.1",
@@ -52,7 +52,7 @@ dev = [
     "pytest>=8.4.0",
     "coverage>=7.8.2",
     # Code quality
-    "black[jupyter]>=25.1.0,<26",
+    "black[jupyter]>=26.10.1,<27",
     "flake8>=7.2.0",
     "flake8-bugbear>=24.12.12",
     # Jupyter support

@@ -1,6 +1,6 @@
 # Installation
 
-`resonances` needs Python 3.11 or newer. It depends on [REBOUND](https://rebound.readthedocs.io) for the
+`resonances` needs Python 3.11.5 or newer. It depends on [REBOUND](https://rebound.readthedocs.io) 4 for the
 integration and on [Astropy](https://www.astropy.org)/astroquery for NASA Horizons; both are installed
 automatically.
 

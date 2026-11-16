@@ -72,7 +72,7 @@ Also `body.py` (`Body`), `config.py` (loads `.env.dist` + `.env`, exposes `Simul
 
 ## How to run
 
-Python >=3.11 required. Uses `uv` for dependency management.
+Python >=3.11.5 required. Uses `uv` for dependency management.
 
 ```bash
 uv sync                # install dependencies
