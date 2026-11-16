@@ -19,7 +19,6 @@ from resonances.plotting import verdict_column as vc  # noqa: E402
 from resonances.resonance.analysis.verdict import Action  # noqa: E402
 from tests.resonances.plotting.test_w29_figures import _zlk  # noqa: E402
 
-
 # --------------------------------------------------------------------------------------------- the plaque
 
 

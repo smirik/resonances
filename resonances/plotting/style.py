@@ -13,7 +13,6 @@ from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 
-
 # MMR plot kinds, as named in `plots`; each is drawn by MMRPlotter.plot_<kind>.
 MMR_PLOT_KINDS = ('combined', 'recurrence', 'fair', 'portrait', 'cycles')
 # Secular plot kinds; `combined` and `portrait` mean the same kind of figure as for an MMR.

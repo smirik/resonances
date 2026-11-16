@@ -19,7 +19,6 @@ from resonances.secular.free_elements import RAD_PER_ARCSEC  # noqa: E402
 from resonances.simulation.serializer import SimulationSerializer  # noqa: E402
 from resonances.simulation.simulation import Simulation  # noqa: E402
 
-
 # Chosen so that with n = 30000 samples and n_seg = 4 the line falls exactly on a
 # frequency bin (nperseg / period = 7500 / 1250 = 6) and inside the validity band
 # (P_max = T / (5 * n_seg) = 1500 yr).

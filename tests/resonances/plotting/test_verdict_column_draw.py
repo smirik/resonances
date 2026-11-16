@@ -549,7 +549,8 @@ def test_plaque_chip_and_decides_row_colours():
         assert chip and to_hex(chip[0].get_facecolor()).upper() == fill.upper()
         chip_text = next(t for t in fig.texts if t.get_text() == 'glance at (b), (i)')
         assert to_hex(chip_text.get_color()).upper() == ink.upper()
-        diamond = next(t for t in fig.texts if t.get_text() == vc.DECIDES)
+        # the check line's icon (bold); the episodes row can wrap its own ◆ mark onto a line of its own
+        diamond = next(t for t in fig.texts if t.get_text() == vc.DECIDES and t.get_fontweight() == 'bold')
         assert to_hex(diamond.get_color()).upper() == '#B35400'
         plaque = next(t for t in fig.texts if t.get_text() == 'TRANSIENT')
         assert to_hex(plaque.get_color()).upper() == '#FFFFFF' and plaque.get_fontsize() == d.PLAQUE_PT

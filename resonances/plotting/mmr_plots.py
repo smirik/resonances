@@ -310,8 +310,7 @@ def draw_recurrence(ax, d: MMRDiagnostics, options: Dict[str, Any], cax=None):
     """
     m = d.mask
     rec = d.recurrence(recurrence_points(d, options['recurrence']['max_points']), options['recurrence']['exclude_samples'])
-    cmap = mpl.colormaps['gray'].copy()
-    cmap.set_bad('white')
+    cmap = mpl.colormaps['gray'].with_extremes(bad='white')
     extent = [rec.times[0] / d.divisor, rec.times[-1] / d.divisor] * 2
     image = ax.imshow(rec.distance, origin='lower', extent=extent, vmin=0, vmax=2, cmap=cmap, interpolation='antialiased', rasterized=True)
     if d.has_focus:

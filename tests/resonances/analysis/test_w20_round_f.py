@@ -125,7 +125,7 @@ def test_the_pilot_note_names_the_fold_free_step():
     body = sim.bodies[0]
     inputs, body_row = dr.static_inputs('round-f', body.initial_data, dry)
     plan = dr._plan(sim, [(body, inputs, body_row)], 100000.0, settings, dry, tables)
-    (_, _, row) = plan['rows'][0]
+    _, _, row = plan['rows'][0]
     pilot = {
         'leak_deg': 3.0,
         'leak_adot_rel': 0.9,

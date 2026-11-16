@@ -379,7 +379,7 @@ def test_edge_marker_sits_just_inside_the_edge():
     ax = _axis()
     mc.edge_marker(ax, 0.5, True, style.MODEL)
     mc.edge_marker(ax, 0.5, False, style.MODEL)
-    (up, down) = ax.lines
+    up, down = ax.lines
     assert (up.get_marker(), down.get_marker()) == ('^', 'v')
     assert 0.9 < up.get_ydata()[0] < 1.0 and 0.0 < down.get_ydata()[0] < 0.1  # axes fraction: inside the frame
 
