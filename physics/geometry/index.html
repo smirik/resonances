@@ -1,0 +1,2653 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python package that finds mean-motion, secular and Lidov-Kozai resonances of small bodies in the Solar system and decides, from a numerical integration, whether the resonant angle librates and why.">
+      
+      
+        <meta name="author" content="Evgeny Smirnov">
+      
+      
+        <link rel="canonical" href="https://smirik.github.io/resonances/physics/geometry/">
+      
+      
+        <link rel="prev" href="../signal/">
+      
+      
+        <link rel="next" href="../response/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>What the angle does - resonances</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#what-the-angle-does" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="resonances" class="md-header__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            resonances
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              What the angle does
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="resonances" class="md-nav__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    resonances
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulations, bodies, resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using with AI agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How the status is determined
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How the status is determined
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pendulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The resonant pendulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../signal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    From the integration to the angle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What the angle does
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What the angle does
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#turning-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turning points
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cycles-and-their-closure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cycles and their closure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runs-and-episodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runs and episodes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Runs and episodes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-co-orbital-turn-in-the-edge-trim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A co-orbital turn in the edge trim
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-co-orbital-episode-ends-only-at-a-separatrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A co-orbital episode ends only at a separatrix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#core-residence-and-sub-regimes-of-a-co-orbital-episode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core, residence and sub-regimes of a co-orbital episode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-center-and-circulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The center and circulation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coverage-exits-and-entries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage, exits and entries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumps-of-a-and-the-last-regime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jumps of \(a\) and the last regime
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Jumps of \(a\) and the last regime">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-step-of-the-libration-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A step of the libration action
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-separatrix-zone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The separatrix zone
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#near-the-separatrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Near the separatrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-center-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The center scale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#from-geometry-to-angle_status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From geometry to angle_status
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../response/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is it this resonance?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../status-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The status tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../confidence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Confidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secular-zlk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular and Lidov-Kozai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resonance matrices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../secular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lidov-kozai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lidov-Kozai resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clones (virtual asteroids)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reading-figures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to read the figures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../serialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serialization and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coherence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-spectral coherence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../free-elements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Free elements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../libration-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    References
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#turning-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turning points
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cycles-and-their-closure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cycles and their closure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runs-and-episodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runs and episodes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Runs and episodes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-co-orbital-turn-in-the-edge-trim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A co-orbital turn in the edge trim
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-co-orbital-episode-ends-only-at-a-separatrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A co-orbital episode ends only at a separatrix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#core-residence-and-sub-regimes-of-a-co-orbital-episode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core, residence and sub-regimes of a co-orbital episode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-center-and-circulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The center and circulation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coverage-exits-and-entries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage, exits and entries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jumps-of-a-and-the-last-regime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jumps of \(a\) and the last regime
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Jumps of \(a\) and the last regime">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-step-of-the-libration-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A step of the libration action
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-separatrix-zone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The separatrix zone
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#near-the-separatrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Near the separatrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-center-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The center scale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#from-geometry-to-angle_status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From geometry to angle_status
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="what-the-angle-does">What the angle does<a class="headerlink" href="#what-the-angle-does" title="Permanent link">&para;</a></h1>
+<p>This page describes how the filtered angle <span class="arithmatex">\(\sigma_f\)</span> (<a href="../signal/">From the integration to the angle</a>) is read as
+geometry: where it turns back, whether its swings close into cycles about a center, where such a libration starts
+and ends, and how the whole record is summarized in <code>angle_status</code>. Nothing here asks whether <span class="arithmatex">\(a\)</span> responds to the
+angle; that is the subject of <a href="../response/">Is it this resonance?</a>. All rules below are those of a mean-motion
+resonance; secular and Lidov-Kozai angles use the same turning points, cycles and episodes
+(<a href="../secular-zlk/">Secular and Lidov-Kozai</a>).</p>
+<h2 id="turning-points">Turning points<a class="headerlink" href="#turning-points" title="Permanent link">&para;</a></h2>
+<p><strong>Question: where does the angle turn back?</strong> A turning point (TP) is a local maximum or minimum of <span class="arithmatex">\(\sigma_f\)</span> whose
+prominence (the height of the extremum above the higher of its two bases, the lowest points between it and the
+nearest more extreme value on either side, as in <code>scipy.signal.find_peaks</code>) is at least</p>
+<div class="arithmatex">\[
+p_\text{TP} = \max\!\left(\texttt{MMR\_TP\_PROMINENCE\_FLOOR\_DEG},\ 4\,r\right),
+\]</div>
+<p>with the floor 1° and the factor <code>MMR_TP_RIPPLE_FACTOR</code> = 4. Here <span class="arithmatex">\(r\)</span> is the half-amplitude of what <span class="arithmatex">\(\sigma_f\)</span>
+still holds faster than the shortest libration <span class="arithmatex">\(P_\text{floor}\)</span> (the 95th percentile of that fast residual, or the
+planetary ripple that could not be removed). A wave of half-amplitude <span class="arithmatex">\(r\)</span> makes extrema of prominence up to <span class="arithmatex">\(2r\)</span>, so
+the factor 4 keeps it from making turning points. The libration itself is subtracted before <span class="arithmatex">\(r\)</span> is measured, and
+each run of turning points (below) gets its own <span class="arithmatex">\(p_\text{TP}\)</span> from its own samples, so a noisy stretch elsewhere in
+the record does not erase the swings of a quiet libration. Turning points alternate: of two maxima in a row the
+higher is kept.</p>
+<h2 id="cycles-and-their-closure">Cycles and their closure<a class="headerlink" href="#cycles-and-their-closure" title="Permanent link">&para;</a></h2>
+<p>Three alternating turning points (max–min–max or min–max–min) make <strong>one full cycle</strong>, one libration period:</p>
+<div class="arithmatex">\[
+P_i = t_{i+2} - t_i .
+\]</div>
+<p>A half-cycle joins two neighboring turning points; its half-amplitude is <span class="arithmatex">\(A_i = \tfrac12\lvert\sigma_{i+1} - \sigma_i\rvert\)</span>
+and its midpoint <span class="arithmatex">\(m_i = \tfrac12(\sigma_{i+1} + \sigma_i)\)</span>. The full-cycle center and half-amplitude are the means of
+two neighboring half-cycles, which cancels the alternation.</p>
+<p><strong>Question: does the angle come back, or does it only pause on its way round?</strong> A cycle is <strong>closed</strong> when its net
+advance is smaller than its swing:</p>
+<div class="arithmatex">\[
+Q_i = \frac{\lvert\sigma_{i+2} - \sigma_i\rvert}{\tfrac12\left(\lvert\sigma_{i+1} - \sigma_i\rvert + \lvert\sigma_{i+2} - \sigma_{i+1}\rvert\right)} &lt; 1 .
+\]</div>
+<p>This is the same as each of the three turning points lying on its own side of the cycle center, or the two
+half-swings differing less than threefold; there is no setting. A circulation that stalls and turns back a little
+closes no cycle. An episode needs at least one closed cycle, not all: the entry and exit half-cycles of a capture,
+or a tadpole that becomes a horseshoe, often leave an edge cycle open.</p>
+<p><strong>Closure by phase return.</strong> A cycle can start between two turns, so two opposite turning points
+(<span class="arithmatex">\(\sigma_1\)</span> at <span class="arithmatex">\(t_1\)</span>, <span class="arithmatex">\(\sigma_2\)</span> at <span class="arithmatex">\(t_2\)</span>) are also one closed cycle when the angle crosses a level between them before
+<span class="arithmatex">\(t_1\)</span> (at <span class="arithmatex">\(t_a\)</span>) and after <span class="arithmatex">\(t_2\)</span> (at <span class="arithmatex">\(t_b\)</span>) in the same direction and is back in the same state:</p>
+<ol>
+<li><span class="arithmatex">\(\lvert a(t_b) - a(t_a)\rvert \le 0.05\times\)</span> the swing of <span class="arithmatex">\(a\)</span> on <span class="arithmatex">\([t_a, t_b]\)</span>, and <span class="arithmatex">\(\dot\sigma(t_b)/\dot\sigma(t_a)\)</span>
+   within <span class="arithmatex">\(1 \pm 0.05\)</span> (<code>LIBRATION_RETURN_TOL</code> = 0.05);</li>
+<li><span class="arithmatex">\((t_b - t_a)/\big(2(t_2 - t_1)\big)\)</span> within <span class="arithmatex">\(1 \pm 0.25\)</span> (<code>LIBRATION_RETURN_PERIOD_TOL</code>): a libration spends as
+   long going from the level to a turn as coming back, while a circulation creeping back gives about 0.5;</li>
+<li><span class="arithmatex">\(a\)</span> carries the swing: <span class="arithmatex">\(\operatorname{corr}\big(\dot\sigma,\ \operatorname{sign}(c)(a - \bar a)\big) \ge 0.9\)</span>
+   (<code>LIBRATION_RETURN_IDENTITY_CORR_MIN</code>);</li>
+<li>the swing is symmetric: between the turning points the angle crosses the level back as fast as at <span class="arithmatex">\(t_a\)</span>,
+   <span class="arithmatex">\(\lvert\dot\sigma(t_m)/\dot\sigma(t_a) + 1\rvert \le 0.05\)</span>.</li>
+</ol>
+<p>The mid-level <span class="arithmatex">\((\sigma_1 + \sigma_2)/2\)</span> is a convention, so the levels at <span class="arithmatex">\(k/20\)</span> of the swing
+(<code>LIBRATION_RETURN_LEVELS</code> = 19) are tried as well, and a level counts only inside a band of at least two
+neighboring levels that also close (<code>LIBRATION_RETURN_BAND_LEVELS</code>, <code>LIBRATION_RETURN_MID_BAND_LEVELS</code>): a real
+return holds over a band of sections, a match at one isolated level is a coincidence. Levels whose crossing may lie
+beyond the record neither close nor break a band, and the crossings are sought inside the run's own regime between
+jumps of <span class="arithmatex">\(a\)</span>. Such a run is an accepted stationary episode of one cycle of period <span class="arithmatex">\(t_b - t_a\)</span>. A verdict resting on
+it has its confidence capped at <code>medium</code> (cap <code>one_return_cycle</code>, <code>LIBRATION_RETURN_CYCLE_CAPS_MEDIUM</code>).</p>
+<p><img alt="Turning points, a closed and an open cycle, and a cycle closed by its phase return" src="../../img/physics/turning_points.png" /></p>
+<h2 id="runs-and-episodes">Runs and episodes<a class="headerlink" href="#runs-and-episodes" title="Permanent link">&para;</a></h2>
+<p>Turning points are grouped into <strong>runs</strong>. A run breaks where a gap exceeds
+<code>LIBRATION_EPISODE_GAP_FACTOR</code> = 3 times its median half-period, where a half-amplitude reaches <span class="arithmatex">\(\pi\)</span> (the angle
+goes over the top), or where two consecutive midpoints differ by more than <span class="arithmatex">\(\pi\)</span> (a slip). A Lidov-Kozai <span class="arithmatex">\(\omega\)</span>
+breaks at half a turn instead (<code>ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG</code> = 90°; <a href="../secular-zlk/#geometry-and-status">Secular and ZLK</a>).</p>
+<p><strong>Question: is this run a libration about a center?</strong> A run is an accepted <strong>episode</strong> when it has at least
+<code>LIBRATION_MIN_TURNING_POINTS</code> = 3 turning points (one full cycle; or two closed by their phase return), at least
+one closed cycle, and a center of one of three kinds:</p>
+<ul>
+<li><strong>stationary</strong>: the bands <span class="arithmatex">\([m_k - A_k,\ m_k + A_k]\)</span> of all its full cycles share a point. With fewer than
+  <code>LIBRATION_CENTRE_MIN_ESTIMATES</code> = 2 independent cycles the episode is accepted but its center is not measured
+  (cap <code>three_tp_episode</code>, at most <code>high</code>);</li>
+<li><strong>modulated</strong>: the cycle centers turn back at least <code>LIBRATION_CENTRE_RETURNS_MODULATED</code> = 3 times within a range
+  below <code>LIBRATION_MODULATED_RANGE_MAX_RAD</code> = <span class="arithmatex">\(\pi\)</span>. Unequal members of a resonance multiplet, or a slowly modulated
+  resonant term, make the libration's amplitude and center oscillate (Morbidelli 2002, §9.4, pp. 224–226); the
+  rule tests the observed returns, not a model of them. A secular or ZLK run needs one return, within a turn and under
+  a cycle that swings over every center (<a href="../secular-zlk/">Secular and ZLK</a>);</li>
+<li><strong>moving center</strong>: the bands share a point in the frame <span class="arithmatex">\(\psi = \sigma - \sigma_c(t)\)</span>, and every band holds
+  <span class="arithmatex">\(\psi = 0\)</span>. Here <span class="arithmatex">\(\sigma_c(t)\)</span> is the minimum of the averaged disturbing function of the angle's planet, recomputed
+  along the record from the slowly varying elements: the stable center of a resonance sits at that minimum
+  (Gallardo 2006, §3, p. 30), and when the well changes much more slowly than one libration the angle librates
+  about the moving minimum (the adiabatic condition: Wisdom 1985, pp. 274, 279). The track is accepted only when
+  the observed cycle centers follow it better (in RMS) than the best fixed center and than the same track run
+  backwards in time. This is done for two-body angles (1:1 and retrograde included) with the planet saved; this
+  implementation has no directly averaged potential for three-body angles, which stay in <span class="arithmatex">\(\sigma\)</span>.</li>
+</ul>
+<details class="info">
+<summary>The center track in detail</summary>
+<p>The track is built only for a run that fails in <span class="arithmatex">\(\sigma\)</span> and is not modulated. <span class="arithmatex">\(\sigma_c(t)\)</span> is the minimum of the
+full averaged potential (<code>averaged_potential</code>) at the elements averaged over <span class="arithmatex">\(P_c\)</span>, at nodes the larger of <span class="arithmatex">\(P_c\)</span>
+and the span / <code>MMR_CENTRE_TRACK_NODES</code> (400) apart, followed by descent from the previous node. A node without a
+well, without a converged quadrature or within <code>MMR_STRENGTH_MIN_DISTANCE_HILL</code> (3) Hill radii of the planet
+leaves the run in <span class="arithmatex">\(\sigma\)</span>. <span class="arithmatex">\(\psi\)</span> is read at the turning points of <span class="arithmatex">\(\sigma\)</span>, and the force law of such an episode
+is fitted in <span class="arithmatex">\(\psi\)</span>.</p>
+</details>
+<p>An accepted episode counts as a libration of this angle only when its median period is not shorter than the
+shortest libration <span class="arithmatex">\(P_\text{floor}\)</span> (a faster one is a forced wave the cutoff let through) and its center does not
+run a full revolution inside it. A run whose center moves is tried again on its regular part (full periods within
+<code>LIBRATION_REGULAR_PERIOD_RATIO</code> = 2 of the median, or without one slow edge half-cycle), and may be cut where its
+regime changes: at a step of its center between two measured librations, or at a stall of a slowly moving center
+(<code>LIBRATION_REGIME_CUTS</code>, <code>LIBRATION_STALL_MIN_CYCLES</code> = 3). Two joins undo a cut that separates no regimes (MMR):
+a half-cycle over the top in <span class="arithmatex">\(\sigma\)</span> but not in <span class="arithmatex">\(\psi\)</span> (rule q, <code>LIBRATION_FRAME_JOIN</code>), and a leftover of a
+stall cut that is the stall's own libration (rule s, <code>LIBRATION_STALL_JOIN</code>). A step or stall between two accepted
+pieces in one libration region is a mark, not a boundary (rule <code>regime_cut_mark</code>, <code>LIBRATION_REGIME_CUT_MARKS</code>).
+Rejected runs keep their reason
+(<code>too_few_tp</code>, <code>centre_moves</code>, <code>no_closed_cycle</code>, <code>over_the_top</code>, <code>edge</code>) in <code>episodes.csv</code>.</p>
+<details class="info">
+<summary>Regime cuts in detail</summary>
+<p>A run still rejected for its moving center is cut where its regime changes, and the cut is kept only when the
+regimes it claims are accepted. (1) A <em>center step</em>: a half-cycle with ≥ 3 turning points and a closed cycle on
+each side, each side passing the band test while the two together do not, each side with a measured center, and
+the cycle centers differing across the step by more than within either side. Failing that, (2) a <em>stall of the
+slow center</em>: the longest stretch of ≥ <code>LIBRATION_STALL_MIN_CYCLES</code> independent cycles whose midpoints move less
+per period than the cycles swing, at the run's own period, cut out as its own run. A steady drift has no stall
+and is not cut.</p>
+</details>
+<details class="info">
+<summary>Joins: rules q and s</summary>
+<p>A cut must separate two regimes. <strong>Rule q</strong> (frame join): over the top means over the potential's maximum, and
+the maximum moves with the well. Two runs broken by one half-cycle whose half-amplitude reaches <span class="arithmatex">\(\pi\)</span> in
+<span class="arithmatex">\(\sigma\)</span> are one run when the angle has a center track whose cycle centers follow it, no half-swing of the
+joined run reaches <span class="arithmatex">\(\pi\)</span> in <span class="arithmatex">\(\psi = \sigma - \sigma_c(t)\)</span>, and the joined run passes the band test. A slow
+edge piece of the regular-part split that holds the joined half-cycle is judged in <span class="arithmatex">\(\psi\)</span> too. A true crossing
+of the separatrix reaches <span class="arithmatex">\(\pi\)</span> in <span class="arithmatex">\(\psi\)</span> as well and stays a break. Example: 82831 13M−24, where the half-cycle
+at 8.76 kyr passes <span class="arithmatex">\(\pi\)</span> in <span class="arithmatex">\(\sigma\)</span> only because the Mars well moved during it: two episodes, 1.9–28.6 and
+29.8–71.3 kyr, both about the moving center.</p>
+<p><strong>Rule s</strong> (stall join): after a stall cut, a leftover piece next to the stall joins it when the joined piece
+passes the band test and the leftover carries the stall's oscillation: at least one of its full cycles (with
+two of its own turning points) has the stall's period within <code>LIBRATION_REGULAR_PERIOD_RATIO</code>. Not the median:
+ripple on the same wave adds turning points. A ripple of another period beside the stall has no such cycle and
+is not joined. Example: 385266 16N−27, one forced wave of the circulating 3N−5 (5:3) at 56.6–98.7 kyr instead
+of two pieces cut at 68.3 kyr. Both rules only change episode boundaries; each one that acts is listed in
+<code>rules_fired</code> (<code>frame_join</code>, <code>stall_join</code>).</p>
+</details>
+<details class="info">
+<summary>A step or stall inside one libration region is a mark</summary>
+<p>Rule <code>regime_cut_mark</code> (<code>LIBRATION_REGIME_CUT_MARKS</code>, an angle that is not 1:1): an episode boundary separates
+two libration regions. Two neighboring <em>accepted</em> pieces of a standing center-step or stall cut are one
+episode when the last full cycle before the cut and the first after it share a band and a period:</p>
+<div class="arithmatex">\[\min(m_l + A_l,\ m_r + A_r) - \max(m_l - A_l,\ m_r - A_r) &gt; 0, \qquad
+  \frac{\max(P_l, P_r)}{\min(P_l, P_r)} \le \texttt{LIBRATION\_REGULAR\_PERIOD\_RATIO},\]</div>
+<p>with <span class="arithmatex">\(m = (v_0 + 2v_1 + v_2)/4\)</span>, <span class="arithmatex">\(A\)</span> the mean half-swing and <span class="arithmatex">\(P = t_2 - t_0\)</span> of each cycle's three turning
+points, and when the turning points of the joined stretch, the step or the stall included, span less than a
+turn (<span class="arithmatex">\(\max v - \min v &lt; 2\pi\)</span>): a libration is an angle that does not take every value, so a center that
+carries the swing around the circle leaves no region to be one of. <span class="arithmatex">\(\sigma\)</span> then swings in one region across the
+cut (the non-1:1 analogue of the 1:1 "same well"); the test adds no threshold of its own. The joined run keeps the band test's verdict when it passes; when it fails
+only for its moving center it is accepted as <code>regime_change</code> with the center stationarity not measured. The cut
+becomes a mark of the episode, <code>centre_step@t0:t1</code> (the step half-cycle) or <code>stall@t0:t1</code> (the stall) in
+<code>episodes.csv</code> <code>marks</code>. Boundaries that stay: an accepted piece next to a rejected one (a drift: 385266
+16N−27), facing bands that do not overlap (2013 VA14 60 kyr at 41.3–41.7 kyr, −4.5° at half-amplitudes
+9.1/11.3°), a joined stretch that spans a turn (55390 1J+3S−1 at its 8.3-kyr center scale: the facing bands
+share 17°, but the center travels −299° in 75 kyr and the stretch spans 455°; 482824 19N−32: 572°), and every
+gap, circulation, passage over the top, jump of <span class="arithmatex">\(a\)</span>, action step and regular-part split. On the benchmark it
+joins 8 boundaries in 6 angles and changes no status, level or reason.</p>
+</details>
+<details class="info">
+<summary>Forced waves (rule F6)</summary>
+<p>Once each accepted episode's own response is measured (<a href="../response/">Is it this resonance?</a>), an episode is a
+forced wave of another argument, not an episode of the angle, when its identity fails with the wrong sign
+(slope/<span class="arithmatex">\(c &lt; 0\)</span> at <span class="arithmatex">\(\lvert\text{corr}\rvert \ge\)</span> <code>MMR_IDENTITY_CORR_MIN</code>), or when its period sits on a forced line
+of the angle's lattice and its identity fails (the line alone suffices only with <code>MMR_FORCED_WAVE_LINE_ALONE</code>).
+Forced waves are kept apart (<code>episodes.csv</code> <code>forced_wave</code>), and the response, the energy, the exit and the entry
+are read again without them. Status, reason and confidence are those without them; only the reported word may
+keep their loops (<a href="../status-tree/#the-reported-angle-word">The reported angle word</a>).</p>
+</details>
+<p>The example of a moving center is 2013 AS27 in 31E−36 (<a href="../gallery/#moving-center">Gallery</a>): its 260 turning
+points (period 150 yr, half-amplitude 24°) fail the band test in <span class="arithmatex">\(\sigma\)</span> by 8.8°, because the Earth's well moves by
+about 57° in 20 kyr, and pass in <span class="arithmatex">\(\psi\)</span> with a margin of 35.5°; the cycle centers lie 1.6° (RMS) from the track,
+against 14.4° from a fixed center and 28.2° from the reversed track.</p>
+<p><img alt="Stationary, modulated and moving-center episodes" src="../../img/physics/centre_types.png" /></p>
+<h3 id="a-co-orbital-turn-in-the-edge-trim">A co-orbital turn in the edge trim<a class="headerlink" href="#a-co-orbital-turn-in-the-edge-trim" title="Permanent link">&para;</a></h3>
+<p><strong>Question: does a 1:1 run lack only the turning point the filter hides?</strong> The filter's edge trim
+(<code>FILTER_EDGE_TRIM_CUTOFFS</code> × <span class="arithmatex">\(P_c\)</span>, 55.5 yr for an Earth co-orbital at 1 kyr) hides a turning point there. For a 1:1
+angle the reversal is then read on the raw angle averaged over <code>MMR_COORBITAL_EDGE_TURN_ORBITS</code> = 3 orbital periods
+(which drops the ripple of one orbit): after the run's last turning point (before its first) the extreme of the
+opposite kind, if it lies in the trim and the angle turns back from it before the record's edge. It counts when</p>
+<ul>
+<li>it swings at least <code>MMR_COORBITAL_EDGE_TURN_MIN_DEG</code> = 20° on both sides (a convention);</li>
+<li>it is a reflection on a top of the averaged potential (the planet's or L3's: a horseshoe turn), not a turn inside a
+  tadpole or quasi-satellite well;</li>
+<li><span class="arithmatex">\(a\)</span> crosses <span class="arithmatex">\(a_P\)</span> across it, as the identity <span class="arithmatex">\(\dot\theta = -\tfrac32 n (a - a_P)/a_P\)</span> requires;</li>
+<li><span class="arithmatex">\(|a - a_P|\)</span> is mirrored, <span class="arithmatex">\(|\ln(\text{out}/\text{in})| \le\)</span> <code>MMR_COORBITAL_TURN_ENERGY_TOL</code> = 0.34: the averaged
+  problem is time-reversible about a turn, a kick is not. Both sides are read on the same window, shrunk to the
+  stretch left to the record's edge.</li>
+</ul>
+<p>It is added as a turning point (<code>edge_raw_tp</code> in <code>episodes.csv</code>, <code>geo_edge_raw_tp_t</code>) only when it closes a cycle: the
+run was no episode without it and is an accepted one with it. It never extends an accepted episode and never continues
+the curve beyond the data (rule <code>coorbital_edge_turn</code>, <code>MMR_COORBITAL_EDGE_TURN</code>). 2006 BZ147 turns at 960 yr, 40 yr
+before the end (swing 180°, at the planet, out/in 0.90): its horseshoe cycle 817–960 yr closes and the verdict is
+<code>transient</code>. 2007 VU6 turns at 994 yr, but in the 6 yr left it swings back only 18.8°: no turning point.</p>
+<p>Only 1:1: the potential gives a co-orbital turn its site and its mirror, so a reversal can be told from a ripple. Other
+resonances have no such test of a single turn here, and their trimmed edge stays unread.</p>
+<h3 id="a-co-orbital-episode-ends-only-at-a-separatrix">A co-orbital episode ends only at a separatrix<a class="headerlink" href="#a-co-orbital-episode-ends-only-at-a-separatrix" title="Permanent link">&para;</a></h3>
+<p><strong>Question: where does a 1:1 episode end?</strong> Only where <span class="arithmatex">\(\sigma\)</span> crosses a separatrix: a half-cycle over the top, or
+a turn of <span class="arithmatex">\(\sigma_f\)</span> or of the orbit-averaged raw angle (rule <code>coorbital_well_cut</code>, <code>MMR_COORBITAL_WELL_EPISODES</code>).
+A change of well (quasi-satellite, tadpole, horseshoe, a compound orbit)
+or of amplitude inside the co-orbital wells is a sub-regime of one libration, not a boundary. The wells are those of
+the averaged potential of the 1:1 force law (<a href="../pendulum/#co-orbitals-11">pendulum</a>), on the run's window:</p>
+<ul>
+<li>a run whose cycle bands do not overlap is accepted when every full cycle's swing (its three turning points) holds a
+  minimum of the potential, to within the run's turning-point prominence, and its cycle centers stay within one
+  turn. The prominence is the smallest swing the run resolves as a turn: a cycle whose amplitude collapses within it
+  misses its minimum by less (2021 XO3 1V−1: 4° and 8° at 11°), a ripple drifting past L5 by more (2022 BB2 1V−1:
+  7–25° at 4°);</li>
+<li>a run some of whose cycles hold no minimum is not lost whole (rule <code>coorbital_well_core</code>,
+  <code>MMR_COORBITAL_WELL_CORE</code>, the author 2026-11-14 on 2024 JR16). Its <strong>cores</strong> are the longest blocks of consecutive
+  cycles that hold one, each accepted on its own (bands, or the wells test above). The first core continues back and
+  the last one forward over the run's other turning points while <span class="arithmatex">\(\sigma\)</span> stays in the same connected co-orbital
+  region: no half-cycle crosses the planet (<span class="arithmatex">\(\sigma = 0\)</span>) or L3 (<span class="arithmatex">\(\pi\)</span>) unless the core itself crosses that line,
+  none swings over the top, none circulates. The episode is the core with its continuation; the core alone gives the
+  cycle count (<code>core_t0_yr</code>/<code>core_t1_yr</code>, mark <code>unheld@t0:t1</code>). Cycles that miss the minimum between two cores split
+  the run: two episodes, never bridged. Past a crossing the turning points are a rejected <code>edge</code> piece: the episode
+  ends at the separatrix. 2024 JR16 c005: core 132–856 yr, its last cycle (a 14° loop 243–271° drifting towards L3)
+  misses the well, episode 132–929 yr, <code>resonant</code>/low (the force law fails); a JR16 clone integrated for 2000 yr crosses
+  L3 near 1450 yr and its episode ends at 1488 yr (<code>transient</code>). 2022 BB2 1V−1: core 445–691 yr after circulation, then
+  a ripple drifting towards L3 to the end, episode 445–926 yr. A wave riding a circulation crosses the planet and L3
+  within a few cycles and stays rejected;</li>
+<li>two accepted neighbors, which <code>split_runs</code> separates where the next regime is slower or its center jumps, join
+  when the half-cycle between them does not circulate and the joined run is accepted. A rejected neighbor is never
+  joined;</li>
+<li>no regime cut (center step, stall) applies to a 1:1 angle.</li>
+</ul>
+<p><code>episodes.csv</code> keeps the changes as annotations: <code>wells</code>, the wells of the run's cycles in time order
+(<code>qs&gt;compound&gt;horseshoe</code>), and <code>marks</code>: <code>well_change@t0:t1</code> (the half-cycle two cycles of different wells share),
+<code>amplitude_change@t0:t1</code> and <code>kick@t</code> (a jump of <span class="arithmatex">\(a\)</span> inside either). An amplitude change is G2a's amplitude test on two
+half-cycles each side of the transitional one (separation ≥ <code>LIBRATION_ACTION_STEP_SEPARATION</code>, ratio ≥
+<code>LIBRATION_ACTION_STEP_RATIO</code>), in one well, with the turning points of the larger swings higher in the potential. A
+run of several wells has the subtype <code>regime_change</code>, the floor of the fastest well it holds, and no L5 (one pendulum
+per well). 2021 XO3: one episode 90–945 yr with amplitude changes at 326–446 and 708–809 yr; 469219 1E−1: one episode
+24–950 yr, quasi-satellite then horseshoe.</p>
+<h3 id="core-residence-and-sub-regimes-of-a-co-orbital-episode">Core, residence and sub-regimes of a co-orbital episode<a class="headerlink" href="#core-residence-and-sub-regimes-of-a-co-orbital-episode" title="Permanent link">&para;</a></h3>
+<p><strong>Question: what is a 1:1 episode made of?</strong> Three intervals (rule <code>coorbital_residence</code>, <code>MMR_COORBITAL_RESIDENCE</code>):</p>
+<ul>
+<li>the <strong>core</strong>, from the first to the last measured turning point (<code>core_t0_yr</code>, <code>core_t1_yr</code>); of a run continued
+  beyond its well-holding cycles (rule <code>coorbital_well_core</code>, above), those cycles only. Coverage, the edges and the
+  margins read the run's turning points, the confidence's core cycles read the core;</li>
+<li>the <strong>sub-regimes</strong>, the stretches of the core between its changes of well or amplitude (<code>subregimes</code>,
+  <code>well@t0:t1</code>); for two or more, each one's own 1:1 force law and energy integral at the angle's cutoff
+  (<code>subregime_checks</code>, <code>force/energy</code>). They describe; the episode's own response decides. The header's orbit type is
+  their wells in time order (<code>compound: horseshoe → tadpole L4</code>);</li>
+<li>the <strong>residence</strong>, the stay in the co-orbital region around the core. It is <strong>inferred, not measured</strong>. The raw
+  angle averaged over <code>MMR_COORBITAL_EDGE_TURN_ORBITS</code> orbits is cut into legs at its reversals of
+  <code>MMR_COORBITAL_EDGE_TURN_MIN_DEG</code>. By <span class="arithmatex">\(\dot\sigma = -\tfrac32 n (a - a_P)/a_P\)</span> each reversal is a crossing of <span class="arithmatex">\(a_P\)</span>.
+  From the core outwards the residence takes legs until one sweeps <code>LIBRATION_EDGE_ARC_REV</code> turns (an arc above
+  <span class="arithmatex">\(2\pi\)</span> is no piece of libration, as for the edge rule) or the record ends: <code>residence_bounded_by_*</code> = <code>circulation</code>
+  or <code>edge</code>. An observed exit or entry bounds it at the core. <code>edge</code> means that the record ends inside the stay; it is
+  no exit, and the continuation is undetermined.</li>
+</ul>
+<p>The largest <span class="arithmatex">\(|a - a_P|/\Delta a_\text{max}\)</span> at the reversals outside the core is reported (<code>residence_zone_max</code>)
+  but bounds nothing. Measured at 20 kyr, the accepted core of 2024 TY11 1M−1 starts at a turn of 2.2, where its own
+  force law passes.</p>
+<p>2020 CB 1E−1: the quasi-satellite core 443–601 yr, then swings below the turning-point prominence. The residence runs
+from 443 yr (the leg before it sweeps 3.1 turns) to the record's end: 601 yr is no exit. 2024 TY11 20 kyr: core
+2.65–8.69 kyr, residence from the record's start to 8.69 kyr (the next leg sweeps 4 turns). 2009 BE81 20 kyr: one
+episode 7.75–16.7 kyr. Its sub-regimes are tadpole L5, horseshoe, tadpole L4 and compound, and their laws read
+pass/pass, pass/fail, pass/pass and pass/pass.</p>
+<h2 id="the-center-and-circulation">The center and circulation<a class="headerlink" href="#the-center-and-circulation" title="Permanent link">&para;</a></h2>
+<p>The <strong>slow center</strong> <span class="arithmatex">\(c(t)\)</span> is <span class="arithmatex">\(\sigma_f\)</span> smoothed over <span class="arithmatex">\(W_c\)</span> = <code>LIBRATION_CENTRE_CYCLES</code> = 3 libration periods (3 <span class="arithmatex">\(P_c\)</span>
+without cycles). Its own turns need a prominence <span class="arithmatex">\(p_c = \max(10°,\ 2p_\text{TP})\)</span>
+(<code>LIBRATION_CENTRE_TP_PROMINENCE_DEG</code>, <code>LIBRATION_CENTRE_TP_FACTOR</code>). A <strong>monotone pass</strong> is the stretch of <span class="arithmatex">\(c(t)\)</span>
+between two of its turns, measured by its maximum minus its minimum.</p>
+<p><strong>Question: does the angle go round?</strong> The angle circulates when the largest monotone pass is at least <span class="arithmatex">\(2\pi\)</span>
+(rule G4): an arc longer than one revolution is never a piece of a libration. A staircase with small step-backs
+circulates as well when the center advances by at least <code>LIBRATION_CIRCULATION_NET_REV</code> = 2 revolutions net over
+the window (G4b). On an aliased step such a circulation has the subtype <code>alias</code>.</p>
+<p><strong>Drift.</strong> When rejected runs whose center moves cover at least <code>LIBRATION_DRIFT_MIN_WINDOW_FRACTION</code> = 0.5 of the
+window and no revolution is completed, the angle drifts (G5). If the slow center turns back exactly once inside the
+record, farther than <span class="arithmatex">\(W_c\)</span> from the window's edges, and its range stays below one revolution, the record holds only
+part of one slow swing and cannot tell a drift from a slow libration: <code>insufficient_time</code> / <code>arc</code> (G5a).</p>
+<p><strong>Too few turns.</strong> With turning points but no episode the angle is <code>insufficient_time</code> / <code>few_cycles</code>; with none it
+is <code>arc</code> (the range of <span class="arithmatex">\(\sigma_f\)</span> is at least <span class="arithmatex">\(\pi\)</span>) or <code>stall</code> (below <span class="arithmatex">\(\pi\)</span>), rule G6. The record then sets only a
+lower bound on the libration period, which gives the length to integrate (<a href="../confidence/#actions">Confidence</a>).</p>
+<details class="info">
+<summary>The lower bound of an arc or a stall</summary>
+<p>A libration about a center 0 or <span class="arithmatex">\(\pi\)</span> moves <span class="arithmatex">\(a\)</span> at <span class="arithmatex">\(\lvert\dot a\rvert = K\lvert\sin\sigma\rvert\)</span>. Over the
+analysis window of length <span class="arithmatex">\(\tau\)</span>, with the range <span class="arithmatex">\(\delta a = \max a_f - \min a_f\)</span> and
+<span class="arithmatex">\(s_{\min} = \min\lvert\sin\sigma_f\rvert\)</span> there,
+<span class="arithmatex">\(K_{\max} = \delta a/(\tau\,s_{\min})\)</span> and</p>
+<div class="arithmatex">\[
+P_\text{lib,min} = \frac{2\pi}{\sqrt{\lvert c\rvert K_{\max}}} = 2\pi\sqrt{\frac{\tau\,s_{\min}}{\lvert c\rvert\,\delta a}} .
+\]</div>
+<p>The least <span class="arithmatex">\(\lvert\sin\rvert\)</span> gives the most cautious bound; <span class="arithmatex">\(s_{\min} = 0\)</span> gives no positive bound.</p>
+</details>
+<h2 id="coverage-exits-and-entries">Coverage, exits and entries<a class="headerlink" href="#coverage-exits-and-entries" title="Permanent link">&para;</a></h2>
+<p><strong>Question: does the libration last the whole record?</strong> An episode covers a record edge when it starts (ends)
+within <code>LIBRATION_COVERAGE_PERIODS</code> = 1 of its own periods of that edge, or when no turning point is missing between
+the edge of the analysis window and the episode and the stretch the filter trims off that edge is itself within one
+period. An episode covering both edges makes the angle a <code>libration</code>; otherwise it is <code>episodic</code> (<code>recurrent</code> with two
+or more librating episodes).</p>
+<p><strong>Exit and entry.</strong> After the last turning point the angle may leave its center:</p>
+<ul>
+<li><strong>suspected</strong>: <span class="arithmatex">\(\sigma_f\)</span> leaves the episode's center by more than <span class="arithmatex">\(\pi\)</span> with less than one period left. The label
+  stays, the flag <code>exit_suspected</code> caps the confidence at <code>medium</code>. For an MMR the center is the local one at that
+  edge, not the episode's mean: the midpoint of the edge swing (the half-cycle that ends at the last turning point,
+  or starts at the first), or the moving well's center <span class="arithmatex">\(c(t)\)</span> at that turning point when the episode was accepted in
+  <span class="arithmatex">\(\psi\)</span>. A mean over an episode whose regime changes inside it can lie more than <span class="arithmatex">\(\pi\)</span> from its own edge turning
+  point: 2016 JA in 1E−1 swings once as a horseshoe about 182° and then as a tadpole about 282° (mean 251°), so its
+  first turning point at 45° read as an entry; the edge swing's midpoint holds its turning point at the
+  half-amplitude, always below <span class="arithmatex">\(\pi\)</span> (rule <code>local_centre_entry</code> when the two readings differ; secular and ZLK
+  angles keep the mean);</li>
+<li><strong>observed</strong>: the raw angle averaged over one orbital period runs at least <code>LIBRATION_EDGE_ARC_REV</code> = 1 turn away
+  from the last turning point to the end of the record and moves monotonically there. The edge is then not covered,
+  there is no <code>exit_suspected</code>, and <code>final_regime</code> is a circulation from the exit. The same holds for an entry at the
+  start of the record. The center-scale pass (G2c) does not look for a slower libration behind such an arc. A secular
+  or ZLK angle has no orbit to average: there <span class="arithmatex">\(\sigma_f\)</span> itself is read
+  (<a href="../secular-zlk/">Secular and ZLK</a>).</li>
+</ul>
+<p>2017 UM52 in 1E−1 (<a href="../gallery/#transient-exit">Gallery</a>) is a horseshoe that exits at 949 yr: its averaged angle then
+runs 1.97 turns monotonically, so the exit is observed and the verdict is <code>transient</code>.</p>
+<p><strong>Union of episodes.</strong> Consecutive librating episodes join into one libration over the record when nothing between
+them goes round and <span class="arithmatex">\(\sigma_f\)</span> stays in their libration band: in each gap the range of the turning points and the
+range of the orbit-averaged raw angle are both below <span class="arithmatex">\(2\pi\)</span>, and the gap is bounded: at every sample of the gap
+<span class="arithmatex">\(\sigma_f\)</span> lies inside one of three bands, up to <code>LIBRATION_UNION_BAND_MARGIN_DEG</code> (10°, a convention),</p>
+<div class="arithmatex">\[|\sigma_f - c_l| \le A_l, \qquad |\sigma_f - c_r| \le A_r, \qquad |\sigma_f - c(t)| \le \max(A_l, A_r),\]</div>
+<p>the band of the left episode about its center at its end, that of the right one at its start (centers: the midpoints
+of their facing full cycles; <span class="arithmatex">\(A\)</span> the largest half-amplitude of each), and the band carried across the gap, <span class="arithmatex">\(c(t)\)</span>
+linear from <span class="arithmatex">\(c_l\)</span> to <span class="arithmatex">\(c_r\)</span> (a step of the center). The gap holds no libration to measure a center on; a low-pass of
+<span class="arithmatex">\(\sigma_f\)</span> there would follow any excursion slower than its window, and the carried band alone misses a swing back
+into the other neighbor's band (the co-orbital 524522). How long the gap is does not matter (2001 WK15 32E−39: gaps of 1.5 and
+1.7 <span class="arithmatex">\((P_\text{left} + P_\text{right})\)</span> inside the band; an excursion over the top and back stays two episodes, even
+without a full turn). Nothing may go round over the whole chain either, and the outer episodes must reach the record's
+edges. The angle is then <code>libration</code> /
+<code>regime_change</code>. For a 1:1 angle this is rule G2: a quasi-satellite becoming a horseshoe without circulating is one
+libration (<a href="../gallery/#coorbital-regime-change">Gallery</a>); with <code>MMR_COORBITAL_WELL_EPISODES</code> such a change is one
+episode already (above), and the union joins only what a rejected stretch separates. For any other angle it is rule G2u: the reported word is
+<code>libration</code> / <code>regime_change</code>, but the status tree reads the chain as episodic and promotes it to <code>resonant</code> only from
+a dynamic transient (<a href="../status-tree/">The status tree</a>).</p>
+<p><img alt="A union of episodes against an observed exit" src="../../img/physics/episodes.png" /></p>
+<h2 id="jumps-of-a-and-the-last-regime">Jumps of <span class="arithmatex">\(a\)</span> and the last regime<a class="headerlink" href="#jumps-of-a-and-the-last-regime" title="Permanent link">&para;</a></h2>
+<p>Close encounters and passages through a chaotic layer change the orbit abruptly. <strong>Question: has the orbit jumped to
+another regime?</strong> A candidate is a change of <span class="arithmatex">\(a_f\)</span> over <span class="arithmatex">\(\tau = \max(2P_c,\ 5\Delta t)\)</span>
+(<code>LIBRATION_JUMP_TAU_CUTOFFS</code>, <code>LIBRATION_JUMP_TAU_STEPS</code>) above <code>LIBRATION_JUMP_NOISE_FACTOR</code> = 8 robust standard
+deviations of such changes, and accumulated in less than one libration period <span class="arithmatex">\(P_\text{cyc}\)</span> (a kick, not an
+adiabatic drift). It is a confirmed <strong>jump</strong> when the mean dimensionless energy <span class="arithmatex">\(h\)</span> of
+<code>LIBRATION_JUMP_CYCLES</code> = 2 cycles on each side differs by more than <span class="arithmatex">\(\max(2\sigma_h,\ 0.1)\)</span>
+(<code>LIBRATION_JUMP_DH_MIN</code>); with fewer cycles, when the step of <span class="arithmatex">\(a\)</span> exceeds the resonance half-width (flag
+<code>jump_by_a_only</code>). A step without an energy change is a kick and cuts nothing; so does a candidate within
+<span class="arithmatex">\(\max(\tau, P_\text{cyc})\)</span> of an edge (flag <code>jump_at_edge</code>).</p>
+<p>After a confirmed jump the geometry is measured again on the <strong>last regime</strong> (flag <code>last_regime_after_jump</code>; each
+regime has its own center and turning-point prominence, and no cycle crosses a jump). The last regime decides the
+angle word, with two exceptions that keep the earlier episodes visible:</p>
+<ul>
+<li>the last regime holds no episode but librating episodes precede the jump: the angle is reported <code>episodic</code>, the
+  status reads those episodes (cap <code>episode_before_jump</code>, at most <code>medium</code>), and <code>final_regime</code> is the last regime's
+  word (G1e). Example: 2003 UG22 in 10E−17 over 40 kyr (<a href="../gallery/#transient-before-jump">Gallery</a>), two episodes,
+  then circulation between jumps of <span class="arithmatex">\(a\)</span> after 31 kyr;</li>
+<li>the last regime librates but nothing librated before the jump (a capture): reported <code>episodic</code>,
+  <code>final_regime = libration</code> (G1l).</li>
+</ul>
+<h3 id="a-step-of-the-libration-action">A step of the libration action<a class="headerlink" href="#a-step-of-the-libration-action" title="Permanent link">&para;</a></h3>
+<p>A step of the libration amplitude can happen without a visible step of the mean <span class="arithmatex">\(a\)</span>, for instance when an encounter
+changes the swing of <span class="arithmatex">\(a\)</span> but not its mean. Away from the separatrix the action of a libration is an adiabatic
+invariant; an amplitude that changes by a large factor within one half-cycle is a candidate impulse onto another
+energy level of the same potential. On every accepted run in the <span class="arithmatex">\(\sigma\)</span> frame (not 1:1) that no jump already cuts,
+the half-amplitudes are split at the half-cycle that separates them best, and the record is cut there, as at a
+jump, when all of these hold:</p>
+<ol>
+<li>each side has at least <code>LIBRATION_ACTION_STEP_MIN_HALF_CYCLES</code> = 2 half-cycles;</li>
+<li>the sides are separated: min(larger side) / max(smaller side) <span class="arithmatex">\(\ge\)</span> <code>LIBRATION_ACTION_STEP_SEPARATION</code> = 2;</li>
+<li>their medians differ by a factor <span class="arithmatex">\(\ge\)</span> <code>LIBRATION_ACTION_STEP_RATIO</code> = 3;</li>
+<li>the swing of <span class="arithmatex">\(a\)</span> (its standard deviation per side) changes the same way by a factor <span class="arithmatex">\(\ge\)</span>
+   <code>LIBRATION_ACTION_STEP_A_RATIO</code> = 1.5, since <span class="arithmatex">\(\delta a \propto \dot\sigma\)</span>: a step of <span class="arithmatex">\(\sigma\)</span> alone is no step of
+   the libration;</li>
+<li>the transitional half-cycle lasts at most <code>LIBRATION_ACTION_STEP_MAX_PERIODS</code> = 1 period of the shorter side;</li>
+<li>each side has at least <code>LIBRATION_ACTION_STEP_CYCLES</code> = 1 cycle of measured energy, and <span class="arithmatex">\(h\)</span> changes the way the
+   amplitude does by more than <span class="arithmatex">\(\max(2\sigma_h,\ 0.1)\)</span>: beats at a constant energy do not;</li>
+<li>both regimes librate in one potential, each at its own energy (column <code>geo_action_step_failed = regime_periods</code>
+   when this fails): the median periods of the two sides differ by more than
+   <code>LIBRATION_ACTION_STEP_PERIOD_TOL</code> = 0.2 (in a nearly harmonic well every loop has the same period, so a forced
+   wave whose envelope steps would pass otherwise); and at every smoothing <span class="arithmatex">\(C = f\times\)</span> the shorter period,
+   <span class="arithmatex">\(f\)</span> in <code>LIBRATION_ACTION_STEP_CUTOFFS</code> = 0.075, 0.1, 0.15, the potential fitted to the cycles of the larger swings
+   explains them, covers the smaller swings, and holds every disjoint cycle of both sides in a loop of its own
+   energy, with the observed period within 20 % of the period predicted in the well that holds the cycle and the
+   turning points within <code>LIBRATION_ACTION_STEP_TP_TOL</code> = 0.2 of the loop's; the energies of each side stay put
+   (<code>LIBRATION_ACTION_STEP_ENERGY_DRIFT</code> = 0.5), and the number of wells is the same at every smoothing.</li>
+</ol>
+<p>With fewer than two energy cycles on a side, or a single cycle of the larger swings, the cut is provisional (cap
+<code>action_step_provisional</code>, at most <code>medium</code>). The record is also analyzed whole: if the cut leaves a measurement that
+failed on the whole record (identity, force law, R0, zone, strength) unmeasured and changes the status or the
+confidence, the cut is withheld and the whole record's analysis is kept, because geometry does not override a
+failed measurement (<code>geo_action_step_withheld_checks</code>). A cut that stands is a confirmed jump (<code>jump_action_step</code> = 1)
+at the middle of the transitional half-cycle (rule G2a); columns <code>geo_action_step_*</code>, and panel (a) of the figure
+marks it.</p>
+<p>2003 TX9 in 3E+2J−10 shows a candidate at 6.96 kyr: the half-amplitude falls from 146° to 12° (separation 8.3, the
+swing of <span class="arithmatex">\(a\)</span> ÷ 7.1, <span class="arithmatex">\(\Delta h = -0.54\)</span>), so tests 1–6 pass; test 7 fails (the period law of the smaller swings in the
+potential of the larger ones is 1.61), and the record is not cut (<a href="../gallery/#measured-objection">Gallery</a>).</p>
+<h2 id="the-separatrix-zone">The separatrix zone<a class="headerlink" href="#the-separatrix-zone" title="Permanent link">&para;</a></h2>
+<p>The separatrix zone is the band swept by the separatrix of a <strong>measured, time-dependent pendulum</strong>, not a fixed
+tolerance about <span class="arithmatex">\(h = 1\)</span>. The force of an MMR is that of its multiplet (members
+<span class="arithmatex">\(\sigma_j = \sigma + j(\varpi - \varpi_P)\)</span>, <a href="../response/#subresonances">Is it this resonance?</a>), which is one harmonic
+of <span class="arithmatex">\(\sigma\)</span> with a slowly turning complex amplitude (Morbidelli 2002, §9.4, pp. 224–225, eqs. 9.20–9.22):</p>
+<div class="arithmatex">\[
+W(t) = \sum_j (A_j + iB_j)\,e^{ij(\varpi - \varpi_P)}, \qquad
+\ddot\sigma = -\Omega(t)^2\sin\big(\sigma - \sigma_s(t)\big), \qquad
+\Omega^2 = \lvert c\,W\rvert, \quad \sigma_s = -\arg W\ (+\pi \text{ for } c &gt; 0).
+\]</div>
+<p>Without resolved members the strength follows the bounded oscillatory part of the eccentricity,
+<span class="arithmatex">\(\Omega^2 \propto (e_\text{osc}/\bar e)^{\lvert p\rvert}\)</span> (<span class="arithmatex">\(p\)</span> the coefficient of <span class="arithmatex">\(\varpi\)</span>), with a fixed center (flag <code>zone_eq_only</code>). The scale <span class="arithmatex">\(\bar\Omega\)</span> comes from
+the potential fitted to <span class="arithmatex">\(\sigma\)</span>, and <span class="arithmatex">\(m(t) = \Omega(t)^2/\bar\Omega^2\)</span>. Trial librations and rotations of this model are
+integrated from a grid of starts to the end of the record: initial actions <span class="arithmatex">\(J_0/\langle J_s\rangle\)</span> from
+<code>MMR_ZONE_J_MIN</code> = 0.1 to 1 and rotation energies <span class="arithmatex">\(h_0\)</span> from 1 to <code>MMR_ZONE_H_MAX</code> = 2, both in steps of
+<code>MMR_ZONE_J_STEP</code> = 0.025, each at <code>MMR_ZONE_PHASES</code> = 16 start times over one modulation period (tolerance
+<code>MMR_ZONE_RTOL</code>). Then</p>
+<ul>
+<li><span class="arithmatex">\(J_\text{lo}\)</span> is the <strong>smallest</strong> starting action that ever goes over the top,</li>
+<li><span class="arithmatex">\(h_\text{hi}\)</span> is the <strong>largest</strong> starting rotation energy that is ever trapped (its relative rate changes sign).</li>
+</ul>
+<p>With <code>MMR_ZONE_METHOD</code> = <code>adiabatic</code> the zone is instead <span class="arithmatex">\(J_\text{lo} = \Omega_\text{min}/\bar\Omega\)</span>,
+<span class="arithmatex">\(h_\text{hi} = (\Omega_\text{max}/\bar\Omega)^2\)</span>; for a slow modulation (adiabaticity
+<span class="arithmatex">\(\lambda = \nu_\text{mod}/\bar\Omega &lt;\)</span> <code>MMR_ZONE_ADIABATIC_LAMBDA_MAX</code> = 0.1) a numeric <span class="arithmatex">\(J_\text{lo}\)</span> that differs from
+this by more than <code>MMR_ZONE_ADIABATIC_TOL</code> = 0.05 sets the flag <code>zone_numeric_mismatch</code>. There is no zone without a
+finite <span class="arithmatex">\(\bar\Omega\)</span>, or when <span class="arithmatex">\(2\pi/\bar\Omega\)</span> is shorter than the smoothing of the angle.</p>
+<p><strong>Energy scatter.</strong> The uncertainty of a cycle's energy is the robust scatter of the energies <span class="arithmatex">\(h_j\)</span> of neighboring
+cycles,</p>
+<div class="arithmatex">\[
+\sigma_h = \max\!\Big(\sigma_\text{floor},\ \frac{1.4826\,\mathrm{MAD}(h_{j+1} - h_j)}{\sqrt2}\Big),
+\]</div>
+<p>with <span class="arithmatex">\(\sigma_\text{floor}\)</span> = <code>SEPARATRIX_SIGMA_FLOOR</code> = 0.02; with fewer than two finite energies <span class="arithmatex">\(\sigma_h\)</span> is not
+measured and the floor is used.</p>
+<p><strong>Classes.</strong> With <span class="arithmatex">\(z\)</span> = <code>SEPARATRIX_SIGMA_MARGIN</code> = 2 and the cycle's mean strength <span class="arithmatex">\(m\)</span>:</p>
+<ul>
+<li>a libration is <strong>deep</strong> if <span class="arithmatex">\(J/\langle J_s\rangle + z\,\sigma_J &lt; J_\text{lo}\)</span>, where
+  <span class="arithmatex">\(J/\langle J_s\rangle = (J/J_s)\sqrt m\)</span> and <span class="arithmatex">\(\sigma_J = \dfrac{d(J/J_s)}{dh}\sqrt m\,\sigma_h\)</span>, with
+  <span class="arithmatex">\(d(J/J_s)/dh = (V_\text{max} - V_\text{min})\,P/(2\pi J_s)\)</span> (<span class="arithmatex">\(\mathsf K(h)/2\)</span> for one harmonic);</li>
+<li>a rotation is <strong>above</strong> if <span class="arithmatex">\(h\,m - z\,\sigma_h &gt; h_\text{hi}\)</span>;</li>
+<li>a libration above the lower saddle of its well in a potential of several wells is <strong>not measured</strong>
+  (<code>not_measured</code>): its loop encloses both wells and has no single-well <span class="arithmatex">\(J/J_s\)</span>
+  (<a href="../pendulum/#the-pendulum">The resonant pendulum</a>); it is neither deep nor in the zone;</li>
+<li>every other cycle is in the <strong>zone</strong>; a cycle within one <span class="arithmatex">\(\sigma\)</span> of an edge sets <code>zone_edge_cycle</code>.</li>
+</ul>
+<p><span class="arithmatex">\(J/J_s\)</span> is the action of the cycle's own loop over the separatrix action of the well it occupies (the basin of its
+fastest sample; <a href="../pendulum/#the-pendulum">The resonant pendulum</a>). For
+a two-body episode whose planet was saved, the directly averaged well replaces the fitted class. Each turning point's
+action is computed in that profile itself, at its own time: <span class="arithmatex">\(J/J_s\)</span> of the loop of energy <span class="arithmatex">\(\bar D(\sigma_\text{TP})\)</span>
+about the bottom of the well that holds the swing's middle, over the action of that well's separatrix loop (at its
+barrier, the lower of its two tops), both by quadrature of <span class="arithmatex">\(\sqrt{2(E - V)}\)</span> on the profile. <span class="arithmatex">\(J_\text{lo}\)</span> is in units
+of the record's mean separatrix action, so the ratio is carried there by the averaged well itself:</p>
+<div class="arithmatex">\[
+\frac{J}{\langle J_s\rangle} = \frac{J}{J_s(t)}\,\frac{J_s(t)}{\langle J_s\rangle},
+\]</div>
+<p>with <span class="arithmatex">\(J_s(t)\)</span> in absolute units (<span class="arithmatex">\(V = 3k^2\mu_P n^2 a\,\bar D\)</span>, so the profile's action times the square root of that
+scale) and <span class="arithmatex">\(\langle J_s\rangle\)</span> its time mean over the record, from <code>MMR_SEPARATRIX_AVGPOT_TP_MAX</code> even times (the well
+that holds the swing middle of the nearest turning point). The action at a fixed <span class="arithmatex">\(h\)</span> grows as the square root of the
+well's strength: where the well is at a quarter of its mean strength, <span class="arithmatex">\(J/J_s(t) = 0.6\)</span> is
+<span class="arithmatex">\(J/\langle J_s\rangle = 0.3\)</span>. An episode cycle is in the zone if any measured turning point has
+<span class="arithmatex">\(J/\langle J_s\rangle \ge J_\text{lo}\)</span>, deep if all are measured and below it, and otherwise keeps its fitted class;
+a turning point above the barrier of a profile of several wells is not measured, and none is when a profile on the
+record's grid fails (the mean is then unknown). This uses no <span class="arithmatex">\(\sigma_h\)</span>. Actions are compared, not energies:
+<span class="arithmatex">\(J/J_s = 0.5\)</span> lies at <span class="arithmatex">\(h = 0.581\)</span> for <span class="arithmatex">\(V = -\cos\sigma\)</span> and at <span class="arithmatex">\(h = 0.628\)</span> for <span class="arithmatex">\(V = -\cos\sigma - 0.2\cos2\sigma\)</span>,
+so an energy mapped from <span class="arithmatex">\(J_\text{lo}\)</span> through the fitted potential misreads a profile of another shape.
+<span class="arithmatex">\(h_\text{TP}\)</span> is still reported (<code>sep_h_avgpot_*</code>, beside <code>sep_J_avgpot_*</code>). The zone and the classes are diagnostics
+of the fitted model, not a measurement of N-body chaos. The same <span class="arithmatex">\(\sigma_h\)</span> enters the jump and action-step tests above.</p>
+<p>The zone gives the flags <code>libration_in_separatrix_zone</code>, <code>episodes_in_separatrix_zone</code> (crossings, and every cycle in
+the zone: a cycle not measured breaks it), <code>near_separatrix_energy</code> and <code>zone_edge_cycle</code>, the margins L2 (thin with a
+cycle in the zone, not measured with a cycle not measured and none in the zone) and Z, and the cap
+<code>episodes_in_separatrix_zone</code>. The classes are not columns only: they move the confidence through these, and one status
+path: when the episodes lie in the zone, O1 is not read as an objection (<a href="../status-tree/">The status tree</a>), so the
+unmeasured-force branch does not end at uncertain on it. When the zone's reading does not survive for the row (the ×2
+filter guard empties Z or L2, or the status rests on an episode before a jump of <span class="arithmatex">\(a\)</span>, whose regime the zone was not
+measured in), the two zone flags and that cap go: the row shows <code>zone_not_measured</code>, never both. The <code>sep_*</code> columns
+keep the classes measured at <span class="arithmatex">\(P_c\)</span>.</p>
+<p><strong>Crossings.</strong> They are read from <span class="arithmatex">\(\sigma\)</span> (<code>pendulum.regime_transitions</code>): an exit is a libration half-cycle
+followed by a slip or a turn, a capture the reverse. The crossings get one mechanism, <code>sep_mechanism</code>, the first
+that applies:</p>
+<table>
+<thead>
+<tr>
+<th><code>sep_mechanism</code></th>
+<th>condition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>kick</code></td>
+<td>an energy-changing step of <span class="arithmatex">\(a\)</span> within one cycle period of a crossing</td>
+</tr>
+<tr>
+<td><code>trend</code></td>
+<td>the slope of <span class="arithmatex">\(J/\langle J_s\rangle\)</span> over the cycles differs from 0 by more than <code>SEPARATRIX_TREND_SIGMA</code> = 3 standard errors, and its total change exceeds <span class="arithmatex">\(1 - J_\text{lo}\)</span></td>
+</tr>
+<tr>
+<td><code>pulsation</code></td>
+<td>the crossings favor the weak phase of <span class="arithmatex">\(m(t)\)</span>: cyclic-shift p-value ≤ <code>SEPARATRIX_PERMUTATION_P_MAX</code> = 0.05</td>
+</tr>
+<tr>
+<td><code>layer</code></td>
+<td><span class="arithmatex">\(\lambda = \nu_\text{mod}/\bar\Omega &gt;\)</span> <code>SEPARATRIX_LAYER_ADIABATICITY_MIN</code> = 0.5: a fast modulation, a chaotic layer</td>
+</tr>
+<tr>
+<td><code>unexplained</code></td>
+<td>none of these</td>
+</tr>
+<tr>
+<td>(empty)</td>
+<td>no crossing</td>
+</tr>
+</tbody>
+</table>
+<p>The mechanism names a reading of the crossing; it sets no status. An episodic angle whose mechanism is <code>unexplained</code>
+and whose episodes are not in the zone gets the cap <code>transient_unexplained</code> (not for a 1:1 angle,
+<code>MMR_COORBITAL_LIFTS_UNEXPLAINED</code>). The mark <code>exit_and_capture</code> (an episodic, non-co-orbital angle with at least one
+exit and one capture, no kick, its own force measured, no filter or sampling caveat) lifts that cap
+(<code>MMR_EXIT_AND_CAPTURE_LIFTS_UNEXPLAINED</code>).</p>
+<h2 id="near-the-separatrix">Near the separatrix<a class="headerlink" href="#near-the-separatrix" title="Permanent link">&para;</a></h2>
+<p>Without any episode, an angle can still show that it lives at the top of its own potential well. These patterns
+need the potential fitted to <span class="arithmatex">\(\sigma\)</span> alone to hold (the pendulum test R0 on <span class="arithmatex">\(\sigma\)</span>,
+<a href="../response/">Is it this resonance?</a>):</p>
+<ul>
+<li><strong>pattern A, slips</strong>: the oscillation midpoint steps by a whole, non-zero number <span class="arithmatex">\(r\)</span> of turns,
+  <span class="arithmatex">\(\lvert\Delta m/2\pi - r\rvert \le\)</span> <code>LIBRATION_SLIP_TOLERANCE</code> = 0.2 (a slip can span several turns). A slip shorter
+  than <code>LIBRATION_SLIP_MIN_DURATION_T0</code> = 0.5 small-amplitude periods <span class="arithmatex">\(T_0\)</span> (when <span class="arithmatex">\(T_0\)</span> is measured) is rejected: an
+  unwrap error smeared by the filter is that fast, and a pendulum passage over the top with <span class="arithmatex">\(h \lesssim 1.6\)</span> is not.
+  This is a convention aimed at near-separatrix passages, not a bound on a fast circulation. At least
+  <code>LIBRATION_PATTERN_A_MIN_SLIPS</code> = 2 slips of pieces with a median half-amplitude <span class="arithmatex">\(\ge\)</span>
+  <code>LIBRATION_PATTERN_A_MIN_AMP_DEG</code> = 60° are needed;</li>
+<li><strong>pattern B, stalls</strong>: every revolution is within reach of the separatrix,
+  <span class="arithmatex">\(h_\text{rev} \le h_\text{hi} + z\,\sigma_h\)</span>, and in at least
+  <code>LIBRATION_STALL_REV_FRACTION</code> = 0.75 of them the rate is slowest within <code>LIBRATION_STALL_PHASE_TOL_DEG</code> = 30° of the
+  top of the potential.</li>
+</ul>
+<p>The angle is then <code>near_separatrix</code> (<code>pattern_a</code> or <code>pattern_b</code>; rule G3). Example:
+523899 in 3N−5 (<a href="../gallery/#near-separatrix">Gallery</a>).</p>
+<h2 id="the-center-scale">The center scale<a class="headerlink" href="#the-center-scale" title="Permanent link">&para;</a></h2>
+<p>A slow libration can carry faster waves whose turning points fill the record: at <span class="arithmatex">\(P_c\)</span> no episode covers it, but the
+center <span class="arithmatex">\(c(t)\)</span> itself librates. <strong>Question: is there a libration at the scale of the center?</strong> When the fine scale
+shows no libration (and no observed exit or entry), the angle is filtered at <span class="arithmatex">\(W_c = 3P_\text{cyc}\)</span>, or, failing that,
+at half the period of the center's own turns. If that angle holds an episode covering the record, the whole analysis
+is repeated at that cutoff, with its turning points taken at the center-turn prominence <span class="arithmatex">\(p_c\)</span>
+(<code>LIBRATION_CENTRE_SCALE_TP_AT_CENTRE</code>), and its verdict is kept when it is a whole-record libration, or an episode
+that would cover both edges of the record but for an exit or entry observed at that scale (rule G2c; column
+<code>geo_centre_scale_cutoff_yr</code>). If the libration found there is too fast for that cutoff, it is analyzed once more at
+half its period, and a libration whose window at <span class="arithmatex">\(W_c\)</span> holds fewer than two of its periods is read at the
+shortest cutoff that keeps its slow extrema (<a href="../signal/#a-shorter-cutoff-for-a-slow-libration-the-scale-ladder-g2c">scale ladder</a>).
+385458 in 9N−17 over 300 kyr is a libration at <span class="arithmatex">\(W_c\)</span> = 4.6 kyr
+(<a href="../gallery/#center-scale">Gallery</a>); over 100 kyr the same body is <code>insufficient_time</code>
+(<a href="../gallery/#insufficient-time">Gallery</a>).</p>
+<h2 id="from-geometry-to-angle_status">From geometry to <code>angle_status</code><a class="headerlink" href="#from-geometry-to-angle_status" title="Permanent link">&para;</a></h2>
+<p>The first rule that applies gives the angle word:</p>
+<table>
+<thead>
+<tr>
+<th>rule</th>
+<th>condition</th>
+<th><code>angle_status</code> (<code>angle_subtype</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>G0</td>
+<td>unphysical orbit; the unwrap residual is over its limits; <span class="arithmatex">\(\varpi\)</span> undefined (<a href="../signal/">signal</a>); <span class="arithmatex">\(P_c \le 2\Delta t\)</span></td>
+<td><code>undefined</code> (<code>unphysical</code>, <code>alias</code>, <code>undefined_phase</code>); <code>invalid</code> / <code>undersampled</code></td>
+</tr>
+<tr>
+<td>G1</td>
+<td>a confirmed jump of <span class="arithmatex">\(a\)</span>, or a step of the action (G2a)</td>
+<td>the rules below on the last regime</td>
+</tr>
+<tr>
+<td>G1c</td>
+<td>after the last turning point the center completes a revolution, for longer than one period of the last episode</td>
+<td><code>episodic</code> (<code>recurrent</code> with ≥ 2 episodes), <code>final_regime = circulation</code> from the last turning point</td>
+</tr>
+<tr>
+<td>G2</td>
+<td>a librating episode covers the record</td>
+<td><code>libration</code> (<code>stationary</code>, <code>modulated</code>, <code>moving_centre</code>)</td>
+</tr>
+<tr>
+<td>G2, G2u</td>
+<td>librating episodes without circulation between them cover the record</td>
+<td><code>libration</code> (<code>regime_change</code>)</td>
+</tr>
+<tr>
+<td>G2</td>
+<td>librating episodes that do not cover it</td>
+<td><code>episodic</code> (<code>recurrent</code> with ≥ 2)</td>
+</tr>
+<tr>
+<td>G1l</td>
+<td>a libration of the last regime after a jump, no librating episode from the record's start to the jump</td>
+<td><code>episodic</code>, <code>final_regime = libration</code> from the start of the last episode (a capture); a libration on both sides of the jump stays <code>libration</code></td>
+</tr>
+<tr>
+<td>G1q</td>
+<td>a prograde 1:1 angle without a libration whose orbit-averaged angle stays in the quasi-satellite well long enough</td>
+<td>analyzed again at the quasi-satellite floor (<a href="../pendulum/#co-orbitals-11">pendulum</a>)</td>
+</tr>
+<tr>
+<td>G2c</td>
+<td>no libration at <span class="arithmatex">\(P_c\)</span> (and no observed exit or entry), but the center librates</td>
+<td>analyzed again at the center scale (below); the rejected analysis is in <code>geo_cs_rej_*</code></td>
+</tr>
+<tr>
+<td>G3</td>
+<td>no episode, the <span class="arithmatex">\(\sigma\)</span>-only potential holds, slips or stalls at the top of the well</td>
+<td><code>near_separatrix</code> (<code>pattern_a</code>, <code>pattern_b</code>)</td>
+</tr>
+<tr>
+<td>G4, G4b</td>
+<td>the center makes a revolution, or ≥ 2 net</td>
+<td><code>circulation</code> (<code>alias</code> on an aliased step)</td>
+</tr>
+<tr>
+<td>G5</td>
+<td>runs with a moving center cover half the window</td>
+<td><code>drift</code></td>
+</tr>
+<tr>
+<td>G5a</td>
+<td>the slow center turns back once, away from the edges, range &lt; <span class="arithmatex">\(2\pi\)</span></td>
+<td><code>insufficient_time</code> (<code>arc</code>)</td>
+</tr>
+<tr>
+<td>G6</td>
+<td>turning points but no episode / none: range ≥ <span class="arithmatex">\(\pi\)</span> / &lt; <span class="arithmatex">\(\pi\)</span></td>
+<td><code>insufficient_time</code> (<code>few_cycles</code> / <code>arc</code> / <code>stall</code>)</td>
+</tr>
+<tr>
+<td>G1e</td>
+<td>the last regime holds no episode, librating episodes precede the jump</td>
+<td><code>episodic</code>, <code>final_regime</code> = the last regime's word; the status reads the earlier episodes with their own response and no energy (cap <code>episode_before_jump</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>final_regime</code></strong> says how the record ends: a circulation from the last turning point (G1c) or from an observed
+exit; the last regime's word after a jump (G1e); <code>libration</code> from the start of the last librating episode when that
+episode reaches the record's end, which includes every whole-record libration and a capture (G1l). It is empty when
+none of these holds.</p>
+<p><strong>The reported word.</strong> The word in the output is not always the raw geometric one: G1c, G1e and G1l are reported as
+<code>episodic</code>, a G2u union as <code>libration</code> / <code>regime_change</code>, a kinematic drift as the center's word, and forced waves
+may keep their loops (<a href="../status-tree/#the-reported-angle-word">The reported angle word</a>).</p>
+<p>So <code>angle_status</code> describes what <span class="arithmatex">\(\sigma\)</span> does, and <code>status</code> says whether that is this resonance. A body can be
+<code>non_resonant</code> with <code>angle_status = libration</code> (<a href="../gallery/#kinematic-libration">Gallery</a>), or <code>resonant</code> at <code>low</code> with
+a measured objection that does not decide (<a href="../gallery/#measured-objection">Gallery</a>; <code>uncertain</code> in the full tree,
+<code>v2_verdict</code>).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../signal/" class="md-footer__link md-footer__link--prev" aria-label="Previous: From the integration to the angle">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                From the integration to the angle
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../response/" class="md-footer__link md-footer__link--next" aria-label="Next: Is it this resonance?">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Is it this resonance?
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

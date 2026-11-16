@@ -1,0 +1,2645 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python package that finds mean-motion, secular and Lidov-Kozai resonances of small bodies in the Solar system and decides, from a numerical integration, whether the resonant angle librates and why.">
+      
+      
+        <meta name="author" content="Evgeny Smirnov">
+      
+      
+        <link rel="canonical" href="https://smirik.github.io/resonances/physics/status-tree/">
+      
+      
+        <link rel="prev" href="../response/">
+      
+      
+        <link rel="next" href="../confidence/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>The status tree - resonances</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-status-tree" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="resonances" class="md-header__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            resonances
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              The status tree
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="resonances" class="md-nav__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    resonances
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulations, bodies, resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using with AI agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How the status is determined
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How the status is determined
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pendulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The resonant pendulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../signal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    From the integration to the angle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What the angle does
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../response/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is it this resonance?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The status tree
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The status tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#minimal-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal policy (default)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The tree
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#before-the-tree-can-the-record-be-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before the tree: can the record be read?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps-in-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Steps in order
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#every-reason" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every reason
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-reported-angle-word" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The reported angle word
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-records-edges-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the record's edges end
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secular-and-lidov-kozai-angles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secular and Lidov-Kozai angles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legacy-integer-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy integer codes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../confidence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Confidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secular-zlk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular and Lidov-Kozai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resonance matrices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../secular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lidov-kozai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lidov-Kozai resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clones (virtual asteroids)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reading-figures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to read the figures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../serialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serialization and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coherence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-spectral coherence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../free-elements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Free elements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../libration-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    References
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#minimal-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal policy (default)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The tree
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#before-the-tree-can-the-record-be-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before the tree: can the record be read?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#steps-in-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Steps in order
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#every-reason" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every reason
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-reported-angle-word" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The reported angle word
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-records-edges-end" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the record's edges end
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secular-and-lidov-kozai-angles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secular and Lidov-Kozai angles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legacy-integer-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy integer codes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="the-status-tree">The status tree<a class="headerlink" href="#the-status-tree" title="Permanent link">&para;</a></h1>
+<p>The geometry (<a href="../geometry/">What the angle does</a>) says what <span class="arithmatex">\(\sigma\)</span> does over the record: <code>angle_status</code>. The
+physics (<a href="../response/">Is it this resonance?</a>) measures whether <span class="arithmatex">\(a\)</span> answers <span class="arithmatex">\(\sigma\)</span> as the pendulum of this
+resonance requires. The status tree combines the two, always in the same order, into <code>status</code>, <code>reason</code> and
+<code>libration_origin</code>. The first question that has an answer decides; the later ones are not asked.</p>
+<p>The order follows one principle: <strong>a cause outside this resonance is looked for before the libration is credited to
+it.</strong> A bounded <span class="arithmatex">\(\sigma\)</span> is first checked against the sampling (can the record be read at all?), then against
+other resonances (a member of the same multiplet, another commensurability), then against pure geometry (the
+perihelion term), and only then is its own force law measured.</p>
+<p>This page describes mean-motion resonances (two-body, three-body, retrograde, co-orbital). Secular and Lidov-Kozai
+angles use a shorter tree, given in <a href="../secular-zlk/#geometry-and-status">Secular and Lidov-Kozai</a>.</p>
+<h2 id="minimal-policy">Minimal policy (default)<a class="headerlink" href="#minimal-policy" title="Permanent link">&para;</a></h2>
+<p>The tree below runs first and measures
+everything; a policy layer (<code>resonance/analysis/policy.py</code>) then re-reads the finished analysis by a few principles:</p>
+<ol>
+<li><strong>Status from the geometry of <span class="arithmatex">\(\sigma_f\)</span>.</strong> libration → <code>resonant</code>, episodic → <code>transient</code>, near_separatrix →
+   <code>near_separatrix</code>, circulation → <code>non_resonant</code>. A drift whose slow center passes ≥ one own revolution →
+   <code>non_resonant</code>/<code>modulated_circulation</code>, less → <code>uncertain</code>. insufficient_time → <code>uncertain</code>, or
+   <code>non_resonant</code>/<code>circulation</code> when the record ends in circulation (<span class="arithmatex">\(\sigma_f\)</span> travels ≥ one own revolution after the
+   last turning point of an accepted or candidate run; for an MMR, of any run, accepted or rejected, or candidate span
+   in the window, one that runs past the window's end counting at that end; a secular or ZLK travel below
+   <span class="arithmatex">\(1 +\)</span> <code>CONFIDENCE_THIN_BAND</code> turns holds the level at medium). One own revolution is <span class="arithmatex">\(2\pi\)</span>, for a ZLK <span class="arithmatex">\(\omega\)</span> too
+   (the half-turn symmetry of the quadrupole's <span class="arithmatex">\(\cos 2\omega\)</span> is not general; ZLK runs still break at half a turn).
+   The geometry alone names no mechanism: a secular or ZLK libration is <code>geometric_libration</code>/<code>geometric_episode</code>,
+   origin unknown, unless a confirmed ZLK gate makes it dynamic.</li>
+<li><strong>Only a measured contradiction vetoes</strong> a bounded angle (column <code>veto</code>): an owner that induces the episode (step
+   2), a kinematic origin (step 3, K2, K3s), a two-body strength from the disturbing function far below the need
+   (5s; the angle's word is then circulation or drift: no run is its libration), every counted episode below 45° being
+   the forced wave its background carries (<code>forced_wave</code>: at the episode's own period the envelopes of
+   <span class="arithmatex">\(\sigma\)</span> and <span class="arithmatex">\(a\)</span> inside stay within the band the same steady wave shows within <code>MMR_FORCED_WAVE_REFERENCE_PERIODS</code>
+   periods around it; a libration adds its own swing; some such episodes leave the count; 2012 KL9; runs found forced
+   join the background of the others; when the slow center passes less than a revolution the drift rule decides
+   instead: <code>uncertain</code> / <code>drift</code>), the ZLK gate measured kinematic on a libration, the free <span class="arithmatex">\(e\)</span> below the forced <span class="arithmatex">\(e\)</span> over the record
+   (<code>zlk_free_e</code>; inside every episode or with an undefined free phase only when the <span class="arithmatex">\(e\)</span>–<span class="arithmatex">\(i\)</span> integral is broken too),
+   or the <span class="arithmatex">\(e\)</span>–<span class="arithmatex">\(i\)</span> exchange of the deciding ZLK episode breaking <span class="arithmatex">\(\sqrt{1-e^2}\cos i\)</span> where the forced terms are small,
+   <span class="arithmatex">\(\rho_{\max} \ge\)</span> <code>ZLK_RHO_KINEMATIC_EXCLUDED</code> (<code>zlk_integral</code>; with larger forced terms it is an objection,
+   <code>ei_integral_not_held</code>; <a href="../secular-zlk/#zlk-free-omega">Secular and ZLK</a>). Every
+   other leaf that moved a status (5a, 5b, 5e, 5f, 5g, 5o, 5x, 5n, 5s three-body, 5s*, 2j, a ZLK gate without a
+   verdict) gives the geometry's status back with a flag: <code>measured_objection</code> and <code>strength_scale_implausible</code> set
+   the level to low, <code>gate_unavailable</code>/<code>gate_disabled</code> to at most medium (not when the integral holds and
+   <span class="arithmatex">\(\rho_{\max} \ge\)</span> <code>ZLK_RHO_KINEMATIC_EXCLUDED</code>: flag <code>kinematic_excluded</code>, no cap, no extension). A veto within <code>CONFIDENCE_THIN_BAND</code> of
+   its threshold still moves the status, at medium (<code>veto_thin</code>).</li>
+<li><strong>The level from the evidence</strong> (<a href="../confidence/#minimal-policy">Confidence</a>); no caps.</li>
+<li><strong>Everything else is a flag</strong>: every cap of the full tree, zone, owner, subresonance and edge mark. The alias (C5) and the
+   undersampled step stay.</li>
+<li><strong>Extend</strong> only for an unfinished libration at the record's end (an end-edge 1:1 leg <code>A1</code>, an end-edge
+   half-swing <code>A2</code>, insufficient_time or a last counted episode at the end with fewer than
+   <code>CONFIDENCE_HIGH_CYCLES</code> cycles <code>A</code>), a deciding period above <span class="arithmatex">\(2T/\)</span><code>LIBRATION_MIN_TURNING_POINTS</code> (<code>B</code>), or a
+   needed veto not measured for lack of length (flag <code>veto_needs_length</code>: MMR L4 short of force windows, a ZLK gate
+   <code>short_window</code>/<code>planetary_residual</code>) whose record <code>pol_veto_need_yr</code> is within the next-check budget
+   <code>MMR_NEXT_CHECK_SPAN_FACTOR</code><span class="arithmatex">\(\,T\)</span> (<code>C</code>, extend to that record). Never when the record ends in circulation or the
+   level is <code>certain</code> (a certain row asks for nothing: action <code>none</code>) (column
+   <code>pol_extend_clause</code>). A needed veto beyond the budget keeps the flag and goes to review. The length asked for is
+   the next check of the deciding period's missing cycles, at least of the baseline's estimate when that is a slow
+   swing seen in part (<code>base_period_source</code> arc_slow, b5, two_omega, modulation: its slow cycles), within <code>MMR_NEXT_CHECK_SPAN_FACTOR</code><span class="arithmatex">\(\,T\)</span> (523683 2U-9: 400 kyr, three slow cycles of 112 kyr).</li>
+<li><strong>Episodes</strong>: the figure and <code>n_counted_episodes</code> show only the counted episodes; candidates are drawn faint.
+   One clean 1:1 leg (G4c) is a transient of half a cycle; a half-swing between passages (G4h) is a candidate of a
+   circulation; an end-edge one extends.</li>
+<li><strong>ZLK and secular</strong> follow the same rules; a secular swing below the mode-phase uncertainty stays
+   <code>uncertain</code>/<code>phase_unresolved</code> (review), never non_resonant.</li>
+</ol>
+<p>The verdict of the full tree stays in <code>v2_verdict</code> (<code>status/confidence/reason/action/angle_status</code>); <code>pol_decided_by</code>
+names the step that gave the final status (<code>tree</code> when the policy kept the tree's, <code>;not_upheld:&lt;leaf&gt;</code> when it did
+not uphold the leaf's veto) and <code>pol_objection_check</code> the checks behind a measured objection (<a href="../../output/">Output</a>).</p>
+<h2 id="the-tree">The tree<a class="headerlink" href="#the-tree" title="Permanent link">&para;</a></h2>
+<p>The rest of this page is the full tree itself: what <code>v2_verdict</code> reports, and what the minimal policy reads.</p>
+<pre class="mermaid"><code>flowchart TD
+    G0{"record readable?&lt;br/&gt;(input, step, unwrap)"} --&gt;|no| INV[invalid]
+    G0 --&gt;|yes| T{angle_status}
+    T --&gt;|undefined| INV
+    T --&gt;|insufficient_time| BN["uncertain&lt;br/&gt;baseline_needed"]
+    T --&gt;|circulation| C{"alias? one leg (G4c/G4h)?&lt;br/&gt;potential?"}
+    C --&gt; CIRC["non_resonant: circulation,&lt;br/&gt;alias, no_resonant_potential&lt;br/&gt;(or invalid: alias)"]
+    C --&gt;|one leg| LEG["transient (one leg) or&lt;br/&gt;uncertain: one_coorbital_leg,&lt;br/&gt;one_half_libration, baseline_needed"]
+    T --&gt;|"libration, episodic,&lt;br/&gt;near_separatrix, drift"| S1{"1. a member of the&lt;br/&gt;multiplet librates?"}
+    S1 --&gt;|yes| SUB["member's status&lt;br/&gt;subresonance_librates"]
+    S1 --&gt;|no| S2{"2. another resonance&lt;br/&gt;drives a?"}
+    S2 --&gt;|yes| J{"both resonances&lt;br/&gt;at once?"}
+    J --&gt;|"no / open"| IND["non_resonant&lt;br/&gt;induced_libration"]
+    J --&gt;|"one cycle of x"| JU["uncertain&lt;br/&gt;baseline_needed (joint)"]
+    J --&gt;|"confirmed"| S3
+    S2 --&gt;|no| S3{"3. a does not&lt;br/&gt;carry σ?"}
+    S3 --&gt;|yes| KIN["non_resonant&lt;br/&gt;kinematic_libration / _drift"]
+    S3 --&gt;|no| S4{"4. drift?"}
+    S4 --&gt;|yes| DR["uncertain&lt;br/&gt;drift_mechanism_unknown"]
+    S4 --&gt;|no| S5{"5. force law L4,&lt;br/&gt;potential R0,&lt;br/&gt;strength F"}
+    S5 --&gt;|"implausible strength"| IMP["non_resonant&lt;br/&gt;implausible_strength"]
+    S5 --&gt;|"a measurement objects"| UNK["uncertain&lt;br/&gt;origin_unknown"]
+    S5 --&gt;|"nothing measured"| GEO["geometric_libration /&lt;br/&gt;geometric_episode&lt;br/&gt;(origin unknown)"]
+    S5 --&gt;|"the force is measured"| DYN["6. resonant / transient /&lt;br/&gt;near_separatrix&lt;br/&gt;(origin dynamic)"]</code></pre>
+<h2 id="before-the-tree-can-the-record-be-read">Before the tree: can the record be read?<a class="headerlink" href="#before-the-tree-can-the-record-be-read" title="Permanent link">&para;</a></h2>
+<p>These checks come before any geometry. A record that fails one of them gets <code>status = invalid</code>: the run says
+nothing about the resonance at these settings, and the action says how to repair it.</p>
+<table>
+<thead>
+<tr>
+<th>question</th>
+<th>test</th>
+<th>reason</th>
+<th>action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Is the angle a resonance of this body at all?</td>
+<td>the coefficient of the body's <span class="arithmatex">\(\lambda\)</span> is <span class="arithmatex">\(k \ne 0\)</span></td>
+<td><code>invalid_input</code></td>
+<td>review</td>
+</tr>
+<tr>
+<td>Is the orbit an ellipse?</td>
+<td><span class="arithmatex">\(a &gt; 0\)</span>, <span class="arithmatex">\(0 \le e &lt; 1\)</span>, all values finite</td>
+<td><code>unphysical</code></td>
+<td>review</td>
+</tr>
+<tr>
+<td>Can the filter keep the shortest libration?</td>
+<td><span class="arithmatex">\(P_c &gt; 2\,\Delta t\)</span> (<a href="../signal/">signal</a>)</td>
+<td><code>undersampled</code></td>
+<td>resample</td>
+</tr>
+<tr>
+<td>Can the angle be unwrapped without guessing turns?</td>
+<td>unwrap residuals at most <code>MMR_UNWRAP_MAX_RESID_P99_DEG</code> = 45° (99th percentile) and <code>MMR_UNWRAP_MAX_RESID_DEG</code> = 135° (largest)</td>
+<td><code>alias</code> (<code>angle_status = undefined</code>)</td>
+<td>resample (review when no finer step helps)</td>
+</tr>
+<tr>
+<td>Is <span class="arithmatex">\(\varpi\)</span> defined? (very small <span class="arithmatex">\(e\)</span>)</td>
+<td>the <span class="arithmatex">\(p\varpi\)</span> part jitters by more than <code>MMR_JITTER_MAX_RAD</code> = 0.785 rad, the full angle cannot be unwrapped, and <span class="arithmatex">\(\varpi\)</span> is undefined over more than <code>MMR_VARPI_UNDEFINED_MAX_SHARE</code> = 0.5 of the record</td>
+<td><code>undefined_phase</code></td>
+<td>review</td>
+</tr>
+</tbody>
+</table>
+<h2 id="steps-in-order">Steps in order<a class="headerlink" href="#steps-in-order" title="Permanent link">&para;</a></h2>
+<p>The tree reads the angle <em>as the status reads it</em>: a record that librates in episodes and then circulates, or
+librates before a jump of <span class="arithmatex">\(a\)</span>, or is captured after one, is judged as the episodic angle its episodes show. The
+reported <code>angle_status</code> may then differ from the word the tree read; see <a href="#the-reported-angle-word">below</a>.
+The episodes the tree counts are the geometry's: for an angle that is not 1:1, a center step or a stall between two
+accepted pieces in one libration region is a mark of one episode, not a boundary (rule <code>regime_cut_mark</code>,
+<a href="../geometry/#runs-and-episodes">geometry</a>); a single half-libration between circulations is G4h below.</p>
+<p><strong>G6. Too short.</strong> <code>angle_status = insufficient_time</code> (too few turning points, an arc, a stall): <code>uncertain</code>,
+<code>baseline_needed</code>, action <code>extend</code> (<a href="../confidence/#actions">Confidence</a> gives the length asked for); action <code>review</code>
+when the period that decides already fits the record (<code>base_cause</code>): more time would decide nothing.</p>
+<p><em>A ripple on an unfinished slow swing</em> (rule <code>ripple_on_arc</code>, <code>MMR_RIPPLE_ON_ARC</code>) does not stop G6. An accepted
+episode is set aside before G2, as an <em>unconfirmed ripple</em> (<code>forced_wave</code> = <code>unconfirmed_ripple</code>), when its
+half-amplitude stays below <code>MMR_A_RESPONSE_MIN_AMP_DEG</code> = 45° (there neither the force law nor <span class="arithmatex">\(V_E pprox V_F\)</span> can be
+measured), its identity does not pass (fails, or cannot be measured on so few cycles: nothing confirms it), and the slow center turns back once or twice within one revolution
+(fewer than three turns: no full slow cycle). A record-covering episode and a 1:1 angle are never set aside; a real small
+libration keeps its passing identity. G6 then counts only the turning points outside the ripples; with none the slow
+center decides: one turn → the G5a arc, else <code>arc</code> or <code>stall</code> by its range. 2004 YG1 9M-10J-4 over 20 kyr: a 3° ripple
+at the turn of a 281° slow swing → <code>uncertain</code> / <code>insufficient_time</code> (<code>arc</code>), extend to 50 kyr; 2002 BG 1E-10S-1 over
+20 kyr: a 2° 735-yr ripple (identity not measured) at the one turn of a 1.68-rad slow swing → the same, extend to
+50 kyr (the slow swing's baseline; over 100 kyr its center drifts 1.6 revolutions: non_resonant).</p>
+<p><em>A slow swing in the resonance's own well</em> (rule G5w, <code>slow_swing_in_well</code>, <code>MMR_SLOW_SWING_IN_WELL</code>).
+A drift needs a center that keeps going: G5a already reads one slow turn back as an arc. With two turns the record holds
+one half-swing between them, and the labeled drifts of 101703 and 142694 1V+3S-7 have two turns too, so the turns
+alone decide nothing. The half-swing reads as part of a slow libration of this resonance, <code>insufficient_time</code> / <code>arc</code>
+(instead of <code>drift</code>, or of <code>few_cycles</code> for the fast turning points riding on it), when it obeys the resonance's
+pendulum: the identity <span class="arithmatex">\(\dot\sigma_s = c\,(a_s - a_*)\)</span> holds on σ and <span class="arithmatex">\(a\)</span> low-passed at W_c, and between the turns
+both the <span class="arithmatex">\(a\)</span> swing (one side: <span class="arithmatex">\(a_*\)</span> to <span class="arithmatex">\(a_* + 2\omega_0\sin(A/2)/|c|\)</span>) and the period <span class="arithmatex">\(2(t_2-t_1)\)</span> agree with the
+directly averaged well at the half-swing's amplitude <span class="arithmatex">\(A\)</span> (<span class="arithmatex">\(T_{0,\text{th}}\)</span>, <span class="arithmatex">\(T = T_{0,\text{th}}F(A)\)</span>,
+<span class="arithmatex">\(F = \tfrac{2}{\pi}K(\sin^2\tfrac{A}{2})\)</span>) within <span class="arithmatex">\([1/\sqrt{x}, \sqrt{x}]\)</span>, <span class="arithmatex">\(x\)</span> = <code>MMR_STRENGTH_CHECK_RATIO</code>
+(no new threshold). Anything unmeasured (three-body: no direct theory; 1:1; one or three turns) leaves the row as it
+was. The extension asks for <code>MMR_EXTEND_SLOW_CYCLES</code> = 3 slow periods (a budget). 523683 2U-9 over 100 kyr (its
+379-yr cycles are its own orbital period, cut off by the cutoff ≥ 1.5 <span class="arithmatex">\(P_\text{orb}\)</span>): turns at 11.9 and 67.7 kyr,
+<span class="arithmatex">\(A\)</span> = 114°, identity 1.00, <span class="arithmatex">\(a\)</span> swing 1.07 ×, period 1.00 × → <code>uncertain</code> / <code>insufficient_time</code>, extend to 400 kyr.
+101703 and 142694 fail the slow identity (slope/c −0.27, −0.25) and stay <code>drift</code>.</p>
+<p><em>A cycle faster than the floor</em> (rule G1f, <code>MMR_SUBFLOOR_PASS</code>). The 150-yr floor stays, but a
+two-body angle (not 1:1) without a libration over the record is analyzed once more at the floor of its own averaged
+potential, <span class="arithmatex">\(\max(T_{0,\text{th}}/\sqrt{x},\ 2\Delta t \cdot\)</span> <code>FILTER_MIN_LIBRATION_CUTOFFS</code><span class="arithmatex">\()\)</span>, <span class="arithmatex">\(x\)</span> =
+<code>MMR_STRENGTH_CHECK_RATIO</code>, when that is below the floor. <span class="arithmatex">\(T_{0,\text{th}}\)</span> is the shortest small-amplitude period of
+the directly averaged potential at the snapshots whose swings lie in its well (no episode needed; a pendulum only gets
+slower with amplitude). The pass replaces the verdict only when its decisive cycle is faster than the floor, F passes by
+direct averaging, the theoretical center lies inside every observed swing and L4 passes; otherwise the first verdict
+stays (columns <code>geo_subfloor_*</code>). The cap <code>short_period_aliased</code> keeps reading the 150-yr floor; three-body angles have
+no computed theory and are never eligible (the forced 115–121-yr waves of 52356 and 23240). 2001 VC2 16E-17:
+<span class="arithmatex">\(T_{0,\text{th}}\)</span> = 112 yr, a 105-yr libration over 20 kyr → <code>resonant</code> / <code>libration</code> / medium (the alias cap).</p>
+<p><strong>C. Circulation.</strong> The center of <span class="arithmatex">\(\sigma\)</span> runs through a full turn.</p>
+<ul>
+<li>If the sampled angle is an <em>alias</em> (the true rate <span class="arithmatex">\(\nu\)</span> folded by the output step), the record can still exclude
+  a libration when the alias branch is the same over the whole range of <span class="arithmatex">\(a\)</span> and the body is far from the
+  resonance: the far ratio (the distance <span class="arithmatex">\(|\langle a\rangle - a_*|\)</span> over half the <span class="arithmatex">\(a\)</span>-range, or over the offset of
+  the <span class="arithmatex">\(a\)</span> implied by the measured mean motion when that is larger; <a href="../signal/#what-the-output-step-can-resolve">signal</a>)
+  is at least <code>MMR_C5_FAR_RATIO_MIN</code> = 3 (rule C5). Then <code>non_resonant / alias</code>; otherwise a libration may hide
+  behind the step: <code>invalid / alias</code>, action <code>resample</code>.</li>
+<li>If a member of the multiplet has a librating verdict of its own, the row takes the member's status (as in step 1
+  below).</li>
+<li>If <span class="arithmatex">\(\sigma\)</span> turns back at times but the energy measured from <span class="arithmatex">\(a\)</span> does not follow a potential of <span class="arithmatex">\(\sigma\)</span> (R0 fails):
+  <code>non_resonant / no_resonant_potential</code>.</li>
+<li><strong>G4c, one 1:1 leg</strong> (<code>MMR_COORBITAL_SINGLE_LEG</code>). A co-orbital angle without a librating episode is judged on
+  its single legs: the stretches of the orbit-averaged angle between two reversals, outside every accepted run, that
+  do not sweep a turn and whose period <span class="arithmatex">\(2L\)</span> is at least the floor less <code>CONFIDENCE_THIN_BAND</code>. Each leg is read
+  against the averaged potential (<a href="../response/#local-force-and-energy-on-a-single-leg">Local force and energy on a single leg</a>):
+  is it one swing of a co-orbital well (tadpole, horseshoe, quasi-satellite, not a lap past the planet), does its
+  local 1:1 law hold with <span class="arithmatex">\(K &gt; 0\)</span>, is its energy conserved, and is each turn a reflection (<span class="arithmatex">\(|\ln(\text{out}/\text{in})|
+  \le\)</span> <code>MMR_COORBITAL_TURN_ENERGY_TOL</code>, zone <span class="arithmatex">\(\le\)</span> <code>MMR_COORBITAL_TURN_ZONE_MAX</code>)?</li>
+<li>everything holds → <code>transient / dynamic_episode</code>, cap <code>one_coorbital_leg</code> (≤ medium): 2023 OE5, 586–665 yr;</li>
+<li>one discrepancy → <code>uncertain / one_coorbital_leg</code>, action <code>review</code> (2018 KS: a lap past the Earth at 779–934 yr);</li>
+<li>a clean leg cut by the record edge whose observed turn reflects → <code>uncertain / baseline_needed</code>, angle word
+    <code>insufficient_time</code>, action <code>extend</code>;</li>
+<li>both turns are kicks → the circulation below, with the cap <code>near_episode</code> (1991 VG: out/in 0.61 and 1.59);
+    a turn that would reflect but for a zone within <code>CONFIDENCE_THIN_BAND</code> above <code>MMR_COORBITAL_TURN_ZONE_MAX</code> is no
+    kick: <code>uncertain / one_coorbital_leg</code>, review (2020 FN3: zones 1.11 and 1.15 against 1.1);</li>
+<li>no leg at all (one reflection between passages, 2008 EZ84) → the circulation below, unchanged.</li>
+</ul>
+<p>The strongest outcome among the legs decides (transient &gt; uncertain &gt; extend &gt; near-episode). The legs of an
+  accepted episode are never read again: its turns already closed a cycle. <code>MMR_COORBITAL_LEG_FORCE_GATE</code> (off)
+  reads a failed 1:1 law as a kick instead of a discrepancy.
+- <strong>G4h, one half-swing of another resonance</strong> (<code>MMR_SINGLE_HALF_LIBRATION</code>, not 1:1). A bounded half-swing between
+  two passages over the top (or a passage and the record edge), at least the floor less the thin band long, that
+  follows the resonance's own one-harmonic law (<span class="arithmatex">\(\dot a = A\sin\sigma + B\cos\sigma + C\)</span> with <span class="arithmatex">\(R^2 \ge\)</span>
+  <code>MMR_FORCE_R2_FAIL</code> on each half of its window, the force turning <span class="arithmatex">\(\sigma\)</span> back at both turns) →
+  <code>uncertain / one_half_libration</code> (review); at the record edge <code>uncertain / baseline_needed</code>, extend (42946 43S-6).
+  A slow wide turn of a circulation does not follow that law and stays a circulation.
+- Otherwise <code>non_resonant / circulation</code>; an owner found for a circulating angle only names its origin.</p>
+<p><strong>1. Is a member of the multiplet librating instead?</strong> A resonance <span class="arithmatex">\(k\lambda + \sum k_j\lambda_j + p\varpi + \dots\)</span>
+comes with members that differ by <span class="arithmatex">\(m(\varpi_P - \varpi)\)</span> or by node terms (Morbidelli 2002, §9.3–9.4). If one
+member has a fixed center while <span class="arithmatex">\(\sigma\)</span>'s center moves with <span class="arithmatex">\(\varpi_P - \varpi\)</span>, the libration belongs to that
+member: the catalog row takes <strong>the member's own status</strong> (an <code>invalid</code> member makes it <code>uncertain</code>),
+<code>reason = subresonance_librates</code>, origin <code>subresonance</code>, <code>owner</code> = the member, and also the member's confidence
+(<a href="../confidence/">Confidence</a>); its <code>angle_status</code> stays its own. An accepted member without a verdict of its own gives
+<code>non_resonant / subresonance_librates</code>. When the catalog angle and the member both librate over the record, each
+keeps its own verdict. Example: <a href="../gallery/#transient-subresonance">82831 13M-24</a>.</p>
+<p><strong>2. Does another resonance drive <span class="arithmatex">\(a\)</span>?</strong> The owner search looks for another commensurability <span class="arithmatex">\(\phi_o\)</span> whose force
+explains <span class="arithmatex">\(\dot a\)</span> better than <span class="arithmatex">\(\sigma\)</span>'s own term. Since <span class="arithmatex">\(\dot\sigma \simeq c\,(a - a_*)\)</span> holds for any oscillation of
+<span class="arithmatex">\(a\)</span>, an <span class="arithmatex">\(a\)</span> driven by <span class="arithmatex">\(\phi_o\)</span> makes <span class="arithmatex">\(\sigma\)</span> oscillate too: an <em>induced</em> libration. The owner is accepted only if its
+intervals cover at least <code>MMR_OWNER_COVER_MIN</code> = 0.5 of <span class="arithmatex">\(\sigma\)</span>'s decisive episode; then <code>non_resonant /
+induced_libration</code>, origin <code>induced</code>. The detail says whether the owner librates (<code>owner_libration</code>) or circulates
+at the oscillation's period (<code>owner_forced_wave</code>). Examples: <a href="../gallery/#induced-forced-wave">117306</a>,
+<a href="../gallery/#induced-owner-librates">1997 GK3</a>. The exception: when the remainder <span class="arithmatex">\(x = \Psi/u\)</span> closes cycles of a well
+of its own ('both resonances at once?' confirmed, <a href="../response/">Response</a>), the tree goes on and the row keeps its own
+reading with origin <code>joint</code>; one such cycle gives <code>uncertain / baseline_needed</code>, origin <code>joint</code>.</p>
+<p><strong>3. Does <span class="arithmatex">\(a\)</span> carry the oscillation at all?</strong> In a resonance the swing of <span class="arithmatex">\(a\)</span> follows from the swing of <span class="arithmatex">\(\sigma\)</span>:
+<span class="arithmatex">\(\delta a \simeq \delta\dot\sigma/|c|\)</span>. If <span class="arithmatex">\(a\)</span> carries less than <code>MMR_B1_RATIO_MIN</code> = 0.1 of that (test B1), or the
+cycle runs at a secular period of the body (the <span class="arithmatex">\(e\)</span>-cycle <span class="arithmatex">\(2\pi/|g - g_5|\)</span> or the <span class="arithmatex">\(2\omega\)</span> cycle, within
+<code>MMR_KIN_PERIOD_TOL</code> = 0.1) while the identity and every force law fail, the bound comes from the geometry of the
+angle (its <span class="arithmatex">\(p\varpi\)</span> part, a secular cycle): <code>non_resonant / kinematic_libration</code>, origin <code>kinematic</code>. When the slow
+center itself follows the <span class="arithmatex">\(\lambda\)</span> part plus the secular part (correlation of rates ≥ <code>MMR_KIN_CORR_MIN</code> = 0.9,
+over at least <code>MMR_KIN_MIN_POINTS</code> = 3 independent points), <span class="arithmatex">\(a\)</span> does not answer (every force law fails, measured on
+at least <code>MMR_FORCE_MIN_WINDOWS</code> = 2 windows) and the librating stretches are only a ripple on it (their swing below
+<code>MMR_KIN_RIPPLE_SHARE_MAX</code> = 0.5 of the center's range), or a kinematic libration's center moves more than
+<code>MMR_KIN_DRIFT_SHIFT_RATIO</code> = 1 amplitude: <code>non_resonant / kinematic_drift</code>. If a libration slower than the record
+cannot be excluded and the center's rate is consistent with an exact commensurability (within
+<code>MMR_B5_EXACT_SIGMA</code> = 2 standard errors, <a href="../response/#kinematic-origins">B5</a>): <code>uncertain / baseline_needed</code>. The
+kinematic drift is rule K2 (<code>rec_rule</code> 3k2), the exact commensurability <code>rec_rule</code> 3b5. Examples:
+<a href="../gallery/#kinematic-libration">285637</a>, <a href="../gallery/#kinematic-drift">62243</a>.</p>
+<p><strong>K3s, after the leaf: a circulation whose slow scale is a secular cycle.</strong> A <code>non_resonant / circulation</code> (no
+mechanism named, not 1:1) whose <a href="../response/#kinematic-origins">slow scale</a> has the period of a secular cycle (within
+<code>MMR_KIN_PERIOD_TOL</code>) and fails its own identity becomes <code>non_resonant / kinematic_libration</code>, origin <code>kinematic</code>,
+detail <code>secular_cycle</code> (<code>rec_rule</code> K3s, <code>MMR_SECULAR_CYCLE_KINEMATIC</code>), whatever B1 or a thin L4. Only where the slow
+libration is the record's regime: the center leaves it by slips of one turn (largest monotone pass ≤ 1 +
+<code>LIBRATION_SLIP_TOLERANCE</code> rev); a center that circulates several turns in a row stays a circulation (285637 2 Myr,
+4.7 rev). The status and the level stay those of the circulation; a librating row is never demoted. Example: 37087
+3J+8S-3 (100 kyr and 1 Myr).</p>
+<p><strong>4. A drift without a cause.</strong> <code>angle_status = drift</code> with no kinematic explanation: <code>uncertain /
+drift_mechanism_unknown</code>. Example: <a href="../gallery/#uncertain-drift">142694</a>.</p>
+<p><strong>5. Is the libration this resonance's own force?</strong> Three measurements can show it
+(<a href="../response/">Is it this resonance?</a>): the force law L4 (<span class="arithmatex">\(\dot a\)</span> follows <span class="arithmatex">\(\sin(\sigma - \varphi_0)\)</span>), the potential
+R0 (the energy <span class="arithmatex">\(\tfrac12\dot\sigma^2 + V(\sigma)\)</span> built from <span class="arithmatex">\(a\)</span> is conserved cycle by cycle) and the strength F (the
+force needed for the observed period against the force the disturbing function gives). Their combinations:</p>
+<table>
+<thead>
+<tr>
+<th>leaf</th>
+<th>measurements</th>
+<th>status / reason</th>
+<th>origin</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5f</td>
+<td>L4 cannot be told from a forced line of the angle's lattice at the same period, and the <span class="arithmatex">\(\sigma\)</span>-only potential test does not fail</td>
+<td>uncertain / origin_unknown (flag <code>force_law_contaminated</code>)</td>
+<td>unknown</td>
+</tr>
+<tr>
+<td>5s</td>
+<td>L4 and R0 do not pass, and the period needs ≥ <code>MMR_STRENGTH_IMPLAUSIBLE_RATIO</code> = <span class="arithmatex">\(10^3\)</span> × the strength computed from the disturbing function (two-body: direct or harmonic, not <code>centre_outside_well</code> unless <code>MMR_STRENGTH_FIRST_OUTSIDE_WELL</code>; three-body: <span class="arithmatex">\(\mu_i\mu_j e^q\)</span> with the small-divisor residual still ≥ <span class="arithmatex">\(10^3\)</span>); cap ≤ low</td>
+<td>non_resonant / implausible_strength</td>
+<td>unknown</td>
+</tr>
+<tr>
+<td>5a</td>
+<td>L4 fails, R0 does not pass (5a* when R0 is not measured rather than failed)</td>
+<td>uncertain / origin_unknown</td>
+<td>unknown</td>
+</tr>
+<tr>
+<td>5b</td>
+<td>L4 passes, R0 fails</td>
+<td>uncertain / origin_unknown (flag <code>force_law_disagrees</code>)</td>
+<td>unknown</td>
+</tr>
+<tr>
+<td>5e</td>
+<td>R0 fails, L4 not measured</td>
+<td>uncertain / origin_unknown</td>
+<td>unknown</td>
+</tr>
+<tr>
+<td>5g</td>
+<td>L4 and R0 not measured, the identity fails on an episode and passes on none</td>
+<td>uncertain / origin_unknown</td>
+<td>unknown</td>
+</tr>
+<tr>
+<td>5c → 6</td>
+<td>L4 fails, R0 passes</td>
+<td>by the behavior (below), cap <code>force_law_disagrees</code></td>
+<td>dynamic</td>
+</tr>
+<tr>
+<td>5d → 6</td>
+<td>L4 passes and R0 does not fail; or R0 passes and L4 is not measured; or (a <code>near_separatrix</code> angle) neither is measured and nothing objects</td>
+<td>by the behavior (below)</td>
+<td>dynamic</td>
+</tr>
+</tbody>
+</table>
+<p>A failed <span class="arithmatex">\(\sigma\)</span>-only potential test (period law or fixed well, no <span class="arithmatex">\(\dot a\)</span> in it) stays an objection even when L4 is
+contaminated: the tree then skips 5f and goes on through 5s and the other leaves.</p>
+<p>For an angle of the <code>near_separatrix</code> type, the leaves 5a, 5e and 5g give <code>non_resonant</code> instead:
+<code>no_resonant_potential</code>, or <code>modulated_circulation</code> when the angle only slows down periodically (pattern B).</p>
+<p>On an output step that folds short periods into slow ones, a failed L4 or identity is read as <em>not measured</em> when
+the directly averaged strength F passes and the short-period scatter of <span class="arithmatex">\(a\)</span> exceeds
+<code>MMR_SHORT_PERIOD_A_RATIO</code> = 0.5 of the libration's half-swing in <span class="arithmatex">\(a\)</span>: the folded terms, not the dynamics, spoil the
+fit.</p>
+<p><strong>The unmeasured branch.</strong> When neither L4 nor R0 could be measured (a small amplitude, one force window) and
+<span class="arithmatex">\(\sigma\)</span> librates, the first leaf that holds:</p>
+<table>
+<thead>
+<tr>
+<th>leaf</th>
+<th>condition</th>
+<th>status / reason</th>
+<th>origin</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5d → 6</td>
+<td>the strength computed by direct averaging passes, required / theory within [1/x, x], x = <code>MMR_STRENGTH_CHECK_RATIO</code> = 10</td>
+<td>by the behavior</td>
+<td>dynamic</td>
+</tr>
+<tr>
+<td>5s</td>
+<td>the period needs ≥ <span class="arithmatex">\(10^3\)</span> × the strength (two-body: direct averaging; three-body: <span class="arithmatex">\(\mu_i\mu_j e^q\)</span> even after the small-divisor envelope)</td>
+<td>non_resonant / implausible_strength</td>
+<td>unknown</td>
+</tr>
+<tr>
+<td>5s*</td>
+<td>three-body ratio ≥ <span class="arithmatex">\(10^3\)</span>, but the envelope could close the gap</td>
+<td>uncertain / origin_unknown</td>
+<td>unknown</td>
+</tr>
+<tr>
+<td>5o</td>
+<td>a measured objection: an episodic angle, whose episodes do not lie in the separatrix zone, with a strong <span class="arithmatex">\(a\)</span>-wave already before the episode (O1 ≥ <code>MMR_O1_RATIO_FAIL</code> = 0.5, <a href="../response/#onset-of-an-episode-o1">O1</a>); or F by direct averaging fails</td>
+<td>uncertain / origin_unknown</td>
+<td>unknown</td>
+</tr>
+<tr>
+<td>5x</td>
+<td>the order-of-magnitude strength (<span class="arithmatex">\(\mu_i\mu_j e^q\)</span>, three-body and 1:1) lies outside [1/x, x]: a scale known to a factor 1–100 is a diagnostic, no objection; origin not established (79653 3M+3J-7: 39.5 ×)</td>
+<td>uncertain / origin_unknown</td>
+<td>unknown</td>
+</tr>
+<tr>
+<td>5n</td>
+<td>the decisive episode has fewer than <code>LIBRATION_CENTRE_MIN_ESTIMATES</code> = 2 independent cycles</td>
+<td>uncertain / origin_unknown</td>
+<td>unknown</td>
+</tr>
+<tr>
+<td>5u → 6</td>
+<td>nothing measured</td>
+<td>by the behavior, reason <code>geometric_libration</code> / <code>geometric_episode</code>, cap ≤ low (<code>geometry_only</code>) or ≤ medium (<code>strength_scale_only</code>, when the order-of-magnitude strength agrees)</td>
+<td>unknown</td>
+</tr>
+</tbody>
+</table>
+<p>Two kinds of <code>uncertain / origin_unknown</code> leaves: a measurement <strong>contradicts</strong> the angle's own dynamics (5a, 5b,
+5e's failed R0, 5g's failed identity, 5o), or <strong>nothing was measured</strong> (5n, 5x). Where the only missing measurement
+is missing for lack of length, the action is <code>extend</code>, not <code>review</code> (<a href="../confidence/#actions">Actions</a>).</p>
+<p><strong>6. By the observed behavior.</strong> When the force is measured, or nothing objects, the angle's own behavior gives
+the status:</p>
+<table>
+<thead>
+<tr>
+<th>angle (as the tree reads it)</th>
+<th>status</th>
+<th>reason (force measured)</th>
+<th>reason (geometry only, 5u)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>libration</code></td>
+<td>resonant</td>
+<td><code>dynamic_libration</code></td>
+<td><code>geometric_libration</code></td>
+</tr>
+<tr>
+<td><code>episodic</code></td>
+<td>transient</td>
+<td><code>dynamic_episode</code></td>
+<td><code>geometric_episode</code></td>
+</tr>
+<tr>
+<td><code>near_separatrix</code></td>
+<td>near_separatrix</td>
+<td><code>separatrix_zone</code></td>
+<td>— (the branch applies to librating angles only)</td>
+</tr>
+</tbody>
+</table>
+<p>The separatrix zone and the energies of the cycles add flags here (<code>libration_in_separatrix_zone</code>,
+<code>episodes_in_separatrix_zone</code>) and confidence evidence; the zone never relabels a geometric libration as
+<code>near_separatrix</code>. It has one indirect effect on the status: episodes in the zone bypass the O1 objection (leaf 5o)
+of the unmeasured branch.</p>
+<p><strong>6u. A union of episodes.</strong> Librating episodes that together cover the record, with no circulation between them,
+are read first as episodic. Only if that reading reaches <code>transient / dynamic_episode</code> with a measured force (leaf 6,
+origin dynamic) is the record promoted to <code>resonant / dynamic_libration</code> (<code>rec_rule</code> gets the suffix u: 5d/6u). Every
+other outcome stays as it is. (For a
+co-orbital 1:1 angle the union is a libration directly: its episodes are the tadpole, horseshoe and quasi-satellite
+regimes of one resonance.)</p>
+<p><strong>After the tree.</strong> A non-resonant verdict next to a run of turning points one turn short of an episode
+(<code>LIBRATION_NEAR_EPISODE_TP_DEFICIT</code> = 1) and at least the floor less <code>CONFIDENCE_THIN_BAND</code> long gets the flag and
+cap <code>near_episode</code>; for a 1:1 angle such a run may also be one rejected over the top, when each of its half-swings
+crosses at most one of the planet and L3 (rule <code>coorbital_near_episode</code>); an owner search run on catalog
+planet longitudes caps the level (<code>catalogue_longitudes</code>). These change the confidence, not the status.</p>
+<h2 id="every-reason">Every reason<a class="headerlink" href="#every-reason" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>reason</th>
+<th>status</th>
+<th>origin</th>
+<th>physical meaning</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dynamic_libration</code></td>
+<td>resonant</td>
+<td>dynamic</td>
+<td><span class="arithmatex">\(\sigma\)</span> librates over the record and a measured force (L4, R0 or F) is this resonance's</td>
+<td><a href="../gallery/#resonant-two-body">1921 2J-1</a></td>
+</tr>
+<tr>
+<td><code>dynamic_episode</code></td>
+<td>transient</td>
+<td>dynamic</td>
+<td>librating episodes with a measured force, circulation elsewhere</td>
+<td><a href="../gallery/#transient-recurrent">52356</a></td>
+</tr>
+<tr>
+<td><code>geometric_libration</code></td>
+<td>resonant</td>
+<td>unknown</td>
+<td>librates over the record; no force could be measured, nothing objects</td>
+<td><a href="../gallery/#geometric-libration">2348</a></td>
+</tr>
+<tr>
+<td><code>geometric_episode</code></td>
+<td>transient</td>
+<td>unknown</td>
+<td>as above, in episodes</td>
+<td><a href="../gallery/#geometric-episode">24820</a></td>
+</tr>
+<tr>
+<td><code>separatrix_zone</code></td>
+<td>near_separatrix</td>
+<td>dynamic</td>
+<td>stalls and slips at the top of its own well, <span class="arithmatex">\(a\)</span> responds</td>
+<td><a href="../gallery/#near-separatrix">523899</a></td>
+</tr>
+<tr>
+<td><code>circulation</code></td>
+<td>non_resonant</td>
+<td>—</td>
+<td>the center of <span class="arithmatex">\(\sigma\)</span> runs through full turns</td>
+<td><a href="../gallery/#circulation">42355</a></td>
+</tr>
+<tr>
+<td><code>alias</code></td>
+<td>non_resonant</td>
+<td>—</td>
+<td>the sampled angle is an alias; one branch, far from <span class="arithmatex">\(a_*\)</span>: no libration possible</td>
+<td><a href="../gallery/#alias">1999 UQ</a></td>
+</tr>
+<tr>
+<td><code>alias</code></td>
+<td>invalid</td>
+<td>—</td>
+<td>an alias that could hide a libration</td>
+<td><a href="../gallery/#invalid-alias">1864</a></td>
+</tr>
+<tr>
+<td><code>no_resonant_potential</code></td>
+<td>non_resonant</td>
+<td>—</td>
+<td><span class="arithmatex">\(\sigma\)</span> turns back at times but no potential of <span class="arithmatex">\(\sigma\)</span> explains the energy</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>modulated_circulation</code></td>
+<td>non_resonant</td>
+<td>—</td>
+<td>a near-separatrix pattern B (periodic slowing) with no resonant potential</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>kinematic_libration</code></td>
+<td>non_resonant</td>
+<td>kinematic</td>
+<td>bounded by geometry (<span class="arithmatex">\(p\varpi\)</span> term, secular cycle); <span class="arithmatex">\(a\)</span> does not carry it</td>
+<td><a href="../gallery/#kinematic-libration">285637</a></td>
+</tr>
+<tr>
+<td><code>kinematic_drift</code></td>
+<td>non_resonant</td>
+<td>kinematic</td>
+<td>the slow center follows the secular part; librations are a ripple on it</td>
+<td><a href="../gallery/#kinematic-drift">62243</a></td>
+</tr>
+<tr>
+<td><code>induced_libration</code></td>
+<td>non_resonant</td>
+<td>induced</td>
+<td>another resonance drives <span class="arithmatex">\(a\)</span>; <span class="arithmatex">\(\sigma\)</span> follows by the identity</td>
+<td><a href="../gallery/#induced-forced-wave">117306</a></td>
+</tr>
+<tr>
+<td>(the own reading)</td>
+<td>its own</td>
+<td>joint</td>
+<td>both resonances at once: the owner librates and <span class="arithmatex">\(\Psi\)</span> has a well of its own</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>subresonance_librates</code></td>
+<td>the member's</td>
+<td>subresonance</td>
+<td>a member of the same multiplet holds the fixed center</td>
+<td><a href="../gallery/#transient-subresonance">82831</a></td>
+</tr>
+<tr>
+<td><code>implausible_strength</code></td>
+<td>non_resonant</td>
+<td>unknown</td>
+<td>the observed period needs a force <span class="arithmatex">\(\ge 10^3\)</span> times the available one</td>
+<td><a href="../gallery/#implausible-strength">2897</a></td>
+</tr>
+<tr>
+<td><code>baseline_needed</code></td>
+<td>uncertain</td>
+<td>—</td>
+<td>too few cycles to decide; integrate longer</td>
+<td><a href="../gallery/#insufficient-time">385458, 100 kyr</a></td>
+</tr>
+<tr>
+<td><code>one_coorbital_leg</code></td>
+<td>uncertain</td>
+<td>unknown</td>
+<td>1:1: one swing between passages with one discrepancy (a lap past the planet, the local law or energy, a turn that is a kick)</td>
+<td>2018 KS</td>
+</tr>
+<tr>
+<td><code>one_half_libration</code></td>
+<td>uncertain</td>
+<td>unknown</td>
+<td>not 1:1: one half-swing between passages that follows the resonance's own law</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>drift_mechanism_unknown</code></td>
+<td>uncertain</td>
+<td>unknown</td>
+<td>the angle drifts and no mechanism is identified</td>
+<td><a href="../gallery/#uncertain-drift">142694</a></td>
+</tr>
+<tr>
+<td><code>origin_unknown</code></td>
+<td>uncertain</td>
+<td>unknown</td>
+<td>it librates, but a measurement contradicts this resonance's own pendulum</td>
+<td>2003 TX9 (minimal: <a href="../gallery/#measured-objection">resonant/low</a>)</td>
+</tr>
+<tr>
+<td><code>unphysical</code></td>
+<td>invalid</td>
+<td>—</td>
+<td>the orbit left the elliptic domain (or <span class="arithmatex">\(e &gt; 1.3\)</span> for secular/ZLK)</td>
+<td><a href="../gallery/#zlk-invalid">2010 HY22</a></td>
+</tr>
+<tr>
+<td><code>undefined_phase</code></td>
+<td>invalid</td>
+<td>—</td>
+<td><span class="arithmatex">\(\varpi\)</span> is undefined at very small <span class="arithmatex">\(e\)</span></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>undersampled</code></td>
+<td>invalid</td>
+<td>—</td>
+<td>the output step is too coarse for the filter, <span class="arithmatex">\(P_c \le 2\Delta t\)</span></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>invalid_input</code></td>
+<td>invalid</td>
+<td>—</td>
+<td>the angle does not contain the body's <span class="arithmatex">\(\lambda\)</span> (<span class="arithmatex">\(k = 0\)</span>)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>gate_unavailable</code></td>
+<td>uncertain</td>
+<td>unknown</td>
+<td>Lidov-Kozai: the free-<span class="arithmatex">\(\omega\)</span> gate could not judge, or its model does not apply (a co-orbital of Mercury to Mars, any bounded <span class="arithmatex">\(\omega\)</span>) (<a href="../secular-zlk/">Secular and ZLK</a>)</td>
+<td><a href="../gallery/#zlk-gate-unavailable">1981</a></td>
+</tr>
+<tr>
+<td><code>unusable_series</code></td>
+<td>uncertain</td>
+<td>—</td>
+<td>secular/ZLK: too few samples or non-finite values in the angle</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>The columns <code>libration_origin</code>, <code>origin_detail</code> and <code>owner</code> are described in <a href="../../output/">Output data</a>; the leaf
+that decided is the column <code>rec_rule</code> of <code>mmr_numbers.csv</code> (5d/6, 5u/6, 3k2, C5, …).</p>
+<p>Files before 2026-10-26 wrote <code>dynamic_libration</code> / <code>dynamic_episode</code> also for the geometric leaf (origin
+<code>unknown</code>). This renamed the reason only; it was not a new classification. Since 1.0 the package reads only the
+format it writes: a run of an earlier version is not restored (run it again).</p>
+<h2 id="the-reported-angle-word">The reported angle word<a class="headerlink" href="#the-reported-angle-word" title="Permanent link">&para;</a></h2>
+<p>The tree reads the angle as the status needs it; the reported <code>angle_status</code> describes what <span class="arithmatex">\(\sigma\)</span> did over the
+whole record. They differ in four cases:</p>
+<ul>
+<li><strong>Episodes, then another regime.</strong> Librating episodes followed by a circulation, by a regime after a jump of <span class="arithmatex">\(a\)</span>,
+  or a capture after a jump: reported <code>episodic</code> (<code>recurrent</code> with two or more episodes); how the record ends goes
+  to <code>final_regime</code> (<code>circulation</code>, <code>libration</code>, …).</li>
+<li><strong>A union of episodes.</strong> Episodes covering the record together are reported <code>libration</code> (subtype
+  <code>regime_change</code>) whatever the status: <span class="arithmatex">\(\sigma\)</span> never went round.</li>
+<li><strong>A kinematic drift of the slow center.</strong> The word follows the mechanism, not the ripple: <code>drift</code>, or
+  <code>circulation</code> when the center's largest monotone pass reaches a full turn or its net shift reaches
+  <code>LIBRATION_CIRCULATION_NET_REV</code> = 2 turns (<code>MMR_KINEMATIC_DRIFT_WORD</code> = True).</li>
+<li><strong>Forced waves.</strong> Runs that are forced waves of another argument are not episodes for the status. If the record
+  would otherwise be reported <code>circulation</code> or <code>drift</code> while <span class="arithmatex">\(\sigma\)</span> loops in those runs, the librating word is
+  reported.</li>
+<li><strong>Forced (strength).</strong> On a row decided by 5s (not 5s*) every accepted run is marked a forced wave of route
+  <code>strength</code> once the verdict is made (<code>MMR_FORCED_WAVE_STRENGTH</code>): its period needs a force ≥ <span class="arithmatex">\(10^3\)</span> times the one
+  the disturbing function gives, so it is no libration of this angle. The mark names that ground, not a driver;
+  nothing is measured again, and the status, word, reason and level stay as they are.</li>
+</ul>
+<p>Only the output changes; the margins and the confidence read the angle as the tree did.</p>
+<h2 id="how-the-records-edges-end">How the record's edges end<a class="headerlink" href="#how-the-records-edges-end" title="Permanent link">&para;</a></h2>
+<p>After the tree, the MMR verdict reads how <span class="arithmatex">\(\sigma_f\)</span> meets the record's edges (rule <code>end_arc_extend</code>,
+<code>MMR_RECORD_EDGE_STRETCH</code>). The edge pass is the stretch from the slow center's turn nearest the edge (or the other
+edge without one) to the edge.</p>
+<ul>
+<li><strong>End arc after circulation.</strong> The pass holds at least one revolution, and after its last completed one <span class="arithmatex">\(\sigma_f\)</span>
+  stays <span class="arithmatex">\(D\)</span> to the end without completing another, with <span class="arithmatex">\(D &gt;\)</span> <code>MMR_END_ARC_SLOWDOWN_FACTOR</code> (2) × the pass's
+  longest revolution and <span class="arithmatex">\(2D \ge\)</span> <code>MMR_END_ARC_MIN_FLOOR_PERIODS</code> (1) × the floor, no librating episode in it. A
+  circulation whose rate depends on <span class="arithmatex">\(\sigma\)</span> alone completes the next revolution sooner than a full one takes, so
+  this is a slowdown. <code>final_regime</code> becomes <code>arc</code> (range ≥ π) or <code>stall</code> from the last revolution, when it was empty or
+  <code>circulation</code>, and the flag <code>extend_time</code> is set forward. A <code>non_resonant / circulation</code> verdict there gets the cap
+  <code>record_ends_unresolved</code> (≤ medium): the record ends before it shows whether <span class="arithmatex">\(\sigma\)</span> circulates on or is
+  captured (2022 BB2: 600 yr after 52-yr revolutions).</li>
+<li><strong>Flag only.</strong> The same slowdown at the start, one reflection of the slow center cut by an edge (less than a
+  revolution between the turn and the edge, at least one beyond it: 2008 EZ84 before 144 yr), a clean 1:1 edge leg
+  whose turn reflects (G4c's extend) and an edge half-libration that holds its law (G4h) set <code>extend_time</code> with the
+  direction of their edge (<code>backward</code> at the start, <code>forward</code> at the end, <code>both</code>); a window that starts at a jump of
+  <span class="arithmatex">\(a\)</span> has no record start to extend. One reflection is no cycle: no cap.</li>
+</ul>
+<p>The flag changes no status and no level, whatever the action. <code>extend_direction</code> gives the direction and
+<code>extend_to_years</code> the length: the next check without an estimate, round_up(2T) (with action <code>extend</code> the action's
+length stays). The words <code>libration</code>, <code>drift</code>, <code>insufficient_time</code> and <code>undefined</code> already say how the record ends:
+no edge stretch is read under them.</p>
+<h2 id="secular-and-lidov-kozai-angles">Secular and Lidov-Kozai angles<a class="headerlink" href="#secular-and-lidov-kozai-angles" title="Permanent link">&para;</a></h2>
+<p>Secular and Lidov-Kozai angles use their own shorter tree, without an owner, a subresonance or a force law step:
+<a href="../secular-zlk/#geometry-and-status">geometry and status</a> and, for Lidov-Kozai, <a href="../secular-zlk/#zlk-free-omega">the free-ω gate</a>.
+A secular libration makes only a few cycles in a record, so which runs are its episodes is read as for an MMR but
+with four rules of its own (IDs G2p, G2t, G2w, G2e in the <a href="../../libration-analysis/#secular-zlk">rule index</a>):
+each run of turning points takes its own prominence; a bounded run whose center turns back once is <code>modulated</code>; an
+episode that is a wave on a slower motion of the angle does not count (secular only; the slower scale decides); and
+<span class="arithmatex">\(\sigma_f\)</span> running a turn or more after the last turning point is an observed exit (<code>transient</code>, <code>final_regime</code>
+circulation), not a libration that goes on past the record.</p>
+<h2 id="legacy-integer-codes">Legacy integer codes<a class="headerlink" href="#legacy-integer-codes" title="Permanent link">&para;</a></h2>
+<p>Old runs stored one integer per angle. The column <code>status_code</code> keeps it for comparison only:</p>
+<table>
+<thead>
+<tr>
+<th>code</th>
+<th>MMR</th>
+<th>secular / ZLK</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td>resonant</td>
+<td>resonant</td>
+</tr>
+<tr>
+<td>1</td>
+<td>transient</td>
+<td>transient</td>
+</tr>
+<tr>
+<td>0</td>
+<td>non_resonant (kinematic, induced, subresonance and alias included)</td>
+<td>non_resonant (circulation)</td>
+</tr>
+<tr>
+<td>−2</td>
+<td>—</td>
+<td>non_resonant / kinematic_libration (ZLK: the gate measured a kinematic libration)</td>
+</tr>
+<tr>
+<td>−3</td>
+<td>near_separatrix</td>
+<td>near_separatrix (old files)</td>
+</tr>
+<tr>
+<td>−4</td>
+<td>—</td>
+<td>uncertain / insufficient_time</td>
+</tr>
+<tr>
+<td>−6</td>
+<td>uncertain / baseline_needed</td>
+<td>uncertain / drift</td>
+</tr>
+<tr>
+<td>−9</td>
+<td>other uncertain</td>
+<td>other uncertain (ZLK: gate_unavailable)</td>
+</tr>
+<tr>
+<td>−99</td>
+<td>invalid</td>
+<td>invalid</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">−2 and −9 are different</p>
+<p>−2 is a measurement (the free <span class="arithmatex">\(\omega\)</span> was found to wind: the libration is geometry); −9 is the absence of one
+(the gate could not judge). Never merge them in a statistic.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../response/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Is it this resonance?">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Is it this resonance?
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../confidence/" class="md-footer__link md-footer__link--next" aria-label="Next: Confidence">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Confidence
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

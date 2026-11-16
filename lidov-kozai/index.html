@@ -1,0 +1,1874 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python package that finds mean-motion, secular and Lidov-Kozai resonances of small bodies in the Solar system and decides, from a numerical integration, whether the resonant angle librates and why.">
+      
+      
+        <meta name="author" content="Evgeny Smirnov">
+      
+      
+        <link rel="canonical" href="https://smirik.github.io/resonances/lidov-kozai/">
+      
+      
+        <link rel="prev" href="../secular/">
+      
+      
+        <link rel="next" href="../clones/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Lidov-Kozai resonances - resonances</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#lidov-kozai-resonances" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="resonances" class="md-header__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            resonances
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Lidov-Kozai resonances
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="resonances" class="md-nav__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    resonances
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulations, bodies, resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using with AI agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How the status is determined
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How the status is determined
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/pendulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The resonant pendulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/signal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    From the integration to the angle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What the angle does
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/response/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is it this resonance?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/status-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The status tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/confidence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Confidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/secular-zlk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular and Lidov-Kozai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resonance matrices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lidov-Kozai resonances
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lidov-Kozai resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#lidovs-integrals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lidov's integrals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-a-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking a body
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-status-is-decided" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the status is decided
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clones (virtual asteroids)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reading-figures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to read the figures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../serialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serialization and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coherence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-spectral coherence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../free-elements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Free elements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../libration-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    References
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#lidovs-integrals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lidov's integrals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-a-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking a body
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-status-is-decided" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the status is decided
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="lidov-kozai-resonances">Lidov-Kozai resonances<a class="headerlink" href="#lidov-kozai-resonances" title="Permanent link">&para;</a></h1>
+<p>In the classical prograde quadrupole problem the Lidov-Kozai (ZLK) resonance is a libration of the argument of
+perihelion <span class="arithmatex">\(\omega\)</span> about 90° or 270°, with <span class="arithmatex">\(e\)</span> and <span class="arithmatex">\(i\)</span> varying in antiphase at constant <span class="arithmatex">\(\sqrt{1-e^2}\cos i\)</span>.
+Inside a mean-motion resonance the center can shift, so the classifier tests that <span class="arithmatex">\(\omega\)</span> and its free counterpart
+are confined (<a href="../free-elements/">free-omega gate</a>), not that the center is at 90° or 270°; the e–i phase is a flag
+(<a href="../coherence/">Coherence</a>). The package checks it as a resonance with the angle
+<span class="arithmatex">\(\omega\)</span>: <code>resonances.LidovKozaiResonance()</code>, key <code>LK</code>. A run may combine it with MMRs and secular resonances.</p>
+<h2 id="lidovs-integrals">Lidov's integrals<a class="headerlink" href="#lidovs-integrals" title="Permanent link">&para;</a></h2>
+<p>In the quadrupole approximation of the doubly averaged, circular restricted three-body problem (an inner body, a
+distant perturber), <span class="arithmatex">\(a\)</span> is constant and the motion has two more integrals (Lidov 1962, eqs. 58–60; Kozai 1962,
+eqs. 26–28):</p>
+<div class="arithmatex">\[
+c_1 = (1 - e^2)\cos^2 i, \qquad c_2 = e^2\left(\tfrac{2}{5} - \sin^2 i \,\sin^2\omega\right).
+\]</div>
+<p>Here <span class="arithmatex">\(i\)</span> is the inclination to the perturber's orbital plane and <span class="arithmatex">\(\omega\)</span> is measured from the node on that plane;
+<span class="arithmatex">\(c_1\)</span> is then the squared normalized component of the angular momentum normal to the perturber's orbit. In that limit
+<span class="arithmatex">\(\omega\)</span> librates about 90° or 270° when <span class="arithmatex">\(c_1 &lt; 3/5\)</span> and <span class="arithmatex">\(c_2 &lt; 0\)</span>, and circulates otherwise; for an initially
+circular orbit this needs <span class="arithmatex">\(\arccos\sqrt{3/5} \approx 39.2° &lt; i &lt; 140.8°\)</span> (not a classifier threshold).
+<code>LidovKozaiParameters.evaluate</code> rotates nothing: it uses the angles it is given. The package reads them from the
+<strong>invariable plane</strong> (<code>evaluate_invariable</code>: the angular momentum and the perihelion rotated exactly, no angle
+subtracted), the plane of the planets' total angular momentum, as an approximate Solar-system stand-in for the
+perturber's plane. The summary columns <code>c1</code>, <code>c2</code>, <code>h_quad</code> are these: osculating, at the epoch, invariable plane. From
+the ecliptic <span class="arithmatex">\(c_1\)</span> moves by up to 0.02 and the sign of <span class="arithmatex">\(c_2\)</span> can flip (1373 Cincinnati: <span class="arithmatex">\(+0.0014\)</span> ecliptic, <span class="arithmatex">\(-0.0011\)</span>
+invariable). The quadrupole energy,
+without its constant factor, is</p>
+<div class="arithmatex">\[
+h_\text{quad} = (2 + 3e^2)(3\cos^2 i - 1) + 15 e^2 \sin^2 i \cos 2\omega = 6c_1 - 2 + 30 c_2 .
+\]</div>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">resonances</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">resonances</span><span class="w"> </span><span class="kn">import</span> <span class="n">LidovKozaiParameters</span>
+
+<span class="c1"># osculating ecliptic e, i, Omega, omega of three main-belt asteroids (the benchmark's epoch)</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">'1373 Cincinnati'</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.3152</span><span class="p">,</span> <span class="mf">38.953</span><span class="p">,</span> <span class="o">-</span><span class="mf">62.561</span><span class="p">,</span> <span class="mf">98.882</span><span class="p">),</span>
+    <span class="s1">'3040 Kozai'</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.2003</span><span class="p">,</span> <span class="mf">46.647</span><span class="p">,</span> <span class="mf">143.473</span><span class="p">,</span> <span class="mf">290.213</span><span class="p">),</span>
+    <span class="s1">'15527'</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.1529</span><span class="p">,</span> <span class="mf">21.259</span><span class="p">,</span> <span class="mf">173.771</span><span class="p">,</span> <span class="mf">168.872</span><span class="p">),</span>
+<span class="p">}</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">inc_deg</span><span class="p">,</span> <span class="n">node_deg</span><span class="p">,</span> <span class="n">omega_deg</span><span class="p">)</span> <span class="ow">in</span> <span class="n">samples</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="c1"># i and omega read from the invariable plane (an exact rotation), as the summary columns c1, c2, h_quad</span>
+    <span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">h_quad</span> <span class="o">=</span> <span class="n">LidovKozaiParameters</span><span class="o">.</span><span class="n">evaluate_invariable</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">([</span><span class="n">inc_deg</span><span class="p">,</span> <span class="n">node_deg</span><span class="p">,</span> <span class="n">omega_deg</span><span class="p">]))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s1">16s</span><span class="si">}</span><span class="s1"> c1 = </span><span class="si">{</span><span class="n">c1</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">  c2 = </span><span class="si">{</span><span class="n">c2</span><span class="si">:</span><span class="s1">+.4f</span><span class="si">}</span><span class="s1">  h_quad = </span><span class="si">{</span><span class="n">h_quad</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>1373 Cincinnati  c1 = 0.521  c2 = -0.0011  h_quad = 1.091
+3040 Kozai       c1 = 0.474  c2 = -0.0021  h_quad = 0.778
+15527            c1 = 0.855  c2 = +0.0092  h_quad = 3.404
+</code></pre></div>
+<p>These numbers are <strong>diagnostics, not the verdict</strong>. The criterion is exact only for <span class="arithmatex">\(a/a_\text{pert} \to 0\)</span>; a
+main-belt asteroid has <span class="arithmatex">\(a/a_J \approx 0.5\)</span> and several perturbers, and a value this close to zero (1373's
+<span class="arithmatex">\(c_2 = -0.0011\)</span>; <span class="arithmatex">\(+0.0014\)</span> from the ecliptic) says nothing on its own. The sign of <span class="arithmatex">\(h_\text{quad}\)</span> is not a criterion
+either: <span class="arithmatex">\(e = 0.1\)</span>, <span class="arithmatex">\(i = 70°\)</span>, <span class="arithmatex">\(\omega = 0\)</span> gives <span class="arithmatex">\(h_\text{quad} &lt; 0\)</span> while <span class="arithmatex">\(\omega\)</span> circulates (<span class="arithmatex">\(c_2 &gt; 0\)</span>). The
+osculating elements are used here, at one instant.</p>
+<h2 id="checking-a-body">Checking a body<a class="headerlink" href="#checking-a-body" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">sim</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">Simulation</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'lk-demo'</span><span class="p">,</span>
+    <span class="n">date</span><span class="o">=</span><span class="s1">'2026-01-01'</span><span class="p">,</span>
+    <span class="n">integration_years</span><span class="o">=</span><span class="mi">5_000</span><span class="p">,</span>  <span class="c1"># 500_000 years for a real verdict: the omega cycles last 10-100 kyr</span>
+    <span class="n">integrator</span><span class="o">=</span><span class="s1">'SABA(10,6,4)'</span><span class="p">,</span>
+    <span class="n">dt</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># REBOUND units: 0.5 / (2 pi) yr = 29 days</span>
+    <span class="n">output_step</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>  <span class="c1"># years</span>
+    <span class="n">plot_always</span><span class="o">=</span><span class="p">[</span><span class="s1">'lidov_kozai'</span><span class="p">],</span>  <span class="c1"># draw the omega figure whatever the status</span>
+<span class="p">)</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">create_solar_system</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">number</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1373</span><span class="p">,</span> <span class="mi">3040</span><span class="p">,</span> <span class="mi">15527</span><span class="p">):</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">add_body</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="n">resonances</span><span class="o">.</span><span class="n">LidovKozaiResonance</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">number</span><span class="p">))</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">body</span> <span class="ow">in</span> <span class="n">sim</span><span class="o">.</span><span class="n">bodies</span><span class="p">:</span>
+    <span class="n">verdict</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">verdict</span><span class="p">(</span><span class="s1">'LK'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">verdict</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">verdict</span><span class="o">.</span><span class="n">angle_status</span><span class="p">,</span> <span class="n">verdict</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span> <span class="n">verdict</span><span class="o">.</span><span class="n">libration_origin</span><span class="p">)</span>
+</code></pre></div>
+<p>The cycles of <span class="arithmatex">\(\omega\)</span> last tens of thousands of years, so a verdict needs a long record: 500 000 years with a saved
+point every 10 years is a good default. <code>SABA(10,6,4)</code> with <code>dt = 0.5</code> (29 days) is safe for perihelion distances
+<span class="arithmatex">\(q \gtrsim 1.3\)</span> au; closer to the planets use <code>ias15</code> (<a href="../dry-run/">dry-run</a>). The short run above gives
+<code>uncertain</code> / <code>insufficient_time</code>; over 500 000 years 3040 Kozai is <code>resonant</code> with <code>certain</code> confidence
+(<a href="../physics/gallery/#zlk-resonant">Gallery</a>).</p>
+<p>The angle is a series like any other:</p>
+<div class="highlight"><pre><span></span><code><span class="n">body</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">bodies</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># 3040 Kozai</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">times</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>  <span class="c1"># years</span>
+<span class="n">omega</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">resonances</span><span class="o">.</span><span class="n">LidovKozaiResonance</span><span class="p">())</span>  <span class="c1"># radians in [0, 2 pi)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="si">}</span><span class="s1"> points, omega from </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">omega</span><span class="o">.</span><span class="n">min</span><span class="p">())</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> to </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">omega</span><span class="o">.</span><span class="n">max</span><span class="p">())</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> deg'</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="how-the-status-is-decided">How the status is decided<a class="headerlink" href="#how-the-status-is-decided" title="Permanent link">&para;</a></h2>
+<p><span class="arithmatex">\(\omega\)</span>, <span class="arithmatex">\(i\)</span> and <span class="arithmatex">\(\Omega\)</span> are measured from the <strong>invariable plane</strong> (<code>ZLK_ANGLE_FRAME = invariable</code>, the default):
+the orbit's angular momentum and perihelion are rotated exactly, as for Lidov's integrals. The free elements, the
+diagnostics below and the figure read the same frame. From the ecliptic, the node of an orbit tilted from the
+invariable plane by about the plane's own 1.58° or less librates about the plane's node instead of turning, and
+<span class="arithmatex">\(\omega = \varpi - \Omega\)</span> with it: 555527 (<span class="arithmatex">\(i_\text{inv} \approx 1.6°\)</span>) looked bounded from the ecliptic and
+circulates from the invariable plane. Where the two frames' <span class="arithmatex">\(\omega\)</span> part by a whole turn or more, the row carries the
+rule <code>zlk_invariable_frame</code> (column <code>zlk_frame_shift_turns</code>). The integration stores the ecliptic <span class="arithmatex">\(\omega\)</span>; the
+analysis writes the classified angle back, so the data files hold it too.</p>
+<p>The angle <span class="arithmatex">\(\omega\)</span> goes through the same geometry as every other angle (turning points, cycles, episodes;
+<a href="../physics/geometry/">What the angle does</a>). A libration of the <em>osculating</em> <span class="arithmatex">\(\omega\)</span> is not enough: the forced
+eccentricity, driven by the planets, can hold the osculating perihelion while the body's own (free) perihelion
+circulates. The <strong>free-ω gate</strong> splits <span class="arithmatex">\(e\)</span> and <span class="arithmatex">\(i\)</span> into forced and free parts and asks whether the free
+<span class="arithmatex">\(\omega\)</span> is confined (<a href="../free-elements/">Free elements</a>, <a href="../physics/secular-zlk/">Secular and Lidov-Kozai</a>).</p>
+<p>On a librating <span class="arithmatex">\(\omega\)</span> the gate's outcome sets the status: confirmed keeps <code>resonant</code>, kinematic gives
+<code>non_resonant</code> / <code>kinematic_libration</code>, no verdict gives <code>uncertain</code> / <code>gate_unavailable</code>; the full rule, also for
+episodes and short records: <a href="../physics/secular-zlk/#zlk-free-omega">Secular and Lidov-Kozai</a>.
+<a href="../physics/gallery/#zlk-kinematic">Gallery</a> shows the Jupiter Trojan 591986, whose osculating <span class="arithmatex">\(\omega\)</span> librates
+while its free <span class="arithmatex">\(\omega\)</span> winds.</p>
+<p>Four measurements sit next to the status and change none of it (<a href="../free-elements/#beyond-the-gate">Free elements</a>):</p>
+<ul>
+<li><strong>e–i coupling</strong> at the row's decisive period (<code>zlk_ei_coupling</code>, every row whatever its status): <code>zlk</code> when <span class="arithmatex">\(e\)</span>
+  and the inclination to the invariable plane trade in antiphase at the amplitude of constant <span class="arithmatex">\(\sqrt{1-e^2}\cos i\)</span>,
+  <code>forced_beat</code> when they move in phase at the amplitude of constant <span class="arithmatex">\(\sqrt{1-e^2}(1-\cos i)\)</span> (a forced
+  eccentricity beating against the free one), <code>none</code>, or <code>not_measured</code>. Coupling is not libration: 15527 circulates
+  and still trades <span class="arithmatex">\(e\)</span> for <span class="arithmatex">\(i\)</span> at its 2.05-kyr <span class="arithmatex">\(\cos 2\omega\)</span> harmonic. <code>confirmed_ei</code> (and <code>check_zlk_ei</code>) is
+  <code>zlk_ei_coupling == zlk</code>.</li>
+<li><strong>Attribution</strong> of a kinematic libration (<code>zlk_forcing_*</code>): the forced mode that holds <span class="arithmatex">\(\varpi\)</span> (591986: g5 with the
+  modes merged into it), when the free circle stays off the origin, the predicted beat is the libration period and
+  the node follows the mode (an episodic row demoted inside its episodes: scope <code>episodes</code>, the node free to turn);
+  otherwise "forcing not attributed". The figure states it as the cause and draws panel (a′).</li>
+<li><strong>Node lock</strong> (<code>zlk_node_lock</code>, a flag): the node's rate one line with a forced mode's and <span class="arithmatex">\(\Omega - \varpi_j\)</span>
+  librating through at least one full cycle (591986 over 4 Myr: g5; over 500 kyr not resolved).</li>
+<li><strong>The slow line of the center</strong> (<code>zlk_centre_*</code>): its period and half-amplitude, and its origin (591986: the g6−g5
+  beat of the forced vector, 54 kyr, ±22°).</li>
+<li><strong>Co-orbitals</strong> of Mercury to Mars have no gate verdict (<code>zlk_gate_detail</code> = <code>coorbital_unfitted_forcing</code>): their
+  forced term is the planet's own vector, which the split does not fit; Jupiter's Trojans are covered.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../secular/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Secular resonances">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Secular resonances
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../clones/" class="md-footer__link md-footer__link--next" aria-label="Next: Clones (virtual asteroids)">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Clones (virtual asteroids)
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

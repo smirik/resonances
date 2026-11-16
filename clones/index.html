@@ -1,0 +1,2121 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python package that finds mean-motion, secular and Lidov-Kozai resonances of small bodies in the Solar system and decides, from a numerical integration, whether the resonant angle librates and why.">
+      
+      
+        <meta name="author" content="Evgeny Smirnov">
+      
+      
+        <link rel="canonical" href="https://smirik.github.io/resonances/clones/">
+      
+      
+        <link rel="prev" href="../lidov-kozai/">
+      
+      
+        <link rel="next" href="../dry-run/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Clones (virtual asteroids) - resonances</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#clones-virtual-asteroids" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="resonances" class="md-header__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            resonances
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Clones (virtual asteroids)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="resonances" class="md-nav__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    resonances
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulations, bodies, resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using with AI agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How the status is determined
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How the status is determined
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/pendulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The resonant pendulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/signal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    From the integration to the angle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What the angle does
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/response/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is it this resonance?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/status-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The status tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/confidence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Confidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/secular-zlk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular and Lidov-Kozai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resonance matrices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lidov-kozai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lidov-Kozai resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clones (virtual asteroids)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clones (virtual asteroids)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-covariance-comes-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the covariance comes from
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a-multivariate-normal-in-the-published-coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a multivariate normal in the published coordinates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-the-covariances-own-epoch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the covariance's own epoch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-many-clones" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How many clones
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-run-treats-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How a run treats them
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resume-and-restore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resume and restore
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reading-figures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to read the figures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../serialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serialization and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coherence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-spectral coherence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../free-elements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Free elements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../libration-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    References
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-covariance-comes-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the covariance comes from
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-a-multivariate-normal-in-the-published-coordinates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a multivariate normal in the published coordinates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-the-covariances-own-epoch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the covariance's own epoch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-many-clones" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How many clones
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-run-treats-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How a run treats them
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resume-and-restore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resume and restore
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="clones-virtual-asteroids">Clones (virtual asteroids)<a class="headerlink" href="#clones-virtual-asteroids" title="Permanent link">&para;</a></h1>
+<p>An orbit is known only within its errors. A clone, or virtual asteroid, is one orbit the observations allow; the
+nominal orbit is one of them, "without any special significance" (Milani, Chesley &amp; Valsecchi 2000, p. 947). A run
+with N clones of an asteroid classifies each clone like any body and reports, per resonance, the share of clones with
+each status and its 95 % interval: the probability of a status given the provider's orbit solution, the package's model
+and the integration span. It says nothing about the model's or the classifier's own errors.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">resonances</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">solution</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">orbit_solution</span><span class="p">(</span><span class="mi">463</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s1">'astdys'</span><span class="p">)</span>  <span class="c1"># nominal orbit + covariance (cached in cache/clones/)</span>
+    <span class="n">ensemble</span> <span class="o">=</span> <span class="n">solution</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># 10 clones and the nominal; 100-1000 for real shares</span>
+
+    <span class="n">sim</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">Simulation</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'clones-demo'</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s1">'2026-01-01'</span><span class="p">,</span> <span class="n">integration_years</span><span class="o">=</span><span class="mi">2_000</span><span class="p">)</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">create_solar_system</span><span class="p">()</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">add_ensemble</span><span class="p">(</span><span class="n">ensemble</span><span class="p">,</span> <span class="n">resonances</span><span class="o">=</span><span class="p">[</span><span class="s1">'4J-2S-1'</span><span class="p">])</span>  <span class="c1"># clones drawn at another epoch are integrated to the date first</span>
+    <span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="n">shares</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">clone_summary</span>  <span class="c1"># the rows of clones.csv: the share of each status with its 95 % Wilson interval</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">shares</span><span class="p">[[</span><span class="s1">'resonance'</span><span class="p">,</span> <span class="s1">'n_clones'</span><span class="p">,</span> <span class="s1">'nominal_status'</span><span class="p">,</span> <span class="s1">'modal_status'</span><span class="p">,</span> <span class="s1">'modal_share'</span><span class="p">,</span> <span class="s1">'f_resonant_lo'</span><span class="p">,</span> <span class="s1">'f_resonant_hi'</span><span class="p">]])</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>  <span class="c1"># the clones run in worker processes: the guard is required</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div>
+<p>The clones run in worker processes, so a script needs the <code>if __name__ == '__main__':</code> guard (without it a run on
+macOS or Windows stops with an error that names the missing guard). Use 100–1000 clones and the full span for real shares.</p>
+<p>Short forms: <code>sim.add_body(463, '4J-2S-1', clones=100)</code>, <code>resonances.check(463, '4J-2S-1', clones=100)</code>,
+<code>resonances.find(463, clones=100)</code> (candidates from the whole cloud), <code>CLONES=100</code> in <code>.env</code>, and on the command line
+<code>resonances check --asteroids=463 --resonances=4J-2S-1 --clones=100</code>. The body itself is then added from <code>DATA_SOURCE</code>
+as without clones; its clones come from the orbit solution of <code>CLONES_SOURCE</code> (<code>auto</code> = the same provider: AstDyS for
+<code>astdys</code>, MPC for <code>mpc</code>, JPL SBDB for <code>nasa</code>).</p>
+<p>Your own clones: <code>resonances.Ensemble.from_elements('name', rows, epoch_mjd=..., nominal=...)</code> (rows with a, e, inc,
+Omega, omega, M in radians, one epoch), or an ensemble saved by <code>Ensemble.save</code> / read by <code>Ensemble.load</code>.</p>
+<h2 id="where-the-covariance-comes-from">Where the covariance comes from<a class="headerlink" href="#where-the-covariance-comes-from" title="Permanent link">&para;</a></h2>
+<p>An orbit is fitted to the astrometry by least squares. With the residuals linearized around the best fit X₀, the
+orbit's density is approximated by the Gaussian</p>
+<div class="arithmatex">\[
+p(X) \propto \exp\!\left(-\tfrac12\,\Delta X^{\mathsf T} C^{-1} \Delta X\right), \qquad \Delta X = X - X_0, \qquad
+C = (B^{\mathsf T} W B)^{-1},
+\]</div>
+<p>B the derivatives of the observations by the six coordinates, W their weights. The clones use the Gaussian
+approximation in the published covariance coordinates: C as each provider publishes it, in its coordinates and at one
+epoch (whether these are the coordinates the fit was solved in is not stated). A Gaussian is a local approximation and
+depends on the coordinates; carrying its draws through the nonlinear map does not repair a poor one. The shares below
+are probabilities under this approximation, not the true astrometric posterior:</p>
+<table>
+<thead>
+<tr>
+<th>source</th>
+<th>coordinates X</th>
+<th>units</th>
+<th>epoch</th>
+<th>file</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>astdys</code> (numbered)</td>
+<td>equinoctial a, h = e sin ϖ, k = e cos ϖ, p = tan(i/2) sin Ω, q = tan(i/2) cos Ω, λ</td>
+<td>au, λ in <strong>degrees</strong> (in the covariance too)</td>
+<td><code>.eq1</code>: the catalog's standard epoch (default); <code>.eq0</code>: the fit's own</td>
+<td>OEF2.0 <code>newton.spacedys.com/~astdys2/epoch/numbered/&lt;n/1000&gt;/&lt;n&gt;.eq1</code></td>
+</tr>
+<tr>
+<td><code>neodys</code> (NEAs)</td>
+<td>as AstDyS</td>
+<td>as AstDyS</td>
+<td><code>.eq0</code>: the fit's own, near the middle of the arc (default); <code>.eq1</code></td>
+<td><code>~neodys2/epoch/&lt;designation&gt;.eq0</code></td>
+</tr>
+<tr>
+<td><code>sbdb</code> (JPL)</td>
+<td>cometary e, q, t_p, Ω, ω, i</td>
+<td>au, JD TDB, degrees</td>
+<td>the orbit-solution epoch (not the epoch of the listed elements)</td>
+<td><code>ssd-api.jpl.nasa.gov/sbdb.api?sstr=..&amp;cov=mat&amp;full-prec=1</code></td>
+</tr>
+<tr>
+<td><code>mpc</code></td>
+<td>Cartesian x, y, z, vx, vy, vz (heliocentric)</td>
+<td>au, au/day</td>
+<td>the orbit's epoch</td>
+<td><code>data.minorplanetcenter.net/api/get-orb</code></td>
+</tr>
+</tbody>
+</table>
+<p>All in the J2000 ecliptic, heliocentric, as the package; a file stating another frame (OEF <code>refsys</code> other than
+<code>ECLM J2000</code>, MPC <code>system_data</code> not ecliptic/ICRF or another obliquity than 84381.448″, SBDB <code>equinox</code> not J2000) is
+refused, nothing is rotated. An OEF file is read as one record: a second one (a bulk <code>.ctc</code>) is refused. The units were checked on the providers' own numbers (tests in
+<code>tests/resonances/clones/</code>): the OEF <code>EIG</code> line is √eig(C) only with λ converted to radians; MPC's <code>eigenvalues</code> are
+√eig of its CAR covariance; MPC's CAR and COM blocks give its own KEP block; AstDyS and MPC agree on 463 to 3·10⁻⁸ au.</p>
+<p>A file is downloaded once into <code>CLONES_CACHE_DIR/&lt;source&gt;/</code> with <code>&lt;file&gt;.meta.json</code> (URL, download time, sha256);
+<code>orbit_solution(..., refresh=True)</code> fetches it again (an orbit improves with new observations). The ensemble's JSON
+keeps the whole solution.</p>
+<h2 id="why-a-multivariate-normal-in-the-published-coordinates">Why a multivariate normal in the published coordinates<a class="headerlink" href="#why-a-multivariate-normal-in-the-published-coordinates" title="Permanent link">&para;</a></h2>
+<p>The coordinates are strongly correlated: in JPL's covariance of 463, |corr(e, q)| = 0.99999. Independent errors per
+element, as several papers draw them, put the clones outside the orbit's confidence region; with e and q independent σ_a
+comes out 4–900 times too large. Each clone is therefore</p>
+<div class="arithmatex">\[
+X_i = X_0 + L z_i, \qquad C = L L^{\mathsf T}\ \text{(Cholesky)}, \qquad z_i \sim \mathcal N(0, I_6),
+\]</div>
+<p>in the published coordinates, and converted exactly to Keplerian elements (equinoctial: e = √(h² + k²), ϖ = atan2(h, k),
+i = 2 atan √(p² + q²), Ω = atan2(p, q), ω = ϖ − Ω, M = λ − ϖ; cometary: a = q/(1 − e), M = k a^−3/2 (t − t_p);
+Cartesian: the two-body map with μ = k², the phase from the argument of latitude, so a circular orbit keeps it). L is
+computed from the correlation matrix (a covariance of a good orbit has a
+condition number of 10¹³–10¹⁹ in its raw units). A draw that is no bound ellipse (e &lt; 0, e ≥ 1 or a ≤ 0) is kept in
+the ensemble (<code>valid</code> False), never redrawn, and never integrated: it is no observation of any status, so it is left
+out of the shares. When such draws are more than <code>CLONES_MAX_INVALID</code> (5 %) of the sample, the Gaussian is no usable
+model of the orbit's uncertainty (a linear covariance of a 1-day arc: SBDB gives 2010 CG236 σ_e = 13, all 100 draws
+unbound; 2010 DH65 83 of 100) and its clones.csv row gets no shares at all (<code>cloud_usable</code> False).</p>
+<p>Each clone's <span class="arithmatex">\(d^2 = \Delta X^{\mathsf T} C^{-1} \Delta X = \lvert z\rvert^2\)</span> is stored: it follows <span class="arithmatex">\(\chi^2\)</span> with 6 degrees of freedom. When float64 finds C singular
+(Cholesky fails), the eigen factor keeps its <code>rank</code> modes (<code>Ensemble.rank</code>, in the JSON as <code>covariance_rank</code>) and d² is
+the pseudo-inverse distance ΔXᵀ C⁺ ΔX, χ² with <code>rank</code> degrees of freedom. In six dimensions the "3σ"
+ellipsoid d ≤ 3 holds only 82.6 % of the clones (P(χ²₆ ≤ 9) = 1 − e^−4.5 (1 + 4.5 + 4.5²/2)); 95 % lie within d ≤ 3.55.
+The draws are not truncated.</p>
+<p>The draws of a body are seeded by (<code>CLONES_SEED</code>, crc32(name)) and prefix-stable: the first 100 of 400 clones are the
+100 clones.</p>
+<h2 id="why-the-covariances-own-epoch">Why the covariance's own epoch<a class="headerlink" href="#why-the-covariances-own-epoch" title="Permanent link">&para;</a></h2>
+<p><code>.eq1</code> is the <code>.eq0</code> covariance propagated <strong>linearly</strong>, C₁ = J C₀ Jᵀ. For an NEA observed over a short arc years ago
+this no longer describes the orbits: for 2013 RZ53 (a 3-day arc in 2013) σ_a grows 47 times and σ_λ 359 times from
+<code>.eq0</code> to <code>.eq1</code>, through Earth encounters a linear map does not follow, and the <code>.eq1</code> matrix is numerically indefinite.
+The clones are drawn where the fit was made and each one is integrated to the run's date (IAS15, the run's planets,
+<code>propagate.py</code>; the nominal alone, the clones together); all of them then start together. Hence the defaults <code>.eq0</code> for
+NEODyS, the solution epoch for SBDB, and MPC refused for U ≥ 3 (MPC publishes the covariance only at its standard
+epoch; U ≥ 3 is a conservative policy, not a physical boundary). For numbered main-belt asteroids <code>.eq1</code> is fine and
+needs no integration (its epoch is AstDyS's catalog epoch).</p>
+<p>Any gap between the covariance's epoch and the run's date is crossed: up to 10⁻⁴ d (8.6 s) on the two-body ellipses
+(5 s already move 463's mean anomaly by 3.8 σ_λ), beyond that by integration. clones.csv records the span
+(<code>propagation_days</code>) and the way (<code>propagation</code>: none, kepler, ias15). The integration was validated against a
+provider's own propagation only for MPC elements over 138 days (<a href="../config/#minor-planet-center-sourcempc">Configuration</a>, <code>MPC_EPOCH_POLICY</code>); with
+<code>MPC_PROPAGATE_MAX_DAYS</code> set, a longer span of the clones gets a warning (not a refusal). A timezone-aware run date is
+taken as its UTC value, the same instant for the planets and the clones.</p>
+<p>The carried cloud is in the package's model: no relativity, no asteroid perturbers, no non-gravitational force. A body
+added from another source (the short forms) can then lie off its cloud: <code>nominal_offset_sigma</code> in clones.csv is
+max(|Δa|/sd(a), |Δλ|/sd(λ)) of the body against its clones at the date, with a warning above 3.</p>
+<p><strong>Non-gravitational parameters</strong> (Yarkovsky A2, comet-like A1–A3) are not modeled: the orbital 6×6 block of the covariance
+(the marginal over them) is used, a warning is logged and clones.csv says so (<code>nongrav</code>).</p>
+<p><strong>Main belt.</strong> A numbered main-belt asteroid has σ_a ~ 10⁻⁹ au, orders of magnitude below any resonance width: its
+clones differ only through chaos, and a regular orbit gives the nominal's verdict to every clone.</p>
+<h2 id="how-many-clones">How many clones<a class="headerlink" href="#how-many-clones" title="Permanent link">&para;</a></h2>
+<p>A share k/N is a binomial estimate; its 95 % interval is Wilson's score interval (Wilson 1927), with <span class="arithmatex">\(\hat p = k/N\)</span>
+and <span class="arithmatex">\(z = 1.96\)</span>:</p>
+<div class="arithmatex">\[
+\text{center} = \frac{\hat p + z^2/2N}{1 + z^2/N}, \qquad
+\text{half-width} = \frac{z}{1 + z^2/N}\sqrt{\frac{\hat p(1 - \hat p)}{N} + \frac{z^2}{4N^2}},
+\]</div>
+<p>which stays within [0, 1] and is not empty at 0/N or N/N.</p>
+<table>
+<thead>
+<tr>
+<th>N</th>
+<th>half-width at p = 0.5</th>
+<th>0 of N: upper bound</th>
+<th>use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100 (default)</td>
+<td>±10 %</td>
+<td>3.7 %</td>
+<td>resonant, split or not</td>
+</tr>
+<tr>
+<td>400</td>
+<td>±5 %</td>
+<td>0.95 %</td>
+<td>the share itself is the result</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>±3 %</td>
+<td>0.38 %</td>
+<td>rare outcomes</td>
+</tr>
+</tbody>
+</table>
+<p>Integration is cheap (about 0.04 s per clone per 10 kyr with SABA); the classification is not: 1–2 CPU-min per clone and
+resonance for a 1-Myr record. Choose the span and the output step with that in mind.</p>
+<h2 id="how-a-run-treats-them">How a run treats them<a class="headerlink" href="#how-a-run-treats-them" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The nominal is an ordinary body of the run: in its own simulation, as without clones, so its verdict does not change.</li>
+<li>The clones <code>&lt;name&gt;~c001</code>, ... are test particles run after the ordinary bodies by the batch workers, <code>CLONES_BATCH</code>
+  (20) per REBOUND simulation, on <code>BATCH_N_CORES</code> processes. Each has its rows in summary.csv and, by <code>SAVE</code>, its data
+  files; its own figures only with <code>CLONES_PLOT_EACH=True</code>.</li>
+<li>In a find (<code>resonances.find(..., clones=N)</code> or <code>add_ensemble(ens)</code> without resonances), every clone gets the union of
+  the MMR candidates of the whole cloud (a clone may sit in a resonance the nominal never visits); the nominal keeps its
+  own, so its rows and the <code>OUTPUT_STEP=auto</code> step planned from them are those of a run without clones. The clones run
+  at that step; a clone-only row it undersamples is flagged by the analysis' own sampling caps.</li>
+</ul>
+<h2 id="output">Output<a class="headerlink" href="#output" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>clones.csv</code> (top of <code>save_path</code>), one row per body and resonance: <code>n_clones</code>, <code>n_classified</code>, <code>n_missing</code>,
+  <code>n_draw_invalid</code> (draws that are no bound orbit, not integrated), <code>f_draw_invalid</code> (their share of <code>n_clones</code>),
+  <code>cloud_usable</code> (<code>f_draw_invalid</code> ≤ <code>CLONES_MAX_INVALID</code>); for each status <code>n_&lt;status&gt;</code>, <code>f_&lt;status&gt;</code>,
+  <code>f_&lt;status&gt;_lo</code>, <code>f_&lt;status&gt;_hi</code> (Wilson 95 %); <code>modal_status</code>, <code>modal_share</code>; <code>nominal_status</code>,
+  <code>nominal_confidence</code>, <code>nominal_agreement</code> (share of clones with the nominal's status, with <code>_lo</code>, <code>_hi</code>: a diagnostic,
+  the nominal has no special weight); <code>nominal_offset_sigma</code>; <code>source</code>, <code>product</code> (eq0, eq1, sbdb, get-orb), <code>epoch_mjd</code>
+  (the covariance's), <code>run_date_mjd</code>, <code>propagated</code>, <code>propagation</code> (none, kepler, ias15), <code>propagation_days</code> (run date
+  − epoch), <code>seed</code>, <code>nongrav</code>. The shares' denominator is <code>n_classified</code>: the bound clones with a verdict (the
+  unbound draws are not in it, and <code>invalid</code> is only the classifier's verdict on a clone's record; clones without a
+  verdict are <code>n_missing</code>, left out). A row with <code>cloud_usable</code> False keeps its counts but its shares, modal status and
+  nominal agreement are empty. A kinematic Lidov-Kozai libration and one without
+  a gate verdict stay apart (<a href="../physics/status-tree/#legacy-integer-codes">why</a>).</li>
+<li><code>data/ensemble-&lt;name&gt;.csv</code> and <code>.json</code>: every draw (clone index and name, Keplerian elements at the covariance's
+  epoch, <code>valid</code>, <code>d2</code>, the draw in the fit's coordinates <code>x_&lt;label&gt;</code>, the elements at the run's date <code>&lt;element&gt;_start</code>)
+  and the orbit solution with its provenance. <code>resonances.Ensemble.load</code> reads it back (to the bit).</li>
+<li><code>data/ensemble-&lt;name&gt;-results.npz</code> (with <code>SAVE</code> on, kept): every clone's verdict per row (status, confidence,
+  angle_status, reason, libration_origin), its initial a, half-widths and derived rows, and the angles of the clones and
+  of the nominal thinned to 2000 points for the figure (years float64, degrees float32: a thumbnail, never analyzed).
+  Restore reads it (<a href="#resume-and-restore">below</a>).</li>
+<li><code>figures/&lt;layout&gt;/&lt;name&gt;-&lt;resonance&gt;-clones.png</code> (plot kind <code>clones</code>, also drawn with <code>combined</code>; in the folder of the
+  nominal's row; drawn when <code>PLOT</code> selects the nominal's row or any clone's): (a) the angle of every clone colored by its
+  status, the nominal in black; (b) the status of every clone against its initial a (a jitter separates the points
+  vertically), with the catalog resonant axis <span class="arithmatex">\(a_{\rm res}\)</span> of an MMR (dotted, legend <code>a_res (catalog)</code>) and
+  <span class="arithmatex">\(a_{\rm res}\)</span> ± the median libration half-width the clones' episodes measured (dashed); (c) the shares with their
+  Wilson intervals, the nominal's status starred (<a href="../reading-figures/#clones">How to read the figures</a>).</li>
+</ul>
+<p>The settings (<code>CLONES</code>, <code>CLONES_SOURCE</code>, <code>CLONES_EPOCH</code>, <code>CLONES_SEED</code>, <code>CLONES_BATCH</code>, <code>CLONES_PLOT_EACH</code>,
+<code>CLONES_CACHE_DIR</code>) are listed in <a href="../config/#clone-options">Configuration</a>.</p>
+<h2 id="resume-and-restore">Resume and restore<a class="headerlink" href="#resume-and-restore" title="Permanent link">&para;</a></h2>
+<p><strong>Resume.</strong> A run with clones keeps one checkpoint for the ordinary bodies and the clones, <code>clones_state/</code> in
+<code>save_path</code>, and removes it (and <code>simulation_state.json</code>) only after the whole run has succeeded. An interrupted run is
+resumed by running the same script again with the same <code>save_path</code> (<code>resume_enabled</code>, on by default):</p>
+<ul>
+<li>each finished clone batch left <code>clones_state/batch-&lt;i&gt;.npz</code> (published atomically; checked when read: run, members,
+  rows, numbers): it is not run again; a batch without a valid file runs again and its old rows are replaced;</li>
+<li>a finished ordinary part is not run again: in one simulation its verdicts are read back from summary.csv (this needs
+  <code>save_summary</code>; without it the ordinary bodies run again), in batches through <code>simulation_state.json</code>. The nominal
+  is never moved into another grouping (its trajectory depends on its simulation's particles);</li>
+<li>the run's identity is checked first: the ordinary bodies with their elements and grouping, the planets' initial
+  state, the settings, the clone settings and batches, each ensemble (the provider's file sha256, the solution, the
+  draws, seed and rank) and the clones' starting elements at the date, which <code>clones_state/starts.npz</code> keeps and a
+  resume compares bit for bit; and the versions of resonances, rebound and numpy. Any difference raises <code>ValueError</code>
+  saying what changed (an orbit solution fetched again with <code>orbit_solution(..., refresh=True)</code> is another cloud). To
+  start over, remove <code>clones_state/</code>.</li>
+</ul>
+<p><strong>Restore.</strong> <code>simulation.json</code> lists the ensembles (<code>simulation.ensembles</code>, <a href="../serialization/">Serialization</a>);
+<code>SimulationSerializer.restore</code> rebuilds <code>sim.ensembles</code> (names, starting elements, the stored verdicts and thumbnails)
+and <code>sim.clone_summary</code> (clones.csv), and <code>ensemble_run.plot_ensembles</code> draws the figure again. With <code>SAVE</code> off there
+is no manifest: only <code>sim.clone_summary</code> comes back (a warning). <code>recompute_librations=True</code> reclassifies the nominal
+from its saved series; the clones keep their stored verdicts (<code>clone_verdicts = 'stored'</code>), and the nominal columns of
+clones.csv (<code>nominal_status</code>, <code>nominal_confidence</code>, <code>nominal_agreement</code>) and the nominal's summary.csv rows are
+rewritten in the run's folder from the one new verdict. The clones are not reclassified even when their series were
+saved: a <code>SAVE</code> mode other than <code>all</code> keeps the series of the clones its status filter selected, so recomputing only
+those would bias the shares, and each clone costs as much analysis as the nominal.</p>
+<h2 id="limits">Limits<a class="headerlink" href="#limits" title="Permanent link">&para;</a></h2>
+<p>Not done: a clone's own series are not reclassified by a restore; no line-of-variations sampling or statistical ranging
+for orbits too weak for a Gaussian; no weighted ensembles.</p>
+<p>No shortcut that gives every clone the nominal's verdict without classifying it. A small spread of
+the cloud in a does not certify that every clone shares the nominal's verdict: chaos inside a resonance separates
+clones of any spread over a long enough span (33128 6N-7 librates with a Lyapunov time of about 4 kyr), the classifier
+has thresholds a tiny difference can cross, and a nominal from another source can lie off its own cloud
+(<code>nominal_offset_sigma</code>). And integrating the clones is cheap next to classifying them, so skipping the integration
+would save little.</p>
+<p>References: Milani, A., Chesley, S. R. &amp; Valsecchi, G. B. (2000), Planet. Space Sci. 48, 945; Milani, A. et al. (2005),
+A&amp;A 431, 729 (multiple solutions, the line of variations); Broucke, R. A. &amp; Cefola, P. J. (1972), Celest. Mech. 5, 303
+(equinoctial elements); Wilson, E. B. (1927), JASA 22, 209; Newcombe, R. G. (1998), Stat. Med. 17, 857.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../lidov-kozai/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Lidov-Kozai resonances">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Lidov-Kozai resonances
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../dry-run/" class="md-footer__link md-footer__link--next" aria-label="Next: Dry-run">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Dry-run
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

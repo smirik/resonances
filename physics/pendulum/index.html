@@ -1,0 +1,2136 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python package that finds mean-motion, secular and Lidov-Kozai resonances of small bodies in the Solar system and decides, from a numerical integration, whether the resonant angle librates and why.">
+      
+      
+        <meta name="author" content="Evgeny Smirnov">
+      
+      
+        <link rel="canonical" href="https://smirik.github.io/resonances/physics/pendulum/">
+      
+      
+        <link rel="prev" href="../overview/">
+      
+      
+        <link rel="next" href="../signal/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>The resonant pendulum - resonances</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-resonant-pendulum" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="resonances" class="md-header__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            resonances
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              The resonant pendulum
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="resonances" class="md-nav__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    resonances
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulations, bodies, resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using with AI agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How the status is determined
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How the status is determined
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The resonant pendulum
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The resonant pendulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-resonant-angle-and-its-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The resonant angle and its rate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-averaged-potential-and-lagranges-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The averaged potential and Lagrange's equation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-pendulum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The pendulum
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-strong-must-the-resonance-be" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How strong must the resonance be?
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How strong must the resonance be?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#three-body-resonances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three-body resonances
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#co-orbitals-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Co-orbitals (1:1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../signal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    From the integration to the angle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What the angle does
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../response/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is it this resonance?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../status-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The status tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../confidence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Confidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secular-zlk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular and Lidov-Kozai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resonance matrices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../secular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lidov-kozai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lidov-Kozai resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clones (virtual asteroids)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reading-figures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to read the figures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../serialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serialization and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coherence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-spectral coherence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../free-elements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Free elements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../libration-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    References
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-resonant-angle-and-its-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The resonant angle and its rate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-averaged-potential-and-lagranges-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The averaged potential and Lagrange's equation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-pendulum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The pendulum
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-strong-must-the-resonance-be" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How strong must the resonance be?
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How strong must the resonance be?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#three-body-resonances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three-body resonances
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#co-orbitals-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Co-orbitals (1:1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="the-resonant-pendulum">The resonant pendulum<a class="headerlink" href="#the-resonant-pendulum" title="Permanent link">&para;</a></h1>
+<p>This page sets out the physical model every MMR test is built on: the resonant angle, the identity that ties its
+rate to the semi-major axis, the averaged potential that drives <span class="arithmatex">\(a\)</span>, and the pendulum that results. The tests
+themselves are on <a href="../response/">Is it this resonance?</a>. Notation is that of the <a href="../overview/#notation">Overview</a>.</p>
+<p>Three layers must be kept apart. The <strong>classical model</strong> (this page) is textbook celestial mechanics. The
+<strong>measurement</strong> is what the package can read from a finite saved trajectory. The <strong>classification</strong> turns
+measurements into statuses with thresholds that are conventions, all of them settings.</p>
+<h2 id="the-resonant-angle-and-its-rate">The resonant angle and its rate<a class="headerlink" href="#the-resonant-angle-and-its-rate" title="Permanent link">&para;</a></h2>
+<p>A mean-motion resonance of the body with one or two planets has the angle (Murray &amp; Dermott 1999, eq. 8.18, p. 329;
+for three-body angles Nesvorný &amp; Morbidelli 1998, eqs. 1–2, p. 3029)</p>
+<div class="arithmatex">\[
+\sigma = k\lambda + \sum_j k_j\lambda_j + p\varpi + \sum_j p_j\varpi_j + v\Omega + \sum_j v_j\Omega_j ,
+\]</div>
+<p>with integer coefficients that obey the d'Alembert rules: the coefficients sum to zero, and the nodal ones sum to
+an even number. The catalog name <code>4J-2S-1</code> stands for <span class="arithmatex">\(4\lambda_J - 2\lambda_S - \lambda\)</span> plus the perihelion term
+that completes the sum (<a href="../../matrix/">Resonance matrices</a>). Its rate (M&amp;D eq. 8.22, p. 331) is modeled as</p>
+<div class="arithmatex">\[
+\nu(a) = k\,n(a) + \sum_j k_j n_j + \nu_\text{slow}, \qquad n(a) = 2\pi a^{-3/2}\ \text{rad/yr},
+\]</div>
+<p>where <span class="arithmatex">\(n_j\)</span> are the planets' mean motions <strong>measured in the run</strong> (the slope of the saved <span class="arithmatex">\(\lambda_j\)</span>, else a table
+value) and <span class="arithmatex">\(\nu_\text{slow} = p\dot\varpi + \sum_j p_j\dot\varpi_j + \dots\)</span> collects the measured precession rates.
+This is a <em>rate model</em>: the slow terms are held fixed and <span class="arithmatex">\(n(a)\)</span> is Kepler's law, so it is not an exact identity at
+every sample.</p>
+<p>The <strong>exact resonance</strong> <span class="arithmatex">\(a_*\)</span> solves <span class="arithmatex">\(\nu(a_*) = 0\)</span>. Near it the rate is linear in <span class="arithmatex">\(a\)</span>:</p>
+<div class="arithmatex">\[
+\dot\sigma \simeq c\,(a - a_*), \qquad c = \frac{\partial\nu}{\partial a} = -\frac{3kn}{2a}.
+\]</div>
+<p>This is the <strong>identity</strong>. Its physical content is simple: <span class="arithmatex">\(\sigma\)</span> can turn back only when <span class="arithmatex">\(a\)</span> crosses <span class="arithmatex">\(a_*\)</span>. A
+libration of <span class="arithmatex">\(\sigma\)</span> therefore needs an oscillation of <span class="arithmatex">\(a\)</span> about <span class="arithmatex">\(a_*\)</span> with the right amplitude and the right phase.
+Most catalog angles have <span class="arithmatex">\(k&lt;0\)</span>, hence <span class="arithmatex">\(c&gt;0\)</span>. A retrograde orbit (<span class="arithmatex">\(i &gt; 90°\)</span>) uses its own angle convention built
+from <span class="arithmatex">\(\Omega,\omega,M\)</span> (<a href="../../matrix/">Resonance matrices</a>).</p>
+<h2 id="the-averaged-potential-and-lagranges-equation">The averaged potential and Lagrange's equation<a class="headerlink" href="#the-averaged-potential-and-lagranges-equation" title="Permanent link">&para;</a></h2>
+<p>The planet perturbs the body through the disturbing function, direct plus indirect part
+(M&amp;D eq. 6.13, p. 227):</p>
+<div class="arithmatex">\[
+R = G m_P\left(\frac{1}{\lvert\mathbf r - \mathbf r_P\rvert} - \frac{\mathbf r\cdot\mathbf r_P}{r_P^3}\right) = G m_P\,D .
+\]</div>
+<p>Averaged over the fast angle at fixed <span class="arithmatex">\(\sigma\)</span> (the planet's longitude runs over <span class="arithmatex">\(\lvert k\rvert\)</span> turns while
+<span class="arithmatex">\(\sigma\)</span> and the slow elements are held), it becomes a function <span class="arithmatex">\(\bar R(\sigma)\)</span> (Gallardo 2006, eqs. 1 and 6, p. 30).
+The package computes this average by quadrature, with both orbits three-dimensional and the planet on its
+eccentric, inclined orbit (its saved elements when the planet was saved, else its mean J2000 ellipse; see
+<a href="#how-strong-must-the-resonance-be">below</a>); no expansion in <span class="arithmatex">\(e\)</span>, <span class="arithmatex">\(i\)</span> or the semi-major-axis ratio is made. Lagrange's equation for <span class="arithmatex">\(a\)</span>
+(M&amp;D eq. 6.145, p. 251), at first order in the planet's mass, gives</p>
+<div class="arithmatex">\[
+\dot a = \frac{2k}{na}\,\frac{\partial\bar R}{\partial\sigma}, \qquad
+\ddot\sigma = k\dot n = -\frac{3k^2}{a^2}\,\frac{\partial\bar R}{\partial\sigma} \equiv -V'(\sigma),
+\qquad V = \frac{3k^2}{a^2}\bar R ,
+\]</div>
+<p>using <span class="arithmatex">\(\dot n = -\tfrac32 (n/a)\,\dot a\)</span>. With the positive disturbing function used here, <strong>stable centers are the
+minima of <span class="arithmatex">\(\bar R\)</span></strong> (the common Hamiltonian convention writes the perturbation as <span class="arithmatex">\(-R\)</span>; the physics is the same).
+The minimum the body occupies, <span class="arithmatex">\(\sigma_c\)</span>, need not be at <span class="arithmatex">\(0\)</span> or <span class="arithmatex">\(\pi\)</span>: exterior <span class="arithmatex">\(1{:}n\)</span> resonances have asymmetric
+wells, and the minima move when <span class="arithmatex">\(e\)</span>, <span class="arithmatex">\(i\)</span>, <span class="arithmatex">\(\omega\)</span> or the planet's perihelion change (Gallardo 2006, §3).</p>
+<p>The average is frozen at the instantaneous slow elements and taken at first order in the mass. It fails at a close
+encounter (inside a few Hill radii of the planet), where the package does not use it.</p>
+<h2 id="the-pendulum">The pendulum<a class="headerlink" href="#the-pendulum" title="Permanent link">&para;</a></h2>
+<p>Near a single well, <span class="arithmatex">\(\ddot\sigma = -V'(\sigma)\)</span> is a pendulum. Measured from its center, <span class="arithmatex">\(\psi = \sigma - \sigma_c\)</span>,
+the cosine pendulum has (M&amp;D eqs. 8.45–8.52, pp. 335–337)</p>
+<div class="arithmatex">\[
+V = -\omega_0^2\cos\psi, \qquad
+h = \frac{\dot\psi^2}{4\omega_0^2} + \sin^2\frac{\psi}{2} ,
+\]</div>
+<p>with <span class="arithmatex">\(h&lt;1\)</span> for libration, <span class="arithmatex">\(h = 1\)</span> on the separatrix and <span class="arithmatex">\(h&gt;1\)</span> for circulation. The package's energy variable is,
+for any fitted <span class="arithmatex">\(V\)</span>,</p>
+<div class="arithmatex">\[
+h = \frac{\dot\sigma^2/2 + V(\sigma) - V_\text{min}}{V_\text{max} - V_\text{min}} ,
+\]</div>
+<p>normalized by the <strong>global</strong> minimum and maximum of <span class="arithmatex">\(V\)</span>. For one harmonic this is the expression above. With two
+harmonics and two wells the two maxima alternate with the wells, so both wells are bounded by the lower maximum, the
+barrier between them, which lies below <span class="arithmatex">\(V_\text{max}\)</span>: their separatrix sits at <span class="arithmatex">\(h&lt;1\)</span>, and <span class="arithmatex">\(h&lt;1\)</span> alone does not say
+which well the orbit is in. <span class="arithmatex">\(h = 1\)</span> stays the boundary of circulation: a loop between the barrier and <span class="arithmatex">\(V_\text{max}\)</span>
+librates around both wells; only <span class="arithmatex">\(E &gt; V_\text{max}\)</span> lets the angle turn. The rules that read <span class="arithmatex">\(h\)</span> against 1 (crossings,
+the filter guard, the turns' zone edge <span class="arithmatex">\(h_\text{hi}\)</span>) mean circulation, and the global normalization is the right one
+there. The predicted period of a cycle is taken in the well
+that holds it (the basin of the cycle's fastest sample), up to that well's own barrier, the lower of the two maxima
+around it, and so is its action (below).</p>
+<p><strong>Period.</strong> A libration of amplitude <span class="arithmatex">\(A\)</span> (half the peak-to-peak swing) has the period</p>
+<div class="arithmatex">\[
+P = \frac{4}{\omega_0}\,\mathsf K(m) = T_0\,F(A), \qquad m = \sin^2\frac A2, \qquad F(A) = \frac{2}{\pi}\mathsf K(m),
+\]</div>
+<p>with <span class="arithmatex">\(T_0 = 2\pi/\omega_0\)</span> the small-amplitude period and <span class="arithmatex">\(\mathsf K\)</span> taken with parameter <span class="arithmatex">\(m\)</span> (some authors use the
+modulus <span class="arithmatex">\(k\)</span>, <span class="arithmatex">\(m = k^2\)</span>). Values: <span class="arithmatex">\(F(30°) = 1.017\)</span>, <span class="arithmatex">\(F(90°) = 1.180\)</span>, <span class="arithmatex">\(F(120°) = 1.373\)</span>, <span class="arithmatex">\(F(150°) = 1.762\)</span>,
+<span class="arithmatex">\(F(170°) = 2.44\)</span>. The period grows without bound at the separatrix. The package converts each observed cycle into
+a small-amplitude period, <span class="arithmatex">\(T_0 = P_i/F(A_i)\)</span>, and takes the median over the cycles of an episode.</p>
+<p><img alt="Phase portraits of the pendulum" src="../../img/physics/pendulum_portrait.png" />
+<em>Libration (closed curves), circulation (open curves) and the separatrix, in <span class="arithmatex">\((\sigma,\dot\sigma)\)</span> and in
+<span class="arithmatex">\((\sigma, a)\)</span>; the half-width <span class="arithmatex">\(\Delta a\)</span> of the resonance is the separatrix's reach in <span class="arithmatex">\(a\)</span>.</em></p>
+<p><img alt="F(A) and P(A)/T0" src="../../img/physics/period_factor.png" />
+<em>The period factor <span class="arithmatex">\(F(A) = P/T_0\)</span>.</em></p>
+<p><strong>Width.</strong> Through the identity, <span class="arithmatex">\(\dot\sigma = c\,(a - a_*)\)</span> maps the separatrix into a band of <span class="arithmatex">\(a\)</span>. For the cosine
+pendulum the half-width and the half-excursion at amplitude <span class="arithmatex">\(A\)</span> are (M&amp;D eqs. 8.57–8.58, p. 338)</p>
+<div class="arithmatex">\[
+\Delta a = \frac{2\omega_0}{\lvert c\rvert}, \qquad \delta a(A) = \Delta a\,\sin\frac A2 .
+\]</div>
+<p>This is the <em>cosine-equivalent</em> half-width, set by the curvature of the well. For a well of any shape the physical
+half-width is</p>
+<div class="arithmatex">\[
+\Delta a = \frac{\sqrt{2\,(E_\text{sep} - V_\text{min})}}{\lvert c\rvert} ,
+\]</div>
+<p>with <span class="arithmatex">\(E_\text{sep}\)</span> the well's own barrier. The two differ for a non-cosine well: for <span class="arithmatex">\(V = -\cos 2\sigma\)</span> and
+<span class="arithmatex">\(\lvert c\rvert = 1\)</span> the curvature formula gives 4, the true half-width 2. The figure's "width in <span class="arithmatex">\(a\)</span>" row uses the
+cosine-equivalent scale.</p>
+<p><strong>Action.</strong> The action of a libration of energy <span class="arithmatex">\(E\)</span> in a well bounded by <span class="arithmatex">\(\psi_-\)</span> and <span class="arithmatex">\(\psi_+\)</span> is</p>
+<div class="arithmatex">\[
+J(E) = \frac{1}{2\pi}\oint p\,d\psi = \frac{1}{\pi}\int_{\psi_-}^{\psi_+}\sqrt{2\,(E - V(\psi))}\;d\psi ,
+\qquad \frac{dJ}{dE} = \frac{P}{2\pi}.
+\]</div>
+<p>For the cosine pendulum <span class="arithmatex">\(J_s = 8\omega_0/\pi\)</span> at the separatrix and (Wisdom 1985, §III, p. 277, with his modulus
+translated to the parameter <span class="arithmatex">\(m\)</span>)</p>
+<div class="arithmatex">\[
+\frac{J}{J_s} = \mathsf E(h) - (1-h)\,\mathsf K(h) .
+\]</div>
+<p>At <span class="arithmatex">\(\omega_0 = 1\)</span>, <span class="arithmatex">\(h = 0.5\)</span> a direct quadrature gives <span class="arithmatex">\(J = 1.0787\)</span>, <span class="arithmatex">\(J_s = 2.5465\)</span>, <span class="arithmatex">\(J/J_s = 0.4236\)</span>, as the
+closed form does. For a fitted potential with two harmonics the package evaluates the same integrals numerically
+in the well the cycle occupies (the basin of its fastest sample, as for the period), up to the lower of that well's
+two bounding maxima, with <span class="arithmatex">\(J_s\)</span> taken at that barrier: the action is the area of the cycle's own loop over <span class="arithmatex">\(2\pi\)</span>
+(M&amp;D 1999, eq. 8.204, p. 376) and <span class="arithmatex">\(J_s\)</span> that of the separatrix that bounds it. With two harmonics both wells of a
+double well share their two maxima, have one period at one energy, and differ in action by a constant,
+<span class="arithmatex">\(J_\text{deep}(E) - J_\text{shallow}(E) = J_\text{deep}(V_\text{shallow min})\)</span> (<span class="arithmatex">\(dJ/dE = P/2\pi\)</span> in both). The
+deepest well's ratio of a shallow-well cycle, <span class="arithmatex">\((J + C)/(J_s + C)\)</span>, would always be too large: for
+<span class="arithmatex">\(V = -\cos\sigma + 0.6\cos2\sigma - 0.25\sin\sigma\)</span> at <span class="arithmatex">\(h = 0.18\)</span> it is 0.66 where the cycle's own is 0.10. In a slowly
+changing well the action is the adiabatic invariant: the amplitude may change, the action does not, except near the
+separatrix (Wisdom 1985, pp. 274, 279).</p>
+<p><strong>Above a lower saddle.</strong> In a potential of several wells a cycle whose energy exceeds its well's barrier but not
+<span class="arithmatex">\(V_\text{max}\)</span> librates on one loop around both wells. That loop has no single-well <span class="arithmatex">\(J/J_s\)</span>: the package leaves it
+undefined (<code>sep_cycle_J</code> nan, topology <code>merged_wells</code> in <code>sep_cycle_topology</code>; <code>rotation</code> above <span class="arithmatex">\(V_\text{max}\)</span>) and
+reports the loop's own action <span class="arithmatex">\(J_\text{loop}\)</span>, the same integral between the loop's turning points
+(<code>sep_cycle_J_loop_rad2_yr</code>), with <span class="arithmatex">\(dJ_\text{loop}/dE = P_\text{loop}/2\pi\)</span> (<code>sep_cycle_dJdE_loop_yr</code>), finite
+between the saddles. For <span class="arithmatex">\(V = -\cos\sigma + \cos2\sigma\)</span> at <span class="arithmatex">\(E = 1\)</span> the turning points are
+<span class="arithmatex">\(\pm\arccos\big((1 - \sqrt{17})/4\big) = \pm 2.4667\)</span>, <span class="arithmatex">\(J_\text{loop} = 2.6051\)</span> and <span class="arithmatex">\(P_\text{loop} = 6.8905\)</span>; just above
+the barrier <span class="arithmatex">\(J_\text{loop}\)</span> is the sum of the two lobes' actions. Clipping the ratio to 1 there would
+put such a cycle in the separatrix zone. A libration whose mean energy reaches the top of a potential of one well keeps
+<span class="arithmatex">\(J/J_s = 1\)</span> (the separatrix, within the energy's scatter).</p>
+<details class="info">
+<summary>Above the separatrix, and the code</summary>
+<p>For the cosine pendulum the revolution period above the separatrix (<span class="arithmatex">\(h &gt; 1\)</span>) is
+<span class="arithmatex">\(2\mathsf K(1/h)/(\omega_0\sqrt h)\)</span>, and the ratio of the slowest to the mean rate of a revolution is
+<span class="arithmatex">\(r_\text{pend}(h) = \frac{2}{\pi}\sqrt{(h-1)/h}\,\mathsf K(1/h)\)</span>. In the code, <span class="arithmatex">\(h\)</span> is <code>Potential.energy_h</code>; the
+well of a cycle is <code>pendulum.occupied_well</code>, its barrier <code>pendulum.well_separatrix</code>, its period
+<code>pendulum.cycle_period</code>; <span class="arithmatex">\(d(J/J_s)/dh\)</span> uses that well's <span class="arithmatex">\(J_s\)</span> (<code>CycleEnergy.well_rad</code>, empty for the deepest
+well). The topology is <code>pendulum.libration_topology</code>, <span class="arithmatex">\(J_\text{loop}\)</span> <code>pendulum.loop_action_through</code>. <code>pendulum.py</code> keeps both the cosine-equivalent and the physical half-width.</p>
+</details>
+<h2 id="how-strong-must-the-resonance-be">How strong must the resonance be?<a class="headerlink" href="#how-strong-must-the-resonance-be" title="Permanent link">&para;</a></h2>
+<p>The pendulum frequency fixes the strength of the resonance. Writing <span class="arithmatex">\(\omega_0 = \lvert k\rvert n\sqrt{3\mu_\text{eff}}\)</span>,</p>
+<div class="arithmatex">\[
+\mu_\text{eff,th} = \frac{a\,\bar R''(\sigma_c)}{G M_\odot} = \mu_P\,a\,\bar D''(\sigma_c)
+\qquad\text{(theory, from the averaged potential)},
+\]</div>
+<div class="arithmatex">\[
+\mu_\text{req} = \frac13\left(\frac{2\pi}{\lvert k\rvert\,n\,T_0}\right)^2
+= \frac13\left(\frac{P_\text{orb}}{\lvert k\rvert\,T_0}\right)^2
+\qquad\text{(required by the observed cycles)},
+\]</div>
+<p>with <span class="arithmatex">\(T_0\)</span> the median small-amplitude period of the decisive episode (<span class="arithmatex">\(P_i/F(A_i)\)</span> already corrects each cycle for its
+amplitude, so <span class="arithmatex">\(F\)</span> enters only once). In these units the cosine half-width is
+<span class="arithmatex">\(\Delta a = \tfrac43 a\sqrt{3\mu_\text{eff}}\)</span>.</p>
+<p>The <strong>curvature</strong>, not the first Fourier harmonic, is what sets the small-amplitude period, and the curvature is
+taken at the minimum whose basin holds the measured center. An evaluation counts only when the observed swing
+librates in that well (it contains <span class="arithmatex">\(\sigma_c\)</span> and does not pass over the global maximum of <span class="arithmatex">\(\bar R\)</span>). The theory is
+evaluated at <code>MMR_STRENGTH_SNAPSHOTS</code> = 3 times in the episode, so it is a range, not a number. When the planet was
+saved, each snapshot uses the simultaneous averaged elements of the body and the planet. Otherwise the planet's
+phase is unknown: its mean J2000 ellipse is turned about the ecliptic pole to <code>MMR_STRENGTH_UNSAVED_PLANET_PHASES</code>
+= 4 equally spaced orientations at each snapshot, and the range spans snapshot times and trial orientations
+(<code>str_planet_elements</code> = <code>mean_orbit_phase_scan</code> instead of <code>saved</code>). This route still gives a direct strength.</p>
+<p>At <strong>high order</strong> the resonant term is so weak (of order <span class="arithmatex">\(e^q\)</span> of <span class="arithmatex">\(D\)</span>, <span class="arithmatex">\(q\)</span> the order of the resonance,
+<a href="../overview/#notation">Overview</a>; not the sum of the slow coefficients of a multiplet member) that the curvature drowns in rounding. The
+package then computes the resonant harmonic itself in extended precision,</p>
+<div class="arithmatex">\[
+C = \left\langle D\,e^{-i\sigma}\right\rangle, \qquad \bar D(\sigma) = D_0 + 2\lvert C\rvert\cos(\sigma - \sigma_1) + \dots,
+\qquad \mu_\text{eff,th} = 2\,\mu_P\,a\,\lvert C\rvert ,
+\]</div>
+<p>since a term <span class="arithmatex">\(2\lvert C\rvert\cos\)</span> has curvature <span class="arithmatex">\(2\lvert C\rvert\)</span> at its minimum.</p>
+<details class="info">
+<summary>Extended precision: when and how</summary>
+<p><code>MMR_STRENGTH_MP</code> = <code>auto</code> switches to the harmonic when the double-precision profile is rounding (its curvature
+below <code>MMR_STRENGTH_DOUBLE_FLOOR</code> × <span class="arithmatex">\(\lvert D_0\rvert\)</span>). The harmonic is
+<span class="arithmatex">\(C = \langle D\,e^{-i(k_P\lambda_P + kM)}\rangle\)</span> over the two mean anomalies, a 2-D trapezoidal sum in mpmath
+(<code>MMR_STRENGTH_MP_*</code>) checked against two grids shifted by half a node.</p>
+</details>
+<p>The <strong>strength check</strong> compares the two: it passes when the range of <span class="arithmatex">\(\mu_\text{req}/\mu_\text{eff,th}\)</span> overlaps
+<span class="arithmatex">\([1/x, x]\)</span>, <span class="arithmatex">\(x\)</span> = <code>MMR_STRENGTH_CHECK_RATIO</code> = 10, and fails when the whole range lies outside. A ratio beyond
+<code>MMR_STRENGTH_IMPLAUSIBLE_RATIO</code> = 1000 either way is called <strong>implausible</strong>: the observed period would need a force a
+thousand times larger (or smaller) than the resonance can give (<a href="../response/#strength">Is it this resonance?</a>).
+If the potential is resolved but none of its evaluations has the observed swing librating in its well, the check
+<strong>fails</strong> (<code>centre_outside_well</code>), whatever the ratio: the range shown then covers every evaluation, also those outside
+the occupied well, and is a diagnostic only. Not measured: no episode, no stable well near the measured center, a quadrature that does not converge (nearly crossing
+orbits), or the body within <code>MMR_STRENGTH_MIN_DISTANCE_HILL</code> = 3 Hill radii of the planet at the center.</p>
+<h3 id="three-body-resonances">Three-body resonances<a class="headerlink" href="#three-body-resonances" title="Permanent link">&para;</a></h3>
+<p>A three-body term appears at second order in the masses (Morbidelli 2002, §9.3, p. 223; Nesvorný &amp; Morbidelli
+1998, §3, pp. 3031–3032). This implementation has <strong>no directly averaged three-body potential</strong>, and no center track
+for three-body angles; it uses only the order-of-magnitude scale</p>
+<div class="arithmatex">\[
+\mu_\text{scale} = \mu_i\,\mu_j\,e^q ,
+\]</div>
+<p>which omits the coefficient of the term (that coefficient can reach <span class="arithmatex">\(10^2\)</span>). The scale is used only when it is
+legal: the record's median <span class="arithmatex">\(e\)</span> below <code>MMR_STRENGTH_E_MAX</code> = 0.3 (the same median gives <span class="arithmatex">\(e\)</span> in <span class="arithmatex">\(e^q\)</span>) and no crossing of the term's planets. The check against it is a
+support only, never a physics measurement. A second-order term can be enhanced by a near two-body commensurability
+with one of its planets. Before calling a three-body strength implausible the package allows the generous
+small-divisor envelope</p>
+<div class="arithmatex">\[
+B = \frac{n}{\max\big(\lvert\Delta\rvert,\ 2\pi/\min(P, P_\text{cyc})\big)}, \qquad
+\text{residual} = \frac{\mu_\text{req}/\mu_\text{scale}}{B^2} ,
+\]</div>
+<p>with <span class="arithmatex">\(\Delta\)</span> the smallest rate of a nearby two-body angle of those planets. The strength is implausible only when the
+residual also stays <span class="arithmatex">\(\ge\)</span> 1000. The envelope is a diagnostic convention, not a bound on every three-body harmonic.</p>
+<details class="info">
+<summary>The small-divisor envelope in detail</summary>
+<p>The two-body angles searched are those of a planet of the term with order ≤ 20 and <span class="arithmatex">\(k_1 \le 60\)</span> whose rate
+<span class="arithmatex">\(\lvert\Delta\rvert\)</span> comes within <span class="arithmatex">\(1.5 \times 2\pi/P\)</span> somewhere in the record's range of <span class="arithmatex">\(a\)</span>
+(<code>strength.small_divisor_envelope</code>). The column <code>str_divisor_residual</code> is the residual above; <code>str_method</code> is
+<code>eq_scale</code> for this route.</p>
+</details>
+<details class="info">
+<summary>What the figure prints</summary>
+<p>Block A of the combined figure ("is <span class="arithmatex">\(\sigma\)</span> the own pendulum") shows
+<span class="arithmatex">\(T_{0,\text{th}} = 2\pi/(\lvert k\rvert n\sqrt{3\mu_\text{eff,th}})\)</span> against the observed <span class="arithmatex">\(T_0\)</span>, the ratio
+<span class="arithmatex">\(\mu_\text{req}/\mu_\text{eff,th} = (T_{0,\text{th}}/T_0)^2\)</span>, and the cosine-equivalent half-width
+<span class="arithmatex">\(2\omega_0/\lvert c\rvert = \tfrac43 a\sqrt{3\mu_\text{eff,th}}\)</span> against the swing of <span class="arithmatex">\(a\)</span> (B1). The width is a scale,
+not a bound for a non-cosine well; its tolerance is <span class="arithmatex">\(\sqrt x\)</span>, since the width goes as <span class="arithmatex">\(\sqrt\mu\)</span>.</p>
+</details>
+<h2 id="co-orbitals-11">Co-orbitals (1:1)<a class="headerlink" href="#co-orbitals-11" title="Permanent link">&para;</a></h2>
+<p>A 1:1 angle, <span class="arithmatex">\(\theta = \lambda - \lambda_P\)</span>, is not a cosine pendulum: its averaged potential is singular at
+<span class="arithmatex">\(\theta = 0\)</span> for <span class="arithmatex">\(e = i = 0\)</span> and far from harmonic over a horseshoe. The package averages the full direct plus
+indirect disturbing function over the planet's longitude at fixed <span class="arithmatex">\(\theta\)</span> (softened at
+<code>MMR_COORBITAL_SOFTENING_HILL</code> = 0.1 Hill radius) and writes, with <span class="arithmatex">\(\tilde R = a\bar R/(G m_P)\)</span> and
+<span class="arithmatex">\(\tilde F = a\langle\partial R/\partial\lambda\rangle/(G m_P)\)</span>,</p>
+<div class="arithmatex">\[
+\dot a = 2\mu\,n\,a\,\tilde F(\theta), \qquad \tfrac12\dot\theta^2 + 3\mu n^2\,\tilde R(\theta) = E .
+\]</div>
+<p>For a circular coplanar orbit (M&amp;D eqs. 3.178–3.179, p. 105)</p>
+<div class="arithmatex">\[
+\tilde R(\theta) = \frac{1}{2\lvert\sin(\theta/2)\rvert} - \cos\theta, \qquad
+\omega_\text{tad}^2 = 3\mu n^2\,\tilde R''(60°) = \frac{27}{4}\mu n^2 ,
+\]</div>
+<p>the small-mass limit of M&amp;D eq. 3.151 (p. 94). The minima at <span class="arithmatex">\(\theta = \pm 60°\)</span> hold <strong>tadpoles</strong> about <span class="arithmatex">\(L_4\)</span> and
+<span class="arithmatex">\(L_5\)</span>; <strong>horseshoes</strong> pass over the maximum at <span class="arithmatex">\(180°\)</span>; an eccentric or inclined orbit opens a well about <span class="arithmatex">\(\theta = 0\)</span>
+where <strong>quasi-satellites</strong> librate, much faster. A horseshoe that becomes a quasi-satellite without circulating is one
+compound libration (<a href="../gallery/#coorbital-regime-change">Gallery</a>).</p>
+<p>The shortest co-orbital libration the analysis keeps is <code>MMR_COORBITAL_PERIOD_FLOOR_FACTOR</code> = 0.5 of the linear
+tadpole period <span class="arithmatex">\(P_\text{orb}/\sqrt{27\mu/4}\)</span> (Jupiter 148 yr, Earth 222 yr). A quasi-satellite needs its own floor,
+from the same averaged potential: <span class="arithmatex">\(\omega_{QS}^2 = 3\mu n^2\tilde R''(\theta_c)\)</span> in the well about 0. When the
+orbit-averaged angle turns inside that well during a stay of at least one loop of the averaged potential through its
+own turns (<code>MMR_COORBITAL_QS_TRIGGER_PERIODS</code>) and the first pass found no libration, the record is analyzed again
+with the floor 0.5 <span class="arithmatex">\(P_{QS}\)</span>, <span class="arithmatex">\(P_{QS} = 2\pi/\omega_{QS}\)</span> (<code>MMR_COORBITAL_QS_FLOOR</code>, rule G1q). <span class="arithmatex">\(P_{QS}\)</span> is the period at
+the bottom of the well, and a low-<span class="arithmatex">\(e\)</span> quasi-satellite well softens towards its barrier: the period falls with the
+amplitude (54509 YORP: 112 yr at 1°, 49.9 yr at 26°), so in that pass a run whose turns all lie in the well has the
+floor min(0.5 <span class="arithmatex">\(P_{QS}\)</span>, 0.7 <span class="arithmatex">\(T\)</span> of the loop through its own turns), read by the prominence too
+(<code>MMR_COORBITAL_QS_RUN_FLOOR</code>, <code>MMR_COORBITAL_QS_LOOP_FACTOR</code>, rule <code>coorbital_qs_run_floor</code>; an 11-TP loop of 50 yr against a 55.7-yr floor). That
+loop is the prediction at the run's own amplitude (counted runs: <span class="arithmatex">\(P/T\)</span> = 0.84–1.05), so the factor carries no margin
+for extrapolating from <span class="arithmatex">\(P(0)\)</span>; it is not below the period the pass's filter keeps at gain <code>MMR_L8_GAIN_FAIL</code> (<span class="arithmatex">\(P_c\)</span>).
+A run slower than the QS floor but faster than <span class="arithmatex">\(2P_c\)</span> is <code>filter_too_slow</code>, as any such libration. A horseshoe that turns close to the planet is faster than a
+tadpole as well: a run whose turns all reflect on a top (below) has the floor 0.5 <span class="arithmatex">\(T\)</span> of the loop through its own
+turns, when its local law has <span class="arithmatex">\(K/K_\text{th} &gt; 0\)</span> (<code>MMR_COORBITAL_PROFILE_FLOOR</code>, rule <code>coorbital_floor_profile</code>;
+2003 YN107: 103 yr against a 119-yr loop and a 111-yr tadpole floor). A run with a turn that is no reflection (a
+turn inside a well, a pair no loop joins) has the floor 0.7 <span class="arithmatex">\(T\)</span> of the median loop of its reflecting pairs whose turns
+are both outside the Hill sphere (<code>MMR_COORBITAL_PAIR_LOOP_MIN_HILL</code> = 1 Hill radius; 2022 RD2 c075: a horseshoe
+of turns 1–2 Hill radii from the Earth, <span class="arithmatex">\(P\)</span> = 74.5 yr, floor 56 yr), at most the tadpole floor, and only when
+its own local 1:1 law passes the force check in full (<code>MMR_COORBITAL_PAIR_LOOP_FLOOR</code>, rule
+<code>coorbital_pair_loop_floor</code>; 2003 YN107 c032: a horseshoe → quasi-satellite → horseshoe run of <span class="arithmatex">\(P\)</span> = 105 yr whose
+reflecting pairs loop in 105 and 129 yr, floor 82 yr, <span class="arithmatex">\(K/K_\text{th}\)</span> 1.18). Without that force its floor stays the
+tadpole floor: a wave the planet does not drive is no loop of this potential. The fastest such loop of a physical horseshoe,
+turning <code>MMR_COORBITAL_MIN_TURN_HILL</code> = 3 Hill radii <span class="arithmatex">\(a_P(\mu/3)^{1/3}\)</span> from the planet (closer the averaged problem
+does not hold), sets what the prominence counts as fast (<a href="../signal/">signal</a>).</p>
+<details class="info">
+<summary>The quasi-satellite pass in detail</summary>
+<p><span class="arithmatex">\(\theta_c\)</span> is the local minimum of <span class="arithmatex">\(\tilde R\)</span> nearest 0 whose basin holds <span class="arithmatex">\(\theta = 0\)</span>. The trigger needs a turn
+(a reversal of at least <code>MMR_TP_PROMINENCE_FLOOR_DEG</code>): by <span class="arithmatex">\(\dot\sigma \propto -(a - a_P)\)</span> it is a crossing of
+<span class="arithmatex">\(a_P\)</span>, and a slow drift through the well has none. The stay is measured against the loop through its turns, not
+against <span class="arithmatex">\(P_{QS}\)</span>: at low <span class="arithmatex">\(e\)</span> the well is far from harmonic (2002 PN, <span class="arithmatex">\(e = 0.09\)</span>: a loop of <span class="arithmatex">\(\pm 8.7°\)</span> takes 17.8 yr
+and follows the 1:1 law with <span class="arithmatex">\(K/K_\text{th} = 1.00\)</span>; the loop through its turns gives 19.5 yr, <span class="arithmatex">\(P_{QS}\)</span> there 32.5 yr).
+Without a loop through the turns the longest <span class="arithmatex">\(P_{QS}\)</span> along the stay is used. For Venus at <span class="arithmatex">\(e = 0.41\)</span> (2021 XA1)
+<span class="arithmatex">\(P_{QS} \approx 150\)</span> yr is the tadpole period, so the pass changes nothing there. The pass is kept when it
+holds a librating episode centered in the well and no fewer episodes outside the well than the first pass. An
+episode takes the quasi-satellite floor only where the well exists on at least <code>MMR_COORBITAL_QS_WELL_SHARE</code> = 0.5
+of its samples. The 1:1 force law is then tabulated on blocks of <span class="arithmatex">\(\min(P_c, P_{QS})\)</span>, at most
+<code>MMR_COORBITAL_QS_MAX_BLOCKS</code> = 4000 over the record. When the step cannot filter the quasi-satellite cutoff the
+action is <code>resample</code> or <code>review</code>, never <code>extend</code> (<a href="../confidence/#actions">Actions</a>).</p>
+</details>
+<p>The co-orbital law has <strong>no free shape and a fixed scale</strong>: fitting <span class="arithmatex">\(\dot a_\text{data} = K\,\dot a_\text{model} + C\)</span>
+should give <span class="arithmatex">\(K/K_\text{theory} = 1\)</span>, the planet's own mass. That is the 1:1 force-law test
+(<a href="../response/#co-orbital-force-law">Is it this resonance?</a>). The strength check is not applied to 1:1 angles.</p>
+<p>The same potential answers where a 1:1 turning point lies and how far it reaches (<code>coorbital_geometry.py</code>): with
+<span class="arithmatex">\(\dot\theta = -\tfrac32 n\,\delta a/a_P\)</span> the energy integral reads <span class="arithmatex">\((\delta a/a_P)^2 + \tfrac83\mu\tilde R(\theta) =
+\text{const}\)</span>, so a turn at <span class="arithmatex">\(\theta_t\)</span> below its well's barrier is a tadpole or quasi-satellite turn, above it a
+reflection on the planet's (horseshoe) or an L3 top, and the potential reverses a body only while
+<span class="arithmatex">\(\lvert\delta a\rvert \le \delta a_\text{max} = a_P\sqrt{\tfrac83\mu(\tilde R_\text{top} - \tilde R(\theta))}\)</span>, the
+top being the highest <span class="arithmatex">\(\tilde R\)</span> before the body reaches the planet or L3. A reflection mirrors <span class="arithmatex">\(\lvert\delta a\rvert\)</span>
+(out/in = 1), and the loop through the observed turning points has the period
+<span class="arithmatex">\(T = 2\int d\theta/\sqrt{2(E - 3\mu n^2\tilde R)}\)</span>: the horseshoe period <span class="arithmatex">\(T_{hs}(\theta_t)\)</span>, or the tadpole and
+quasi-satellite periods at that amplitude. These are columns (<code>cpl_*</code> in episodes.csv) and inputs for the 1:1 rules,
+not a status of their own. The turns are read on the orbit-averaged angle: the low-pass rounds a sharp turn at the
+planet off (YN107's turns read 39° and 319° on <span class="arithmatex">\(\sigma_f\)</span>, a tadpole turn, and 2.0° and 358.3° averaged).
+A record without a closed cycle is judged on its single legs with the same three numbers, the local law and the
+energy (<a href="../response/#local-force-and-energy-on-a-single-leg">Local force and energy on a single leg</a>): out/in tells
+a reflection from a kick by a close approach, <span class="arithmatex">\(\lvert\delta a\rvert/\delta a_\text{max}\)</span> a level the potential
+can reverse from one it cannot.</p>
+<div class="admonition note">
+<p class="admonition-title">Limits of the model</p>
+<p>The cosine pendulum is a local normal form: it assumes one dominant resonant term, nearly constant coefficients
+and slowly varying non-resonant variables (Henrard &amp; Lemaître 1983; Lemaître 1984). At low eccentricity, high
+order, close encounters, overlapping multiplets or a quickly changing well a richer resonant Hamiltonian may be
+needed. The package measures geometry and the response of <span class="arithmatex">\(a\)</span> on the saved record and reports where the
+evidence ends. It does not solve every normal form, does not compute capture probabilities (Henrard 1982), and
+does not measure chaos: its energy, action and separatrix-zone numbers are diagnostics of a fitted model, not
+integrals of the full N-body motion.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../overview/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Overview
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../signal/" class="md-footer__link md-footer__link--next" aria-label="Next: From the integration to the angle">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                From the integration to the angle
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

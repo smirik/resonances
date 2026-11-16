@@ -1,0 +1,2395 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python package that finds mean-motion, secular and Lidov-Kozai resonances of small bodies in the Solar system and decides, from a numerical integration, whether the resonant angle librates and why.">
+      
+      
+        <meta name="author" content="Evgeny Smirnov">
+      
+      
+        <link rel="canonical" href="https://smirik.github.io/resonances/coherence/">
+      
+      
+        <link rel="prev" href="../serialization/">
+      
+      
+        <link rel="next" href="../free-elements/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Cross-spectral coherence - resonances</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cross-spectral-coherence" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="resonances" class="md-header__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            resonances
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Cross-spectral coherence
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="resonances" class="md-nav__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    resonances
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulations, bodies, resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using with AI agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How the status is determined
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How the status is determined
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/pendulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The resonant pendulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/signal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    From the integration to the angle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What the angle does
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/response/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is it this resonance?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/status-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The status tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/confidence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Confidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/secular-zlk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular and Lidov-Kozai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resonance matrices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lidov-kozai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lidov-Kozai resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clones (virtual asteroids)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reading-figures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to read the figures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../serialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serialization and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-spectral coherence
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-spectral coherence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-is-measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it is measured
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How it is measured">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#validity-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validity limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#segmentation-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Segmentation levels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lines-not-bins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lines, not bins
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase criteria
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-phase-alone-is-not-enough" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why phase alone is not enough
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-e-i-exchange-flag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The e-i exchange flag
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The e-i exchange flag">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-it-does-not-decide-the-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why it does not decide the status
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#forced-and-free-eccentricity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forced and free eccentricity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plots
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-the-primitives-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the primitives directly
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../free-elements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Free elements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../libration-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    References
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-is-measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it is measured
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How it is measured">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#validity-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validity limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#segmentation-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Segmentation levels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lines-not-bins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lines, not bins
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase criteria
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-phase-alone-is-not-enough" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why phase alone is not enough
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-e-i-exchange-flag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The e-i exchange flag
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The e-i exchange flag">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-it-does-not-decide-the-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why it does not decide the status
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#forced-and-free-eccentricity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forced and free eccentricity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plots
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-the-primitives-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the primitives directly
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="cross-spectral-coherence">Cross-spectral coherence<a class="headerlink" href="#cross-spectral-coherence" title="Permanent link">&para;</a></h1>
+<p>Periodograms answer "which periods are present in this series". Cross spectra answer
+a different question: <strong>do two series share a period, and with what phase shift?</strong></p>
+<p>That is what distinguishes a real resonance from a coincidence:</p>
+<ul>
+<li>in a mean-motion resonance, the resonant angle <span class="arithmatex">\(\sigma\)</span> and the semi-major axis share the
+  libration frequency, a quarter period apart. From <span class="arithmatex">\(\dot\sigma = c\,(a - a_*)\)</span> with <span class="arithmatex">\(c = -3kn/(2a)\)</span>, a libration
+  <span class="arithmatex">\(\sigma = A\sin\omega t\)</span> gives <span class="arithmatex">\(a - a_* = (A\omega/c)\cos\omega t\)</span>: <span class="arithmatex">\(a\)</span> leads <span class="arithmatex">\(\sigma\)</span> by +90° when <span class="arithmatex">\(c &gt; 0\)</span>
+  (the usual prograde angle, <span class="arithmatex">\(k &lt; 0\)</span>) and by −90° when <span class="arithmatex">\(c &lt; 0\)</span>. The preset target below is +90°, a convention for the
+  usual sign, not a law (<a href="../physics/pendulum/">The resonant pendulum</a>);</li>
+<li>in a Lidov-Kozai resonance, <span class="arithmatex">\(e\)</span> and <span class="arithmatex">\(i\)</span> share the ZLK-cycle frequency <strong>in antiphase</strong>: the body trades
+  eccentricity for inclination at constant <span class="arithmatex">\(H = \sqrt{1-e^2}\cos i\)</span>.</li>
+</ul>
+<p>The second point is not decorative. The argument of pericentre ω can librate without
+any Lidov-Kozai resonance: when the forced eccentricity vector dominates the free one,
+the geometry alone keeps ω bounded. Asteroid 591986 is exactly this case — its
+osculating ω librates, but its free ω circulates; at its 6-kyr cycle <code>e</code> and <code>i</code> move
+in phase (a forced-eccentricity beat), not in the ZLK antiphase.</p>
+<div class="admonition note">
+<p class="admonition-title">No status depends on this page</p>
+<p>The cross spectra are diagnostics. The e-i criterion gives the columns <code>zlk_coherent</code> and <code>zlk_check</code>
+(<code>confirmed_ei</code> is now the e–i coupling at the row's own period, <a href="../free-elements/#beyond-the-gate">Free elements</a>); what makes 591986
+<code>non_resonant</code> is the free-ω gate (<a href="../free-elements/">Free elements</a>). The reason is the baseline, see
+<a href="#why-it-does-not-decide-the-status">below</a>.</p>
+</div>
+<h2 id="how-it-is-measured">How it is measured<a class="headerlink" href="#how-it-is-measured" title="Permanent link">&para;</a></h2>
+<p>Welch's method on <strong>non-overlapping</strong> segments, via <code>scipy.signal.coherence</code> and
+<code>scipy.signal.csd</code> with identical parameters. Each of the <span class="arithmatex">\(n_{\rm seg}\)</span> segments is linearly detrended and windowed
+(Hann by default), the two series are Fourier transformed (<span class="arithmatex">\(X\)</span>, <span class="arithmatex">\(Y\)</span>), and the spectra are averaged over segments:
+<span class="arithmatex">\(P_{xx} = \langle |X|^2\rangle\)</span>, <span class="arithmatex">\(P_{yy} = \langle |Y|^2\rangle\)</span>, <span class="arithmatex">\(P_{xy} = \langle X^* Y\rangle\)</span>. Then</p>
+<div class="arithmatex">\[
+\gamma^2(f) = \frac{|P_{xy}|^2}{P_{xx}P_{yy}} \in [0, 1], \qquad \varphi(f) = \arg P_{xy}, \qquad
+\text{amplitude ratio} = \sqrt{P_{yy}/P_{xx}} .
+\]</div>
+<p><span class="arithmatex">\(\gamma^2\)</span> is the magnitude-squared coherence (1: the two series share that frequency with a fixed phase); a
+positive <span class="arithmatex">\(\varphi\)</span> means the second series leads.</p>
+<p>Non-overlapping is deliberate. The significance threshold</p>
+<div class="arithmatex">\[
+\gamma^2_{\rm crit} = 1 - \alpha^{1/(n_{\rm seg} - 1)}
+\]</div>
+<p>is exact only for statistically independent segments. Measured false-alarm rate on
+white noise, <code>alpha = 0.01</code>:</p>
+<table>
+<thead>
+<tr>
+<th>segmentation</th>
+<th><code>gamma2_crit</code></th>
+<th>measured fraction of significant bins</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>non-overlapping</td>
+<td>0.785 (n=4)</td>
+<td>0.0100</td>
+</tr>
+<tr>
+<td>50% overlap</td>
+<td>0.785 (n=4)</td>
+<td>0.0001</td>
+</tr>
+</tbody>
+</table>
+<p>With overlap the same threshold is roughly a hundred times too conservative. <span class="arithmatex">\(\alpha\)</span> is a false-alarm probability
+per frequency bin, not for the whole searched spectrum.</p>
+<h3 id="validity-limits">Validity limits<a class="headerlink" href="#validity-limits" title="Permanent link">&para;</a></h3>
+<div class="arithmatex">\[
+P_{\min} = 4\,\Delta t \quad\text{(a margin over Nyquist)}, \qquad
+P_{\max} = \frac{T}{5\,n_{\rm seg}} \quad\text{(at least 5 cycles in every segment)}.
+\]</div>
+<p>Nothing outside <code>[P_min, P_max]</code> is reported. This is the constraint that usually
+bites: to see a 50 kyr Lidov-Kozai cycle at <code>n_seg = 4</code> you need at least 1 Myr of
+integration. A shorter run reports <code>short_baseline</code> rather than a verdict.</p>
+<h3 id="segmentation-levels">Segmentation levels<a class="headerlink" href="#segmentation-levels" title="Permanent link">&para;</a></h3>
+<p><code>P_max</code> shrinks as <code>n_seg</code> grows, while the threshold gets easier. Rather than fixing
+one segmentation, several levels are computed (<code>COHERENCE_N_SEGMENTS</code>, default
+<code>4,8,16</code>) and the verdict is taken from the <strong>coarsest level whose validity band is
+non-empty</strong> — the one reaching the longest periods with the strictest threshold.
+Levels that cannot be computed (fewer than 512 samples per segment, empty band) are
+reported as invalid rather than silently dropped.</p>
+<h3 id="lines-not-bins">Lines, not bins<a class="headerlink" href="#lines-not-bins" title="Permanent link">&para;</a></h3>
+<p>Contiguous runs of significant bins are grouped into <em>lines</em>. A line's period, <span class="arithmatex">\(\gamma^2\)</span> and amplitude ratio are
+those of its strongest bin (largest <code>|Pxy|</code>, not largest coherence — a wide
+coherent band's most coherent bin is often not the one carrying the power); its phase is the <span class="arithmatex">\(|P_{xy}|\)</span>-weighted
+circular mean over all its bins (spread in <code>phase_std</code>). Lines
+are ranked by integrated cross-amplitude <code>sum(|Pxy|)</code>.</p>
+<p><strong>The phase criterion is applied to the top-ranked line only.</strong> Ranking matters: in
+the 30 Myr integration of 591986 the <code>e</code>–<code>i</code> search band holds tens of significant
+lines, one of which happens to sit at −166° and would satisfy a naive "is there any
+antiphase line" test. The amplitude-dominant line sits at +125° at every segmentation
+level, which is the correct answer.</p>
+<h2 id="phase-criteria">Phase criteria<a class="headerlink" href="#phase-criteria" title="Permanent link">&para;</a></h2>
+<p>A criterion is <code>(target_deg, tolerance_deg)</code> per pair, preset per resonance type:</p>
+<table>
+<thead>
+<tr>
+<th>resonance type</th>
+<th>pairs</th>
+<th>phase target</th>
+<th>search band</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lidov_kozai</code></td>
+<td><code>e-i</code></td>
+<td>180° ± 30°</td>
+<td>periods &gt; 10 kyr</td>
+</tr>
+<tr>
+<td><code>mmr</code></td>
+<td><code>sigma-a</code></td>
+<td>90° ± 30° (for <span class="arithmatex">\(c &gt; 0\)</span>, see above)</td>
+<td>full validity band</td>
+</tr>
+<tr>
+<td><code>secular</code></td>
+<td><code>sigma-e</code></td>
+<td>—</td>
+<td>periods &gt; 10 kyr</td>
+</tr>
+</tbody>
+</table>
+<p>Phase sign convention: <strong>positive means the second series leads the first.</strong></p>
+<p>Override per resonance type when creating the simulation; types you do not mention
+keep their presets:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">resonances</span>
+
+<span class="n">sim</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">check</span><span class="p">(</span>
+    <span class="mi">463</span><span class="p">,</span>
+    <span class="s1">'4J-2S-1'</span><span class="p">,</span>
+    <span class="n">integration_years</span><span class="o">=</span><span class="mi">2_000</span><span class="p">,</span>  <span class="c1"># 100_000 years for a real verdict</span>
+    <span class="n">coherence_pairs</span><span class="o">=</span><span class="p">{</span><span class="s1">'mmr'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'sigma-a'</span><span class="p">,</span> <span class="s1">'sigma-e'</span><span class="p">,</span> <span class="s1">'sigma-i'</span><span class="p">]},</span>
+    <span class="n">coherence_phase_targets</span><span class="o">=</span><span class="p">{</span><span class="s1">'mmr'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'sigma-a'</span><span class="p">:</span> <span class="p">(</span><span class="mf">90.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">)}},</span>
+<span class="p">)</span>
+</code></pre></div>
+<h2 id="why-phase-alone-is-not-enough">Why phase alone is not enough<a class="headerlink" href="#why-phase-alone-is-not-enough" title="Permanent link">&para;</a></h2>
+<p>A line's cross-phase is a weighted mean over a few adjacent bins, and those bins lie when several close
+lines blend into them. On 591986 the <code>e</code>–<code>i</code> line near 54 kyr is really a triplet
+(53.9 / 54.0 / 54.2 kyr). Truncating one 30 Myr integration to different lengths and
+running the same code gives:</p>
+<table>
+<thead>
+<tr>
+<th>window</th>
+<th>decisive line</th>
+<th>phase</th>
+<th>band-passed r</th>
+<th>broadband r</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2 Myr</td>
+<td>11.4 kyr</td>
+<td>−2.9°</td>
+<td>−0.25</td>
+<td>−0.05</td>
+</tr>
+<tr>
+<td>3 Myr</td>
+<td>11.0 kyr</td>
+<td>+29.5°</td>
+<td>−0.26</td>
+<td>−0.02</td>
+</tr>
+<tr>
+<td><strong>5 Myr</strong></td>
+<td><strong>54.3 kyr</strong></td>
+<td><strong>+177.7°</strong></td>
+<td>−0.15</td>
+<td>−0.01</td>
+</tr>
+<tr>
+<td>7.5 Myr</td>
+<td>27.2 kyr</td>
+<td>+134.0°</td>
+<td>−0.38</td>
+<td>−0.00</td>
+</tr>
+<tr>
+<td>10–30 Myr</td>
+<td>27–56 kyr</td>
+<td>+120…+128°</td>
+<td>−0.12…−0.18</td>
+<td>±0.00</td>
+</tr>
+</tbody>
+</table>
+<p>The phase says "antiphase" in exactly one window out of nine. The correlations say the
+same thing in all nine: <strong>e and i never actually trade.</strong> So the flag requires both.</p>
+<h2 id="the-e-i-exchange-flag">The e-i exchange flag<a class="headerlink" href="#the-e-i-exchange-flag" title="Permanent link">&para;</a></h2>
+<p>Measured after the verdict, for Lidov-Kozai rows that are not <code>non_resonant</code> (with
+<code>COHERENCE_SKIP_NON_RESONANT</code>). It <strong>changes no status</strong>: it records whether the strongest coherent e–i line is an
+exchange, as <code>zlk_coherent</code> and <code>zlk_check</code>. The flag <code>confirmed_ei</code> and the check <code>check_zlk_ei</code> no longer come
+from here: they are the e–i coupling measured at the row's own decisive period, for every ZLK row
+(<code>zlk_ei_coupling</code>, <a href="../free-elements/#beyond-the-gate">Free elements: beyond the gate</a>), because this line can sit
+on a harmonic or outside the ZLK band (3040, 4257 and 162474 pass here on lines at 10–21 kyr while their ZLK periods
+are 40–59 kyr).</p>
+<table>
+<thead>
+<tr>
+<th>situation</th>
+<th><code>zlk_coherent</code></th>
+<th><code>zlk_check</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>antiphase line <strong>and</strong> e/i anticorrelate</td>
+<td><code>True</code></td>
+<td><code>passed</code></td>
+</tr>
+<tr>
+<td>no antiphase line</td>
+<td><code>False</code></td>
+<td><code>failed</code></td>
+</tr>
+<tr>
+<td>antiphase line, but no exchange</td>
+<td><code>False</code></td>
+<td><code>weak_exchange</code></td>
+</tr>
+<tr>
+<td>baseline too short to measure</td>
+<td>empty</td>
+<td><code>short_baseline</code></td>
+</tr>
+<tr>
+<td><code>ZLK_COHERENCE_CHECK=False</code></td>
+<td>empty</td>
+<td><code>disabled</code></td>
+</tr>
+<tr>
+<td>no <code>e-i</code> pair, or no phase target for it</td>
+<td>empty</td>
+<td><code>no_target</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>no_target</code> appears when <code>coherence_pairs</code> or the phase targets of <code>lidov_kozai</code> were overridden without <code>e-i</code>;
+restoring <code>coherence_pairs['lidov_kozai'] = ['e-i']</code> with its target enables the check.</p>
+<p>The 180° target is a <strong>prograde</strong> diagnostic. At constant <span class="arithmatex">\(H\)</span> a retrograde orbit (<span class="arithmatex">\(\cos i &lt; 0\)</span>) has <span class="arithmatex">\(e\)</span> and <span class="arithmatex">\(i\)</span>
+varying <em>in phase</em>, and the anticorrelation test does not confirm that branch. The exchange also assumes <span class="arithmatex">\(i\)</span> measured
+from the perturber's plane and <span class="arithmatex">\(H\)</span> conserved (quadrupole approximation); this line uses the ecliptic <span class="arithmatex">\(i\)</span> of an
+N-body run, so the comparison is approximate. The period-specific coupling (<code>zlk_ei_coupling</code>) reads <span class="arithmatex">\(i\)</span> from the
+invariable plane and the tilt of a retrograde orbit. No status depends on either.</p>
+<p><code>short_baseline</code> is the important distinction: a check that could not run must not be read
+as a negative result, so the reason is recorded and a researcher can filter on the column
+instead of guessing.</p>
+<h3 id="why-it-does-not-decide-the-status">Why it does not decide the status<a class="headerlink" href="#why-it-does-not-decide-the-status" title="Permanent link">&para;</a></h3>
+<p>Earlier versions demoted a librating Lidov-Kozai angle on this check alone. The baseline is
+what took that away. The validity band tops out at <code>T / (5 · n_seg)</code>,
+which is <strong>25 kyr on a 500 kyr run at four segments</strong>, while the real Lidov-Kozai lines in
+the reference set sit at <strong>27–58 kyr</strong>. On the short integrations this package now targets,
+the check would be judging on a line outside its own validity band — it happened to agree
+with the free-omega gate on all ten reference objects at 500 kyr, but by luck rather than
+by measurement.</p>
+<p>The status decision moved to the forced/free split, which has no such band: see
+<a href="../free-elements/">free elements</a>. The cross spectra, <code>coherence.csv</code> and the figures are
+unchanged; the line columns sit next to the status as independent evidence.</p>
+<blockquote>
+<p><strong>The <code>ZLK_MIN_ANTICORRELATION = 0.5</code> default is provisional.</strong> It sits between the
+only two objects measured so far — 591986 never exceeds 0.38 and is not in resonance,
+162474 reaches 0.79 and is — but two objects do not calibrate a threshold. The raw
+<code>r_band</code> and <code>r_broadband</code> values are written to <code>coherence.csv</code> for every pair, so a
+larger sample can be collected and the threshold revisited from data.</p>
+</blockquote>
+<p>The correlation condition is deliberately ZLK-only: it encodes <code>cos(180°) = −1</code>, and would
+be meaningless against the MMR target of 90°, where quadrature puts the correlation at zero
+by construction. For MMR and secular resonances the cross spectrum is pure diagnostics.</p>
+<h2 id="forced-and-free-eccentricity">Forced and free eccentricity<a class="headerlink" href="#forced-and-free-eccentricity" title="Permanent link">&para;</a></h2>
+<p>In the <code>(k, h) = (e cos ω, e sin ω)</code> plane the forced term is the offset of the cloud
+from the origin and the free term is the radius it traces:</p>
+<div class="arithmatex">\[
+e_{\rm forced} = \sqrt{\langle k\rangle^2 + \langle h\rangle^2}, \qquad
+e_{\rm free} = \sqrt{\operatorname{var} k + \operatorname{var} h}.
+\]</div>
+<p>Note the <strong>sum</strong> of the two variances. A free vector of radius <code>R</code> sweeping the circle
+uniformly puts <span class="arithmatex">\(R^2/2\)</span> into each coordinate, so summing recovers <code>R</code>; averaging instead
+would under-report by a factor √2.</p>
+<p>Both go into <code>summary.csv</code>. On the 30 Myr integration of 591986 they come out as
+<code>e_forced = 0.0392</code> and <code>e_free = 0.0308</code>, the latter matching the AstDyS <code>tro.syn</code>
+proper eccentricity <code>e_p = 0.0308</code>.</p>
+<h2 id="output">Output<a class="headerlink" href="#output" title="Permanent link">&para;</a></h2>
+<p><strong><code>summary.csv</code></strong> gains, per body and resonance:
+<code>e_forced</code>, <code>e_free</code>, <code>zlk_coherent</code> (True/False/empty), <code>zlk_check</code>, <code>zlk_line_period</code>, <code>zlk_line_phase</code>,
+<code>zlk_line_gamma2</code>, <code>zlk_line_r_band</code>.</p>
+<p><strong><code>coherence.csv</code></strong> — one row per detected line, appended per run like <code>summary.csv</code>
+(written only when <code>save_summary</code> is on):</p>
+<table>
+<thead>
+<tr>
+<th>column</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>body</code>, <code>resonance</code>, <code>pair</code></td>
+<td>what was analyzed</td>
+</tr>
+<tr>
+<td><code>n_seg</code>, <code>rank</code>, <code>decisive</code></td>
+<td>segmentation level, rank by cross-amplitude, whether this is the line the criterion used</td>
+</tr>
+<tr>
+<td><code>period</code>, <code>gamma2</code>, <code>gamma2_crit</code></td>
+<td>the line and the threshold it cleared</td>
+</tr>
+<tr>
+<td><code>phase_deg</code>, <code>phase_std</code></td>
+<td>cross-phase and its spread across the line's bins</td>
+</tr>
+<tr>
+<td><code>amp_ratio</code></td>
+<td><code>sqrt(Pyy/Pxx)</code> — how much the second series moves per unit of the first</td>
+</tr>
+<tr>
+<td><code>r_band</code></td>
+<td>Pearson r of the two series band-passed around this line; filled for the strongest line only</td>
+</tr>
+<tr>
+<td><code>r_broadband</code></td>
+<td>Pearson r of the two raw series, unfiltered</td>
+</tr>
+<tr>
+<td><code>cross_amplitude</code>, <code>n_bins</code></td>
+<td>integrated <code>\|Pxy\|</code> and width of the line</td>
+</tr>
+<tr>
+<td><code>period_min</code>, <code>period_max</code></td>
+<td>validity band of that level</td>
+</tr>
+<tr>
+<td><code>phase_target</code>, <code>phase_tolerance</code></td>
+<td>criterion applied, if any</td>
+</tr>
+<tr>
+<td><code>n_levels_valid</code>, <code>n_levels_passed</code>, <code>n_levels_agreeing</code></td>
+<td>how many levels could be computed, how many satisfied the criterion, how many reproduce the decisive line</td>
+</tr>
+</tbody>
+</table>
+<p><code>amp_ratio</code> is a useful independent check. Conservation of <span class="arithmatex">\(H = \sqrt{1-e^2}\cos i\)</span> gives the signed derivative</p>
+<div class="arithmatex">\[
+\frac{{\rm d}i}{{\rm d}e} = -\frac{e\cos i}{(1 - e^2)\sin i},
+\]</div>
+<p>so the amplitude ratio <span class="arithmatex">\(\lvert\delta i\rvert/\lvert\delta e\rvert\)</span> (i in radians) should be the absolute value of
+the right-hand side (with <span class="arithmatex">\(i\)</span> from the perturber's plane; for ecliptic elements this is approximate). The sign is
+negative only for a prograde orbit. <code>amp_ratio</code> is non-negative, an amplitude ratio, not the signed derivative. A line whose ratio is
+far from it is shared but not driven by the Lidov-Kozai mechanism.</p>
+<h2 id="plots">Plots<a class="headerlink" href="#plots" title="Permanent link">&para;</a></h2>
+<p>Add to <code>plots</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">sim</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">check</span><span class="p">(</span>
+    <span class="mi">162474</span><span class="p">,</span>
+    <span class="s1">'lidov-kozai'</span><span class="p">,</span>
+    <span class="n">integration_years</span><span class="o">=</span><span class="mi">20_000</span><span class="p">,</span>  <span class="c1"># 500 kyr or more for the Lidov-Kozai periods</span>
+    <span class="n">plots</span><span class="o">=</span><span class="p">[</span><span class="s1">'evolution'</span><span class="p">,</span> <span class="s1">'ecc_vector'</span><span class="p">,</span> <span class="s1">'cross_spectrum'</span><span class="p">],</span>
+    <span class="n">plot</span><span class="o">=</span><span class="s1">'all'</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+<ul>
+<li><code>ecc_vector</code> → <code>{body}-ecc-vector.png</code> (<a href="../reading-figures/#ecc_vector">How to read the figures</a>): the offset of the cloud is
+  <code>e_forced</code>, its radius <code>e_free</code>. It explains <em>why</em> ω is bounded, not whether that is a resonance: genuine
+  librators and forced-geometry cases both show an offset cloud, with <code>e_free/e_forced</code> below 1 for both
+  (0.27–0.35 for 3040, 4257 and 162474, 0.79 for 591986).</li>
+<li><code>cross_spectrum</code> → <code>{body}-{resonance}-coherence-{pair}.png</code> per pair: coherence, cross-phase and the two series
+  band-passed at the decisive line (<a href="../reading-figures/#cross_spectrum">How to read the figures</a>). The yellow
+  bands there mark agreement across levels at one of the strongest lines; agreement alone is reported but is not a
+  gate condition, since for <code>e-i</code> it mostly measures the conservation of <code>H = √(1−e²)·cos i</code>: the share of the band
+  where all levels agree tracks how well i is predicted from e through H (3040 78 %, 4257 44 %, 88899 24 %,
+  10563 0 %; R² = 0.86, 0.64, 0.06, 0).</li>
+</ul>
+<p>Both plotters are usable directly:</p>
+<div class="highlight"><pre><span></span><code><span class="n">body</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">bodies</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">resonance</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">lidov_kozai_resonances</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># key 'LK'</span>
+<span class="n">resonances</span><span class="o">.</span><span class="n">EccentricityVectorPlotter</span><span class="o">.</span><span class="n">from_body</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="n">resonance</span><span class="p">,</span> <span class="n">sim</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">'kh.png'</span><span class="p">)</span>
+<span class="n">resonances</span><span class="o">.</span><span class="n">CrossSpectrumPlotter</span><span class="o">.</span><span class="n">from_body</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="n">resonance</span><span class="p">,</span> <span class="s1">'e-i'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">'coh.png'</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="using-the-primitives-directly">Using the primitives directly<a class="headerlink" href="#using-the-primitives-directly" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>  <span class="c1"># noqa: E402</span>
+
+<span class="n">times_yrs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">times</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>  <span class="c1"># a uniform grid, in years</span>
+<span class="n">e</span><span class="p">,</span> <span class="n">inc</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">ecc</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">inc</span>  <span class="c1"># a, e and i are not unwrapped; angles must be (np.unwrap)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">cross_spectrum</span><span class="p">(</span><span class="n">times_yrs</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">inc</span><span class="p">,</span> <span class="n">n_seg</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">period_min</span><span class="o">=</span><span class="mi">10_000</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">valid</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">top_line</span><span class="p">:</span>
+    <span class="n">line</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">top_line</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">period</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">gamma2</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">phase_deg</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">amp_ratio</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">resonances</span><span class="o">.</span><span class="n">phase_matches</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">phase_deg</span><span class="p">,</span> <span class="mf">180.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">))</span>
+</code></pre></div>
+<p>Angles must be <code>np.unwrap</code>ed before being passed in; <code>a</code>, <code>e</code> and <code>i</code> must not be. The
+grid must be uniform — a non-uniform one returns <code>valid=False</code> with a reason rather
+than a wrong number.</p>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<p>The options are listed in <a href="../config/#cross-spectral-coherence">Configuration</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../serialization/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Serialization and restore">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Serialization and restore
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../free-elements/" class="md-footer__link md-footer__link--next" aria-label="Next: Free elements">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Free elements
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

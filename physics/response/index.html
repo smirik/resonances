@@ -1,0 +1,2748 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python package that finds mean-motion, secular and Lidov-Kozai resonances of small bodies in the Solar system and decides, from a numerical integration, whether the resonant angle librates and why.">
+      
+      
+        <meta name="author" content="Evgeny Smirnov">
+      
+      
+        <link rel="canonical" href="https://smirik.github.io/resonances/physics/response/">
+      
+      
+        <link rel="prev" href="../geometry/">
+      
+      
+        <link rel="next" href="../status-tree/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Is it this resonance? - resonances</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#is-it-this-resonance" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="resonances" class="md-header__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            resonances
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Is it this resonance?
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="resonances" class="md-nav__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    resonances
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulations, bodies, resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using with AI agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How the status is determined
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How the status is determined
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pendulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The resonant pendulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../signal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    From the integration to the angle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What the angle does
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is it this resonance?
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is it this resonance?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-response-is-measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the response is measured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The identity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-force-law" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The force law
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The force law">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-direct-averaged-force-law" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The direct averaged-force law
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#co-orbital-force-law" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Co-orbital force law
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-force-and-energy-on-a-single-leg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local force and energy on a single leg
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#energy-and-potential" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy and potential
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#amplitude-of-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Amplitude of \(a\)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kinematic-origins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kinematic origins
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#another-resonance-owns-the-oscillation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Another resonance owns the oscillation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Another resonance owns the oscillation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Roles of the other resonance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subresonances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subresonances
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#onset-of-an-episode-o1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Onset of an episode (O1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#strength" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strength
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-tests-decide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the tests decide
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../status-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The status tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../confidence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Confidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secular-zlk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular and Lidov-Kozai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resonance matrices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../secular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lidov-kozai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lidov-Kozai resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clones (virtual asteroids)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reading-figures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to read the figures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../serialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serialization and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coherence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-spectral coherence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../free-elements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Free elements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../libration-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    References
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-response-is-measured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the response is measured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The identity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-force-law" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The force law
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The force law">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-direct-averaged-force-law" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The direct averaged-force law
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#co-orbital-force-law" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Co-orbital force law
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-force-and-energy-on-a-single-leg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local force and energy on a single leg
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#energy-and-potential" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy and potential
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#amplitude-of-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Amplitude of \(a\)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kinematic-origins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kinematic origins
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#another-resonance-owns-the-oscillation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Another resonance owns the oscillation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Another resonance owns the oscillation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Roles of the other resonance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subresonances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subresonances
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#onset-of-an-episode-o1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Onset of an episode (O1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#strength" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strength
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-tests-decide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the tests decide
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="is-it-this-resonance">Is it this resonance?<a class="headerlink" href="#is-it-this-resonance" title="Permanent link">&para;</a></h1>
+<p>A bounded resonant angle is not yet a resonance. In a real resonance the resonant term moves the semi-major axis,
+and <span class="arithmatex">\(\sigma\)</span> librates <em>because</em> <span class="arithmatex">\(a\)</span> swings about <span class="arithmatex">\(a_*\)</span> (<a href="../pendulum/">The resonant pendulum</a>). An angle can also look
+bounded when the perihelion precession carries it, when another resonance drives <span class="arithmatex">\(a\)</span> and <span class="arithmatex">\(\sigma\)</span> follows through the
+identity, or when a forced wave of a nearby term happens to have the right period. The tests on this page ask, one
+by one, whether <span class="arithmatex">\(a\)</span> does what the pendulum of <em>this</em> resonance requires, and if not, what else makes the cycles.</p>
+<p>The outcome is <code>libration_origin</code>:</p>
+<table>
+<thead>
+<tr>
+<th>origin</th>
+<th>meaning</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dynamic</code></td>
+<td>a measured force of this resonance (force law, energy integral or strength) explains the libration</td>
+<td><a href="../gallery/#resonant-two-body">two-body</a>, <a href="../gallery/#resonant-coorbital">co-orbital</a></td>
+</tr>
+<tr>
+<td><code>kinematic</code></td>
+<td><span class="arithmatex">\(\sigma\)</span> is bounded by geometry (perihelion term, a secular cycle, a planetary ripple); <span class="arithmatex">\(a\)</span> does not respond</td>
+<td><a href="../gallery/#kinematic-libration">kinematic libration</a>, <a href="../gallery/#kinematic-drift">kinematic drift</a></td>
+</tr>
+<tr>
+<td><code>induced</code></td>
+<td>another resonance (the <em>owner</em>) drives <span class="arithmatex">\(a\)</span>; <span class="arithmatex">\(\sigma\)</span> follows by the identity</td>
+<td><a href="../gallery/#induced-forced-wave">forced wave</a>, <a href="../gallery/#induced-owner-librates">owner librates</a></td>
+</tr>
+<tr>
+<td><code>subresonance</code></td>
+<td>another member of the same multiplet librates about a fixed center</td>
+<td><a href="../gallery/#transient-subresonance">82831</a></td>
+</tr>
+<tr>
+<td><code>unknown</code></td>
+<td>bounded, mechanism not established</td>
+<td><a href="../gallery/#measured-objection">2003 TX9</a>, <a href="../gallery/#geometric-libration">geometric libration</a></td>
+</tr>
+</tbody>
+</table>
+<p>How the origins combine into a status is on <a href="../status-tree/">The status tree</a>. Every check has four outcomes:
+<code>pass</code> supports the resonant reading, <code>fail</code> refutes it, <code>not_measured</code> means the record could not say, and
+<code>not_applicable</code> means the test does not exist for this angle. Each outcome is a column of <code>summary.csv</code>
+(<a href="../../output/">Output data</a>).</p>
+<h2 id="where-the-response-is-measured">Where the response is measured<a class="headerlink" href="#where-the-response-is-measured" title="Permanent link">&para;</a></h2>
+<p>The derivative tests read <span class="arithmatex">\(\sigma\)</span> and <span class="arithmatex">\(a\)</span> smoothed once more at
+<span class="arithmatex">\(\max(P_c,\ 0.1\,P_\text{cyc})\)</span> (<code>MMR_RESPONSE_CUTOFF_CYCLES</code> = 0.1, <span class="arithmatex">\(P_\text{cyc}\)</span> the median cycle period): the
+record's cutoff <span class="arithmatex">\(P_c\)</span> is chosen for <span class="arithmatex">\(\sigma\)</span>, and a time derivative amplifies whatever leaks through it
+(<a href="../signal/">From the integration to the angle</a>). The tests are made on the union of the librating episodes (else
+the whole record) and again <strong>on every librating episode</strong> with its own period. An episode is a <em>witness</em> when its
+force law passes with full margin while the amplitude test does not fail and the identity is not measured to fail
+(or the force law passes thinly with both of those passing). With a witness, the status tree reads the identity, the
+force law and the amplitude from the witness with most turning points: one episode decides, nothing is counted over
+windows (rule R; columns <code>rsp_*_source</code>). Without a witness it reads the pooled measurement (after a jump with no
+episode in the last regime, G1e: pooled over the episodes before the jump). A witness next to an episode whose force
+law fails gives the cap <code>episode_force_law_mixed</code> (at most <code>medium</code>). Windows that overlap a confirmed jump of <span class="arithmatex">\(a\)</span>
+(<a href="../geometry/">What the angle does</a>) are left out.</p>
+<h2 id="the-identity">The identity<a class="headerlink" href="#the-identity" title="Permanent link">&para;</a></h2>
+<p><em>Question.</em> Does the rate of the angle follow the semi-major axis as <span class="arithmatex">\(\dot\sigma = c\,(a - a_*)\)</span>?</p>
+<p><em>Measurement.</em> Regression of the filtered <span class="arithmatex">\(\dot\sigma\)</span> on the filtered <span class="arithmatex">\(a\)</span>:</p>
+<div class="arithmatex">\[
+\dot\sigma_f = s\,a_f + \text{const}, \qquad \text{pass if }\ \left\lvert \frac{s}{c} - 1\right\rvert \le 0.2
+\ \text{ and }\ \operatorname{corr}(a_f, \dot\sigma_f)\,\operatorname{sign} c \ge 0.9 ,
+\]</div>
+<p>with <code>MMR_IDENTITY_SLOPE_TOL</code> = 0.2 and <code>MMR_IDENTITY_CORR_MIN</code> = 0.9.</p>
+<p><em>Meaning.</em> The identity holds for almost any angle that contains <span class="arithmatex">\(k\lambda\)</span>, so a pass says little. A <strong>fail</strong> is
+informative: the oscillation of <span class="arithmatex">\(\sigma\)</span> sits in the perihelion part, the output step aliases the angle, or <span class="arithmatex">\(a\)</span> and
+<span class="arithmatex">\(\sigma\)</span> follow another clock. An episode whose identity fails with the wrong sign (<span class="arithmatex">\(s/c&lt;0\)</span> at
+<span class="arithmatex">\(\lvert\text{corr}\rvert \ge 0.9\)</span>) cannot be a pendulum of this angle at all and is treated as a forced wave (below).
+<em>In the output:</em> <code>check_mmr_identity</code>.</p>
+<h2 id="the-force-law">The force law<a class="headerlink" href="#the-force-law" title="Permanent link">&para;</a></h2>
+<p><em>Question.</em> Is <span class="arithmatex">\(\dot a\)</span> the force of a pendulum in <span class="arithmatex">\(\sigma\)</span>?</p>
+<p><em>Measurement.</em> From Lagrange's equation, the cosine pendulum has <span class="arithmatex">\(\dot a \propto \sin(\sigma - \sigma_c)\)</span>. In sliding
+windows of <code>MMR_FORCE_WINDOW_CYCLES</code> = 3.5 cycles (long enough to define the phase, short enough for the force to stay
+constant), the package fits by least squares</p>
+<div class="arithmatex">\[
+\dot a_f = R\,\sin(\psi - \phi_0) + C ,
+\]</div>
+<p>with <span class="arithmatex">\(\psi\)</span> the angle (or <span class="arithmatex">\(\sigma - \sigma_c(t)\)</span> in a moving well) and <span class="arithmatex">\(C\)</span> a free offset (a slow drift of <span class="arithmatex">\(a_*\)</span>, not
+part of the potential). Its <span class="arithmatex">\(R^2\)</span> is the smaller of the median <span class="arithmatex">\(R^2\)</span> in the two halves of the record:</p>
+<ul>
+<li>pass with <span class="arithmatex">\(R^2 \ge\)</span> <code>MMR_FORCE_R2_FULL</code> = 0.7 (a <em>thin</em> pass for <span class="arithmatex">\(0.4 \le R^2 &lt; 0.7\)</span>);</li>
+<li>fail with <span class="arithmatex">\(R^2 &lt;\)</span> <code>MMR_FORCE_R2_FAIL</code> = 0.4 under every law tried;</li>
+<li>not measured below an amplitude of <code>MMR_A_RESPONSE_MIN_AMP_DEG</code> = 45° (there <span class="arithmatex">\(\sin\psi\)</span> and <span class="arithmatex">\(\psi\)</span> differ by
+  less than 10 %, and any oscillation carried by <span class="arithmatex">\(a\)</span> fits), or with fewer than <code>MMR_FORCE_MIN_WINDOWS</code> = 2 windows.</li>
+</ul>
+<p>The fitted phase tells where the center is, but its sign depends on <span class="arithmatex">\(c\)</span>: <span class="arithmatex">\(\sigma\)</span> is stable at <span class="arithmatex">\(\phi_0\)</span> when <span class="arithmatex">\(c&lt;0\)</span> and
+at <span class="arithmatex">\(\phi_0 + \pi\)</span> when <span class="arithmatex">\(c&gt;0\)</span> (from <span class="arithmatex">\(\ddot\sigma = c\,\dot a\)</span>). The phase spread over the windows is recorded but not
+tested: a modulated pendulum's phase legitimately moves (Morbidelli 2002, §9.3).</p>
+<p><strong>Multiplet law.</strong> A two-body commensurability has several members <span class="arithmatex">\(\sigma_j = \sigma + j(\varpi - \varpi_P)\)</span> with
+the same fast part (Morbidelli 2002, §9.3–9.4). Their sum</p>
+<div class="arithmatex">\[
+\dot a_f = \sum_j\big[A_j\sin\sigma_j + B_j\cos\sigma_j\big] + C
+\]</div>
+<p>is taken when its <span class="arithmatex">\(R^2\)</span> beats the single law by <code>MMR_FORCE_MULTI_GAIN</code> = 0.1, and only if its leading coefficients
+stay coherent over the windows (<code>MMR_FORCE_COEF_COH_MIN</code> = 0.8; otherwise the law fails).</p>
+<p><strong>Several harmonics of the angle.</strong> A well that is not a cosine (a double well, a flat bottom) has the force law of
+its own potential, <span class="arithmatex">\(\ddot\sigma = c\,\dot a = -V'(\sigma)\)</span> with a few harmonics:</p>
+<div class="arithmatex">\[
+\dot a_f = \sum_{k=1}^{N}\big[A_k\sin k\psi + B_k\cos k\psi\big] + C .
+\]</div>
+<p>When the one-harmonic law fails or passes thinly (never for a 1:1 angle, never inside a null test), <span class="arithmatex">\(N\)</span> grows from 2
+(the one-harmonic law is <span class="arithmatex">\(N = 1\)</span>) while <span class="arithmatex">\(R^2\)</span> gains at least <code>MMR_FORCE_MULTI_GAIN</code> = 0.1, up to
+<code>MMR_FORCE_HARMONICS_MAX</code> = 2. The law is taken only if it passes, in order: a shifted null test exists; its
+coefficients are coherent (0.8); its <span class="arithmatex">\(R^2\)</span> beats the null by <code>MMR_FORCE_NULL_GAIN</code> = 0.2; <span class="arithmatex">\(R^2 \ge 0.4\)</span>; and the law
+fitted on the earlier half (in time) of the windows' samples predicts the later half with <span class="arithmatex">\(R^2 \ge 0.4\)</span>, and the
+reverse. It can only lift the check, never lower it. A purely kinematic linear swing wider than about <span class="arithmatex">\(\pm150°\)</span> can also fit two harmonics, so the force
+law is necessary, not sufficient: the kinematic tests, the energy and the strength decide the origin.</p>
+<p><strong>Guards.</strong> Three effects can fake or spoil the force law, and each has a guard:</p>
+<ul>
+<li><em>A line of <span class="arithmatex">\(\dot a\)</span> near the cutoff.</em> A short-period term just above the response cutoff, with an amplitude of at
+  least <code>MMR_RESPONSE_LINE_AMP_FRAC</code> = 0.5 of the fitted force, raises the cutoff of that measurement to
+  <code>MMR_RESPONSE_LINE_MARGIN</code> = 1.5 × its period (at most <span class="arithmatex">\(P/4\)</span>). The law is then refitted and must beat a <strong>null
+  test</strong>: the same fit with <span class="arithmatex">\(\dot a\)</span> shifted in time by <span class="arithmatex">\((m+\tfrac14)P\)</span> and <span class="arithmatex">\((m+\tfrac34)P\)</span>
+  (<code>MMR_FORCE_NULL_SHIFTS</code> = 8 lags), by at least 0.2 in <span class="arithmatex">\(R^2\)</span>.</li>
+<li><em>A forced line at the libration period.</em> Inside a libration <span class="arithmatex">\(n\)</span> sits at the commensurate value <span class="arithmatex">\(n_c\)</span>, and every
+  argument <span class="arithmatex">\(m\lambda + \sum_j l_j\lambda_j\)</span> of the angle's own planets turns at <span class="arithmatex">\(m n_c + \sum_j l_j n_j\)</span>. Such a
+  term moves <span class="arithmatex">\(a\)</span> at its own frequency, and through the identity a wave <span class="arithmatex">\(a - \bar a = A\cos\nu t\)</span> gives
+  <span class="arithmatex">\(\dot a = -(\nu^2/c)(\sigma - \sigma_c)\)</span>: a pendulum-looking law with no resonant force. A window of 3.5 periods
+  resolves frequencies only to <span class="arithmatex">\(1/(3.5P)\)</span>, so when such a line lies within that resolution of the measured period the
+  force law is <code>not_measured</code> (<code>MMR_FORCE_CONTAMINATION</code> = lattice). If the episode's identity also fails, the
+  episode is a <strong>forced wave</strong>, not a libration of this angle: it is removed from the episodes.</li>
+<li><em>Folded short periods in <span class="arithmatex">\(a\)</span>.</em> When the output step folds orbital or synodic periods into slow lines
+  (<a href="../signal/">From the integration to the angle</a>), these lines reach <span class="arithmatex">\(a\)</span> far more than <span class="arithmatex">\(\sigma_f\)</span>. A failed force
+  law and a failed identity are then read as <code>not_measured</code> when the strength by direct averaging passes and the
+  short-period scatter of <span class="arithmatex">\(a\)</span> exceeds <code>MMR_SHORT_PERIOD_A_RATIO</code> = 0.5 of the libration's half-excursion in <span class="arithmatex">\(a\)</span>. A
+  fail never becomes a pass.</li>
+</ul>
+<details class="info">
+<summary>The guards in detail</summary>
+<ul>
+<li><em>Lines.</em> Each measurement fits the law at its base cutoff, takes the amplitude <span class="arithmatex">\(K\)</span>, and reads the spectrum of
+  <span class="arithmatex">\(\dot a\)</span> from <code>MMR_RESPONSE_LINE_BAND_CUTOFFS</code> = 0.5 × that cutoff to <span class="arithmatex">\(P/2\)</span>, leaving out the libration's
+  harmonics. The raised cutoff is at most <span class="arithmatex">\(P\)</span> / <code>MMR_RESPONSE_MAX_FRACTION</code> = 4. The null shifts reach up to half the
+  record; without a null (half the record shorter than <span class="arithmatex">\(1.75P\)</span>) the force law is not measured, and below the null
+  gain it fails.</li>
+<li><em>Jumps.</em> Windows within <span class="arithmatex">\(\tau/2\)</span> + <code>FILTER_EDGE_TRIM_CUTOFFS</code> × the response cutoff of a confirmed jump are
+  dropped; kicks do not count.</li>
+<li><em>Forced lines.</em> The lattice holds <span class="arithmatex">\(1 \le m \le \lvert k\rvert\)</span>, <span class="arithmatex">\(\lvert l_j\rvert \le \lvert k_j\rvert\)</span>; a line is
+  "at the period" when <span class="arithmatex">\(\lvert 1/T - 1/P\rvert &lt; 1/(WP)\)</span>, <span class="arithmatex">\(W\)</span> = <code>MMR_FORCE_WINDOW_CYCLES</code>. A contaminated L4
+  (<code>rsp_force_contaminated</code>) never makes a libration dynamic (leaf 5f of <a href="../status-tree/">the status tree</a>).</li>
+<li><em>Folded short periods</em> (<code>MMR_SHORT_PERIOD_A_UNMEASURED</code>): the check columns keep the measured fail
+  (<code>rsp_short_period_unmeasured</code>), and the cap <code>short_period_aliased</code> stays.</li>
+</ul>
+</details>
+<p><em>Meaning.</em> A pass is support for a physical mechanism: <span class="arithmatex">\(a\)</span> is pushed back and forth by a force in phase with the
+angle. A fail with a bounded angle points to a kinematic or induced origin. <em>In the output:</em> <code>check_mmr_a_response</code>;
+the law taken in <code>rsp_force_law</code> (<code>mmr_numbers.csv</code>), the harmonic law in <code>rsp_force_harm_*</code>.</p>
+<h3 id="the-direct-averaged-force-law">The direct averaged-force law<a class="headerlink" href="#the-direct-averaged-force-law" title="Permanent link">&para;</a></h3>
+<p>A line of <span class="arithmatex">\(\dot a\)</span> between the response cutoff and the period can swamp the fitted sine and also add small turns that
+shorten the period the turning points give. 59358 8N-13 shows both: the conjunction cycle <span class="arithmatex">\(13P_N \approx 2.1\)</span> kyr in
+<span class="arithmatex">\(\dot a\)</span>, a period of 4.4 kyr from the turns against a swing of 8.8 kyr, and L4 halves of 0.16. Where the harmonic
+L4 fails or passes thinly on a two-body angle that is not 1:1 and has a direct strength, the
+resonance's own force is then tested directly. Lagrange's equation with the directly averaged disturbing function of
+the term, the planet's <strong>real mass</strong> and each window's elements,</p>
+<div class="arithmatex">\[
+\dot a_\text{th}(t) = \frac{2k}{na}\,G m_P\,\frac{d\langle D\rangle}{d\sigma}\big(\sigma(t)\big),
+\]</div>
+<p>is evaluated along the recorded <span class="arithmatex">\(\sigma(t)\)</span>, and <span class="arithmatex">\(\dot a_\text{th}\)</span> and the observed <span class="arithmatex">\(\dot a\)</span> go through the <strong>same</strong>
+low-pass at <span class="arithmatex">\(f\,P_\text{large}\)</span>, <span class="arithmatex">\(f\)</span> = <code>MMR_DIRECT_FORCE_CUTOFF_CYCLES</code> = 0.35 (the filter of the force is compared
+with the filter of <span class="arithmatex">\(\dot a\)</span>, never <span class="arithmatex">\(\sin\)</span> of a filtered angle). Only one scale <span class="arithmatex">\(s\)</span> per window is free: shape and phase
+are the theory's. <span class="arithmatex">\(P_\text{large}\)</span> is the period of the turns that survive a change of the cutoff: the turns of
+<span class="arithmatex">\(\sigma\)</span> low-passed at <span class="arithmatex">\(f P\)</span> count when their number stays within <code>MMR_FILTER_GUARD_TP_REL</code> with the cutoff doubled;
+otherwise the doubled cutoff's period is tried (a clean libration keeps its own period at once).</p>
+<p>The law is taken when two windows share no sample (one stretch counted twice is not a confirmation), a shifted null
+exists, the smaller half median <span class="arithmatex">\(R^2 \ge 0.4\)</span> (thin below 0.7), every <span class="arithmatex">\(s\)</span> lies in <span class="arithmatex">\([1/\sqrt{10},\ \sqrt{10}]\)</span>
+(<code>MMR_STRENGTH_CHECK_RATIO</code>) and <span class="arithmatex">\(R^2\)</span> beats the null by 0.2. It lifts L4 (<code>rsp_force_law</code> = <code>direct_force</code>, rule
+<code>direct_force_law</code>), never lowers it, never makes an episode, and the level is at most medium (cap
+<code>force_law_theory_only</code>: a computed first-order average with a fitted scale, not the measured shape). F then reads the
+strength the large turns need. It is not consulted where the step folds short periods into <span class="arithmatex">\(a\)</span> (the guard above):
+it reads <span class="arithmatex">\(a\)</span> too. 59358: <span class="arithmatex">\(R^2\)</span> 0.75, <span class="arithmatex">\(s\)</span> 1.14–1.29, null 0.02 → transient, medium; 2005 GQ107 40M-57 stays
+uncertain (its episode at 31.7–38.8 kyr holds two overlapping windows only). <em>In the output:</em> <code>rsp_dforce_*</code>
+(<code>rsp_dforce_reason</code>: <code>taken</code> or the guard that refused it), <code>geo_period_large_yr</code>; per episode <code>force_dforce_*</code>.</p>
+<h3 id="co-orbital-force-law">Co-orbital force law<a class="headerlink" href="#co-orbital-force-law" title="Permanent link">&para;</a></h3>
+<p>A 1:1 angle has its own law with no free shape (<a href="../pendulum/#co-orbitals-11">The resonant pendulum</a>). The model
+<span class="arithmatex">\(\dot a = 2\mu n a\,\tilde F(\theta)\)</span> is evaluated on the <em>unfiltered</em> angle and then passed through the data's own
+filters (smoothing <span class="arithmatex">\(\theta\)</span> first would flatten the sharp peak of the force at the planet's passage):</p>
+<div class="arithmatex">\[
+\dot a_\text{data} = K\,\dot a_\text{model} + C ,
+\qquad \text{pass if } R^2 \ge 0.4 \text{ in both halves and } K/K_\text{theory} \in [1/3,\ 3],
+\]</div>
+<p>overall and in both halves; the pass is thin while the smaller half's <span class="arithmatex">\(R^2 &lt; 0.7\)</span> (<code>MMR_FORCE_R2_FAIL</code> = 0.4,
+<code>MMR_FORCE_R2_FULL</code> = 0.7, <code>MMR_COORBITAL_SCALE_RATIO_MAX</code> = 3). <span class="arithmatex">\(K/K_\text{theory} = 1\)</span> means the libration period is the one the planet's mass
+gives, which a kinematic oscillation does not reproduce, so the 45° amplitude floor does not apply and even a small
+tadpole is measured. The owner search does not apply to 1:1 angles: every candidate is a multiple of <span class="arithmatex">\(\sigma\)</span> plus a
+combination of the planets alone. The pendulum test (below) is the energy integral of this law, fitted per cycle.</p>
+<details class="info">
+<summary>The retrograde 1/−1</summary>
+<p>The retrograde co-orbital <code>1J-1r&lt;k&gt;</code> (<span class="arithmatex">\(i &gt; 90°\)</span>) is judged by the same law, with the body placed at
+<span class="arithmatex">\(M = \sigma + \lambda' - ((2k-1)\omega + \Omega)\)</span>: the angle of Li et al. (2019), built from <span class="arithmatex">\(\Omega\)</span>, <span class="arithmatex">\(\omega\)</span> and
+<span class="arithmatex">\(M\)</span> only.</p>
+</details>
+<h3 id="local-force-and-energy-on-a-single-leg">Local force and energy on a single leg<a class="headerlink" href="#local-force-and-energy-on-a-single-leg" title="Permanent link">&para;</a></h3>
+<p>A co-orbital body is often in the 1:1 well for less than a cycle: it is reversed once or twice by the averaged
+potential between two passages, then leaves. Such a stretch closes no cycle, so no episode is accepted, but it may
+still be a capture. The single-leg branch (status tree, leaf G4c) reads the <em>leg</em>: the
+orbit-averaged angle (<code>MMR_COORBITAL_EDGE_TURN_ORBITS</code> = 3 orbits) between two reversals of at least
+<code>MMR_COORBITAL_EDGE_TURN_MIN_DEG</code> = 20°, outside every accepted run, period <span class="arithmatex">\(2L\)</span> at least the floor less
+<code>CONFIDENCE_THIN_BAND</code>. Four questions, each from the averaged problem of
+<a href="../pendulum/#co-orbitals-11">the co-orbital pendulum</a>:</p>
+<ul>
+<li><strong>Topology.</strong> Which of the planet (<span class="arithmatex">\(\theta = 0\)</span>) and L3 (<span class="arithmatex">\(\pi\)</span>) the leg crosses: none (tadpole), L3 (horseshoe),
+  the planet (quasi-satellite), both (a lap past the planet, no swing of one well).</li>
+<li><strong>Local law.</strong> The 1:1 law above on the leg widened by <code>MMR_COORBITAL_LEG_WINDOW_FACTOR</code> × <span class="arithmatex">\(L\)</span> on each side, at the
+  leg's own cutoff <span class="arithmatex">\(\max(2P_\text{orb},\ 0.1\cdot 2L)\)</span> (<code>MMR_COORBITAL_LEG_CUTOFF_ORBITS</code>,
+  <code>MMR_COORBITAL_LEG_CUTOFF_FRACTION</code>): the angle's <span class="arithmatex">\(P_c\)</span> is as long as the shortest legs. Its force check with
+  <span class="arithmatex">\(K &gt; 0\)</span> and its energy integral must pass. On the leg alone the energy is too short to fit; ±0.25 L keeps 85 % of
+  the legs of confirmed cycles passing and separates them 2.0× from the single legs of non-resonant rows.</li>
+<li><strong>Turn conservation.</strong> The averaged problem is time-reversible about a turn, so a reflection mirrors
+  <span class="arithmatex">\(|a - a_P|\)</span>: out/in <span class="arithmatex">\(= |a - a_P|_\text{after} / |a - a_P|_\text{before}\)</span>, medians over
+  <code>MMR_COORBITAL_TURN_SIDE_WINDOW</code> × the shorter adjacent leg on each side, is 1. A close approach (a kick) is not
+  reversible: <span class="arithmatex">\(|\ln(\text{out}/\text{in})| &gt;\)</span> <code>MMR_COORBITAL_TURN_ENERGY_TOL</code> = ln 1.4, the 90th percentile of the
+  turns of confirmed cycles.</li>
+<li><strong>Zone.</strong> A level is reversed only below the highest <span class="arithmatex">\(\tilde R\)</span> before the planet or L3 ahead of the turn: the
+  zone <span class="arithmatex">\(|a - a_P| / \Delta a_\text{max} \le\)</span> <code>MMR_COORBITAL_TURN_ZONE_MAX</code> = 1.1 (97.6 % of the turns of confirmed
+  cycles; <span class="arithmatex">\(\Delta a_\text{max} = a_P\sqrt{(8/3)\mu(\tilde R_\text{top} - \tilde R(\theta))}\)</span>).</li>
+</ul>
+<p>All four hold → a transient of one leg (≤ medium); one fails → uncertain; both turns fail → no capture, but a near
+miss (the near-episode cap). Example: 1991 VG's horseshoe leg 552–613 yr follows the Earth's law (K 2.1, energy
+passes), but its turns read out/in 0.61 and 1.59: two kicks by Earth approaches, not reflections, so the verdict is
+<code>non_resonant / medium</code> (near-episode); 2023 OE5's leg 586–665 yr (out/in 0.84 and
+1.20, K 1.2, energy passes) is a transient.</p>
+<h2 id="energy-and-potential">Energy and potential<a class="headerlink" href="#energy-and-potential" title="Permanent link">&para;</a></h2>
+<p><em>Question.</em> Does <span class="arithmatex">\(\sigma\)</span> move in a fixed potential well, with the period that well predicts?</p>
+<p><em>Measurement.</em> Within each cycle the energy is constant, so a potential <span class="arithmatex">\(V_E\)</span> (up to <code>SEPARATRIX_HARMONICS_MAX</code> = 2
+harmonics) is fitted from</p>
+<div class="arithmatex">\[
+\dot\sigma^2 = 2E_w - 2V(\sigma) \qquad \text{(one energy } E_w \text{ per cycle)},
+\]</div>
+<p>and, independently, <span class="arithmatex">\(V_F\)</span> from the force, <span class="arithmatex">\(c\,\dot a = -V'(\sigma)\)</span>, with no free constant: a periodic <span class="arithmatex">\(V\)</span> has no
+mean force over a closed cycle, and on a short arc a constant column would take part of the force (137295 1N-2 visits
+98° of an asymmetric well; with the constant fitted and dropped, <span class="arithmatex">\(V_F\)</span>'s well moved from 279° to 338°). In a frame
+that follows a moving well, <span class="arithmatex">\(\varphi = \sigma - s(t)\)</span>, the frame's own acceleration is taken off instead,
+<span class="arithmatex">\(c\,\dot a - \ddot s = -V'(\varphi)\)</span>, so <span class="arithmatex">\(V_F\)</span> sees the same motion as <span class="arithmatex">\(V_E\)</span>. The test has two parts:</p>
+<ul>
+<li><em><span class="arithmatex">\(\sigma\)</span> alone</em>: the <strong>period law</strong> <span class="arithmatex">\(\lvert\operatorname{median}(T_\text{obs}/T_\text{pred}) - 1\rvert \le\)</span>
+  <code>SEPARATRIX_PERIOD_TOL</code> = 0.2, and the wells fitted in different windows agree (phase coherence <span class="arithmatex">\(\ge\)</span>
+  <code>SEPARATRIX_PHASE_COHERENCE</code> = 0.9);</li>
+<li><em>with <span class="arithmatex">\(a\)</span></em>: <span class="arithmatex">\(V_E\)</span> and <span class="arithmatex">\(V_F\)</span> correlate at <span class="arithmatex">\(r \ge\)</span> <code>SEPARATRIX_VEVF_R_MIN</code> = 0.9 in at least
+  <code>SEPARATRIX_VEVF_FRACTION</code> = 2/3 of the eligible windows (one window per cycle or turn). The two are compared on
+  the arc of <span class="arithmatex">\(\varphi\)</span> the window visits (<code>SEPARATRIX_VEVF_ARC</code>; outside it both fits are extrapolations), with the
+  number of harmonics chosen by held-out prediction (fitted on one half of the cycle, predicted on the other;
+  <code>SEPARATRIX_HOLDOUT_GAIN</code>). A window is eligible when <span class="arithmatex">\(\sigma\)</span> swings at least <code>MMR_A_RESPONSE_MIN_AMP_DEG</code> = 45°
+  in it, or turns: on a shorter arc the shape of <span class="arithmatex">\(V\)</span> is not constrained (2004 BG41 3J-1: <span class="arithmatex">\(r\)</span> = 0.64–0.90 at
+  ±20–30°, 0.98–1.00 at ±60–108°). No eligible window: not measured, never a pass. <code>sep_VE_VF_n_eligible</code> of
+  <code>sep_VE_VF_n_windows</code> counted, <code>sep_VE_VF_arc_deg</code> their median arc.
+  A correlation does not see a scale: <span class="arithmatex">\(V_F = kV_E\)</span> correlates at 1.00 for any <span class="arithmatex">\(k &gt; 0\)</span>. So <span class="arithmatex">\(V_F\)</span> must also carry the
+  observed period (<code>SEPARATRIX_VF_PERIOD_LAW</code>): each compared cycle's energy is recomputed in <span class="arithmatex">\(V_F\)</span> from the observed
+  <span class="arithmatex">\(\varphi\)</span> and <span class="arithmatex">\(\dot\varphi\)</span> (the same frame and <span class="arithmatex">\(m(t)\)</span>), its period taken in <span class="arithmatex">\(V_F\)</span>'s loop of that energy, and
+  <span class="arithmatex">\(\lvert\operatorname{median}(T_\text{obs}/T_\text{pred}(V_F)) - 1\rvert \le\)</span> <code>SEPARATRIX_PERIOD_TOL</code> over the
+  eligible windows, else R0 fails. A cycle whose <span class="arithmatex">\(V_F\)</span> loop is of the other kind (a libration above <span class="arithmatex">\(V_F\)</span>'s top, a
+  turn below it) has no law; none left: not measured. For a pendulum at 90°, <span class="arithmatex">\(V_F = 2V_E\)</span> gives 1.48 and
+  <span class="arithmatex">\(V_E/2\)</span> 0.62. On the benchmark every passing row of this route lies within 0.94–1.14
+  (<code>sep_VF_period_law_med</code> over <code>sep_VF_period_law_n</code> cycles).</li>
+</ul>
+<p><span class="arithmatex">\(T_\text{pred}\)</span> of a cycle is its period in a potential, through its own turning points. For a two-body angle (not
+1:1) with its planet saved, the potential is the <strong>full averaged well</strong>
+<span class="arithmatex">\(V = 3k^2\mu_P n^2 a\,\bar D(\sigma)\)</span> at the cycle's middle time, with nothing fitted (shape and scale are the
+theory's), when the swing librates in that well. Otherwise it is <span class="arithmatex">\(V_E\)</span>, in the loop of the cycle's energy around the
+minimum whose basin holds the cycle's fastest sample (with two wells, the well the cycle is in, not the deepest one).
+A well that moves at a steady rate <span class="arithmatex">\(\dot\sigma_c\)</span> is followed: the turning points are moved to the well at the cycle's
+middle time, with the kinetic energy <span class="arithmatex">\(\dot\sigma_c^2/2\)</span> they carry. In a frame that follows a moving well the
+coherence of the per-cycle wells is reported but not required; the period law carries the test there.</p>
+<p>Not measured when <span class="arithmatex">\(V_E\)</span> explains less than <code>SEPARATRIX_VE_R2_MIN</code> = 0.7 of <span class="arithmatex">\(\dot\sigma^2\)</span> within the cycles, when the
+filter is too slow for the cycles, and (the part with <span class="arithmatex">\(a\)</span>) below 45° without a slip over the top. For a 1:1 angle the
+energy integral of the co-orbital law replaces this test.</p>
+<p><em>Per episode</em> (<code>SEPARATRIX_R0_EPISODES</code>). One <span class="arithmatex">\(V_E\)</span> fitted over every cycle of the record mixes regimes: two episodes
+in different wells and the circulation between them (79653 3M+3J-7: <span class="arithmatex">\(R^2\)</span> 0.25, not measured). When the record's R0 is
+not measured, each accepted episode with at least two disjoint full cycles is fitted on its own (its period, its best
+frame, the same thresholds); R0 passes when some episode passes and none fails (column <code>sep_R0_episode_id</code>), and the
+×2 filter guard, which compared another episode, does not withdraw it. 79653's first episode (4.8–32.5 kyr): <span class="arithmatex">\(V_E\)</span>
+<span class="arithmatex">\(R^2\)</span> 0.93, period law 0.96, <span class="arithmatex">\(V_E \approx V_F\)</span> at <span class="arithmatex">\(r \ge 0.996\)</span>.</p>
+<details class="info">
+<summary>The order of the two parts</summary>
+<p><code>zone.r0_checks</code> decides the part on <span class="arithmatex">\(\sigma\)</span> alone (R0σ) first. If it fails or is not measured, the part with
+<span class="arithmatex">\(a\)</span> takes the same value: a failed period law stays an objection even at a small amplitude. Only when R0σ passes is
+the part with <span class="arithmatex">\(a\)</span> not measured below <code>MMR_A_RESPONSE_MIN_AMP_DEG</code> = 45° without a turn (there the identity alone
+makes <span class="arithmatex">\(V_E \approx V_F\)</span>); above it the window fraction decides.</p>
+</details>
+<p><em>Meaning.</em> A pass says the cycles have the period a pendulum of their energy would have; with <span class="arithmatex">\(a\)</span>, that the force on
+<span class="arithmatex">\(a\)</span> is the gradient of the same potential. The full-well period law reads the theory's strength, so it is not
+independent of the strength check. <em>In the output:</em> <code>check_mmr_potential</code>; <code>sep_period_law_*</code> in <code>mmr_numbers.csv</code>.</p>
+<h2 id="amplitude-of-a">Amplitude of <span class="arithmatex">\(a\)</span><a class="headerlink" href="#amplitude-of-a" title="Permanent link">&para;</a></h2>
+<p><em>Question.</em> Does <span class="arithmatex">\(a\)</span> carry the amplitude the libration needs?</p>
+<p><em>Measurement.</em> By the identity, each harmonic of <span class="arithmatex">\(\sigma\)</span> has an amplitude in <span class="arithmatex">\(a\)</span> of <span class="arithmatex">\(\omega\,\sigma_\omega/\lvert c\rvert\)</span>.
+In the band <span class="arithmatex">\([P/2,\ 2P]\)</span> around the cycle period (<code>MMR_B1_BAND_FACTOR</code> = 2) the package compares</p>
+<div class="arithmatex">\[
+\text{B1} = \frac{\sqrt2\,\operatorname{std}(a_\text{band})}{\sqrt2\,\operatorname{std}(\dot\sigma_\text{band})/\lvert c\rvert}
+\]</div>
+<p>and fails it below <code>MMR_B1_RATIO_MIN</code> = 0.1.</p>
+<p><em>Meaning.</em> A ratio below 0.1 puts the oscillation in the perihelion part of the angle: a kinematic libration.
+<em>In the output:</em> <code>check_mmr_a_amplitude</code>.</p>
+<h2 id="kinematic-origins">Kinematic origins<a class="headerlink" href="#kinematic-origins" title="Permanent link">&para;</a></h2>
+<p>A libration is <strong>kinematic</strong> when the angle is bounded by geometry while <span class="arithmatex">\(a\)</span> does not respond. The package looks for
+three mechanisms (<code>origin_detail</code>):</p>
+<ul>
+<li><strong>perihelion term</strong> (<code>varpi_term</code>): without an episode, the slow part of <span class="arithmatex">\(\sigma\)</span> follows <span class="arithmatex">\(p\varpi\)</span> (correlation
+  <span class="arithmatex">\(\ge\)</span> <code>MMR_KIN_CORR_MIN</code> = 0.9) while the slow <span class="arithmatex">\(\dot a\)</span> does not answer <span class="arithmatex">\(\sin\sigma\)</span> (<span class="arithmatex">\(R^2 \le\)</span>
+  <code>MMR_KIN_SLOW_R2_MAX</code> = 0.2): the <span class="arithmatex">\(\lambda\)</span> part cancels <span class="arithmatex">\(p\dot\varpi\)</span>. The amplitude test below 0.1 says the same
+  for an episode;</li>
+<li><strong>secular cycle</strong> (<code>secular_cycle</code>): an episode whose period matches the eccentricity cycle <span class="arithmatex">\(2\pi/\lvert g - g_5\rvert\)</span>
+  or the <span class="arithmatex">\(2\omega\)</span> cycle <span class="arithmatex">\(\pi/\lvert\dot\omega\rvert\)</span> within <code>MMR_KIN_PERIOD_TOL</code> = 10 %, while its identity fails and
+  its force law stays below 0.4 under every law;</li>
+<li><strong>planetary ripple</strong> (<code>planet_ripple</code>): the period matches a planetary inequality that survived the filter.</li>
+</ul>
+<p><strong>Kinematic drift.</strong> Some angles show episodes that are only a ripple on a drifting center. The angle is a kinematic
+drift (rule K2, <code>rec_rule</code> 3k2) when the force law, measured on at least <code>MMR_FORCE_MIN_WINDOWS</code> = 2 windows, fails under every law, the largest episode swing is below
+<code>MMR_KIN_RIPPLE_SHARE_MAX</code> = 0.5 of the range of the slow center, and the rate of the slow center correlates
+(<span class="arithmatex">\(\ge 0.9\)</span>) with the rate of the angle's secular part <span class="arithmatex">\(s = \sigma - \psi_\lambda\)</span> low-passed at the same <span class="arithmatex">\(W_c\)</span>,
+over at least <code>MMR_KIN_MIN_POINTS</code> = 3 independent points <span class="arithmatex">\((T - 2W_c)/W_c\)</span>. Over a fraction of <span class="arithmatex">\(W_c\)</span> two smooth
+curves correlate whatever they are: (485) Genua in 3J-1S-1, a clean libration after 42 kyr of circulation, read
+15 kyr of a 42-kyr <span class="arithmatex">\(W_c\)</span> and one force window, and is transient, not a drift. A
+kinematic libration whose center moves by more than <code>MMR_KIN_DRIFT_SHIFT_RATIO</code> = 1 amplitude over its episode is
+read the same way. <em>In the output:</em> <code>check_mmr_kinematic</code>, <code>kin_*</code>.</p>
+<p><strong>K1 on the episode and the swing shares.</strong> On the decisive episode, <span class="arithmatex">\(\sigma\)</span> and <span class="arithmatex">\(p\varpi\)</span> are low-passed at the
+episode's response cutoff (<span class="arithmatex">\(\max(P_c, 0.1\,P_e)\)</span>), cut to the episode and detrended; their difference is the
+<span class="arithmatex">\(\lambda\)</span> part <span class="arithmatex">\(\psi_\lambda\)</span>. Three numbers describe who makes the swing:</p>
+<div class="arithmatex">\[
+\text{K1e} = \operatorname{corr}(\sigma, p\varpi), \qquad
+\text{swing share} = \frac{\tfrac12\operatorname{range}(p\varpi)}{\tfrac12\operatorname{range}(\sigma)}, \qquad
+\lambda\text{ share} = \frac{\tfrac12\operatorname{range}(\psi_\lambda)}{\tfrac12\operatorname{range}(\sigma)} .
+\]</div>
+<p>A kinematic libration has K1e ≈ 1, a swing share ≈ 1 and a small <span class="arithmatex">\(\lambda\)</span> share; a pendulum swings <span class="arithmatex">\(\sigma\)</span> through
+its own <span class="arithmatex">\(a\)</span>, so its <span class="arithmatex">\(\lambda\)</span> share is ≈ 1. The numbers are nan, with the reason in <code>kin_k1_episode_reason</code>, for
+<span class="arithmatex">\(p = 0\)</span>, a retrograde angle, no librating episode, or an episode shorter than <code>MMR_KIN_MIN_POINTS</code> cutoffs.
+<code>kin_check_reason</code> names why the slow-angle correlation (K1) has no number, e.g. <code>too_few_points</code> when the record is
+shorter than three center windows. 285637 3M+7J-6: K1e 0.971, swing share 1.13 (<span class="arithmatex">\(\psi_\lambda\)</span> carries a slow
+±7° wave longer than the 18-kyr cycle, <span class="arithmatex">\(\lambda\)</span> share 0.24). <em>In the output:</em> <code>kin_k1_episode</code>, <code>kin_swing_share</code>,
+<code>kin_lambda_swing_share</code>.</p>
+<p><strong>When a kinematic libration is measured.</strong> K1e ≥ <code>MMR_KIN_CORR_MIN</code>, a flat <span class="arithmatex">\(a\)</span> (B1 &lt; <code>MMR_KIN_B1_CLEAR</code> = 0.01, far
+below what a pendulum needs) and a period at a secular one (within <code>MMR_KIN_PERIOD_TOL</code>) together measure the
+kinematic cause: the margin K1e is full and counts as the verdict's physics, so the verdict may reach <code>high</code>
+(<a href="../confidence/">confidence</a>). 285637 (B1 6·10⁻⁵) and 481085 7E-10M-6 (3.2·10⁻³) are high; 41588 3J+9S-2 (B1 0.095)
+stays medium. No response of <span class="arithmatex">\(a\)</span> means no resonance: the class stays non_resonant, only the confidence in it rises.</p>
+<p><strong>A slower libration of the center (slow scale).</strong> Whenever the center turns, the package stores the slower
+libration at its own scale (<code>MMR_SLOW_SCALE_REPORT</code>): the runs G2c finds at the center scale <span class="arithmatex">\(W_c\)</span>, even when they do
+not cover the record (episodes.csv rows with <code>scale</code> = <code>slow</code>), else the turns of the slow center <span class="arithmatex">\(c(t)\)</span> of a
+librating angle. Its period, closed cycles and half-amplitude, its own identity <span class="arithmatex">\(\dot\sigma_s = c\,(a_s - a_*)\)</span>, B1 in
+the band of its period, and the nearest secular period (<span class="arithmatex">\(\pi/\lvert\dot\omega\rvert\)</span>, <span class="arithmatex">\(2\pi/\lvert g - g_j\rvert\)</span>)
+are columns. A slow swing at a secular period is that cycle seen through the angle's <span class="arithmatex">\(p\varpi\)</span> part: a modulation, not
+a second libration. Its cause is named with a level: <em>identified</em> when the period matches a secular period and the
+center follows that cycle (<span class="arithmatex">\(\dot c\)</span> on its harmonics, <span class="arithmatex">\(R^2 \ge\)</span> <code>MMR_OWNER_R2_MIN</code>, or the slow center's rate follows the
+secular part of <span class="arithmatex">\(\sigma\)</span>, <span class="arithmatex">\(\ge\)</span> <code>MMR_KIN_CORR_MIN</code>); <em>possible</em> with one of the two; <em>unknown</em> with neither, and then
+it is said as unknown. Where the identity holds on the slow scale the slow libration is a <code>dynamic_candidate</code>: it
+changes no status. An owner row names its owner's slow <span class="arithmatex">\(x\)</span> cause first. The swing <span class="arithmatex">\(p\varpi\)</span> alone makes is
+<span class="arithmatex">\(\lvert p\rvert\arcsin(\min(e_f, e_F)/\max(e_f, e_F))\)</span> (<code>kin_pred_swing_deg</code>, next to the measured
+<code>kin_meas_swing_deg</code>). 37087 3J+8S-3: slow runs 17.3–62.4 and 65.8–96.6 kyr, period 5.69 kyr against
+<span class="arithmatex">\(2\pi/(g - g_5)\)</span> = 5.70 kyr, identity slope/<span class="arithmatex">\(c\)</span> 2.8 (fails): identified. 2001 HW7 5J+6S-2 (owner row): one slow
+cycle, the <span class="arithmatex">\(2\omega\)</span> cause of its owner's <span class="arithmatex">\(x\)</span>, identified. <em>In the output:</em> <code>slow_*</code>.</p>
+<details class="info">
+<summary>The perihelion rate of a two-mode eccentricity vector</summary>
+<p>With <span class="arithmatex">\(z = e\,e^{i\varpi} = e_f e^{igt} + e_F e^{ig_5t}\)</span> (free and forced parts, <span class="arithmatex">\(\theta\)</span> the angle between them),</p>
+<div class="arithmatex">\[
+\dot\varpi = g_5 + (g - g_5)\,\frac{e_f^2 + e_f e_F\cos\theta}{e_f^2 + e_F^2 + 2e_f e_F\cos\theta} ,
+\]</div>
+<p>so <span class="arithmatex">\(\varpi\)</span>, and with it <span class="arithmatex">\(p\varpi\)</span>, can be held by the forced mode while <span class="arithmatex">\(a\)</span> does nothing.</p>
+</details>
+<p><strong>A slower libration (B5).</strong> A drifting center could still be a libration slower than the record. B5 excludes it when
+the center moves faster than any libration through the observed arc could, given how little <span class="arithmatex">\(a\)</span> moves; else the cap
+<code>slow_libration_not_excluded</code> (at most <code>medium</code>). In step 3 of <a href="../status-tree/">the status tree</a>, a kinematic
+reading whose center rate is consistent with an exact commensurability (within <code>MMR_B5_EXACT_SIGMA</code> = 2 standard
+errors) becomes <code>uncertain / baseline_needed</code> (<code>rec_rule</code> 3b5). <em>In the output:</em> <code>rsp_b5_ratio</code>, <code>rsp_b5_route</code>.</p>
+<details class="info">
+<summary>B5: formula</summary>
+<p>On the analysis window of length <span class="arithmatex">\(T_w\)</span> the center is fitted by a line, <span class="arithmatex">\(\sigma_c(t) = b + \nu_c t\)</span>, with residual
+standard deviation <span class="arithmatex">\(s_c\)</span>; then</p>
+<div class="arithmatex">\[
+\delta\nu_c = \frac{2\sqrt3\,s_c}{T_w},\qquad S = \lvert\nu_c\rvert\,T_w,\qquad
+K_{\max} = \frac{\lvert\nu_c\rvert\,\delta a}{1 - \cos(\min(S, 2\pi)/2)},\qquad \omega_{0,\max} = \sqrt{\lvert c\rvert K_{\max}},
+\]</div>
+<p><span class="arithmatex">\(\delta a\)</span> the range of the slow <span class="arithmatex">\(a\)</span> on the window: <span class="arithmatex">\(K_{\max}\)</span> is the largest force a libration through the
+observed arc could have without moving <span class="arithmatex">\(a\)</span> by more than observed (worst case: the arc centered on the stable
+point). The slow libration is excluded when <span class="arithmatex">\(\lvert\nu_c\rvert - \delta\nu_c \ge 2\omega_{0,\max}\)</span> (full at the ratio
+<code>MMR_B5_RATIO_FULL</code> = 2), when the center completes a revolution at every smoothing over an interval that overlaps
+the deciding episode, or by an owner.</p>
+</details>
+<h2 id="another-resonance-owns-the-oscillation">Another resonance owns the oscillation<a class="headerlink" href="#another-resonance-owns-the-oscillation" title="Permanent link">&para;</a></h2>
+<p>Two angles of the same body, <span class="arithmatex">\(\sigma = k\lambda + s\)</span> and <span class="arithmatex">\(\phi_o = k_o\lambda + s_o\)</span>, satisfy an exact identity with
+<span class="arithmatex">\(d = \gcd(\lvert k\rvert, \lvert k_o\rvert)\)</span>, <span class="arithmatex">\(u = k_o/d\)</span>, <span class="arithmatex">\(v = k/d\)</span>:</p>
+<div class="arithmatex">\[
+\Psi = u\,\sigma - v\,\phi_o \quad (\text{free of } \lambda), \qquad \sigma = \frac{v}{u}\,\phi_o + \frac{\Psi}{u}.
+\]</div>
+<p>So when resonance B (the angle <span class="arithmatex">\(\phi_o\)</span>) drives <span class="arithmatex">\(a\)</span>, <span class="arithmatex">\(\sigma\)</span> oscillates with it: an <em>induced</em> libration. The identity
+holds whoever drives <span class="arithmatex">\(a\)</span>; a shared oscillation is necessary, not proof. Resonance B is accepted as the <strong>owner</strong> on an
+interval when its own force explains <span class="arithmatex">\(\dot a\)</span> there, by one of four routes.</p>
+<p>The first three routes are tried only on candidates that pass common admissibility checks on the same windows
+(the force law of B is fitted to <span class="arithmatex">\(\dot a\)</span> band-passed to <span class="arithmatex">\([P/f,\ fP]\)</span>, <span class="arithmatex">\(f\)</span> = <code>MMR_OWNER_BAND_FACTOR</code> = 2, <span class="arithmatex">\(P\)</span> the
+reference period of the <span class="arithmatex">\(\dot a\)</span> oscillation):</p>
+<ul>
+<li>B explains <span class="arithmatex">\(\dot a\)</span> with <span class="arithmatex">\(R^2 \ge\)</span> <code>MMR_OWNER_R2_MIN</code> = 0.7;</li>
+<li>the <span class="arithmatex">\(\lambda\)</span>-free remainder carries little of the oscillation:
+  <span class="arithmatex">\(\operatorname{std}[(\Psi/u)_\text{band}]/\operatorname{std}(\sigma_\text{band}) \le\)</span> <code>MMR_OWNER_PSI_SHARE_MAX</code> = 0.1
+  (an amplitude ratio, not a power ratio);</li>
+<li>the apparent turns are not a planetary ripple;</li>
+<li>for the <span class="arithmatex">\(R^2\)</span>-gain and phase routes, the phase <span class="arithmatex">\(\phi_0\)</span> is fixed (coherence <span class="arithmatex">\(\ge\)</span> <code>MMR_OWNER_PHI0_COH_MIN</code> = 0.8, or
+  coherent coefficients of B's multiplet);</li>
+<li>a circulating owner (a forced wave) turns at a period inside the band of <span class="arithmatex">\(a\)</span>.</li>
+</ul>
+<p>The windows are <code>MMR_FORCE_WINDOW_CYCLES</code> = 3.5 periods long at a half-window step, and two of them must fit
+between the band-pass edges (<span class="arithmatex">\(2P\)</span> from either end): about <span class="arithmatex">\(9.25P\)</span> of record. A shorter record is searched again with
+windows of <code>MMR_OWNER_SHORT_WINDOW_CYCLES</code> = 2 periods, about <span class="arithmatex">\(7P\)</span> of record (flag <code>owner_short_windows</code>; a multiplet
+keeps its modulation-period windows; 385533 7N-12 over <span class="arithmatex">\(8.1P\)</span> finds no owner among 17 candidates).
+When even those do not fit, a third stage trims less: the band-pass edge error falls to its interior level <span class="arithmatex">\(0.75P\)</span>
+from an end (measured on the order-2 band <span class="arithmatex">\([P/2, 2P]\)</span>; <code>MMR_OWNER_FITTED_EDGE_TRIM</code> = 0.375 <span class="arithmatex">\(fP\)</span>), and two windows are
+fitted to the span left, each between <code>MMR_OWNER_FITTED_MIN_CYCLES</code> = 1.5 and 2 periods: about <span class="arithmatex">\(3.75P\)</span> of record
+(flag <code>owner_fitted_windows</code>; 385458 9N-17 over 300 kyr, <span class="arithmatex">\(4.6P\)</span>: none of 14 candidates drives <span class="arithmatex">\(a\)</span>). The first two
+stages keep the <span class="arithmatex">\(2P\)</span> trim: on 2001 HW7 over 150 kyr, windows nearer the ends split the owner 5E-16's regimes
+differently, and its cover of σ's episode falls from 1 to 0.</p>
+<p>The potential route keeps the <span class="arithmatex">\(R^2\)</span>, remainder and ripple checks but needs no fixed phase. The identity route has its
+own conditions (in the table).</p>
+<table>
+<thead>
+<tr>
+<th>route</th>
+<th>condition</th>
+<th>settings</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(R^2\)</span> gain</td>
+<td><span class="arithmatex">\(\dot a = R\sin(\phi_o - \phi_0) + C\)</span> fits with <span class="arithmatex">\(R^2 \ge 0.7\)</span>, at least 0.2 above <span class="arithmatex">\(\sigma\)</span>'s own law</td>
+<td><code>MMR_OWNER_R2_MIN</code>, <code>MMR_OWNER_R2_GAIN</code></td>
+</tr>
+<tr>
+<td>phase</td>
+<td>the phase <span class="arithmatex">\(\phi_0\)</span> is fixed (coherence <span class="arithmatex">\(C_B \ge 0.8\)</span>) and exceeds what it could be if <span class="arithmatex">\(\sigma\)</span>'s own term drove <span class="arithmatex">\(a\)</span>: <span class="arithmatex">\(C_B \ge L_B + 0.2\)</span>, <span class="arithmatex">\(L_B = \lvert\langle e^{i\Psi/v}\rangle\rvert\)</span>, while <span class="arithmatex">\(\sigma\)</span>'s coherence stays below <span class="arithmatex">\(L_\sigma + 0.2\)</span></td>
+<td><code>MMR_OWNER_PHI0_COH_MIN</code>, <code>MMR_OWNER_PHI0_COH_GAIN</code></td>
+</tr>
+<tr>
+<td>potential</td>
+<td>for a two-body B with its planet saved: the directly averaged force <span class="arithmatex">\(\dot a_B = (2k_o/na)\,\partial\bar R_B/\partial\phi_o\)</span> along the recorded <span class="arithmatex">\(\phi_o\)</span> predicts <span class="arithmatex">\(\dot a\)</span> with <span class="arithmatex">\(R^2 \ge 0.7\)</span> and a scale within <span class="arithmatex">\([1/2,\ 2]\)</span></td>
+<td><code>MMR_OWNER_POTENTIAL_SCALE_MAX</code></td>
+</tr>
+<tr>
+<td>identity</td>
+<td>for a three-body <span class="arithmatex">\(\sigma\)</span> whose period needs <span class="arithmatex">\(\ge 10^3\,\mu_i\mu_j e^q\)</span>: a two-body <span class="arithmatex">\(\phi\)</span> follows <span class="arithmatex">\(\sigma\)</span> by the identity, librates over <span class="arithmatex">\(\sigma\)</span>'s episode and passes its own strength check</td>
+<td><code>MMR_OWNER_IDENTITY_RATIO_MIN</code></td>
+</tr>
+</tbody>
+</table>
+<p>An owner may itself librate (<code>owner_libration</code>) or circulate at the right period, a forced wave (<code>owner_forced_wave</code>).
+It is credited only with its measured regimes (libration or admissible forced wave; a gap between two of its libration
+pieces is not its time), and it takes an episode of <span class="arithmatex">\(\sigma\)</span> only when these intervals cover at least
+<code>MMR_OWNER_COVER_MIN</code> = 0.5 of it, checked on every accepted episode (rule F7). Near the ends of the record its force
+is not measured at all: its windows keep clear of the band-pass edges, so the record's first and last stretch of
+about <span class="arithmatex">\(2P\)</span> is in no window, and neither is the tail the windows' step leaves. There the owner is neither present nor
+absent. A window where it circulates too fast to fit is a measurement: the owner is absent there. With covered fraction <span class="arithmatex">\(c\)</span> and an unmeasured fraction <span class="arithmatex">\(u\)</span> of the episode, the episode is induced when
+<span class="arithmatex">\(c \ge 0.5\)</span>, the row's own when <span class="arithmatex">\(c + u &lt; 0.5\)</span>, and otherwise not measured: it neither counts for the owner nor
+decides against it (2001 HW7 without planets: an episode at 19.5 kyr, after the owner's last window ends at 19.0 kyr).
+A cover equal to the threshold counts as covering; round-off cannot push it below. An owner in its libration regime
+must also be slow enough to make <span class="arithmatex">\(\sigma\)</span>'s cycles (P2): <span class="arithmatex">\(\Psi/u\)</span> turns less than
+<code>MMR_OWNER_PSI_TURNS_PER_CYCLE_MAX</code> = 1 per cycle, <span class="arithmatex">\(\lvert\dot\Psi\rvert P/(2\pi u) &lt; 1\)</span>; a closed cycle of <span class="arithmatex">\(\sigma\)</span>
+cannot hold more than one turn of the remainder. The episodes it covers and passes P2 for are induced
+(<code>libration_origin</code> = <code>induced</code> in <code>episodes.csv</code>); the others are the row's own and decide the status: every episode
+induced gives non_resonant / induced_libration, an own episode next to induced ones is read without them (2000 SF8
+8M-9: 17E-36 librates before and after its episode, so it is a transient). The owner of a
+three-body angle can be a two-body resonance, and the multiplet law above applies to an owner too.</p>
+<p><strong>Two librations are not two resonances.</strong> Membership is judged by the term that moves <span class="arithmatex">\(a\)</span>, not by a librating
+angle (Nesvorný &amp; Morbidelli 1998, §2, pp. 3030–3031: a three-body resonance is identified by the correlation of the
+filtered <span class="arithmatex">\(a\)</span> with <span class="arithmatex">\(\sigma\)</span>, a rival one rejected because <span class="arithmatex">\(a\)</span> does not follow its angles; Gallardo, Coito &amp; Badano
+2016, p. 89: at small <span class="arithmatex">\(e\)</span> a high-order two-body and a zero-order three-body angle both librate, only the second moves
+<span class="arithmatex">\(a\)</span>). Two angles sharing <span class="arithmatex">\(\lambda\)</span> are tied by <span class="arithmatex">\(\Psi\)</span>: while the owner holds <span class="arithmatex">\(a\)</span>, both librate as one oscillation, and
+the body is in both resonances only when <span class="arithmatex">\(x = \Psi/u\)</span> has a well of its own (<em>confirmed</em> below). An owner explains the
+measured forcing but does not exclude an extra restoring term, so an unresolved test caps the confidence (2001 HW7);
+a residual after the owner is no second capture either. A slow swing of the center at <span class="arithmatex">\(\pi/\lvert\dot\omega\rvert\)</span>
+or <span class="arithmatex">\(2\pi/\lvert g - g_j\rvert\)</span> is the secular cycle when <span class="arithmatex">\(\ddot x\)</span> is a function of <span class="arithmatex">\(2\omega\)</span> or <span class="arithmatex">\(\varpi - g_jt\)</span>, not
+of <span class="arithmatex">\(x\)</span>: a modulation, not a second libration. With no term holding <span class="arithmatex">\(\lambda\)</span> the same beat is a
+<a href="#kinematic-origins">kinematic libration</a> (285637, 481085): <span class="arithmatex">\(a\)</span> stays flat, so non_resonant. Perihelion dominance is no
+veto by itself, and an apocentric center is a branch of a resonant model, not a synonym for non-resonant.</p>
+<p><em>Two resonances at once?</em> Both angles can librate together only if <span class="arithmatex">\(\Psi\)</span> is itself bounded, and a <span class="arithmatex">\(\Psi\)</span> held by
+<span class="arithmatex">\(\sigma\)</span>'s own term is a pendulum in <span class="arithmatex">\(x = \Psi/u\)</span>. A second capture is excluded by either of two routes:</p>
+<ul>
+<li><em>sweep and energy</em>: <span class="arithmatex">\(x\)</span> sweeps at least <code>MMR_OWNER_CAPTURE_SWEEP_DEG</code> = 180° and <span class="arithmatex">\(\dot x^2\)</span> is not a function of
+  <span class="arithmatex">\(x\)</span> (<span class="arithmatex">\(R^2 &lt; 0.7\)</span> on its first harmonics);</li>
+<li><em>secular forcing</em> (F3): <span class="arithmatex">\(\ddot x\)</span> follows the secular cycle, <span class="arithmatex">\(R^2 \ge 0.7\)</span> on the harmonics of <span class="arithmatex">\(2\omega\)</span> or of
+  <span class="arithmatex">\(\varpi - g_jt\)</span> (<span class="arithmatex">\(j = 5..8\)</span>), and not <span class="arithmatex">\(x\)</span> itself, $R^2 &lt; $ <code>MMR_OWNER_CAPTURE_SELF_R2_MAX</code> = 0.2 on
+  <span class="arithmatex">\([1, \sin x, \cos x]\)</span>: the remainder is pushed by the perihelion's cycle, not held in a well of its own (78085
+  5J-4S-1: 0.98 against 0.001, while <span class="arithmatex">\(x\)</span> moved only 155°).</li>
+</ul>
+<p><em>Confirmed</em> (the third outcome): "both angles librate" is not "in both resonances"; <span class="arithmatex">\(\Psi\)</span> is, when <span class="arithmatex">\(x\)</span>
+has a well of its own. All of these on the test window: <span class="arithmatex">\(x\)</span> is bounded (sweep &lt; 180°), <span class="arithmatex">\(\dot x^2\)</span> is a function of
+<span class="arithmatex">\(x\)</span> and <span class="arithmatex">\(\ddot x\)</span> of <span class="arithmatex">\(\sin x\)</span> (<span class="arithmatex">\(R^2 \ge 0.7\)</span> both), its period <span class="arithmatex">\(P_x\)</span> (the median full period of its turns at the
+center-turn prominence <code>LIBRATION_CENTRE_TP_PROMINENCE_DEG</code> = 10°) is no secular one (<span class="arithmatex">\(|P_x/(P_\text{sec}/k) - 1| &gt;\)</span>
+<code>MMR_KIN_PERIOD_TOL</code> for <span class="arithmatex">\(\pi/|\dot\omega|\)</span>, every <span class="arithmatex">\(2\pi/|\dot\varpi - g_j|\)</span> and <span class="arithmatex">\(k = 1, 2\)</span>: a small forced
+sinusoid passes both fits like a pendulum, only its period tells it), and <span class="arithmatex">\(x\)</span> closes at least
+<code>LIBRATION_CENTRE_MIN_ESTIMATES</code> = 2 cycles (a monotonic <span class="arithmatex">\(x\)</span> fits the energy integral trivially: 2013 TW135, <span class="arithmatex">\(R^2\)</span>
+1.00, no turn). The row then keeps the tree's own reading of <span class="arithmatex">\(\sigma\)</span> with origin <code>joint</code> (detail <code>joint_capture</code>,
+<code>owner</code> = the other resonance, role <code>joint</code>; rule <code>both_resonances_confirmed</code>), when that reading claims the
+libration; another reading stands as it is. With one cycle the row is <code>uncertain / baseline_needed</code>, origin <code>joint</code>.
+The owner's own row is untouched. No benchmark row is confirmed (45 owner rows; the bounded <span class="arithmatex">\(x\)</span> of nine
+of them has no turn but HW7's one).</p>
+<p>Otherwise it stays unresolved and caps the confidence at medium (2001 HW7: <span class="arithmatex">\(\ddot x\)</span> follows <span class="arithmatex">\(2\omega\)</span> but also
+<span class="arithmatex">\(\sin x\)</span>, <span class="arithmatex">\(R^2\)</span> 0.63). A slow wobble of the center on an owner row is described, not judged: the period of <span class="arithmatex">\(x\)</span> and its
+secular cause, <code>identified</code> when its period matches <span class="arithmatex">\(\pi/|\dot\omega|\)</span> or <span class="arithmatex">\(2\pi/|g - g_j|\)</span> (or a harmonic) within
+<code>MMR_KIN_PERIOD_TOL</code> and <span class="arithmatex">\(\dot x\)</span> follows that term with <span class="arithmatex">\(R^2 \ge 0.7\)</span>, <code>possible</code> when one of the two holds (HW7:
+6.6 kyr against <span class="arithmatex">\(\pi/|\dot\omega|\)</span> = 7.2 kyr, identified). A secular
+or Lidov-Kozai angle never demotes an MMR verdict: it has no <span class="arithmatex">\(\lambda\)</span>, so no identity ties them. <em>In the output:</em>
+<code>check_mmr_owner</code>, the role columns below, <code>own_*</code>; the candidates are in <code>candidates.csv</code>.</p>
+<details class="info">
+<summary>Owner routes and the second capture in detail</summary>
+<ul>
+<li><em>Identity route.</em> The two-body <span class="arithmatex">\(\varphi\)</span> follows <span class="arithmatex">\(\sigma\)</span> on the decisive window as <span class="arithmatex">\(\sigma_f = c\,\varphi_f + a + bt\)</span>
+  with <span class="arithmatex">\(\lvert c/(k_\sigma/k_\varphi) - 1\rvert \le\)</span> <code>MMR_OWNER_IDENTITY_COEF_TOL</code> and a residual at most
+  <code>MMR_OWNER_IDENTITY_RESID_MAX</code> × the half-amplitude; <span class="arithmatex">\(\varphi\)</span> librates there by its own analysis, and its directly
+  averaged strength passes. Nothing is measured on <span class="arithmatex">\(a\)</span>.</li>
+<li><em>Multiplet owner</em> (<code>MMR_OWNER_LAW</code> = <code>multiplet</code>). An owner whose single phase drifts is fitted with all its
+  members <span class="arithmatex">\(\varphi_j = \varphi_o + j(\varpi - \varpi_P)\)</span>, and must then beat <span class="arithmatex">\(\sigma\)</span>'s own constant-coefficient <span class="arithmatex">\(R^2\)</span>
+  by 0.2.</li>
+<li><em>Outside the episode.</em> An owner whose intervals cover less than <code>MMR_OWNER_COVER_MIN</code> of an own episode (rule F7)
+  sets the flag <code>owner_outside_episode</code>; one that covers it but fails P2 sets <code>owner_psi_too_fast</code>. Its key goes to
+  <code>neighbours</code> with where it acts (before, during or after the row's own episodes), the origin is the tree's.</li>
+<li><em>Second capture window.</em> The test runs on the hull of the owner's intervals that meet <span class="arithmatex">\(\sigma\)</span>'s episodes: a test
+  window only, never owner time.</li>
+<li><em>Second capture.</em> <span class="arithmatex">\(x = \Psi/u\)</span> is low-passed at <code>MMR_OWNER_CAPTURE_LOWPASS_PERIODS</code> = 3 periods before any
+  derivative; <span class="arithmatex">\(\dot x^2\)</span> is fitted as a function of <span class="arithmatex">\(x\)</span> with <code>MMR_OWNER_CAPTURE_HARMONICS</code> = 2 harmonics, and F3
+  fits <span class="arithmatex">\(\ddot x\)</span> on each secular phase alone with the same number of harmonics. A secular term or a period of <span class="arithmatex">\(x\)</span>
+  is read only when <code>MMR_OWNER_X_MIN_CYCLES</code> = 2 of its cycles fit in the test window (over less, the cosine of a
+  nearly uniform phase is a low polynomial in <span class="arithmatex">\(t\)</span> and fits any trend). The phases are <span class="arithmatex">\(2\omega\)</span> and the body's
+  <span class="arithmatex">\(\varpi\)</span> against the giant planets' modes <span class="arithmatex">\(g_jt\)</span>, not their osculating <span class="arithmatex">\(\varpi_j\)</span> (the fit's cosine and sine
+  take up the phase). Unresolved: the cap <code>second_capture_unresolved</code>; an exclusion by F3 fires the rule
+  <code>second_capture_f3</code>.</li>
+<li><em>Well selection (F2), a column only.</em> Over <span class="arithmatex">\(\sigma\)</span>'s episodes in the test window, the Rayleigh length of the
+  owner's centers against <span class="arithmatex">\(\sigma\)</span>'s (78085: 0.97 against 0.24: the owner returns to its own well, <span class="arithmatex">\(\sigma\)</span> does
+  not). Not a criterion: the episodes are few and an owner that re-captures is what rule 2 already says.</li>
+<li><em>Catalog longitudes.</em> A planet whose <span class="arithmatex">\(\lambda\)</span> was not saved enters the owner search (and nothing else) as the
+  line <span class="arithmatex">\(\lambda_{j0} + n_jt\)</span>. Candidates whose decision lies within the phase error this causes are
+  neither accepted nor rejected (flag <code>owner_catalogue_ambiguous</code>), and every such search carries the cap <code>catalogue_longitudes</code> (at most <code>medium</code>).</li>
+</ul>
+</details>
+<h3 id="roles">Roles of the other resonance<a class="headerlink" href="#roles" title="Permanent link">&para;</a></h3>
+<p>The verdict names the other term by what it does; only an owner, a driver or the partner of a confirmed joint capture
+goes into <code>owner</code>, so the column suggests two resonances at once only when they were measured (role <code>joint</code>):</p>
+<table>
+<thead>
+<tr>
+<th><code>cause_role</code></th>
+<th>when</th>
+<th>column</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>owner</td>
+<td>another commensurability librates and makes every deciding episode (F7, P2; <code>owner_libration</code>)</td>
+<td><code>owner</code> = <code>cause_term</code> = its key</td>
+<td>2001 HW7 5J+6S-2: 5E-16</td>
+</tr>
+<tr>
+<td>driver</td>
+<td>it circulates and its forced wave makes the cycles (<code>owner_forced_wave</code>)</td>
+<td><code>owner</code> = <code>cause_term</code> = its key</td>
+<td>385266 16N-27: 3N-5+0+2</td>
+</tr>
+<tr>
+<td>neighbor</td>
+<td>an accepted owner that does not make the row's own episodes (<code>owner_outside_episode</code>, <code>owner_psi_too_fast</code>): the body is in it before or after, not at the same time</td>
+<td><code>neighbours</code> = <code>KEY t0–t1 before\|during\|after;…</code></td>
+<td>1999 GL4 1V-5: 4J-1 after</td>
+</tr>
+<tr>
+<td>empty</td>
+<td>rule C: the librating member of the same multiplet; one resonance, its status is the row's</td>
+<td><code>resonant_argument</code></td>
+<td>31935 9M-16+0+7: 9M-16+2+5</td>
+</tr>
+<tr>
+<td>kinematic</td>
+<td>the secular part of <span class="arithmatex">\(\sigma\)</span> makes the cycles, <span class="arithmatex">\(a\)</span> does not respond</td>
+<td><code>cause_term</code> = the term</td>
+<td>285637 3M+7J-6: <code>-4varpi</code></td>
+</tr>
+<tr>
+<td>joint</td>
+<td>'both resonances at once?' confirmed: the other commensurability librates and <span class="arithmatex">\(\Psi\)</span> has a well of its own (origin <code>joint</code>)</td>
+<td><code>owner</code> = <code>cause_term</code> = its key</td>
+<td>— (none on the benchmark)</td>
+</tr>
+</tbody>
+</table>
+<p><code>commensurability</code> (<code>9M-16</code>) is the key a statistic counts once per body. The place of a neighbor's block is read by
+its midpoint against the span of the row's own episodes.</p>
+<h2 id="subresonances">Subresonances<a class="headerlink" href="#subresonances" title="Permanent link">&para;</a></h2>
+<p>The members of one multiplet, <span class="arithmatex">\(\sigma_s = \sigma + \Delta_s\)</span>, share the fast part and differ by a slow angle
+<span class="arithmatex">\(\Delta_s = m(\varpi_P - \varpi)\)</span> plus node terms, including the members <span class="arithmatex">\(\sigma \pm 2m\omega\)</span> (<code>MMR_SUBRESONANCE_OMEGA_HARMONICS</code> = 2)
+through which an inclined orbit's center moves with <span class="arithmatex">\(\omega\)</span> (Gallardo 2006, §3). If member <span class="arithmatex">\(s\)</span> librates about a fixed
+center <span class="arithmatex">\(c_s\)</span>, the catalog angle's center drifts as <span class="arithmatex">\(c_s - \Delta_s(t)\)</span>. Nodal members join when the inclination to
+the invariable plane is at least <code>MMR_SUBRESONANCE_NODAL_INC_MIN_DEG</code> = 10°. Nodal members are evaluated in the
+invariable-plane frame and <strong>listed for diagnosis only</strong>: a nodal winner is never accepted. The check is then
+<code>not_measured</code>, with the flag and cap <code>nodal_subresonance_candidate</code> (confidence at most <code>medium</code>), and nothing is
+passed to the catalog row. What follows applies to accepted planar members.</p>
+<p>A member that stands still is not enough: in a libration about a moving well every member's frame looks steady. A
+member is accepted when its center range is at most <code>MMR_SUBRESONANCE_RANGE_RATIO</code> = 0.5 of the catalog angle's and
+does not drift or revolve; its d'Alembert factor is at least <code>MMR_SUBRESONANCE_STRENGTH_REL_MIN</code> = <span class="arithmatex">\(10^{-3}\)</span> of the
+strongest term of the commensurability (a weaker member would librate over 30 times slower and cannot set the shared
+oscillation); it librates itself in the window; its force-law phase is coherent (<span class="arithmatex">\(\ge 0.8\)</span>, and 0.2 above the
+catalog angle's) where the swing exceeds 45°; its center lies near 0 or <span class="arithmatex">\(\pi\)</span> (within 30°, at low <span class="arithmatex">\(e\)</span> and <span class="arithmatex">\(i\)</span>); it is
+unique; and its theoretical small-amplitude period is at most <code>MMR_SUBRESONANCE_T0_RATIO_MAX</code> = 2 times the observed
+period (it is a resonance at all). Every one of these tests is a veto applied before the choice, so a member that fails
+one hands the choice to the next. The choice itself is physical, not a score: for a two-body angle whose orbits do not
+cross, the theory chooses the member whose theoretical center <span class="arithmatex">\(c_j(t) = \pi - \arg P(\beta(t)) + j\beta(t)\)</span> is the
+flattest over the episode, provided the measured center follows the theory (RMS ≤ <code>MMR_SUBRESONANCE_THEORY_RMS_DEG</code> =
+20°); the measured center range <span class="arithmatex">\(W\)</span> breaks ties (within <code>MMR_SUBRESONANCE_TIE_FRACTION</code> = 20 %) and is the fallback
+(three-body, crossing orbits, a theory that does not follow). Each accepted episode is scanned in its own window; the
+row's member is that of the episode its status rests on, and episodes.csv names each episode's own. When nothing is
+admissible, the theory follows, the members are told apart (<span class="arithmatex">\(\beta\)</span> moves by more than
+<code>MMR_SUBRESONANCE_CENTRE_MOVE_RATIO</code> × the half-amplitude) and the two flattest theoretical centers tie (within the
+tie fraction: two members of equal weight do, since <span class="arithmatex">\(C_a = C_b\)</span> gives
+<span class="arithmatex">\(P = 2C\cos\frac{(a-b)\beta}{2}\,e^{i(a+b)\beta/2}\)</span> and both centers move by <span class="arithmatex">\(|a-b|/2\)</span> of <span class="arithmatex">\(\beta\)</span>'s range), the
+regime is <strong>composite</strong>: the oscillation is about the moving center of <span class="arithmatex">\(P(\beta)\)</span>, the catalog angle's own verdict
+stands, with <code>origin_detail</code> <code>composite_multiplet</code> and <code>resonant_argument</code> <code>composite</code>. An episode whose own window
+cannot decide (members only the unmeasured test A could tell apart) caps the row as the decisive one would
+(<code>subresonance_undetermined</code>). The theory names the same member as before on the five two-body accepted rows of the
+benchmark (12218, 27011, 31935, 65366, 67495; 82831's orbits cross Mars: W). An accepted member gets a row of its own
+(<code>added_by = subresonance_check</code>) and the catalog angle gets origin <code>subresonance</code>
+(<a href="../gallery/#transient-subresonance">Gallery</a>). <em>In the output:</em> <code>check_mmr_subresonances</code>, <code>sub_*</code>.</p>
+<details class="info">
+<summary>The subresonance scan in detail</summary>
+<p>The scan runs on a trigger: a drift; a moving, modulated or unclosed center; <span class="arithmatex">\(a\)</span> responding with a rotating
+<span class="arithmatex">\(\phi_0\)</span>; a kinematic or unexplained-drift verdict; another member leading by the averaged coefficients; the
+theoretical center of the catalog member <span class="arithmatex">\(\pi - \arg P + j\beta\)</span> moving over an accepted episode by more than
+<code>MMR_SUBRESONANCE_CENTRE_MOVE_RATIO</code> = 1 × its half-amplitude (T7, two-body). A center that moves by more than that
+while its bands still overlap, or an <code>origin_unknown</code> verdict (2003 ND, 2003 EH16), runs the scan as a
+<strong>diagnostic</strong> (T8): its numbers go to <code>sub_diag_*</code>, it never accepts a member and the check stays
+<code>not_applicable</code>. Members are
+every d'Alembert-valid split of the slow coefficients up to the catalog's largest order
+(<code>MATRIX_2BODY_ORDER_MAX</code>, <code>MATRIX_3BODY_ORDER_MAX</code>); nodal members are built wholly in the invariable plane.</p>
+<p>The tests, as the columns name them: E′ (the d'Alembert factor), L (the member librates in the scan window), A
+(a coherent force-law phase), B (center near 0 or <span class="arithmatex">\(\pi\)</span>), C (unique; a tie goes to the lower degree), E (a
+resonance at all: the period ratio). Test D compares the center with the composite multiplet theory
+<span class="arithmatex">\(c_0(\beta) = \pi - \arg\sum_j C_j e^{ij\beta}\)</span> (Morbidelli 2002, §9.3–9.4) and only raises the confidence. When
+several members pass and only A could tell them apart, no member is accepted (cap <code>subresonance_undetermined</code>);
+the other subresonance caps are <code>subresonance_tie</code>, <code>subresonance_t6_only</code> and <code>subresonance_theory_unconfirmed</code>.</p>
+<p><code>sub_top</code> lists the best <code>MMR_SUBRESONANCE_TOP_N</code> = 10 members as <code>key:W/W0:E:N:A/W</code>: the range <span class="arithmatex">\(W\)</span> of the
+member's slow center against <span class="arithmatex">\(W_0\)</span> of the catalog angle, <span class="arithmatex">\(E = 1 - \operatorname{var}(c_s)/\operatorname{var}(c_0)\)</span>,
+<span class="arithmatex">\(N\)</span> the number of its slow cycles the window holds, <span class="arithmatex">\(A/W\)</span> the swing over <span class="arithmatex">\(W\)</span>; <code>sub_rank1..3_pass_deg</code> is the
+largest monotone pass of that member's center in the scan window (≈ 360° for a center that turns once there, which
+step 1 rejects). The list decides nothing.</p>
+<p><strong>Cheap numbers on every row</strong> (prograde, not 1:1; scan or not; nothing reads them for the status). The theory
+(two-body, planet saved, orbits not crossing) gives the planar shares <span class="arithmatex">\(|C_j|/\sum|C_j|\)</span>, Rouché for the catalog
+member, <span class="arithmatex">\(|P|/\max|P|\)</span> of the compound term <span class="arithmatex">\(P(\beta) = \sum_j C_j e^{ij\beta}\)</span> inside the gaps between accepted
+episodes and at their edges, and the center travel behind T7. A gap where <span class="arithmatex">\(|P|\)</span> nearly vanishes is the compound term
+canceling as <span class="arithmatex">\(\beta = \varpi_P - \varpi\)</span> passes its cancellation phase (12218 4M-7: 9·10⁻⁵ between 48.7 and
+76.2 kyr). The cheap list puts every planar member up to the catalog's order on the existing center of the
+longest accepted episode, with test E′ and step 1: <code>sub_cheap_n</code> pass both, <code>sub_cheap_best</code> is the first of them,
+else the flattest frame. A flat frame with a negligible factor is a frame, not a force (2003 UG22 40 kyr: +5+2 and
++6+1, factors 10⁻⁸ and 10⁻¹⁰).</p>
+</details>
+<h2 id="onset-of-an-episode-o1">Onset of an episode (O1)<a class="headerlink" href="#onset-of-an-episode-o1" title="Permanent link">&para;</a></h2>
+<p><em>Question.</em> Is the episode a capture, or does it continue an <span class="arithmatex">\(a\)</span>-wave that was already there?</p>
+<p><em>Measurement.</em> With the band-passed axis <span class="arithmatex">\(a_\text{band} = \operatorname{LP}_{P/2}(a_f) - \operatorname{LP}_{2P}(a_f)\)</span>
+(<span class="arithmatex">\(P\)</span> the episode's libration period),</p>
+<div class="arithmatex">\[
+\mathrm{O1} = \frac{\operatorname{std}(a_\text{band})_\text{before}}{\operatorname{std}(a_\text{band})_\text{episode}} .
+\]</div>
+<p>The background is the <span class="arithmatex">\(2P\)</span> before the episode, or before its group: an earlier episode ending inside that stretch with
+no observed circulation in the gap joins the group, and an earlier one followed by a circulation cuts the stretch at
+its end. The stretch is also cut at confirmed jumps of <span class="arithmatex">\(a\)</span> and at the filter edges; with less than one period <span class="arithmatex">\(P\)</span> of
+clear background (or of episode), O1 is not measured.</p>
+<p><em>Applicability.</em> O1 tests a capture claim: the angle's own libration, a subresonance or a librating owner. It does
+not apply to a kinematic libration, a forced wave of a circulating owner, or a non_resonant verdict of unknown origin;
+nor when an already librating owner covers at least <code>MMR_O1_OWNER_COVER_MIN</code> = 0.5 of the background; nor when the
+episodes lie in the separatrix zone (<a href="../geometry/#the-separatrix-zone">What the angle does</a>), where the wave before
+is the same force's near-separatrix circulation.</p>
+<p>A large ratio alone does not show a foreign wave. Before a capture from circulation the body circulates near the
+separatrix under the same force (Murray &amp; Dermott 1999, §8.12), so <span class="arithmatex">\(a\)</span> already swings at about <span class="arithmatex">\(P\)</span>; after an encounter
+kick the swing before is noise. Three more numbers on the background say which it is:</p>
+<ul>
+<li>O1c, coherence: <span class="arithmatex">\(R^2_\text{coh}\)</span> of one sinusoid <span class="arithmatex">\(A\cos(2\pi t/P - \varphi) + C\)</span> fitted to <span class="arithmatex">\(a_\text{band}\)</span> there;</li>
+<li>O1c, phase: <span class="arithmatex">\(|\varphi_\text{bg} - \varphi_\text{ep}|\)</span>, with <span class="arithmatex">\(\varphi_\text{ep}\)</span> fitted on the episode's first <span class="arithmatex">\(2P\)</span>
+  (both phases are absolute in <span class="arithmatex">\(t\)</span>, so this is the background wave extrapolated into the episode; a capture starts
+  its own phase);</li>
+<li>O1l, own law: <span class="arithmatex">\(R^2\)</span> of <span class="arithmatex">\(\dot a\)</span> on the background under the episode's own force law,
+  <span class="arithmatex">\(\dot a = K\sin(\sigma - \varphi_0) + c\)</span> with the episode's <span class="arithmatex">\(K\)</span> and <span class="arithmatex">\(\varphi_0\)</span> fixed (only <span class="arithmatex">\(c\)</span> free; for a 1:1
+  angle the co-orbital law with the episode's <span class="arithmatex">\(K/K_\text{th}\)</span>), over the same <span class="arithmatex">\(R^2\)</span> on the episode.</li>
+</ul>
+<p><em>Meaning.</em> Full below <code>MMR_O1_RATIO_THIN</code> = 0.25, thin from 0.25 to below <code>MMR_O1_RATIO_FAIL</code> = 0.5. From 0.5 O1
+fails only for a foreign wave: coherent (<span class="arithmatex">\(R^2_\text{coh} \ge\)</span> <code>MMR_O1_COHERENCE_R2_MIN</code> = 0.5), in phase (gap ≤
+<code>MMR_O1_PHASE_GAP_MAX_DEG</code> = 90°) and not explained by the own law (the ratio of the two <span class="arithmatex">\(R^2\)</span> below
+<code>MMR_O1_OWN_LAW_R2_FRACTION</code> = 0.5); otherwise it is thin. The three settings are conventions. A part that cannot be
+measured is no evidence of a wave (O1c) and explains nothing (O1l). A failed applicable O1 caps the confidence at
+<code>low</code> (<code>onset_failed</code>). Leaf 5o (<a href="../status-tree/">The status tree</a>), where nothing else measured the force, still
+reads the ratio alone: narrowed, it would move two author labels (2013 VA14 over 60 kyr, the background incoherent
+at its period; 2003 TG2 over 100 kyr, coherence 0.23), whose objection is the strong wave itself.
+<em>In the output:</em> <code>ep_onset_ratio</code>, <code>ep_onset_coherence_r2</code>, <code>ep_onset_phase_gap_deg</code>, <code>ep_onset_own_law_r2</code>,
+<code>ep_onset_own_law_r2_episode</code>, <code>mrg_O1</code>.</p>
+<h2 id="strength">Strength<a class="headerlink" href="#strength" title="Permanent link">&para;</a></h2>
+<p><em>Question.</em> Could this resonance produce the observed period at all?</p>
+<p><em>Measurement.</em> The required strength <span class="arithmatex">\(\mu_\text{req}\)</span> from the observed small-amplitude period against the theory
+<span class="arithmatex">\(\mu_\text{eff,th}\)</span> from the averaged potential (<a href="../pendulum/#how-strong-must-the-resonance-be">The resonant pendulum</a>):
+pass when the range of <span class="arithmatex">\(\mu_\text{req}/\mu_\text{eff,th}\)</span> over the snapshots overlaps <span class="arithmatex">\([1/10,\ 10]\)</span>
+(<code>MMR_STRENGTH_CHECK_RATIO</code>). For three-body angles the theory is only the scale <span class="arithmatex">\(\mu_i\mu_j e^q\)</span>, and the check is a
+support, not a measurement of the force.</p>
+<p><em>Meaning.</em> When neither the force law nor the energy could be measured, the strength is the only physics left. If the
+observed cycles would need a force at least <code>MMR_STRENGTH_IMPLAUSIBLE_RATIO</code> = 1000 times what the resonance gives (for
+a three-body angle, even after the small-divisor envelope), the bounded angle is not this resonance: <code>non_resonant</code>,
+reason <code>implausible_strength</code> (<a href="../gallery/#implausible-strength">Gallery</a>). The strength check does not apply to 1:1
+angles, which have their own law. <em>In the output:</em> <code>check_mmr_strength</code>, <code>str_*</code>.</p>
+<h2 id="what-the-tests-decide">What the tests decide<a class="headerlink" href="#what-the-tests-decide" title="Permanent link">&para;</a></h2>
+<p>The tests give <code>libration_origin</code> as in the table at the top; the reason each combination gives is listed in
+<a href="../status-tree/#every-reason">Every reason</a>, and the order in which the tests are applied, and what happens when
+they disagree, is on <a href="../status-tree/">The status tree</a>. How much each pass, thin pass or failure weighs is on
+<a href="../confidence/">Confidence</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../geometry/" class="md-footer__link md-footer__link--prev" aria-label="Previous: What the angle does">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                What the angle does
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../status-tree/" class="md-footer__link md-footer__link--next" aria-label="Next: The status tree">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                The status tree
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

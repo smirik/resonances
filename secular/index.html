@@ -1,236 +1,1991 @@
-<!DOCTYPE html>
-<html class="writer-html5" lang="en" >
-<head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://github.com/smirik/resonances/secular/" />
-      <link rel="shortcut icon" href="../img/favicon.ico" />
-    <title>Secular Resonances - Mean-Motion Resonances</title>
-    <link rel="stylesheet" href="../css/theme.css" />
-    <link rel="stylesheet" href="../css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
     
-      <script>
-        // Current page data
-        var mkdocs_page_name = "Secular Resonances";
-        var mkdocs_page_input_path = "secular.md";
-        var mkdocs_page_url = "/smirik/resonances/secular/";
-      </script>
-    
-    <script src="../js/jquery-3.6.0.min.js" defer></script>
-    <!--[if lt IE 9]>
-      <script src="../js/html5shiv.min.js"></script>
-    <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-      <script>hljs.initHighlightingOnLoad();</script> 
-</head>
-
-<body class="wy-body-for-nav" role="document">
-
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
-    <div class="wy-side-scroll">
-      <div class="wy-side-nav-search">
-          <a href=".." class="icon icon-home"> Mean-Motion Resonances
-        </a>
-      </div>
-
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
-                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
-                </li>
-              </ul>
-              <p class="caption"><span class="caption-text">Getting Started</span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../quick-start/">Quick Start</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../install/">Installation and updates</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../examples/">Examples</a>
-                  </li>
-              </ul>
-              <p class="caption"><span class="caption-text">Features</span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations, Bodies, MMRs</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../libration/">Libration module</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../matrix/">Resonance Matrices</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../output/">Output Files</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
-                  </li>
-              </ul>
-              <p class="caption"><span class="caption-text">About</span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../about/">Copyright, license, references</a>
-                  </li>
-              </ul>
-      </div>
-    </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="..">Mean-Motion Resonances</a>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python package that finds mean-motion, secular and Lidov-Kozai resonances of small bodies in the Solar system and decides, from a numerical integration, whether the resonant angle librates and why.">
+      
+      
+        <meta name="author" content="Evgeny Smirnov">
+      
+      
+        <link rel="canonical" href="https://smirik.github.io/resonances/secular/">
+      
+      
+        <link rel="prev" href="../matrix/">
+      
+      
+        <link rel="next" href="../lidov-kozai/">
+      
+      
         
-      </nav>
-      <div class="wy-nav-content">
-        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
-  <ul class="wy-breadcrumbs">
-    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
-      <li>Secular Resonances</li>
-    <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/smirik/resonances/blob/master/docs/secular.md" class="icon icon-github"> Edit on GitHub</a>
-    </li>
-  </ul>
-  <hr/>
-</div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-            <div class="section" itemprop="articleBody">
-              
-                <h1 id="secular-resonances">Secular Resonances</h1>
-<p>This guide shows how to work with secular resonances in the resonances library. Examples assume familiarity with secular resonance theory and asteroid dynamics.</p>
-<h2 id="quick-start">Quick Start</h2>
-<h3 id="creating-individual-secular-resonances">Creating Individual Secular Resonances</h3>
-<pre><code class="language-python">import resonances
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Secular resonances - resonances</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
 
-# Create specific secular resonances
-nu6 = resonances.create_secular_resonance('nu6')      # ν₆ resonance (g-g₆)
-nu5 = resonances.create_secular_resonance('nu5')      # ν₅ resonance (g-g₅)
-nu16 = resonances.create_secular_resonance('nu16')    # ν₁₆ resonance (s-s₆)
 
-# Create from mathematical formulas
-nu6_formula = resonances.create_secular_resonance('g-g6')
-nu5_formula = resonances.create_secular_resonance('g-g5')
-nu16_formula = resonances.create_secular_resonance('s-s6')
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
 
-# Create nonlinear resonances
-nonlinear = resonances.create_secular_resonance('2g-g5-g6')
-complex_res = resonances.create_secular_resonance('g+s-s7-g5')
-</code></pre>
-<h3 id="building-multiple-resonances">Building Multiple Resonances</h3>
-<pre><code class="language-python">from resonances.matrix.secular_matrix import SecularMatrix
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#secular-resonances" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
 
-# Build specific resonances
-resonances_list = SecularMatrix.build(['g-g5', 'g-g6', 's-s6'])
+  
 
-# Build all resonances of a specific order
-order2_resonances = SecularMatrix.build(order=2)  # Linear resonances
-order4_resonances = SecularMatrix.build(order=4)  # Nonlinear resonances of order 4
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="resonances" class="md-header__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
 
-# Build all available resonances
-all_resonances = SecularMatrix.build()
-</code></pre>
-<h2 id="example-asteroid-759-vinifera-6-resonance">Example: Asteroid 759 Vinifera (ν₆ Resonance)</h2>
-<pre><code class="language-python">import resonances
-
-# Create the ν₆ resonance
-nu6 = resonances.create_secular_resonance('nu6')
-# Set up simulation with Vinifera
-sim = resonances.Simulation()
-sim.add_body(759, nu6, name='Vinifera')
-# Access the body
-body = sim.bodies[0]
-print(f&quot;Added body: {body.name}&quot;)
-print(f&quot;Body has {len(body.secular_resonances)} secular resonances&quot;)
-
-sim = resonances.check(
-    asteroids=[759],
-    resonance='nu6',
-    integration_years=1000000,
-    oscillations_cutoff=0.0005,
-    plot='all',
-    save='all',
-)# Configure simulation
-sim.run(progress=True)
-
-print(f&quot;Simulation completed for {sim.bodies[0].name}&quot;)
-print(f&quot;Resonance: {sim.bodies[0].secular_resonances[0].to_s()}&quot;)
-</code></pre>
-<h2 id="nonlinear-secular-resonances">Nonlinear Secular Resonances</h2>
-<pre><code class="language-python">import resonances
-
-# High-order resonances
-high_order = resonances.GeneralSecularResonance(formula='g+s-s7-g5')
-kozai_type = resonances.GeneralSecularResonance(formula='2g-2s')
-
-# Mixed frequency resonances
-mixed = resonances.GeneralSecularResonance(formula='g-g5+s7-s6')
-complex_mixed = resonances.GeneralSecularResonance(formula='2g-s7-s6')
-
-# Special case with parentheses
-special = resonances.GeneralSecularResonance(formula='2(g-g6)+(s-s6)')
-</code></pre>
-<h2 id="custom-planetary-frequencies">Custom Planetary Frequencies</h2>
-<p>You can customize planetary frequencies by creating a <code>.env</code> file in your project directory:</p>
-<pre><code class="language-bash"># .env file
-g5=4.25749319
-g6=28.24552984
-g7=3.08675577
-g8=0.67255084
-s5=0.0
-s6=-26.34496354
-s7=-2.99266093
-s8=-0.69251386
-</code></pre>
-<p>The frequencies will be loaded automatically when you import the resonances library.</p>
-<pre><code class="language-python">from resonances.matrix.secular_resonances import load_planetary_frequencies
-
-# Load current frequencies
-frequencies = load_planetary_frequencies()
-print(&quot;Current planetary frequencies (arcsec/yr):&quot;)
-for freq, value in frequencies.items():
-    print(f&quot;  {freq}: {value}&quot;)
-</code></pre>
-<h2 id="references">References</h2>
-<p>For theoretical background on secular resonances, see:</p>
-<ol>
-<li><strong>Murray, C. D. &amp; Dermott, S. F.</strong> Solar System Dynamics. Cambridge University Press (1999).</li>
-<li><strong>Morbidelli, A.</strong> Modern Celestial Mechanics: Aspects of Solar System Dynamics. Taylor &amp; Francis (2002).</li>
-<li><strong>Knežević, Z. &amp; Milani, A.</strong> Proper element catalogs and asteroid families. Astronomy &amp; Astrophysics (2003).</li>
-</ol>
-              
-            </div>
-          </div><footer>
-
-  <hr/>
-
-  <div role="contentinfo">
-    <!-- Copyright etc -->
-  </div>
-
-  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
-</footer>
-          
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            resonances
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Secular resonances
+            
+          </span>
         </div>
       </div>
-
-    </section>
-
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
   </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
 
-  <div class="rst-versions" role="note" aria-label="Versions">
-  <span class="rst-current-version" data-toggle="rst-current-version">
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="resonances" class="md-nav__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    resonances
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
     
-        <span>
-          <a href="https://github.com/smirik/resonances" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
-        </span>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
     
+  
+    Home
+  
+
     
   </span>
-</div>
-    <script>var base_url = '..';</script>
-    <script src="../js/theme_extra.js" defer></script>
-    <script src="../js/theme.js" defer></script>
-    <script defer>
-        window.onload = function () {
-            SphinxRtdTheme.Navigation.enable(true);
-        };
-    </script>
+  
+  
 
-</body>
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulations, bodies, resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using with AI agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How the status is determined
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How the status is determined
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/pendulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The resonant pendulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/signal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    From the integration to the angle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What the angle does
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/response/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is it this resonance?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/status-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The status tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/confidence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Confidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/secular-zlk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular and Lidov-Kozai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resonance matrices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular resonances
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-resonances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating resonances
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-angle-is-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the angle is built
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planetary-frequencies-and-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planetary frequencies and phases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Planetary frequencies and phases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mode-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mode phases
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-resonances-to-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which resonances to check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-1020-arcadia-in-z1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: (1020) Arcadia in z1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lidov-kozai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lidov-Kozai resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clones (virtual asteroids)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reading-figures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to read the figures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../serialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serialization and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coherence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-spectral coherence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../free-elements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Free elements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../libration-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    References
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-resonances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating resonances
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-angle-is-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the angle is built
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planetary-frequencies-and-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planetary frequencies and phases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Planetary frequencies and phases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mode-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mode phases
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-resonances-to-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which resonances to check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-1020-arcadia-in-z1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: (1020) Arcadia in z1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="secular-resonances">Secular resonances<a class="headerlink" href="#secular-resonances" title="Permanent link">&para;</a></h1>
+<p>A secular resonance is a commensurability between the slow precession of the body's perihelion
+(<code>g</code>) or node (<code>s</code>) and the fundamental frequencies of the planets (<code>g1…g8</code>, <code>s1…s8</code>, Mercury…Neptune). How the
+status of a secular angle is decided: <a href="../physics/secular-zlk/">Secular and Lidov-Kozai</a>.</p>
+<h2 id="creating-resonances">Creating resonances<a class="headerlink" href="#creating-resonances" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">resonances</span>
+
+<span class="n">nu6</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">create_secular_resonance</span><span class="p">(</span><span class="s1">'nu6'</span><span class="p">)</span>  <span class="c1"># g-g6</span>
+<span class="n">nu14</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">create_secular_resonance</span><span class="p">(</span><span class="s1">'nu14'</span><span class="p">)</span>  <span class="c1"># s-s4</span>
+<span class="n">z1</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">create_secular_resonance</span><span class="p">(</span><span class="s1">'g-g6+s-s6'</span><span class="p">)</span>
+<span class="n">z2</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">create_secular_resonance</span><span class="p">(</span><span class="s1">'2(g-g6)+(s-s6)'</span><span class="p">)</span>
+<span class="n">other</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">create_secular_resonance</span><span class="p">(</span><span class="s1">'-g+s+g5-s7'</span><span class="p">)</span>
+</code></pre></div>
+<p>Aliases: <code>nu1</code>…<code>nu8</code> are <code>g-g1</code>…<code>g-g8</code>, <code>nu11</code>…<code>nu18</code> are <code>s-s1</code>…<code>s-s8</code> (no <code>nu15</code>: <code>s5</code> is
+identically zero), <code>z1</code>…<code>z4</code>, <code>2nu6-nu5</code>, <code>3nu6-2nu5</code>. A formula needs at least one term of the body
+(<code>g</code> or <code>s</code>); planet indices run from 1 to 8. A string is recognized as secular by
+<code>detect_resonance_type</code> if it is an alias (any case) or its only letters are a lowercase <code>g</code> and <code>s</code>.
+Capital letters are MMR notation, so <code>2S-1</code> and <code>4J-2S-1</code> are MMRs with Saturn.</p>
+<h2 id="how-the-angle-is-built">How the angle is built<a class="headerlink" href="#how-the-angle-is-built" title="Permanent link">&para;</a></h2>
+<p>With <code>secular_angle_mode='proper'</code> (the default), the angle that is classified, plotted and saved compares the
+body's perihelion and node with the planets' <strong>mode longitudes</strong> <span class="arithmatex">\(g_j t + \phi_j\)</span> (the frequencies
+<code>PLANETARY_FREQUENCIES</code> and the J2000 phases <code>PLANETARY_PHASES</code> of <code>resonances/data/const.py</code>, shifted to the
+simulation date), with the body's node measured from the <strong>invariable plane</strong> (<code>INVARIABLE_PLANE</code>). The formulas
+and the fitted basis: <a href="../physics/secular-zlk/#the-secular-angle">The secular angle</a>. This section explains why.</p>
+<p>Both matter. Measured from the ecliptic, the node of every planet is dominated by the constant
+1.58° tilt of the invariable plane and does not circulate at all (Jupiter's and Saturn's mean rate
+is 0, not <code>s6</code>); the osculating perihelia of Venus, Earth, Mars, Uranus and Neptune do not turn at
+their own mode either (Uranus' turns at ~5.8″/yr, not <code>g7</code>). Only Mercury's, Jupiter's and Saturn's
+perihelia follow their mode. So an angle built from the planets' osculating elements is wrong for
+every term but <code>g1</code>, <code>g5</code>, <code>g6</code>: built so, the z1 angle <code>g+s-g6-s6</code> of (847) Agnia turns at −26″/yr, exactly −s6,
+the rate of the planets' artificial node. The same holds for a body of low free inclination, whose ecliptic node
+librates around the invariable node instead of turning at <code>s</code>.</p>
+<p><strong>Reduced angle</strong> (<code>secular_remove_forced=True</code>, the default). The body's e and i vectors carry
+forced terms at every planetary fundamental. Those at frequencies that are <em>not</em> in the angle (g5 for
+z1 or ν6, s7 for z2, …) only shake it, and when the free e or i is not much larger than the forced one
+they decide whether the angle turns at all: (363) Padua's z1 angle from the osculating elements
+circulates for 6 of 10 Myr while the resonance holds. The literature removes them by low-pass
+filtering (Carruba et al. 2016 filter the z2 angle at 700 kyr "to eliminate all short-period
+perturbations such as the g5 frequency"); here they are subtracted by least squares at the known
+frequencies (<code>proper_angle.reduced_vectors</code>). The terms at the angle's own frequencies
+(g6, s6 for z1; g6 for ν6) are the resonance and stay — one rule for linear and nonlinear resonances.
+Removing all of them would give the free-phase angle of Vokrouhlický et al. (2006, Agnia), which for a
+linear resonance removes the resonance itself.</p>
+<p>The angle from the osculating elements (same mode longitudes, nothing removed) is saved as
+<code>&lt;resonance&gt;_angle_osculating</code>; <code>secular_angle_mode='osculating'</code> classifies the integration's angle
+instead. The analysis of the angle (cutoff, center scale, turning points: a libration needs
+<code>LIBRATION_MIN_TURNING_POINTS</code> = 3 turning points, one full cycle) is described in
+<a href="../physics/secular-zlk/">Secular and Lidov-Kozai</a>.</p>
+<p><strong>Free divisor</strong> (summary.csv <code>free_divisor</code>, ″/yr; a diagnostic, no status depends on it):
+<span class="arithmatex">\(p g + q s + \sum_j(p_j g_j + q_j s_j)\)</span> with the body's own <span class="arithmatex">\(g\)</span> and <span class="arithmatex">\(s\)</span> — the rates of its free vectors, every fundamental
+removed (<code>proper_angle.free_rates</code>). Near 0 the free vector itself keeps pace with the planets' modes
+(16712 and 48717 in ν6, the z1 and z2 librators). A libration whose period is
+<span class="arithmatex">\(P = 1\,296\,000/|D|\)</span> yr, with the free divisor <span class="arithmatex">\(D\)</span> in ″/yr (one turn = 1 296 000″), is one around the forced equilibrium: the angle's own forced term is larger than the free amplitude and
+the free vector turns at its own rate — Tina in ν6 (2.18″/yr, 592 kyr), the anti-aligned ν6 libration
+of Carruba &amp; Morbidelli (2011). The two cannot be told apart by this number alone, so it changes nothing.</p>
+<h2 id="planetary-frequencies-and-phases">Planetary frequencies and phases<a class="headerlink" href="#planetary-frequencies-and-phases" title="Permanent link">&para;</a></h2>
+<p><code>g5…g8</code>, <code>s6…s8</code> are the AstDyS values (Knežević &amp; Milani 2000). <code>g1…g4</code>, <code>s1…s4</code> and all the phases
+are measured on the package's own model (Sun, eight planets, Pluto, Newtonian, Earth = Earth–Moon
+barycenter) by a frequency analysis of a 10-Myr integration.
+Against Laskar (1990, Icarus 88, 266, Tables II–III) the outer planets agree to 0.01–0.02″/yr and
+1–2° in phase, <code>g3, g4, s3, s4</code> to 0.01–0.06″/yr; <code>g1</code> is lower by 0.38″/yr, <code>g2</code> by 0.12, <code>s1</code> higher
+by 0.11 — the model has no general relativity. The inner frequencies drift by ~0.01″/yr over 10 Myr,
+and their phases are uncertain by tens of degrees. <code>s2</code> is split into several lines in this model and
+is the least certain of all.</p>
+<p><strong>Measured phases</strong> (<code>secular_planet_phases='measured'</code>, needs <code>save_planets='all'</code> (or <code>True</code>)). Over tens of
+Myr the linear law drifts away from the integrated planets: in a 20 Myr run of the package's model the
+phase of s4 is off by 80° after 17 Myr, s3 by 23°, g3 and s2 by 20°, and even s6 by 16° (the AstDyS
+<code>s6</code> is 0.003″/yr off the model's). <code>resonances/secular/planet_modes.py</code> fits the phase of mode <code>j</code>
+in planet <code>j</code>'s own vector (<code>e·exp(iϖ)</code> for <code>g_j</code>, <code>sin(i/2)·exp(iΩ)</code> for <code>s_j</code>) by least squares
+on all eight modes of that kind, in windows of <code>secular_phase_window</code> (5 Myr: g3 and g4 are 0.54″/yr
+apart), a tenth of a window apart, and builds the longitude as <code>g_j t + φ_j(t)</code>. Within half a window
+of either end the phase goes on along its slope. A baseline shorter than the window keeps the linear
+law: a shorter fit cannot separate g3 from g4 (over 200 kyr it puts g3 51° off).</p>
+<h3 id="mode-phases">Mode phases<a class="headerlink" href="#mode-phases" title="Permanent link">&para;</a></h3>
+<p><strong>How far the linear phases stray</strong> (<code>resonances/data/mode_phase_uncertainty.json</code>). For every mode, <code>range_j(T)</code> is
+the largest max − min of <code>φ_j(t)</code> over a window of length <code>T</code>, from the same 5 Myr fits, in three runs of the model
+(SABA dt 0.5 and 0.25 over 50 Myr, WHFast 3 d over 20 Myr), the maximum over the runs. Up to 20 Myr the windows lie
+anywhere inside the first 20 Myr from the epoch, the span the three runs agree on; a longer <code>T</code> starts at the epoch
+(both SABA runs show a jump of the inner modes 22–25 Myr ahead, where g3 moves by 125° in 2.5 Myr).
+At <code>T</code> = 10 Myr: g1 18°, g2 2.7°, g3 24°, g4 30°, s1 17°, s2 87°, s3 23°, s4 81°; every outer mode below 10°
+(s6 9.5°, g5 1.4°, g6 0.9°). The fit smooths <code>φ_j</code> over 5 Myr, so below that length <code>range_j</code> is the phase's drift,
+not its faster wobble. Under the linear law a secular libration must swing more than <code>Σ|k_j| range_j(T)</code> over the
+angle's modes, or it is <code>insufficient_time</code> / <code>phase_unresolved</code> (<a href="../physics/secular-zlk/#geometry-and-status">the rule</a>).
+The table was measured with a research script on local runs; neither is part of the package.</p>
+<h2 id="which-resonances-to-check">Which resonances to check<a class="headerlink" href="#which-resonances-to-check" title="Permanent link">&para;</a></h2>
+<p><code>SECULAR_FORMULAS</code> is the catalog: the linear <code>ν_j</code>, <code>ν_1j</code> of all planets, the classical degree-4
+set, <code>z1…z4</code> and the g-type terms (75 distinct angles). For a complete search around one body use
+<code>resonances.secular.combinations.near_resonant(g, s, max_order=6, thresholds={2: 5.0, 4: 2.0, 6: 1.0}, modes=...)</code>
+(g, s and the windows in ″/yr; pass <code>modes</code> by name). For
+<span class="arithmatex">\(\sigma = p\varpi + q\Omega + \sum_j(p_j\varpi_j + q_j\Omega_j)\)</span> it builds every angle allowed by the d'Alembert
+rules, <span class="arithmatex">\(p + q + \sum_j(p_j + q_j) = 0\)</span> and <span class="arithmatex">\(q + \sum_j q_j\)</span> even (the sum of the node coefficients, not the number of
+node terms: 2s − s4 − s6 is allowed), up to the order <span class="arithmatex">\(|p| + |q| + \sum_j(|p_j| + |q_j|)\)</span>, and keeps those whose
+divisor <span class="arithmatex">\(p g + q s + \sum_j(p_j g_j + q_j s_j)\)</span> is inside the window for its order. It returns <code>SecularCombination</code>
+records (<code>formula</code>, <code>order</code>, <code>divisor</code>, <code>key</code>); <code>resonances.create_secular_resonance(formula)</code> turns a chosen formula
+into a resonance. Order 6 with all fifteen planetary modes gives ~900 angles within 1″/yr of a main-belt
+body — the window and the modes have to be chosen physically.</p>
+<p>The catalog is wider than what the literature reports. Librations are shown for ν5, ν6, ν16, ν4
+(one Hungaria), z1, z2, g+g5−2g6, g+2g5−3g6, 2g−3g5+g6, g−g5+s−s7, 2g−g5−g6+s−s6 and, among the
+Hungarias, g−s−g5+s6; s−g5+g8−s6, s+g5−g8−s3, 2s−s4−s6 and 2g−g5−g6 are located there but shown only as
+temporary interactions (Warner et al. 2009; Milani et al. 2010; Knežević 2022). Nothing is reported for
+combinations with <code>g1, g2, s1, s2</code> or mixed degree-4 terms of the inner planets with Uranus or Neptune;
+their divisors in this model are also off by 0.1–0.3″/yr (no general relativity). A degree-4 resonance
+(half-width ~0.3″/yr) librates in ~9 Myr, a degree-6 one (~0.1″/yr) in ~26 Myr. To plan the baseline, use the
+rule <span class="arithmatex">\(T_{\rm req}\)</span> of <a href="../physics/confidence/#actions">Confidence</a> (one and a half periods plus the two filter edges).</p>
+<p><code>SecularResonanceFinder</code> evaluates the catalog's divisors on AstDyS synthetic proper elements
+(<code>resonances secular-candidates</code> on the command line).</p>
+<h2 id="example-1020-arcadia-in-z1">Example: (1020) Arcadia in z1<a class="headerlink" href="#example-1020-arcadia-in-z1" title="Permanent link">&para;</a></h2>
+<p>The benchmark example of a z1 librator (SABA(10,6,4), dt = 0.5, 10 Myr from 2026-09-29, a 100-yr output step;
+the benchmark keeps every fifth point, a 500-yr step, which the <a href="../physics/gallery/#secular-z1-resonant">Gallery</a>
+verdict reads):</p>
+<div class="highlight"><pre><span></span><code><span class="n">sim</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">Simulation</span><span class="p">(</span>
+    <span class="n">date</span><span class="o">=</span><span class="s1">'2026-09-29'</span><span class="p">,</span>
+    <span class="n">integrator</span><span class="o">=</span><span class="s1">'SABA(10,6,4)'</span><span class="p">,</span>
+    <span class="n">dt</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">integration_years</span><span class="o">=</span><span class="mi">20_000</span><span class="p">,</span>  <span class="c1"># the benchmark run: integration_years=10_000_000, Nout=100001</span>
+    <span class="n">Nout</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">create_solar_system</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">add_body</span><span class="p">(</span><span class="mi">1020</span><span class="p">,</span> <span class="p">[</span><span class="n">resonances</span><span class="o">.</span><span class="n">create_secular_resonance</span><span class="p">(</span><span class="s1">'z1'</span><span class="p">)],</span> <span class="n">name</span><span class="o">=</span><span class="s1">'Arcadia'</span><span class="p">)</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">bodies</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">statuses</span><span class="p">)</span>  <span class="c1"># {'g-g6+s-s6': 'resonant'} over 10 Myr in the benchmark; 20 kyr is too short</span>
+</code></pre></div>
+<p>(847) Agnia, the classical z1 family, circulates slowly in the same benchmark
+(<a href="../physics/gallery/#secular-z1-circulation">Gallery</a>): its free vector keeps near pace with the planets' modes
+without turning back.</p>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Laskar, J. (1990). The chaotic motion of the solar system. Icarus 88, 266.</li>
+<li>Knežević, Z. &amp; Milani, A. (2000). Synthetic proper elements for outer main belt asteroids. Celest. Mech. Dyn. Astron. 78, 17.</li>
+<li>Milani, A. &amp; Knežević, Z. (1990). Secular perturbation theory and computation of asteroid proper elements. Celest. Mech. Dyn. Astron. 49, 347.</li>
+<li>Souami, D. &amp; Souchay, J. (2012). The solar system's invariable plane. A&amp;A 543, A133.</li>
+<li>Vokrouhlický, D., Brož, M., Bottke, W. F., Nesvorný, D. &amp; Morbidelli, A. (2006). The peculiar case of the Agnia asteroid family. Icarus 183, 349.</li>
+<li>Carruba, V. (2009). The (not so) peculiar case of the Padua family. MNRAS 395, 358.</li>
+<li>Carruba, V. &amp; Morbidelli, A. (2011). On the first ν6 anti-aligned librating asteroid family of Tina. MNRAS 412, 2040.</li>
+<li>Warner, B. D., Harris, A. W., Vokrouhlický, D., Nesvorný, D. &amp; Bottke, W. F. (2009). Analysis of the Hungaria asteroid population. Icarus 204, 172.</li>
+<li>Milani, A., Knežević, Z., Novaković, B. &amp; Cellino, A. (2010). Dynamics of the Hungaria asteroids. Icarus 207, 769.</li>
+<li>Knežević, Z. (2022). Survey of secular resonances in the asteroid belt. Serb. Astron. J. 204, 1.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../matrix/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Resonance matrices">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Resonance matrices
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../lidov-kozai/" class="md-footer__link md-footer__link--next" aria-label="Next: Lidov-Kozai resonances">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Lidov-Kozai resonances
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
 </html>

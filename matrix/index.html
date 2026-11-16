@@ -1,205 +1,1912 @@
-<!DOCTYPE html>
-<html class="writer-html5" lang="en" >
-<head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://github.com/smirik/resonances/matrix/" />
-      <link rel="shortcut icon" href="../img/favicon.ico" />
-    <title>Resonance Matrices - Mean-Motion Resonances</title>
-    <link rel="stylesheet" href="../css/theme.css" />
-    <link rel="stylesheet" href="../css/theme_extra.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
-    
-      <script>
-        // Current page data
-        var mkdocs_page_name = "Resonance Matrices";
-        var mkdocs_page_input_path = "matrix.md";
-        var mkdocs_page_url = "/smirik/resonances/matrix/";
-      </script>
-    
-    <script src="../js/jquery-3.6.0.min.js" defer></script>
-    <!--[if lt IE 9]>
-      <script src="../js/html5shiv.min.js"></script>
-    <![endif]-->
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-      <script>hljs.initHighlightingOnLoad();</script> 
-</head>
 
-<body class="wy-body-for-nav" role="document">
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python package that finds mean-motion, secular and Lidov-Kozai resonances of small bodies in the Solar system and decides, from a numerical integration, whether the resonant angle librates and why.">
+      
+      
+        <meta name="author" content="Evgeny Smirnov">
+      
+      
+        <link rel="canonical" href="https://smirik.github.io/resonances/matrix/">
+      
+      
+        <link rel="prev" href="../physics/gallery/">
+      
+      
+        <link rel="next" href="../secular/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Resonance matrices - resonances</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
-    <div class="wy-side-scroll">
-      <div class="wy-side-nav-search">
-          <a href=".." class="icon icon-home"> Mean-Motion Resonances
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#resonance-matrices" class="md-skip">
+          Skip to content
         </a>
-      </div>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
 
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul>
-                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
-                </li>
-              </ul>
-              <p class="caption"><span class="caption-text">Getting Started</span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../quick-start/">Quick Start</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../install/">Installation and updates</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../examples/">Examples</a>
-                  </li>
-              </ul>
-              <p class="caption"><span class="caption-text">Features</span></p>
-              <ul class="current">
-                  <li class="toctree-l1"><a class="reference internal" href="../core/">Simulations, Bodies, MMRs</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../libration/">Libration module</a>
-                  </li>
-                  <li class="toctree-l1 current"><a class="reference internal current" href="./">Resonance Matrices</a>
-    <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#initialisation">Initialisation</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a>
-        <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#mix-with-astdys">Mix with AstDyS</a>
-    </li>
-        </ul>
-    </li>
-    </ul>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../output/">Output Files</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../config/">Config</a>
-                  </li>
-              </ul>
-              <p class="caption"><span class="caption-text">About</span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../about/">Copyright, license, references</a>
-                  </li>
-              </ul>
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="resonances" class="md-header__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            resonances
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Resonance matrices
+            
+          </span>
+        </div>
       </div>
     </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="..">Mean-Motion Resonances</a>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
         
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
       </nav>
-      <div class="wy-nav-content">
-        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
-  <ul class="wy-breadcrumbs">
-    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
-          <li>Features &raquo;</li>
-      <li>Resonance Matrices</li>
-    <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/smirik/resonances/blob/master/docs/matrix.md" class="icon icon-github"> Edit on GitHub</a>
-    </li>
-  </ul>
-  <hr/>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-            <div class="section" itemprop="articleBody">
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
               
-                <h1 id="resonance-matrices">Resonance Matrices</h1>
-<p>The Resonance Matrices allows us to find the preliminary (theoretical) value of a resonant semi-major axis for the resonance. While for a two-body mean motion resonance the calculation follows obviously from the Third Kepler Law, it is not so straightforward for three-body mean motion resonances.</p>
-<p>This app calculates the value of the resonant semi-major axis for three-body resonance based on the paper: <em>Smirnov, E. A., Dovgalev, I. S. &amp; Popova, E. A. Asteroids in three-body mean motion resonances with planets. Icarus (2017) doi:10.1016/j.icarus.2017.09.032.</em> The algorithms are in the classes <code>TwoBody</code> and <code>ThreeBody</code>.</p>
-<h2 id="initialisation">Initialisation</h2>
-<p>When the app needs to know the value of the resonant semi-major axis for the first time, it calculates it and stores it in the file (the config items <code>MATRIX_3BODY_FILE</code> and <code>MATRIX_2BODY_FILE</code>). The files have the following structure:</p>
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="resonances" class="md-nav__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    resonances
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulations, bodies, resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using with AI agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How the status is determined
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How the status is determined
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/pendulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The resonant pendulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/signal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    From the integration to the angle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What the angle does
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/response/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is it this resonance?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/status-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The status tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/confidence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Confidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/secular-zlk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular and Lidov-Kozai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../physics/gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resonance matrices
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resonance matrices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initialization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Initialization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prograde-resonances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prograde resonances
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrograde-resonances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrograde resonances
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#candidates-from-a-catalog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Candidates from a catalog
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lidov-kozai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lidov-Kozai resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clones (virtual asteroids)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reading-figures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to read the figures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../serialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serialization and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coherence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-spectral coherence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../free-elements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Free elements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../libration-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    References
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initialization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Initialization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prograde-resonances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prograde resonances
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrograde-resonances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrograde resonances
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#candidates-from-a-catalog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Candidates from a catalog
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="resonance-matrices">Resonance matrices<a class="headerlink" href="#resonance-matrices" title="Permanent link">&para;</a></h1>
+<p>A resonance matrix is a catalog of mean-motion resonances with their nominal resonant semi-major axes <span class="arithmatex">\(a_{\rm res}\)</span>.
+It is used to find the resonances near a body before integrating it.</p>
+<ul>
+<li><strong>Two-body</strong> (<code>TwoBody</code>): Kepler's third law at the commensurability <span class="arithmatex">\(k_P n_P + k n = 0\)</span>,
+  <span class="arithmatex">\(a_{\rm res} = a_P\,(-k/k_P)^{2/3}\)</span>, with <span class="arithmatex">\(a_P\)</span> the planet's semi-major axis.</li>
+<li><strong>Three-body</strong> (<code>ThreeBody</code>): one perturbative correction of the commensurability
+  <span class="arithmatex">\(k_1 n_1 + k_2 n_2 + k\,n + p\,\dot\varpi = 0\)</span> (the planets' own precession neglected). First the Keplerian
+  <span class="arithmatex">\(n_K = -(k_1 n_1 + k_2 n_2)/k\)</span> and <span class="arithmatex">\(a_0 = (K/n_K)^{2/3}\)</span>; then the body's perihelion rate <span class="arithmatex">\(g_0\)</span> at <span class="arithmatex">\(a_0\)</span>, and
+  <span class="arithmatex">\(n = -(k_1 n_1 + k_2 n_2 + p\,g_0)/k\)</span>, <span class="arithmatex">\(a_{\rm res} = (K/n)^{2/3}\)</span>. Here <span class="arithmatex">\(n_j = K a_j^{-3/2}\)</span> (rad/day,
+  <span class="arithmatex">\(K = 0.0172020989484\)</span>, <span class="arithmatex">\(a\)</span> in au) and, summed over all planets with <span class="arithmatex">\(\mu_j = m_j/M_\odot\)</span> and <span class="arithmatex">\(D = 365.2422\)</span> days,
+  <span class="arithmatex">\(g_0 = \frac{3\pi}{2D}\sum_j \mu_j F_j\)</span>, <span class="arithmatex">\(F_j = a_0^{3/2}/a_j^3\)</span> for <span class="arithmatex">\(a_0 \le a_j\)</span> and
+  <span class="arithmatex">\(F_j = a_j^2/[a_0^{7/2}(1+\mu_j)^{3/2}]\)</span> for <span class="arithmatex">\(a_0 &gt; a_j\)</span> (the leading terms <span class="arithmatex">\(\tfrac34 n\mu_j (a/a_j)^3\)</span> of an outer planet and <span class="arithmatex">\(\tfrac34 n\mu_j (a_j/a)^2\)</span> of an inner one).
+  <span class="arithmatex">\(\dot\varpi\)</span> is not iterated to the corrected axis.</li>
+</ul>
+<p>These are nominal values from fixed planetary axes. The classifier does not use them: it measures the exact
+resonance <span class="arithmatex">\(a_*\)</span> of each angle from the integration (<a href="../physics/pendulum/">The resonant pendulum</a>).</p>
+<h2 id="initialization">Initialization<a class="headerlink" href="#initialization" title="Permanent link">&para;</a></h2>
+<p>When the app needs to know the value of the resonant semi-major axis for the first time, it calculates it and stores it in the file (the config items <code>MATRIX_3BODY_FILE</code>, <code>MATRIX_2BODY_FILE</code> and <code>MATRIX_2BODY_RETRO_FILE</code>). The files have the following structure:</p>
 <ol>
 <li>The number of an item</li>
 <li>The short notation of resonance (i.e. <code>4J-2S-1</code> or <code>1J-1</code>)</li>
 <li>The planet(s), one per column (i.e. <code>Jupiter</code> and <code>Saturn</code>)</li>
-<li>Two or three integers depending on the type of a MMR</li>
+<li>Two or three integers depending on the type of a MMR (p, q and k for a retrograde one)</li>
 <li>The order of a resonance</li>
 <li>The value of the resonant semi-major axis</li>
 </ol>
-<p>If the app generates the file, it will use it next time. If you need to recalculate the matrix, simply delete the output file.</p>
-<h2 id="usage">Usage</h2>
-<p>There are two classes, <code>ThreeBodyMatrix</code> and <code>TwoBodyMatrix</code>, responsible for building the resonant matrices. You might use any of them to find the possible resonances close to the given value of the semi-major axis.</p>
-<p>The following code will print the list of three-body MMRs close to the value <code>2.39</code> AU of the semi-major axis.</p>
-<pre><code class="language-python">from resonances.matrix.three_body_matrix import ThreeBodyMatrix
+<p>The first line of the file is a stamp with the class and the catalog version (e.g. <code># TwoBodyMatrix v2</code>). If the app generates the file, it will use it next time; a file with another stamp, written by an older version of the package, is rebuilt automatically. If you change the <code>MATRIX_*</code> limits, delete the output file to recalculate the matrix.</p>
+<p>Next to the file the app writes its build record, <code>&lt;file&gt;.meta.json</code> (e.g. <code>cache/mmr-2body.csv.meta.json</code>): the <code>MATRIX_*</code> limits, the planets, the catalog version and the package version. When a cached catalog is read, the record is compared with the current settings. Other limits or planets give a warning in the log naming the file and each differing setting (cached and current); a file without a record (written by an older version) gives one warning that its limits are unknown. The file is still read as it is, nothing is rebuilt or deleted: the paths are relative to the working directory, so a run started elsewhere can silently use a catalog built with other limits, and the warning is how you see it. To rebuild, delete the file (or call <code>TwoBodyMatrix.load(reload=True)</code>), or point <code>MATRIX_*_FILE</code> to another file. The retrograde catalog holds its limits in the stamp and is rebuilt when they change.</p>
+<h3 id="prograde-resonances">Prograde resonances<a class="headerlink" href="#prograde-resonances" title="Permanent link">&para;</a></h3>
+<p><code>TwoBody</code> and <code>ThreeBody</code> are resonances of prograde orbits. A two-body resonance <code>m_p P + m</code> (angle <code>m_p λ_p + m λ + p ϖ</code>) needs <code>n = −m_p/m · n_p &gt; 0</code>, so the body's coefficient <code>m</code> must be negative: <code>3J-2</code> is a resonance, <code>3J+2</code> is not. <code>TwoBody.calculate_resonant_axis</code> raises for <code>m ≥ 0</code>, and <code>TwoBodyMatrix</code> does not list such combinations. Their angle circulates at about <code>6 n_J</code> for <code>3J+2</code>, far above the Nyquist rate of any reasonable output step, so its series would be pure aliasing. <code>ThreeBody</code> likewise raises when the mean motion comes out negative.</p>
+<h3 id="retrograde-resonances">Retrograde resonances<a class="headerlink" href="#retrograde-resonances" title="Permanent link">&para;</a></h3>
+<p>A body with <span class="arithmatex">\(i &gt; 90°\)</span> can be in a p/−q resonance with a planet (Morais &amp; Namouni 2013a, b; Li, Huang &amp; Gong 2019,
+A&amp;A 630, A60): <span class="arithmatex">\(q n = p n'\)</span>, at the same axis as the prograde p/q, <span class="arithmatex">\(a = (q/p)^{2/3} a'\)</span>. With
+<span class="arithmatex">\(\varpi^* = \omega - \Omega\)</span> and <span class="arithmatex">\(\lambda^* = M + \omega - \Omega\)</span> the arguments are</p>
+<div class="arithmatex">\[
+\varphi = q\lambda^* - p\lambda' - (p + q - 2k)\,\varpi^* + 2k\,\Omega = qM + (2k - p)\,\omega + p\,\Omega - p\lambda',
+\qquad 0 \le 2k \le p + q .
+\]</div>
+<p>Each k is a separate angle; the order is p + q, the amplitude <span class="arithmatex">\(\propto \cos^{2k}(i/2)\,e^{p+q-2k}\)</span>. Near the ecliptic k = 0 dominates, at polar orbits higher k do (2011 KT19 in 7/−9 with Neptune: k = 6).</p>
+<p>Notation: <code>&lt;p&gt;&lt;planet&gt;-&lt;q&gt;r&lt;k&gt;</code>, planet first, k required. <code>1J-3r0</code> is 2000 DG8 (1/−3 with Jupiter), <code>1J-1r1</code> is 2015 BZ509 (Ka'epaoka'awela), <code>7N-9r6</code> is 2011 KT19. <code>to_s()</code> and <code>to_short()</code> give the same string; it is the key in summary.csv and the data files.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">resonances</span>
 
-mmrs = ThreeBodyMatrix.find_resonances(2.39, planets=['Jupiter', 'Saturn', 'Uranus'])
-for mmr in mmrs:
-    print(mmr.to_short())
-</code></pre>
+<span class="n">mmr</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">create_mmr</span><span class="p">(</span><span class="s1">'1J-3r0'</span><span class="p">)</span>  <span class="c1"># or RetrogradeTwoBody(p=1, q=3, k=0, planet='Jupiter')</span>
+<span class="c1"># 2_000 years here; 10_000 and more for a verdict</span>
+<span class="n">sim</span> <span class="o">=</span> <span class="n">resonances</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="s1">'2000 DG8'</span><span class="p">,</span> <span class="s1">'1J-3r0'</span><span class="p">,</span> <span class="n">integrator</span><span class="o">=</span><span class="s1">'ias15'</span><span class="p">,</span> <span class="n">integration_years</span><span class="o">=</span><span class="mi">2_000</span><span class="p">,</span> <span class="n">Nout</span><span class="o">=</span><span class="mi">2_001</span><span class="p">)</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+<ul>
+<li><code>RetrogradeTwoBodyMatrix</code> lists every coprime p, q ≤ <code>MATRIX_2BODY_RETRO_COEF_MAX</code> (15) with p + q ≤ <code>MATRIX_2BODY_RETRO_ORDER_MAX</code> (30) and every k: 143 resonances per planet as in Li et al., 1198 angles. The cache stamp holds both limits, so changing either rebuilds the cached catalog.</li>
+<li><code>find</code> gives a body with <code>i &gt; 90°</code> only retrograde candidates, within <code>sigma_retro = 0.5</code> au (Li et al.), and any other body only prograde ones. In <code>find_mmrs</code>, a single <code>sigma</code> overrides <code>sigma_retro</code> too, and <code>retrograde=True</code> with <code>mmr_type='two-body'</code> or <code>'three-body'</code> is a <code>ValueError</code>. <code>check</code> accepts any combination; a resonance of the other direction is only warned about, since orbits can flip. A run whose inclination crosses 90° is warned about too.</li>
+<li>The text of Li et al. writes the condition as <code>pn − qn' ≈ 0</code>; their eqs. (1), (2) and the objects give <code>qn − pn' ≈ 0</code>.</li>
+<li>The angle is built from the body's Ω, ω and M only. For <code>i &gt; 90°</code> REBOUND returns <code>l = −λ*</code> and <code>pomega = −ϖ*</code>; an angle from those runs off on a pure Kepler orbit. The <code>longitude</code> (REBOUND's <code>l</code>) and <code>varpi</code> (Ω + ω) columns of the data files are therefore in different conventions for such orbits, and the FAIR plot is not drawn for retrograde resonances.</li>
+<li>The libration periods of retrograde Centaurs are 0.7–3 kyr (2000 DG8: 0.71 kyr, 2015 BZ509: 0.70 kyr). The classifier chooses the filter cutoff of each angle itself, from its synodic periods and the shortest libration it allows (<a href="../physics/signal/">From the integration to the angle</a>), so these librations are kept; what they need is an output step of 1–2 yr (the <a href="../dry-run/">dry-run</a> checks it). <code>oscillations_cutoff</code> changes only the body-level filter of the <code>evolution</code> figure and the periodograms: set it to <code>0.005</code> (200 yr) to see these librations there too. Slow TNO librations (2011 KT19: a period of 41 kyr) need a long run.</li>
+</ul>
+<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<p>There are three classes, <code>ThreeBodyMatrix</code>, <code>TwoBodyMatrix</code> and <code>RetrogradeTwoBodyMatrix</code>, responsible for building the resonant matrices. You might use any of them to find the possible resonances close to the given value of the semi-major axis.</p>
+<p>The following code will print the list of three-body MMRs close to the value <code>2.39</code> AU of the semi-major axis.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">resonances.mmr.three_body_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreeBodyMatrix</span>  <span class="c1"># noqa: E402</span>
+
+<span class="n">mmrs</span> <span class="o">=</span> <span class="n">ThreeBodyMatrix</span><span class="o">.</span><span class="n">find_resonances</span><span class="p">(</span><span class="mf">2.39</span><span class="p">,</span> <span class="n">planets</span><span class="o">=</span><span class="p">[</span><span class="s1">'Jupiter'</span><span class="p">,</span> <span class="s1">'Saturn'</span><span class="p">,</span> <span class="s1">'Uranus'</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">mmr</span> <span class="ow">in</span> <span class="n">mmrs</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">mmr</span><span class="o">.</span><span class="n">to_short</span><span class="p">())</span>
+</code></pre></div>
 <p>Note that there is an optional parameter <code>planets</code> representing the array of the planets involved in the MMR. The app will try all possible configurations. In this particular case, there are three combinations: Jupiter and Saturn, Jupiter and Uranus, and Saturn and Uranus.</p>
 <p>If you omit this parameter, the app will use all possible combinations of all planets in the Solar System.</p>
 <p>The same workflow is for two-body MMRs. The following code will find all two-body MMRs with Jupiter near <code>5.2</code> AU (Trojans, actually):</p>
-<pre><code class="language-python">from resonances.matrix.two_body_matrix import TwoBodyMatrix
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">resonances.mmr.two_body_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">TwoBodyMatrix</span>  <span class="c1"># noqa: E402</span>
 
-mmrs = TwoBodyMatrix.find_resonances(5.2, planets=['Jupiter'])
-for mmr in mmrs:
-    print(mmr.to_short())
-</code></pre>
-<p>The method <code>find_resonance</code> has one more optional parameter <code>sigma</code> representing the maximum distance between the given value of the semi-major axis and the value of a resonant semi-major axis of a possible MMR.</p>
+<span class="n">mmrs</span> <span class="o">=</span> <span class="n">TwoBodyMatrix</span><span class="o">.</span><span class="n">find_resonances</span><span class="p">(</span><span class="mf">5.2</span><span class="p">,</span> <span class="n">planets</span><span class="o">=</span><span class="p">[</span><span class="s1">'Jupiter'</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">mmr</span> <span class="ow">in</span> <span class="n">mmrs</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">mmr</span><span class="o">.</span><span class="n">to_short</span><span class="p">())</span>
+</code></pre></div>
+<p>The method <code>find_resonances</code> has one more optional parameter <code>sigma</code> (default <code>0.1</code> au): the largest distance between the given semi-major axis and the resonant one.</p>
 <p>The following code will find all two-body MMRs with Jupiter between <code>4.2</code> and <code>6.2</code> AU:</p>
-<pre><code class="language-python">from resonances.matrix.two_body_matrix import TwoBodyMatrix
-
-mmrs = TwoBodyMatrix.find_resonances(5.2, planets=['Jupiter'], sigma=1.0)
-for mmr in mmrs:
-    print(mmr.to_short())
-</code></pre>
-<p>While sometimes it is useful to make <code>sigma</code> greater, the default value is <code>0.02</code>. For three-body MMRs, it is recommended to use <code>0.1</code> or <code>0.2</code> for the asteroids with high eccentricity and <code>0.05</code> otherwise.</p>
-<h3 id="mix-with-astdys">Mix with AstDyS</h3>
-<p>You might want to find all possible resonant asteroids for a given resonance. While you have to integrate them to confirm their status, you can get the possible candidates based only on the value of the semi-major axis. To perform this, there is a method <code>search_by_axis</code> in <code>astdys</code> class.</p>
+<div class="highlight"><pre><span></span><code><span class="n">mmrs</span> <span class="o">=</span> <span class="n">TwoBodyMatrix</span><span class="o">.</span><span class="n">find_resonances</span><span class="p">(</span><span class="mf">5.2</span><span class="p">,</span> <span class="n">planets</span><span class="o">=</span><span class="p">[</span><span class="s1">'Jupiter'</span><span class="p">],</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">mmr</span> <span class="ow">in</span> <span class="n">mmrs</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">mmr</span><span class="o">.</span><span class="n">to_short</span><span class="p">())</span>
+</code></pre></div>
+<p><code>resonances.find</code> and <code>find_mmrs</code> have their own tolerances: <code>sigma2 = 0.1</code> au for two-body, <code>sigma3 = 0.02</code> au for three-body and <code>sigma_retro = 0.5</code> au for retrograde resonances. A wide tolerance only adds candidates; the integration decides.</p>
+<h3 id="candidates-from-a-catalog">Candidates from a catalog<a class="headerlink" href="#candidates-from-a-catalog" title="Permanent link">&para;</a></h3>
+<p>The bodies that might be in a given resonance, from their semi-major axis alone (an integration decides), come from
+<code>search_by_axis</code> of the <code>astdys</code> package (AstDyS) or of <code>resonances.mpcorb</code> (Minor Planet Center, see
+<a href="../config/#minor-planet-center-sourcempc">Configuration</a>); both take <code>sigma</code> (default 0.1 au).</p>
 <p>The following code will print the numbers of asteroids that might be in the three-body resonance <code>4J-2S-1</code>:</p>
-<pre><code class="language-python">import resonances
-import astdys
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">resonances</span><span class="w"> </span><span class="kn">import</span> <span class="n">mpcorb</span>  <span class="c1"># noqa: E402</span>
 
-df = astdys.search_by_axis(resonances.create_mmr('4J-2S-1').resonant_axis)
-print(df['num'].tolist())
-</code></pre>
+<span class="n">df</span> <span class="o">=</span> <span class="n">mpcorb</span><span class="o">.</span><span class="n">search_by_axis</span><span class="p">(</span><span class="n">resonances</span><span class="o">.</span><span class="n">create_mmr</span><span class="p">(</span><span class="s1">'4J-2S-1'</span><span class="p">)</span><span class="o">.</span><span class="n">resonant_axis</span><span class="p">)</span>  <span class="c1"># or astdys.search_by_axis (AstDyS)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'number'</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+</code></pre></div>
 <p>Note that the method <code>search_by_axis</code> returns <a href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html">Pandas DataFrame</a>, not simply a list or a dict. The DataFrame consists of the number of an asteroid and its orbital elements. You can use <code>df.head()</code> to see its structure.</p>
-              
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
             </div>
-          </div><footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../libration/" class="btn btn-neutral float-left" title="Libration module"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../output/" class="btn btn-neutral float-right" title="Output Files">Next <span class="icon icon-circle-arrow-right"></span></a>
-    </div>
-
-  <hr/>
-
-  <div role="contentinfo">
-    <!-- Copyright etc -->
-  </div>
-
-  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
-</footer>
           
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
-      </div>
-
-    </section>
-
-  </div>
-
-  <div class="rst-versions" role="note" aria-label="Versions">
-  <span class="rst-current-version" data-toggle="rst-current-version">
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
     
-        <span>
-          <a href="https://github.com/smirik/resonances" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
-        </span>
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../physics/gallery/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Gallery">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Gallery
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../secular/" class="md-footer__link md-footer__link--next" aria-label="Next: Secular resonances">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Secular resonances
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
     
-    
-      <span><a href="../libration/" style="color: #fcfcfc">&laquo; Previous</a></span>
-    
-    
-      <span><a href="../output/" style="color: #fcfcfc">Next &raquo;</a></span>
-    
-  </span>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
 </div>
-    <script>var base_url = '..';</script>
-    <script src="../js/theme_extra.js" defer></script>
-    <script src="../js/theme.js" defer></script>
-    <script defer>
-        window.onload = function () {
-            SphinxRtdTheme.Navigation.enable(true);
-        };
-    </script>
-
-</body>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
 </html>

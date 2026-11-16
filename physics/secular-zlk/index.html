@@ -1,0 +1,2381 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python package that finds mean-motion, secular and Lidov-Kozai resonances of small bodies in the Solar system and decides, from a numerical integration, whether the resonant angle librates and why.">
+      
+      
+        <meta name="author" content="Evgeny Smirnov">
+      
+      
+        <link rel="canonical" href="https://smirik.github.io/resonances/physics/secular-zlk/">
+      
+      
+        <link rel="prev" href="../confidence/">
+      
+      
+        <link rel="next" href="../gallery/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Secular and Lidov-Kozai - resonances</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#secular-and-lidov-kozai-angles" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="resonances" class="md-header__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            resonances
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Secular and Lidov-Kozai
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="resonances" class="md-nav__button md-logo" aria-label="resonances" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    resonances
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/smirik/resonances" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    smirik/resonances
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulations, bodies, resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using with AI agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How the status is determined
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    How the status is determined
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pendulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The resonant pendulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../signal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    From the integration to the angle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What the angle does
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../response/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is it this resonance?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../status-tree/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The status tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../confidence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Confidence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular and Lidov-Kozai
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular and Lidov-Kozai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-secular-angle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The secular angle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The secular angle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signal-what-is-not-the-libration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signal: what is not the libration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#geometry-and-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geometry and status
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-lidov-kozai-angle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Lidov-Kozai angle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Lidov-Kozai angle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zlk-free-omega" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a bounded \(\omega\) is not enough
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#confidence-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Confidence and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resonance matrices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../secular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secular resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../lidov-kozai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lidov-Kozai resonances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../clones/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clones (virtual asteroids)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reading-figures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How to read the figures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../serialization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serialization and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../coherence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cross-spectral coherence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../free-elements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Free elements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../libration-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rule index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmark/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    References
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-secular-angle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The secular angle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The secular angle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signal-what-is-not-the-libration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signal: what is not the libration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#geometry-and-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geometry and status
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-lidov-kozai-angle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Lidov-Kozai angle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Lidov-Kozai angle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zlk-free-omega" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a bounded \(\omega\) is not enough
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#confidence-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Confidence and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="secular-and-lidov-kozai-angles">Secular and Lidov-Kozai angles<a class="headerlink" href="#secular-and-lidov-kozai-angles" title="Permanent link">&para;</a></h1>
+<p>Secular and Lidov-Kozai (ZLK) angles evolve over <span class="arithmatex">\(10^4\)</span>–<span class="arithmatex">\(10^7\)</span> yr instead of <span class="arithmatex">\(10^2\)</span>–<span class="arithmatex">\(10^4\)</span> yr, and they involve only
+the slow angles <span class="arithmatex">\(\varpi\)</span>, <span class="arithmatex">\(\Omega\)</span>, <span class="arithmatex">\(\omega\)</span>. They go through the same <a href="../geometry/">geometry</a> as mean-motion
+resonances (turning points, cycles, episodes, coverage), with their own signal step and their own physics. The
+status tree is short (<a href="#geometry-and-status">below</a>): there is no semi-major axis to respond, no owner and no
+subresonance.</p>
+<p><code>analysis.secular.analyse_secular(series, settings)</code> and <code>analysis.zlk.analyse_zlk(series, settings, free_elements=...)</code>
+read a <code>LongPeriodSeries</code>: the classified angle (the reduced proper angle of a secular resonance, <span class="arithmatex">\(\omega\)</span> for ZLK) with
+<span class="arithmatex">\(a\)</span>, <span class="arithmatex">\(e\)</span>, <span class="arithmatex">\(i\)</span>, <span class="arithmatex">\(\varpi\)</span>, <span class="arithmatex">\(\Omega\)</span> on a uniform grid of years. <code>Simulation.identify_librations</code> calls them on every path
+(a run, a batch worker, <code>restore(recompute_librations=True)</code>).</p>
+<details class="info">
+<summary>The steps of the analysis</summary>
+<table>
+<thead>
+<tr>
+<th>step</th>
+<th>what</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 input</td>
+<td>an unphysical orbit (<span class="arithmatex">\(e &gt; 1.3\)</span>, <span class="arithmatex">\(a &lt; 0\)</span>, non-finite <span class="arithmatex">\(a\)</span> or <span class="arithmatex">\(e\)</span>) → <code>invalid</code> / <code>unphysical</code>; fewer than three samples, or non-finite times or angles → <code>uncertain</code> / <code>unusable_series</code> (angle <code>undefined</code> in both)</td>
+</tr>
+<tr>
+<td>1 cutoff</td>
+<td><span class="arithmatex">\(P_c\)</span> and the turning-point prominence (below)</td>
+</tr>
+<tr>
+<td>2 filter</td>
+<td><span class="arithmatex">\(\sigma_f\)</span> at <span class="arithmatex">\(P_c\)</span>, <span class="arithmatex">\(P_c/2\)</span> and <span class="arithmatex">\(2P_c\)</span>; the window <span class="arithmatex">\([t_0 + P_c,\ t_1 - P_c]\)</span>. When <span class="arithmatex">\(\sigma\)</span> cannot be filtered at <span class="arithmatex">\(P_c\)</span> (a grid not uniform and increasing within <code>FILTER_GRID_RTOL</code>, or <span class="arithmatex">\(P_c \le 2\Delta t\)</span>) → <code>uncertain</code> / <code>unusable_series</code>, no geometry (an MMR gives <code>invalid</code> / <code>undersampled</code> there)</td>
+</tr>
+<tr>
+<td>3 geometry</td>
+<td>turning points, runs, episodes, the center and its passes, exit and entry (shared with MMRs)</td>
+</tr>
+<tr>
+<td>4 angle</td>
+<td><code>angle_status</code> from the geometry (below); without a libration at <span class="arithmatex">\(P_c\)</span>, the same at the scale of the center</td>
+</tr>
+<tr>
+<td>5 physics</td>
+<td>secular: the <span class="arithmatex">\(e\)</span>/<span class="arithmatex">\(i\)</span> response (a column); ZLK: the free-<span class="arithmatex">\(\omega\)</span> gate</td>
+</tr>
+<tr>
+<td>6 status</td>
+<td><code>analysis.secular.decide.decide_status</code></td>
+</tr>
+<tr>
+<td>7 confidence</td>
+<td>the margins N, S, F, P, G and the caps (below)</td>
+</tr>
+</tbody>
+</table>
+</details>
+<h2 id="the-secular-angle">The secular angle<a class="headerlink" href="#the-secular-angle" title="Permanent link">&para;</a></h2>
+<p><strong>What should librate?</strong> A linear secular resonance locks a precession frequency of the body to one of the
+planetary system's eigenfrequencies: <span class="arithmatex">\(g \approx g_6\)</span> (<span class="arithmatex">\(\nu_6\)</span>), <span class="arithmatex">\(s \approx s_6\)</span> (<span class="arithmatex">\(\nu_{16}\)</span>), or a combination such
+as <span class="arithmatex">\(g + s - g_6 - s_6\)</span> (<span class="arithmatex">\(z_1\)</span>). In the Laplace-Lagrange theory the planets' eccentricity and inclination vectors are
+sums of eigenmodes, each turning at its own rate <span class="arithmatex">\(g_j\)</span> or <span class="arithmatex">\(s_j\)</span> (Murray &amp; Dermott 1999, eqs. 7.28–7.29, p. 278).
+The resonant angle therefore compares the body's <span class="arithmatex">\(\varpi\)</span> and <span class="arithmatex">\(\Omega\)</span> with the planets' <strong>mode longitudes</strong>, not
+with their osculating elements, after removing the forced terms that are not in the angle. Why both matter, and the
+measured phases: <a href="../../secular/#how-the-angle-is-built">Secular resonances</a>.</p>
+<details class="info">
+<summary>The angle σ and the reduced vectors</summary>
+<p>The mode longitudes are</p>
+<div class="arithmatex">\[
+\ell_{g_j}(t) = g_j\,(t + t_{\rm epoch}) + \phi_{g_j}, \qquad \ell_{s_j}(t) = s_j\,(t + t_{\rm epoch}) + \phi_{s_j},
+\]</div>
+<p>with the phases quoted at J2000 (<span class="arithmatex">\(t_{\rm epoch}\)</span> the offset of the run's start from J2000).</p>
+<p><strong>Units.</strong> In the formulas of this page <span class="arithmatex">\(g\)</span>, <span class="arithmatex">\(s\)</span> and every frequency <span class="arithmatex">\(f\)</span> are angular frequencies in rad/yr. The
+stored <code>PLANETARY_FREQUENCIES</code> are in ″/yr and are multiplied by <span class="arithmatex">\(\pi/648\,000\)</span>; one cycle per year is
+1 296 000 ″/yr. A record of length <span class="arithmatex">\(T\)</span> resolves frequencies <span class="arithmatex">\(2\pi/T\)</span> rad/yr apart (one Rayleigh width, <span class="arithmatex">\(1/T\)</span> in
+cycles/yr).</p>
+<p>The body enters through its complex eccentricity and inclination vectors, built from the saved (ecliptic)
+elements, <span class="arithmatex">\(z_e = e\,e^{i\varpi}\)</span> and <span class="arithmatex">\(z_i = \sin\tfrac{i}{2}\,e^{i\Omega}\)</span> (Murray &amp; Dermott use <span class="arithmatex">\(I\)</span> in radians;
+since <span class="arithmatex">\(\sin\frac i2 \simeq I/2\)</span>, phases and frequencies agree, while inclination amplitudes here are <strong>half</strong>
+theirs). The forced terms at the fundamentals that are <strong>not</strong> in the angle only shake it, so they are removed by a
+least-squares fit at their known frequencies <span class="arithmatex">\(f_j\)</span>:</p>
+<div class="arithmatex">\[
+z_{\rm red} = z - \sum_{j \in B} C_j\, e^{i f_j t}.
+\]</div>
+<p>The basis <span class="arithmatex">\(B\)</span> is that of the <a href="../../free-elements/">free elements</a>: <span class="arithmatex">\(g_5\)</span>–<span class="arithmatex">\(g_8\)</span> plus a constant for <span class="arithmatex">\(z_e\)</span>, and the
+constant (<span class="arithmatex">\(s_5 = 0\)</span>, the invariable plane) plus <span class="arithmatex">\(s_6\)</span>–<span class="arithmatex">\(s_8\)</span> for <span class="arithmatex">\(z_i\)</span>; inner-planet modes are not subtracted. Modes
+closer than two Rayleigh widths cannot be separated, so the candidates are first clustered and one representative
+of each cluster is kept; the representatives whose labels occur in the angle are dropped (their terms are the
+resonance), and the rest is fitted and removed. With <span class="arithmatex">\(\varpi = \arg z_{e,\rm red}\)</span> and <span class="arithmatex">\(\Omega = \arg z_{i,\rm red}\)</span>:</p>
+<div class="arithmatex">\[
+\sigma = p\,\varpi + q\,\Omega + \sum_j \big(p_j\,\ell_{g_j} + q_j\,\ell_{s_j}\big),
+\qquad p + q + \sum_j (p_j + q_j) = 0 .
+\]</div>
+</details>
+<h3 id="signal-what-is-not-the-libration">Signal: what is not the libration<a class="headerlink" href="#signal-what-is-not-the-libration" title="Permanent link">&para;</a></h3>
+<p>The filter must remove everything faster than the shortest-period libration allowed, and nothing slower:</p>
+<div class="arithmatex">\[
+P_c = \max\Big(F_{\rm GI}\,P_{\rm GI},\ \ F_w \max_j \frac{2\pi}{\lvert f - f_j\rvert},\ \ \frac{P_{\min}}{f_{\min}}\Big).
+\]</div>
+<ul>
+<li><span class="arithmatex">\(P_{\rm GI}\)</span> = 937 yr, the Jupiter-Saturn great inequality, the longest short-period term of an asteroid's
+  elements; <span class="arithmatex">\(F_{\rm GI}\)</span> = <code>SECULAR_FILTER_GI_FACTOR</code> = 2.</li>
+<li>For an angle with two or more planetary modes, each mode <span class="arithmatex">\(j\)</span> makes a <strong>forced wave</strong>: its forced term turns
+  relative to the free one at <span class="arithmatex">\(f - f_j\)</span> (<span class="arithmatex">\(f\)</span> the body's own <span class="arithmatex">\(g\)</span> or <span class="arithmatex">\(s\)</span>). These waves are not librations; <span class="arithmatex">\(F_w\)</span> =
+  <code>SECULAR_FILTER_FORCED_FACTOR</code> = 2. A single-mode angle (<span class="arithmatex">\(\nu_6\)</span>) has none: its forced term is the resonance.</li>
+<li><span class="arithmatex">\(P_{\min}\)</span> = <code>SECULAR_LIBRATION_PERIOD_MIN_YR</code> = 200 kyr, the shortest secular libration accepted (a convention:
+  the widest linear resonances are a few ″/yr wide, so their periods exceed ~1 Myr); <span class="arithmatex">\(f_{\min}\)</span> =
+  <code>FILTER_MIN_LIBRATION_CUTOFFS</code> = 2.</li>
+</ul>
+<p><strong>What periods to expect, and why the filter is not stronger.</strong> A local resonant Hamiltonian
+<span class="arithmatex">\(H = H_0(I) + A(I)\cos\sigma\)</span> gives the small-amplitude period <span class="arithmatex">\(P_0 = 2\pi/\sqrt{\lvert KA\rvert}\)</span>, with <span class="arithmatex">\(K\)</span> the
+torsion <span class="arithmatex">\(\partial\delta/\partial I\)</span> of the divisor along the angle's canonical action and <span class="arithmatex">\(A\)</span> the resonant
+coefficient (Morbidelli 2002, pp. 72–74; Morbidelli &amp; Henrard 1991, Eqs. 35–39); the period grows towards the
+separatrix. Neither <span class="arithmatex">\(K\)</span> nor <span class="arithmatex">\(A\)</span> follows from one body's proper elements and frequencies, and the package measures
+neither, so no period is predicted per body. Published cycles span sub-Myr to ~8 Myr (<span class="arithmatex">\(z_1\)</span>: (339) Dorothea 4.15 Myr,
+(221) Eos 3.4 Myr, Milani &amp; Knežević 1992, p. 227; (3701) Purkyne ~8 Myr, Vokrouhlický et al. 2006; <span class="arithmatex">\(z_2\)</span>: (8089)
+Yukar ~6.1 Myr, Carruba et al. 2016). The <span class="arithmatex">\(\nu_6\)</span> librators of the benchmark (0.24–0.57 Myr) repeat at the
+free/forced beat <span class="arithmatex">\(2\pi/\lvert g_{\rm free} - g_6\rvert\)</span> within 1 %: a forced oscillator, not a pendulum. No general
+lower bound on the period exists, so a filter set above a real libration's period would erase it (<span class="arithmatex">\(G(P) = 1/[1 +
+(P_c/P)^4]\)</span> keeps half at <span class="arithmatex">\(P = P_c\)</span>): the slower scales are tried only where the record shows a slow motion (the center
+scale below).</p>
+<p>The output step does not enter. The filter acts on the unwrapped angle with its trend removed and restored, so it
+cannot turn a circulation into a libration. A turning point must stand out by at least <span class="arithmatex">\(\max(5°,\ 4r)\)</span>, where <span class="arithmatex">\(r\)</span> is
+the 95th percentile of what the filtered angle still holds faster than <span class="arithmatex">\(P_{\rm floor} = \max(P_{\min},\ 2P_c)\)</span>, the
+same shortest period as for an episode (<code>SECULAR_TP_PROMINENCE_DEG</code>, <code>SECULAR_TP_RIPPLE_FACTOR</code>; <span class="arithmatex">\(r = 0\)</span> when
+<span class="arithmatex">\(P_{\rm floor} \le P_c\)</span>). The two filters split softly, so a libration slower than <span class="arithmatex">\(P_{\rm floor}\)</span> leaves
+<span class="arithmatex">\(G(P; P_c) - G(P; P_{\rm floor})\)</span> of its own swing in that difference; its image through the same filters is taken out
+first (as for an MMR, <a href="../geometry/">Geometry: turning points</a>; <code>geometry.libration_image</code>), or a libration close to the floor raises its own threshold
+(591986 over 4 Myr: <span class="arithmatex">\(r\)</span> = 4.35° and 17.4° against a 16° libration, cut into three episodes where its center moves
+fastest; 1.17° and 5° without the image, one episode).</p>
+<p>That <span class="arithmatex">\(r\)</span> is the record's, and a circulation elsewhere in the record inflates it. So, as for an MMR, each run of
+turning points found at the floor (5°) is selected at the prominence measured on its own samples, its ends trimmed by
+<span class="arithmatex">\(P_{\rm floor}\)</span> and the rest at least <span class="arithmatex">\(P_{\rm floor}\)</span> long, and never above the record's
+(<code>SECULAR_TP_LOCAL_PROMINENCE</code>, <code>ZLK_TP_LOCAL_PROMINENCE</code>). 19289 s−s6 over 20 Myr: 76.8° from the record
+(26.8° outside the libration, 8.0° inside), 31.7° on the run: the libration from 5.1 Myr to the end is one episode
+instead of seven pieces. The cap: where faster waves hide the libration's period from the turning points at the
+floor, its image is not taken out and its own swing would count as fast on the run (2020 PP1, ZLK: 101° against 52°).
+A lower threshold may add libration but never remove it: every librating episode found at the record's prominence
+must lie inside one librating episode of the local reading, else the runs it overlaps keep the record's prominence.
+A run of provisional turning points can span a libration and the slow approach to it, and the approach's wiggles
+then become turning points too: 455327 g−s−g5+s6 (ias15, 20 Myr), 39.0° from the record and 13.8° on the run, a
+32° wiggle at 9.1–9.5 Myr would start the run on the drifting approach (centre_moves) and lose the crescent episode
+10.2–12.5 Myr.</p>
+<h3 id="geometry-and-status">Geometry and status<a class="headerlink" href="#geometry-and-status" title="Permanent link">&para;</a></h3>
+<p>A librating episode needs <code>LIBRATION_MIN_TURNING_POINTS</code> = 3 turning points (max–min–max: one full cycle), a period
+not shorter than <span class="arithmatex">\(\max(P_{\min},\ 2P_c)\)</span> (a faster one is a forced wave), and a center that does not run a full turn
+inside it. One that reaches both ends of the record, within <code>LIBRATION_COVERAGE_PERIODS</code> = 1 period, makes
+<code>libration</code>; otherwise the record is <code>episodic</code>.</p>
+<p><strong>A bounded run whose center turns back.</strong> The center tests are those of <a href="../geometry/">Geometry</a> (the bands of the
+cycles share a point, or the center turns back <code>LIBRATION_CENTRE_RETURNS_MODULATED</code> = 3 times), but a secular
+libration makes only a few cycles in a record, too few for three returns. So a run of a secular or ZLK angle that fails
+only for its moving center is accepted as <code>modulated</code> (center stationarity not measured) when it closes a cycle, its
+turning points span less than a turn, its cycle center turns back at least once within less than <span class="arithmatex">\(\pi\)</span>, and one of its
+cycles swings over every center it has (<code>SECULAR_TURNING_CENTRE</code>, <code>ZLK_TURNING_CENTRE</code>; <code>geometry.accept_turning_centre</code>).
+A center that moves one way stays a drift (101703 g−2g6+g7, a run at 13.4–19 Myr: −231°, no return), and so does a
+small wave carried by a slower motion: no cycle of it covers the track (363 g−g6+s−s6: half-amplitudes 4–6° on a center
+that travels 42°). 42946 g−g6+s−s6 over 20 Myr: the run 1.3–14.6 Myr (17 turning points, <span class="arithmatex">\(P\)</span> = 1.6 Myr, centers
+116–228° turning back twice, bands missing by 18°, the cycle about 183° of half-amplitude 93° covering them all) is
+the early libration episode.</p>
+<p><strong>A ZLK island is half a turn wide.</strong> The averaged Lidov-Kozai Hamiltonian depends on <span class="arithmatex">\(2\omega\)</span>, so its islands
+(<span class="arithmatex">\(\omega\)</span> about 90° and 270°) are at most half a turn wide. A run of <span class="arithmatex">\(\omega\)</span> therefore breaks where a half-cycle swings
+<code>ZLK_RUN_BREAK_HALF_AMPLITUDE_DEG</code> = 90° or more, or its midpoint jumps by more (a secular or MMR angle: 180°). This
+only splits runs; which island an episode is in decides nothing. 88899 over 500 kyr: two islands (67–169 kyr about
+90°, 191–294 kyr about 270°) that one run at 180° joined into a circulation (rule <code>zlk_half_turn_cut</code>).</p>
+<p><strong>Drift needs a monotone center.</strong> A drift is a slow center that keeps going one way. When the runs are rejected for
+their moving center but the slow center turns back inside the record (away from the edges of its own low-pass) and its
+largest pass stays below a turn, the record holds part of one slow swing: <code>insufficient_time</code> / <code>few_cycles</code>, not
+<code>drift</code> (2306 <span class="arithmatex">\(g-g_6+s-s_6\)</span>: a turn at 2.04 Myr, largest pass 0.92 rev in 10 Myr; rule <code>centre_turned_insufficient</code>).
+Status and extension are the same as for a drift.</p>
+<p><strong>A swing must exceed the uncertainty of the mode phases.</strong> Under <code>SECULAR_PLANET_PHASES=linear</code> the angle uses
+<span class="arithmatex">\(\ell_j = g_j t + \phi_j\)</span> with constant phases, while the true phase <span class="arithmatex">\(\phi_j(t)\)</span> of an inner mode wanders (Laskar
+1990). Over a record of length <span class="arithmatex">\(T\)</span> the angle then carries an error whose swing is at most</p>
+<div class="arithmatex">\[
+\Delta\phi(T) = \sum_j \lvert k_j\rvert\, \mathrm{range}_j(T),
+\]</div>
+<p><span class="arithmatex">\(k_j\)</span> the angle's coefficient of mode <span class="arithmatex">\(j\)</span>, <span class="arithmatex">\(\mathrm{range}_j(T)\)</span> the largest max − min of <span class="arithmatex">\(\phi_j\)</span> over a window of
+length <span class="arithmatex">\(T\)</span>, measured on the package's own model (<code>resonances/data/mode_phase_uncertainty.json</code>, at 10 Myr: <span class="arithmatex">\(g_4\)</span> 30°,
+<span class="arithmatex">\(g_3\)</span> 24°, <span class="arithmatex">\(s_4\)</span> 81°, <span class="arithmatex">\(s_2\)</span> 87°, <span class="arithmatex">\(g_2\)</span> 2.7°, <span class="arithmatex">\(g_6\)</span> 0.9°, <span class="arithmatex">\(s_6\)</span> 9.5°; <a href="../../secular/#mode-phases">how it is measured</a>).
+A libration or episode whose swing <span class="arithmatex">\(2A_{\max}\)</span> (the deciding episode's largest half-amplitude) is not larger than
+<code>SECULAR_PHASE_UNCERTAINTY_FACTOR</code> × <span class="arithmatex">\(\Delta\phi\)</span> (1, a convention) is not resolved from that error: its turning
+points may be the phases'. It becomes <code>insufficient_time</code> / <code>phase_unresolved</code>, action <code>review</code>: rerun with
+<code>SECULAR_PLANET_PHASES=measured</code> (<code>SAVE_PLANETS=all</code>), where the measured modes add nothing (rule <code>phase_unresolved</code>;
+columns <code>sec_phase_uncertainty_deg</code>, <code>sec_phase_swing_deg</code>, <code>sec_phase_swing_ratio</code>). 5026 <span class="arithmatex">\(g+g_2-g_4-g_6\)</span> over
+10 Myr: <span class="arithmatex">\(2A_{\max}\)</span> = 22° against <span class="arithmatex">\(\Delta\phi\)</span> = 34°. The outer modes stray too little to matter: the narrowest
+<span class="arithmatex">\(z_1\)</span>/<span class="arithmatex">\(z_2\)</span> libration of the benchmark swings 4.6 times its <span class="arithmatex">\(\Delta\phi\)</span> (52773), <span class="arithmatex">\(\nu_6\)</span> 78 times.</p>
+<p><strong>The center scale.</strong> A slow secular libration often carries faster waves that break its turning points into
+fragments. When the fine scale shows no libration, the angle is filtered again at the scale of its center,
+<span class="arithmatex">\(W_c\)</span> = <code>LIBRATION_CENTRE_CYCLES</code> × <span class="arithmatex">\(P_{\rm cyc}\)</span> = <span class="arithmatex">\(3P_{\rm cyc}\)</span>; if the center itself librates there (or shows episodes
+the fine scale lacks), that scale decides (<code>sec_scale</code> = <code>centre</code>). There the shortest libration is
+<span class="arithmatex">\(\max(P_{\min},\ 2W_c)\)</span> and a turning point needs the prominence of a center turn. When <span class="arithmatex">\(W_c\)</span> shows no more libration
+than the fine scale, a secular angle tries the scale of its center's own turns (the fine turning points at the
+prominence of a center turn, <span class="arithmatex">\(W\)</span> = their median period / <code>FILTER_MIN_LIBRATION_CUTOFFS</code>; the MMR second scale,
+<code>SECULAR_CENTRE_TURNS_SCALE</code>): <span class="arithmatex">\(P_{\rm cyc}\)</span> of fast waves sets <span class="arithmatex">\(W_c\)</span>, and its edge trim of <span class="arithmatex">\(W_c\)</span> per end, far above
+what the slow turns need. 101703 g−2g6+g7 over 20 Myr: <span class="arithmatex">\(W_c\)</span> = 3.1 Myr from 1-Myr waves trims 3–17 Myr and loses the
+turn at 18.2 Myr; the turns give 1.6 Myr and one libration of 12 Myr from 6.3 to 18.25 Myr (<code>resonant</code>, extend).</p>
+<p><strong>A wave on a slower motion is no episode.</strong> An accepted episode can be a ripple that the slow motion of the angle
+carries (<code>SECULAR_SLOW_WAVES</code>; <code>secular.decide.slow_waves</code>). The slow motion around it is <span class="arithmatex">\(\sigma_f\)</span> between the turns of
+the center track that bracket it (or the record's edges), of range <span class="arithmatex">\(R\)</span>:</p>
+<ul>
+<li><span class="arithmatex">\(R\)</span> below a turn (a slow swing): the episode is a ripple on it when <span class="arithmatex">\(A_{\max} \le\)</span>
+  <code>SECULAR_SLOW_SWING_RIPPLE_RATIO</code> × <span class="arithmatex">\(R/2\)</span> (0.5, the MMR ratio, a convention) and the swing carries it: the slow
+  track <span class="arithmatex">\(S\)</span> (below) moves inside the episode at least <code>SECULAR_SLOW_SWING_CARRY_RATIO</code> (1/16, a convention) of its
+  fastest rate beside it. A wave at a smooth turn of the slow motion reads at least 1/8 (a parabola centred on the
+  episode: <span class="arithmatex">\((D/2)^2\)</span> inside against <span class="arithmatex">\((3D/2)^2-(D/2)^2\)</span> on an arm as long again); a libration on a plateau of the slow
+  motion, which moves only beside it, reads the filter's leak and stays an episode (two stationary librations joined
+  by a monotone transition: ≤ 0.04). 101703 g−2g6+g7: 8–19° waves of 1 Myr at the turns of the 12-Myr libration
+  (<span class="arithmatex">\(R\)</span> = 315°, carried 0.16 and 0.12); 56700 s+s7−2s6: a 13° ripple on a 322° arc of 20 Myr (0.51), which becomes
+  <code>insufficient_time</code>, extend (possibly a slow libration longer than the 20-Myr record);</li>
+<li><span class="arithmatex">\(R\)</span> a turn or more (a circulation): a capture stops the circulation, a stall only slows it. The slow track <span class="arithmatex">\(S\)</span>
+  (<span class="arithmatex">\(\sigma\)</span> low-passed at <code>LIBRATION_CENTRE_CYCLES</code> × the episode's period) must carry the angle out of the episode's
+  band beside it (<span class="arithmatex">\(\ge A_{\max}\)</span> over as long again before or after; an arm the record cuts below
+  <code>SECULAR_STALL_ARM_MIN_FRACTION</code> of the episode's span is not read) and keep inside the episode at least
+  <code>SECULAR_STALL_RATE_RATIO</code> (0.5, a convention) of that rate. 348018 g−g5+s−s7: a 4° ripple on 4.4 turns, 0.73:
+  <code>non_resonant</code>; the captures of 19289 and 278067 s−s6 read 0.04–0.05, 455327 s−s3 0.24.</li>
+</ul>
+<p>A record-covering episode is never a wave (no motion beside it). The rule runs at every scale (a ripple filtered at
+the center scale is still one), and the exit and entry are read again on the episodes left.</p>
+<p><strong>Exit and entry.</strong> As for an MMR (<a href="../geometry/#coverage-exits-and-entries">Geometry</a>), an arc of more than a turn is
+no piece of libration: when <span class="arithmatex">\(\sigma_f\)</span> runs at least <code>LIBRATION_EDGE_ARC_REV</code> = 1 turn monotonically after the last
+turning point (before the first), the exit (entry) is observed, that end is not covered however short the gap, the
+angle is <code>episodic</code> and <code>final_regime</code> is a circulation from the exit. A secular angle has no orbit to average, so
+<span class="arithmatex">\(\sigma_f\)</span> itself is read, against the episode's mean center; the center scale is then not tried. 2012 AX10 and 33325
+in 2s − s4 − s6 over 20 Myr leave their libration near 16 Myr and run 1.9 and 1.7 turns to the end: <code>transient</code>
+(the end gap of 0.8 P does not count as covered). An exit that runs less than a turn stays
+<code>exit_suspected</code>.</p>
+<details class="info">
+<summary>Every <code>angle_status</code> rule</summary>
+<table>
+<thead>
+<tr>
+<th>condition</th>
+<th>angle_status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>an accepted episode covering the record (both ends within <code>LIBRATION_COVERAGE_PERIODS</code> periods, no observed exit or entry)</td>
+<td><code>libration</code> (<code>stationary</code> or <code>modulated</code> center)</td>
+</tr>
+<tr>
+<td>accepted episodes, none covering</td>
+<td><code>episodic</code></td>
+</tr>
+<tr>
+<td>no episode; the center's largest monotone pass ≥ 1 turn</td>
+<td><code>circulation</code></td>
+</tr>
+<tr>
+<td>no turning point; the filtered angle turns ≥ 1 time</td>
+<td><code>circulation</code></td>
+</tr>
+<tr>
+<td>no turning point, less than a turn</td>
+<td><code>insufficient_time</code> (<code>arc</code> when it spans at least half a turn, else <code>stall</code>)</td>
+</tr>
+<tr>
+<td>runs rejected for a moving center cover ≥ <code>LIBRATION_DRIFT_MIN_WINDOW_FRACTION</code> (0.5) of the window, the slow center monotone</td>
+<td><code>drift</code></td>
+</tr>
+<tr>
+<td>the same, the slow center turned back (largest pass &lt; 1 turn)</td>
+<td><code>insufficient_time</code> (<code>few_cycles</code>)</td>
+</tr>
+<tr>
+<td>otherwise (fewer turning points than one cycle)</td>
+<td><code>insufficient_time</code> (<code>few_cycles</code>)</td>
+</tr>
+<tr>
+<td>a libration or episode under linear phases swinging no more than <code>SECULAR_PHASE_UNCERTAINTY_FACTOR</code> × <span class="arithmatex">\(\Delta\phi(T)\)</span></td>
+<td><code>insufficient_time</code> (<code>phase_unresolved</code>)</td>
+</tr>
+</tbody>
+</table>
+</details>
+<table>
+<thead>
+<tr>
+<th>angle_status</th>
+<th>status</th>
+<th>reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>libration</td>
+<td>resonant</td>
+<td>dynamic_libration</td>
+</tr>
+<tr>
+<td>episodic</td>
+<td>transient</td>
+<td>dynamic_episode</td>
+</tr>
+<tr>
+<td>circulation</td>
+<td>non_resonant</td>
+<td>circulation</td>
+</tr>
+<tr>
+<td>drift, insufficient_time</td>
+<td>uncertain</td>
+<td>baseline_needed (action extend; <code>phase_unresolved</code>: review)</td>
+</tr>
+<tr>
+<td>undefined</td>
+<td>invalid / uncertain</td>
+<td>unphysical (<span class="arithmatex">\(e &gt; 1.3\)</span>, <span class="arithmatex">\(a &lt; 0\)</span>) / unusable_series</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The response of <span class="arithmatex">\(e\)</span> and <span class="arithmatex">\(i\)</span>.</strong> To leading order in <span class="arithmatex">\(e\)</span> and <span class="arithmatex">\(i\)</span>, a secular term
+<span class="arithmatex">\(K\,e^{\lvert p\rvert}\sin^{\lvert q\rvert}(i/2)\cos\sigma\)</span> of the averaged disturbing function drives
+<span class="arithmatex">\(\dot e \propto p\sin\sigma\)</span> and <span class="arithmatex">\(\frac{d}{dt}\sin\frac i2 \propto q\sin\sigma\)</span> (Lagrange's equations; Murray &amp; Dermott
+1999, eqs. 6.146 and 6.150, pp. 251–252). At finite inclination the equation for <span class="arithmatex">\(i\)</span> also contains the perihelion
+derivative, so even <span class="arithmatex">\(q = 0\)</span> need not give a zero response of <span class="arithmatex">\(\sin\frac i2\)</span>. The package fits
+<span class="arithmatex">\(\dot x = A\sin\sigma_f + B\cos\sigma_f + C\)</span> for <span class="arithmatex">\(x = e\)</span> and/or <span class="arithmatex">\(x = \sin\frac i2\)</span>, whichever the angle contains, with
+free amplitudes: a phase and shape diagnostic that does not enforce the theoretical coefficient. It is reported as
+<code>check_secular_e_response</code> (pass at <span class="arithmatex">\(R^2 \ge\)</span> <code>SECULAR_RESPONSE_R2_MIN</code> = 0.5), a column only: it changes no status
+and no confidence.</p>
+<p><strong>How long to integrate.</strong> An <code>uncertain</code> verdict names the next check in <code>extend_to_years</code>: the baseline
+<span class="arithmatex">\(\tfrac32 P + 2P_c\)</span> with <span class="arithmatex">\(P\)</span> at least the shortest libration (500 kyr for a secular angle at the defaults), capped at
+four and at least twice the record; for ZLK the free-ω gate's cycles or frequency resolution, or <code>review</code> when no
+length would help (<a href="../confidence/#actions">How long to extend</a>). Before a run, the dry-run warns about a record
+shorter than that baseline (<a href="../../dry-run/#secular-and-lidov-kozai-rows">Dry-run</a>).</p>
+<p>Examples: <a href="../gallery/#secular-nu6">1222 in <span class="arithmatex">\(\nu_6\)</span></a>, <a href="../gallery/#secular-z1-resonant">1020 in <span class="arithmatex">\(z_1\)</span></a>,
+<a href="../gallery/#secular-z1-unfinished-swing">2306 one unfinished slow swing</a>, <a href="../gallery/#secular-z1-circulation">847 circulates</a>,
+<a href="../gallery/#secular-insufficient-time">363 too short</a>.</p>
+<h2 id="the-lidov-kozai-angle">The Lidov-Kozai angle<a class="headerlink" href="#the-lidov-kozai-angle" title="Permanent link">&para;</a></h2>
+<p><strong>What should librate?</strong> For a highly inclined orbit perturbed by a distant planet, the quadrupole problem makes the
+argument of perihelion <span class="arithmatex">\(\omega\)</span> librate about 90° or 270° (<a href="../../lidov-kozai/#lidovs-integrals">Lidov's integrals</a>).
+The package reports <span class="arithmatex">\(c_1\)</span>, <span class="arithmatex">\(c_2\)</span> and <span class="arithmatex">\(h_{\rm quad}\)</span> as diagnostics only; no threshold on them enters the status.</p>
+<p><strong>From which plane?</strong> The quadrupole problem's reference plane is the perturbers' orbital plane; the package measures
+<span class="arithmatex">\(\omega\)</span>, <span class="arithmatex">\(i\)</span> and <span class="arithmatex">\(\Omega\)</span> from the invariable plane (<code>ZLK_ANGLE_FRAME</code>, default <code>invariable</code>; <code>ecliptic</code> is kept for
+comparison), by rotating the orbit's angular momentum <span class="arithmatex">\(\mathbf h\)</span> and perihelion vector <span class="arithmatex">\(\mathbf P\)</span> exactly, never
+by subtracting angles. The free elements of a ZLK body, the gate, the attribution, the node lock, the e–i coupling and
+the figure use the same frame. The ecliptic is tilted by <span class="arithmatex">\(I = 1.58°\)</span> from that plane: the ecliptic node of an orbit
+with <span class="arithmatex">\(i_{\rm inv} &lt; I\)</span> cannot turn (the orbit's pole circles the invariable pole without enclosing the ecliptic pole),
+so it librates about the plane's node, and with a bounded <span class="arithmatex">\(\varpi\)</span> the ecliptic <span class="arithmatex">\(\omega\)</span> looks confined while the
+invariable one circulates (555527, <span class="arithmatex">\(i_{\rm inv} \approx 1.6°\)</span>: <code>non_resonant</code> / <code>circulation</code> / <code>certain</code> on both
+records). At <span class="arithmatex">\(i \gtrsim 20°\)</span> the two frames give the same number of turns. Rule <code>zlk_invariable_frame</code> marks a row whose
+two <span class="arithmatex">\(\omega\)</span> part by a whole turn or more (<code>zlk_frame_shift_turns</code>).</p>
+<p>The geometry of <span class="arithmatex">\(\omega\)</span> is that of a secular angle with <span class="arithmatex">\(P_c = \max(F_{\rm GI} P_{\rm GI},\ P_{\min}/f_{\min})\)</span> and
+no forced waves: <span class="arithmatex">\(F_{\rm GI}\)</span> = <code>ZLK_FILTER_GI_FACTOR</code> = 2, <span class="arithmatex">\(P_{\min}\)</span> = <code>ZLK_LIBRATION_PERIOD_MIN_YR</code> = 2 kyr, the
+prominence from <code>ZLK_TP_PROMINENCE_DEG</code> and <code>ZLK_TP_RIPPLE_FACTOR</code>. The shortest libration is then
+<span class="arithmatex">\(\max(P_{\min},\ 2P_c)\)</span> = 3748 yr, not 2 kyr.</p>
+<h3 id="zlk-free-omega">Why a bounded <span class="arithmatex">\(\omega\)</span> is not enough<a class="headerlink" href="#zlk-free-omega" title="Permanent link">&para;</a></h3>
+<p>The osculating <span class="arithmatex">\(\omega\)</span> can be bounded without any Lidov-Kozai dynamics. When the forced eccentricity vector is longer
+than the free one, the point <span class="arithmatex">\((e\cos\varpi, e\sin\varpi)\)</span> circles around the tip of the forced vector without
+enclosing the origin, so <span class="arithmatex">\(\varpi\)</span> follows the forced vector's phase instead of turning on its own. The forced vector
+itself turns at the planets' frequencies, so this does not fix <span class="arithmatex">\(\varpi\)</span>; but when its phase and the node move
+together, <span class="arithmatex">\(\omega = \varpi - \Omega\)</span> stays confined by the forcing alone. A true ZLK libration lives in the body's
+<strong>free</strong> elements, which is why the gate tests the free perihelion against the free node.</p>
+<p><strong>The free-<span class="arithmatex">\(\omega\)</span> gate</strong> removes the forced parts of <span class="arithmatex">\(z_e\)</span> and <span class="arithmatex">\(z_i\)</span> at the planetary fundamentals and asks whether
+<span class="arithmatex">\(\omega_{\rm free} = \arg z_{e,\rm free} - \arg z_{i,\rm free}\)</span> stays within a turn. Its outcome is <code>confirmed</code>
+(confined), <code>kinematic</code> (the free <span class="arithmatex">\(\omega\)</span> winds) or no verdict (<code>short_window</code>, <code>undefined_phase</code>,
+<code>planetary_residual</code>, <code>unavailable</code>); the conditions are in <a href="../../free-elements/#the-gate">Free elements: the gate</a>.
+It judges every <span class="arithmatex">\(\omega\)</span> that stays within a turn (<code>libration</code>, <code>episodic</code>, <code>drift</code>, <code>insufficient_time</code>).</p>
+<p><strong>From the outcome to the status</strong> (<code>decide_status</code>, check <code>check_zlk_free_omega</code>):</p>
+<table>
+<thead>
+<tr>
+<th>angle_status</th>
+<th>confirmed</th>
+<th>kinematic</th>
+<th>no verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>libration</td>
+<td>resonant / dynamic_libration (check <code>pass</code>)</td>
+<td>non_resonant / kinematic_libration, origin <code>kinematic</code>, detail <code>free_omega_winds</code> (check <code>fail</code>)</td>
+<td>uncertain / gate_unavailable, origin <code>unknown</code></td>
+</tr>
+<tr>
+<td>episodic</td>
+<td>unchanged (also when confirmed inside its episodes, below)</td>
+<td>non_resonant / kinematic_libration <strong>only if</strong> <span class="arithmatex">\(\rho_{\max} &lt; 1\)</span> or every episode pinned (below), else read inside the episodes</td>
+<td>transient only if <span class="arithmatex">\(e\)</span> and <span class="arithmatex">\(i\)</span> trade at constant <span class="arithmatex">\(H\)</span> inside the deciding episode, else uncertain / gate_unavailable (below)</td>
+</tr>
+<tr>
+<td>drift, insufficient_time</td>
+<td>unchanged</td>
+<td>non_resonant / kinematic_libration <strong>only if</strong> <span class="arithmatex">\(\rho_{\max} &lt; 1\)</span>, else unchanged</td>
+<td>unchanged</td>
+</tr>
+</tbody>
+</table>
+<p>With <code>FREE_GATE_ENABLED</code> off the outcome is <code>disabled</code> and the geometry's status stands. On a record that does not
+librate throughout, free elements fitted over the whole record cannot judge a change of regime, so only the
+strongest case changes it:</p>
+<div class="arithmatex">\[
+\rho_{\max} = \max_t \frac{\operatorname{rollmed}_W \lvert z_{e,\rm free}\rvert}{\operatorname{rollmed}_W \lvert z_{e,\rm forced}\rvert} &lt; 1,
+\qquad W = \max\bigl(\tfrac{1}{10}\text{ of the shortest beat of the fitted modes},\ k\,P_{\rm cyc}\bigr),
+\]</div>
+<p><span class="arithmatex">\(k\)</span> = <code>ZLK_RHO_WINDOW_CYCLES</code> (1, a convention). Each radius is a rolling median over about one libration cycle, so
+the free radius of every part of the record is compared with the forced one of the same part: a free circle that grows
+in part of the record (and there encloses the origin) is seen, which one median free radius for the whole record
+missed. Below one, <span class="arithmatex">\(\varpi\)</span> stays tied to the forced phase throughout; the condition is applied only together with a
+<code>kinematic</code> gate outcome (the free <span class="arithmatex">\(\omega\)</span> winds). 555527: 0.66 at 100 kyr, 0.63 at 500 kyr (<code>non_resonant</code>, as the
+author labeled it). The former median ratio is the column <code>zlk_gate_rho_global</code>.</p>
+<p>An <strong>episodic</strong> <span class="arithmatex">\(\omega\)</span> is also kinematic when every librating episode is the forced vector's: inside each, the median
+of <span class="arithmatex">\(\lvert z_{e,\rm free}\rvert / \lvert z_{e,\rm forced}\rvert\)</span> (instantaneous: a window as long as a forced beat would
+mix in the surroundings) is below 1, so the free circle stays off the origin there, and over the episode's whole
+cycles (first turning point to the last of the same kind) the free <span class="arithmatex">\(\omega\)</span> advances at least
+<code>ZLK_EPISODE_FREE_TURNS_PER_CYCLE</code> = 0.5 turns per cycle (a convention: a kinematic cycle is one turn of the free
+vector about the forced one, since <span class="arithmatex">\(P_{\rm cyc}\)</span> is their beat; a free <span class="arithmatex">\(\omega\)</span> that librates with the osculating one
+returns after whole cycles, about 0). An episode the free elements do not measure (outside their baseline, a masked
+sample in it, fewer than two samples per cycle) pins nothing. Columns <code>zlk_gate_rho_episodes</code> (the largest median)
+and <code>zlk_gate_free_turns_episodes</code> (the fewest turns per cycle). 624 Hektor: its <span class="arithmatex">\(\omega\)</span> circulates but swings back
+for one to three cycles wherever the free radius dips just below the forced one (0.99 at most inside, 2.0 over the
+record; 0.94 turns per cycle at least): non_resonant, episodic, kinematic. The real ZLK transients of the benchmark
+have 3.0–13.7 and at most 0.04.</p>
+<p><strong>The gate inside the episodes</strong> (<code>ZLK_GATE_EPISODES</code>). Between its episodes an episodic <span class="arithmatex">\(\omega\)</span> circulates, so
+its free <span class="arithmatex">\(\omega\)</span> winds over the record whatever it does inside them, and the record's outcome (<code>kinematic</code>, or a
+<code>planetary_residual</code> on the winding branch: over 500 kyr some <span class="arithmatex">\(g_j - s_k\)</span> always lies within a width of <span class="arithmatex">\(b_\omega\)</span>)
+says nothing about the episodes. Such a row is read inside its librating episodes with the confirmation test: in every
+one the free vector is the longer one (median <span class="arithmatex">\(\rho \ge 1\)</span>, column <code>zlk_gate_rho_episodes_min</code>) and the free <span class="arithmatex">\(\omega\)</span>
+advances fewer than <code>ZLK_EPISODE_FREE_TURNS_PER_CYCLE</code> turns per cycle (<code>zlk_gate_free_turns_episodes_max</code>), and
+<span class="arithmatex">\(b_\varpi\)</span>, <span class="arithmatex">\(b_\Omega\)</span> stay off the <span class="arithmatex">\(g\)</span> and <span class="arithmatex">\(s\)</span> modes → <code>confirmed</code>, <code>zlk_gate_detail</code> = <code>episodes</code>; a residual at a
+mode → <code>planetary_residual</code>; an episode the free elements do not measure keeps the record's outcome. 88899 over
+500 kyr: 3.0 turns over the record, 0.005 turns per cycle and <span class="arithmatex">\(\rho \ge 8.2\)</span> inside both episodes → confirmed; its
+<span class="arithmatex">\(e\)</span>–<span class="arithmatex">\(i\)</span> integral is not held there, an objection (transient/low, flag <code>ei_integral_not_held</code>). 1866, 373136, 3752 and
+797204 (500 kyr) are confirmed the same way (origin dynamic).</p>
+<p><code>kinematic_libration</code> is a measurement and <code>gate_unavailable</code> the absence of one: keep them apart
+(<a href="../status-tree/#legacy-integer-codes">legacy codes</a>). A co-orbital of a planet whose own modes the split does not
+fit (Mercury to Mars) gets no verdict (<code>unavailable</code>, detail <code>coorbital_unfitted_forcing</code>): <code>uncertain</code> /
+<code>gate_unavailable</code> whatever bounded <span class="arithmatex">\(\omega\)</span> it has, an episodic one, a drift or too few cycles included, since the
+model does not apply (2020 PP1 and 10563 over 500 kyr; rule <code>zlk_coorbital_episodic</code>). A Jupiter Trojan is
+covered, its forced vector being Jupiter's g5 + g6 (<a href="../../free-elements/#where-the-method-stops-working">Free elements</a>).</p>
+<p><strong>An episodic <span class="arithmatex">\(\omega\)</span> without a gate verdict</strong> (any other no-verdict outcome) needs the physics of a ZLK cycle inside
+its deciding episode: <span class="arithmatex">\(e\)</span> and <span class="arithmatex">\(i\)</span> must trade so that the quadrupole integral <span class="arithmatex">\(H = \sqrt{1-e^2}\cos i\)</span> stays constant.
+At the episode's own period <span class="arithmatex">\(P\)</span>, on its samples only (the whole record also holds stretches where <span class="arithmatex">\(\omega\)</span>
+circulates, which trade <span class="arithmatex">\(e\)</span> for <span class="arithmatex">\(i\)</span> near <span class="arithmatex">\(P\)</span> as well), <span class="arithmatex">\(e\)</span>, <span class="arithmatex">\(i\)</span>, <span class="arithmatex">\(G = \sqrt{1-e^2}\)</span>, <span class="arithmatex">\(H\)</span> and <span class="arithmatex">\(K = G(1-\cos i)\)</span> are
+high-passed by a one-period running mean over the whole record and demodulated at <span class="arithmatex">\(P\)</span> cycle by cycle; then</p>
+<div class="arithmatex">\[
+\eta_H = \frac{\operatorname{rms}\,\delta H}{\lvert\cos i\rvert\,\operatorname{rms}\,\delta G}
+\]</div>
+<p>is 0 when <span class="arithmatex">\(H\)</span> is held and 1 as if <span class="arithmatex">\(i\)</span> were frozen. The coupling <code>zlk_ei_episode_coupling</code> is <code>zlk</code> when <span class="arithmatex">\(i\)</span> is in
+antiphase with <span class="arithmatex">\(e\)</span> (within <code>ZLK_EI_PHASE_TOL_DEG</code>), the demodulated coherence is <span class="arithmatex">\(\le -\)</span><code>ZLK_EI_EPISODE_MIN_COHERENCE</code>
+and <span class="arithmatex">\(\eta_H \le\)</span> <code>ZLK_EI_H_RESIDUAL_MAX</code> (0.5, a convention: the benchmark's ZLK episodes measure at most 0.28, the
+others at least 0.58); <code>forced_beat</code> the same in phase with <span class="arithmatex">\(K\)</span>; <code>none</code>; <code>not_measured</code> when the episode spans fewer than
+<code>ZLK_EI_MIN_CYCLES</code> = 3 periods (two independent estimators agree only by chance below that). In the full tree
+(<code>v2_verdict</code>) the row stays <code>transient</code> only on <code>zlk</code>, otherwise it is <code>uncertain</code> / <code>gate_unavailable</code> (−9), rule
+<code>zlk_gate_unconfirmed</code>; the minimal policy reads the same coupling as the e–i integral (below).
+373136, 3752 and 797204 over 500 kyr stay transient (<span class="arithmatex">\(\eta_H\)</span> 0.05–0.23 over 4.6–8 periods); 88899 over 500 kyr
+(<span class="arithmatex">\(e\)</span> and <span class="arithmatex">\(i\)</span> out of antiphase, <span class="arithmatex">\(\eta_H\)</span> 1.2) and 797204 over 100 kyr and 2023 RS2 (deciding episodes of 1.5 and 2.4
+periods) become uncertain. The record's coupling (<code>zlk_ei_coupling</code>) stays a column.</p>
+<p><strong>Under the minimal policy</strong> (the table above is the full tree's, kept in <code>v2_verdict</code>): the quadrupole problem, its integral thresholds (<span class="arithmatex">\(h^2 &lt; 3/5\)</span>, <span class="arithmatex">\(c_1\)</span>,
+Kozai's 39.2°) and its half-turn symmetry hold only for a hierarchical, axisymmetric perturber, outside their domain
+for main-belt and planet-crossing asteroids (Gronchi &amp; Milani 1999; Gallardo et al. 2012); none of them decides. The
+geometry of <span class="arithmatex">\(\omega\)</span> gives the status (one revolution is <span class="arithmatex">\(2\pi\)</span>), and the physics reads two measurements on the
+deciding episode:</p>
+<ul>
+<li>the <strong><span class="arithmatex">\(e\)</span>–<span class="arithmatex">\(i\)</span> integral</strong> above, measured on every bounded <span class="arithmatex">\(\omega\)</span> (a libration too): broken (measured, not <code>zlk</code>)
+  where the forced terms are small, <span class="arithmatex">\(\rho_{\max} \ge\)</span> <code>ZLK_RHO_KINEMATIC_EXCLUDED</code> (3, a convention: a non-resonant
+  forced <span class="arithmatex">\(e\)</span> is at most ~0.1), is a veto, non_resonant / kinematic_libration, detail <code>ei_integral_not_held</code> (88899 over
+  500 kyr, <span class="arithmatex">\(\eta_H\)</span> 1.24, <span class="arithmatex">\(\rho_{\max}\)</span> 13); with larger forced terms it is an objection (flag
+  <code>ei_integral_not_held</code>, level low), since the forcing itself breaks <span class="arithmatex">\(\sqrt{1-e^2}\cos i\)</span>;</li>
+<li>the <strong>forced vector</strong>: a gate <code>kinematic</code> on a libration is a veto (<code>zlk_kinematic</code>), and so is <span class="arithmatex">\(\rho_{\max} &lt; 1\)</span>
+  over the record together with a <code>kinematic</code> gate on an episodic angle, a drift or too few cycles (<code>zlk_free_e</code>); the
+  per-episode pin (a median) and an undefined free phase veto only together with a broken integral (624 Hektor:
+  <span class="arithmatex">\(\eta_H\)</span> 1.04), otherwise they are objections. <span class="arithmatex">\(\rho_{\max}\)</span> is a ratio of two parts of one split, not a fact
+  independent of it: 591986 refitted with g7 for the unresolved g5 gives 2.9 instead of 0.43, a planetary residual
+  0.83″/yr from g5 and resonant/low with <code>gate_unavailable</code>; the default split (g5, the one the 4-Myr record resolves)
+  is kinematic.</li>
+</ul>
+<p>A gate without a verdict keeps the geometry's status with the flag <code>gate_unavailable</code> at most medium, except when the
+integral holds and <span class="arithmatex">\(\rho_{\max} \ge\)</span> <code>ZLK_RHO_KINEMATIC_EXCLUDED</code>: the forced vector cannot hold the perihelion, so
+the abstention (1981 Midas: its free node near <span class="arithmatex">\(s_6\)</span>) is no cap and asks no extension (flag <code>kinematic_excluded</code>). Only
+a <code>confirmed</code> gate names a dynamic origin; otherwise the reason is <code>geometric_libration</code>/<code>geometric_episode</code>.</p>
+<p><strong>The scale.</strong> The gate's period is that of the deciding librating episode (the covering one, or the one with the most
+turning points; <code>sec_decisive_period_yr</code>), and <code>zlk_gate_n_cycles</code> = <span class="arithmatex">\(T/P\)</span> counts cycles of the osculating <span class="arithmatex">\(\omega\)</span>.
+F, the <span class="arithmatex">\(e\)</span>–<span class="arithmatex">\(i\)</span> coupling, the <span class="arithmatex">\(\rho\)</span> window and the extension read the same <span class="arithmatex">\(P\)</span>. Without a librating episode it is the
+median full period of the runs not faster than the floor. The median over every episode (<span class="arithmatex">\(P_{\rm cyc}\)</span>,
+<code>geo_period_cycle_yr</code>) is a column only: 2020 PP1's five episodes run from 2.3 to 34 kyr. The attribution of an <span class="arithmatex">\(\omega\)</span>
+pinned inside every episode tests the beat against the episodes' pooled period, since each episode is a cycle of the same
+beat (624 Hektor). A libration at the center scale whose period is within a Rayleigh width of a
+beat <span class="arithmatex">\(2\pi/|g_k - g_j|\)</span> of two fitted forced modes with nonzero amplitudes, whose reconstructed forced phase wave
+explains the center (correlation <span class="arithmatex">\(\ge\)</span> <code>ZLK_CENTRE_MODEL_R_MIN</code>, swing within a factor <code>ZLK_CENTRE_MODEL_AMP_FACTOR</code>),
+while <span class="arithmatex">\(\rho_{\max} &lt; 1\)</span> at the fine period, is the forced vector turning its direction, not a libration of <span class="arithmatex">\(\omega\)</span>:
+the fine scale stays decisive (<code>sec_centre_rejected</code> = <code>forced_beat:&lt;gk&gt;-&lt;gj&gt;</code>). Without the per-mode amplitudes (an
+old file) there is no measured beat and no rejection. The guard acts only where the gate does: with the gate disabled,
+without a split or for a co-orbital whose forcing the split does not fit, the geometric scale stands.</p>
+<p><strong>Columns that change no status</strong> (<a href="../../free-elements/#beyond-the-gate">Free elements: beyond the gate</a>): the <span class="arithmatex">\(e\)</span>–<span class="arithmatex">\(i\)</span>
+coupling of the whole record at the decisive period (<code>zlk_ei_coupling</code>, every row; <code>check_zlk_ei</code> and <code>confirmed_ei</code>
+are <code>zlk</code> coupling; the deciding episode's own coupling <code>zlk_ei_episode_*</code> is a column too, except for an episodic row
+without a gate verdict),
+the attribution of a kinematic libration to a forced mode (<code>zlk_forcing_*</code>), the node lock (<code>zlk_node_lock*</code>) and the
+slow line of the center (<code>zlk_centre_*</code>, 591986: the g6−g5 beat). The strongest coherent line of the <span class="arithmatex">\(e\)</span>–<span class="arithmatex">\(i\)</span> cross-spectrum
+(<a href="../../coherence/">Cross-spectral coherence</a>) is the columns <code>zlk_coherent</code>, <code>zlk_check</code>.</p>
+<p>Examples: <a href="../gallery/#zlk-resonant">3040 librates</a>, <a href="../gallery/#zlk-kinematic">591986 kinematic</a>,
+<a href="../gallery/#zlk-transient">162474 over 1.5 Myr</a>, <a href="../gallery/#zlk-gate-unavailable">1981 without a verdict</a>,
+<a href="../gallery/#zlk-circulation">15527 circulates</a>, <a href="../gallery/#zlk-invalid">2010 HY22 unphysical</a>.</p>
+<h2 id="confidence-and-output">Confidence and output<a class="headerlink" href="#confidence-and-output" title="Permanent link">&para;</a></h2>
+<p>The level follows the shared rule (<a href="../confidence/">Confidence</a>); a suspected exit or entry caps it at medium. A secular
+angle has no physics margin; for ZLK it is G.</p>
+<details class="info">
+<summary>The margins and their classes</summary>
+<p>S = support, D = decisive (<a href="../confidence/#margins">Confidence</a>).</p>
+<table>
+<thead>
+<tr>
+<th>margin</th>
+<th>what</th>
+<th>full when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>N (S)</td>
+<td>turning points of the decisive episode</td>
+<td>above the minimum (thin at it, with the cap <code>three_tp_episode</code>, ≤ high)</td>
+</tr>
+<tr>
+<td>S (S)</td>
+<td>its center</td>
+<td>every cycle's band overlaps, with enough independent cycles; not measured with one; not applicable to a modulated center</td>
+</tr>
+<tr>
+<td>F (S)</td>
+<td>the filter</td>
+<td>the libration period ≥ <code>FILTER_MIN_LIBRATION_CUTOFFS</code> × <span class="arithmatex">\(P_c\)</span>; else not measured (flag <code>filter_too_slow</code>)</td>
+</tr>
+<tr>
+<td>P (D)</td>
+<td>a circulation</td>
+<td>its largest center pass ≥ 1 + <code>CONFIDENCE_THIN_BAND</code> = 1.1 turns at every smoothing (×0.5, ×1, ×2); else thin</td>
+</tr>
+<tr>
+<td>G (D)</td>
+<td>ZLK: the gate</td>
+<td>confirmed with its cycle count clear of <code>FREE_GATE_MIN_CYCLES</code> by <code>CONFIDENCE_THIN_BAND</code>; a kinematic outcome that decided the status is full</td>
+</tr>
+</tbody>
+</table>
+</details>
+<p>The summary row carries the analysis' columns (<code>flt_*</code>, <code>geo_*</code>, <code>sec_*</code>, <code>rsp_*</code>, <code>zlk_gate*</code>, <code>ep_*</code>;
+<a href="../../output/">Output data</a>); the runs of turning points go to episodes.csv; the figure is the one-page <code>combined</code>
+figure (<a href="../../plots/">Plots</a>).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../confidence/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Confidence">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Confidence
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../gallery/" class="md-footer__link md-footer__link--next" aria-label="Next: Gallery">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Gallery
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "navigation.indexes", "toc.follow", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
