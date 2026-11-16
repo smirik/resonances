@@ -568,3 +568,10 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   of a run with a non-reflecting turn (amin07h + Codex's force-law witness); (3) `_mmr_t_last` reads the last turning
   point of any run, clipped to the window end. The secular/ZLK `apply_long_period` analogue is left for him.
 
+- **Nov 16 (pre-merge review, Codex).** (1) `fcntl` is optional (`run_lock.HAS_FLOCK`): without it (Windows) the
+  folder and table locks do nothing, as in 0.5.x, and the package imports again (main had no `fcntl`). (2) The 0.5.x
+  keywords `integrator_corrector`/`integrator_safe_mode` (renamed `integration_*`) and `libration_period_critical`/
+  `periodogram_critical` (old classifier) raise `TypeError` in `SimulationConfig` instead of being ignored (an ignored
+  corrector ran with 17); `SimulationSerializer.restore` drops them from an old simulation.json (the benchmark's runs
+  hold the last two). (3) Docs and skill: under the minimal policy `short_period_aliased` is a flag; the level drops
+  and `action=resample` comes only where R-ALIAS-A withdrew a check (`rsp_short_period_unmeasured`).

@@ -473,6 +473,14 @@ def load_example(example_id: str, with_planets: bool = True) -> Example:
 # ------------------------------------------------------------------ package objects
 
 
+def classifier_config(meta: Dict[str, Any]) -> Dict[str, Any]:
+    """The source run's classifier settings (`meta.classifier_config`) without the 0.5.x keys a new
+    SimulationConfig refuses (`REMOVED_KWARGS`): an old run's record, nothing the analysis reads."""
+    from resonances.simulation.config import REMOVED_KWARGS
+
+    return {k: v for k, v in (meta.get('classifier_config') or {}).items() if k not in REMOVED_KWARGS}
+
+
 def make_config(meta: Dict[str, Any], series: pd.DataFrame, has_planets: bool = False, **overrides):
     """SimulationConfig for this series: span and Nout from the saved times, classifier settings from
     the source run (`meta.classifier_config`), then `overrides` (e.g. a redesigned classifier's)."""
@@ -481,7 +489,7 @@ def make_config(meta: Dict[str, Any], series: pd.DataFrame, has_planets: bool = 
     t = series['t_yr'].to_numpy(dtype=float)
     span = float(t[-1] - t[0])
     kwargs: Dict[str, Any] = dict(save=None, plot=None, save_summary=False, _skip_path_verification=True)
-    kwargs.update(meta.get('classifier_config') or {})
+    kwargs.update(classifier_config(meta))
     if kwargs.get('secular_planet_phases') == 'measured' and not has_planets:
         kwargs['secular_planet_phases'] = 'linear'
     kwargs['save_planets'] = bool(has_planets)

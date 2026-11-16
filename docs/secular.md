@@ -91,8 +91,7 @@ At `T` = 10 Myr: g1 18°, g2 2.7°, g3 24°, g4 30°, s1 17°, s2 87°, s3 23°,
 (s6 9.5°, g5 1.4°, g6 0.9°). The fit smooths `φ_j` over 5 Myr, so below that length `range_j` is the phase's drift,
 not its faster wobble. Under the linear law a secular libration must swing more than `Σ|k_j| range_j(T)` over the
 angle's modes, or it is `insufficient_time` / `phase_unresolved` ([the rule](physics/secular-zlk.md#geometry-and-status)).
-Rebuild: `uv run python experiments/2026-10-planetary-frequencies/phase_uncertainty.py --write` (the runs' `.npz`
-files are local).
+The table was measured with a research script on local runs; neither is part of the package.
 
 ## Which resonances to check
 

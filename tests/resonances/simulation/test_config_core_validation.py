@@ -231,3 +231,18 @@ class TestCoreConfigValidation:
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
+
+
+@pytest.mark.parametrize(
+    'old, hint',
+    [
+        ('integrator_corrector', 'integration_corrector'),
+        ('integrator_safe_mode', 'integration_safe_mode'),
+        ('libration_period_critical', 'old classifier'),
+        ('periodogram_critical', 'old classifier'),
+    ],
+)
+def test_a_keyword_of_0_5_that_1_0_renamed_or_removed_is_refused_with_its_replacement(old, hint):
+    # 0.5.x read these four; ignored silently they would change the run (a corrector of 17 instead of the one asked)
+    with pytest.raises(TypeError, match=hint):
+        Simulation(**{old: 5})

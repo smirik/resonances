@@ -53,8 +53,8 @@ One palette gives a quantity the same color in every panel of the combined figur
 The right column is ten blocks (header, subtitle, key facts, why, confidence, checks, evidence, caveats, numbers,
 footer; [reading the figures](reading-figures.md#the-right-column)), in two halves with a fixed place for each: header
 to checks on the left, evidence to the footer on the right, on every figure. The time axis is labeled under the last
-panel and under (b). Its plaque and ◆ take the status color (resonant
-#1B7A3A, transient #B35400, near_separatrix #6B3FA0, non_resonant #4A4F57, uncertain #2F5D9E, invalid #B2182B;
+panel and under (b). Its plaque and ◆ take the status color (resonant `#1B7A3A`, transient `#B35400`,
+near_separatrix `#6B3FA0`, non_resonant `#4A4F57`, uncertain `#2F5D9E`, invalid `#B2182B`;
 `style.STATUS_COLOURS`, also used by the clone figures). The icons are ✓ green, ⚠ amber, ✗ red, ? gray and – light
 gray. The action is one chip in the header: gray `no action needed`, amber `glance at (…)`, red `review figure +
 numbers`, blue `extend to …` or `resample to …`. A column that does not fit makes the figure taller, by at most

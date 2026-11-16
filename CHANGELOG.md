@@ -32,6 +32,9 @@ Code and scripts written for 0.5.x must be updated for these changes:
   `nonzero`. `candidates` has a new meaning: `resonant`, `transient`, `near_separatrix` and `uncertain`. The new
   modes are `extended`, `review` and `negative`
   ([Configuration](https://smirik.github.io/resonances/config/#saving-and-plotting)).
+- **Integrator arguments renamed.** `integrator_corrector` and `integrator_safe_mode` are now `integration_corrector`
+  and `integration_safe_mode` (arguments and `SimulationConfig` attributes). The old names, and the old classifier's
+  `libration_period_critical` and `periodogram_critical`, are refused with a `TypeError` that names the replacement.
 - **Output layout.**
     - Each saved body has one series file, `data/data-<body>.csv`, with every angle, plus
       `data/data-<body>-periodograms.csv`. Before, the run folder held one file per body and resonance.
@@ -134,6 +137,9 @@ Code and scripts written for 0.5.x must be updated for these changes:
   `MMR_COORBITAL_PAIR_LOOP_FLOOR`, `MMR_COORBITAL_PAIR_LOOP_MIN_HILL`); a 1:1 run whose late cycles leave the well
   keeps its well-holding core and ends only at a separatrix crossing. The record's end is read from the last turning
   point of any run, for mean-motion, secular and Lidov-Kozai angles alike.
+- **One run per output folder.** A second run into a folder that a run (or a worker of an earlier run) is still
+  writing stops with an error instead of doubling the rows of `summary.csv` (`.run.lock`). The lock is an `flock`:
+  on Windows, which has none, it is not taken.
 - **Settings for every threshold.** Each threshold of the analysis has an `.env` key and a line in
   [Configuration](https://smirik.github.io/resonances/config/). Thresholds that are conventions are marked as
   such.

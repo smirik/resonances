@@ -68,3 +68,32 @@ def test_a_coordinator_does_not_block_its_own_workers(tmp_path):
     hold = run_lock.hold_as_worker(tmp_path)
     run_lock.release_worker(hold)
     run_lock.release(fd, tmp_path)
+
+
+def test_without_flock_the_module_imports_and_its_locks_do_nothing(tmp_path, monkeypatch):
+    # Windows has no fcntl: 1.0 must import there and run as 0.5 did, without the folder locks
+    import importlib.util
+
+    import pandas as pd
+
+    from resonances.simulation.data_manager import DataManager
+
+    monkeypatch.setitem(sys.modules, 'fcntl', None)  # `import fcntl` raises ImportError
+    spec = importlib.util.spec_from_file_location('run_lock_without_fcntl', run_lock.__file__)
+    fresh = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fresh)
+    assert fresh.HAS_FLOCK is False
+
+    monkeypatch.setattr(run_lock, 'fcntl', None)
+    monkeypatch.setattr(run_lock, 'HAS_FLOCK', False)
+    fd = run_lock.acquire(tmp_path)
+    second = run_lock.acquire(tmp_path)  # not refused: nothing to hold the folder with
+    run_lock.release(second)
+    run_lock.release(fd, tmp_path)
+    run_lock.release_worker(run_lock.hold_as_worker(tmp_path))
+
+    table = tmp_path / 'summary.csv'
+    DataManager._append_csv(pd.DataFrame({'a': [1]}), str(table))
+    DataManager._append_csv(pd.DataFrame({'a': [2]}), str(table))
+    assert pd.read_csv(table)['a'].tolist() == [1, 2]
+    assert not (tmp_path / 'summary.csv.lock').exists()

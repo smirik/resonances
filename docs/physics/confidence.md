@@ -240,7 +240,7 @@ Each verdict ends with an `action`, the cheapest step that would make it stronge
 | `review` | `low`; `uncertain / origin_unknown`; `invalid` other than an alias or an undersampled step; a record whose period already fits it while it is still too short to decide (more time cures nothing) |
 | `extend` | other `uncertain` verdicts, and an `uncertain / origin_unknown` one whose deciding measurement is missing only for lack of length (below): integrate longer, to `extend_to_years` |
 | `resample` or `review` | an `uncertain` 1:1 stall that stays long enough in the quasi-satellite well ([G1q](pendulum.md#co-orbitals-11)) with $P_{QS} < P_c$: the filter erased a possible quasi-satellite libration, so more time at the same step cures nothing. `resample` when the record's step cannot hold the quasi-satellite cutoff, else `review` |
-| `resample` | `invalid / alias` or `undersampled`, or a level held down only by `short_period_aliased`: integrate again with the output step `resample_step_yr` |
+| `resample` | `invalid / alias` or `undersampled`, or a level held down by a check the folded short periods withdrew (R-ALIAS-A, `rsp_short_period_unmeasured`): integrate again with the output step `resample_step_yr` |
 
 **How long to extend.** A libration needs at least $N_{\rm TP}/2$ periods plus the edges the filter trims:
 
@@ -296,8 +296,8 @@ EZ84's one reflection at 144 yr). No status or level changes; a review row stays
 **Which step to resample at.** For an alias or a coarse step, `resample_step_yr` is the largest value of
 `MMR_RESAMPLE_STEPS_YR` that keeps one alias branch over the range of $a$, samples the libration at least
 `MMR_RESAMPLE_STEPS_PER_CYCLE` = 20 times per cycle and lets the filter exist ($P_c > 2\Delta t$); `review` when
-the record's step already meets these bounds. When the cap `short_period_aliased` alone holds the level down, the
-step is `smp_fold_free_step_yr`: the largest grid step below the record's at which no short period folds.
+the record's step already meets these bounds. When a check the folded short periods withdrew holds the level down,
+the step is `smp_fold_free_step_yr`: the largest grid step below the record's at which no short period folds.
 
 **Secular and Lidov-Kozai.** The same table, and every extension is a next check $T_{\rm next}$ with an $N$ by
 cause (column `base_extend_cause`; module `analysis/secular/extend.py`). No status changes:

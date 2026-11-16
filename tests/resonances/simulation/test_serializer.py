@@ -119,6 +119,20 @@ def test_restore_simulation_basic(tmp_path):
     assert isinstance(body.angles["2J+3S-1+0+0-4"], np.ndarray)
 
 
+def test_restore_drops_the_keys_of_0_5_that_a_new_simulation_refuses(tmp_path):
+    # a run saved by 0.5.x keeps periodogram_critical and libration_period_critical in its config (the benchmark's runs)
+    _build_minimal_simulation(tmp_path)
+    json_path = tmp_path / "simulation.json"
+    data = json.loads(json_path.read_text())
+    data["config"].update(periodogram_critical=0.05, libration_period_critical=20000.0)
+    json_path.write_text(json.dumps(data))
+
+    sim = SimulationSerializer.restore(str(json_path), recompute_librations=False)
+
+    assert sim.config.name == "test_serializer"
+    assert not hasattr(sim.config, "periodogram_critical")
+
+
 def test_restore_periodograms_loaded(tmp_path):
     _build_minimal_simulation(tmp_path)
     json_path = tmp_path / "simulation.json"

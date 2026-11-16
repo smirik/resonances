@@ -64,7 +64,8 @@ not one. Typical records of the package's own examples (references/physics/galle
 | Lidov-Kozai | 500 kyr, 10–100 yr |
 
 **Output step.** The default (span/100, 15.9 yr for 100 kyr) folds the short periods of every main-belt angle: the
-verdicts then carry the cap `short_period_aliased` (confidence ≤ medium). For any run with MMRs use
+verdicts then carry the flag `short_period_aliased`, and a check the folded periods spoil is withdrawn (R-ALIAS-A,
+`rsp_short_period_unmeasured`: confidence ≤ medium, `action=resample`). For any run with MMRs use
 `output_step='auto'`: the dry-run walks down to a step that folds no short period (about 1 yr in the main belt, 2.5 yr
 for Hildas and Jupiter Trojans, 0.5 yr for NEAs). `auto` is not defined for purely secular/ZLK runs: set the step.
 
@@ -302,8 +303,9 @@ Distinctions that matter when you report:
 
 ## 5. Traps
 
-- **Default output step.** 15.9 yr makes every main-belt MMR `short_period_aliased` (≤ medium). The action is then
-  `resample` at `smp_fold_free_step_yr`; prevent it with `output_step='auto'`.
+- **Default output step.** 15.9 yr flags every main-belt MMR `short_period_aliased`; where the folded periods withdraw
+  a check (`rsp_short_period_unmeasured`) the level is ≤ medium and the action `resample` at `smp_fold_free_step_yr`.
+  Prevent it with `output_step='auto'`.
 - **Too short a record** gives `uncertain / baseline_needed`, not "not resonant". Compare the span with the period
   (`geo_period_cycle_yr`, `base_period_yr` in mmr_numbers.csv).
 - **Retrograde orbits (i > 90°).** Use `RetrogradeTwoBody` keys (`1J-3r0`); `find` gives such bodies only retrograde
@@ -423,7 +425,8 @@ If you can view images, open the figure of every `medium`/`low` verdict before r
 2. `invalid`: report that the record could not be measured and how to repair it; never as non-resonant.
 3. Is the span long enough (several periods)? If not, or `uncertain`, or caps `three_tp_episode`/`one_return_cycle`:
    "not decided yet; integrate to N yr".
-4. Is the step fine enough? `short_period_aliased`: the level is held down by the sampling; propose the resample step.
+4. Is the step fine enough? `short_period_aliased` with `rsp_short_period_unmeasured`: the sampling withdrew a check and
+   holds the level down; propose the resample step.
 5. Name the origin: `dynamic` vs `unknown` (geometric), `kinematic`, `induced` (with `owner`), `subresonance`.
    `subfloor_pass` in `rules_fired`: a two-body libration faster than the 150-yr floor, accepted because its own
    averaged potential, center and force law confirm it (G1f; `geo_subfloor_*`).

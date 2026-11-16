@@ -11,6 +11,7 @@ from resonances.body import Body
 from resonances.logger import logger
 from resonances.resonance.analysis.verdict import Verdict
 from resonances.resonance.factory import create_resonance
+from resonances.simulation.config import REMOVED_KWARGS
 from resonances.data.util import datetime_from_string
 
 # The run-wide MMR tables written next to summary.csv (by DataManager), listed in the manifest when present
@@ -60,6 +61,8 @@ class SimulationSerializer:
         config["_skip_path_verification"] = True
         if isinstance(config.get("date"), str):
             config["date"] = cls._parse_datetime(config["date"])
+        for name in REMOVED_KWARGS:  # keys of 0.5.x in a run saved then: a restore integrates nothing, so none applies
+            config.pop(name, None)
         if current_settings:
             for name in cls._analysis_setting_names():
                 config.pop(name, None)

@@ -97,7 +97,7 @@ def _config_kwargs(example: 'bio.Example') -> Dict[str, Any]:
     """The keyword arguments `bio.make_config` passes to SimulationConfig (the same settings, for a Simulation)."""
     t = example.series['t_yr'].to_numpy(dtype=float)
     kwargs: Dict[str, Any] = dict(save=None, plot=None, save_summary=False, _skip_path_verification=True)
-    kwargs.update(example.meta.get('classifier_config') or {})
+    kwargs.update(bio.classifier_config(example.meta))
     if kwargs.get('secular_planet_phases') == 'measured':
         kwargs['secular_planet_phases'] = 'linear'  # the saved angle is used as it is; no planets are loaded
     kwargs['save_planets'] = False

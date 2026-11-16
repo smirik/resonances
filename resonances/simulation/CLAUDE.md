@@ -59,7 +59,8 @@ User docs: `docs/output.md`, `docs/dry-run.md`, `docs/serialization.md`, `docs/c
   body's own epoch; never a linear covariance map). Used by the MPC `propagate` policy and by clones.
 - `run_lock.py`: one run per folder (`<save_path>/.run.lock`, host and pid), taken by `Simulation.run` in the
   coordinating process (never by batch workers) before anything is written, released at the end; a live holder stops
-  the run (2026-11-06: a clone run launched twice into one folder left every summary.csv row twice).
+  the run (2026-11-06: a clone run launched twice into one folder left every summary.csv row twice). Without fcntl
+  (Windows) this lock and `DataManager._locked` do nothing (`run_lock.HAS_FLOCK`), so the package still imports there.
 - `ensemble_run.py`: clones in a run (see `resonances/clones/CLAUDE.md`); with ensembles `Simulation.run` goes
   through `run_with_clones` (ordinary part, then clones, one checkpoint). `clone_store.py`: the checkpoint
   `clones_state/` (identity, starts, `batch-<i>.npz` published by tmp + `os.replace`, existence after validation =

@@ -99,10 +99,10 @@ counts only with `DRYRUN_FAIR=required` (or `--fair`), `user` is `DRYRUN_MAX_STE
 the short periods decide in the main belt (a = 2.5 au: 1 yr; a Hilda: 2.5 yr) and for NEAs (1999 UQ: 0.5 yr), the
 libration bound for a Jupiter Trojan (2.5 yr). After a run, each record's own fold-free step is in
 `smp_fold_free_step_yr` (the same walk for that row alone on `MMR_RESAMPLE_STEPS_YR`, see output.md), and
-`action=resample` names it when the cap `short_period_aliased` holds the level down. `auto` is defined only for runs with MMRs; a purely secular
+`action=resample` names it when the folded periods withdraw a check the level needs (R-ALIAS-A, `rsp_short_period_unmeasured`). `auto` is defined only for runs with MMRs; a purely secular
 or ZLK run keeps Nout. A numeric `OUTPUT_STEP` sets Nout = ⌈span/step⌉ + 1; an explicit Nout overrides both. The default
 step is unchanged (15.9 yr): a Hilda keeps P_c = 75 yr there and its libration, but every main-belt row is
-`short_period_aliased` (confidence ≤ medium). The run warns of each limit the configured step is above; the pilot
+flagged `short_period_aliased` (the full tree, `v2_verdict`, caps it at medium; the final level drops only where a check is withdrawn). The run warns of each limit the configured step is above; the pilot
 lifts the short-period warning when it accepts the step for every flagged row (153 Hilda and the Trojans: leaks
 0.1–0.7°, ε 0.1–0.2), and keeps it when not (62243 1M-4J-1: 2.4°, ε 5.9). A row below that step whose harmonic folds slower than
 the floor and whose leak the pilot rejects adds the `short_period_harmonic` limit, with the fold-free step to use

@@ -1,4 +1,3 @@
-import fcntl
 import functools
 import math
 import os
@@ -9,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from . import layout
+from . import layout, run_lock
 from .config import SavePlotMode, SimulationConfig, status_selected
 from resonances.body import Body
 from resonances.logger import logger
@@ -709,10 +708,13 @@ class DataManager:
         locked, otherwise it opens the path again. The file is removed only by its holder, so two processes never
         both see their own file at the path.
         """
+        if not run_lock.HAS_FLOCK:  # Windows: no lock, as before 1.0 (and an open file cannot be unlinked there)
+            yield
+            return
         lock_path = f'{filename}.lock'
         while True:
             with open(lock_path, 'a') as lock_file:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                run_lock.flock(lock_file.fileno(), run_lock.LOCK_EX)
                 try:
                     current = os.path.samestat(os.fstat(lock_file.fileno()), os.stat(lock_path))
                 except FileNotFoundError:

@@ -189,11 +189,23 @@ def _config_or(config, key: str, default: str) -> str:
 DEFAULT_PLOT_LAYOUT = 'confidence/status'
 
 
+# Keyword arguments of 0.5.x that 1.0.0 renamed or removed: an error, since a silently ignored one would change the run
+REMOVED_KWARGS = {
+    'integrator_corrector': "renamed to 'integration_corrector'",
+    'integrator_safe_mode': "renamed to 'integration_safe_mode'",
+    'libration_period_critical': 'removed with the old classifier (see the 1.0.0 changelog)',
+    'periodogram_critical': 'removed with the old classifier (see the 1.0.0 changelog)',
+}
+
+
 class SimulationConfig:
     """Handles simulation configuration and setup parameters."""
 
     def __init__(self, **kwargs):
         """Initialize simulation configuration."""
+        removed = [f"'{k}' ({REMOVED_KWARGS[k]})" for k in kwargs if k in REMOVED_KWARGS]
+        if removed:
+            raise TypeError(f"Unsupported argument(s): {', '.join(removed)}")
         self.name = kwargs.get('name', datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
         # Internal flag for batch workers to skip path verification
         self._skip_path_verification = kwargs.get('_skip_path_verification', False)

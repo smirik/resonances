@@ -5,7 +5,7 @@ Turning points (TP), the centre and its largest monotone pass, runs of TPs and e
 jumps of the slow variable (a for an MMR) and the last regime. Pure arrays in, dataclasses out:
 times in years (increasing), angles in radians, the slow variable in its own unit.
 
-Definitions (tmp/methodichka-2026-10-14/inputs/definitions.md, SPEC §4.3–4.4): a TP is a local
+Definitions (docs/physics/geometry.md, SPEC §4.3–4.4): a TP is a local
 maximum or minimum of sigma_f with prominence >= p_TP, the sequence made alternating; one full
 cycle is `libration_min_turning_points` TPs; an episode is a run of >= that many TPs with a
 stationary or modulated centre and at least one closed full cycle (`closure_ratios`).
