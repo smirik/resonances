@@ -39,6 +39,7 @@ def test_lock_is_taken_and_released(tmp_path):
     assert not (folder / run_lock.LOCK_NAME).exists() and list(folder.iterdir()) == []
 
 
+@pytest.mark.skipif(not run_lock.HAS_FLOCK, reason='no flock (Windows): the folder is not locked there')
 def test_a_live_run_holds_the_folder(tmp_path):
     child = _child(tmp_path, 'acquire', tmp_path.parent / f'{tmp_path.name}.ready')
     try:
@@ -51,6 +52,7 @@ def test_a_live_run_holds_the_folder(tmp_path):
     run_lock.release(fd, tmp_path)
 
 
+@pytest.mark.skipif(not run_lock.HAS_FLOCK, reason='no flock (Windows): the folder is not locked there')
 def test_a_worker_of_an_earlier_run_holds_the_folder(tmp_path):
     """Workers outlive a killed parent and still append rows: a new run waits for them."""
     child = _child(tmp_path, 'hold_as_worker', tmp_path.parent / f'{tmp_path.name}.ready')
@@ -90,6 +92,7 @@ def test_without_flock_the_module_imports_and_its_locks_do_nothing(tmp_path, mon
     second = run_lock.acquire(tmp_path)  # not refused: nothing to hold the folder with
     run_lock.release(second)
     run_lock.release(fd, tmp_path)
+    assert not (tmp_path / run_lock.LOCK_NAME).exists()  # closed first: Windows cannot remove an open file
     run_lock.release_worker(run_lock.hold_as_worker(tmp_path))
 
     table = tmp_path / 'summary.csv'

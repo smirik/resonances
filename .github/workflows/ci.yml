@@ -1,5 +1,11 @@
 name: Resonances App
 
+# What CI runs and why (the rest stays local: test-slow needs Horizons and depends on the date, test-benchmark needs
+# benchmark/data, which is not in git):
+#   quality: black, flake8, the docs site (mkdocs --strict), the wheel installed in a clean environment
+#   tests:   test-fast (every test of at most 1 s, synthetic data and committed fixtures only) on each Python
+#   windows: install, import and the tests of the parts that differ there (no fcntl)
+
 on:
     push:
         branches: [main]
@@ -7,25 +13,16 @@ on:
         branches: [main]
 
 jobs:
-    build:
-        strategy:
-            fail-fast: false
-            matrix:
-                python-version: ["3.11", "3.12", "3.13"]
-
+    quality:
         runs-on: ubuntu-latest
-
         steps:
             - uses: actions/checkout@v4
 
             - name: Install uv
-              uses: astral-sh/setup-uv@v4
-
-            - name: Set up Python ${{ matrix.python-version }}
-              run: uv python install ${{ matrix.python-version }}
+              uses: astral-sh/setup-uv@v6
 
             - name: Install dependencies
-              run: uv sync
+              run: uv sync --locked --python 3.12
 
             - name: Code Quality
               run: uv run black . --check
@@ -33,5 +30,60 @@ jobs:
             - name: Lint
               run: uv run flake8 --count
 
-            - name: Test with pytest
-              run: uv run pytest -v -m "not long" tests/resonances
+            - name: Docs
+              run: NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict
+
+            - name: Wheel in a clean environment
+              run: |
+                  uv build --wheel --out-dir dist
+                  uv venv --python 3.12 /tmp/wheel-env
+                  VIRTUAL_ENV=/tmp/wheel-env uv pip install dist/*.whl
+                  cd /tmp
+                  /tmp/wheel-env/bin/python -c "import resonances; from resonances import Simulation, find, check"
+                  /tmp/wheel-env/bin/resonances --help
+                  mkdir -p /tmp/skill-project
+                  /tmp/wheel-env/bin/resonances skill install --path /tmp/skill-project
+                  test -f /tmp/skill-project/.claude/skills/resonances/SKILL.md
+                  test -d /tmp/skill-project/.claude/skills/resonances/references
+
+    tests:
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version: ["3.11", "3.12", "3.13"]
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v6
+
+            - name: Install dependencies
+              run: uv sync --locked --python ${{ matrix.python-version }}
+
+            - name: test-fast
+              run: uv run pytest -n 4 --dist loadfile -q -m "not slow and not benchmark and not long" tests
+
+    windows:
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v6
+
+            - name: Install dependencies
+              run: uv sync --locked --python 3.12
+
+            - name: Import and CLI
+              run: |
+                  uv run python -c "import resonances; from resonances.simulation import run_lock; assert not run_lock.HAS_FLOCK"
+                  uv run resonances --help
+
+            - name: Tests of the parts that differ on Windows
+              run: >-
+                  uv run pytest -q -m "not slow and not benchmark and not long"
+                  tests/resonances/simulation/test_run_lock.py
+                  tests/resonances/simulation/test_config_core_validation.py
+                  tests/resonances/simulation/test_serializer.py
+                  tests/resonances/skills

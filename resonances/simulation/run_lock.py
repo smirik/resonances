@@ -71,12 +71,17 @@ def release(fd: Optional[int], folder=None) -> None:
     """Drop the lock taken by `acquire` and remove its files (a folder with nothing else stays as before the run)."""
     if fd is None:
         return
+    if not HAS_FLOCK:  # Windows: nothing to unlock, and an open file cannot be removed
+        os.close(fd)
+        fd = None
     if folder is not None:
         for name in (WORKERS_NAME, LOCK_NAME):
             try:
                 (Path(folder) / name).unlink()
             except OSError:
                 pass
+    if fd is None:
+        return
     try:
         flock(fd, LOCK_UN)
     finally:
