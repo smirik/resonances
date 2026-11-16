@@ -98,7 +98,7 @@ not from the package:
 """
 
 import math
-from dataclasses import replace
+from dataclasses import astuple, replace
 
 import numpy as np
 import pytest
@@ -1769,14 +1769,24 @@ def test_xiv_the_residence_walks_the_legs_until_a_whole_turn():
     exit keeps the core's end."""
     legs = g.AveragedLegs(np.array([100.0, 200.0, 300.0, 400.0]), np.array([0.3, 1.2, 0.2, 0.4, 0.9]), (0.0, 1000.0))
     run = make_wells_run(200.0, 300.0)
-    assert g.residence_of(run, legs, S) == g.Residence(200.0, 1000.0, g.RESIDENCE_CIRCULATION, g.RESIDENCE_EDGE)
-    assert g.residence_of(make_wells_run(330.0, 390.0), legs, S) == g.Residence(200.0, 1000.0, g.RESIDENCE_CIRCULATION, g.RESIDENCE_EDGE)
+    assert same_fields(g.residence_of(run, legs, S), g.Residence(200.0, 1000.0, g.RESIDENCE_CIRCULATION, g.RESIDENCE_EDGE))
+    assert same_fields(
+        g.residence_of(make_wells_run(330.0, 390.0), legs, S), g.Residence(200.0, 1000.0, g.RESIDENCE_CIRCULATION, g.RESIDENCE_EDGE)
+    )
     exits = replace(make_wells_run(330.0, 390.0), exit_observed=True)
-    assert g.residence_of(exits, legs, S) == g.Residence(200.0, 390.0, g.RESIDENCE_CIRCULATION, g.RESIDENCE_CIRCULATION)
+    assert same_fields(g.residence_of(exits, legs, S), g.Residence(200.0, 390.0, g.RESIDENCE_CIRCULATION, g.RESIDENCE_CIRCULATION))
     one_turn = g.AveragedLegs(
         np.array([100.0, 200.0, 300.0, 400.0]), np.array([0.3, 0.2, 0.2, 0.4, S.libration_edge_arc_rev]), (0.0, 1000.0)
     )
-    assert g.residence_of(run, one_turn, S) == g.Residence(0.0, 400.0, g.RESIDENCE_EDGE, g.RESIDENCE_CIRCULATION)
+    assert same_fields(g.residence_of(run, one_turn, S), g.Residence(0.0, 400.0, g.RESIDENCE_EDGE, g.RESIDENCE_CIRCULATION))
+
+
+def same_fields(a, b) -> bool:
+    """Dataclass equality with nan equal to nan (Python 3.13 compares fields with ==, where nan != nan)."""
+    return type(a) is type(b) and all(
+        x == y or (isinstance(x, float) and isinstance(y, float) and math.isnan(x) and math.isnan(y))
+        for x, y in zip(astuple(a), astuple(b))
+    )
 
 
 def make_wells_run(t0, t1):

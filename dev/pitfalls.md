@@ -34,6 +34,10 @@ Things that cost a session hours. Each says what happens and what to do instead.
   (example_id, resonance), not example_id alone (repeated ids are subresonance children, not duplicates).
 - **Saved figures are not proof that a row is current.** An old child figure (2003 UG22 +7+0, Oct 16) outlived its
   row. Regenerate before showing figures.
+- **Dataclass `==` with a nan field (Python 3.13+).** 3.13 compares the fields one by one, so two equal instances
+  holding nan are unequal (before, the tuple comparison saw the same nan object as equal). Tests compare such objects
+  nan-aware; the package's own comparisons are list membership and dict keys, where identity decides first (probed on
+  test-fast 2026-11-16: no decision reads `==` of two nan-holding dataclasses).
 
 ## Units, epochs, data
 
