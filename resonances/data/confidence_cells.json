@@ -1,0 +1,200 @@
+{
+ "version": 1,
+ "note": "Written by benchmark/tools/calibrate.py from the author verdicts. n_examples/n_errors/accuracy_95: labelled verdicts of the cell at confidence high or certain; uncertain/invalid verdicts and author-uncertain labels are abstentions. Reported in summary.csv (cell_* columns); the file changes no confidence level.",
+ "run": "v2-w28",
+ "labelled_rows": 387,
+ "cells": [
+  {
+   "status": "non_resonant",
+   "angle_status": "circulation",
+   "reason": "circulation",
+   "n_examples": 92,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.9599,
+    1.0
+   ],
+   "n_labelled_all": 118,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "resonant",
+   "angle_status": "libration",
+   "reason": "dynamic_libration",
+   "n_examples": 68,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.9465,
+    1.0
+   ],
+   "n_labelled_all": 86,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "transient",
+   "angle_status": "episodic",
+   "reason": "dynamic_episode",
+   "n_examples": 40,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.9124,
+    1.0
+   ],
+   "n_labelled_all": 79,
+   "n_errors_all": 2,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "circulation",
+   "reason": "alias",
+   "n_examples": 6,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.6097,
+    1.0
+   ],
+   "n_labelled_all": 6,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "libration",
+   "reason": "kinematic_libration",
+   "n_examples": 4,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.5101,
+    1.0
+   ],
+   "n_labelled_all": 4,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "episodic",
+   "reason": "kinematic_libration",
+   "n_examples": 1,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.2065,
+    1.0
+   ],
+   "n_labelled_all": 9,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "transient",
+   "angle_status": "episodic",
+   "reason": "subresonance_librates",
+   "n_examples": 1,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.2065,
+    1.0
+   ],
+   "n_labelled_all": 3,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "circulation",
+   "reason": "no_resonant_potential",
+   "n_examples": 1,
+   "n_errors": 0,
+   "accuracy_95": [
+    0.2065,
+    1.0
+   ],
+   "n_labelled_all": 1,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "episodic",
+   "reason": "implausible_strength",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 9,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "episodic",
+   "reason": "induced_libration",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 5,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "drift",
+   "reason": "induced_libration",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 3,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "drift",
+   "reason": "kinematic_drift",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 3,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "transient",
+   "angle_status": "episodic",
+   "reason": "geometric_episode",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 3,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "near_separatrix",
+   "angle_status": "near_separatrix",
+   "reason": "separatrix_zone",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 1,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "episodic",
+   "reason": "circulation",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 1,
+   "n_errors_all": 0,
+   "error_examples": []
+  },
+  {
+   "status": "non_resonant",
+   "angle_status": "libration",
+   "reason": "induced_libration",
+   "n_examples": 0,
+   "n_errors": 0,
+   "n_labelled_all": 1,
+   "n_errors_all": 0,
+   "error_examples": []
+  }
+ ]
+}

@@ -1,0 +1,104 @@
+example_id,status,confidence,angle_status,source
+coorbital__2024_JR16__1E-1+0+0,resonant,low,libration,"author:2026-11-03 (W30 page: group geom C: ""Остальные — согласен с решениями пакета""; the package value at W30)"
+coorbital__2026_AC4__1E-1+0+0,transient,low,episodic,"author:2026-11-03 (W30 page: group geom C: ""Остальные — согласен с решениями пакета""; the package value at W30)"
+mmr2__2005_GQ107__40M-57+0+17,transient,low,episodic,"author:2026-11-03 (W30 page: group geom C: ""Остальные — согласен с решениями пакета""; the package value at W30)"
+mmr3__1998_QA62__1V-5M+3+0+0+1,transient,low,episodic,"author:2026-11-03 (W30 page: group geom C: ""Остальные — согласен с решениями пакета""; the package value at W30)"
+mmr3__2003_EH16__1M-3J-1+0+0+3__30kyr,resonant,low,libration,"author:2026-11-03 (W30 page: group geom C: ""Остальные — согласен с решениями пакета""; the package value at W30)"
+mmr3__2003_ND__6J-6S-1+0+0+1,resonant,medium,libration,"author:2026-11-03 (W30 page: group geom C: ""Остальные — согласен с решениями пакета""; the package value at W30)"
+mmr3__2003_TX9__3E+2J-10+0+0+5,resonant,low,libration,"author:2026-11-03 (W30 page: group geom C: ""Остальные — согласен с решениями пакета""; the package value at W30)"
+mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr,resonant,low,libration,"author:2026-11-03 (W30 page: group geom C: ""Остальные — согласен с решениями пакета""; the package value at W30)"
+mmr3__79653__3M+3J-7+0+0+1,transient,high,episodic,"author:2026-11-03 (W30 page: group geom C: ""Остальные — согласен с решениями пакета""; the package value at W30)"
+zlk__10563__LK__500kyr,transient,medium,episodic,author:2026-11-03 (W30 page: row zlk__10563__LK__500kyr: package; the package value at W30)
+zlk__1981__LK__1myr,resonant,medium,libration,author:2026-11-03 (W30 page: row zlk__1981__LK__1myr: package; the package value at W30)
+zlk__2020_PP1__LK,transient,medium,episodic,author:2026-11-03 (W30 page: row zlk__2020_PP1__LK: package; the package value at W30)
+zlk__373136__LK,resonant,medium,libration,author:2026-11-03 (W30 page: row zlk__373136__LK: package; the package value at W30)
+zlk__797204__LK,transient,medium,episodic,author:2026-11-03 (W30 page: row zlk__797204__LK: package; the package value at W30)
+zlk__88899__LK__500kyr,transient,medium,episodic,author:2026-11-03 (W30 page: row zlk__88899__LK__500kyr: package; the package value at W30)
+coorbital__2014_OL339__1E-1+0+0,transient,medium,episodic,author:2026-11-03 (W30 page: row coorbital__2014_OL339__1E-1+0+0: package; the package value at W30)
+coorbital__2015_SO2__1E-1+0+0,transient,medium,episodic,author:2026-11-03 (W30 page: row coorbital__2015_SO2__1E-1+0+0: package; the package value at W30)
+coorbital__2019_GM1__1E-1+0+0,transient,medium,episodic,author:2026-11-03 (W30 page: row coorbital__2019_GM1__1E-1+0+0: package; the package value at W30)
+coorbital__2020_SB__1V-1+0+0,transient,low,episodic,author:2026-11-03 (W30 page: row coorbital__2020_SB__1V-1+0+0: package; the package value at W30)
+coorbital__2022_UA13__1V-1+0+0,transient,medium,episodic,author:2026-11-03 (W30 page: row coorbital__2022_UA13__1V-1+0+0: package; the package value at W30)
+coorbital__2024_TY11__1M-1+0+0__20kyr,transient,medium,episodic,author:2026-11-03 (W30 page: row coorbital__2024_TY11__1M-1+0+0__20kyr: package; the package value at W30)
+mmr2__182223__7N-19+0+12,transient,medium,episodic,author:2026-11-03 (W30 page: row mmr2__182223__7N-19+0+12: package; the package value at W30)
+mmr2__2001_HW7__5E-16+0+11__150kyr,transient,medium,episodic,author:2026-11-03 (W30 page: row mmr2__2001_HW7__5E-16+0+11__150kyr: package; the package value at W30)
+coorbital__2009_BE81__1M-1+0+0__20kyr,transient,high,episodic,author:2026-11-03 (W30 page: row coorbital__2009_BE81__1M-1+0+0__20kyr: package; the package value at W30)
+coorbital__2021_WX6__1M-1+0+0__20kyr,transient,high,episodic,author:2026-11-03 (W30 page: row coorbital__2021_WX6__1M-1+0+0__20kyr: package; the package value at W30)
+coorbital__2026_SZ2__1V-1+0+0,resonant,high,libration,author:2026-11-03 (W30 page: row coorbital__2026_SZ2__1V-1+0+0: package; the package value at W30)
+mmr2__12218__4M-7+0+3,transient,high,episodic,author:2026-11-03 (W30 page: row mmr2__12218__4M-7+0+3: package; the package value at W30)
+mmr2__1999_GL4__1V-5+0+4,transient,high,episodic,author:2026-11-03 (W30 page: row mmr2__1999_GL4__1V-5+0+4: package; the package value at W30)
+mmr2__1999_GL4__1V-5+0+4__0.25yr,transient,high,episodic,author:2026-11-03 (W30 page: row mmr2__1999_GL4__1V-5+0+4__0.25yr: package; the package value at W30)
+mmr2__2000_SF8__8M-9+0+1,transient,high,episodic,author:2026-11-03 (W30 page: row mmr2__2000_SF8__8M-9+0+1: package; the package value at W30)
+mmr2__2001_ND13__1V-3+0+2,transient,high,episodic,author:2026-11-03 (W30 page: row mmr2__2001_ND13__1V-3+0+2: package; the package value at W30)
+mmr2__2001_PG14__14E-25+0+11__step0.25yr,transient,high,episodic,author:2026-11-03 (W30 page: row mmr2__2001_PG14__14E-25+0+11__step0.25yr: package; the package value at W30)
+mmr2__2001_WK15__32E-39+0+7,resonant,high,libration,author:2026-11-03 (W30 page: row mmr2__2001_WK15__32E-39+0+7: package; the package value at W30)
+mmr2__2003_UG22__10E-17+0+7__40kyr,transient,high,episodic,author:2026-11-03 (W30 page: row mmr2__2003_UG22__10E-17+0+7__40kyr: package; the package value at W30)
+mmr2__2004_BG41__3J-1+0-2,resonant,high,libration,author:2026-11-03 (W30 page: row mmr2__2004_BG41__3J-1+0-2: package; the package value at W30)
+mmr2__2013_AS27__31E-36+0+5,resonant,high,libration,author:2026-11-03 (W30 page: row mmr2__2013_AS27__31E-36+0+5: package; the package value at W30)
+mmr2__433__47M-44+0-3__step0.5yr,transient,high,episodic,author:2026-11-03 (W30 page: row mmr2__433__47M-44+0-3__step0.5yr: package; the package value at W30)
+mmr2__59358__8N-13+0+5,transient,high,episodic,author:2026-11-03 (W30 page: row mmr2__59358__8N-13+0+5: package; the package value at W30)
+mmr2__78085__2E-7+0+5,transient,high,episodic,author:2026-11-03 (W30 page: row mmr2__78085__2E-7+0+5: package; the package value at W30)
+mmr3__24820__3J-1S-1+0+0-1,transient,high,episodic,author:2026-11-03 (W30 page: row mmr3__24820__3J-1S-1+0+0-1: package; the package value at W30)
+mmr3__52356__5J-2S-2+0+0-1,transient,high,episodic,author:2026-11-03 (W30 page: row mmr3__52356__5J-2S-2+0+0-1: package; the package value at W30)
+mmr3__1865__5E+4M-8+0+0-1,transient,high,episodic,author:2026-11-03 (W30 page: row mmr3__1865__5E+4M-8+0+0-1: package; the package value at W30)
+mmr2__2001_VC2__16E-17+0+1,resonant,certain,libration,author:2026-11-03 (W30 page: row mmr2__2001_VC2__16E-17+0+1: package; the package value at W30)
+mmr2__2002_XA__5J-2+0-3,resonant,high,libration,author:2026-11-03 (W30 page: row mmr2__2002_XA__5J-2+0-3: package; the package value at W30)
+mmr2__2003_UC22__16M-27+0+11__step0.5yr,resonant,certain,libration,author:2026-11-03 (W30 page: row mmr2__2003_UC22__16M-27+0+11__step0.5yr: package; the package value at W30)
+mmr2__2004_TK14__31M-34+0+3__step0.5yr,resonant,certain,libration,author:2026-11-03 (W30 page: row mmr2__2004_TK14__31M-34+0+3__step0.5yr: package; the package value at W30)
+coorbital__2022_AP1__1V-1+0+0,non_resonant,high,circulation,author:2026-11-03 (W30 page: row coorbital__2022_AP1__1V-1+0+0: package; the package value at W30)
+coorbital__85770__1E-1+0+0,non_resonant,high,circulation,author:2026-11-03 (W30 page: row coorbital__85770__1E-1+0+0: package; the package value at W30)
+mmr2__258640__46J-19+0-27,non_resonant,high,circulation,author:2026-11-03 (W30 page: row mmr2__258640__46J-19+0-27: package; the package value at W30)
+mmr3__142694__1V+3S-7+0+0+3__200kyr,non_resonant,high,circulation,author:2026-11-03 (W30 page: row mmr3__142694__1V+3S-7+0+0+3__200kyr: package; the package value at W30)
+mmr3__2000_YG4__2R-8E-1+0+0+7,non_resonant,high,circulation,author:2026-11-03 (W30 page: row mmr3__2000_YG4__2R-8E-1+0+0+7: package; the package value at W30)
+mmr2__16017__7S-1+0-6,non_resonant,medium,episodic,author:2026-11-03 (W30 page: row mmr2__16017__7S-1+0-6: package; the package value at W30)
+mmr2__42946__43S-6+0-37,non_resonant,medium,circulation,author:2026-11-03 (W30 page: row mmr2__42946__43S-6+0-37: package; the package value at W30)
+mmr3__101703__1V+3S-7+0+0+3,uncertain,,drift,author:2026-11-03 (W30 page: row mmr3__101703__1V+3S-7+0+0+3: package; the package value at W30)
+secular__5026__g+g2-g4-g6,uncertain,,insufficient_time,author:2026-11-03 (W30 page: group s5026 A; the package value at W30)
+coorbital__2013_RZ53__1E-1+0+0,uncertain,,episodic,"author:2026-11-03 (W30 page: group oldco: package (oldco: ""полагаюсь на твоё мнение""); the package value at W30)"
+coorbital__2015_TG24__1V-1+0+0,uncertain,,insufficient_time,"author:2026-11-03 (W30 page: group oldco: package (oldco: ""полагаюсь на твоё мнение""); the package value at W30)"
+coorbital__2021_VH2__1E-1+0+0,uncertain,,episodic,"author:2026-11-03 (W30 page: group oldco: package (oldco: ""полагаюсь на твоё мнение""); the package value at W30)"
+coorbital__2025_SC__1E-1+0+0,uncertain,,episodic,"author:2026-11-03 (W30 page: group oldco: package (oldco: ""полагаюсь на твоё мнение""); the package value at W30)"
+coorbital__2025_YU11__1E-1+0+0,transient,low,episodic,author:2026-11-03 (W30 page: row coorbital__2025_YU11__1E-1+0+0: package; the package value at W30)
+coorbital__2002_PN__1E-1+0+0,transient,low,episodic,author:2026-11-03 (W30 page: group lowone A; the package value at W30)
+coorbital__2006_BZ147__1E-1+0+0,transient,low,episodic,author:2026-11-03 (W30 page: group lowone A; the package value at W30)
+coorbital__2016_CA138__1E-1+0+0,transient,low,episodic,author:2026-11-03 (W30 page: group lowone A; the package value at W30)
+coorbital__2018_XW2__1E-1+0+0,transient,low,episodic,author:2026-11-03 (W30 page: group lowone A; the package value at W30)
+coorbital__2019_DJ1__1E-1+0+0,transient,low,episodic,author:2026-11-03 (W30 page: group lowone A; the package value at W30)
+coorbital__2024_WJ__1E-1+0+0,transient,low,episodic,author:2026-11-03 (W30 page: group lowone A; the package value at W30)
+coorbital__2024_XP16__1E-1+0+0,transient,low,episodic,author:2026-11-03 (W30 page: group lowone A; the package value at W30)
+mmr2__115978__11M-19+0+8,transient,low,episodic,author:2026-11-03 (W30 page: group lowone A; the package value at W30)
+mmr2__117306__11M-20+0+9,transient,low,episodic,author:2026-11-03 (W30 page: group lowone A; the package value at W30)
+coorbital__2020_FN3__1E-1+0+0,uncertain,,episodic,"author:2026-11-03 (W30 page: group zone C: a turn within the thin band of MMR_COORBITAL_TURN_ZONE_MAX is undecided -> uncertain + review)"
+mmr3__2002_BG__1E-10S-1+0+0+10,uncertain,,insufficient_time,"author:2026-11-03 (W31 page, card bg C: ""эпизод — весь график, rev << 1 ... insufficient_time + extend""; replaces non_resonant of 2026-11-02)"
+secular__339__g-g6+s-s6,resonant,high,libration,"author:2026-11-03 (W31 page, card secular A: high, one confidence ladder for every family)"
+secular__21211__g-g6+s-s6,resonant,high,libration,"author:2026-11-03 (W31 page, card secular A: high, one confidence ladder for every family)"
+secular__633__g-g6+s-s6,resonant,high,libration,"author:2026-11-03 (W31 page, card secular A: high, one confidence ladder for every family)"
+coorbital__164207__1E-1+0+0,resonant,certain,libration,"author:2026-11-03 (W32 disagreements page, card ladder A; the package value of v2-w32b / v2-w31b-secular-zlk)"
+coorbital__469219__1E-1+0+0,resonant,certain,libration,"author:2026-11-03 (W32 disagreements page, card ladder A; the package value of v2-w32b / v2-w31b-secular-zlk)"
+coorbital__524522__1V-1+0+0,resonant,certain,libration,"author:2026-11-03 (W32 disagreements page, card ladder A; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr2__33128__6N-7+0+1,transient,certain,episodic,"author:2026-11-03 (W32 disagreements page, card ladder A; the package value of v2-w32b / v2-w31b-secular-zlk)"
+coorbital__2015_YA__1E-1+0+0,transient,high,episodic,"author:2026-11-03 (W32 disagreements page, card ladder A; the package value of v2-w32b / v2-w31b-secular-zlk)"
+coorbital__2019_GM1__1E-1+0+0,transient,high,episodic,"author:2026-11-03 (W32 disagreements page, card ladder A; the package value of v2-w32b / v2-w31b-secular-zlk)"
+coorbital__2024_TY11__1M-1+0+0__20kyr,transient,high,episodic,"author:2026-11-03 (W32 disagreements page, card ladder A; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr2__2001_HW7__5E-16+0+11__150kyr,transient,high,episodic,"author:2026-11-03 (W32 disagreements page, card ladder A; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr2__82831__13M-24+0+11,transient,high,episodic,"author:2026-11-03 (W32 disagreements page, card ladder A; the package value of v2-w32b / v2-w31b-secular-zlk)"
+zlk__1981__LK,resonant,certain,libration,"author:2026-11-03 (W32 disagreements page, card ladder A; the package value of v2-w32b / v2-w31b-secular-zlk)"
+zlk__1981__LK__1myr,resonant,certain,libration,"author:2026-11-03 (W32 disagreements page, card ladder A; the package value of v2-w32b / v2-w31b-secular-zlk)"
+coorbital__439908__1M-1+0+0__20kyr,transient,medium,episodic,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+secular__518__g-g6+s-s6,resonant,high,libration,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+zlk__591986__LK,non_resonant,high,libration,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+zlk__2023_RS2__LK,transient,medium,episodic,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr2__16017__7S-1+0-6,non_resonant,high,episodic,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr3__2001_HW7__5J+6S-2+0+0-9__150kyr,non_resonant,high,episodic,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr3__41588__3J+9S-2+0+0-10,non_resonant,high,episodic,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr3__62243__1M-4J-1+0+0+4,non_resonant,high,drift,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr3__8306__2M-5S-3+0+0+6,non_resonant,high,circulation,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr2__2001_PG14__33S-2+0-31,non_resonant,high,circulation,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr3__501710__1E+7S-4+0+0-4__500kyr,transient,low,episodic,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr3__2012_DE61__1E+5S-4+0+0-2,transient,low,episodic,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr3__2013_VA14__2J+6S-1+0+0-7__60kyr_1yr,transient,low,episodic,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+coorbital__255071__1E-1+0+0,non_resonant,medium,circulation,"author:2026-11-03 (W32 disagreements page, row: package; the package value of v2-w32b / v2-w31b-secular-zlk)"
+zlk__88899__LK__500kyr,non_resonant,high,episodic,"author:2026-11-03 (W32 disagreements page, row 88899: package (card r88899 A: keep the veto, rule D1 C); the package value of v2-w32b / v2-w31b-secular-zlk)"
+zlk__555527__LK,non_resonant,high,circulation,"author:2026-11-03 (W32 disagreements page, row 555527: «Готов согласиться с high, хотя мелкая рябь явно ни на что не влияет»; the package value of v2-w32b / v2-w31b-secular-zlk)"
+zlk__555527__LK__500kyr,non_resonant,high,circulation,"author:2026-11-03 (W32 disagreements page, row 555527: «Готов согласиться с high, хотя мелкая рябь явно ни на что не влияет»; the package value of v2-w32b / v2-w31b-secular-zlk)"
+mmr3__1580__4M-7J-5+0+0+8,transient,low,episodic,"author:2026-11-03 (W32 disagreements page, row 1580: «с low можно согласиться» (episode bounds to be fixed: «правильные плюс-минус от 2.5 до 6»); the package value of v2-w32b / v2-w31b-secular-zlk)"

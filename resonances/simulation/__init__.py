@@ -1,7 +1,25 @@
-from .config import SimulationConfig
+"""Simulation components for resonance analysis."""
+
+from .simulation import Simulation
+from .config import SimulationConfig, SavePlotMode
 from .body_manager import BodyManager
 from .integration import IntegrationEngine
 from .data_manager import DataManager
-from .simulation import Simulation
+from .batch_manager import BatchManager
+from .state_manager import StateManager, SimulationState
+from .parallel_executor import ParallelExecutor
+from .serializer import SimulationSerializer
 
-__all__ = ['SimulationConfig', 'BodyManager', 'IntegrationEngine', 'DataManager', 'Simulation']
+__all__ = [
+    "Simulation",
+    "SimulationConfig",
+    "SavePlotMode",
+    "BodyManager",
+    "IntegrationEngine",
+    "DataManager",
+    "BatchManager",
+    "StateManager",
+    "SimulationState",
+    "ParallelExecutor",
+    "SimulationSerializer",
+]

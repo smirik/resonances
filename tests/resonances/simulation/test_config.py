@@ -57,7 +57,28 @@ class TestSimulationConfig:
         assert hasattr(config, 'oscillations_filter_order')
         assert hasattr(config, 'periodogram_frequency_min')
         assert hasattr(config, 'periodogram_frequency_max')
-        assert hasattr(config, 'libration_period_critical')
+
+    def test_backward_integration_keeps_span_derived_params_positive(self):
+        """A negative tmax (backward run) must not produce negative periodogram windows.
+
+        With tmax = -100000 the span is 15915.5 yr, so the end cut is 5 % = 795.8 yr
+        and the minimum frequency is 1/15915.5 yr.
+        Before the fix these came out negative and the periodogram trimmed a negative number
+        of points, keeping only the tail of every series.
+        """
+        config = SimulationConfig(tmax=-100000)
+
+        span_yrs = 100000 / (2 * np.pi)
+        assert config.tmax == -100000
+        assert config.Nout == 1000
+        assert abs(config.libration_period_min - 0.05 * span_yrs) < 1e-9
+        assert abs(config.periodogram_frequency_min - 1.0 / span_yrs) < 1e-15
+        assert config.libration_period_min > 0
+        assert config.periodogram_frequency_min > 0
+
+        forward = SimulationConfig(tmax=100000)
+        assert forward.libration_period_min == config.libration_period_min
+        assert forward.periodogram_frequency_min == config.periodogram_frequency_min
 
 
 if __name__ == '__main__':

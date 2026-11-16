@@ -1,0 +1,7 @@
+{
+  "bytes": 3908,
+  "downloaded_at": "2026-10-27T08:28:38+00:00",
+  "request_body": null,
+  "sha256": "8d6b94519eef948b7c0db25eb42800654c14c1d33fbe8832242c81d840efe405",
+  "url": "https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=463&cov=mat&full-prec=1"
+}

@@ -1,0 +1,289 @@
+"""The free-omega gate: does a bounded Lidov-Kozai angle survive the forced/free split?
+
+`secular/free_elements.py` does the signal processing; this module reads its output and returns an outcome
+(`evaluate_gate`). The ZLK analysis (`analysis.zlk`, `analysis.secular.decide.decide_status`) turns the outcome into
+the verdict: on a libration, confirmed keeps it resonant, kinematic makes it non_resonant (kinematic_libration),
+any other outcome uncertain (gate_unavailable) — the last two never merged; on an episodic angle, a drift or too
+few cycles only a kinematic outcome with the free circle never around the origin changes the status.
+
+Why it is needed. Libration of the osculating omega does not prove a Lidov-Kozai
+resonance. When the forced eccentricity vector is longer than the free one, the (k, h)
+cloud does not enclose the origin, varpi cannot turn, and omega = varpi - Omega is pinned
+by geometry alone. 591986 is the worked example: its osculating omega is confined for
+30 Myr while the free one leaves confinement after 6 kyr.
+
+The outcomes:
+
+    no free elements (too short, or failed)      -> unavailable       (never measured)
+    co-orbital of a planet whose own modes the
+    split does not fit (Mercury to Mars)         -> unavailable       (coorbital_unfitted_forcing)
+    baseline shorter than min_cycles * P_lib     -> short_window      (never measured)
+    more than half the samples masked            -> undefined_phase   (no usable argument)
+    free omega spans less than a full turn:
+        b_varpi or b_Omega at a planetary rate   -> planetary_residual (residual is forcing)
+        otherwise                                -> confirmed
+    free omega winds:
+        any rate at a planetary rate             -> planetary_residual
+        otherwise                                -> kinematic
+
+The same frequency check stands on both branches, and that symmetry is the point. A
+Lidov-Kozai libration lives on the object's *own* rates, so it can only be confirmed when
+varpi_free and Omega_free turn at speeds that are not planetary. A residual sitting at a
+planetary rate is either a defect of the subtraction or a genuine linear secular resonance
+(g close to some g_j, the nu5/nu6 family) where the forced/free split is undefined in the
+first place; both make the verdict unsafe, and telling them apart is not required.
+
+There is no amplitude criterion anywhere in the gate. An earlier design compared the free
+eccentricity against an estimated floor of unsubtracted forcing, but that floor cannot be
+measured: estimating how much forcing sits at a frequency the baseline cannot resolve
+requires resolving it. Frequency is the direct observable — unsubtracted forcing lives, by
+construction, only at known rates.
+
+Co-orbitals. The forced term of a co-orbital is its planet's own vector. For a Jupiter Trojan that vector is
+Jupiter's, g5 + g6, which the split fits (591986 stays kinematic); for a co-orbital of Mercury to Mars the planet's
+own modes are not candidates at all, so whatever the residual does is no measurement: the outcome is unavailable
+(`coorbital_planet`, detail coorbital_unfitted_forcing), never not_applicable, which would keep the geometric status.
+
+The honest cost: an object whose own g or s happens to sit within one Rayleigh width of a
+planetary fundamental is withheld rather than confirmed. That is a real ambiguity, not a
+missing feature. For screening, uncertain means "re-check on a longer baseline", so it
+belongs in the candidate list next to resonant, not in the discard pile. When the free node
+is the only match (`node_near`, column zlk_gate_node_near: 1981 Midas, b_Omega 1.85 arcsec/yr
+from s6 over 500 kyr), the reason text says so and the extension asks for the baseline that
+separates it; a true nu16 lock (s locked to s6) is not separated by any length.
+"""
+
+from dataclasses import dataclass, field
+from enum import StrEnum
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+
+from resonances.data.const import PLANETS_AXIS, PLANETS_MASS
+from resonances.secular.free_elements import FreeElements
+
+# Modes the residual rates are compared against. 'const' is deliberately absent from the
+# single-rate lists: a residual that barely turns always sits within tolerance of zero,
+# which is what a librator looks like, not what a leak looks like. It joins the list only
+# on the confirmation branch, and only when a constant term was actually left unsubtracted.
+E_MODES = ('g5', 'g6', 'g7', 'g8')
+I_MODES = ('s6', 's7', 's8')
+
+DEFAULT_MIN_CYCLES = 3.0
+MAX_MASKED_FRACTION = 0.5
+COORBITAL_UNFITTED = 'coorbital_unfitted_forcing'
+EPISODES = 'episodes'  # confirmed inside the librating episodes of an episodic omega (`episode_confirmation`)
+PLANET_ORDER = ('Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune')
+
+
+class GateOutcome(StrEnum):
+    """Why the gate reached the status it did."""
+
+    CONFIRMED = 'confirmed'  # free omega confined and turning at non-planetary rates
+    KINEMATIC = 'kinematic'  # free omega winds: the osculating libration was geometry
+    SHORT_WINDOW = 'short_window'  # fewer than min_cycles libration periods in the baseline
+    UNDEFINED_PHASE = 'undefined_phase'  # too many samples near the origin to unwrap
+    PLANETARY_RESIDUAL = 'planetary_residual'  # a residual rate matches a planetary one
+    NOT_APPLICABLE = 'not_applicable'  # the angle does not librate, nothing to check
+    DISABLED = 'disabled'
+    UNAVAILABLE = 'unavailable'  # the decomposition could not be built: nothing was measured
+
+
+@dataclass
+class OmegaFreeGate:
+    """Verdict of the free-omega check for one body-resonance."""
+
+    outcome: GateOutcome
+    matches: List[str] = field(default_factory=list)  # e.g. ['b_varpi~g8 (d=0.4)']
+    n_cycles: Optional[float] = None  # baseline / P_lib
+    # planetary_residual: the smallest |rate - target| of the matches [arcsec/yr] (what a longer baseline must resolve)
+    min_distance: Optional[float] = None
+    detail: str = ''  # unavailable: why ('' = no free elements; COORBITAL_UNFITTED)
+
+
+def _close(label: str, value: float, targets: Dict[str, float], tolerance: float) -> List[Tuple[str, float]]:
+    """(text, |value - target|) of the targets the signed rate `value` cannot be told apart from.
+
+    Signed, not absolute: every s_j is retrograde, so a prograde free node is not s8 no
+    matter how close the magnitudes are.
+    """
+    if not np.isfinite(value):
+        return []
+    distances = ((name, abs(value - target)) for name, target in targets.items())
+    return [(f'{label}~{name} (d={distance:.1f})', float(distance)) for name, distance in distances if distance < tolerance]
+
+
+def _residual(close: List[Tuple[str, float]], cycles: Optional[float]) -> OmegaFreeGate:
+    """planetary_residual with its matches and the smallest distance."""
+    return OmegaFreeGate(GateOutcome.PLANETARY_RESIDUAL, [text for text, _ in close], cycles, min(d for _, d in close))
+
+
+def _mode_targets(names: Tuple[str, ...], frequencies: Dict[str, float]) -> Dict[str, float]:
+    return {name: frequencies[name] for name in names if name in frequencies}
+
+
+def _confirmation_targets(elements: FreeElements, frequencies: Dict[str, float]) -> Tuple[dict, dict]:
+    """Planetary rates a *confined* residual must stay away from.
+
+    Zero joins the eccentricity list when the constant term was clustered away and so left
+    in the residual, because an unsubtracted constant is exactly what makes an angle look
+    confined — the dangerous direction. The inclination list never needs it: 'const' heads
+    PRIORITY_I, so it is always its cluster's representative and always fitted.
+    """
+    g_targets = _mode_targets(E_MODES, frequencies)
+    if 'const' in elements.dropped_e:
+        g_targets = dict(g_targets, const=0.0)
+    return g_targets, _mode_targets(I_MODES, frequencies)
+
+
+def _demotion_targets(frequencies: Dict[str, float]) -> Tuple[dict, dict, dict]:
+    """Planetary rates a *winding* residual must stay away from, including differences.
+
+    omega = varpi - Omega, so an unsubtracted term in either vector shows up in omega at a
+    difference frequency; all g_j - s_k are checked, with s5 = 0 included as a real mode.
+    """
+    g_targets = _mode_targets(E_MODES, frequencies)
+    s_targets = _mode_targets(I_MODES, frequencies)
+    combos = {
+        f'{g}-{s}': g_value - s_value
+        for g, g_value in g_targets.items()
+        for s, s_value in dict(s_targets, s5=frequencies.get('s5', 0.0)).items()
+    }
+    return g_targets, s_targets, combos
+
+
+def _modes_fitted(index: int, elements: FreeElements) -> bool:
+    """Whether planet `index`'s own modes g_index and s_index (s5 is the constant) are among the split's candidates:
+    fitted, or merged into a fitted neighbour by the baseline."""
+    covered_e = set(elements.basis_e) | set(elements.dropped_e) | {label for group in elements.clusters_e for label in group}
+    covered_i = set(elements.basis_i) | set(elements.dropped_i) | {label for group in elements.clusters_i for label in group}
+    s_label = 'const' if index == 5 else f's{index}'
+    return f'g{index}' in covered_e and s_label in covered_i
+
+
+def episode_confirmation(
+    verdict: OmegaFreeGate, elements: Optional[FreeElements], rho_min: float, turns_max: float, turns_limit: float
+) -> OmegaFreeGate:
+    """The verdict of an episodic omega read inside its librating episodes (W34, the author on 88899 500 kyr).
+
+    Between its episodes an episodic omega circulates, so its free omega winds over the record whatever happens inside
+    them, and the record's verdict (kinematic or planetary_residual on the winding branch) says nothing about the
+    episodes. Inside them the test is the confirmation branch's: in every librating episode the free vector is the
+    longer one (median local rho_min >= 1, so the osculating omega is the free one's) and the free omega advances fewer
+    than `turns_limit` turns per whole cycle (`FreeElements.episode_pinning`; a forced cycle advances one), and
+    b_varpi, b_Omega stay off the g and s modes -> confirmed, detail `EPISODES`; a residual there -> planetary_residual.
+    nan (an episode the free elements do not measure) keeps the record's verdict."""
+    if elements is None or elements.librates or verdict.outcome not in (GateOutcome.KINEMATIC, GateOutcome.PLANETARY_RESIDUAL):
+        return verdict
+    if not (rho_min >= 1.0 and turns_max < turns_limit):
+        return verdict
+    g_targets, s_targets = _confirmation_targets(elements, elements.frequencies)
+    close = _close('b_varpi', elements.b_varpi, g_targets, elements.resolution) + _close(
+        'b_Omega', elements.b_Omega, s_targets, elements.resolution
+    )
+    if close:
+        return _residual(close, verdict.n_cycles)
+    return OmegaFreeGate(GateOutcome.CONFIRMED, n_cycles=verdict.n_cycles, detail=EPISODES)
+
+
+def coorbital_planet(semi_major_axis: float, elements: Optional[FreeElements], hill_factor: float) -> str:
+    """The planet whose co-orbital region holds the body's mean semi-major axis and whose own modes the split does not
+    fit ('' when none): |<a>/a_P - 1| < hill_factor x (m_P / 3 M_sun)^(1/3) (ZLK_COORBITAL_HILL_FACTOR). Earth:
+    0.030 at the default 3; Jupiter's Trojans are covered (g5, g6 fitted) and never named."""
+    if elements is None or not (semi_major_axis is not None and np.isfinite(semi_major_axis) and semi_major_axis > 0):
+        return ''
+    for index, name in enumerate(PLANET_ORDER, start=1):
+        width = hill_factor * (PLANETS_MASS[name] / 3.0) ** (1.0 / 3.0)
+        if abs(semi_major_axis / PLANETS_AXIS[name] - 1.0) < width and not _modes_fitted(index, elements):
+            return name
+    return ''
+
+
+def evaluate_gate(elements: Optional[FreeElements], libration_period: Optional[float], config, coorbital: str = '') -> OmegaFreeGate:
+    """The free-omega verdict on a bounded Lidov-Kozai angle (`libration_period` its period in years).
+
+    The caller asks only for an angle that librates (or has libration episodes); the outcome is then confirmed,
+    kinematic, or one of the reasons why no verdict is possible (short_window, undefined_phase, planetary_residual,
+    unavailable). The two outcomes below confirmed are distinct and must stay that way in any statistics: kinematic
+    is a measurement (the libration was found to be geometry), the others are the absence of one. `coorbital` names
+    the planet of a co-orbital whose modes the split does not fit (`coorbital_planet`): unavailable.
+    """
+    if not getattr(config, 'free_gate_enabled', True):
+        return OmegaFreeGate(GateOutcome.DISABLED)
+    if elements is None:
+        return OmegaFreeGate(GateOutcome.UNAVAILABLE)
+    if coorbital:
+        return OmegaFreeGate(GateOutcome.UNAVAILABLE, [f'{COORBITAL_UNFITTED}:{coorbital}'], detail=COORBITAL_UNFITTED)
+
+    # The fundamentals the split actually subtracted, not a fresh lookup: judging a
+    # residual against numbers other than the ones removed would be meaningless.
+    frequencies = elements.frequencies
+    tolerance = elements.resolution
+    min_cycles = getattr(config, 'free_gate_min_cycles', DEFAULT_MIN_CYCLES)
+    cycles = elements.baseline / libration_period if libration_period and np.isfinite(libration_period) else None
+
+    if cycles is not None and cycles < min_cycles:
+        return OmegaFreeGate(GateOutcome.SHORT_WINDOW, n_cycles=cycles)
+    if max(elements.mask_fraction_e, elements.mask_fraction_i) > MAX_MASKED_FRACTION:
+        return OmegaFreeGate(GateOutcome.UNDEFINED_PHASE, n_cycles=cycles)
+
+    if elements.librates:
+        g_targets, s_targets = _confirmation_targets(elements, frequencies)
+        close = _close('b_varpi', elements.b_varpi, g_targets, tolerance) + _close('b_Omega', elements.b_Omega, s_targets, tolerance)
+        if close:
+            return _residual(close, cycles)
+        return OmegaFreeGate(GateOutcome.CONFIRMED, n_cycles=cycles)
+
+    g_targets, s_targets, combos = _demotion_targets(frequencies)
+    close = (
+        _close('b_varpi', elements.b_varpi, g_targets, tolerance)
+        + _close('b_Omega', elements.b_Omega, s_targets, tolerance)
+        + _close('b_omega', elements.b_omega, combos, tolerance)
+    )
+    if close:
+        return _residual(close, cycles)
+    return OmegaFreeGate(GateOutcome.KINEMATIC, n_cycles=cycles)
+
+
+def node_near(elements: Optional[FreeElements]) -> Tuple[str, float]:
+    """(s_j, |b_Omega - s_j|) when the free node is the only planetary match of the gate's branch — b_Omega within
+    one Rayleigh width of s_j (the nearest), b_varpi (and on a winding omega b_omega) away from every planetary rate —
+    else ('', nan). Read with a planetary_residual outcome: such a residual is a node not yet separated from s_j by
+    the baseline (1981: s6, d 1.85 < 2.59 arcsec/yr over 500 kyr), not a defect of the eccentricity split. A number
+    for the reason text and the extension; no outcome reads it."""
+    nothing = ('', float('nan'))
+    if elements is None:
+        return nothing
+    frequencies, tolerance = elements.frequencies, elements.resolution
+    if elements.librates:
+        g_targets, s_targets = _confirmation_targets(elements, frequencies)
+        others = _close('b_varpi', elements.b_varpi, g_targets, tolerance)
+    else:
+        g_targets, s_targets, combos = _demotion_targets(frequencies)
+        others = _close('b_varpi', elements.b_varpi, g_targets, tolerance) + _close('b_omega', elements.b_omega, combos, tolerance)
+    if others or not np.isfinite(elements.b_Omega):
+        return nothing
+    near = [(name, abs(elements.b_Omega - target)) for name, target in s_targets.items() if abs(elements.b_Omega - target) < tolerance]
+    if not near:
+        return nothing
+    name, distance = min(near, key=lambda item: item[1])
+    return name, float(distance)
+
+
+SUMMARY_COLUMNS = ('free_gate', 'free_n_cycles', 'free_gate_matches')
+
+
+def summary_fields(gate: Optional[OmegaFreeGate]) -> dict:
+    """The gate columns of one summary.csv row.
+
+    `free_gate` duplicates information that also lands in `comments`, on purpose: counting
+    how many librations the gate demoted should not require a regular expression over free
+    text.
+    """
+    if gate is None:
+        return {column: None for column in SUMMARY_COLUMNS}
+    return {
+        'free_gate': str(gate.outcome),
+        'free_n_cycles': gate.n_cycles,
+        'free_gate_matches': '; '.join(gate.matches) or None,
+    }

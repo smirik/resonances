@@ -1,0 +1,10 @@
+example_id,status,confidence,angle_status,source
+secular__2012_AX10__2s-s4-s6,transient,,,"author:2026-11-07 (review of the pairs secular wave 1, item 1: the episode ends near 16 Myr and goes over into circulation; ""статус ... скорее, transient"")"
+secular__33325__2s-s4-s6,transient,,,"author:2026-11-07 (item 2: ""аналогично"" to 2012 AX10: the episode ends near 16 Myr, then circulation; transient)"
+secular__19289__s-s6,transient,,,"author:2026-11-07 (item 4: one libration episode from ~5 Myr to the end, not pieces; the status of a libration that starts inside the record)"
+secular__278067__s-s6,transient,,,"author:2026-11-07 (item 9: like 19289, one episode from 6.5 Myr to the end; the status of a libration that starts inside the record)"
+secular__42946__g-g6+s-s6,transient,,,"author:2026-11-07 (item 5: the episode is wrong, the early libration 0 to ~14.6 Myr Claude pointed out is missed; an early and a late episode: transient)"
+secular__56700__s+s7-2s6,uncertain,,,"author:2026-11-07 (item 6: ""надо extend"": a slow libration we cannot see in 20 Myr; uncertain + extend)"
+secular__165548__s-g5+g6-s6,transient,low,,"author:2026-11-07 (item 8: a drift on which small librations are caught; chat answer on the status: ""ближе к transient low"")"
+secular__348018__g-g5+s-s7,non_resonant,,,"author:2026-11-07 (item 10: ""нерезонансное (как ты и указывал)"")"
+secular__455327__s-s3,transient,,,"author:2026-11-07 (item 12, the ias15 record: the episode should be longer than 9.2-10.8 Myr; transient)"

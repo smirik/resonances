@@ -5,8 +5,18 @@ authors:
     given-names: Evgeny
     orcid: https://orcid.org/0000-0001-8264-8668
 title: "resonances python package"
-version: 0.3.1
+version: 1.0.0
 identifiers:
   - type: doi
     value: 10.1016/j.ascom.2023.100707
-date-released: 2023-03-18
+date-released: 2026-11-16
+references:
+  - type: article
+    status: submitted
+    authors:
+      - family-names: Smirnov
+        given-names: Evgeny
+        orcid: https://orcid.org/0000-0001-8264-8668
+    title: "Physical Identification of Mean-Motion Resonances in Numerical Integrations: When a Librating Angle Is Not Enough"
+    year: 2026
+    notes: "The libration analysis of 1.0. Submitted; check the repository for the journal reference before citing."

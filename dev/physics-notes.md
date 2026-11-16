@@ -1,0 +1,167 @@
+# Physics notes the code relies on
+
+Conclusions measured during the program, with the objects that showed them. The formulas are in
+`docs/physics/` (rule IDs: `docs/libration-analysis.md`); here is why the code is built the way it is.
+
+## The a↔σ identity and what it forbids
+
+- σ̇ = Σ k_j n_j + k n(a) + p ϖ̇ ties the angle to a: a resonant-angle swing of half-amplitude A_σ with period P implies
+  A_σ = 1.5 |k| n A_a P / (2π a). "σ and a share a period" is therefore automatic and is not evidence; the atlas
+  reconstructed σ from a within 1–2 % in all 121 cases, forced ripples included.
+- The fits of a's response (V_E) and of the force law (V_F) are linked by the same identity: V_E ≈ V_F is necessary,
+  not sufficient. A synthetic kinematic swing passed every window but its period law gave T_obs/T_pend = 0.61,
+  against ≈ 1 for real pendulums. The nonlinear period law (R0) is what separates them.
+- L3 (the identity's slope) and L4 (the force law) are not independent; a measured L3 failure overrides a good L4
+  (37087 3J+8S-3: seven 167-yr episodes pass strict L4 and fail L3 with the opposite slope).
+- Below a half-amplitude of 45°, sin σ ≈ σ and the force law cannot be told from the identity: L4 and R0 with a are
+  not_measured (2348 4J-2S-1 at 14–21°).
+
+## Kinematic and induced librations
+
+- 285637: a −4ϖ beating looks like a clean ±26° libration, but a responds 3000× too weakly.
+- 37087 3J+8S-3: the episode cycle sits on the secular period 2π/|g − g5| (`secular_cycle`); the 1-Myr record is the
+  benchmark's reference kinematic libration.
+- 101703 41J-14: the apparent 166.2-yr libration is driven by 3J-1 (164.4-yr lattice line); the owner fit R² 0.855
+  against σ's own 0.085, coherence 0.978 → non_resonant/induced.
+- A geometrically librating multiplet member can be physically negligible: 2003 UG22 10E-17+7+0 has
+  (e_E/e)^7 ≈ 6e-11 and must not displace the real member.
+- 2012 KL9: accepted 0.5–0.6° loops follow an external 222-yr wave of a that is not on the angle lattice; F6 misses
+  them, strength rejects the row.
+- A detuned linear forced secular vector (two lines 4.32″/yr apart) produces a bounded 14.5° angle at 300 kyr without
+  any trapping: a bounded angle alone is not a mechanism.
+
+## Strength
+
+- Two-body strength is computed: the curvature of the directly averaged potential at the occupied center.
+- Three-body strength is known only to a coefficient of order 1–100 (Gallardo 2006, p. 30): μμe^q is an order
+  estimate, not a bound. Hence a three-body libration whose force cannot be measured is capped at medium
+  (`strength_scale_only`). 2348 4J-2S-1: required/e^q = 1.59, while its large-swing siblings (force measured) have
+  1.30–1.66 and μ_force/μ_req ≈ 0.95–1.03.
+- A theoretical three-body strength needs second-order averaging in the masses (Morbidelli 2002, ch. 10; Nesvorný &
+  Morbidelli 1998): the harmonic pairs divided by their own frequencies, a refusal near two-body commensurabilities.
+  Neither Gallardo's ρ nor a "clean-model force law" supplies it (see [rejected.md](rejected.md)).
+- The small-divisor envelope B is capped by the observed swing, B ≤ n·min(P, P_cyc)/2π; it may not diverge near
+  commensurability (W22, R-DIV).
+
+## Aliasing and sampling
+
+- Stroboscopic ghosts lie at n(a_m) = n_res + 2πm/(kΔt) with m = round(νΔt/2π) and apparent rate ν − 2πm/Δt (the sign
+  was fixed by a test dispute).
+- 1999 UQ 7E+2M-9 at a 5.0012-yr step is a ghost: the predictive unwrap gives 3998.84 turns (3998.86 at 1 yr),
+  `np.unwrap` gives −0.16; mean a is 4e-6 AU from the ghost at 1.0941756 AU. Its 97-yr wave is real Earth 8:7 forcing
+  (present at 1 yr, at 5.0012 yr and in a 0.0127-yr pilot).
+- Density rule Δt ≤ P_c/20; FAIR needs Δt ≤ P/4.2. Integrator: ias15 for NEAs (q < 1.3 au) and planet-crossers; SABA
+  with dt ≤ min(58 d, P/10, τ_peri/10).
+- Folded short-period lines are negligible in σ (≤ 0.024 of the half-amplitude on 47 fine re-integrations); they
+  matter through a. Only four rows lost their verdict to aliasing (TG2 4E-1M-3, TK14 31M-34, UC22 16M-27,
+  433 47M-44); their 0.5-yr twins are in the benchmark.
+- The alias gate reads the λ part of the angle: 17346 had a λ residual of 0.34° but a full-angle residual of 173.5°
+  across low-e perihelion flips.
+
+## Multiplets (sisters)
+
+- Sisters share the fast wiggle; only the center tells them apart. 65366 6M-11 and 31935 9M-16: separations
+  6.3e-6 / 3.2e-6 AU against widths ~1e-4 AU (λ = 0.032 / 0.018): one overlapped multiplet, a modulated pendulum.
+  The composite center c0(β) = π − arg P(β) fits to 8–10° RMS against 21–27° for one sister.
+- The guiding member is the largest coefficient (Murray & Dermott §8.14.2), and only over an episode: for 65366 and
+  31935 Rouché dominance fails and the winding over a full β cycle is zero, so the origin is reported as composite,
+  not one member as the global owner; the binomial mode is
+  j = floor((q + 1)x/(1 + x)), with j = 0 largest for qx ≤ 1 (the earlier x < 1/(2q − 1) rule was wrong).
+- ϖ-type and node-type members can drift at the same rate (g − g_P ≈ −(s − s_P)); rate matching alone cannot choose.
+- The catalog row takes the status of an accepted member of its multiplet (rule C).
+
+## Separatrix and moving center
+
+- The pulsating-zone half-range is q(e_max − e_min)/(2 mean e) (it had been doubled: 52356 0.609 → 0.304,
+  469333 0.139 → 0.070). min/mean speed < 1/4 maps to pendulum h ≈ 1.012, not 1.07. Remove secular trends before
+  defining a zone, or a trend-driven capture widens its own zone.
+- 145480 1N-4 needs an asymmetric two-harmonic potential (second/first 1.91; energy R² 0.30 → 0.87).
+- 2013 AS27 31E-36 librates about a moving center (literature: Gallardo 2006 p. 30; Wisdom 1985 p. 274): track RMS
+  1.55° against 14.4° fixed and 28.2° reversed; near-zero osculating MOID was not an encounter (minimum 0.0714 AU =
+  7.1 Hill radii). Its 4E+9S-5 row is induced.
+- 2003 UG22 10E-17: the full flat-bottom well predicts the periods within 0.98–1.10 against 0.76–0.80 for a cosine.
+- 23240 1M+3J-3: force-plus-wave fits predict both halves (R² 0.72) yet K_J/K_cat crosses 1 between equally good
+  fits (0.64–1.34), changing the well topology: uncertain means the well is unidentified, not that there is no
+  resonance.
+- The 52356 slip-placement significance p < 5e-5 was overstated: 0.0007 for independent placements, 0.017 for cyclic
+  shifts that keep the spacing.
+- 33128 6N-7: chaos and sustained libration coexist (Lyapunov 4.2–4.4 kyr against P_lib 9.1 kyr); one slip is an exit
+  plus a capture.
+- In a two-harmonic well every loop of one energy has one period in either well, so R0 reads each cycle in the well
+  that holds its fastest sample (`pendulum.cycle_period`).
+- 2003 TX9 3E+2J-10: an amplitude step (146° → 12°, a swing ÷7) right after Mars encounters at 6.49–6.87 kyr; the
+  regimes' periods do not hold in one shared potential on every cycle (law 1.61 on a late cycle), so no cut.
+
+## Co-orbitals
+
+- Force sign: with R positive, da/dt = +2 ∂⟨R⟩/∂σ / (na); a minus gradient needs U = −R. A signed K catches a sign
+  error that R² cannot; time-weighted averaging uses uniform mean anomaly.
+- Evaluate the force on the raw or briefly smoothed angle, then filter it like a; smoothing σ first ruined 2002 AA29
+  (R² 1.00 → 0.04). Use the full 3D eccentricity and orbit normal.
+- R² ≥ 0.8 alone is not enough: the passing orbit 85770 fits with R² 0.883, K/K_th = 1.020.
+- Earth-only fits to Earth+Moon integrations carry the Moon's 1.2 % mass (K/K_th ≈ 1.0123).
+- The free-element basis does not apply to co-orbitals: their forced vector follows the perturber's own vector.
+
+## Secular
+
+- From the ecliptic no planet's node circulates (the 1.58° invariable-plane tilt dominates), and only Mercury's,
+  Jupiter's and Saturn's osculating perihelia follow their modes. The zero inclination mode s5 is the invariable plane
+  (physical); the eccentricity basis has no physical zero mode, its constant term only absorbs a slow arc.
+- The model has no GR: g1, g2, s1, s2 are off by 0.1–0.3″/yr; with GR La90 is reproduced to 0.02–0.08″/yr. The
+  inner frequencies and phases are measured on the package's own model.
+- The measured mode longitudes drift from the linear law by tens of degrees over 20 Myr (inner modes, s6).
+- The secular cutoff must include the angle's longest forced wave: 4305 (27/18 kyr waves) and 8089 (137/68 kyr) hid
+  real librations behind a fixed window.
+- A frequency error matters through accumulated phase: residual fraction √(1 − sinc²(δT/2)); 0.1″/yr at 500 kyr
+  leaves ~7 %, 0.05″/yr at 5 Myr ~34 %.
+- The response of a secular angle belongs to the Poincaré actions Γ = L − G (conjugate to −ϖ) and Z = G − H
+  (conjugate to −Ω): an isolated term in σ = p ϖ + q Ω + … gives (Γ̇, Ż) ∝ (p, q) sin σ, so q Γ − p Z is conserved
+  and a g-only term need not keep i constant at finite i (Codex, W28 D9). The present response fits raw e and
+  sin(i/2) separately over the whole window; on z-type rows other waves dominate (1020: R² 0.002 and 0.012), so its
+  fail is no measurement of absence. It passes no non-resonant benchmark row (0/9).
+- Libration periods (W36, Codex, page-checked): a local resonant Hamiltonian gives ω₀² = H_II H_σσ − H_Iσ² at the
+  equilibrium, ≈ |KA| for one harmonic of nearly constant A (P₀ = 2π/sqrt|KA|, Morbidelli 2002 pp. 72–74; Morbidelli &
+  Henrard 1991 Eqs. 35–39); K = kᵀ(D²H₀)k along the angle's canonical direction k = (p, p+q) in Delaunay (G, H). The
+  finite-amplitude factor is 4K(m)/(2π) (1.18 at 90°, 2.44 at 170°). Neither K nor A follows from one body's g, s:
+  the fitted forced vector and the e-response are not A. Published: z1 Dorothea 4.15 Myr, Eos 3.4 Myr (MK92 p. 227),
+  Purkyne ~8 Myr (Vokrouhlický 2006); z2 Yukar ~6.1 Myr (Carruba 2016); ν6 ~7 Myr for a fictitious orbit (MH91). Our
+  ν6 pairs (0.24–0.57 Myr) repeat at the free/forced beat 1,296,000/|g_free − g6| yr within 0.9 % (ν16 5.5 %): a
+  displaced linear oscillator, not a pendulum. For z2 and −g+s+g6−s6 the beat of the angle's own divisor gives
+  92–2108 and ~300 Myr against 4.4–5.1 and 1.3 Myr measured: the divisor is a locking diagnostic, not a frequency.
+  Hence no lower bound on P_lib, and no global cutoff is safe (Butterworth N = 2 keeps 50 % at P = P_c).
+
+## ZLK
+
+- A bounded osculating ω in a Trojan can be forced-eccentricity geometry (591986; Vinogradova 2024 on shifted ZLK
+  centers): the free ω winds while the forced e holds the osculating one.
+- e–i exchange also occurs with circulating ω (41/186 bodies), so it cannot decide ZLK. Two laws tell its mechanism:
+  constant √(1−e²)cos i (ZLK: di/de = −e cot i/(1−e²), antiphase) and constant √(1−e²)(1−cos i), the momentum
+  conjugate to Ω when the forcing acts on ϖ only (a forced-eccentricity beat: +e tan(i/2)/(1−e²), in phase). 591986's
+  6-kyr cycle follows the second (δi 0.0041° vs 0.0037°); 15527 (circulating) follows the first at its cos 2ω harmonic.
+- 591986 has two scales that are both forcing: 6 kyr = 2π/(g_free − g5) (free circle around the forced tip) and
+  54 kyr = 2π/(g6 − g5), the forced vector's direction swinging ±arcsin(|c6|/|c5|) = 22.8° (reconstruction r 0.991).
+  A clean synthetic of it decided at the 54-kyr center scale until the scale guard (forced beat + ρ_max < 1).
+- One median e_free over the whole record hides a free circle that grows in part of it: compare rolling medians of
+  both radii over one libration cycle (555527: 0.59 global, 0.66 local at 100 kyr; an instantaneous ratio reaches
+  1.03 on noise).
+- e–i measured over a whole record is not the e–i of an episode (W28 D9): circulating stretches trade e and i at
+  constant H at their cos 2ω harmonic, which can lie near the libration period (88899 500 kyr: both episodes in
+  phase, H not conserved, η_H 1.1–1.4; the whole record at P reads zlk or none depending on the estimator).
+- The constant-H test is better read as H cancellation, η_H = |δH| / |cos i δG| at P (δG from e alone; 0 for an exact
+  trade), than as the first-order slope di/de = −e cot i/(1−e²): large cycles break the slope (1866 slope 3.0×, 477492
+  2.0×) while H stays canceled to 4–5 %. On the benchmark ZLK items zlk sits at η_H ≤ 0.28, everything else ≥ 0.58.
+  A fixed-period fit over many cycles of a drifting period loses phase and amplitude (162474 1.5 Myr ep0: 121°);
+  demodulate cycle by cycle. Fewer than 3 periods do not separate the classes (two estimators agree 3/11).
+- A planetary-frequency free residual means leakage or a true secular resonance; either makes the ZLK reading
+  ambiguous (withhold, do not call it kinematic; 4257).
+- Different baselines are different evidence: 162474 is episodic over 1.5 Myr, resonant on its first 0.5 Myr alone.
+- SABA cannot follow Earth-crossers (3752, 10563 end at −99); 162474 needs SABA dt = 0.5; 3040's verdict over 500 kyr
+  of SABA at dt = 1 changes with a few weeks of start epoch (chaotic).
+
+## Literature
+
+Murray & Dermott (1999); Morbidelli (2002); Nesvorný & Morbidelli (1998, 1999); Gallardo (2006, 2014); Gallardo, Coito
+& Badano (2016); Wisdom (1985); Shevchenko (2020); Vinogradova (2024); Knežević & Milani; Laskar (1990); Souami &
+Souchay (2012); Li, Huang & Gong (2019); Morais & Namouni (retrograde λ*, ϖ*); secular periods: Morbidelli & Henrard (1991), Milani & Knežević (1992, 1994),
+Vokrouhlický et al. (2006), Carruba, Aljbaae & Winter (2016); Milani, Chesley & Valsecchi (2000) and
+the clone literature in `docs/clones.md`.

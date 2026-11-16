@@ -1,0 +1,3587 @@
+[
+  {
+    "case": "E01",
+    "example_id": "mmr2__2005_GQ107__40M-57+0+17",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16.md",
+        "line": 33,
+        "who": "author",
+        "text": "эпизод около 31000 отклонен с комментарием, что центр движется. Но визуально как будто бы он не отличается от других эпизодов. Можешь пояснить?",
+        "transcript": "65dd5462…jsonl 2026-10-16T10:41:54Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 16,
+        "who": "author",
+        "text": "C4 - понимаю, но кто сказал, что нельзя закончить эпизод раньше, на 10 циклах. Последний, судя по всему, испытывает какой-то влияние, а потому зашумлённый. По сути, просто неверно определена граница эпизода, а сам эпизод (без последнего цикла) хороший.",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E02",
+    "example_id": "mmr3__2001_HW7__5J+6S-2+0+0-9",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16.md",
+        "line": 40,
+        "who": "author",
+        "text": "тут как будто бы либрация на протяжении всего времени интегрирования, а ты почему-то выделил три эпизода",
+        "transcript": "65dd5462…jsonl 2026-10-16T10:41:54Z"
+      }
+    ]
+  },
+  {
+    "case": "E03",
+    "example_id": "coorbital__2002_AA29__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 30,
+        "who": "author",
+        "text": "эпизод AA29 закрашен куском, а либрация покрывает 0–1000 лет — поправить везде",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E04",
+    "example_id": "mmr2__2003_UG22__10E-17+0+7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 22,
+        "who": "author",
+        "text": "Во-первых, та же проблема, что и с предыдущем (на самом деле, весь график являет собой один эпизод).",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E05",
+    "example_id": "mmr3__52356__5J-2S-2+0+0-1",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 22,
+        "who": "author",
+        "text": "почему ты пишешь, что нет эпизода с 3.5 циклами. Разве последний - не такой?",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E06",
+    "example_id": "secular__1020__g-g6+s-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 22,
+        "who": "author",
+        "text": "Aprime__secular__1020__g-g6+s-s6.png - тоже пример, когда весь график есть либрация, а не отдельный эпизод.",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E07",
+    "example_id": "coorbital__524522__1V-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 14,
+        "who": "Claude question",
+        "text": "   - квазиспутник → головастик: 524522.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 20,
+        "who": "author",
+        "text": "Я считаю, что все объекты — resonant. 1-ый: high, 2 - high, 3 - high (не certain за счёт смены узла). Не транзиент, так как переход быстрый.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/E-coorb-TX9-CA138.md",
+        "line": 73,
+        "who": "review (Claude+Codex), accepted 2026-10-19 13:31 «ок»",
+        "text": "- **524522 (Венера, 1 тыс. лет).** Квазиспутник 52–476 лет: 6 точек, центр 0°, ±28–30°, период 170–206 лет. Один переходный размах 149° (476 → 678 лет). Головастик 678–965 лет: 5 точек, центр около 83°, ±27–33°, период 140–155 лет."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 442,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Только сепаратриса или смена владельца; смена ямы и амплитуды — пометки: XO3 — один эпизод, JA — один с подрежимом, CB — до конца (пребывание). E07–E09 переписываются: один эпизод + последовательность видов орбиты. Нужны новые интервалы и правки geometry и рисунков.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-9)"
+      }
+    ]
+  },
+  {
+    "case": "E08",
+    "example_id": "coorbital__469219__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 13,
+        "who": "Claude question",
+        "text": "   - квазиспутник → подкова: 469219, 164207;",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 20,
+        "who": "author",
+        "text": "Я считаю, что все объекты — resonant. 1-ый: high, 2 - high, 3 - high (не certain за счёт смены узла). Не транзиент, так как переход быстрый.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/E-coorb-TX9-CA138.md",
+        "line": 71,
+        "who": "review, accepted",
+        "text": "- **469219.** Квазиспутник 24–257 лет: 12 точек, ±4.4–5.6°, период растёт с 38 до 56 лет. Затем один переходный размах 257 → 426 лет. Подкова 426–950 лет: 5 точек, размах ~342°, период ~264 года."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 442,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Только сепаратриса или смена владельца; смена ямы и амплитуды — пометки: XO3 — один эпизод, JA — один с подрежимом, CB — до конца (пребывание). E07–E09 переписываются: один эпизод + последовательность видов орбиты. Нужны новые интервалы и правки geometry и рисунков.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-9)"
+      }
+    ]
+  },
+  {
+    "case": "E09",
+    "example_id": "coorbital__164207__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 13,
+        "who": "Claude question",
+        "text": "   - квазиспутник → подкова: 469219, 164207;",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 20,
+        "who": "author",
+        "text": "Я считаю, что все объекты — resonant. 1-ый: high, 2 - high, 3 - high (не certain за счёт смены узла). Не транзиент, так как переход быстрый.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 442,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Только сепаратриса или смена владельца; смена ямы и амплитуды — пометки: XO3 — один эпизод, JA — один с подрежимом, CB — до конца (пребывание). E07–E09 переписываются: один эпизод + последовательность видов орбиты. Нужны новые интервалы и правки geometry и рисунков.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-9)"
+      }
+    ]
+  },
+  {
+    "case": "E10",
+    "example_id": "mmr2__88710__9V-16+0+7",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 99,
+        "who": "DECISIONS paraphrase",
+        "text": "относится и к выходу из резонанса (524522 1V-1 20 кыр, 88710 9V-16: эпизоды, затем скачок a и циркуляция), и к"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 25,
+        "who": "author",
+        "text": "«Да, симметрично; метки 82831 и 31935 переведи в transient»",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E11",
+    "example_id": "coorbital__524522__1V-1+0+0__20kyr",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 99,
+        "who": "DECISIONS paraphrase",
+        "text": "относится и к выходу из резонанса (524522 1V-1 20 кыр, 88710 9V-16: эпизоды, затем скачок a и циркуляция), и к"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 25,
+        "who": "author",
+        "text": "«Да, симметрично; метки 82831 и 31935 переведи в transient»",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E12",
+    "example_id": "coorbital__277617__1M-1+0+0__20kyr",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 100,
+        "who": "DECISIONS paraphrase",
+        "text": "захвату после циркуляции (277617 1M-1 20 кыр: циркуляция до скачка a на ~9.2 кыр, затем квазиспутник до конца —"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-16b.md",
+        "line": 25,
+        "who": "author",
+        "text": "«Да, симметрично; метки 82831 и 31935 переведи в transient»",
+        "transcript": "65dd5462…jsonl 2026-10-16T12:55:23Z (C4, mock-ups); 16:42 block later the same day"
+      }
+    ]
+  },
+  {
+    "case": "E13",
+    "example_id": "mmr3__1864__3E-5S-5+0+0+7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 17,
+        "who": "author",
+        "text": "Посмотрел 1864. Да, явный non-resonant (это видно и по ФП по эпизоду). Давай делать обязательным замыкание цикла.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      }
+    ]
+  },
+  {
+    "case": "E14",
+    "example_id": "mmr2__33128__6N-7+0+1",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 29,
+        "who": "author",
+        "text": "Это же идеальный транзиент. Очень близкий к чистому резонансу. Посмотри на угол - либрирует.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 108,
+        "who": "author",
+        "text": "угол действительно в конце покидает резонанс, но при этом мы классифицируем это как транзиент.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      }
+    ]
+  },
+  {
+    "case": "E15",
+    "example_id": "mmr3__2012_KL9__5E-2M-10+0+0+7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 83,
+        "who": "author",
+        "text": "эпизоды выглядят уж очень короткими, глянь на 1 и 2 панель, как будто бы они реально длиннее? В целом, поведение напоминает просто дрейф вниз, а не либрацию.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-17b/ANSWERS.md",
+        "line": 35,
+        "who": "review (Claude+Codex)",
+        "text": "- «Эпизоды» с периодом 214 лет и полуамплитудой 1.3° — отражение волны a с периодом 222 года. Эта волна идёт через всю"
+      }
+    ]
+  },
+  {
+    "case": "E17",
+    "example_id": "mmr3__2013_VA14__2J+6S-1+0+0-7__60kyr_1yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1131,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Два эпизода допустимы: E17 переписывается: episode_near 41.7–47.5 тыс. лет, #4 разрешён. Флаг снимается, кода нет. Отменяет ваше чтение от 23.10 «по сути один эпизод».",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g11-4)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E18",
+    "example_id": "mmr2__2001_PG14__33S-2+0-31",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 106,
+        "who": "author",
+        "text": "Как будто бы мы рано обрезаем эпизод. Судя по 2 панели, там есть три полных цикла, но эпизод захватывает и обрезан по первому, по сути. ФП говорит о транзиенте. Так что надо проверить, корректно ли мы определяем начало и конец эпизода...",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-17b/ANSWERS.md",
+        "line": 175,
+        "who": "review; author «Q11 ok»",
+        "text": "- **Вы правы.** Либрация идёт с 345 до 2816 лет: 26 точек поворота, период 188 лет."
+      }
+    ]
+  },
+  {
+    "case": "E19",
+    "example_id": "mmr3__2013_AS27__4E+9S-5+0+0-8",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 145,
+        "who": "author",
+        "text": "Тебе не кажется, что эпизоды как-то странно определены? ДО середины идёт как будто бы дрифт вверх, но медленный, и ты разбиваешь его на кучу эпизодов. Затем где-то с 14 kyr до где-то 17.5 kyr есть как будто бы захват.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-17c/ANSWERS.md",
+        "line": 165,
+        "who": "review",
+        "text": "- **Эпизоды до середины вы заметили верно — это был дефект.** Порог точек поворота (5.4°) стоял на высоте чужой трёхградусной волны и резал медленный дрейф на куски. После W16 (свой порог для каждой серии, 8.3°) нарезки нет."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 167,
+        "who": "author",
+        "text": "non-resonant/drift - согласен; owner - 31E-36 - ok.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E20",
+    "example_id": "mmr2__2013_AS27__31E-36+0+5",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-17c/ANSWERS.md",
+        "line": 187,
+        "who": "review",
+        "text": "- Пакет пока выдаёт transient, и это его ошибка: порог точек поворота (48.9°) наполовину складывается из самой либрации и режет её на 19 кусков"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 151,
+        "who": "author",
+        "text": "Резонанс с подвижным центром - это соответствует литературе? Проверь и субагентом, и codex'ом. Если да, то можно принимать.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      }
+    ]
+  },
+  {
+    "case": "E21",
+    "example_id": "mmr2__82831__13M-24+0+11",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 102,
+        "who": "author",
+        "text": "Выглядит как прекрасный пример перехода из одного субрезонанса в другой. Проверь это независимо (типа сначала либрирует в первом до 25-30 kyr, затем во втором).",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-17b/ANSWERS.md",
+        "line": 161,
+        "who": "review",
+        "text": "- **Физически это одна непрерывная либрация 13:24, примерно со 2 до 73 тыс. лет, вокруг подвижного центра.**"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 153,
+        "who": "author",
+        "text": "Q10\nСогласен с transient.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 36,
+        "who": "Claude question",
+        "text": "   - У 82831 это одна либрация около подвижного центра в интервале 2–73 тыс. лет, затем выход.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 38,
+        "who": "author",
+        "text": "Согласен с транзиентом.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1106,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Да, два эпизода (правило q сейчас): E21 проходит по второй альтернативе, флаг снимается. На бенчмарке двигается только 82831: основная строка и член +2+9 (подтип '' → recurrent). Статусы прежние. Работа M.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g11-2)"
+      }
+    ]
+  },
+  {
+    "case": "E22",
+    "example_id": "coorbital__2016_CA138__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 49,
+        "who": "author",
+        "text": "Здесь я считаю, что это либо transient, либо uncertain. Ближе к transient, посмотри на ФП. Эпизод идёт с 100 лет до примерно 400 лет. Что думаешь?",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/E-coorb-TX9-CA138.md",
+        "line": 116,
+        "who": "review",
+        "text": "Ваш интервал «100–400 лет» — это верхняя ветвь подковы (a > 1), 165–355 лет, то есть половина цикла. Полный цикл занимает 80–454 года."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 23,
+        "who": "author",
+        "text": "CA138 и Cruithne/RB7  — согласен с твоей рекомендацией.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E23",
+    "example_id": "coorbital__3753__1E-1+0+0",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "benchmark/author_label_decisions_2026-10-15.csv",
+        "line": 57,
+        "who": "label",
+        "text": "coorbital__3753__1E-1+0+0,resonant,,libration,author:2026-10-19 13:31 (ANSWERS-2026-10-19b §4.2; phase-return closure 12.6->782.9 yr; replaces uncertain of 19.10 12:16)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 23,
+        "who": "author",
+        "text": "CA138 и Cruithne/RB7  — согласен с твоей рекомендацией.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E24",
+    "example_id": "coorbital__2025_RB7__1E-1+0+0",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "benchmark/author_label_decisions_2026-10-15.csv",
+        "line": 58,
+        "who": "label",
+        "text": "coorbital__2025_RB7__1E-1+0+0,resonant,,libration,author:2026-10-19 13:31 (ANSWERS-2026-10-19b §4.2; phase-return closure 72->782 yr; replaces uncertain of 19.10 12:16)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 23,
+        "who": "author",
+        "text": "CA138 и Cruithne/RB7  — согласен с твоей рекомендацией.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E25",
+    "example_id": "coorbital__2024_WJ__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 51,
+        "who": "Claude question",
+        "text": "8. **2024 WJ → transient.** В конце записи захват в подкову: 3 точки поворота и замкнутый цикл 754–928 лет. У вас non-resonant.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 53,
+        "who": "author",
+        "text": "Согласен с transient/medium.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E26",
+    "example_id": "mmr3__2003_TX9__3E+2J-10+0+0+5",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 58,
+        "who": "author",
+        "text": "А. Я вижу два типа либрации - амплитудная от 0 до где-то 6 kyr. Затем низко-амплитудная до конца.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 59,
+        "who": "author",
+        "text": "Б. Эпизодов должно быть либо 2 по этим типам либрации, либо же весь график - сплошной эпизод (нет перехода за 2pi).",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-25-w22/ANSWERS-2026-10-25.md",
+        "line": 3,
+        "who": "author",
+        "text": "у TX9 как будто бы неверно определены эпизоды",
+        "transcript": "65dd5462…jsonl 2026-10-25T10:19:32Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-25-w22/ANSWERS-2026-10-25.md",
+        "line": 3,
+        "who": "author",
+        "text": "Касательно TX9 я вижу 2 варианта: либо весь промежуток делать 1 эпизодом (сойдёт), либо, как видно из графика эволюции и ФП, разделить на начальные либрации до где-то 7 kyr, а затем всё остальное - во второй эпизод (там и амплитуда либраций ниже).",
+        "transcript": "65dd5462…jsonl 2026-10-25T10:19:32Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-26-w24/ANSWERS-2026-10-27.md",
+        "line": 34,
+        "who": "author",
+        "text": "resonant/low меня устроит. Поэтому давай попробуем доработать, чтобы разделение на эпизоды было корректным (и это же можно сделать тестом эпизодов, вроде, мы делали такие тесты на бенче). Можно 1б, если это несложно. Если же будет просто resonant/low по текущему коду, то и ок.",
+        "transcript": "author reply 2026-10-27 08:54 (W24 Q1), relayed to this session"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 942,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: B** — uncertain + extend до ~30 тыс. лет, правило (b) отложено с условием возврата: Статус тот же; у позднего режима будет два окна силы (L4), и позднюю часть можно будет пересмотреть; ранний провал R0 останется. Для (b) — только запись в dev/, кода нет.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-5)"
+      }
+    ]
+  },
+  {
+    "case": "E27",
+    "example_id": "mmr3__2003_TX9__3E+2J-10+0+0+5__step0.5yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-25-w22/ANSWERS-2026-10-25.md",
+        "line": 3,
+        "who": "author",
+        "text": "Касательно TX9 я вижу 2 варианта: либо весь промежуток делать 1 эпизодом (сойдёт), либо, как видно из графика эволюции и ФП, разделить на начальные либрации до где-то 7 kyr, а затем всё остальное - во второй эпизод (там и амплитуда либраций ниже).",
+        "transcript": "65dd5462…jsonl 2026-10-25T10:19:32Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-26-w24/ANSWERS-2026-10-27.md",
+        "line": 34,
+        "who": "author",
+        "text": "resonant/low меня устроит. Поэтому давай попробуем доработать, чтобы разделение на эпизоды было корректным (и это же можно сделать тестом эпизодов, вроде, мы делали такие тесты на бенче). Можно 1б, если это несложно. Если же будет просто resonant/low по текущему коду, то и ок.",
+        "transcript": "author reply 2026-10-27 08:54 (W24 Q1), relayed to this session"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 942,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: B** — uncertain + extend до ~30 тыс. лет, правило (b) отложено с условием возврата: Статус тот же; у позднего режима будет два окна силы (L4), и позднюю часть можно будет пересмотреть; ранний провал R0 останется. Для (b) — только запись в dev/, кода нет.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-5)"
+      }
+    ]
+  },
+  {
+    "case": "E28",
+    "example_id": "mmr3__285637__3M+7J-6+0+0-4",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 67,
+        "who": "author",
+        "text": "На 50 kyr это визуально чистая либрация?",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 41,
+        "who": "author",
+        "text": "ОК, давай оставим medium, так как реально неочевидный кейс - визуально чистая либрация, а в реальности - не резонанс.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E29",
+    "example_id": "mmr3__285637__3M+7J-6+0+0-4__2Myr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 67,
+        "who": "author",
+        "text": "И покажи график на 2 млн, чтобы я увидел медленную циркуляцию...",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 85,
+        "who": "author",
+        "text": "Согласен с твоими выводами. В принципе, можно дать и high, но и medium ok.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E30",
+    "example_id": "mmr2__385266__16N-27+0+11",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 114,
+        "who": "author",
+        "text": "Посмотри на 55 kyr - 100 kyr. Это должно было бы быть выделено как эпизод, и там идут норм либрации.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/D-385266-KQ18.md",
+        "line": 14,
+        "who": "review",
+        "text": "- **Колебания на 55–100 тыс. лет настоящие, но это не 27:16.** После фильтра 600 лет там 24 точки поворота, полуамплитуда 20° (медиана), период 4.4–4.5 тыс. лет."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 93,
+        "who": "author",
+        "text": "Согласен с вашими оценками non_resonant / episodic / induced.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 58,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Один кусок сейчас (правило s): E30 проходит, known_fail снимается. Двигаются ещё 138537 и 2002 BG 100 kyr (границы на сотни лет), статусы прежние. Работа S–M.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g04-5)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1115,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Да, правило s сейчас: E30 проходит, флаг снимается. Ещё двигаются 138537 и 2002 BG 100 тыс. лет (границы сдвигаются на сотни лет), статусы прежние. Работа S–M.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g11-3)"
+      }
+    ]
+  },
+  {
+    "case": "E31",
+    "example_id": "mmr3__1997_GK3__3M+5S-3+0+0-5",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 116,
+        "who": "Claude question",
+        "text": "    - 1997 GK3 → episodic (до 11.7 тыс. лет центр уходит);",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 118,
+        "who": "author",
+        "text": "episodic — ok, хотя owner тут явно 10E-17.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E32",
+    "example_id": "mmr3__2003_KQ18__6J+2S-1+0+0-7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 124,
+        "who": "author",
+        "text": "А не кажется ли тебе, что uncertain/insufficient_time?",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/D-385266-KQ18.md",
+        "line": 64,
+        "who": "review",
+        "text": "Вы правы. Метка: **uncertain / insufficient_time (подтип arc)**"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 97,
+        "who": "author",
+        "text": "Да, давай вносить правки.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E33",
+    "example_id": "mmr3__2000_YG4__2R-8E-1+0+0+7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "benchmark/author_labels_2026-10-14_1612.csv",
+        "line": 36,
+        "who": "author",
+        "text": "А нет ли тут эпизода дрифта?"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 126,
+        "who": "Claude question",
+        "text": "    - 2000 YG4 → circulation с отметкой «дрейф 0.45–6.4 тыс. лет, наведён 7:23 с Землёй».",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 128,
+        "who": "author",
+        "text": "Согласен.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E34",
+    "example_id": "mmr3__8306__2M-5S-3+0+0+6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 147,
+        "who": "author",
+        "text": "По мне, так это non-resonant (эпизод либрации слишком мал), episodic можно оставить.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E35",
+    "example_id": "coorbital__2010_NT134__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 97,
+        "who": "author",
+        "text": "Да, resonant/libration. Согласен?",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E36",
+    "example_id": "coorbital__2017_UM52__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 10,
+        "who": "author",
+        "text": "Я всё же склоняюсь к формальному transient с уверенностью high за счёт того, что на графике wrapped явно видна транзиентная часть.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E37",
+    "example_id": "coorbital__2022_VR1__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 10,
+        "who": "author",
+        "text": "Я всё же склоняюсь к формальному transient с уверенностью high за счёт того, что на графике wrapped явно видна транзиентная часть.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E38",
+    "example_id": "coorbital__2026_FW12__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 10,
+        "who": "author",
+        "text": "Я всё же склоняюсь к формальному transient с уверенностью high за счёт того, что на графике wrapped явно видна транзиентная часть.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E39",
+    "example_id": "mmr3__24820__3J-1S-1+0+0-1",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "benchmark/author_labels_2026-10-14_1612.csv",
+        "line": 48,
+        "who": "author",
+        "text": "Тут есть вопрос —  в конце явно идёт выход на циркуляцию. Может, общий дать статус transient? Что думаешь?"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5b - transient/episodic/medium или high - тут очевидный захват...",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E40",
+    "example_id": "mmr2__182223__7N-19+0+12",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5 - 5a transient/episodic/high - это правильное (кейс очевиден, уверенность высокая, так как классический транзиент)",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E41",
+    "example_id": "coorbital__2014_OL339__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5c - transient/high",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E42",
+    "example_id": "coorbital__2016_CO246__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5c - transient/high",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E43",
+    "example_id": "coorbital__2021_XO3__1V-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5e - тут, кстати, эпизоды опять не до конца хорошо определены - идёт от 0 до примерно 300 лет, затем от 300 до где-то 600-700, потом поведение меняется на что-то иное; либо просто один большой эпизод на всё",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/README.md",
+        "line": 157,
+        "who": "Claude, for information",
+        "text": "- **XO3 (5e).** Вся тысяча лет — одна квазиспутниковая либрация; амплитуду меняют три толчка (350, 785, 942 г., Δa до 3·10⁻³ а.е.), по-видимому сближения с Землёй — отсюда ваши границы ~300 и ~700 лет. Разрез пакета на 608–668 г. физическому событию не соответствует."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 338,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Один эпизод + пометки (смена амплитуды ~330–450 и ~710–810, толчки ~348/~783): Это альтернатива (a) в E43; known_fail снимается после правки. Правило ям для 1:1 в geometry; статус не меняется.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 442,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Только сепаратриса или смена владельца; смена ямы и амплитуды — пометки: XO3 — один эпизод, JA — один с подрежимом, CB — до конца (пребывание). E07–E09 переписываются: один эпизод + последовательность видов орбиты. Нужны новые интервалы и правки geometry и рисунков.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-9)"
+      }
+    ]
+  },
+  {
+    "case": "E44",
+    "example_id": "mmr2__433__47M-44+0-3",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/ANSWERS-2026-10-24.md",
+        "line": 24,
+        "who": "author",
+        "text": "По 433 - как будто бы есть два периода захвата... И даже ФП показывает замкнутые траектории...",
+        "transcript": "65dd5462…jsonl 2026-10-24T07:31:32Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 63,
+        "who": "review",
+        "text": "- **Два эпизода настоящие** (3.5–6.6 и 7.6–10.6 тыс. лет, период 610–650 лет), петли на портрете тоже."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 4,
+        "who": "author",
+        "text": "A2 - ok, понял объяснение",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "E45",
+    "example_id": "mmr2__433__47M-44+0-3__step0.5yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/ANSWERS-2026-10-24.md",
+        "line": 24,
+        "who": "author",
+        "text": "По 433 - как будто бы есть два периода захвата... И даже ФП показывает замкнутые траектории...",
+        "transcript": "65dd5462…jsonl 2026-10-24T07:31:32Z"
+      }
+    ]
+  },
+  {
+    "case": "E46",
+    "example_id": "mmr3__433__1R-5V+7+0+0-3",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/ANSWERS-2026-10-24.md",
+        "line": 24,
+        "who": "author",
+        "text": "По 433 - как будто бы есть два периода захвата... И даже ФП показывает замкнутые траектории...",
+        "transcript": "65dd5462…jsonl 2026-10-24T07:31:32Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 63,
+        "who": "review",
+        "text": "- **Два эпизода настоящие** (3.5–6.6 и 7.6–10.6 тыс. лет, период 610–650 лет), петли на портрете тоже."
+      }
+    ]
+  },
+  {
+    "case": "E47",
+    "example_id": "mmr3__433__1R-5V+7+0+0-3__step0.5yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/ANSWERS-2026-10-24.md",
+        "line": 24,
+        "who": "author",
+        "text": "По 433 - как будто бы есть два периода захвата... И даже ФП показывает замкнутые траектории...",
+        "transcript": "65dd5462…jsonl 2026-10-24T07:31:32Z"
+      }
+    ]
+  },
+  {
+    "case": "E48",
+    "example_id": "mmr3__37087__3J+8S-3+0+0-8",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5d -     non_resonant/episodic/medium",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      },
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 533,
+        "who": "DECISIONS (author Q16/Q21)",
+        "text": "- **F6. Эпизод — вынужденная волна, а не либрация этого угла**"
+      }
+    ]
+  },
+  {
+    "case": "E49",
+    "example_id": "mmr3__37087__3J+8S-3+0+0-8__1Myr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 93,
+        "who": "author",
+        "text": "Я считаю, что это non-resonant (угол растёт, видимых либраций нет, ФП зашумлённый). Что думаешь? angle_status можно сделать episodic теоретически.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E50",
+    "example_id": "mmr2__2897__35S-4+0-31",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "Я согласен, что там есть элементы циркуляции, но в самом начале идёт нечто, похожее на либрацию + рябь.",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 12,
+        "who": "author",
+        "text": "2897 - согласен с episodic",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "E51",
+    "example_id": "mmr2__2004_TK14__31M-34+0+3__step0.5yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "7 - слушай, а вот тут эпизоды ХОРОШО определены, я с ними согласен абсолютно, не надо менять...",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-23/ANSWERS-2026-10-24.md",
+        "line": 5,
+        "who": "author",
+        "text": "1 - а не логично ли сделать правило актуальным для любых резонансов. Если несколько эпизодов, но они покрывают всё пространство, то резонансный (естественно, если другие критерии норм).",
+        "transcript": "65dd5462…jsonl 2026-10-24T07:31:32Z"
+      }
+    ]
+  },
+  {
+    "case": "E52",
+    "example_id": "mmr2__2004_TK14__31M-34+0+3",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "7 - слушай, а вот тут эпизоды ХОРОШО определены, я с ними согласен абсолютно, не надо менять...",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E53",
+    "example_id": "mmr2__78085__2E-7+0+5",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5h - transient/episodic/medium - согласен; интересно, что явно идут захваты, но при этом значение резонансного угла (unwrapped) постоянно подымается.",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E54",
+    "example_id": "mmr2__78085__2E-7+0+5__step0.5yr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-20/ANSWERS-2026-10-23.md",
+        "line": 3,
+        "who": "author",
+        "text": "5h - transient/episodic/medium - согласен; интересно, что явно идут захваты, но при этом значение резонансного угла (unwrapped) постоянно подымается.",
+        "transcript": "65dd5462…jsonl 2026-10-23T09:41:59Z"
+      }
+    ]
+  },
+  {
+    "case": "E55",
+    "example_id": "mmr3__2003_TG2__4E-1M-3+0+0+0__100kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "benchmark/author_labels_2026-10-14_1612.csv",
+        "line": 40,
+        "who": "author",
+        "text": "А почему не транзиент на 0-20 kyr? Там, вроде, резонансный угол практически константа, как и большая полуось. ФП непонятен, но всё же."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/analysis-1019/F-37087-TG2-21028.md",
+        "line": 95,
+        "who": "review",
+        "text": "Обоснование: правило силы (≥ 1000× → non_resonant, вы приняли его в п. 4) для эпизода на 30 тыс. лет, и нет ни одного цикла в стоянии."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19b.md",
+        "line": 106,
+        "who": "author",
+        "text": "ОК, согласен с твоими рассуждениями.",
+        "transcript": "65dd5462…jsonl 2026-10-19T11:31:42Z"
+      }
+    ]
+  },
+  {
+    "case": "E56",
+    "example_id": "zlk__162474__LK__1500kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 44,
+        "who": "author",
+        "text": "Если ты хочешь обновить тест, можно, к примеру, взять первые 0.5 млн лет и проверять либрацию около 270 (для теста). То, что оно перескакивает на 90 - это ок, обычный транзиент.",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      }
+    ]
+  },
+  {
+    "case": "E57",
+    "example_id": "zlk__162474__LK",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-17.md",
+        "line": 44,
+        "who": "author",
+        "text": "можно, к примеру, взять первые 0.5 млн лет и проверять либрацию около 270 (для теста).",
+        "transcript": "65dd5462…jsonl 2026-10-17T08:12:49Z / 10:31:01Z / 17:18:51Z"
+      }
+    ]
+  },
+  {
+    "case": "E58",
+    "example_id": "mmr2__2003_UG22__10E-17+0+7__40kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 107,
+        "who": "DECISIONS",
+        "text": "- В бенчмарк (автор 16:43): 2003 UG22 10E-17+0+7 продление до 40 тыс. лет (выход из резонанса при ω ≈ 75°, яма"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-19/ANSWERS-2026-10-19.md",
+        "line": 163,
+        "who": "author",
+        "text": "Текущий вариант — транзиент + episodic ОК.",
+        "transcript": "65dd5462…jsonl 2026-10-19T10:16:33Z"
+      }
+    ]
+  },
+  {
+    "case": "E59",
+    "example_id": "mmr2__2002_XA__5J-2+0-3",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 692,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Да: критерий «ограниченного промежутка»: WK15 и XA → resonant/libration/medium. Отменяет D1b; E59/E60 переписываются на склейку и resonant. По геометрической проверке на 56 строках других склеек нет; подтвердить полным прогоном и проверить TK14/TX9.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g06-5)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E60",
+    "example_id": "mmr2__2001_WK15__32E-39+0+7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w31/ANSWERS-2026-11-03.json",
+        "line": 72,
+        "who": "author",
+        "text": "По сути, весь промежуток интегрирования — эпизод.",
+        "transcript": "W30 page answers 2026-11-03"
+      }
+    ]
+  },
+  {
+    "case": "E61",
+    "example_id": "mmr2__138537__13N-25+0+12",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 127,
+        "who": "review",
+        "text": "- У 138537 13N-25 склеиваются 48 крошечных эпизодов (полуамплитуда ~1°), хотя центр за запись несколько раз обходит круг."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 10,
+        "who": "author",
+        "text": "D1b - согласен с твоей рекомендацией",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "E62",
+    "example_id": "mmr3__7343__1M+1J-2+0+0+0",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 128,
+        "who": "review",
+        "text": "- 7343 1M+1J-2 (ваш resonant) и 136108 7N-12 ломаются. Сейчас их правильно ловит медленная либрация на масштабе центра (G2c), а склейка мелких эпизодов перехватывает решение раньше."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 10,
+        "who": "author",
+        "text": "D1b - согласен с твоей рекомендацией",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "E63",
+    "example_id": "mmr2__136108__7N-12+0+5",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/README.md",
+        "line": 128,
+        "who": "review",
+        "text": "- 7343 1M+1J-2 (ваш resonant) и 136108 7N-12 ломаются. Сейчас их правильно ловит медленная либрация на масштабе центра (G2c), а склейка мелких эпизодов перехватывает решение раньше."
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/for-author-2026-10-24-disagreements/ANSWERS-2026-10-24.md",
+        "line": 10,
+        "who": "author",
+        "text": "D1b - согласен с твоей рекомендацией",
+        "transcript": "65dd5462…jsonl 2026-10-24T17:40:19Z"
+      }
+    ]
+  },
+  {
+    "case": "E64",
+    "example_id": "zlk__591986__LK__4myr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/AUTHOR-FEEDBACK-2026-10-29.md",
+        "line": 3,
+        "who": "author",
+        "text": "По картинке - эпизоды абсолютно неверно определены. Тут 1 эпизод.",
+        "transcript": "65dd5462…jsonl 2026-10-29T06:48Z"
+      }
+    ]
+  },
+  {
+    "case": "E65",
+    "example_id": "mmr2__2000_SF8__8M-9+0+1",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 22,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Да: transient/medium + пример: Убираем мост slip (g04-2), SF8 становится transient/medium, 17E-36 в шапке называется соседним резонансом; объект идёт в бенчмарк (эпизод tier A) и в PAPER-EXAMPLES с меткой автора.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g04-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E66",
+    "example_id": "coorbital__2002_PN__1E-1+0+0",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 191,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: B** — non_resonant / medium (почти-эпизод): Как предлагает Claude: одна петля — ещё не захват, но high снимаем.  (рекомендовали A)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g01-2)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 192,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Но технически можно и транзиент дать, если так будет лучше сходиться.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g01-2)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E70",
+    "example_id": "coorbital__2009_BE81__1M-1+0+0__20kyr",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 276,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — transient/low, два ядра: Статус виден исследователю. Код — разрез по физически подтверждённым циклам; перепрогон проверит MMR с движущимся центром.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g02-3)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 442,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — Только сепаратриса или смена владельца; смена ямы и амплитуды — пометки: XO3 — один эпизод, JA — один с подрежимом, CB — до конца (пребывание). E07–E09 переписываются: один эпизод + последовательность видов орбиты. Нужны новые интервалы и правки geometry и рисунков.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-9)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E71",
+    "example_id": "coorbital__2016_JA__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/AUTHOR-2026-10-30.md",
+        "line": 48,
+        "who": "author",
+        "text": "coorbital__2016_JA__1E-1+0+0 — возможно, неверно определены эпизоды.",
+        "transcript": "notes 2026-10-30 12:18"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 353,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Один эпизод до ~540, подрежим HS→tadpole около 340, уровень high: Вход считается по локальному центру, entry_suspected снимается; поздняя часть вне эпизода, пока запись не продлена.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-2)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 354,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Посмотри на фазовый портрет: сначала идут замкнутые кривые около 270 градусов, а потом начинается переход на апоцентрическую либрацию около 0/360. Это как будто бы намекает — 2 разных режима! Поэтому учитывай это — возможно, ни один из 4 предложенных вариантов не будет корректен.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-2)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E72",
+    "example_id": "coorbital__2020_CB__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 367,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: C** — Оставить 443–601, low, с пометкой «продолжение не определено»: Позиция Codex. Меняется только текст: 601 год — не выход.  (рекомендовали A)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-3)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 368,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Мне кажется, что давать high — это многовато...",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-3)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 442,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — Только сепаратриса или смена владельца; смена ямы и амплитуды — пометки: XO3 — один эпизод, JA — один с подрежимом, CB — до конца (пребывание). E07–E09 переписываются: один эпизод + последовательность видов орбиты. Нужны новые интервалы и правки geometry и рисунков.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-9)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1377,
+        "who": "author (chosen option; the option's wording is the plan question's)",
+        "text": "- q-2 → **b**: общий потолок: high только если хотя бы одна физическая опора (L4, R0, F, закон 1:1) проходит с полным запасом, иначе medium; список затронутых строк показать.",
+        "transcript": "W28 plan questions, answers 2026-11-01 (q-2)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E73",
+    "example_id": "coorbital__2024_TY11__1M-1+0+0__20kyr",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 433,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — high; ядро 2.65–8.69 + пребывание от начала записи (выведено): Статус и уровень не меняются; после g03-9 меняются только границы и текст.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-8)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E74",
+    "example_id": "mmr2__137295__1N-2+0+1",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 841,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Сочетание: без константы и на дуге: V_F без свободной константы, сравнение только на посещённой дуге, полный прогон строк с R0. 137295 → resonant/high; нужно отдельно разобрать 82831 (confidence может сдвинуться).",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g07-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E75",
+    "example_id": "mmr2__59358__8N-13+0+5",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 850,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — transient/medium после исправления силы: Общая проверка силы на шкале либрации с реальной массой; 59358 станет transient, ценой — прогон всех строк с L4 fail и разбор каждой сдвинувшейся.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g07-2)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E77",
+    "example_id": "mmr2__31935__9M-16+0+7",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 607,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Один резонанс 9:16; правило C + новая подача: Статусы обеих строк остаются transient. Вместо owner — «резонансный аргумент: +2+5». Резонанс считается один раз на пару (тело, соизмеримость). Меняются только подача и колонки CSV.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g06-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E78",
+    "example_id": "mmr2__31935__9M-16+2+5",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 607,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Один резонанс 9:16; правило C + новая подача: Статусы обеих строк остаются transient. Вместо owner — «резонансный аргумент: +2+5». Резонанс считается один раз на пару (тело, соизмеримость). Меняются только подача и колонки CSV.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g06-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E79",
+    "example_id": "mmr2__12218__4M-7+0+3",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 633,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Один резонанс 4:7, аргумент +1+2 (как g06-1 A): Статус transient/medium остаётся. Вместо owner — «аргумент». В текст добавляется причина разрыва (гашение составного члена).",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g06-2)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E80",
+    "example_id": "mmr2__2004_BG41__3J-1+0-2",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 898,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Да, фикс R0 + resonant/medium: BG41 становится resonant/libration/medium; на трёх проверенных контрольных строках изменений нет; нужен полный прогон бенчмарка.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E81",
+    "example_id": "mmr2__2001_VC2__16E-17+0+1",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 908,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: B** — Отдельный проход кандидатов ниже порога (вариант Codex): Порог 150 лет остаётся, но цикл короче него принимается, если его подтверждают теоретический период и сила; результат для VC2 тот же, реализация сложнее.  (рекомендовали A)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-2)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E82",
+    "example_id": "mmr2__6318__3J-1+0-2",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 918,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Сочетание: возражение, только если когерентная волна на P в той же фазе И не закон эпизода: 6318, 16183, 2020 CB, 2024 JZ64, 17346, 34706, 45074 теряют кап; уровни без капа известны у 6318, 16183 (high) и CB (high), у остальных не проверены. O1 сохраняется, но проверяется на синтетике; три порога-соглашения (R² ≥ 0.5, разрыв < 90°, доля ½).",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-3)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E83",
+    "example_id": "mmr3__16183__5J-2S-2+0+0-1",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 918,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Сочетание: возражение, только если когерентная волна на P в той же фазе И не закон эпизода: 6318, 16183, 2020 CB, 2024 JZ64, 17346, 34706, 45074 теряют кап; уровни без капа известны у 6318, 16183 (high) и CB (high), у остальных не проверены. O1 сохраняется, но проверяется на синтетике; три порога-соглашения (R² ≥ 0.5, разрыв < 90°, доля ½).",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-3)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E84",
+    "example_id": "mmr3__2004_YG1__9M-10J-4+0+0+5",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 932,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Да: insufficient_time (arc) + extend, рябь — вспомогательный интервал: Статус по-прежнему uncertain; меняются angle_status, reason и action — объект попадает в «следующую волну». Риск низкий.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-4)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E76",
+    "example_id": "mmr2__523683__2U-9+0+7",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 877,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — insufficient_time, extend ≥ 400 тыс. лет + обе правки: Срез ≥ 1.5 P_orb и сохранение медленного исхода при совместимости с ямой; 15874 нужно перемаркировать (confidence high) или занести в расхождения.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g07-5)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E85",
+    "example_id": "zlk__555527__LK",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1002,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Обе правки (фильтр + неизменяемая плоскость): Обе записи: non_resonant/circulation/certain, certain опирается на прямую циркуляцию ω.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g09-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E85b",
+    "example_id": "zlk__555527__LK__500kyr",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1002,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Обе правки (фильтр + неизменяемая плоскость): Обе записи: non_resonant/circulation/certain, certain опирается на прямую циркуляцию ω.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g09-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E86",
+    "example_id": "secular__2306__g-g6+s-s6",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1033,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: B** — insufficient_time, если центр развернулся: Ярлык отражает незамкнутое медленное колебание; статус и extend те же.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g09-4)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E87",
+    "example_id": "secular__5026__g+g2-g4-g6",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1023,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: B** — uncertain/insufficient_time через критерий фазовой неопределённости (Claude): Меняется только эта строка и, возможно, другие углы с внутренними модами. 8089 и z1/ν6 не задеваются.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g09-3)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "E98",
+    "example_id": "mmr3__78085__5J-4S-1+0+0+0",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 570,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: C** — Да, но только по F3; F2 оставить диагностикой: Одна новая настройка; 78085 → excluded; HW7 и строки с монотонным x на 180–360° остаются unresolved.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g05-6)"
+      }
+    ]
+  },
+  {
+    "case": "E99",
+    "example_id": "mmr3__2001_HW7__5J+6S-2+0+0-9",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 570,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: C** — Да, но только по F3; F2 оставить диагностикой: Одна новая настройка; 78085 → excluded; HW7 и строки с монотонным x на 180–360° остаются unresolved.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g05-6)"
+      }
+    ]
+  },
+  {
+    "case": "C01",
+    "example_id": "mmr2__117306__11M-20+0+9",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 194,
+        "who": "author",
+        "text": "controversial: could be a very short capture (author: capture near 40 kyr, phase portrait confirms)"
+      }
+    ]
+  },
+  {
+    "case": "C02",
+    "example_id": "mmr2__1221__3E-8+0+5",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 196,
+        "who": "author",
+        "text": "another excellent model transient (capture at centre)"
+      }
+    ]
+  },
+  {
+    "case": "C03",
+    "example_id": "mmr2__2000_SF8__8M-9+0+1",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 210,
+        "who": "author",
+        "text": "purest transient 8000-12000 yr, seen in angle and portrait"
+      }
+    ]
+  },
+  {
+    "case": "C04",
+    "example_id": "mmr2__1999_GL4__1V-5+0+4",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 650,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Последовательно; резонанс вне эпизода — в поле «до/после»: Статусы не меняются (в т. ч. метки автора у ND13, PG14, TG2). Колонка owner и правая колонка больше не намекают на двойной резонанс. Затрагивает все 19 строк с флагом owner_outside_episode; меняется ожидание C04.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g06-3)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 651,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Ага + запомним этот объект для статьи / примера.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g06-3)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C05",
+    "example_id": "mmr2__2001_ND13__1V-3+0+2",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 211,
+        "who": "author",
+        "text": "transient at start, visible in angle and portrait"
+      }
+    ]
+  },
+  {
+    "case": "C06",
+    "example_id": "mmr2__887__3J-1+0-2",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 238,
+        "who": "author",
+        "text": "excellent transient example: capture at start (very clear on portrait), then non-resonant; model example"
+      }
+    ]
+  },
+  {
+    "case": "C07",
+    "example_id": "mmr2__5026__3E-11+0+8",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 227,
+        "who": "author",
+        "text": "transient: classical capture"
+      }
+    ]
+  },
+  {
+    "case": "C08",
+    "example_id": "mmr2__1999_TJ10__19M-22+0+3",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 209,
+        "who": "author",
+        "text": "also transient, a double one: normal libration, then circulation, then apocentric/drifting libration; portrait shows it but not well"
+      }
+    ]
+  },
+  {
+    "case": "C09",
+    "example_id": "mmr3__1998_QA62__1V-5M+3+0+0+1",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 409,
+        "who": "author",
+        "text": "interesting, like 1685-1V-1E-1 but stronger: 8000-11000 yr short-period libration matching a"
+      }
+    ]
+  },
+  {
+    "case": "C10",
+    "example_id": "mmr2__17346__2J-1+0-1",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 203,
+        "who": "author",
+        "text": "Transient; libration only at the end"
+      }
+    ]
+  },
+  {
+    "case": "C11",
+    "example_id": "mmr2__6489__3J-1+0-2",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 983,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — «FAIR по всей записи пропускает транзиент; по окну видит, но окно надо знать заранее»: Честное и проверенное утверждение: 15 % пустых клеток против ≤ 0.1 % на окнах равной длины. Пример добавляется в PAPER-EXAMPLES с текстом из рекомендации.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-9)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C12",
+    "example_id": "mmr3__1865__5E+4M-8+0+0-1",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 405,
+        "who": "author",
+        "text": "tiny capture at the very end (frequencies even match); portrait noisy; do not know how to classify"
+      }
+    ]
+  },
+  {
+    "case": "C13",
+    "example_id": "mmr3__1036__5J+8S-3+0+0-10",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 283,
+        "who": "author",
+        "text": "non-resonant, though an interesting interval 15000-16000 yr that is too short"
+      }
+    ]
+  },
+  {
+    "case": "C14",
+    "example_id": "mmr3__2003_TG2__4E-1M-3+0+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 270,
+        "who": "author",
+        "text": "very like slow circulation, but at the end angle starts to librate with downward drift; maybe transient; needs extended integration"
+      }
+    ]
+  },
+  {
+    "case": "C15",
+    "example_id": "mmr2__55913__40M-57+0+17",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 230,
+        "who": "author",
+        "text": "controversial: could be a short capture near the end, but I'm inclined to non-resonant"
+      }
+    ]
+  },
+  {
+    "case": "C16",
+    "example_id": "mmr3__154634__1M+1J-2+0+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "benchmark/candidates.csv",
+        "line": 349,
+        "who": "author",
+        "text": "extend time -> resonant after 200 kyr (5 cycles). Author updated sheet to resonant"
+      }
+    ]
+  },
+  {
+    "case": "C17",
+    "example_id": "mmr3__1862__2M-6J-1+0+0+5",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 48,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Оставить transient/low: Геометрический кандидат неизвестного происхождения (позиция Codex). Кода не меняем; строку проверяют вручную.  (рекомендовали B)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g04-4)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 49,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Я всё же считаю, что здесь есть захват, пусть и в маленьком объёме. Мой вердикт касается именно представленной картинки, то есть, резонанса 2M-6J-1",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g04-4)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C18",
+    "example_id": "mmr3__41588__3J+9S-2+0+0-10",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 77,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Да, текст про −10ϖ; owner n/a: Статус тот же; правка текста в verdict_text.py и пометка «n/a» для owner'а при kinematic. Затронет текст всех строк kinematic_libration.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g04-7)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C19",
+    "example_id": "coorbital__1991_VG__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 182,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — non_resonant / medium (почти-эпизод): Захвата нет, но high снимается шапкой near_episode. Статус не меняется, объект попадает в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g01-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C20",
+    "example_id": "coorbital__2008_EZ84__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 210,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — оставить non_resonant / high: Один разворот — не цикл. Объект служит отрицательным контролем.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g01-4)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C22",
+    "example_id": "coorbital__2018_KS__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 284,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — uncertain/episodic: Строка видна исследователю; транзиентом её не считаем, потому что цикл не замкнут.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g02-4)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C23",
+    "example_id": "coorbital__2019_XH2__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 292,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: B** — чистый ход подковы → transient, проход мимо планеты → uncertain: OE5, AV2 (и в просмотре SS2, YU11, VH2, SC) → transient/low или medium; XH2, FN3 → uncertain. Ближе к литературному «транзиентному коорбиталю».  (рекомендовали A)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g02-5)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 293,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Я тут готов обсудить и другие варианты, но мне кажется, что должно быть плюс-минус консистентно.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g02-5)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C24",
+    "example_id": "coorbital__2020_FN3__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 292,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: B** — чистый ход подковы → transient, проход мимо планеты → uncertain: OE5, AV2 (и в просмотре SS2, YU11, VH2, SC) → transient/low или medium; XH2, FN3 → uncertain. Ближе к литературному «транзиентному коорбиталю».  (рекомендовали A)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g02-5)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 293,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Я тут готов обсудить и другие варианты, но мне кажется, что должно быть плюс-минус консистентно.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g02-5)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C27",
+    "example_id": "coorbital__2022_UA13__1V-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 424,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Показать причину в пустом слоте (m), FAIR не восстанавливать: Вопрос «почему нет FAIR» отпадает; затрагивает около 217 рисунков; вердикты не меняются.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-7)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 425,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Важно: пустой слот рисовать — не хорошо. Место займёт, пользы не даст. Можно просто показать где-то в том радиусе предупреждение с пояснением, почему FAIR не отрисовывается.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g03-7)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C28",
+    "example_id": "mmr2__385533__7N-12+0+5",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 868,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — resonant/medium + прогон 300 тыс. лет: Правка выбора шкалы; 385533 → resonant с потолком medium; новый вариант __300kyr в бенчмарке как проверка.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g07-4)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C29",
+    "example_id": "mmr3__2003_EH16__1M-3J-1+0+0+3",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 739,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — uncertain + пояснение + продлить запись: Статус не меняется; текст объясняет подозрение на кинематику, действие — extend.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g06-6)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C30",
+    "example_id": "mmr3__2003_ND__6J-6S-1+0+0+1",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 757,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — uncertain + действие extend (~40 тыс. лет): Статус прежний, объект уходит на следующую волну с длинной интеграцией. Общее правило затронет другие uncertain с одним циклом.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g06-7)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C31",
+    "example_id": "mmr3__481085__7E-10M-6+0+0+9",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 544,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Да: non_resonant / libration / kinematic: Строка входит в гейт со статусом non_resonant; уверенность — по решению g05-3.  (рекомендовали B)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g05-4)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C32",
+    "example_id": "mmr3__78085__5J-4S-1+0+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 570,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: C** — Да, но только по F3; F2 оставить диагностикой: Одна новая настройка; 78085 → excluded; HW7 и строки с монотонным x на 180–360° остаются unresolved.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g05-6)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C33",
+    "example_id": "mmr3__79653__3M+3J-7+0+0+1",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 952,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — uncertain + причина «происхождение не установлено» + extend ~130 тыс. лет: Статус тот же. eq_scale больше не называется измеренным возражением, это меняет формулировку у строк 5o. Объект уходит на продление.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-6)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C34",
+    "example_id": "zlk__2020_PP1__LK",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1053,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: B** — Модель неприменима (коорбиталь) → uncertain −9: Сдвигаются PP1 и 10563 (500 тыс. лет). Ряды с planetary_residual, в том числе 2023 RS2, остаются transient. Согласуется с решением W25 «unavailable (−9)».",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g09-6)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C35",
+    "example_id": "zlk__1981__LK",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1063,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: C** — A + прогон 1 млн лет + проверка ρ для наклонения: Решаем по измерению. Если s≈s6 подтвердится, появится физический критерий для таких тел, не опирающийся на связь e–i.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g09-7)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1064,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Можно продлить, но как будто бы у нас уже достаточно периодов либрации.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g09-7)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C36",
+    "example_id": "zlk__373136__LK",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1074,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Да, оставить как есть: 100 тыс. лет: uncertain/extend; 500 тыс. лет: transient. Код не меняется.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g09-8)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "C37",
+    "example_id": "zlk__373136__LK__500kyr",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1074,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Да, оставить как есть: 100 тыс. лет: uncertain/extend; 500 тыс. лет: transient. Код не меняется.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g09-8)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      }
+    ]
+  },
+  {
+    "case": "D01",
+    "example_id": "zlk__88899__LK__500kyr",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1012,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: C** — B, но эпизоды без подтверждения гейтом → uncertain (Codex): Эпизоды видны как кандидаты, статус −9. Вместе с ним сдвигаются 373136 и 3752 на 500 тыс. лет и другие (см. g09-6).  (рекомендовали B)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g09-2)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1196,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Утверждаю список целиком, с этим порядком: Уровень A — где есть ваши слова, B — где вы примете разбор, остальное C. Каждый случай A/B добавляется вместе со своей правкой, known_fail только у отложенных. Изменённые статусы сразу закрываются метками, и шлюз не покажет ложных расхождений.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (s-1)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1376,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- q-1 → **E**: эпизодическая ZLK-строка без вердикта гейта — transient только при антикорреляции e–i (класс zlk на решающем периоде), иначе uncertain −9;",
+        "transcript": "W28 plan questions, author in chat 2026-10-31 11:40 ('я ответил на всё по рекомендованным')"
+      }
+    ]
+  },
+  {
+    "case": "C38",
+    "example_id": "mmr3__37087__3J+8S-3+0+0-8",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 962,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Да, второй масштаб в CSV и на рисунке: Период и эпизоды медленной либрации видны и проверяемы; быстрая волна остаётся отвергнутой; у эпизодов и проверок нужна схема «масштаб».",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-7)"
+      }
+    ]
+  },
+  {
+    "case": "E94",
+    "example_id": "mmr3__37087__3J+8S-3+0+0-8",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 972,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — non_resonant / kinematic_libration (secular_cycle): Возврат к физике решения W9 и метке 19.10 для строки 1 млн лет. Новое правило «вековой период + провал тождества» может затронуть 2001 HW7, 2011 KT19, 2013 VA14, 1566.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-8)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 973,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Тут и везде важно: если причина — в вековом цикле, это надо показывать линией (по-моему, мы где-то уже показываем график с k\\varpi. Чтобы исследователю была понятна причина либрации. Ну и понятное описание в правой колонке, разумеется.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-8)"
+      }
+    ]
+  },
+  {
+    "case": "E95",
+    "example_id": "mmr3__37087__3J+8S-3+0+0-8__1Myr",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 972,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — non_resonant / kinematic_libration (secular_cycle): Возврат к физике решения W9 и метке 19.10 для строки 1 млн лет. Новое правило «вековой период + провал тождества» может затронуть 2001 HW7, 2011 KT19, 2013 VA14, 1566.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-8)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 973,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Тут и везде важно: если причина — в вековом цикле, это надо показывать линией (по-моему, мы где-то уже показываем график с k\\varpi. Чтобы исследователю была понятна причина либрации. Ну и понятное описание в правой колонке, разумеется.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g08-8)"
+      }
+    ]
+  },
+  {
+    "case": "C39",
+    "example_id": "mmr3__2001_HW7__5J+6S-2+0+0-9",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 481,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "**ответ автора: A** — Заметка, диагностика и продление записи (Claude): Статус non_resonant / medium остаётся. В правой колонке фраза про цикл 2ω, в CSV колонки own_x_*. HW7 продлеваем до ≥ 150 тыс. лет и решаем по результату.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g05-2)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 482,
+        "who": "author",
+        "text": "**комментарий автора (дословно):** Давай, во-первых, рассчитывать подобную либрацию, если она есть. Чтобы она появлялась в правой колонке. Во-вторых, если мы можем определить потенциальную причину (типа вековых колебаний), то давай это указывать (с потенциальной уверенностью; не уверены — ОК, просто указали; уверены — отметили). Чтобы у исследователя не возникало вопросов, а нет ли тут медленной трёхтельной либрации.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g05-2)"
+      }
+    ]
+  },
+  {
+    "case": "E68",
+    "example_id": "coorbital__2003_YN107__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 259,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — transient/medium, пол = T_hs(θ_t) + знак силы: YN107 → transient (эпизод от начала до ~147 лет). Пол головастика остаётся для разворотов вдали от планеты, AP1 остаётся не-транзиентом. Нужен перепрогон коорбиталей; ожидаемо сдвинутся несколько строк без меток автора.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 260,
+        "who": "author",
+        "text": "- **комментарий автора (дословно):** Мне не нравится, что это правило будет применено только для коорбиталей. Могут же быть аналогичные истории и в других резонансах, разве нет???",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1378,
+        "who": "author (plan question q-3, chat 2026-10-31 11:40)",
+        "text": "- q-3 → **A**: F2 заменить полом из периода собственного усреднённого потенциала (для всех резонансов); AC4 — по замеру; YN107 → transient.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      }
+    ]
+  },
+  {
+    "case": "C21",
+    "example_id": "coorbital__2026_AC4__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 228,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да (F2) → transient: Для 1:1 пол заменяется проверкой тождества σ̇ = −(3/2)n(a−a_p). AC4 становится transient; могут сдвинуться 2023 HM4 и 2023 RX1. Нужен прогон 259 коорбиталей (30–40 мин).",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1378,
+        "who": "author (plan question q-3, chat 2026-10-31 11:40)",
+        "text": "- q-3 → **A**: F2 заменить полом из периода собственного усреднённого потенциала (для всех резонансов); AC4 — по замеру; YN107 → transient.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      }
+    ]
+  },
+  {
+    "case": "E69",
+    "example_id": "coorbital__2006_BZ147__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/AUTHOR-2026-10-30.md",
+        "line": 69,
+        "who": "author",
+        "text": "coorbital__2006_BZ147__1E-1+0+0 — тут в конце есть эпизод захвата, но ты не эпизод не выделил, не статус верно определил. Как и предыдущий. ИМХО, это транзиент. Но проверь независимо.",
+        "transcript": "author review 2026-10-30"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 268,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — transient/medium, разворот в обрезке замыкает цикл (только 1:1): BZ147 → transient; узкое добавление: оно может только добавить замкнутые циклы. Перепрогон коорбиталей, возможен сдвиг нескольких high-строк.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      }
+    ]
+  },
+  {
+    "case": "E67",
+    "example_id": "coorbital__2007_VU6__1E-1+0+0",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/AUTHOR-2026-10-30.md",
+        "line": 33,
+        "who": "author",
+        "text": "coorbital__2007_VU6__1E-1+0+0 — нет ли тут временного захвата около 600-1000 лет? ФП и evolution указывает на что-то такое. А мы аж high ставим…",
+        "transcript": "author review 2026-10-30"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 201,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — transient / low, эпизод 839–994: Разворот у края принимается, если он подтверждён сырым рядом. Остаются капы одного цикла и неизмеренного входа. Нужен прогон всех коорбиталей.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      }
+    ]
+  },
+  {
+    "case": "C25",
+    "example_id": "coorbital__2023_OE5__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 292,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: B** — чистый ход подковы → transient, проход мимо планеты → uncertain: OE5, AV2 (и в просмотре SS2, YU11, VH2, SC) → transient/low или medium; XH2, FN3 → uncertain. Ближе к литературному «транзиентному коорбиталю».  (рекомендовали A)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 301,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: B** — да, но критерий — локальная сила и энергия (Codex): Больше строк станет transient; результат зависит от окна подгонки.  (рекомендовали A)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C26",
+    "example_id": "coorbital__2024_AV2__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 292,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: B** — чистый ход подковы → transient, проход мимо планеты → uncertain: OE5, AV2 (и в просмотре SS2, YU11, VH2, SC) → transient/low или medium; XH2, FN3 → uncertain. Ближе к литературному «транзиентному коорбиталю».  (рекомендовали A)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 301,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: B** — да, но критерий — локальная сила и энергия (Codex): Больше строк станет transient; результат зависит от окна подгонки.  (рекомендовали A)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C40",
+    "example_id": "coorbital__138175__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C41",
+    "example_id": "coorbital__2015_YQ1__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C42",
+    "example_id": "coorbital__2021_VF__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C43",
+    "example_id": "coorbital__2022_BY39__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C44",
+    "example_id": "coorbital__2022_RA__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C45",
+    "example_id": "coorbital__2022_TD__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C46",
+    "example_id": "coorbital__2025_DU7__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C47",
+    "example_id": "coorbital__2020_HO8__1M-1+0+0__20kyr",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 247,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — структурное (Claude), допуск 10 %: Прогон ≥ 2 ТП 1:1, включая `over_the_top`; a пересекает a_p; нога пересекает не больше одной точки из {планета, L3}; период ≥ пол × 0.9. Даёт 13 строк → medium.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C48",
+    "example_id": "coorbital__2021_JE1__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 222,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- тесты: Чтение Claude: у каждой из 13 строк [{\"op\":\"n_accepted\",\"max\":0}], confidence medium, tier C. Отрицательные контроли, остаются high/certain: 2021 JE1, 2023 QS7, 2001 GP2, 2018 JL1, 2015 XC352.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C49",
+    "example_id": "coorbital__2023_QS7__1V-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 222,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- тесты: Чтение Claude: у каждой из 13 строк [{\"op\":\"n_accepted\",\"max\":0}], confidence medium, tier C. Отрицательные контроли, остаются high/certain: 2021 JE1, 2023 QS7, 2001 GP2, 2018 JL1, 2015 XC352.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C50",
+    "example_id": "coorbital__2001_GP2__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 222,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- тесты: Чтение Claude: у каждой из 13 строк [{\"op\":\"n_accepted\",\"max\":0}], confidence medium, tier C. Отрицательные контроли, остаются high/certain: 2021 JE1, 2023 QS7, 2001 GP2, 2018 JL1, 2015 XC352.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C51",
+    "example_id": "coorbital__2018_JL1__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 222,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- тесты: Чтение Claude: у каждой из 13 строк [{\"op\":\"n_accepted\",\"max\":0}], confidence medium, tier C. Отрицательные контроли, остаются high/certain: 2021 JE1, 2023 QS7, 2001 GP2, 2018 JL1, 2015 XC352.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C52",
+    "example_id": "coorbital__2015_XC352__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 219,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — да, 13 строк → medium: Шапка near_episode для 1:1. Статусы не меняются, строки попадают в проверку.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 222,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- тесты: Чтение Claude: у каждой из 13 строк [{\"op\":\"n_accepted\",\"max\":0}], confidence medium, tier C. Отрицательные контроли, остаются high/certain: 2021 JE1, 2023 QS7, 2001 GP2, 2018 JL1, 2015 XC352.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C53",
+    "example_id": "coorbital__2018_XW2__1E-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 292,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: B** — чистый ход подковы → transient, проход мимо планеты → uncertain: OE5, AV2 (и в просмотре SS2, YU11, VH2, SC) → transient/low или medium; XH2, FN3 → uncertain. Ближе к литературному «транзиентному коорбиталю».  (рекомендовали A)",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "C54",
+    "example_id": "coorbital__2022_BB2__1V-1+0+0",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 237,
+        "who": "author (chosen option; the option's wording is the card's)",
+        "text": "- **ответ автора: A** — medium + review, интегрировать дольше: Статус прежний, high снимается, объект идёт на продление.",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g01-7)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 238,
+        "who": "author",
+        "text": "- **комментарий автора (дословно):** Дополнительный комментарий: а по текущей картинке, без продления, ничего сказать нельзя? И нет ли возможности дать дополнительный флаг extend_time?",
+        "transcript": "W28 card answers, artifact 2026-10-31 10:38 (g01-7, verbatim comment)"
+      },
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w28/DECISIONS-2026-10-31.md",
+        "line": 1379,
+        "who": "author (plan question q-4, chosen option)",
+        "text": "- q-4 → **A**: единое правило для одиночных ног коорбиталей по умолчанию (чистая нога + локальная сила 1:1 + энергия + консервативные развороты → transient; одно расхождение → uncertain/episodic; обрезанная краем → uncertain + extend; рассеяния → non_resonant/medium с почти-эпизодом); расхождения с ответами по объектам показать в итоговой папке.",
+        "transcript": "author in chat 2026-10-31 11:40 (answers-q.json)"
+      }
+    ]
+  },
+  {
+    "case": "E100",
+    "example_id": "mmr2__120348__15N-22+0+7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 20,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "Я не вижу тут эпизодов вообще. non-resonant / circulation / certain или high",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E101",
+    "example_id": "mmr2__138537__13N-25+0+12",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 21,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "Я считаю, тут нету эпизодов. И non-resonant / circulation / certain или high",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E102",
+    "example_id": "mmr2__182259__35S-4+0-31",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 22,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "Мне кажется, тут, скорее, один эпизод или вообще их нет, а не два. Есть небольшой кусок, где резонансный угол не дрифтует, но он один, не два. Статус - non-resonant / circulation / high",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E103",
+    "example_id": "mmr2__2897__35S-4+0-31",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 29,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "Как и в похожем примере ранее, тут либо нет эпизодов (есть просто дрифт резонансного аргумента), либо один эпизод.. И статус: non-resonant / circulation / high ",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E104",
+    "example_id": "mmr3__101703__1V+3S-7+0+0+3",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 36,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "Тут нету эпизодов.",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E105",
+    "example_id": "mmr3__101703__1V+3S-7+0+0+3__200kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w29/answers.json",
+        "line": 37,
+        "who": "author (episodes note on the W28 review page, verbatim)",
+        "text": "mmr3__101703__1V+3S-7+0+0+3__200kyr\":{\"verdict\":\"status\",\"episodes_note\":\"Тут нету эпизодов.",
+        "transcript": "W28 review page answers, artifact 2026-11-02 08:00-08:54 (answers.json verdicts)"
+      }
+    ]
+  },
+  {
+    "case": "E106",
+    "example_id": "coorbital__439908__1M-1+0+0__20kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/classifier-v2-2026-10-15/w31/ANSWERS-2026-11-03.json",
+        "line": 46,
+        "who": "author",
+        "text": "До 13 kyr идёт циркуляция. ТАМ НЕ ДОЛЖНО БЫТЬ ЭПИЗОДА.",
+        "transcript": "W30 page answers 2026-11-03"
+      }
+    ]
+  },
+  {
+    "case": "E107",
+    "example_id": "secular__2012_AX10__2s-s4-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 13,
+        "who": "author",
+        "text": "2012 AX10 2s-s4-s6 - неверно определена граница эпизода — он заканчивается около 16 Myr и переходит в циркуляцию. Отсюда и статус, который должен быть, скорее, transient.",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E108",
+    "example_id": "secular__33325__2s-s4-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 13,
+        "who": "author",
+        "text": "2012 AX10 2s-s4-s6 - неверно определена граница эпизода — он заканчивается около 16 Myr и переходит в циркуляцию. Отсюда и статус, который должен быть, скорее, transient.",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      },
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 14,
+        "who": "author",
+        "text": "33325 1998 RH3 2s-s4-s6 — аналогично",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E109",
+    "example_id": "secular__19289__s-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 16,
+        "who": "author",
+        "text": "19289 1996 HY12 s-s6.png — неверно определён эпизод. Начиная где-то с 5 Myr и до конца идёт эпизод либраций. А у тебя разделено на кусочки.",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E110",
+    "example_id": "secular__278067__s-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 21,
+        "who": "author",
+        "text": "278067 2006 YY40 s-s6 — похоже на 19289: начиная с 6.5 Myr до конца идёт один эпизод.",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E111",
+    "example_id": "secular__42946__g-g6+s-s6",
+    "tier": "B",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 17,
+        "who": "author",
+        "text": "42946 1999 TU95 g-g6+s-s6 — неверно определён эпизод (ты уже об этом писал).",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E112",
+    "example_id": "secular__56700__s+s7-2s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 18,
+        "who": "author",
+        "text": "56700 2000 LL28 s+s7-2s6 — есть подозрение, что надо extend, что мы медленную либрацию не видим…",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E113",
+    "example_id": "secular__101703__g-2g6+g7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 19,
+        "who": "author",
+        "text": "101703 1999 CA150 g-2g6+g7.png — тоже хитрый случай. Система поймала короткие либрации. Но нет ли тут глобальной либрации (весь промежуток интегрирования — сплошной эпизод)?",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      },
+      {
+        "file": "tmp/secular-episodes-2026-11-07/PLAN.md",
+        "line": 36,
+        "who": "author",
+        "text": "Как пакет классифицирует, так и считаем (если это resonant или uncertain). extend - да.",
+        "transcript": "chat answer 2026-11-07, recorded in PLAN.md"
+      }
+    ]
+  },
+  {
+    "case": "E114",
+    "example_id": "secular__142694__g-2g6+g7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 19,
+        "who": "author",
+        "text": "Похожее в 142694 2002 TW243 g-2g6+g7 где-то с 7.5 Myr и до конца (плюс-минус).",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      },
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-ANSWERS-2026-11-08.md",
+        "line": 7,
+        "who": "author",
+        "text": "142694 - ok",
+        "transcript": "chat 2026-11-08 11:31 CET (answers to the W36 report)"
+      }
+    ]
+  },
+  {
+    "case": "E115",
+    "example_id": "secular__165548__s-g5+g6-s6",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 20,
+        "who": "author",
+        "text": "165548 2001 DO37 s-g5+g6-s6 — тут, ИМХО, идёт дрифт, а система ловит мелкие либрации…",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      },
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-ANSWERS-2026-11-08.md",
+        "line": 7,
+        "who": "author",
+        "text": "165548 - можно убрать из расхождений; сойдёт",
+        "transcript": "chat 2026-11-08 11:31 CET (answers to the W36 report)"
+      }
+    ]
+  },
+  {
+    "case": "E116",
+    "example_id": "secular__348018__g-g5+s-s7",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 22,
+        "who": "author",
+        "text": "348018 2003 SF334 g-g5+s-s7 — нерезонансное (как ты и указывал).",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      }
+    ]
+  },
+  {
+    "case": "E117",
+    "example_id": "secular__455327__s-s3",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-FEEDBACK-2026-11-07.md",
+        "line": 24,
+        "who": "author",
+        "text": "455327 2002 OP28 s-s3 — тут мне кажется, эпизод тоже подлиннее должен быть.",
+        "transcript": "chat 2026-11-07 10:36 CET (review of experiments/2026-11-pairs-secular-zlk/share)"
+      },
+      {
+        "file": "tmp/secular-episodes-2026-11-07/AUTHOR-ANSWERS-2026-11-08.md",
+        "line": 7,
+        "who": "author",
+        "text": "455327 - да. всё норм.",
+        "transcript": "chat 2026-11-08 11:31 CET (answers to the W36 report)"
+      }
+    ]
+  },
+  {
+    "case": "C55",
+    "example_id": "secular__2012_AX10__2s-s4-s6",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 17,
+        "who": "codex",
+        "text": "**Author yes; transient.** Libration is already present at the open initial boundary; last closed core ends at 13.74–13.81, then escape occurs around 15.6–16.4.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C56",
+    "example_id": "secular__101703__g-2g6+g7",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 81,
+        "who": "codex",
+        "text": "Small ~1-Myr waves are superposed, not separate captures.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C57",
+    "example_id": "secular__142694__g-2g6+g7",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 83,
+        "who": "codex",
+        "text": "**142694: author partly (onset approximate, long episode plausible); transient, provisional.** The initial branch circulates",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C58",
+    "example_id": "secular__165548__s-g5+g6-s6",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 95,
+        "who": "codex",
+        "text": "**Author partly; transient (geometric, weak), not global resonance.** Circulation dominates0–11 and after ~14.2, with a large reverse-and-return excursion in between.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C59",
+    "example_id": "secular__348018__g-g5+s-s7",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 115,
+        "who": "codex",
+        "text": "**Author yes; non_resonant.** No credible slow bounded episode; circulation 0–20 with weak .35-Myr reversals, not a slow libration.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C60",
+    "example_id": "secular__455327__s-s3",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 135,
+        "who": "codex",
+        "text": "**Author partly; transient, boundaries uncertain.** The package's9.20–10.84 core understates bounded residence: the additional minimum at 12.40–12.45 returns to the initial σ≈−2820° by 13.30.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "C61",
+    "example_id": "secular__455327__g-s-g5+s6",
+    "tier": "C",
+    "quotes": [
+      {
+        "file": "tmp/secular-episodes-2026-11-07/codex-remarks.md",
+        "line": 125,
+        "who": "codex",
+        "text": "Core boundaries~10.2–12.49 are robust; onset/exit shoulders are not exactly those TPs. Extending back to 9.2 includes a near-turn-wide drifting approach, not automatically another closed libration.",
+        "transcript": "Codex adversarial check 2026-11-07 (not the author)"
+      }
+    ]
+  },
+  {
+    "case": "E118",
+    "example_id": "mmr3__485__3J-1S-1+0+0-1",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/genua-k2-2026-11-14/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "Да, Генуя явно transient. Надо дорабатывать и включать в бенч, так как важный пример, и на нём должно работать",
+        "transcript": "chat 2026-11-14 00:58 CET (after the Nesvorny & Morbidelli 1998 check)"
+      }
+    ]
+  },
+  {
+    "case": "E119",
+    "example_id": "coorbital__2003_YN107_c027__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/coorbital-clones-2026-11-14/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "2003 YN107 - с027 (эпизод от 0 до 200 плюс-минус; сейчас не определён)",
+        "transcript": "chat 2026-11-14 (on the combined figures A = current code of followup/combined-yn107 and combined-jr16)"
+      }
+    ]
+  },
+  {
+    "case": "E120",
+    "example_id": "coorbital__2003_YN107_c032__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/coorbital-clones-2026-11-14/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "c032 (эпизод от 0 до 300, сейчас неверно) transient; c032 - transient (эпизод до 350-370 лет)",
+        "transcript": "chat 2026-11-14 (on the combined figures A = current code of followup/combined-yn107 and combined-jr16)"
+      }
+    ]
+  },
+  {
+    "case": "E121",
+    "example_id": "coorbital__2024_JR16_c005__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/coorbital-clones-2026-11-14/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "2024 jr16 c005 - resonant, вроде бы, хотя ФП странноват; эпизод - весь интервал)",
+        "transcript": "chat 2026-11-14 (on the combined figures A = current code of followup/combined-yn107 and combined-jr16)"
+      }
+    ]
+  },
+  {
+    "case": "E122",
+    "example_id": "coorbital__2024_JR16_c010__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/coorbital-clones-2026-11-14/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "Второй пример - похоже.",
+        "transcript": "chat 2026-11-14 (on the combined figures A = current code of followup/combined-yn107 and combined-jr16)"
+      }
+    ]
+  },
+  {
+    "case": "E123",
+    "example_id": "coorbital__2022_RD2_c075__1E-1+0+0",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "tmp/coorbital-clones-2026-11-15/AUTHOR.md",
+        "line": 3,
+        "who": "author",
+        "text": "2022 rd2 c075 - не уверен, мне кажется, что эпизод в начале всё равно надо выделять обязательно.",
+        "transcript": "chat 2026-11-15 (answers page of qs-missed-episodes, followup/answers/q2_rd2_b_*.png)"
+      }
+    ]
+  }
+]

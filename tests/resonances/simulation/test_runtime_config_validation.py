@@ -46,11 +46,11 @@ class TestRuntimeConfigValidation:
         assert sim_valid.config.tmax == 1000
 
         # Test with edge case parameters
-        sim_edge = Simulation(dt=0.0001, tmax=1, integrator_safe_mode=0)  # Very small dt  # Very small tmax  # Different safe mode
+        sim_edge = Simulation(dt=0.0001, tmax=1, integration_safe_mode=0)  # Very small dt  # Very small tmax  # Different safe mode
 
         assert sim_edge.config.dt == 0.0001
         assert sim_edge.config.tmax == 1
-        assert sim_edge.config.integrator_safe_mode == 0
+        assert sim_edge.config.integration_safe_mode == 0
 
     @patch('rebound.Simulation')
     def test_integration_engine_parameter_consistency(self, mock_rebound_sim):
@@ -147,16 +147,16 @@ class TestRuntimeConfigValidation:
         assert sim2.config.tmax == int(1e8)
 
         # Test zero safe mode
-        sim3 = Simulation(integrator_safe_mode=0)
-        assert sim3.config.integrator_safe_mode == 0
+        sim3 = Simulation(integration_safe_mode=0)
+        assert sim3.config.integration_safe_mode == 0
 
         # Test different safe mode value
-        sim4 = Simulation(integrator_safe_mode=1)
-        assert sim4.config.integrator_safe_mode == 1
+        sim4 = Simulation(integration_safe_mode=1)
+        assert sim4.config.integration_safe_mode == 1
 
     def test_saba_integrator_configuration_verification(self):
         """Test that SABA integrator parameters are correctly configured."""
-        sim = Simulation(integrator='SABA(10,6,4)', dt=2.5, integrator_safe_mode=1)
+        sim = Simulation(integrator='SABA(10,6,4)', dt=2.5, integration_safe_mode=1)
 
         # Mock REBOUND simulation
         mock_sim = Mock()
@@ -175,7 +175,7 @@ class TestRuntimeConfigValidation:
     def test_multiple_saba_configurations(self):
         """Test different SABA integrator configurations."""
         # Test SABA(8,6,4)
-        sim1 = Simulation(integrator='SABA(8,6,4)', dt=1.0, integrator_safe_mode=0)
+        sim1 = Simulation(integrator='SABA(8,6,4)', dt=1.0, integration_safe_mode=0)
 
         mock_sim1 = Mock()
         mock_sim1.ri_saba = Mock()
@@ -187,7 +187,7 @@ class TestRuntimeConfigValidation:
         assert mock_sim1.ri_saba.safe_mode == 0
 
         # Test SABA(10,6,4)
-        sim2 = Simulation(integrator='SABA(10,6,4)', dt=5.0, integrator_safe_mode=1)
+        sim2 = Simulation(integrator='SABA(10,6,4)', dt=5.0, integration_safe_mode=1)
 
         mock_sim2 = Mock()
         mock_sim2.ri_saba = Mock()
@@ -200,7 +200,7 @@ class TestRuntimeConfigValidation:
 
     def test_configuration_parameter_types_at_runtime(self):
         """Test that configuration parameter types are preserved at runtime."""
-        sim = Simulation(integrator='SABA(10,6,4)', dt=3.14159, integrator_safe_mode=1, tmax=62831)  # str  # float  # int  # int
+        sim = Simulation(integrator='SABA(10,6,4)', dt=3.14159, integration_safe_mode=1, tmax=62831)  # str  # float  # int  # int
 
         # Mock setup
         mock_sim = Mock()

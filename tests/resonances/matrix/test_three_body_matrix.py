@@ -1,18 +1,16 @@
 import pytest
 import pandas as pd
 from pathlib import Path
-import shutil
 
 import resonances
-from resonances.matrix.three_body_matrix import ThreeBodyMatrix
+from resonances.mmr.three_body_matrix import ThreeBodyMatrix
+from tests.tools import TEST_CACHE
 
 
 @pytest.fixture(autouse=True)
 def run_around_tests():
-    resonances.config.set(ThreeBodyMatrix.catalog_file, 'cache/tests/mmr-3body-test.csv')
-    Path('cache/tests').mkdir(parents=True, exist_ok=True)
+    resonances.config.set(ThreeBodyMatrix.catalog_file, f'{TEST_CACHE}/mmr-3body-test.csv')
     yield
-    shutil.rmtree('cache/tests')
 
 
 def test_build():
@@ -86,8 +84,8 @@ def test_find_resonances():
 
 
 def test_recreate():
-    assert Path('cache/tests/mmr-3body-test.csv').is_file() is False
+    assert Path(f'{TEST_CACHE}/mmr-3body-test.csv').is_file() is False
     ThreeBodyMatrix.load()
-    assert Path('cache/tests/mmr-3body-test.csv').is_file() is True
+    assert Path(f'{TEST_CACHE}/mmr-3body-test.csv').is_file() is True
     ThreeBodyMatrix.load()
-    assert Path('cache/tests/mmr-3body-test.csv').is_file() is True
+    assert Path(f'{TEST_CACHE}/mmr-3body-test.csv').is_file() is True

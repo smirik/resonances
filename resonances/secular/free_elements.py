@@ -1,0 +1,837 @@
+"""Free (proper) eccentricity and inclination vectors, and the free argument of pericentre.
+
+An osculating element vector is the sum of a *forced* part, imposed by the planets and
+turning at *their* frequencies, and a *free* part carrying the object's own secular
+motion:
+
+    z_e(t) = e * exp(i * varpi) = z_forced + z_free      (driven by g5..g8)
+    z_i(t) = sin(i/2) * exp(i * Omega)                   (driven by s5..s8)
+
+Vectors add and angles do not, so the whole computation lives in the non-singular
+variables built by `non_singular_elements`. What it is for: the Lidov-Kozai angle is
+omega = varpi - Omega, so
+
+    omega_free(t) = arg(z_e_free) - arg(z_i_free)
+
+separates a genuine ZLK librator from an object whose osculating omega only *looks*
+confined because the forced eccentricity offsets the (k, h) cloud.
+
+The forced part is removed by a complex least-squares fit at the *known* planetary
+frequencies from `PLANETARY_FREQUENCIES`. Fitting known frequencies rather than searching
+for them matters: a frequency analysis (NAFF/FMFT) of a real integration splits the free
+mode into five or six neighbouring terms — on 4257 the spread is +-0.5 arcsec/yr against a
+Rayleigh resolution of 0.13 — and any of those splinters can be mistaken for a planetary
+line and subtracted by accident.
+
+Which modes can be fitted depends on the baseline, and the rule is pairwise rather than
+per-mode. Two modes whose rates differ by less than the Rayleigh resolution never drift a
+full turn apart over the window, so no fit can tell them apart and least squares splits
+their amplitude arbitrarily. `cluster` therefore groups the candidates by 2/T and only one
+member of each group is fitted — see `choose_basis` for how that member is picked, and why
+the choice is a modelling assumption rather than a free convention.
+
+This module is pure signal processing: it knows nothing about Body, Resonance or status.
+The decision built on top of it lives in `resonance/omega_free_gate.py`.
+"""
+
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Sequence, Tuple
+
+import numpy as np
+from scipy.signal import decimate, resample_poly
+
+from resonances.data.const import PLANETARY_FREQUENCIES
+from resonances.data.util import time_ordered
+from resonances.logger import logger
+from resonances.resonance.analysis.secular.models import ARCSEC_PER_TURN  # one turn in arcsec: arcsec/yr per cycle/yr
+from .proper_angle import non_singular_elements
+
+RAD_PER_ARCSEC = 2.0 * np.pi / ARCSEC_PER_TURN
+
+# Order in which a cluster's representative is picked. This is NOT arbitrary and it is not
+# free: measured across the reference set, fitting a different member of the same cluster
+# moves 3752 from 2 to -9 and 591986 from -2 to -9. The order encodes what actually
+# dominates the forcing — Jupiter's g5 for the eccentricity vector of a main-belt orbit,
+# and the constant offset between the ecliptic and the invariable plane (the s5 mode, zero
+# by construction) for the slow inclination modes. On baselines from 300 kyr to 1 Myr it
+# reproduces the {g5, g6} / {const, s6} basis that was validated independently against
+# 10 Myr integrations. Errors from a different choice always go towards withholding a
+# verdict, never towards a false confirmation.
+PRIORITY_E = ('g5', 'g6', 'g7', 'g8', 'const')
+PRIORITY_I = ('const', 's6', 's7', 's8')
+
+# Points where |z_free| falls below this fraction of its median are dropped before the
+# phase is unwrapped: near the origin the argument is undefined and unwrapping picks up
+# spurious half-turns that look like circulation.
+DEFAULT_MASK_QUANTILE = 0.15
+
+# An angle whose span over the baseline is less than a full turn is confined. The threshold
+# is topological rather than tuned, and it must not be tightened: inside a mean-motion
+# resonance the Lidov-Kozai cycle is asymmetric and its centre shifts away from 90/270
+# degrees — to 0/180 for Hildas and by +-60 degrees for Trojans (Vinogradova 2024).
+LIBRATION_RANGE = 2.0 * np.pi
+
+
+def candidate_frequencies(kind: str, frequencies: Optional[dict] = None) -> Dict[str, float]:
+    """Candidate modes for one vector, arcsec/yr, in representative-priority order.
+
+    'const' is a mode at exactly zero frequency. For the inclination vector it is real
+    physics under another name — s5 is identically zero because the planetary angular
+    momentum is conserved, and the vector it defines is the invariable plane, so an
+    inclination measured from the ecliptic carries a constant offset of about 1.6 degrees.
+    For the eccentricity vector there is no conserved direction and every g is non-zero;
+    'const' there is a technical absorber for the slow arcs of unresolved modes.
+    """
+    source = PLANETARY_FREQUENCIES if frequencies is None else frequencies
+    if kind == 'e':
+        return {label: (0.0 if label == 'const' else source[label]) for label in PRIORITY_E}
+    if kind == 'i':
+        return {label: (source.get('s5', 0.0) if label == 'const' else source[label]) for label in PRIORITY_I}
+    raise ValueError(f"kind must be 'e' or 'i', got {kind!r}")
+
+
+def cluster(candidates: Dict[str, float], baseline: float) -> List[List[str]]:
+    """Group modes the baseline cannot tell apart, keeping each group in priority order.
+
+    Two rates separated by less than 2/T accumulate less than two turns of relative phase
+    over the window, so a fit cannot attribute amplitude between them. Grouping is by
+    chaining: A joins B and B joins C puts all three together even when A and C are far
+    apart, because each link is individually unresolvable. The sign of `baseline` (a backward
+    run) does not matter.
+    """
+    baseline = abs(baseline)
+    threshold = 2.0 * ARCSEC_PER_TURN / baseline if baseline > 0 else float('inf')
+    ordered = sorted(candidates, key=lambda label: candidates[label])
+    groups: List[List[str]] = []
+    current = [ordered[0]]
+    for previous, label in zip(ordered, ordered[1:]):
+        if candidates[label] - candidates[previous] < threshold:
+            current.append(label)
+        else:
+            groups.append(current)
+            current = [label]
+    groups.append(current)
+    return [[label for label in candidates if label in members] for members in groups]
+
+
+def choose_basis(
+    candidates: Dict[str, float], baseline: float, representatives: Optional[Sequence[str]] = None
+) -> Tuple[Dict[str, float], List[str], List[List[str]]]:
+    """Reduce the candidates to one representative per cluster.
+
+    Returns the basis (label -> arcsec/yr), the dropped labels, and the clusters. By default
+    the representative is the highest-priority member, `candidates` being in priority order
+    — see PRIORITY_E for why that ordering carries a physical assumption. `representatives`
+    forces the choice instead, which is what makes that assumption testable: exactly one
+    label per cluster, in any order.
+    """
+    groups = cluster(candidates, baseline)
+    if representatives is None:
+        chosen = [members[0] for members in groups]
+    else:
+        chosen = [next(label for label in members if label in representatives) for members in groups]
+    basis = {label: candidates[label] for label in chosen}
+    dropped = [label for members in groups for label in members if label not in basis]
+    return basis, dropped, groups
+
+
+def remove_forced(z: np.ndarray, times: np.ndarray, frequencies: Dict[str, float]) -> Tuple[np.ndarray, np.ndarray, Dict[str, complex]]:
+    """Fit and subtract terms at `frequencies` (arcsec/yr) from a complex series.
+
+    The model is linear in the complex amplitudes because the rates are fixed, so one
+    lstsq does it: |c_j| is the amplitude of mode j and arg(c_j) its phase at t = 0.
+    Least squares rather than a notch, because the fundamentals are independent but not
+    orthogonal on a finite baseline — lstsq handles that exactly, while a notch also
+    removes whatever else shares the bin.
+    """
+    z = np.asarray(z, dtype=complex)
+    if not frequencies:
+        return z, np.zeros_like(z), {}
+    design = np.exp(1j * np.outer(times, [value * RAD_PER_ARCSEC for value in frequencies.values()]))
+    coefficients, *_ = np.linalg.lstsq(design, z, rcond=None)
+    forced = design @ coefficients
+    return z - forced, forced, dict(zip(frequencies.keys(), coefficients))
+
+
+def mask_origin(z_free: np.ndarray, quantile: float = DEFAULT_MASK_QUANTILE) -> np.ndarray:
+    """Which samples have a well-defined argument: those far enough from the origin. A vector that is zero (median
+    amplitude 0) has no argument anywhere: no sample."""
+    amplitude = np.abs(z_free)
+    median = float(np.median(amplitude)) if amplitude.size else 0.0
+    if not median > 0:
+        return np.zeros(amplitude.shape, dtype=bool)
+    return amplitude >= quantile * median
+
+
+def rate(times: np.ndarray, angle: np.ndarray) -> float:
+    """Least-squares slope of an unwrapped angle, in arcsec/yr."""
+    if len(times) < 3:
+        return float('nan')
+    return float(np.polyfit(times, angle, 1)[0] / RAD_PER_ARCSEC)
+
+
+def _rolling_median(values: np.ndarray, window: int) -> np.ndarray:
+    """Median over a sliding window, used to smooth the beating of |z_forced|."""
+    window = max(1, min(int(window), len(values)))
+    if window <= 1:
+        return values
+    view = np.lib.stride_tricks.sliding_window_view(values, window)
+    return np.median(view, axis=1)
+
+
+def _beat_window(basis: Dict[str, float], dt: float) -> int:
+    """Samples covering a tenth of the shortest beat period between fitted modes.
+
+    |z_forced| is a sum of arrows, so its length oscillates at the difference frequencies
+    of every pair. A window well inside the shortest beat smooths sampling noise without
+    smoothing the beat itself. A single-line basis has no beats, hence no smoothing.
+    """
+    rates = list(basis.values())
+    gaps = [abs(a - b) for index, a in enumerate(rates) for b in rates[index + 1 :] if abs(a - b) > 0]
+    if not gaps or dt <= 0:
+        return 1
+    return max(1, int(round(ARCSEC_PER_TURN / max(gaps) / 10.0 / dt)))
+
+
+@dataclass
+class FreeElements:
+    """Forced/free split of one body's eccentricity and inclination vectors."""
+
+    times: np.ndarray  # years, increasing (a backward run is put in time order), possibly resampled
+    z_e: np.ndarray  # osculating e * exp(i varpi)
+    z_i: np.ndarray  # osculating sin(i/2) * exp(i Omega)
+    z_e_free: np.ndarray
+    z_i_free: np.ndarray
+    z_e_forced: np.ndarray
+    z_i_forced: np.ndarray
+    basis_e: Dict[str, float]  # modes actually fitted, arcsec/yr
+    basis_i: Dict[str, float]
+    dropped_e: List[str]  # cluster members the baseline could not separate
+    dropped_i: List[str]
+    amplitudes_e: Dict[str, complex]  # fitted complex amplitude per mode
+    amplitudes_i: Dict[str, complex]
+    keep_e: np.ndarray  # boolean mask of samples with a defined argument
+    keep_i: np.ndarray
+    varpi_free: np.ndarray  # unwrapped, on the keep_e grid
+    Omega_free: np.ndarray  # unwrapped, on the keep_i grid
+    omega_free: np.ndarray  # unwrapped, on the intersection of the two masks
+    b_varpi: float  # arcsec/yr
+    b_Omega: float
+    b_omega: float
+    clusters_e: List[List[str]] = field(default_factory=list)
+    clusters_i: List[List[str]] = field(default_factory=list)
+    # The fundamentals this split was built from, carried along so that anything judging
+    # the residual compares it against the same numbers that were subtracted.
+    frequencies: Dict[str, float] = field(default_factory=lambda: dict(PLANETARY_FREQUENCIES))
+    # The decimation passes that built `times` (`decimation_steps`; () without resampling, and on a split restored from
+    # omega_free.csv, which does not store them). A pass above 10 is the polyphase leftover (rule free_resample_remainder).
+    resample_steps: Tuple[int, ...] = ()
+
+    @property
+    def resample_remainder(self) -> bool:
+        """Whether the resampling ended in a polyphase pass (a factor with a prime above 10, e.g. 31)."""
+        return has_remainder(self.resample_steps)
+
+    @property
+    def baseline(self) -> float:
+        return float(abs(self.times[-1] - self.times[0]))
+
+    @property
+    def resolution(self) -> float:
+        """One Rayleigh width over this baseline, arcsec/yr — the frequency tolerance."""
+        return ARCSEC_PER_TURN / self.baseline
+
+    @property
+    def cluster_threshold(self) -> float:
+        """The 2/T grouping threshold, arcsec/yr."""
+        return 2.0 * self.resolution
+
+    @property
+    def omega_times(self) -> np.ndarray:
+        """Times where both arguments are defined — the grid omega_free lives on."""
+        return self.times[self.keep_e & self.keep_i]
+
+    @property
+    def omega_range(self) -> float:
+        """Span of the free omega, radians, trimmed by half a percent at each end.
+
+        Quantiles rather than a strict peak-to-peak: a span is an extreme statistic and one
+        surviving glitch ruins the maximum. The known cost is that a sharp excursion right
+        at the end of the window gets trimmed too.
+        """
+        if len(self.omega_free) == 0:
+            return float('nan')
+        return float(np.quantile(self.omega_free, 0.995) - np.quantile(self.omega_free, 0.005))
+
+    @property
+    def librates(self) -> bool:
+        """Whether the free omega stays inside a full turn over the baseline."""
+        return bool(self.omega_range < LIBRATION_RANGE)
+
+    @property
+    def revolutions(self) -> float:
+        """Turns accumulated by the free omega over the baseline."""
+        if len(self.omega_free) == 0:
+            return float('nan')
+        return float((self.omega_free[-1] - self.omega_free[0]) / (2.0 * np.pi))
+
+    @property
+    def e_free(self) -> float:
+        """Median length of the free eccentricity vector.
+
+        Median rather than mean: |z_free| of a real Lidov-Kozai object oscillates — that is
+        the resonance — with dips towards zero and occasional spikes. For a circle the
+        median is the radius, so nothing is biased away.
+        """
+        return float(np.median(np.abs(self.z_e_free)))
+
+    @property
+    def e_forced(self) -> float:
+        return float(np.median(np.abs(self.z_e_forced)))
+
+    @property
+    def rho(self) -> float:
+        """e_free / e_forced: does the free circle enclose the origin?
+
+        Above one it does and varpi can turn freely; below one the osculating pericentre is
+        pinned by the planets and any libration of it is geometry. Annotation only, never a
+        verdict — for a large-amplitude librator e_forced is inflated by the same free
+        signal the fit could not represent, so read it in the small-amplitude regime.
+        """
+        forced = self.e_forced
+        return self.e_free / forced if forced > 0 else float('nan')
+
+    @property
+    def e_free_series(self) -> np.ndarray:
+        """Free eccentricity over time, on the full grid."""
+        return np.abs(self.z_e_free)
+
+    @property
+    def omega_free_wrapped(self) -> np.ndarray:
+        """Free omega folded into [0, 2*pi), on the `omega_times` grid."""
+        return np.mod(self.omega_free, 2.0 * np.pi)
+
+    def free_eccentricity_vector(self) -> Tuple[np.ndarray, np.ndarray]:
+        """(e cos omega, e sin omega) built from free quantities, on the `omega_times` grid.
+
+        The free counterpart of `Body.eccentricity_vector()`. Drawn against the osculating
+        one it shows directly whether the cloud that keeps omega bounded is the object's
+        own free circle or the forced offset: a genuine librator keeps a comparable ring,
+        a carousel collapses to a small ring displaced from the origin.
+        """
+        amplitude = self.e_free_series[self.keep_e & self.keep_i]
+        return amplitude * np.cos(self.omega_free), amplitude * np.sin(self.omega_free)
+
+    @property
+    def mask_fraction_e(self) -> float:
+        return float(1.0 - self.keep_e.mean())
+
+    @property
+    def mask_fraction_i(self) -> float:
+        return float(1.0 - self.keep_i.mean())
+
+    @property
+    def slope_consistency(self) -> float:
+        """|b_omega - (b_varpi - b_Omega)|, arcsec/yr.
+
+        Not an identity: the three slopes are fitted on three different grids, because the
+        two masks are independent and omega_free lives on their intersection. A large value
+        means the masks disagree badly enough that the rates are not comparable.
+        """
+        return float(abs(self.b_omega - (self.b_varpi - self.b_Omega)))
+
+    @property
+    def step(self) -> float:
+        """The sampling step of the split, years."""
+        return float(abs(np.median(np.diff(self.times)))) if len(self.times) > 1 else 0.0
+
+    def rho_envelope(self) -> Tuple[float, float]:
+        """(rho_min, rho_max) of the median e_free over the beating of |z_e_forced| (the columns free_rho_min/max).
+
+        Descriptive only: one median of the free radius over the whole record against the extremes of the smoothed
+        forced one, so a free circle that grows in part of the record is not seen. The gate reads `rho_local_max`.
+        """
+        smoothed = _rolling_median(np.abs(self.z_e_forced), _beat_window(self.basis_e, self.step))
+        low, high = float(np.min(smoothed)), float(np.max(smoothed))
+        e_free = self.e_free
+        return (e_free / high if high > 0 else float('nan'), e_free / low if low > 0 else float('nan'))
+
+    def rho_local_max(self, period_yr: Optional[float] = None, window_cycles: float = 1.0) -> float:
+        """max over the record of rollmed(|z_e_free|, W) / rollmed(|z_e_forced|, W): below one the free circle never
+        reaches round the origin, varpi cannot turn and the forced vector pins omega throughout.
+
+        W = max(a tenth of the shortest beat of the fitted modes, `window_cycles` x `period_yr`) samples: each radius
+        is read over about one libration cycle (`period_yr`, P_cyc of the osculating omega; none: the beat window), so
+        the free radius of every part of the record is compared with the forced one of the same part (555527: 0.66 at
+        100 kyr, where the global ratio says 0.59). A window holding fewer samples than the record is the whole record.
+        """
+        ratio = self.local_rho(period_yr, window_cycles)[1]
+        return float(np.max(ratio)) if len(ratio) else float('nan')
+
+    def local_rho(self, period_yr: Optional[float] = None, window_cycles: float = 1.0) -> Tuple[np.ndarray, np.ndarray]:
+        """(times [yr], rollmed(|z_e_free|, W) / rollmed(|z_e_forced|, W)): the ratio of `rho_local_max` along the
+        record, each value at the middle of its window (the mean of its first and last sample times)."""
+        return self._local_ratio(self.z_e_free, self.z_e_forced, self.basis_e, period_yr, window_cycles)
+
+    def _local_ratio(self, free, forced, basis, period_yr, window_cycles) -> Tuple[np.ndarray, np.ndarray]:
+        """(times, rollmed(|free|, W) / rollmed(|forced|, W)), W = max(the beat window of `basis`, window_cycles x
+        period_yr) samples, each value at the middle of its window."""
+        step = self.step
+        window = _beat_window(basis, step)
+        if period_yr is not None and np.isfinite(period_yr) and period_yr > 0 and step > 0:
+            window = max(window, int(round(window_cycles * period_yr / step)))
+        free = _rolling_median(np.abs(free), window)
+        forced = _rolling_median(np.abs(forced), window)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ratio = np.where(forced > 0, free / forced, np.inf)
+        times = np.asarray(self.times, dtype=float)
+        if len(ratio) < len(times):  # a sliding window of W samples: value i covers samples i .. i + W - 1
+            span = len(times) - len(ratio)
+            times = 0.5 * (times[: len(ratio)] + times[span : span + len(ratio)])
+        return times, ratio
+
+    def forced_i_turning(self) -> Optional[np.ndarray]:
+        """The fitted forced inclination vector without its constant term, sum over the s modes != const of
+        c_j exp(i s_j t) on `times`; None when no such term was fitted (the baseline merged s6-s8 into the constant)
+        or no amplitude was fitted.
+
+        The constant (s5 = 0) is the tilt of the reference plane, not a forcing that turns the node: from the
+        invariable plane it is about zero, from the ecliptic about 1.6 deg."""
+        terms = {label: c for label, c in self.amplitudes_i.items() if label != 'const' and label in self.basis_i}
+        if not terms:
+            return None
+        times = np.asarray(self.times, dtype=float)
+        return sum(c * np.exp(1j * self.basis_i[label] * RAD_PER_ARCSEC * times) for label, c in terms.items())
+
+    def rho_i_local_max(self, period_yr: Optional[float] = None, window_cycles: float = 1.0) -> float:
+        """max over the record of rollmed(|z_i_free|, W) / rollmed(|z_i_forced without the constant|, W): the free
+        inclination over the turning forced one (column free_rho_i_max; W as in `rho_local_max`, from the fitted s
+        modes' beats). nan when no turning forced term was fitted (`forced_i_turning`).
+
+        A number, not a verdict. Far above one, a free node near s_j cannot be a leak of the forced s_j term (a leak is
+        at most as large as that term); but when b_Omega is within one Rayleigh width of the fitted s_j, least squares
+        splits the free node between the two and the ratio is not the physical one (1981 over 500 kyr: |c_s6| 0.30
+        against a median |z_i_free| 0.25, ratio 0.5-1.4)."""
+        forced = self.forced_i_turning()
+        if forced is None:
+            return float('nan')
+        basis = {label: rate_ for label, rate_ in self.basis_i.items() if label != 'const'}
+        ratio = self._local_ratio(self.z_i_free, forced, basis, period_yr, window_cycles)[1]
+        return float(np.max(ratio)) if len(ratio) else float('nan')
+
+    def episode_pinning(self, start_yr: float, end_yr: float, cycles_end_yr: float, cycles: int) -> Tuple[float, float]:
+        """(median |z_e_free| / |z_e_forced|, turns of the free omega per cycle) inside one librating episode of the
+        osculating omega [start, end]; (nan, nan) when the free elements do not measure it there.
+
+        Measured only where they hold: the episode inside the baseline, every sample in it with a defined free
+        perihelion and node (the masks), and at least two samples per cycle (a free omega turning once per cycle is
+        unwrapped unambiguously below the Nyquist step). The ratio is the instantaneous one: a rolling window as long
+        as a forced beat would mix in the free circle around the episode. The turns are counted over whole cycles of
+        the osculating omega, from the first turning point to the last of the same kind (`cycles_end_yr`, `cycles`
+        full cycles): a free omega that librates with the osculating one returns there (about 0 turns), one that the
+        forced vector carries advances one turn per cycle; an endpoint difference of a part cycle is no winding."""
+        times = np.asarray(self.times, dtype=float)
+        nan = (float('nan'), float('nan'))
+        if not len(times) or cycles < 1 or start_yr < times[0] or end_yr > times[-1] or cycles_end_yr > end_yr:
+            return nan
+        inside = (times >= start_yr) & (times <= end_yr)
+        if np.count_nonzero(inside) < 2 or not np.all((self.keep_e & self.keep_i)[inside]):
+            return nan
+        period = (cycles_end_yr - start_yr) / cycles
+        if not (self.step > 0 and 2.0 * self.step < period):
+            return nan
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ratio = np.abs(self.z_e_free[inside]) / np.abs(self.z_e_forced[inside])
+        if not np.all(np.isfinite(ratio)):
+            return nan
+        whole = (times >= start_yr) & (times <= cycles_end_yr)
+        free_omega = np.unwrap(np.angle(self.z_e_free[whole]) - np.angle(self.z_i_free[whole]))
+        if len(free_omega) < 2:
+            return nan
+        turns = abs(free_omega[-1] - free_omega[0]) / (2.0 * np.pi)
+        return float(np.median(ratio)), float(turns / cycles)
+
+    def forced_beats(self) -> Dict[str, float]:
+        """{'gk-gj': period [yr]} of every pair of fitted eccentricity modes with nonzero measured amplitudes (j the
+        larger): the length and the direction of the forced vector beat at 2 pi/|g_k - g_j| (591986: g6-g5, 54.0 kyr).
+        Empty with fewer than two nonzero amplitudes: basis membership is not a measured term, and a zero amplitude
+        has no beat."""
+        amplitude = {label: abs(self.amplitudes_e.get(label, 0.0)) for label in self.basis_e}
+        labels = [label for label, value in amplitude.items() if np.isfinite(value) and value > 0]
+        beats = {}
+        for index, first in enumerate(labels):
+            for second in labels[index + 1 :]:
+                gap = abs(self.basis_e[first] - self.basis_e[second])
+                if gap > 0:
+                    big, small = (first, second) if amplitude[first] >= amplitude[second] else (second, first)
+                    beats[f'{small}-{big}'] = ARCSEC_PER_TURN / gap
+        return beats
+
+    def forced_vector(self, times: np.ndarray) -> Optional[np.ndarray]:
+        """The fitted forced eccentricity vector sum_j c_j exp(i g_j t) on `times` [yr]; None without the amplitudes
+        (no eccentricity mode fitted)."""
+        if not self.amplitudes_e:
+            return None
+        times = np.asarray(times, dtype=float)
+        total = np.zeros(len(times), dtype=complex)
+        for label, coefficient in self.amplitudes_e.items():
+            total += coefficient * np.exp(1j * self.basis_e.get(label, 0.0) * RAD_PER_ARCSEC * times)
+        return total
+
+    def drift_flag(self) -> int:
+        """Whether the free omega shows a reproducible monotonic drift inside its span.
+
+        Informational: the span may be under a full turn while a steady ramp is plainly
+        visible, which is what makes an object worth integrating for longer. Reproducible
+        means the two halves of the window agree on the slope.
+        """
+        times, angle = self.omega_times, self.omega_free
+        if len(times) < 8 or not np.isfinite(self.b_omega):
+            return 0
+        half = len(times) // 2
+        spread = abs(rate(times[:half], angle[:half]) - rate(times[half:], angle[half:])) / 2.0
+        drift = abs(self.b_omega) * self.baseline * RAD_PER_ARCSEC
+        return int(drift > np.pi and abs(self.b_omega) > 2.0 * spread)
+
+
+def decimation_steps(factor: int) -> List[int]:
+    """Split a decimation factor into passes of at most 10, then the leftover factor.
+
+    scipy's FIR design stays accurate up to about a factor of 10 per pass; a single large
+    factor produces a filter whose transition band swallows the signal. Passes that do not
+    divide the remaining factor are shrunk rather than rounded. What no pass of at most 10
+    divides (a prime factor above 10, e.g. 31 at a 15.918-yr step) is returned whole as the
+    last step and goes through a polyphase filter (`_resample`): the product of the steps is
+    always the factor, so every factor is filtered and the thinned time grid
+    `times[::factor]` matches the decimated series. (Before W28 the leftover was dropped:
+    at a factor of 31 nothing was filtered and the 11.86-yr ripple folded into the secular
+    band as steps of the free varpi, 555527.)
+    """
+    steps = []
+    while factor > 1:
+        step = min(factor, 10)
+        while factor % step and step > 1:
+            step -= 1
+        if step == 1:
+            steps.append(factor)  # the leftover, > 10 and without a divisor <= 10
+            break
+        steps.append(step)
+        factor //= step
+    return steps
+
+
+def has_remainder(steps: Sequence[int]) -> bool:
+    """Whether a decimation (`decimation_steps`) ends in a polyphase pass of more than 10."""
+    return any(step > 10 for step in steps)
+
+
+def _decimate_real(x: np.ndarray, step: int) -> np.ndarray:
+    """One anti-aliased decimation pass of a real series.
+
+    Up to 10: scipy's zero-phase FIR `decimate`. Above (the leftover of `decimation_steps`):
+    `resample_poly(x, 1, step)`, a linear-phase polyphase FIR whose output sample k sits at
+    input sample k * step, like `decimate`; `padtype='line'` extends the record along its end
+    trend rather than with zeros, which would pull the first and last filter lengths towards
+    the origin. Both return ceil(len(x) / step) samples.
+    """
+    if step <= 10:
+        return decimate(x, step, ftype='fir', zero_phase=True)
+    return resample_poly(x, 1, step, padtype='line')
+
+
+def _resample(z: np.ndarray, steps: Sequence[int]) -> np.ndarray:
+    """Decimate a complex series with an anti-aliasing filter on each component, pass by pass."""
+    for step in steps:
+        z = _decimate_real(z.real, step) + 1j * _decimate_real(z.imag, step)
+    return z
+
+
+def free_elements(
+    times: np.ndarray,
+    ecc: np.ndarray,
+    inc: np.ndarray,
+    Omega: np.ndarray,
+    omega: np.ndarray,
+    sampling_years: Optional[float] = 500.0,
+    frequencies: Optional[dict] = None,
+    mask_quantile: float = DEFAULT_MASK_QUANTILE,
+    representatives: Optional[Sequence[str]] = None,
+) -> Optional[FreeElements]:
+    """Split the eccentricity and inclination vectors into forced and free parts.
+
+    Parameters
+    ----------
+    times : np.ndarray
+        Sampling times in years, uniform. Decreasing times (a backward run) are put in time
+        order first, so the result is that of the time-ordered series.
+    ecc, inc, Omega, omega : np.ndarray
+        Osculating elements; angles in radians. `omega` is the argument of pericentre, the
+        longitude is rebuilt internally as varpi = Omega + omega.
+    sampling_years : float, optional
+        Resample to about this step first (the integer factor round(sampling_years / dt)),
+        with an anti-aliasing filter at every factor (`decimation_steps`). Secular work needs
+        nothing finer, and short-period terms folded into the secular band would otherwise
+        show up as free motion. None keeps the integration grid.
+    frequencies : dict, optional
+        Planetary fundamentals in arcsec/yr, defaults to `PLANETARY_FREQUENCIES`.
+    mask_quantile : float
+        Samples with |z_free| below this fraction of the median are dropped before the
+        argument is unwrapped.
+    representatives : sequence of str, optional
+        Force which member of each cluster is fitted, overriding the priority order. For
+        research and for testing that the priority is a safe assumption; leave unset.
+
+    Returns
+    -------
+    FreeElements, or None when the series are too short to say anything.
+    """
+    times, ecc, inc, Omega, omega = time_ordered(np.asarray(times, dtype=float), ecc, inc, Omega, omega)
+    if len(times) < 16:
+        logger.warning("Free elements: fewer than 16 samples, skipping")
+        return None
+
+    varpi = np.asarray(Omega) + np.asarray(omega)
+    k, h, q, p = non_singular_elements(ecc, inc, Omega, varpi)
+    z_e, z_i = k + 1j * h, q + 1j * p
+
+    dt = float(np.median(np.diff(times)))
+    steps = decimation_steps(1 if not sampling_years else max(1, int(round(sampling_years / dt))))
+    if steps:
+        z_e, z_i = _resample(z_e, steps), _resample(z_i, steps)
+        times = times[:: int(np.prod(steps))][: len(z_e)]
+    if len(times) < 16:
+        logger.warning("Free elements: fewer than 16 samples after resampling, skipping")
+        return None
+
+    baseline = float(times[-1] - times[0])
+    basis_e, dropped_e, clusters_e = choose_basis(candidate_frequencies('e', frequencies), baseline, representatives)
+    basis_i, dropped_i, clusters_i = choose_basis(candidate_frequencies('i', frequencies), baseline, representatives)
+    if dropped_e or dropped_i:
+        # info, not warning: below 10 Myr some clustering is the normal case, it is recorded
+        # in the summary columns, and a batch of thousands of bodies would emit one each.
+        logger.info(
+            f"Free elements: a {baseline / 1e3:.0f} kyr baseline merges "
+            f"{', '.join(dropped_e + dropped_i)} into their neighbours; "
+            f"fitting {'+'.join(basis_e)} / {'+'.join(basis_i)}"
+        )
+
+    z_e_free, z_e_forced, amplitudes_e = remove_forced(z_e, times, basis_e)
+    z_i_free, z_i_forced, amplitudes_i = remove_forced(z_i, times, basis_i)
+
+    keep_e, keep_i = mask_origin(z_e_free, mask_quantile), mask_origin(z_i_free, mask_quantile)
+    both = keep_e & keep_i
+    varpi_free = np.unwrap(np.angle(z_e_free[keep_e]))
+    Omega_free = np.unwrap(np.angle(z_i_free[keep_i]))
+    # Unwrapped separately and only then subtracted: each vector has its own passages near
+    # the origin, so a difference taken before unwrapping would inherit both sets of jumps.
+    omega_free = np.unwrap(np.angle(z_e_free[both])) - np.unwrap(np.angle(z_i_free[both]))
+
+    return FreeElements(
+        times=times,
+        z_e=z_e,
+        z_i=z_i,
+        z_e_free=z_e_free,
+        z_i_free=z_i_free,
+        z_e_forced=z_e_forced,
+        z_i_forced=z_i_forced,
+        basis_e=basis_e,
+        basis_i=basis_i,
+        dropped_e=dropped_e,
+        dropped_i=dropped_i,
+        amplitudes_e=amplitudes_e,
+        amplitudes_i=amplitudes_i,
+        keep_e=keep_e,
+        keep_i=keep_i,
+        varpi_free=varpi_free,
+        Omega_free=Omega_free,
+        omega_free=omega_free,
+        b_varpi=rate(times[keep_e], varpi_free),
+        b_Omega=rate(times[keep_i], Omega_free),
+        b_omega=rate(times[both], omega_free),
+        clusters_e=clusters_e,
+        clusters_i=clusters_i,
+        frequencies=dict(PLANETARY_FREQUENCIES if frequencies is None else frequencies),
+        resample_steps=tuple(steps),
+    )
+
+
+SUMMARY_COLUMNS = (
+    'free_basis_e',
+    'free_basis_i',
+    'free_e',
+    'free_e_forced',
+    'free_rho',
+    'free_rho_min',
+    'free_rho_max',
+    'free_omega_range_deg',
+    'free_omega_revolutions',
+    'free_b_varpi',
+    'free_b_Omega',
+    'free_b_omega',
+    'free_drift_flag',
+    'free_mask_e',
+    'free_mask_i',
+    'free_resolution',
+)
+
+
+def summary_fields(elements: Optional[FreeElements]) -> dict:
+    """The decomposition columns of one summary.csv row.
+
+    Measurements only — the verdict built on them belongs to `omega_free_gate`. Note that
+    `free_e` / `free_e_forced` come from this fit, while the older `e_free` / `e_forced`
+    columns come from the (k, h) scatter in `cross_spectrum` and exist for every resonance
+    type; the two are different estimators and are expected to differ.
+    """
+    if elements is None:
+        return {column: None for column in SUMMARY_COLUMNS}
+    rho_min, rho_max = elements.rho_envelope()
+    return {
+        'free_basis_e': '+'.join(elements.basis_e),
+        'free_basis_i': '+'.join(elements.basis_i),
+        'free_e': elements.e_free,
+        'free_e_forced': elements.e_forced,
+        'free_rho': elements.rho,
+        'free_rho_min': rho_min,
+        'free_rho_max': rho_max,
+        'free_omega_range_deg': np.degrees(elements.omega_range),
+        'free_omega_revolutions': elements.revolutions,
+        'free_b_varpi': elements.b_varpi,
+        'free_b_Omega': elements.b_Omega,
+        'free_b_omega': elements.b_omega,
+        'free_drift_flag': elements.drift_flag(),
+        'free_mask_e': elements.mask_fraction_e,
+        'free_mask_i': elements.mask_fraction_i,
+        'free_resolution': elements.resolution,
+    }
+
+
+AMPLITUDE_PREFIX = 'amp_'  # omega-free.csv: amp_<e|i>_<mode>_re / _im on the first row, t = 0 of `times`
+
+
+def series_rows(elements: Optional[FreeElements]) -> Optional[dict]:
+    """Columns of the per-body `omega_free.csv`, as equal-length arrays on the full grid.
+
+    The fitted complex amplitude of every mode goes in `amp_<e|i>_<mode>_re`/`_im`, written on the first row only
+    (NaN below): c_j is the term's value at t = 0 of the `times` column (`remove_forced`), so a restored run rebuilds
+    the forced vectors with their phases and the attribution of a kinematic libration (`analysis.zlk.diagnostics`).
+    """
+    if elements is None:
+        return None
+    both = elements.keep_e & elements.keep_i
+    columns: Dict[str, np.ndarray] = {
+        'times': elements.times,
+        'abs_ze_free': np.abs(elements.z_e_free),
+        'abs_ze_forced': np.abs(elements.z_e_forced),
+        'abs_zi_free': np.abs(elements.z_i_free),
+        'abs_zi_forced': np.abs(elements.z_i_forced),
+        'masked_e': (~elements.keep_e).astype(int),
+        'masked_i': (~elements.keep_i).astype(int),
+    }
+    for name, mask, values in (
+        ('varpi_free_unwrapped', elements.keep_e, elements.varpi_free),
+        ('Omega_free_unwrapped', elements.keep_i, elements.Omega_free),
+        ('omega_free_unwrapped', both, elements.omega_free),
+    ):
+        full = np.full(len(elements.times), np.nan)
+        full[mask] = values
+        columns[name] = full
+    for kind, amplitudes in (('e', elements.amplitudes_e), ('i', elements.amplitudes_i)):
+        for label, coefficient in amplitudes.items():
+            for part, value in (('re', complex(coefficient).real), ('im', complex(coefficient).imag)):
+                column = np.full(len(elements.times), np.nan)
+                column[:1] = value
+                columns[f'{AMPLITUDE_PREFIX}{kind}_{label}_{part}'] = column
+    return columns
+
+
+def _restored_amplitudes(frame, kind: str) -> Dict[str, complex]:
+    """{mode: c_j} of one vector from the amp_ columns of an omega-free.csv frame (`series_rows`)."""
+    prefix = f'{AMPLITUDE_PREFIX}{kind}_'
+    labels = [column[len(prefix) : -len('_re')] for column in frame.columns if column.startswith(prefix) and column.endswith('_re')]
+    amplitudes = {}
+    for label in labels:
+        if f'{prefix}{label}_im' not in frame.columns:
+            continue
+        real, imag = frame[f'{prefix}{label}_re'].iloc[0], frame[f'{prefix}{label}_im'].iloc[0]
+        if np.isfinite(real) and np.isfinite(imag):
+            amplitudes[label] = complex(float(real), float(imag))
+    return amplitudes
+
+
+def from_series_frame(frame, setup: Optional[dict] = None) -> Optional[FreeElements]:
+    """Rebuild the plot-relevant free-element state from an ``omega-free.csv`` frame.
+
+    The persisted table deliberately stores magnitudes and unwrapped phases rather than
+    redundant real/imaginary columns.  Reconstructing the complex vectors makes restored
+    simulations capable of regenerating all free-omega plots without re-integration.
+    Masked phases are linearly filled only to keep the arrays finite; plots and diagnostics
+    continue to use the original masks and therefore never consume those filled samples.
+    """
+    if frame is None or len(frame) == 0:
+        return None
+    setup = setup or {}
+    times = np.asarray(frame['times'], dtype=float)
+    keep_e = ~np.asarray(frame['masked_e'], dtype=bool)
+    keep_i = ~np.asarray(frame['masked_i'], dtype=bool)
+    both = keep_e & keep_i
+
+    def restored_complex(amplitude_column: str, phase_column: str, keep: np.ndarray) -> np.ndarray:
+        amplitude = np.asarray(frame[amplitude_column], dtype=float)
+        phase = np.asarray(frame[phase_column], dtype=float)
+        valid = keep & np.isfinite(phase)
+        if valid.any():
+            phase = np.interp(times, times[valid], phase[valid])
+        else:
+            phase = np.zeros(len(times))
+        return amplitude * np.exp(1j * phase)
+
+    z_e_free = restored_complex('abs_ze_free', 'varpi_free_unwrapped', keep_e)
+    z_i_free = restored_complex('abs_zi_free', 'Omega_free_unwrapped', keep_i)
+    frequencies = dict(setup.get('frequencies') or PLANETARY_FREQUENCIES)
+
+    def basis(kind: str) -> Dict[str, float]:
+        return {label: (0.0 if label == 'const' else frequencies[label]) for label in setup.get(f'basis_{kind}', [])}
+
+    amplitudes_e, amplitudes_i = _restored_amplitudes(frame, 'e'), _restored_amplitudes(frame, 'i')
+
+    def forced(kind: str, column: str, amplitudes: Dict[str, complex]) -> np.ndarray:
+        """The forced vector from its persisted amplitudes; without them (no mode fitted, or amplitudes outside the run's
+        basis) the magnitudes at a stable zero phase, so rho/rho_envelope remain exactly reproducible from the file."""
+        rates = basis(kind)
+        if amplitudes and set(amplitudes) <= set(rates):
+            return sum(c * np.exp(1j * rates[label] * RAD_PER_ARCSEC * times) for label, c in amplitudes.items())
+        return np.asarray(frame[column], dtype=float).astype(complex)
+
+    z_e_forced = forced('e', 'abs_ze_forced', amplitudes_e)
+    z_i_forced = forced('i', 'abs_zi_forced', amplitudes_i)
+    varpi_free = np.asarray(frame.loc[keep_e, 'varpi_free_unwrapped'], dtype=float)
+    Omega_free = np.asarray(frame.loc[keep_i, 'Omega_free_unwrapped'], dtype=float)
+    omega_free = np.asarray(frame.loc[both, 'omega_free_unwrapped'], dtype=float)
+
+    return FreeElements(
+        times=times,
+        z_e=z_e_free + z_e_forced,
+        z_i=z_i_free + z_i_forced,
+        z_e_free=z_e_free,
+        z_i_free=z_i_free,
+        z_e_forced=z_e_forced,
+        z_i_forced=z_i_forced,
+        basis_e=basis('e'),
+        basis_i=basis('i'),
+        dropped_e=list(setup.get('dropped_e', [])),
+        dropped_i=list(setup.get('dropped_i', [])),
+        amplitudes_e=amplitudes_e,
+        amplitudes_i=amplitudes_i,
+        keep_e=keep_e,
+        keep_i=keep_i,
+        varpi_free=varpi_free,
+        Omega_free=Omega_free,
+        omega_free=omega_free,
+        b_varpi=rate(times[keep_e], varpi_free),
+        b_Omega=rate(times[keep_i], Omega_free),
+        b_omega=rate(times[both], omega_free),
+        clusters_e=list(setup.get('clusters_e', [])),
+        clusters_i=list(setup.get('clusters_i', [])),
+        frequencies=frequencies,
+    )

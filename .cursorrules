@@ -8,9 +8,9 @@
   - All functionality works correctly (pytest)
 - Run these commands in sequence:
   ```bash
-  poetry run black . --check
-  poetry run flake8 --count
-  poetry run pytest tests/ -v
+  uv run black . --check
+  uv run flake8 --count
+  uv run pytest tests/ -v
   ```
 
 ## Project Structure

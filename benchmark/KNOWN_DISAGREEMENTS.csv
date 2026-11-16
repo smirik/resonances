@@ -1,0 +1,5 @@
+# The package's known disagreements with the author's labels (make test-benchmark fails on any other, on a listed one
+# that now agrees, and on a listed one whose values changed): benchmark/tools/known_disagreements.py, benchmark/LAYOUT.md.
+# author/package: the values compared; category and reason: Claude's reading of each case, NOT an author label;
+# since: the run that recorded the row. Regenerate with `known_disagreements.py <run> --write` (keeps category and reason).
+example_id,field,author,package,category,reason,since

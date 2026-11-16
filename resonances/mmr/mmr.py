@@ -1,0 +1,63 @@
+from typing import ClassVar, Optional, Tuple
+import numpy as np
+from resonances.resonance.resonance import Resonance
+from resonances.resonance.planets_mappings import planet_name_from_letter, planet_letter_from_name
+
+
+class MMR(Resonance):
+    mmr_type: ClassVar[str] = "mmr"
+    # True for resonances of orbits with i > 90 deg (RetrogradeTwoBody)
+    retrograde: ClassVar[bool] = False
+    # How each angle in coeff turns when the frame is rotated about z: None = all +1, the
+    # D'Alembert rule sum(coeff) == 0. A retrograde angle mixes angles that turn both ways.
+    rotation_weights: ClassVar[Optional[Tuple[int, ...]]] = None
+
+    def __init__(self, coeff, planets_names=None, index_of_planets=None):
+        self.coeff = np.array(coeff)
+        if self.coeff[0] <= 0:
+            raise Exception("The primary coefficient of the resonance should be greater than 0. Given {}.".format(self.coeff[0]))
+
+        weights = np.ones(len(self.coeff)) if self.rotation_weights is None else np.array(self.rotation_weights)
+        if np.dot(weights, self.coeff) != 0:
+            raise Exception(
+                "Sum of integers in a resonance should follow the D'Alembert rule. Given {}, the sum is equal to {}.".format(
+                    ', '.join(str(e) for e in coeff), int(np.dot(weights, self.coeff))
+                )
+            )
+
+        if planets_names is None:
+            self.planets_names = []
+        else:
+            self.planets_names = planets_names
+
+        self._resonant_axis = None
+        self.index_of_planets = index_of_planets
+
+    @property
+    def type(self) -> str:
+        return 'mmr'
+
+    def number_of_bodies(self):
+        return len(self.coeff) // 2
+
+    def get_planet_name_from_letter(self, letter):
+        planet = planet_name_from_letter(letter)
+        if planet == letter:
+            raise Exception('Bad notation used. Only the following letter are available: R (for Mercury), V, E, M, J, S, U, N ')
+        return planet
+
+    def get_letter_from_planet_name(self, planet_name: str) -> str:
+        return planet_letter_from_name(planet_name)
+
+    @property
+    def resonant_axis(self):
+        if self._resonant_axis is None:
+            self._resonant_axis = self.calculate_resonant_axis()
+        return self._resonant_axis
+
+    @resonant_axis.setter
+    def resonant_axis(self, value):
+        self._resonant_axis = value
+
+    def calculate_resonant_axis(self):  # pragma: no cover
+        pass

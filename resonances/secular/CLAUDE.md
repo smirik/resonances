@@ -1,0 +1,193 @@
+# secular (and Lidov-Kozai) — science invariants
+
+Covers `resonances/secular/`, `resonances/lidov_kozai/`, `resonance/omega_free_gate.py`, `resonance/cross_spectrum.py`,
+`resonance/coherence_analysis.py` and the decision in `resonance/analysis/secular/` and `analysis/zlk/`. User docs:
+`docs/secular.md`, `docs/physics/secular-zlk.md` (the decision), `docs/free-elements.md`, `docs/coherence.md`. Reasons: `dev/physics-notes.md`.
+One home per topic in the docs, the others link: why the angle is built so (`secular.md`), the steps, angle_status,
+status and the gate's outcome → status (`physics/secular-zlk.md`), the gate's outcomes (`free-elements.md` "The gate"),
+Lidov's integrals (`lidov-kozai.md`), −2 vs −9 (`physics/status-tree.md`), the baseline rule (`physics/confidence.md`).
+
+## Modules
+
+- `secular/proper_angle.py`: the classified secular angle: the body's ϖ and Ω against the planets' mode longitudes
+  g_j·t + phase_j (`PLANETARY_FREQUENCIES`, `PLANETARY_PHASES`) or the measured ones, reduced by default — forced terms
+  at the fundamentals not in the angle subtracted (`reduced_vectors`). Also `free_rates`/`free_divisor` (diagnostic
+  only).
+- `secular/planet_modes.py`: the planets' mode longitudes measured in the integration
+  (`secular_planet_phases='measured'`, needs `save_planets`): phase of mode j in planet j's own vector, least squares
+  on all modes in sliding 5 Myr windows. The linear law drifts by tens of degrees over 20 Myr (inner modes, and s6).
+- `secular/free_elements.py`: forced/free split by least squares at the planetary fundamentals: resample to ~500 yr
+  with an anti-alias filter at every integer factor (`decimation_steps`: FIR passes <= 10, a prime leftover > 10 as a
+  polyphase pass; `FreeElements.resample_steps`, rule `free_resample_remainder`), cluster the candidates at 2/T, fit
+  one representative each, mask each free vector near its own origin, measure the three rates. Pure signal
+  processing, no Body or status.
+- `secular/phase_uncertainty.py`: range_j(T), how far mode j's phase strays from the linear law over a window of length
+  T (table `data/mode_phase_uncertainty.json`, built by `experiments/2026-10-planetary-frequencies/phase_uncertainty.py`
+  from the same 5 Myr fits), and dphi(T) = sum |k_j| range_j(T) of an angle (`decide.phase_check`).
+- `secular/combinations.py`: d'Alembert combinations near a body.
+- `resonance/omega_free_gate.py`: the free-omega gate (`evaluate_gate`): an outcome only (confirmed, kinematic, no
+  verdict, disabled); `analysis.secular.decide.decide_status` turns it into the ZLK status.
+- `resonance/cross_spectrum.py`: Welch coherence + cross-phase, line extraction, phase criterion, e_forced/e_free (in
+  the ω plane, not ϖ). Pure math, no Body/Simulation.
+- `resonance/coherence_analysis.py`: per-resonance-type pair presets, `analyse_resonance`, the strongest-line columns
+  (`zlk_coherent`, `zlk_check`), CSV row builders. Changes no status.
+- `resonance/analysis/zlk/diagnostics.py`: columns of a ZLK row that change no status: the e-i coupling at the decisive
+  period (`zlk_ei_*`, `confirmed_ei`, `check_zlk_ei`), the attribution of a kinematic libration (`zlk_forcing_*`;
+  scope `episodes` for an episodic row demoted inside its episodes, 624: the node then may turn), the node lock
+  (`zlk_node_lock*`, a flag), and the centre-scale guard (`forced_beat_centre`). `resonance/analysis/secular/slow.py`:
+  the slow line of the centre (`zlk_centre_*`, `sec_centre_*`; origin `forced_direction` = arg z_forced − Ω explains it). `data/invariable_plane.py`: the exact rotation (shared with the MMR analysis; `rotate_elements`,
+  `elements_in_invariable_plane`, `FRAME_*`; the inverse rotation and omega' alone are test helpers,
+  `tests/resonances/analysis/oracles.py`).
+- `lidov_kozai/lidov_kozai_resonance.py`: `elements_in_frame` (ZLK_ANGLE_FRAME); `simulation.long_period_series` builds
+  the ZLK angle from it on the analysis path, `_store_zlk_angle` writes it back to `body.angles`,
+  `_build_free_elements` fits the free elements in the same frame.
+
+## Invariants (the root CLAUDE.md states them as rules; the reasons are here)
+
+- **One frame for a ZLK row** (W28 D2, g09-1): ω, i, Ω from the invariable plane by default (`ZLK_ANGLE_FRAME`), by
+  rotating h and P exactly (never pomega or l: the i > 90° rule). From the ecliptic a node with i_inv < 1.58° librates
+  about the plane's node and ω with it (555527 looked kinematic, circulates). The angle, the free elements (measured:
+  no gate outcome, match, attribution, node lock or centre origin moves on any ZLK row; rho_max by ≤ 7 %), the
+  attribution, node lock, centre line, e-i coupling and the figure share it; `LongPeriodSeries.frame` says which, and
+  `measure_ei_coupling(frame=...)` must not rotate an invariable series again. Rule `zlk_invariable_frame`: the two
+  frames' ω part by ≥ 1 turn. The dry-run (`dry_run._long_period_series`) still reads the ecliptic ω.
+
+- **No osculating planet elements in secular angles** (the bug fixed 2026-10-12: every s_j-term status before it was
+  wrong). From the ecliptic no planet's node circulates (the 1.58° invariable-plane tilt dominates) and only Mercury's,
+  Jupiter's and Saturn's perihelia follow their mode. `secular_angle_mode='proper'` (default) is what the classifier
+  reads; the osculating series is kept for reference only.
+- **Inner-planet frequencies and phases** in `const.py` are measured on the package's own Newtonian model
+  (`experiments/2026-10-planetary-frequencies`), not taken from the literature: the model has no GR, so g1, g2, s1, s2
+  differ from La90 by 0.1–0.3″/yr.
+- **The cluster representative** (`PRIORITY_E`, `PRIORITY_I`) is a modelling assumption, not a free convention: a
+  different member changes the verdict on 3752 and 591986. What must stay true, and is tested: no choice ever makes the
+  gate confirm a non-librator (under the minimal policy a choice that leaves the gate without a verdict gives the
+  geometry's status back at <= medium, flag gate_unavailable: 591986 with g7 for g5; W34, `test_omega_free_gate_reference`).
+- **Free elements do not apply to co-orbitals of a planet whose modes are not in the fitted basis** (Mercury to Mars:
+  g1-g4, s1-s4 are not candidates): their forced term is the planet's own vector; a confident-looking straight line
+  there is not a measurement. Guard (`omega_free_gate.coorbital_planet`, author's variant (a), 2026-10-28):
+  |<a>/a_P - 1| < `ZLK_COORBITAL_HILL_FACTOR` (m_P/3)^(1/3) and the planet's modes not fitted -> outcome unavailable,
+  detail `coorbital_unfitted_forcing`: uncertain/gate_unavailable for any bounded omega, an episodic one, a drift or
+  too few cycles included (W28 g09-6 B, the author: the model does not apply; 2020 PP1 and 10563 500 kyr, and 10563
+  100 kyr from baseline_needed/extend to gate_unavailable/review; rule `zlk_coorbital_episodic`). Never not_applicable (that would keep the geometric status and make 591986 resonant).
+  Jupiter Trojans are covered: their forced vector is Jupiter's, g5+g6 (591986: fitted g5 1.02 x Jupiter's own term).
+- **The ZLK status** comes from the gate's outcome in `decide_status`: confirmed → resonant; kinematic →
+  non_resonant/kinematic_libration (−2); no verdict → uncertain/gate_unavailable (−9). An episodic row without a
+  verdict (not an unfitted co-orbital) goes, in the W28 tree, by its episode's e-i coupling (`decide.episodic_without_verdict`, W28 D10,
+  the author's q-1 E of 2026-10-31): transient only when the deciding episode's own e-i coupling is zlk, else −9, rule
+  `zlk_gate_unconfirmed` (below). A drift or short
+  record changes only on a kinematic outcome with rho_max < 1: max over the record of rollmed(|z_free|, W) /
+  rollmed(|z_forced|, W), W = max(beat window, `ZLK_RHO_WINDOW_CYCLES` P_cyc) (`rho_local_max`; 555527: 0.66 at
+  100 kyr, 0.63 at 500 kyr); an episodic one also when every librating episode is pinned: median instantaneous
+  |z_free|/|z_forced| < 1 inside it and the free omega advancing >= `ZLK_EPISODE_FREE_TURNS_PER_CYCLE` turns per whole
+  cycle (W26, 624 Hektor; `zlk.analyse._episode_pinning`, `FreeElements.episode_pinning`: nan, so no pin, where the free
+  elements do not measure the episode: outside the baseline, a masked sample, < 2 samples per cycle; Codex W26). W34
+  (the author on 88899: the free omega winds over the record but stays put inside the episodes): an episodic omega whose
+  record gate is kinematic or a winding planetary_residual is read inside its episodes (`ZLK_GATE_EPISODES`,
+  `omega_free_gate.episode_confirmation`): every episode rho >= 1 and < `ZLK_EPISODE_FREE_TURNS_PER_CYCLE` turns per
+  cycle, b_varpi/b_Omega off the modes -> confirmed, detail `episodes` (88899 500 kyr non_resonant/high -> transient/low,
+  the broken e-i integral an objection; 1866 low -> medium; 373136, 3752, 797204 500 kyr origin dynamic). The former median ratio (one e_free over the smallest forced radius) is the column
+  `zlk_gate_rho_global` and `free_rho_max`, descriptive only. Gate **disabled** keeps
+  the geometric status with `check_zlk_free_omega` not_measured — not the same as unavailable. −2 and −9 are never
+  merged in a statistic.
+- **One period per row** (W28 D4, g09-6): the gate's period and n_cycles, F, the e-i coupling, the rho window and
+  the extension read `decide.decisive_period_yr`: the deciding librating episode's median full period (the covering
+  one, else the most turning points), else the runs not faster than the floor; column `sec_decisive_period_yr`. The
+  pooled P_cyc (`geo_period_cycle_yr`) mixed 2020 PP1's 2.3-34 kyr episodes and lets a floor-rejected fast run in.
+  Measured on every secular/ZLK row: no status, confidence, gate outcome or e-i class moved (gate periods by up to
+  10 %: RS2 10.1 -> 11.0 kyr). The attribution's scope `episodes` tests the beat against the librating episodes'
+  pooled period (624: the deciding episode's 3955 yr is 1.2 % off the 3910-yr beat, outside the tight test; the
+  pooled 3940 inside). The centre-scale guard still reads the fine geometry's pooled P_cyc.
+- **The episode's e-i coupling decides an episodic row without a gate verdict** (W28 D10; `analysis/zlk/episode_ei.py`,
+  columns `zlk_ei_episode_*`, carried in `GateResult.episode_ei`). Measured on the deciding
+  episode's samples [first TP, last TP] at its own period: e, the tilt i, G, H, K high-passed on the whole record by a
+  one-period running mean, then demodulated at P cycle by cycle (one fixed-P fit loses phase over many cycles of a
+  drifting period: 162474 1.5 Myr). zlk = antiphase within `ZLK_EI_PHASE_TOL_DEG`, signed coherence <=
+  −`ZLK_EI_EPISODE_MIN_COHERENCE`, eta_H = rms dH / |cos i| rms dG <= `ZLK_EI_H_RESIDUAL_MAX`; fewer than
+  `ZLK_EI_MIN_CYCLES` periods → not_measured (short_episode) → −9. Why the episode and not the record: circulating
+  stretches trade e for i at constant H near P too (88899 500 kyr: both episodes in phase, eta_H 1.1-1.4; PP1: record
+  zlk, deciding episode none). Why eta_H and not the slope: the slope fails on large cycles (1866 3.0x with H
+  cancelled to 5 %, 477492 2.0x with 4 %). Validated by two blind estimators (D9, Claude demodulation and Codex 2P
+  windows): zlk-or-not 39/40 episodes, the common rule 51/51; zlk items eta_H <= 0.28, the others >= 0.58; 1.5-3
+  periods agree 3/11 (chance), hence the 3-period minimum. Moves (W28): 88899 500 kyr, 797204 100 kyr, 2023 RS2 →
+  −9; 373136, 3752, 797204 at 500 kyr stay transient. The unfitted co-orbital rule comes first (PP1 stays −9 by it).
+  A frozen i with a moving e is `none` (eta_H = 1), not not_measured.
+- **e–i coupling of the record is a column** (`zlk_ei_coupling`; `confirmed_ei` = coupling `zlk`, kept for compatibility), measured
+  for every ZLK row at its decisive period (the deciding librating episode's; a circulating ω: pi/|omega_dot|), i from the invariable plane (tilt
+  for i > 90°, an orbit flip is not measured): `zlk` = antiphase at the constant-sqrt(1-e^2)cos i amplitude,
+  `forced_beat` = in phase at the constant-sqrt(1-e^2)(1-cos i) amplitude (the momentum conjugate to Omega when the
+  forcing acts on varpi only). Coupling is not libration: 15527 circulates and shows `zlk` at its 2.05-kyr harmonic;
+  591986's 6-kyr cycle is `forced_beat`. The Welch line (`zlk_coherent`, `zlk_check`) stays: its band T/(5·n_seg)
+  sits below real ZLK periods, and it is skipped for non_resonant rows; the period-specific coupling is not.
+- **The gate**: signed rates with tolerance 1.296e6/T ″/yr (one turn over the record); a confined residual is
+  tested against the g and s modes (and zero for e when the constant term was clustered away), a winding one also
+  against every g_j − s_k (s5 = 0 included); no amplitude floor (the prefit
+  estimates e_free, not e_forced); calibrated at 500 kyr (`T ≥ max(500 kyr, 10·P_ZLK)`), where longer records answer
+  "does it stay" rather than "is it ZLK".
+- **A swing within the phase uncertainty is no libration** (W28 D5, g09-3 B): under linear phases a secular
+  libration or episode with 2 A_max <= `SECULAR_PHASE_UNCERTAINTY_FACTOR` x dphi(T) is `insufficient_time` /
+  `phase_unresolved`, review (rule `phase_unresolved`); measured modes (`LongPeriodSeries.measured_modes`, set by
+  `Simulation.secular_phases_measured`: measured phases and a record >= the fit window) add nothing. The table's
+  windows lie inside the first 20 Myr (T <= 20 Myr), where SABA 0.5/0.25 and WHFast 3 d agree; sliding over all 50
+  Myr reaches the inner modes' jump 22-25 Myr ahead (g3 range 378 deg at 10 Myr) and would demote 21028 nu3 (swing
+  102 deg) too; anchored at the epoch only, 5026 would stay (dphi 13 deg). Measured on the benchmark: only 5026 moves
+  (22 vs 34 deg); the next lowest ratio is 21028 (4.3), z1/z2 >= 4.6 (52773), nu6 >= 78. Caveat: 5026 rebuilt with
+  measured phases (the same SABA run) still librates (half-amplitude 10 deg, P 5.0 Myr, one cycle) - but the 5 Myr
+  fit window is blind to a phase wobble at 5 Myr. The benchmark reclassification runs with linear phases (no planets
+  loaded) but, since W36 F4, tells the check that the phases were measured when the source run measured them over a
+  record >= the fit window (`reclassify_secular_zlk._phases_measured`): the saved angle is built from them (56700
+  s+s7-2s6 read phase_unresolved in the bench, transient/low in its run).
+- **Secular cutoff** includes the angle's longest forced wave (4305 and 8089 hid real librations behind a fixed
+  window). `SECULAR_LIBRATION_PERIOD_MIN_YR` (200 kyr) and the ZLK floor (2 kyr) are conventions.
+  No harder global cutoff (the author's question, W36): there is no lower bound on a secular libration period (P0 =
+  2 pi / sqrt|KA| needs the torsion K and the coefficient A, which the package does not measure; the nu6 pairs librate
+  at the free/forced beat, 0.24-0.57 Myr), so slower scales are tried only where the record shows the slow motion
+  (`dev/physics-notes.md` Secular).
+- **Which runs are a secular angle's episodes** (W36; rules in `resonance/analysis/CLAUDE.md` Geometry, docs
+  `physics/secular-zlk.md`): a run's own TP prominence, capped at the record's and never losing an episode the
+  record's finds (F2, `measure_fine`); a bounded run whose centre turns back once and is covered by one cycle is
+  modulated (F3); a ripple carried by a slow swing or a stall of a circulation is no
+  episode, secular only, and the slower scale (W_c, else the centre-turns window) decides (F4); sigma_f running >= 1
+  turn after the last TP is an observed exit (F1, overrides the Oct 15 "visible exit -> libration <= medium" for such
+  arcs). A record-covering episode is never a wave. The ZLK omega takes F1-F3, not F4 (its ratios overlap 591986 and
+  162474 librations).
+- **The action of an uncertain verdict** (`analysis/secular/extend.py`) changes no status: extend with a next check
+  (N by cause, `base_extend_cause`) or review where no length helps (undefined_phase, unavailable, unusable_series,
+  a planetary residual beyond `ZLK_EXTEND_MAX_YR`). The gate's `min_distance` (d_min) feeds it; keep the extension
+  local when changing the gate.
+- **Status statistics use the 21 literature secular resonances** (`benchmark/tools/calibrate.py` `LITERATURE_SECULAR`: other
+  secular rows are abstentions `outside_literature`), not broad order-≤4 scans (their hits were
+  near-commensurabilities with g1/g2/s1/s2, wrong without GR). The finder itself scans the 75 `SECULAR_FORMULAS` by
+  divisor; an explicit formula is classified as given.
+- Lidov's names: c1 = (1 − e²) cos² i; the code's `c` is Lidov's c2 (renamed per Lidov). The columns c1, c2, h_quad
+  are osculating, at the epoch, in the invariable plane (`evaluate_invariable`, exact rotation; 1373's c2 is +0.0014
+  from the ecliptic, −0.0011 from the invariable plane).
+- **Two scales of ω** (591986): the fast cycle (6 kyr, the free-forced beat 2pi/|b_varpi − g5|) decides; the centre's
+  slow wave (54 kyr) is the g6−g5 beat of the forced vector, ±arcsin(|c6|/|c5|) = 22.8°, measured as a column
+  (`zlk_centre_*`, origin `forced_beat:g6-g5`, reconstruction r 0.99, gain 1.00). A centre-scale libration at a forced
+  beat while rho_max < 1 never becomes the decisive period (`sec_centre_rejected`; a clean synthetic otherwise decided
+  at 54 kyr), only if the beat is measured (two nonzero per-mode amplitudes) and its forced phase
+  wave explains the centre in shape and size (`slow.forced_beat_model`: r and `ZLK_CENTRE_MODEL_AMP_FACTOR`; r alone
+  is blind to size), and only where the gate acts (enabled, a split, no unfitted co-orbital): a disabled gate keeps the
+  geometric scale (Codex W25 review, findings 1 and 5). Attribution (`zlk_forcing_*`) needs the per-mode amplitudes,
+  persisted in omega-free.csv (`amp_*`). Its strict pin bounds the free radius by its maximum over the
+  record, never the median (finding 2). The e-i coupling is `none` only on finite numbers; an undersampled or
+  unfilterable band is not_measured (finding 4).
+
+## Integration notes
+
+- SABA cannot follow Earth-crossers (3752, 10563 end at −99); use ias15. 162474 needs SABA dt = 0.5.
+- About 0.7 GB per body in memory at Nout 100k for 10 Myr; arrays of unplotted rows are dropped after the verdict.
+- Formula strings went through `detect_resonance_type`, which once read 9 catalogue formulas as MMRs (fixed; an
+  MMR key starting with `2S…` once went to the secular parser). Keep a test when touching that detection; passing
+  `SecularResonance` objects avoids it altogether.
+- 3040 ZLK over 500 kyr (SABA dt = 1) depends on the start epoch within weeks: pin the date in tests.
+
+## Open
+
+591986: free-element g 220″/yr vs 6.65″/yr in the proper catalogue (the tadpole sidebands are not modelled). Its node
+librates against g5 only over ≥ 3 Myr: `zlk_node_lock` g5 over 4 Myr (50–130°, 2 cycles of 1.4 Myr), `unresolved`
+over 500 kyr (rate within the resolution, 52–91°, no full cycle: the honest answer, one period does not fit). The node
+lock reads the osculating node (what ω is built from), smoothed at its longest forced wave, so a record shorter than a
+few of those waves never resolves a lock. The attribution's beat test (P_cyc within one Rayleigh width) is tighter than
+P_cyc's own precision on long records (`dev/status.md`); 88899 two-island episodes (tier D); secular bounded angles take a dynamic origin directly. See `dev/status.md`.

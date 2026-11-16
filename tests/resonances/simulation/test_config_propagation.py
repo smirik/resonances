@@ -31,8 +31,8 @@ class TestConfigurationPropagation:
             'tmax': 50000,
             'dt': 1.5,
             'integrator': 'SABA(10,6,4)',
-            'integrator_corrector': 11,
-            'integrator_safe_mode': 0,
+            'integration_corrector': 11,
+            'integration_safe_mode': 0,
             'save': 'resonant',
             'save_summary': False,
             'plot': 'all',
@@ -47,8 +47,8 @@ class TestConfigurationPropagation:
         assert sim.config.tmax == config_params['tmax']
         assert sim.config.dt == config_params['dt']
         assert sim.config.integrator == config_params['integrator']
-        assert sim.config.integrator_corrector == config_params['integrator_corrector']
-        assert sim.config.integrator_safe_mode == config_params['integrator_safe_mode']
+        assert sim.config.integration_corrector == config_params['integration_corrector']
+        assert sim.config.integration_safe_mode == config_params['integration_safe_mode']
         assert sim.config.save == config_params['save']
         assert sim.config.save_summary == config_params['save_summary']
         assert sim.config.plot == config_params['plot']
@@ -66,12 +66,12 @@ class TestConfigurationPropagation:
         # Modify directly (use different integrator than default)
         sim.config.dt = 2.5
         sim.config.integrator = 'SABA(8,6,4)'  # Different from default SABA(10,6,4)
-        sim.config.integrator_safe_mode = 0
+        sim.config.integration_safe_mode = 0
 
         # Verify changes took effect
         assert sim.config.dt == 2.5
         assert sim.config.integrator == 'SABA(8,6,4)'
-        assert sim.config.integrator_safe_mode == 0
+        assert sim.config.integration_safe_mode == 0
 
         # Verify they're different from original
         assert sim.config.dt != original_dt
@@ -80,7 +80,7 @@ class TestConfigurationPropagation:
     def test_integration_engine_uses_config(self):
         """Test that IntegrationEngine actually uses config parameters during setup."""
         # Create simulation with specific parameters
-        sim = Simulation(integrator='SABA(10,6,4)', dt=3.14, integrator_safe_mode=1)
+        sim = Simulation(integrator='SABA(10,6,4)', dt=3.14, integration_safe_mode=1)
 
         # Create mock REBOUND simulation
         mock_sim = Mock()
@@ -98,7 +98,7 @@ class TestConfigurationPropagation:
 
     def test_saba_integrator_config_usage(self):
         """Test that SABA integrator uses config parameters correctly."""
-        sim = Simulation(integrator='SABA(10,6,4)', dt=0.123, integrator_safe_mode=1)
+        sim = Simulation(integrator='SABA(10,6,4)', dt=0.123, integration_safe_mode=1)
 
         # Create mock REBOUND simulation
         mock_sim = Mock()
@@ -130,7 +130,7 @@ class TestConfigurationPropagation:
         # Change config
         sim.config.integrator = 'SABA(10,6,4)'
         sim.config.dt = 2.0
-        sim.config.integrator_safe_mode = 0
+        sim.config.integration_safe_mode = 0
 
         # Setup again with new config
         mock_sim2 = Mock()
@@ -166,7 +166,7 @@ class TestConfigurationPropagation:
         mock_rebound_sim.return_value = mock_sim
 
         # Create simulation with specific parameters
-        sim = Simulation(integrator='SABA(8,6,4)', dt=4.0, integrator_safe_mode=1, tmax=1000)
+        sim = Simulation(integrator='SABA(8,6,4)', dt=4.0, integration_safe_mode=1, tmax=1000)
 
         # Mock file operations
         with patch('pathlib.Path.exists', return_value=False):
@@ -265,7 +265,7 @@ class TestConfigurationPropagation:
         sim = Simulation(
             tmax=10000,
             dt=1.5,
-            integrator_safe_mode=1,
+            integration_safe_mode=1,
             save_summary=True,
             integrator='SABA(10,6,4)',  # int  # float  # int  # bool  # str
         )
@@ -273,7 +273,7 @@ class TestConfigurationPropagation:
         # Verify types are preserved (note: tmax may be converted to float during processing)
         assert isinstance(sim.config.tmax, (int, float))
         assert isinstance(sim.config.dt, float)
-        assert isinstance(sim.config.integrator_safe_mode, int)
+        assert isinstance(sim.config.integration_safe_mode, int)
         assert isinstance(sim.config.save_summary, bool)
         assert isinstance(sim.config.integrator, str)
 

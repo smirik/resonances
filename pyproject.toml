@@ -1,13 +1,11 @@
-[tool.poetry]
+[project]
 name = "resonances"
-version = "0.5.0"
-description = "Identification of mean-motion resonances"
-authors = ["Evgeny Smirnov <smirik@gmail.com>"]
-license = "MIT"
+version = "1.0.0"
+description = "Identification of mean-motion, secular and Lidov-Kozai resonances of small bodies"
+authors = [{ name = "Evgeny Smirnov", email = "smirik@gmail.com" }]
+license = { text = "MIT" }
 readme = "README.md"
-homepage = "http://smirik.github.io/resonances/"
-repository = "https://github.com/smirik/resonances"
-documentation = "http://smirik.github.io/resonances/"
+requires-python = ">=3.11, <4"
 keywords = ["astronomy", "nbody", "resonance", "mmr"]
 classifiers = [
     'Development Status :: 4 - Beta',
@@ -18,49 +16,74 @@ classifiers = [
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
 ]
+dependencies = [
+    # Core scientific computing
+    "numpy>=2.3.0",
+    "scipy>=1.15.3",
+    "pandas>=2.3.0",
+    # Visualization
+    "matplotlib>=3.10.3",
+    "seaborn>=0.13.2",
+    # Astronomy specific
+    "astropy>=7.1.0",
+    "astroquery>=0.4.10",
+    "rebound>=4.4.8",
+    "astdys>=1.0.2",
+    # Utilities
+    "tqdm>=4.67.1",
+    "python-dotenv>=1.1.0",
+    "lxml-html-clean>=0.1.1,<0.5.0",
+    "click>=8.1.7",
+    "mpmath>=1.4.1",
+    "gmpy2>=2.3.2",  # the fast backend of mpmath (the direct-harmonic strength: 16126 6.2 -> 4.7 s, W23)
+]
 
-[tool.poetry.dependencies]
-python = ">=3.11, <4"
-# Core scientific computing
-numpy = "^2.3.0"
-scipy = "^1.15.3"
-pandas = "^2.3.0"
-# Visualization
-matplotlib = "^3.10.3"
-seaborn = "^0.13.2"
-# Astronomy specific
-astropy = "^7.1.0"
-astroquery = "^0.4.10"
-rebound = "^4.4.8"
-# rebound = "^4.4.2"
-astdys = ">=0.9.4"
-# Utilities
-tqdm = "^4.67.1"
-python-dotenv = "^1.1.0"
-lxml-html-clean = ">=0.1.1,<0.5.0"
+[project.urls]
+Homepage = "https://smirik.github.io/resonances/"
+Repository = "https://github.com/smirik/resonances"
+Documentation = "https://smirik.github.io/resonances/"
 
-[tool.poetry.group.dev.dependencies]
-# Testing
-pytest = "^8.4.0"
-coverage = "^7.8.2"
-# Code quality
-black = { extras = ["jupyter"], version = "^25.1.0" }
-flake8 = "^7.2.0"
-flake8-bugbear = "^24.12.12"
-# Documentation
-mkdocs = "1.4.2"
-mkdocs-jupyter = "^0.25.1"
-# Jupyter support
-ipykernel = "^6.29.5"
+[project.scripts]
+resonances = "resonances.cli:cli"
+
+[dependency-groups]
+dev = [
+    # Testing
+    "pytest>=8.4.0",
+    "coverage>=7.8.2",
+    # Code quality
+    "black[jupyter]>=25.1.0,<26",
+    "flake8>=7.2.0",
+    "flake8-bugbear>=24.12.12",
+    # Jupyter support
+    "ipykernel>=6.29.5",
+    "pytest-xdist>=3.8.0",
+]
+# The documentation site (mkdocs-material, LaTeX through arithmatex + MathJax): `make docs`, `make run-docs`
+docs = [
+    "mkdocs>=1.6.1,<1.7",
+    "mkdocs-material>=9.5,<10",
+    "pymdown-extensions>=10.12",
+]
+
+[tool.uv]
+default-groups = ["dev", "docs"]
 
 [tool.coverage.run]
 omit = [".*", "tests/*", "*/site-packages/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/resonances"]
+addopts = ["--import-mode=importlib"]
+markers = [
+    "slow: more than 1 s (integrations, long synthetic series); needs nothing outside git (make test-slow)",
+    "benchmark: reads local-only data (benchmark/data, not in git), or a gate against the author's labels (make test-benchmark)",
+    "long: integrations of several minutes and more (make test-long; excluded from test, test-fast and test-slow)",
+]
 filterwarnings = [
     "ignore::DeprecationWarning:rebound",
     "ignore::RuntimeWarning:rebound.horizons",
+    "ignore::RuntimeWarning:rebound",
 ]
 
 [tool.coverage.report]
@@ -68,9 +91,18 @@ fail_under = 80
 omit = [".*", "tests/resonances/*", "*/site-packages/*"]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+exclude = ["**/CLAUDE.md"]
+
+# The source distribution: the package and its tests, nothing local (benchmark/, docs/, dev/, caches, agent notes)
+[tool.hatch.build.targets.sdist]
+only-include = ["resonances", "tests", "README.md", "LICENSE", "CHANGELOG.md", "CITATION.cff"]
+exclude = ["**/CLAUDE.md"]
 
 [tool.black]
 line-length = 140
 skip-string-normalization = true
+target-version = ["py311"]

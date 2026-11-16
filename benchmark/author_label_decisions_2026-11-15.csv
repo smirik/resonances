@@ -1,0 +1,5 @@
+example_id,status,confidence,angle_status,source
+coorbital__2010_JK1__1E-1+0+0,transient,low,,"author:2026-11-15 (answers page, the QS run floor: «2010 JK1 - согласен с transient/low»; «1 цикл подковы с 3 поворотами - да, transient / low»)"
+coorbital__2026_SZ2__1V-1+0+0,resonant,certain,,"author:2026-11-15 (answers page, rule coorbital_well_core: «2026 SZ2 - согласен с certain»)"
+coorbital__2022_RD2_c075__1E-1+0+0,transient,low,,"author:2026-11-15 (answers page, the before/after figures of the clone: «не уверен, мне кажется, что эпизод в начале всё равно надо выделять обязательно»; added on «Если имеет смысл, то можно»)"
+coorbital__2022_BB2__1V-1+0+0,transient,low,,"author:2026-11-15 («Да, transient/low с этим объяснением (в правой колонке). Эпизод можно оставить AS IS»: the early 472-648 yr libration in the Venus well, its own Venus force law passes; later the Earth 13:8 drives it)"
