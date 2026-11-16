@@ -28,7 +28,7 @@ dependencies = [
     "astropy>=7.1.0",
     "astroquery>=0.4.10",
     "rebound>=4.4.8",
-    "astdys>=1.0.0",
+    "astdys>=1.0.2",
     # Utilities
     "tqdm>=4.67.1",
     "python-dotenv>=1.1.0",

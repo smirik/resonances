@@ -152,6 +152,7 @@ Code and scripts written for 0.5.x must be updated for these changes:
   planets' osculating elements, which do not give the angle of an s_j term correctly.
 - The documentation is rewritten. It now includes physics pages for every status, a rule index, a guide to the
   figures, references for configuration and output, and a gallery of benchmark examples.
+- Requires `astdys>=1.0.2`: the earlier versions held `pyarrow<18`, which has no wheels for Python 3.13 and later.
 
 ## [0.5.0] and earlier
 
