@@ -72,10 +72,12 @@ publish-docs:
 	NO_MKDOCS_2_WARNING=1 uv run mkdocs gh-deploy --strict
 
 publish-test:
+	rm -rf dist
 	uv build
 	uv publish --publish-url https://test.pypi.org/legacy/
 
 publish:
+	rm -rf dist
 	uv build
 	uv publish
 

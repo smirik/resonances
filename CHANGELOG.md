@@ -4,7 +4,7 @@ All notable changes to `resonances` are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-11-14
+## [1.0.0] - 2026-11-16
 
 The first stable release, and a large one: changes since 0.5.0. One libration analysis now classifies mean-motion,
 secular and Lidov-Kozai angles. Each verdict states what the angle does, what causes it and how certain the result

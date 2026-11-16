@@ -97,6 +97,11 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 exclude = ["**/CLAUDE.md"]
 
+# The source distribution: the package and its tests, nothing local (benchmark/, docs/, dev/, caches, agent notes)
+[tool.hatch.build.targets.sdist]
+only-include = ["resonances", "tests", "README.md", "LICENSE", "CHANGELOG.md", "CITATION.cff"]
+exclude = ["**/CLAUDE.md"]
+
 [tool.black]
 line-length = 140
 skip-string-normalization = true

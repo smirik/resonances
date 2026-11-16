@@ -16,7 +16,7 @@ Working with a coding agent? `resonances skill install` puts the package's agent
 
 ## What's new in 1.0.0
 
-Version 1.0.0 is a major release with breaking changes. One libration analysis now classifies mean-motion, secular and Lidov–Kozai angles. Statuses are strings (`resonant`, `transient`, `near_separatrix`, `non_resonant`, `uncertain`, `invalid`) instead of integers, and each verdict has a confidence level and a next action. The release also adds clones, the Minor Planet Center as a data source, a dry-run, a command line, the one-page verdict figure and an agent skill. See [CHANGELOG.md](CHANGELOG.md) for what changed and how to update code written for 0.5.x.
+Version 1.0.0 is a major release with breaking changes. One libration analysis now classifies mean-motion, secular and Lidov–Kozai angles. Statuses are strings (`resonant`, `transient`, `near_separatrix`, `non_resonant`, `uncertain`, `invalid`) instead of integers, and each verdict has a confidence level and a next action. The release also adds clones, the Minor Planet Center as a data source, a dry-run, a command line, the one-page verdict figure and an agent skill. See [CHANGELOG.md](https://github.com/smirik/resonances/blob/main/CHANGELOG.md) for what changed and how to update code written for 0.5.x.
 
 ## Changes before 1.0.0
 
@@ -224,7 +224,7 @@ Feel free to contribute to the code by sending pull requests [to the repository]
 
 ## Development
 
-Notes for developers (history of the classifier, decisions and their reasons, rejected approaches, pitfalls, open questions) are in [dev/](dev/README.md); they are not part of the documentation site.
+Notes for developers (history of the classifier, decisions and their reasons, rejected approaches, pitfalls, open questions) are in [dev/](https://github.com/smirik/resonances/blob/main/dev/README.md); they are not part of the documentation site.
 
 ## License
 
