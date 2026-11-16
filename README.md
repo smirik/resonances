@@ -138,7 +138,18 @@ Whenever you use this package, we are kindly asking you to refer to one of the f
 }
 ```
 
-2. **The libration analysis and automatic identification of librations**: the same paper, Smirnov (2023), above.
+2. **The libration analysis and automatic identification of librations** (the classifier of 1.0: statuses, causes, confidence): the paper below is submitted, the journal reference is not known yet; check this page before citing. For earlier versions, Smirnov (2023) above.
+
+- Smirnov, E. (2026). Physical Identification of Mean-Motion Resonances in Numerical Integrations: When a Librating Angle Is Not Enough. Submitted.
+
+```tex
+@unpublished{Smirnov2026mmr,
+  title  = {Physical Identification of Mean-Motion Resonances in Numerical Integrations: When a Librating Angle Is Not Enough},
+  author = {Smirnov, Evgeny},
+  year   = {2026},
+  note   = {Submitted}
+}
+```
 
 3. **Mass identification of mean-motion resonances:**
 

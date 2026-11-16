@@ -3,7 +3,7 @@ name: Resonances App
 # What CI runs and why (the rest stays local: test-slow needs Horizons and depends on the date, test-benchmark needs
 # benchmark/data, which is not in git):
 #   quality: black, flake8, the docs site (mkdocs --strict), the wheel installed in a clean environment
-#   tests:   test-fast (every test of at most 1 s, synthetic data and committed fixtures only) on 3.11 and 3.13
+#   tests:   test-fast (every test of at most 1 s, synthetic data and committed fixtures only) on 3.11 and 3.14
 #   windows: install, import and the tests of the parts that differ there (no fcntl)
 
 on:
@@ -50,15 +50,10 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                # the oldest and the newest supported Python (3.12 is the development one: quality builds on it);
-                # 3.14 is allowed by requires-python but not yet required to pass
-                python-version: ["3.11", "3.13"]
-                experimental: [false]
-                include:
-                    - python-version: "3.14"
-                      experimental: true
+                # the oldest supported Python and the newest one with wheels of every dependency (3.12, the
+                # development one, builds the docs and the wheel in quality and runs on Windows)
+                python-version: ["3.11", "3.14"]
         runs-on: ubuntu-latest
-        continue-on-error: ${{ matrix.experimental }}
         steps:
             - uses: actions/checkout@v4
 

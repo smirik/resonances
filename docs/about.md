@@ -42,6 +42,18 @@ python package "resonances". *Astronomy and Computing*, 54, 101022.
 }
 ```
 
+**The libration analysis of 1.0 (statuses, causes, confidence).** Smirnov, E. (2026). Physical Identification of Mean-Motion Resonances in Numerical Integrations: When a Librating Angle Is Not Enough. Submitted. The
+journal reference is not known yet: check this page or the repository before citing.
+
+```tex
+@unpublished{Smirnov2026mmr,
+  title  = {Physical Identification of Mean-Motion Resonances in Numerical Integrations: When a Librating Angle Is Not Enough},
+  author = {Smirnov, Evgeny},
+  year   = {2026},
+  note   = {Submitted}
+}
+```
+
 **Mass identification of mean-motion resonances.**
 
 - Smirnov, E. A., & Dovgalev, I. S. (2018). Identification of asteroids in two-body resonances.
