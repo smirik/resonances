@@ -1,12 +1,33 @@
+import dataclasses
 import datetime
+import math
 import os
 
 import astdys.util
+import numpy as np
 import resonances
 
 # The output folder of this test process: one per pytest-xdist worker (gw0, gw1, ...) or per session (its pid), so
 # that parallel workers and two sessions in one working directory never clean up each other's files (tests/CLAUDE.md)
 TEST_CACHE = f"cache/tests/{os.environ.get('PYTEST_XDIST_WORKER') or f'session-{os.getpid()}'}"
+
+
+def same_values(a, b) -> bool:
+    """Equality of result objects with nan equal to nan: dataclasses field by field, mappings, sequences and arrays
+    element by element. Since Python 3.13 a dataclass compares its fields with ==, so two equal objects holding nan
+    are unequal (dev/pitfalls.md); compare such objects with this, not with ==."""
+    if dataclasses.is_dataclass(a) and not isinstance(a, type):
+        return type(a) is type(b) and all(same_values(getattr(a, f.name), getattr(b, f.name)) for f in dataclasses.fields(a))
+    if isinstance(a, dict):
+        return isinstance(b, dict) and a.keys() == b.keys() and all(same_values(a[k], b[k]) for k in a)
+    if isinstance(a, (list, tuple)):
+        return type(a) is type(b) and len(a) == len(b) and all(same_values(x, y) for x, y in zip(a, b))
+    if isinstance(a, np.ndarray) or isinstance(b, np.ndarray):
+        a, b = np.asarray(a), np.asarray(b)
+        return a.shape == b.shape and bool(np.array_equal(a, b, equal_nan=a.dtype.kind in 'fc' and b.dtype.kind in 'fc'))
+    if isinstance(a, float) and isinstance(b, float) and math.isnan(a) and math.isnan(b):
+        return True
+    return bool(a == b)
 
 
 # 463 Lola

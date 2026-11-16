@@ -39,6 +39,8 @@ the detail. Benchmark gates: `benchmark/CLAUDE.md`.
 - A test must fail on the broken implementation: an oracle that omits a check (L4/R0) can pass a wrong leaf.
 - Time CPU, not wall clock, with a margin (a 5-s wall assert flaked under load).
 - Do not cite `tmp/` files in tests; cite docs.
+- Compare result objects that can hold nan with `tests.tools.same_values`, not `==`: since Python 3.13 a dataclass
+  compares its fields with ==, so nan makes two equal objects unequal (CI runs 3.11 and 3.13).
 - Never set `mpmath.mp.dps` globally in a test: the precision leaks into the next tests on the same xdist worker
   (W28: a 40-digit setting broke 7 tests of `test_action_occupied_well.py`, depending on the module order). Use
   `monkeypatch.setattr(mp.mp, 'dps', N)` or `with mp.workdps(N):`.

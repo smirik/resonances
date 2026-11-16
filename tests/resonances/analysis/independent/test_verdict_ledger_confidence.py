@@ -8,13 +8,13 @@ shown in a comment.
 import hashlib
 import json
 import math
-from dataclasses import astuple
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from resonances.resonance.analysis import confidence as conf
+from tests.tools import same_values
 from resonances.resonance.analysis.ledger import Ledger, LedgerEntry, Margin, Op
 from resonances.resonance.analysis.settings import conventions, settings_from_config
 from resonances.resonance.analysis.verdict import (
@@ -722,10 +722,7 @@ def test_load_cells_reads_every_cell(tmp_path):
     assert loaded.records[('non_resonant', 'circulation', 'circulation')] == conf.CellRecord(101, 1, 0.946, 0.9983)
     empty = loaded.records[('transient', 'episodic', 'dynamic_episode')]
     assert (empty.n_examples, empty.n_errors) == (0, 0) and math.isnan(empty.accuracy_low_95)
-    again = conf.load_cells(str(path)).records  # the same file read by a string path
-    assert again.keys() == loaded.records.keys()
-    for key, record in again.items():  # nan != nan field by field since Python 3.13
-        assert np.array_equal(np.array(astuple(record), float), np.array(astuple(loaded.records[key]), float), equal_nan=True)
+    assert same_values(conf.load_cells(str(path)).records, loaded.records)  # the same file read by a string path
 
 
 def test_load_cells_missing_file(tmp_path):
