@@ -175,7 +175,9 @@ def test_the_decisive_line_names_its_numbers_in_words():
     conflict = vt.Emphasis(
         vt.EMPHASIS_CONFLICT, 'L3', 'σ̇ follows a − a*', (vt.EmphasisPart('rsp_identity_corr', '0.777'),), vt.OBJECTION_NOTE
     )
-    assert vm.decisive_line(conflict, ('identity',)) == 'fails, read as an objection: σ̇ follows a − a* [L3]: σ̇ against a: correlation 0.777'
+    assert (
+        vm.decisive_line(conflict, ('identity',)) == 'fails, read as an objection: σ̇ follows a − a* [L3]: σ̇ against a: correlation 0.777'
+    )
     assert vm.decisive_line(conflict, ()).startswith('fails, not read: ')
     missing = vt.Emphasis(vt.EMPHASIS_UNMEASURED, 'L4', 'a obeys the force law', (), 'not measured (half-amplitude 0.783° < 45°)')
     assert vm.decisive_line(missing, ()) == 'not measured: a obeys the force law [L4]: half-amplitude 0.783° < 45°'

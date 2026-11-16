@@ -12,16 +12,14 @@ import pytest
 
 from resonances.simulation.parallel_executor import line_outside_main_guard
 
-SCRIPT = textwrap.dedent(
-    """\
+SCRIPT = textwrap.dedent("""\
     from resonances.simulation.parallel_executor import ParallelExecutor
 
     def main():
         return ParallelExecutor(2).execute_batches([(0, [])], {{}})
 
     {call}
-    """
-)
+    """)
 
 
 @pytest.mark.parametrize(

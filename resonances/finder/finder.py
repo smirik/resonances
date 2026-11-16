@@ -13,7 +13,6 @@ from resonances.lidov_kozai.lidov_kozai_resonance import LidovKozaiResonance
 from resonances.simulation.simulation import Simulation
 from resonances.resonance.factory import detect_resonance_type
 
-
 ResonanceType = Union[
     MMR,
     SecularResonance,

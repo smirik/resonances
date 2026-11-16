@@ -2,7 +2,6 @@ import pytest
 
 from resonances.secular.secular_resonance_formula import SecularResonanceFormula
 
-
 SECULAR_RESONANCES = {
     # Linear
     'g-g5': [

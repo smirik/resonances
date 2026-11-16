@@ -11,15 +11,13 @@ from resonances.simulation import run_lock
 
 def _child(folder, call: str, ready):
     """A child process that takes a lock in `folder` (`call`), says so through the file `ready`, and sleeps."""
-    code = textwrap.dedent(
-        f"""
+    code = textwrap.dedent(f"""
         import time
         from resonances.simulation import run_lock
         run_lock.{call}({str(folder)!r})
         open({str(ready)!r}, 'w').write('ok')
         time.sleep(60)
-    """
-    )
+    """)
     child = subprocess.Popen([sys.executable, '-c', code])
     for _ in range(600):  # up to 30 s for the import
         if ready.exists():

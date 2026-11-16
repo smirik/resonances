@@ -68,7 +68,7 @@ class Periodogram:
         points_to_cut = round(libration_period_min * fs)
 
         try:
-            (frequency, power) = cls.lomb_scargle(
+            frequency, power = cls.lomb_scargle(
                 t[points_to_cut : len(y) - points_to_cut] / (2 * np.pi),
                 y[points_to_cut : len(y) - points_to_cut],
                 minimum_frequency=minimum_frequency,

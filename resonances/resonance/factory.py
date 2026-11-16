@@ -89,12 +89,8 @@ def create_mmr(coeff, planets_names=None):  # noqa: C901
                 if len(letters) >= 2 and len(numbers) >= 6:
                     planets = [planet_name_from_letter(letters[0]), planet_name_from_letter(letters[1])]
                     return ThreeBody(numbers[:6], planets)
-            raise Exception(
-                """Cannot create a resonance because the notation is wrong.
-                 It should have either two or three bodies (i.e. 2J-1 or 4M-2J-1) for MMR. Given {}.""".format(
-                    coeff
-                )
-            )
+            raise Exception("""Cannot create a resonance because the notation is wrong.
+                 It should have either two or three bodies (i.e. 2J-1 or 4M-2J-1) for MMR. Given {}.""".format(coeff))
 
     raise Exception(
         'The argument should be either a string if you use the short notation (i.e. 2J-1) or a list containing 2 or 3 elements.'

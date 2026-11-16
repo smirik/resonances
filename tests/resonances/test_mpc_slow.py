@@ -12,7 +12,6 @@ from resonances import mpcorb
 from resonances.data.util import mjd_from_datetime
 from resonances.simulation.simulation import Simulation
 
-
 # The comparison is meant for spans like the 138 days it was made on (MPC_PROPAGATE_MAX_DAYS no longer bounds it)
 PROPAGATION_SPAN_DAYS = 400.0
 
