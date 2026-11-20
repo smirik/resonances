@@ -223,6 +223,28 @@ class TestCheckCommand:
             call_kwargs = mock_check.call_args[1]
             assert call_kwargs['resonance'] == ['4J-2S-1', '3J-1S-1']
 
+    def test_check_earth_resonances_stay_text(self, runner, mock_simulation):
+        """4E-15 and 1E-2 read as floats (4e-15, 0.01); resonance keys must reach check() as written."""
+        import resonances
+
+        args = ['check', '--asteroids=755140', '--resonances=4E-15,1E-2', '--dt=1e-3']
+        with patch('resonances.cli.main.resonances.check', return_value=mock_simulation) as mock_check:
+            result = runner.invoke(cli, args)
+            assert result.exit_code == 0
+            call_kwargs = mock_check.call_args[1]
+            assert call_kwargs['resonance'] == ['4E-15', '1E-2']
+            assert call_kwargs['dt'] == 0.001
+
+        with patch('resonances.cli.main.resonances.check', return_value=mock_simulation) as mock_check:
+            result = runner.invoke(cli, ['check', '--asteroids=755140', '--resonances', '2E-3'])
+            assert result.exit_code == 0
+            assert mock_check.call_args[1]['resonance'] == '2E-3'
+
+        # 4E-15: Earth, 4 lambda_E - 15 lambda + 11 varpi (d'Alembert), the outer body's 15:4.
+        r = resonances.create_resonance('4E-15')
+        assert r.planets_names == ['Earth']
+        assert r.to_s() == '4E-15+0+11'
+
     def test_check_with_planets_parameter(self, runner, mock_simulation):
         """Test check with planets parameter."""
         with patch('resonances.cli.main.resonances.check', return_value=mock_simulation) as mock_check:

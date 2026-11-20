@@ -1,0 +1,5 @@
+example_id,status,confidence,angle_status,source
+mmr2__49030__11J-3+0-8,non_resonant,high,,"author:2026-11-20 (combined figure, package verdict non_resonant/circulation/high: «49030 - ок, 156048 - ок (я с вердиктами согласен)»)"
+mmr2__156048__22J-7+0-15,non_resonant,high,,"author:2026-11-20 (combined figure of the FAIR-borderline pilot 1M-2, package verdict non_resonant/circulation/high: «49030 - ок, 156048 - ок (я с вердиктами согласен)»)"
+mmr2__755140__2E-3+0+1,transient,low,,"author:2026-11-20 (combined figure of the FAIR-borderline NEA pilot, package verdict transient/episodic/low: «755140 - согласен с вердиктом (по обоим резонансам)»)"
+mmr2__755140__7E-11+0+4,transient,medium,,"author:2026-11-20 (combined figure of the FAIR-borderline NEA pilot, package verdict transient/episodic/medium: «755140 - согласен с вердиктом (по обоим резонансам)»)"

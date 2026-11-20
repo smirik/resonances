@@ -4,6 +4,13 @@ All notable changes to `resonances` are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `resonances check --resonances=4E-15` (and any Earth resonance such as `1E-2`) failed: the CLI read the key as the
+  number 4e-15. `--resonances` values are now kept as text.
+
 ## [1.0.1] - 2026-11-16
 
 ### Fixed

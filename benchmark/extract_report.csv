@@ -482,6 +482,9 @@ c0805,165548,s-g5+g6-s6,secular,extracted,,secular__165548__s-g5+g6-s6,experimen
 c0806,348018,g-g5+s-s7,secular,extracted,,secular__348018__g-g5+s-s7,experiments/2026-11-pairs-secular-zlk/output/secular-w1/data/data-348018.csv
 c0807,455327,s-s3,secular,extracted,,secular__455327__s-s3,experiments/2026-11-pairs-secular-zlk/output/secular-w1-ias15-p12/data/data-455327.csv
 c0808,455327,g-s-g5+s6,secular,extracted,,secular__455327__g-s-g5+s6,experiments/2026-11-pairs-secular-zlk/output/secular-w1-ias15-p12/data/data-455327.csv
+c0815,156048,22J-7+0-15,mmr2,extracted,,mmr2__156048__22J-7+0-15,experiments/2026-11-fair-borderline/pilot/output/1M-2/data/data-156048.csv
+c0816,755140,2E-3+0+1,mmr2,extracted,,mmr2__755140__2E-3+0+1,experiments/2026-11-fair-borderline/pilot/output/nea/data/data-755140.csv
+c0817,755140,7E-11+0+4,mmr2,extracted,,mmr2__755140__7E-11+0+4,experiments/2026-11-fair-borderline/pilot/output/nea/data/data-755140.csv
 c0669,9068,all secular angles,secular,failed,"resonance ""all secular angles"" names no single angle",,experiments/2026-09-binary-asteroids/output/secular-10myr-ias15-pair12-v4/data-9068.csv
 c0001,620082,4J-1+0-3,mmr2,skipped,needs_integration=yes (batches A-E),,
 c0002,12123,46J-15+0-31,mmr2,skipped,needs_integration=yes (batches A-E),,

@@ -162,6 +162,19 @@ SABA-задачи объединяют до 8 тел в одну Simulation: т�
     `sim.pkl` через `mmr_adapter.series_from_body`). Автор: resonant, эпизод — вся запись.
   Вердикт сохранённого ряда (`io.load_series`, настройки по умолчанию, как reclassify.py) совпал с вердиктом прогона у
   всех четырёх; угол и a после записи `%.12g` совпадают с исходными до 1e-9 рад / 1e-11 отн.
+- 2026-11-20 (`extract_existing.py --only c0815,c0816,c0817`): три примера из пилота FAIR-borderline
+  (`experiments/2026-11-fair-borderline/pilot/output/<прогон>/data/`, пакет 1.0.1 = c40ca38; run.json нет, поэтому
+  `source_package_commit` пуст, коммит записан в `data_desc`; `settings_hash` прогонов 553e42ee7dc6 = настройки
+  анализа по умолчанию). run_id `pilot-1M-2` и `pilot-nea` (`resolve_run` берёт папку над `output`, здесь `pilot`).
+  - `mmr2__156048__22J-7+0-15` (c0815): прогон 1M-2 (`run_pilot.py`), AstDyS, эпоха MJD 61200, SABA(10,6,4) dt 1,
+    50 тыс. лет, шаг 0.5 года (100001 строка). Автор: non_resonant/high.
+  - `mmr2__755140__2E-3+0+1` (c0816) и `mmr2__755140__7E-11+0+4` (c0817): прогон nea (`run_nea.py`), MPC neam00 на
+    2026-10-25, ias15 dt 1, 20 тыс. лет, шаг 0.1 года (200000 строк); настройки CLASSIFIER_NEA (oscillations_cutoff
+    0.01, periodogram_frequency_max 0.02, libration_period_min 50) лежат в `classifier_config`, как у примеров NEA
+    production. Автор: transient/low и transient/medium; переход между двумя резонансами с Землёй (эпизод 6.18–6.38
+    тыс. лет, затем 19.32–19.57 тыс. лет).
+  Вердикт сохранённого ряда (`reclassify.py`, настройки по умолчанию) совпал с вердиктом прогона у всех трёх (статус,
+  angle_status, уровень, причина, флаги, действие, засчитанные эпизоды); проверочный прогон `data/v2-add-2026-11-20`.
 
 ## Переклассификация и `make test-benchmark`
 

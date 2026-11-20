@@ -291,6 +291,7 @@ mmr2__145480__1N-4+0+3__1Myr,c0787,mmr2,non-resonant,low,,,"added 2026-10-15 wit
 mmr2__149348__6N-11+0+5,c0126,mmr2,resonant,high,,,
 mmr2__149349__3N-5+0+2,c0127,mmr2,resonant,high,,,
 mmr2__153__3J-2+0-1,c0784,mmr2,resonant,high,,,added 2026-10-15 with the author's permission; Hilda reference: clean stationary libration for docs/paper; Claude label
+mmr2__156048__22J-7+0-15,c0815,mmr2,non-resonant,high,,,
 mmr2__15760__2U+7+0-9,c0044,mmr2,non-resonant,low,,,
 mmr2__15788__2N-3+0+1,c0128,mmr2,resonant,low,,,
 mmr2__15789__1U+3+0-4,c0045,mmr2,non-resonant,low,,,
@@ -517,6 +518,8 @@ mmr2__67495__11M-20+0+9,c0236,mmr2,transient,low,,,
 mmr2__719__36J-13+0-23,c0099,mmr2,non-resonant,high,,,
 mmr2__719__55S-8+0-47,c0100,mmr2,non-resonant,high,,,
 mmr2__719__7E-30+0+23,c0101,mmr2,non-resonant,high,,,
+mmr2__755140__2E-3+0+1,c0816,mmr2,transient,low,,,
+mmr2__755140__7E-11+0+4,c0817,mmr2,transient,medium,,,
 mmr2__78085__2E-7+0+5,c0795,mmr2,transient,low,,,"added 2026-10-19 with the author's approval (author:2026-10-19); verdict pending; label_source=author:2026-10-19; confirmed as example 2026-10-19; verdict pending (ANSWERS-2026-10-19b: ""Новые примеры для бенчмарка. ОК, принимаем.""; ANSWERS-2026-10-19 Q11). The owner of 78085 5J-4S-1+0+0+0 (analysis-1019/A-two-resonances.md: 2E-7 librates about 180 deg in six intervals, 45.7 of 100 kyr). Author 2026-10-19 on Q11 agreed that his earlier near_separatrix label refers to the 2:7 itself, not an explicit verdict on this row. Angle derived from mmr3__78085__5J-4S-1+0+0+0 and the run-A Earth. Step 1 yr = 0.29 of the orbital period (the batch-A rule would give 0.5 yr to a fresh two-body example; the series was not rerun)."
 mmr2__78085__2E-7+0+5__step0.5yr,c0795,mmr2,transient,low,,,"added 2026-10-19 (author:2026-10-19, verdict pending); step variant of mmr2__78085__2E-7+0+5 (rerun 2026-10-19, R6): initial elements = first row of mmr3__78085__5J-4S-1+0+0+0, SABA(10,6,4) dt 1, step 0.5 yr (batch-A rule for a two-body angle at P < 4.2 yr); same orbit to 0.14 deg in lambda up to 20 kyr, first |dlambda| > 1 deg at 27.3 kyr. The 1-yr series gets the short_period_aliased cap, this one does not."
 mmr2__78799__5N-7+0+2,c0102,mmr2,non-resonant,high,,,

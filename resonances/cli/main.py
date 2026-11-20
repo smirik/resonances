@@ -330,8 +330,14 @@ def dry_run(ctx):
 
 
 # flake8: noqa: C901
-def _parse_param(value):
+# Values kept as text: an Earth resonance such as 4E-15 or 1E-2 also reads as a float (4e-15, 0.01).
+TEXT_KEYS = {'resonances', 'resonance'}
+
+
+def _parse_param(value, text=False):
     """Parse CLI parameter - handles comma-separated lists, single values, JSON.
+
+    With text=True the value stays a string (a list of strings when comma-separated).
 
     Supports:
         - Comma-separated: "463,490" -> [463, 490]
@@ -342,6 +348,8 @@ def _parse_param(value):
     """
     if not isinstance(value, str):
         return value
+    if text:
+        return [v.strip() for v in value.split(',')] if ',' in value else value
 
     # Try comma-separated list
     if ',' in value:
@@ -407,13 +415,13 @@ def _parse_extra_args(args):
             if '=' in arg:
                 key, value = arg.split('=', 1)
                 key = key.replace('-', '_')  # Convert kebab-case to snake_case
-                kwargs[key] = _parse_param(value)
+                kwargs[key] = _parse_param(value, text=key in TEXT_KEYS)
                 i += 1
             # Check if next arg is the value (--key value format)
             elif i + 1 < len(args) and not args[i + 1].startswith('--'):
                 key = arg.replace('-', '_')
                 value = args[i + 1]
-                kwargs[key] = _parse_param(value)
+                kwargs[key] = _parse_param(value, text=key in TEXT_KEYS)
                 i += 2
             else:
                 # Flag without value, treat as True
