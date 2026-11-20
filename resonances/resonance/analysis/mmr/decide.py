@@ -35,7 +35,8 @@ angle_status (first rule that fires, SPEC §5.2):
      (or one bounded by an observed exit or entry) (once more at
      P / FILTER_MIN_LIBRATION_CUTOFFS when W_c is too slow for the libration's period P)
   G3 no episode, sigma-only potential, pattern A or B -> near_separatrix/pattern_a|pattern_b (confidence <= medium
-     while the zone is not measured: cap near_separatrix_without_zone)
+     while the zone is not measured: cap near_separatrix_without_zone); B counts the turns that stall at the top, slow
+     more than their own rotating branch explains and pass the top within reach of the zone (geometry.pattern_b)
   G4 largest monotone centre pass >= 2pi -> circulation ('' | alias)
   G5 centre_moves runs cover >= libration_drift_min_window_fraction -> drift; G5a: the slow centre turns back once
      (farther than W_c from the edges) and stays within one revolution -> insufficient_time/arc; G5w (W28 B6c,
@@ -1238,7 +1239,13 @@ def _g3(geometry: Geometry, energy: Optional[EnergyAnalysis], settings: Analysis
         '',
         'geo_stall_fraction',
     )
-    if stalls and pattern.detected:
+    if not stalls:
+        return None
+    # a turn counts when it stalls at the top, slows more than its own rotating branch explains and its top passage is
+    # within reach of the zone (geometry.pattern_b)
+    name = 'G3 pattern B: turns below their branch within reach'
+    counted = pattern.counted_fraction
+    if ledger.compare_setting(name, counted, Op.GE, settings, 'libration_stall_rev_fraction', '', 'geo_stall_counted_fraction'):
         return AngleDecision(AngleStatus.NEAR_SEPARATRIX, AngleSubtype.PATTERN_B, 'G3')
     return None
 
@@ -2112,6 +2119,32 @@ def _objection(
     if l4 not in MEASURED and r0 != CheckValue.PASS and identity_fails_locally(response):
         return _identity_objects(angle, response, settings, ledger)
     return None
+
+
+# The leaves of step 5 where a measurement contradicts the angle's own dynamics (docs/physics/status-tree.md §5, "a
+# measurement contradicts"): the force law and/or the potential with a fail (5a, 5a*, 5e), the two contradict each other
+# (5b), a forced line sits at the period (5f), the identity fails (5g), the onset or the direct strength fails (5o).
+# Not 5n/5x/5u (nothing measured: not_measured is no contradiction) and not 5s (a status veto). The minimal policy reads
+# them as a measured objection (`policy.LEAVES`); the centre-scale guard as a reading that cannot displace a fine one.
+OBJECTION_LEAVES = ('5a', '5a*', '5b', '5e', '5f', '5g', '5o')
+
+
+def objection_leaf(rule: str) -> bool:
+    """The leaf `rule` (`StatusDecision.rule`, the column rec_rule) left the origin unknown because a measurement
+    contradicts the angle's own dynamics (`OBJECTION_LEAVES`)."""
+    return rule in OBJECTION_LEAVES
+
+
+def centre_scale_displaced(fine: StatusDecision, coarse_rule: str, coarse_origin) -> bool:
+    """The centre-scale guard (G2c, `analyse._analyse_mmr`; LIBRATION_CENTRE_SCALE_OBJECTION_GUARD): a coarser reading of
+    the angle may replace the fine one only when it is at least as well established as the resonance's own libration.
+    True (the fine decision `fine` stays) when the fine pass established the origin as dynamic (the resonance's own force
+    measured) and the reading at the scale of the centre left its origin unknown on a leaf where a measurement
+    contradicts it (`objection_leaf` of its rule `coarse_rule`, origin `coarse_origin`). A coarse origin that is
+    dynamic or kinematic is a measurement, and a coarse leaf where nothing was measured (5n, 5x, 5u) is no
+    contradiction: G2c keeps its precedence there (709123 2J-1: the fine union of 2J-1 librations at P_cyc 458 yr, origin
+    dynamic, against the g - g5 wave of the centre at W_c 1374 yr, leaf 5g)."""
+    return fine.origin == LibrationOrigin.DYNAMIC and str(coarse_origin) == LibrationOrigin.UNKNOWN and objection_leaf(coarse_rule)
 
 
 def identity_fails_locally(response: Optional[Response]) -> bool:

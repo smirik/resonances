@@ -616,40 +616,69 @@ def _revs(phases, h, rmin):
     ]
 
 
+def _h_top_ref(h, rmin):
+    """The top passage's energy by hand: on the branch of energy h the top speed is v = sqrt(2 (h - 1) depth), the
+    observed slowest rate is rmin / r_pend(h) of it, so h_top - 1 = (h - 1) (rmin / r_pend)^2, signed by rmin."""
+    s = rmin / r_pend_ref(h)
+    return 1.0 + (h - 1.0) * s * abs(s)
+
+
+# a turn counts when it stalls at the top, slows more than its own rotating branch explains (r_pend - r_min >
+# libration_stall_rate_tol 0.2) and passes the top within reach (h_top <= h_hi + 2 sigma_h); r_pend_ref(1.05) = 0.407,
+# so r_min 0.107 dips 0.3 below the branch
+DIP = 0.3
+
+
 def test_pattern_b_detected_at_the_top_with_wrap_around(settings):
     # top = pi; phases alternate +3.1 and -3.1 (both 0.04 rad from pi across the wrap)
     h = 1.05
-    revs = _revs([3.1, -3.1] * 4, h, r_pend_ref(h))
+    rmin = r_pend_ref(h) - DIP
+    revs = _revs([3.1, -3.1] * 4, h, rmin)
     pb = geo.pattern_b(revs, np.pi, 1.1, 0.02, settings)
     assert pb.n_revolutions == 8
     assert pb.stall_fraction == pytest.approx(1.0)
+    assert pb.counted_fraction == pytest.approx(1.0)
     assert pb.in_zone and pb.detected
-    assert not pb.rate_inconsistent
+    assert pb.rate_inconsistent  # the medians differ by DIP > 0.2: every counted turn is below its branch
     assert geo.wrap_pi(pb.stall_phase_mean_rad - np.pi) == pytest.approx(0.0, abs=1e-6)
     assert pb.stall_phase_r == pytest.approx(np.cos(np.pi - 3.1), abs=1e-6)
     assert pb.rate_min_over_mean_pend_med == pytest.approx(r_pend_ref(h), abs=1e-3)
     assert pb.h_rev_med == pytest.approx(h) and pb.h_rev_max == pytest.approx(h)
+    # h_top = 1 + 0.05 (0.107 / 0.407)^2 = 1.0035
+    assert pb.h_top_med == pytest.approx(_h_top_ref(h, rmin), abs=1e-6)
+    assert pb.h_top_med == pytest.approx(1.0035, abs=2e-4)
 
 
 def test_pattern_b_fraction_threshold(settings):
     # 6 of 8 at the top = 0.75 (>= threshold) -> detected; 5 of 8 = 0.625 -> not
     h = 1.05
-    six = _revs([np.pi] * 6 + [0.0, 1.0], h, r_pend_ref(h))
-    five = _revs([np.pi] * 5 + [0.0, 1.0, -1.0], h, r_pend_ref(h))
+    rmin = r_pend_ref(h) - DIP
+    six = _revs([np.pi] * 6 + [0.0, 1.0], h, rmin)
+    five = _revs([np.pi] * 5 + [0.0, 1.0, -1.0], h, rmin)
     pb6 = geo.pattern_b(six, np.pi, 1.1, 0.02, settings)
     pb5 = geo.pattern_b(five, np.pi, 1.1, 0.02, settings)
-    assert pb6.stall_fraction == pytest.approx(0.75) and pb6.detected
+    assert pb6.stall_fraction == pytest.approx(0.75) and pb6.counted_fraction == pytest.approx(0.75) and pb6.detected
     assert pb5.stall_fraction == pytest.approx(0.625) and not pb5.detected
 
 
-def test_pattern_b_needs_every_turn_in_the_zone(settings):
-    # one turn at h = 1.5 > h_hi + 2 sigma_h = 1.14: out of the separatrix zone
-    revs = _revs([np.pi] * 8, 1.05, r_pend_ref(1.05))
-    revs[3] = dataclasses.replace(revs[3], energy_h=1.5)
-    pb = geo.pattern_b(revs, np.pi, 1.1, 0.02, settings)
-    assert pb.stall_fraction == pytest.approx(1.0)
-    assert not pb.in_zone and not pb.detected
-    assert pb.h_rev_max == pytest.approx(1.5)
+def test_pattern_b_needs_the_top_passages_within_reach(settings):
+    # reach is read on the top passage: a turn at h = 1.5 on its own branch (r_min = r_pend(1.5)) passes the top at
+    # h_top = 1.5 > h_hi + 2 sigma_h = 1.14. One such turn of 8 leaves 7/8 >= 0.75 counted; three leave 5/8
+    revs = _revs([np.pi] * 8, 1.05, r_pend_ref(1.05) - DIP)
+    far = dataclasses.replace(revs[3], energy_h=1.5, rate_min_over_mean=float(r_pend_ref(1.5)))
+    assert _h_top_ref(1.5, r_pend_ref(1.5)) == pytest.approx(1.5)
+    one = revs[:3] + [far] + revs[4:]
+    pb1 = geo.pattern_b(one, np.pi, 1.1, 0.02, settings)
+    assert pb1.counted_fraction == pytest.approx(7 / 8) and pb1.in_zone and pb1.detected
+    assert pb1.h_rev_max == pytest.approx(1.5)
+    three = [far] * 3 + revs[3:]
+    pb3 = geo.pattern_b(three, np.pi, 1.1, 0.02, settings)
+    assert pb3.stall_fraction == pytest.approx(1.0)
+    assert pb3.counted_fraction == pytest.approx(5 / 8) and not pb3.in_zone and not pb3.detected
+    # a turn far above the separatrix that dips to a crawl at the top is within reach: h_top = 1 + 0.5 s^2
+    crawl = dataclasses.replace(far, rate_min_over_mean=0.1)
+    assert geo.pattern_b([crawl] * 8, np.pi, 1.1, 0.02, settings).detected
+    assert _h_top_ref(1.5, 0.1) < 1.1 + 0.04
 
 
 def test_pattern_b_rate_inconsistent_flag(settings):
@@ -658,6 +687,92 @@ def test_pattern_b_rate_inconsistent_flag(settings):
     pb = geo.pattern_b(revs, np.pi, 1.2, 0.02, settings)
     assert pb.rate_inconsistent
     assert pb.rate_min_over_mean_pend_med == pytest.approx(0.554, abs=2e-3)
+    # faster than the branch at the top: no turn counts (the clause is one-sided)
+    assert pb.counted_fraction == 0.0 and not pb.detected
+
+
+def test_pattern_b_does_not_count_a_turn_on_its_own_branch(settings):
+    # a free rotation is slowest at the top whatever its energy: r_min = r_pend(h) at the top is no sign of the
+    # separatrix (the 2J-1 pilot: r_min within 0.02-0.07 of its branch), even at h = 1.01 within reach of h_hi = 1.1
+    for h in (1.01, 1.05, 1.14):
+        pb = geo.pattern_b(_revs([np.pi] * 8, h, r_pend_ref(h)), np.pi, 1.1, 0.02, settings)
+        assert pb.stall_fraction == pytest.approx(1.0) and pb.in_zone
+        assert pb.counted_fraction == 0.0 and not pb.detected
+        assert pb.h_top_med == pytest.approx(h, abs=1e-6)  # on its branch the top passage is at the turn's energy
+
+
+def test_pattern_b_counts_a_turn_that_backs_up_at_the_top(settings):
+    # 523899 3N-5: each turn reverses at the top (r_min < 0): its top passage is below the separatrix,
+    # h_top = 1 - (h - 1) s^2 (s = r_min / r_pend(h) < 0); r_min -0.41 at h 1.03: s = -0.41 / 0.344
+    h, rmin = 1.03, -0.41
+    s = rmin / 0.344  # r_pend(1.03) = 0.344 (by hand from the closed form, checked below)
+    assert r_pend_ref(h) == pytest.approx(0.344, abs=1e-3)
+    pb = geo.pattern_b(_revs([np.pi] * 3, h, rmin), np.pi, 1.0, 0.02, settings)
+    assert pb.h_top_med == pytest.approx(1 - 0.03 * s * s, abs=2e-3)
+    assert pb.h_top_med < 1.0
+    assert pb.counted_fraction == pytest.approx(1.0) and pb.detected
+
+
+def test_rotating_branch_rate_of_one_harmonic_is_the_pendulum_formula():
+    potential = _cosine_potential(2 * np.pi / 400.0)
+    h = np.array([1.01, 1.05, 1.14, 1.5])
+    assert geo.rotating_branch_rate(h, potential) == pytest.approx(r_pend_ref(h), rel=1e-9)
+    assert geo.rotating_branch_rate(h) == pytest.approx(r_pend_ref(h), rel=1e-9)
+    assert np.isnan(geo.rotating_branch_rate(0.9, potential)[0])
+
+
+def test_rotating_branch_rate_in_a_two_harmonic_potential():
+    # V = -w^2 (cos sigma + b cos 2 sigma): integrate one free turn at energy h and read min/mean rate directly
+    w, b = 2 * np.pi / 400.0, 0.2
+    potential = Potential(
+        n_harmonics=2,
+        cos_coeffs=np.array([-(w**2), -b * w**2]),
+        sin_coeffs=np.array([0.0, 0.0]),
+        r2=0.99,
+        well_rad=0.0,
+        top_rad=np.pi,
+        omega_rad_yr=w,
+        v_min=-(w**2) * (1 + b),
+        v_max=w**2 * (1 - b),
+    )
+    assert float(potential.value(np.array([np.pi]))[0]) == pytest.approx(potential.v_max)
+    for h in (1.02, 1.1, 1.4):
+        energy = potential.v_min + h * potential.depth
+        speed0 = np.sqrt(2 * (energy - potential.v_min))
+        t = np.linspace(0.0, 4000.0, 400001)
+        sol = solve_ivp(
+            lambda _, y: [y[1], -(w**2) * (np.sin(y[0]) + 2 * b * np.sin(2 * y[0]))],
+            (t[0], t[-1]),
+            [0.0, speed0],
+            t_eval=t,
+            rtol=1e-11,
+            atol=1e-13,
+            method='DOP853',
+        )
+        turn = np.flatnonzero(sol.y[0] >= TWO_PI)[0]  # one full turn from sigma = 0
+        mean_rate = TWO_PI / t[turn]
+        measured = float(np.min(sol.y[1][: turn + 1]) / mean_rate)
+        assert geo.rotating_branch_rate(h, potential)[0] == pytest.approx(measured, abs=2e-3)
+        # the cosine pendulum's branch differs: the shape matters (145480 1N-4: 0.48 in V_E against 0.54)
+        assert abs(r_pend_ref(h) - measured) > 0.01
+        # a turn on this branch passes the top at its own energy; one at half that speed at 1 + (h - 1) / 4
+        branch = geo.rotating_branch_rate(h, potential)
+        assert geo.top_passage_energy(h, measured, branch) == pytest.approx(h, abs=3e-3)
+        assert geo.top_passage_energy(h, measured / 2, branch) == pytest.approx(1 + (h - 1) / 4, abs=3e-3)
+
+
+def _cosine_potential(w):
+    return Potential(
+        n_harmonics=1,
+        cos_coeffs=np.array([-(w**2)]),
+        sin_coeffs=np.array([0.0]),
+        r2=0.99,
+        well_rad=0.0,
+        top_rad=np.pi,
+        omega_rad_yr=w,
+        v_min=-(w**2),
+        v_max=w**2,
+    )
 
 
 # ----------------------------------------------------------------------------------------------
@@ -1347,13 +1462,15 @@ def test_slow_arc_of_more_than_a_turn_is_circulation(settings):
     assert dec.angle_status == AngleStatus.CIRCULATION
 
 
-def _rotation_geometry(settings):
-    h = 1.14
+def _rotation_geometry(settings, h=1.14, h_measured=None):
+    """A free rotation at energy h; its turns carry the measured energy `h_measured` (default h): a top passage slower
+    than the measured energy's branch is what a separatrix that rises at the top passages (a strength stronger then
+    than on average) leaves in the turns of a record whose energy is read in the mean potential."""
     t = np.arange(0.0, 3000.0 + 1e-9, 0.05)
     omega0, sigma, rate = _rotation(h, 1.0, t)
     angle = make_angle(t, sigma, rate, cutoff=5.0)
     g = geo.measure_geometry(angle, 1 * DEG, settings)
-    revs = [dataclasses.replace(r, energy_h=h) for r in g.revolutions]
+    revs = [dataclasses.replace(r, energy_h=h if h_measured is None else h_measured) for r in g.revolutions]
     g.pattern_b = geo.pattern_b(revs, np.pi, 1.2, 0.02, settings)
     potential = Potential(
         n_harmonics=1,
@@ -1370,10 +1487,36 @@ def _rotation_geometry(settings):
     return t, sigma, rate, g, potential, zone
 
 
-def test_g3_pattern_b_of_a_rotation_just_above_the_separatrix(settings):
-    # pendulum rotation at h = 1.14: every turn stalls at the top pi with min/mean 0.554
+def _energy_of(potential, zone, sigma_only=CheckValue.PASS):
+    return EnergyAnalysis(
+        potential_e=potential,
+        potential_f=None,
+        ve_vf_agree_fraction=NAN,
+        well_coherence=0.99,
+        zone=zone,
+        sigma_only=sigma_only,
+    )
+
+
+def test_g3_free_rotation_above_the_separatrix_is_a_circulation(settings):
+    # pendulum rotation at h = 1.14: every turn is slowest at the top pi with min/mean 0.554 = r_pend(1.14), its own
+    # branch: a stall at the top alone is no sign of the separatrix (the 2J-1 pilot), so G3 does not fire
     t, sigma, rate, g, potential, zone = _rotation_geometry(settings)
     assert len(g.turning_points) == 0 and g.episodes == []
+    assert g.pattern_b.stall_fraction == pytest.approx(1.0)
+    assert g.pattern_b.rate_min_over_mean_med == pytest.approx(r_pend_ref(1.14), abs=0.01)
+    assert g.pattern_b.counted_fraction == 0.0 and not g.pattern_b.detected
+    dec, _, _ = _decide(settings, (t, sigma, rate), energy=_energy_of(potential, zone), geometry=g)
+    assert (dec.angle_status, dec.rule) == (AngleStatus.CIRCULATION, 'G4')
+
+
+def test_g3_pattern_b_of_turns_below_their_branch(settings):
+    # the turns of a rotation at h = 1.01 (min/mean 0.234 at the top) read at h = 1.14 (branch 0.554): each dips 0.32
+    # below its branch and passes the top at h_top = 1 + 0.14 (0.234 / 0.554)^2 = 1.025 <= h_hi + 2 sigma_h = 1.24
+    t, sigma, rate, g, potential, zone = _rotation_geometry(settings, h=1.01, h_measured=1.14)
+    assert len(g.turning_points) == 0 and g.episodes == []
+    assert g.pattern_b.rate_min_over_mean_med == pytest.approx(r_pend_ref(1.01), abs=0.01)
+    assert g.pattern_b.h_top_med == pytest.approx(_h_top_ref(1.14, r_pend_ref(1.01)), abs=5e-3)
     assert g.pattern_b.detected
     energy = EnergyAnalysis(
         potential_e=potential,

@@ -4,7 +4,7 @@ For every candidates.csv row with needs_integration != 'yes' and a data_path to 
 data/examples/<example_id>/ (series.csv.gz, meta.json, planets link) per ../LAYOUT.md, add the row to
 labels.csv, and log every candidate that was not extracted, with the reason, to extract_report.csv.
 
-    uv run python benchmark/tools/extract_existing.py [--only c0001,c0002] [--runs substr]
+    uv run python benchmark/tools/extract_existing.py [--only c0001,c0002] [--runs substr] [--all-planets]
 
 Secular angles are rebuilt with the current package from the body's elements at full resolution
 (`build_proper_angle_series`, unreduced and reduced; measured planet phases when the run saved the
@@ -654,6 +654,12 @@ def main() -> int:
     ap.add_argument('--only', help='comma-separated candidate ids')
     ap.add_argument('--runs', help='only data paths containing this substring')
     ap.add_argument('--no-sha', action='store_true', help='skip sha256 of source files')
+    ap.add_argument(
+        '--all-planets',
+        action='store_true',
+        help='MMR runs keep every planet the run saved, not only those of the examples\' resonances (the owner search '
+        'and the subresonance scan read the other planets: a record labelled on the full run)',
+    )
     args = ap.parse_args()
 
     cand = pd.read_csv(CANDIDATES, dtype={'name': str})
@@ -704,8 +710,8 @@ def main() -> int:
         io.log(f'run {run_id}: {len(items)} candidate rows')
         load_statuses(run, {str(r.name) for r, *_ in items})
 
-        # planets: MMR runs keep the planets the examples' resonances use; secular runs keep all
-        planets_needed = set()
+        # planets: MMR runs keep the planets the examples' resonances use (all with --all-planets); secular runs keep all
+        planets_needed = set(run.planet_files) if args.all_planets else set()
         for _row, _path, keys, _base in items:
             for k in keys:
                 try:

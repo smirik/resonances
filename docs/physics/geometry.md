@@ -442,7 +442,23 @@ $$
 
 Without resolved members the strength follows the bounded oscillatory part of the eccentricity,
 $\Omega^2 \propto (e_\text{osc}/\bar e)^{\lvert p\rvert}$ ($p$ the coefficient of $\varpi$), with a fixed center (flag `zone_eq_only`). The scale $\bar\Omega$ comes from
-the potential fitted to $\sigma$, and $m(t) = \Omega(t)^2/\bar\Omega^2$. Trial librations and rotations of this model are
+the potential fitted to $\sigma$, and $m(t) = \Omega(t)^2/\bar\Omega^2$.
+
+**Only external motion moves the separatrix.** The modulation is read from motion slower than the angle's own
+period $P_\text{own}$ ($P_\text{cyc}$, else the median turn): $e$ and the offset $\varpi - \varpi_P$ are low-passed at
+`LIBRATION_CENTRE_CYCLES` × $P_\text{own}$ (for a librator that is already the window of $e$). The angle's own line in
+$e$ at $P_\text{own}$ is its response, not a pulsation of the force; left in, it pumps the trial librations over the
+top near $2\bar\Omega$ and empties the zone (the 2J−1 pilot: $J_\text{lo}$ at the 0.1 floor). Within that cutoff
+of either edge $e$ is held at its edge-free value. The members count only when the slow offset sweeps at least one full
+turn over the record: on less their harmonics are not separated from each other (the same rule as the $e$-cycle sine
+of $e^q$; 523899: $\nu T = 0.006$ rad). A record shorter than twice the cutoff resolves no external motion: its
+separatrix is a standing one, the zone $[1, 1]$ (flag `zone_external_unresolved`), never an absent zone. This rule
+is the zone's only: the frames $V_E$ is fitted in (fixed, the modulation's, the center's, the moving well's; the one
+that explains $\dot\sigma^2$ best wins) still include the members' own fit at the filter's cutoff, whatever their
+offset sweeps (without it, the $e^q$ frame is the zone's). A frame is a coordinate system judged by its $R^2$, not a prediction of how the separatrix pulsates;
+without it R0 lost the frame it passed in on 7 rows (2003 UG22 in 10E−17, a moving center, among them).
+
+Trial librations and rotations of this model are
 integrated from a grid of starts to the end of the record: initial actions $J_0/\langle J_s\rangle$ from
 `MMR_ZONE_J_MIN` = 0.1 to 1 and rotation energies $h_0$ from 1 to `MMR_ZONE_H_MAX` = 2, both in steps of
 `MMR_ZONE_J_STEP` = 0.025, each at `MMR_ZONE_PHASES` = 16 start times over one modulation period (tolerance
@@ -545,10 +561,19 @@ need the potential fitted to $\sigma$ alone to hold (the pendulum test R0 on $\s
   This is a convention aimed at near-separatrix passages, not a bound on a fast circulation. At least
   `LIBRATION_PATTERN_A_MIN_SLIPS` = 2 slips of pieces with a median half-amplitude $\ge$
   `LIBRATION_PATTERN_A_MIN_AMP_DEG` = 60° are needed;
-- **pattern B, stalls**: every revolution is within reach of the separatrix,
-  $h_\text{rev} \le h_\text{hi} + z\,\sigma_h$, and in at least
-  `LIBRATION_STALL_REV_FRACTION` = 0.75 of them the rate is slowest within `LIBRATION_STALL_PHASE_TOL_DEG` = 30° of the
-  top of the potential.
+- **pattern B, stalls**: judged revolution by revolution. Every rotating branch is slowest at the top, so a stall at
+  the top alone says nothing. A revolution $k$ of energy $h_k$ and slowest rate $r_{\min,k}$ (over its mean rate)
+  counts when (i) that minimum is within `LIBRATION_STALL_PHASE_TOL_DEG` = 30° of the top of the potential; (ii) it is
+  slower than its own branch, $r_\text{pend}(h_k) - r_{\min,k} >$ `LIBRATION_STALL_RATE_TOL` = 0.2, with
+  $r_\text{pend}$ the min/mean rate of a free rotation at $h_k$ in the fitted potential
+  ($\tfrac{2}{\pi}\sqrt{(h-1)/h}\,K(1/h)$ for one harmonic, $v_\text{top}T(h)/2\pi$ otherwise); (iii) its top passage is
+  within reach of the separatrix,
+  $$h_{\text{top},k} = 1 + (h_k - 1)\,s_k\lvert s_k\rvert \le h_\text{hi} + z\,\sigma_h, \qquad s_k = r_{\min,k}/r_\text{pend}(h_k)$$
+  (the top speed of the branch scaled by the observed one; $s_k < 0$, a turn that backs up at the top, is below the
+  separatrix). Pattern B needs at least `LIBRATION_STALL_REV_FRACTION` = 0.75 of the revolutions counted (columns
+  `geo_stall_counted_fraction`, `geo_h_top_med`, `geo_h_top_min`). A free pendulum just above the separatrix is
+  therefore a circulation: its turns sit on their branch (2026-11-20; the 2J−1 pilot rows sat within 0.02–0.07 of
+  it).
 
 The angle is then `near_separatrix` (`pattern_a` or `pattern_b`; rule G3). Example:
 523899 in 3N−5 ([Gallery](gallery.md#near-separatrix)).
@@ -569,6 +594,15 @@ shortest cutoff that keeps its slow extrema ([scale ladder](signal.md#a-shorter-
 ([Gallery](gallery.md#center-scale)); over 100 kyr the same body is `insufficient_time`
 ([Gallery](gallery.md#insufficient-time)).
 
+The center-scale reading replaces the fine one only when it is at least as well established as the resonance's own
+libration (`LIBRATION_CENTRE_SCALE_OBJECTION_GUARD`, rule `centre_scale_displaced`). When the fine pass reads the origin
+as dynamic and the center scale leaves it unknown because a measurement contradicts it there (leaves 5a, 5a\*, 5b,
+5e, 5f, 5g, 5o of the [status tree](status-tree.md)), the fine verdict stays; the center's motion is reported as the
+slow scale and the set-aside reading in `geo_cs_displaced_*`. 709123 in 2J−1 over 50 kyr: the 2:1 libration (458 yr,
+a union of episodes, its force measured) stays, and the 3.3-kyr wave of its center at $g - g_5$, whose identity fails
+at $W_c$ = 1.37 kyr, is its slow scale. A coarse reading whose origin is measured (dynamic, kinematic) or where
+nothing was measured (5n, 5x, 5u) keeps the precedence of G2c.
+
 ## From geometry to `angle_status`
 
 The first rule that applies gives the angle word:
@@ -583,8 +617,8 @@ The first rule that applies gives the angle word:
 | G2 | librating episodes that do not cover it | `episodic` (`recurrent` with ≥ 2) |
 | G1l | a libration of the last regime after a jump, no librating episode from the record's start to the jump | `episodic`, `final_regime = libration` from the start of the last episode (a capture); a libration on both sides of the jump stays `libration` |
 | G1q | a prograde 1:1 angle without a libration whose orbit-averaged angle stays in the quasi-satellite well long enough | analyzed again at the quasi-satellite floor ([pendulum](pendulum.md#co-orbitals-11)) |
-| G2c | no libration at $P_c$ (and no observed exit or entry), but the center librates | analyzed again at the center scale (below); the rejected analysis is in `geo_cs_rej_*` |
-| G3 | no episode, the $\sigma$-only potential holds, slips or stalls at the top of the well | `near_separatrix` (`pattern_a`, `pattern_b`) |
+| G2c | no libration at $P_c$ (and no observed exit or entry), but the center librates | analyzed again at the center scale (below); the rejected analysis is in `geo_cs_rej_*`; a reading there with a measured objection does not displace a fine dynamic libration (`geo_cs_displaced_*`) |
+| G3 | no episode, the $\sigma$-only potential holds, slips, or turns slower than their branch at the top of the well | `near_separatrix` (`pattern_a`, `pattern_b`) |
 | G4, G4b | the center makes a revolution, or ≥ 2 net | `circulation` (`alias` on an aliased step) |
 | G5 | runs with a moving center cover half the window | `drift` |
 | G5a | the slow center turns back once, away from the edges, range < $2\pi$ | `insufficient_time` (`arc`) |

@@ -963,8 +963,9 @@ for each case below.
 - **a subresonance** ([example](physics/gallery.md#transient-subresonance)): in (j) a member's line is flat while the
   catalog angle wanders.
 - **near_separatrix** ([example](physics/gallery.md#near-separatrix)): no accepted episode, but the angle stalls: ○
-  slips on the zero line of (c), or revolutions in (h) close to the separatrix zone
-  ([near the separatrix](physics/geometry.md#near-the-separatrix)).
+  slips on the zero line of (c), or revolutions in (h) close to the separatrix zone that cross the top slower than a
+  free rotation at their energy (a turn that merely slows at the top is a circulation;
+  [near the separatrix](physics/geometry.md#near-the-separatrix)).
 - **non_resonant, circulation** ([example](physics/gallery.md#circulation)): the center in (i) runs a full turn
   one way (shaded); the recurrence figure stays light away from its diagonal.
 - **non_resonant with a libration** ([kinematic](physics/gallery.md#kinematic-libration),

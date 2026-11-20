@@ -805,7 +805,14 @@ class AnalysisSettings:
         convention=True,
     )
     libration_centre_cycles: float = _setting(
-        3.0, 'LIBRATION_CENTRE_CYCLES', 'float', 'the center is the angle smoothed over this many cycles'
+        3.0,
+        'LIBRATION_CENTRE_CYCLES',
+        'float',
+        'the center is the angle smoothed over this many cycles; also the MMR separatrix zone: its strength modulation '
+        '(e and the varpi offset of the members) is read only from motion slower than this x the angle\'s own period '
+        '(P_cyc, else the median turn), and a record shorter than twice that has a standing separatrix, zone [1, 1] '
+        '(flag zone_external_unresolved)',
+        convention=True,
     )
     libration_centre_tp_prominence_deg: float = _setting(
         10.0,
@@ -825,6 +832,17 @@ class AnalysisSettings:
         '(MMR_TP_PROMINENCE_FLOOR_DEG raised to p_c there): the turns the precheck that qualified the scale reads: a swing '
         'below p_c is no turn of the center there (residue of the fast component W_c attenuates, or a libration too small '
         'for this scale, which the fine scale judges) (2003 TX9 3E+2J-10); off: the floor of the fine scale',
+    )
+    libration_centre_scale_objection_guard: bool = _setting(
+        True,
+        'LIBRATION_CENTRE_SCALE_OBJECTION_GUARD',
+        'bool',
+        'MMR G2c guard: a reading at the scale of the center replaces the fine reading only when it is at least as well '
+        'established as the resonance\'s own libration: when the fine pass reads the origin as dynamic and the center-scale '
+        'analysis left it unknown on a leaf where a measurement contradicts it (5a, 5a*, 5b, 5e, 5f, 5g, 5o), the fine '
+        'verdict stays and the center-scale reading is reported as the slow scale and in geo_cs_displaced_* (rule '
+        'centre_scale_displaced; 709123 2J-1: the g - g5 wave of the center, leaf 5g, displaced the 2J-1 libration); a '
+        'rule switch, no threshold; off: G2c always takes precedence',
     )
     mmr_scale_ladder: tuple = _setting(
         (0.71, 0.5, 0.35, 0.25, 0.18, 0.125),
@@ -889,11 +907,19 @@ class AnalysisSettings:
         0.75,
         'LIBRATION_STALL_REV_FRACTION',
         'float',
-        'pattern B: this fraction of revolutions has the rate minimum at the top',
+        'pattern B: this fraction of revolutions counts: the rate minimum at the top, slower than the rotating branch '
+        'by LIBRATION_STALL_RATE_TOL and the top passage within reach of the separatrix zone',
         convention=True,
     )
     libration_stall_rate_tol: float = _setting(
-        0.2, 'LIBRATION_STALL_RATE_TOL', 'float', '|r_min - r_pend(h)| above this = stall_rate_inconsistent (flag only)'
+        0.2,
+        'LIBRATION_STALL_RATE_TOL',
+        'float',
+        'pattern B: a revolution counts only when its slowest rate r_min is below r_pend(h), the min/mean rate of its '
+        'own rotating branch at its energy, by more than this (every rotating branch is slowest at the top); the medians '
+        '|r_min - r_pend| above it = stall_rate_inconsistent (flag); the former flag\'s tolerance (a branch at h = 1.14, '
+        'r_pend 0.55, counts turns slower than 0.35 at the top)',
+        convention=True,
     )
     libration_drift_min_window_fraction: float = _setting(
         0.5, 'LIBRATION_DRIFT_MIN_WINDOW_FRACTION', 'float', 'drift: rejected centre_moves runs cover at least this fraction of the window'

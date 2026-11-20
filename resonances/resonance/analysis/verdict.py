@@ -247,6 +247,9 @@ class Flag(StrEnum):
     # with its own force measured: a mark that names no mechanism and changes no status (W17 Q12)
     EXIT_AND_CAPTURE = 'exit_and_capture'
     ZONE_EQ_ONLY = 'zone_eq_only'
+    # the record resolves no motion slower than libration_centre_cycles x the angle's own period: the zone's
+    # separatrix is a standing one, [1, 1] (a column, no status)
+    ZONE_EXTERNAL_UNRESOLVED = 'zone_external_unresolved'
     ZONE_NUMERIC_MISMATCH = 'zone_numeric_mismatch'
     ZONE_EDGE_CYCLE = 'zone_edge_cycle'
     THREE_TP_EPISODE = 'three_tp_episode'

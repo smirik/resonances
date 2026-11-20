@@ -394,14 +394,17 @@ def test_the_edge_rule_reads_the_real_last_episode():
 
     W28: at the default settings the record has no runs at all (B6a: the cutoff is bound by 1.5 P_orb, 329 -> 990 yr,
     and all three runs were the P_orb wave of a), and B2 marks the episodes of a 5s row as forced (strength). The edge
-    rule is read on the geometry it was written for, with both switches off."""
+    rule is read on the geometry it was written for, with both switches off. The default reading is
+    near_separatrix since 2026-11-20 (docs/physics/geometry.md, near the separatrix)."""
     example = 'mmr2__145480__1N-4+0+3__1Myr'
     if not io.example_path(example).exists():
         pytest.skip('benchmark data not available')
     series = io.load_series(example)
     default = analyse_mmr(series, S)
     assert default.prep.cutoff.binding == 'orbit' and not default.geometry.episodes and not default.geometry.forced_wave_ids
-    assert (str(default.verdict.status), str(default.verdict.angle_status)) == ('non_resonant', 'circulation')
+    # 2026-11-20 (per-turn pattern B): its top passages crawl below their branch to h_top 1.000 before it turns back at
+    # 732 kyr: near_separatrix/pattern_b (a circulation before; no author label yet)
+    assert (str(default.verdict.status), str(default.verdict.angle_status)) == ('near_separatrix', 'near_separatrix')
     before_w28 = replace(S, mmr_filter_orbit_factor=0.0, mmr_forced_wave_strength=False)
     geometry = analyse_mmr(series, before_w28).geometry
     (real,) = geometry.episodes

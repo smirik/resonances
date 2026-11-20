@@ -201,7 +201,8 @@ def test_synthetic_pendulum_at_400_and_800_yr():
     # P = 1066 yr >= 2 x 400: measured; 2 P_c = 800 yr is itself too slow for the shape: those are not checked
     assert at_400.verdict.status == Status.RESONANT and not at_400.prep.filter_too_slow
     assert at_400.extra_columns['flt_filter_sensitive'] is False
-    assert at_400.extra_columns['flt_unchecked_quantities'] == 'energy;shape'
+    # and the stall (pattern B) is not compared on a record with a librating episode: no decision reads it there
+    assert at_400.extra_columns['flt_unchecked_quantities'] == 'stall;energy;shape'
     at_800 = analyse_mmr(series, settings_from_config(mmr_filter_cutoff_yr=800.0), scan_owner=False, scan_subresonances=False)
     # P < 2 x 800 (filter_too_slow): the shape of the oscillation is not measured, whatever the geometry says
     assert at_800.prep.filter_too_slow and str(Flag.FILTER_TOO_SLOW) in at_800.verdict.flags

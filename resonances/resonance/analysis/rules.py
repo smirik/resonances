@@ -45,6 +45,7 @@ class Rule(StrEnum):
     EXTEND_LENGTH_LIMITED = 'extend_length_limited'
     EQ_SCALE_NOT_OBJECTION = 'eq_scale_not_objection'
     SLOW_SCALE = 'slow_scale'
+    CENTRE_SCALE_DISPLACED = 'centre_scale_displaced'  # G2c guard: a contradicted center-scale reading keeps the fine one
     SECULAR_CYCLE_KINEMATIC = 'secular_cycle_kinematic'
     KINEMATIC_HIGH = 'kinematic_high'
     # subresonances
@@ -113,6 +114,9 @@ RULES: dict[Rule, RuleInfo] = {
     Rule.EXTEND_LENGTH_LIMITED: _w28('extend', 'a length-limited uncertain row given extend (B9)'),
     Rule.EQ_SCALE_NOT_OBJECTION: _w28('5x', 'leaf 5x: an eq_scale strength failure is no objection (B9)'),
     Rule.SLOW_SCALE: _w28('G2c', 'the slow component stored and judged at its own scale (B10a)'),
+    Rule.CENTRE_SCALE_DISPLACED: RuleInfo(
+        'G2c', 'a center-scale reading with a measured objection does not displace a fine dynamic libration (709123)', 'v1.1.0'
+    ),
     Rule.SECULAR_CYCLE_KINEMATIC: _w28('K3s', 'K3s: the slow cycle is a secular cycle, kinematic libration (B10a)'),
     Rule.KINEMATIC_HIGH: _w28('K1e', 'a kinematic libration with measured physics allowed to reach high (A5)'),
     Rule.SUBRESONANCE_THEORY_SELECT: _w28('S', 'the theory chose the subresonance (A6b)'),

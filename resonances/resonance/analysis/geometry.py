@@ -726,7 +726,7 @@ class Revolution:
 
 @dataclass(frozen=True)
 class PatternB:
-    """Stalls of a circulation at the top of the potential (SPEC §4.3.5)."""
+    """Stalls of a circulation at the top of the potential (SPEC §4.3.5), judged turn by turn (`pattern_b`)."""
 
     n_revolutions: int
     stall_fraction: float  # fraction of turns with the rate minimum within the tolerance of the top
@@ -736,9 +736,12 @@ class PatternB:
     rate_min_over_mean_pend_med: float  # r_pend(h) of the same turns
     h_rev_med: float
     h_rev_max: float
-    in_zone: bool  # every h_rev <= h_hi + margin * sigma_h
-    detected: bool  # in_zone and stall_fraction >= libration_stall_rev_fraction
-    rate_inconsistent: bool  # |r_min - r_pend| > libration_stall_rate_tol (flag)
+    in_zone: bool  # >= libration_stall_rev_fraction of the top passages h_top <= h_hi + margin * sigma_h
+    detected: bool  # counted_fraction >= libration_stall_rev_fraction
+    rate_inconsistent: bool  # |r_min - r_pend| > libration_stall_rate_tol, medians (flag)
+    counted_fraction: float = NAN  # turns at the top, below their rotating branch and within reach (see pattern_b)
+    h_top_med: float = NAN  # energy of the top passages, 1 + (h - 1) s |s|, s = r_min / r_pend(h)
+    h_top_min: float = NAN
 
 
 @dataclass(frozen=True)
@@ -1240,6 +1243,9 @@ def _pattern_b_columns(pattern: Optional[PatternB]) -> dict:
         'geo_pattern_b_in_zone': pattern.in_zone,
         'geo_pattern_b_detected': pattern.detected,
         'geo_stall_rate_inconsistent': pattern.rate_inconsistent,
+        'geo_stall_counted_fraction': pattern.counted_fraction,
+        'geo_h_top_med': pattern.h_top_med,
+        'geo_h_top_min': pattern.h_top_min,
     }
 
 
@@ -4532,18 +4538,57 @@ def revolutions(t_yr: np.ndarray, angle_f: np.ndarray, rate_f: np.ndarray, windo
     ]
 
 
+def rotating_branch_rate(h, potential=None):
+    """r_pend(h): min/mean sigma_dot over one turn of a free rotation of energy h > 1 (its rotating branch); nan for
+    h <= 1. One harmonic (or no potential): the cosine pendulum's `pendulum.rate_min_over_mean`. Several harmonics:
+    v_top T(h) / 2 pi with v_top = sqrt(2 (h - 1) depth) at the top of V and T(h) = `pendulum.period_in_potential`."""
+    h = np.atleast_1d(np.asarray(h, dtype=float))
+    if potential is None or potential.n_harmonics == 1:
+        return np.atleast_1d(pendulum.rate_min_over_mean(h))
+    out = np.full_like(h, NAN)
+    for k, value in enumerate(h):
+        if np.isfinite(value) and value > 1:
+            period = pendulum.period_in_potential(potential, float(value))
+            if np.isfinite(period) and period > 0:
+                out[k] = np.sqrt(2 * (value - 1) * potential.depth) * period / TWO_PI
+    return out
+
+
+def top_passage_energy(h, r_min, r_pend):
+    """h_top = 1 + (h - 1) s |s|, s = r_min / r_pend(h): the energy of a turn's top passage from its slowest rate.
+
+    On the rotating branch the top speed is v(h) = sqrt(2 (h - 1) depth) (in the turn's own mean-rate units r_pend);
+    the observed slowest rate r_min = s r_pend is the speed v_top = s v(h), so h_top - 1 = v_top^2 / (2 depth) =
+    s^2 (h - 1), signed by the direction of the passage (s < 0: the turn backs up at the top, h_top < 1). A turn at
+    h <= 1 (no rotating branch) keeps h."""
+    h, r_min, r_pend = (np.asarray(x, dtype=float) for x in (h, r_min, r_pend))
+    rotating = np.isfinite(h) & (h > 1) & np.isfinite(r_pend) & (r_pend > 0)
+    with np.errstate(invalid='ignore', divide='ignore'):
+        s = np.where(rotating, r_min / np.where(rotating, r_pend, 1.0), NAN)
+    return np.where(rotating, 1 + (h - 1) * s * np.abs(s), h)
+
+
 def pattern_b(
     revs: Sequence[Revolution],
     top_rad: float,
     h_hi: float,
     sigma_h: float,
     settings: AnalysisSettings,
+    potential=None,
 ) -> PatternB:
-    """Pattern B: every turn reachable by the separatrix (h_rev <= h_hi + separatrix_sigma_margin * sigma_h)
-    and the rate minima of >= libration_stall_rev_fraction turns within libration_stall_phase_tol_deg of
-    the potential top `top_rad`. `rate_inconsistent` compares r_min with `pendulum.rate_min_over_mean(h)`.
+    """Pattern B, turn by turn (the near_separatrix fix of 2026-11-20). Every rotating branch is slowest at the top, so
+    a stall at the top alone says nothing about the separatrix; a turn k counts when
 
-    Unknown energies (nan h or h_hi) leave `in_zone` False: pattern B is then not detected.
+    (i) its rate minimum is within libration_stall_phase_tol_deg of the potential top `top_rad`;
+    (ii) it slows more than its own rotating branch explains: r_pend(h_k) - r_min,k > libration_stall_rate_tol
+         (`rotating_branch_rate`; a turn at h_k <= 1 has no branch and passes this clause);
+    (iii) its top passage is within reach of the separatrix: h_top,k <= h_hi + separatrix_sigma_margin x sigma_h
+         (`top_passage_energy`; h_hi the zone's upper edge, read from motion external to the angle).
+
+    `detected` when the counted share >= libration_stall_rev_fraction. `stall_fraction` is the share of (i) alone,
+    `in_zone` that share of (iii); `rate_inconsistent` compares the medians of r_min and r_pend (flag).
+    `potential` (V_E) sets r_pend for several harmonics; None or one harmonic: the cosine pendulum.
+    Unknown energies (nan h or h_hi) count no turn: pattern B is then not detected.
     """
     n = len(revs)
     if n == 0:
@@ -4556,15 +4601,23 @@ def pattern_b(
         at_top = np.abs(wrap_pi(phases - top_rad)) <= np.radians(settings.libration_stall_phase_tol_deg)
         stall_fraction = float(np.mean(at_top))
     else:
+        at_top = np.zeros(n, dtype=bool)
         stall_fraction = NAN
     margin = settings.separatrix_sigma_margin * (sigma_h if np.isfinite(sigma_h) else 0.0)
-    in_zone = bool(np.all(np.isfinite(h)) and np.isfinite(h_hi) and np.all(h <= h_hi + margin))
     rotating = np.isfinite(h) & (h > 1)
-    r_pend = np.atleast_1d(pendulum.rate_min_over_mean(h[rotating]))
-    r_pend_med = float(np.median(r_pend)) if len(r_pend) else NAN
+    r_pend = np.full(n, NAN)
+    if rotating.any():
+        r_pend[rotating] = rotating_branch_rate(h[rotating], potential)
+    h_top = top_passage_energy(h, r_min, r_pend)
+    reach = np.isfinite(h_top) & np.isfinite(h_hi) & (h_top <= h_hi + margin)
+    with np.errstate(invalid='ignore'):
+        below_branch = np.where(rotating, (r_pend - r_min) > settings.libration_stall_rate_tol, np.isfinite(h))
+    counted_fraction = float(np.mean(at_top & below_branch & reach))
+    r_pend_rot = r_pend[np.isfinite(r_pend)]
+    r_pend_med = float(np.median(r_pend_rot)) if len(r_pend_rot) else NAN
     r_min_med = float(np.median(r_min))
     inconsistent = bool(np.isfinite(r_pend_med) and abs(r_min_med - r_pend_med) > settings.libration_stall_rate_tol)
-    detected = bool(in_zone and np.isfinite(stall_fraction) and stall_fraction >= settings.libration_stall_rev_fraction)
+    finite_top = h_top[np.isfinite(h_top)]
     return PatternB(
         n_revolutions=n,
         stall_fraction=stall_fraction,
@@ -4574,9 +4627,12 @@ def pattern_b(
         rate_min_over_mean_pend_med=r_pend_med,
         h_rev_med=float(np.nanmedian(h)) if np.isfinite(h).any() else NAN,
         h_rev_max=float(np.nanmax(h)) if np.isfinite(h).any() else NAN,
-        in_zone=in_zone,
-        detected=detected,
+        in_zone=bool(np.mean(reach) >= settings.libration_stall_rev_fraction),
+        detected=bool(counted_fraction >= settings.libration_stall_rev_fraction),
         rate_inconsistent=inconsistent,
+        counted_fraction=counted_fraction,
+        h_top_med=float(np.median(finite_top)) if len(finite_top) else NAN,
+        h_top_min=float(np.min(finite_top)) if len(finite_top) else NAN,
     )
 
 
@@ -6033,6 +6089,7 @@ def finish_geometry(
     settings: AnalysisSettings,
     regime_prominence: Optional[LocalProminence] = None,
     cycle_spans_yr: Optional[np.ndarray] = None,
+    potential=None,
 ) -> Geometry:
     """Add slips (needs T0), pattern B (needs the potential top and the zone h_hi) and confirmed jumps
     (needs cycle energies); set `regime_start_yr`, the window of the last regime and mark the runs
@@ -6113,7 +6170,7 @@ def finish_geometry(
         flags.append(str(Flag.UNWRAP_STEP_SUSPECT))
 
     geometry.revolutions = _with_energies(geometry.revolutions, cycle_times, energies)
-    geometry.pattern_b = pattern_b(geometry.revolutions, top_rad, h_hi, sigma_h, settings)
+    geometry.pattern_b = pattern_b(geometry.revolutions, top_rad, h_hi, sigma_h, settings, potential)
     if geometry.pattern_b.rate_inconsistent:
         flags.append(str(Flag.STALL_RATE_INCONSISTENT))
     geometry.flags = list(dict.fromkeys(flags))

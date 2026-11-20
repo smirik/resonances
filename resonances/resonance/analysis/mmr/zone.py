@@ -104,6 +104,9 @@ class Modulation:
     nu_rad_yr: float = NAN  # frequency of the modulation
     eq_dk_over_k: float = NAN
     e_trend_per_kyr: float = NAN
+    # the record is too short to resolve any motion slower than the angle's own period (`external_cutoff_yr`): the
+    # strength is held constant, a standing separatrix (zone [1, 1]), flag zone_external_unresolved
+    external_unresolved: bool = False
 
     @property
     def omega_rel(self) -> np.ndarray:
@@ -291,6 +294,20 @@ def _offset_rate(offset: np.ndarray, t_yr: np.ndarray, mask: np.ndarray) -> floa
     return float(abs(np.polyfit(t_yr[mask], offset[mask], 1)[0]))
 
 
+def external_cutoff_yr(period_yr: float, settings: AnalysisSettings) -> float:
+    """libration_centre_cycles x the angle's own period P_own (`record_period`) [yr]: the zone's modulation is read
+    only from motion slower than this (the e_slow window W_c of a librator); nan without a period."""
+    if not (np.isfinite(period_yr) and period_yr > 0):
+        return NAN
+    return float(settings.libration_centre_cycles * period_yr)
+
+
+def _unresolved(t_yr: np.ndarray, cutoff_yr: float) -> bool:
+    """No stretch of the record lies a cutoff away from both edges (`edge_window` empty): nothing slower than the
+    cutoff is measured on it."""
+    return not np.isfinite(filtering.edge_window(t_yr, cutoff_yr)[0])
+
+
 def best_members(
     series: MMRSeries,
     t_yr: np.ndarray,
@@ -300,11 +317,24 @@ def best_members(
     context: Context,
     cutoff_yr: float,
     settings: AnalysisSettings,
+    period_yr: float = NAN,
 ) -> Optional[Modulation]:
     """The members' modulation over each planet of the term (multiplet_harmonics of the varpi coefficients); the
-    planet with the largest gain wins. None for a retrograde angle or when no planet gives a finite fit."""
+    planet with the largest gain wins. None for a retrograde angle or when no planet gives a finite fit.
+
+    With the angle's own period `period_yr` (P_own) the offset varpi - varpi_P is low-passed at
+    max(cutoff_yr, `external_cutoff_yr`): the strength modulation must come from motion external to the angle, not from
+    its own varpi response at P_own (which pumps the zone's trial librations over the top, the 2J-1 pilot). A planet
+    counts only when that slow offset sweeps at least one full turn over `mask`: on less the members' harmonics are
+    not separated from each other and the constant (the same one-full-period rule as the e-cycle sinusoid of
+    `modulation_from_eccentricity`; 523899 3N-5: nu T = 0.006 rad, eps 1-500). None when the record does not resolve
+    that cutoff. Without `period_yr` the offset is low-passed at `cutoff_yr` and every planet counts (the old reading)."""
     spec = series.resonance
     if spec.retrograde:
+        return None
+    external = external_cutoff_yr(period_yr, settings)
+    cut = max(cutoff_yr, external) if np.isfinite(external) else cutoff_yr
+    if np.isfinite(external) and _unresolved(t_yr, cut):
         return None
     best = None
     for planet, planet_p in zip(spec.planets, spec.planet_varpi_terms):
@@ -312,7 +342,10 @@ def best_members(
         offset = _varpi_offset(series, planet, context, t_yr)
         if offset is None or len(harmonics) < 2:
             continue
-        offset = filtering.lowpass_with(t_yr, offset, cutoff_yr, settings)
+        low = filtering.lowpass_or_none(t_yr, offset, cut, settings) if cut != cutoff_yr else None
+        offset = low if low is not None else filtering.lowpass_with(t_yr, offset, cutoff_yr, settings)
+        if np.isfinite(external) and np.ptp(offset[mask]) < TWO_PI:
+            continue
         omega_squared, well, eps, gain = modulation_from_members(t_yr, angle, adot, offset, context.identity_coefficient, harmonics, mask)
         if not np.isfinite(gain) or (best is not None and gain <= best.gain):
             continue
@@ -321,18 +354,47 @@ def best_members(
     return best
 
 
-def eccentricity_modulation(series: MMRSeries, slow: SlowComponents, context: Context, t_yr: np.ndarray) -> Modulation:
+def eccentricity_modulation(
+    series: MMRSeries,
+    slow: SlowComponents,
+    context: Context,
+    t_yr: np.ndarray,
+    period_yr: float = NAN,
+    settings: Optional[AnalysisSettings] = None,
+) -> Modulation:
     """The e^q route: q = |p| of the body, nu = |varpi_dot - g_P| of the most massive planet of the term; relative
-    Omega^2 (Omega_bar = 1), fixed stable point; dK/K and the trend of e over the trimmed slow window."""
+    Omega^2 (Omega_bar = 1), fixed stable point; dK/K and the trend of e over the trimmed slow window.
+
+    e is `slow.e_slow` (W_c = libration_centre_cycles x P_cyc, 3 P_c without cycles). With the angle's own period
+    `period_yr` and `settings`, a circulation's e (W_c shorter than `external_cutoff_yr`) is low-passed at that cutoff
+    instead: at 3 P_c it keeps the angle's own e line at P_circ, which pumps the zone's trial librations over the top
+    (731025 2J-1: e_slow 0.0124 at P_own, 0.0001 with the own band removed). When the record does not resolve the
+    cutoff, e is its mean: a standing separatrix (zone [1, 1]), `external_unresolved`. Within a cutoff of either edge
+    the filter spreads the own line back in (the edge transient of the forward-backward filter: 0.008 of a 0.01 line
+    at 3 P_own), so there e is held at its value at the edge of `filtering.edge_window` and dK/K is read inside it."""
     spec = series.resonance
-    e = np.interp(t_yr, np.asarray(slow.t_yr, float), np.asarray(slow.e_slow, float))
+    e_slow = np.asarray(slow.e_slow, float)
+    measured = slow.window
+    unresolved = False
+    external = external_cutoff_yr(period_yr, settings) if settings is not None else NAN
+    if np.isfinite(external) and external > slow.window_yr:
+        t_slow = np.asarray(slow.t_yr, float)
+        inside = filtering.window_mask(t_slow, filtering.edge_window(t_slow, external))
+        if np.count_nonzero(inside) < 2:  # `_unresolved`, or a window between two samples
+            e_slow, unresolved = np.full_like(t_slow, float(np.nanmean(series.e))), True
+        else:
+            low = filtering.lowpass_or_none(t_slow, np.asarray(series.e, float), external, settings)
+            if low is not None:
+                measured = filtering.edge_window(t_slow, external)
+                e_slow = np.interp(t_slow, t_slow[inside], low[inside])  # held flat beyond the edge window
+    e = np.interp(t_yr, np.asarray(slow.t_yr, float), e_slow)
     nu = NAN
     masses = {name: context.planet_mass.get(name, NAN) for name in spec.planets}
     if masses and not spec.retrograde:
         planet = max(masses, key=lambda name: masses[name] if np.isfinite(masses[name]) else -np.inf)
         rate = context.planet_varpi_rate_rad_yr.get(planet, NAN)
         nu = abs(context.body_varpi_rate_rad_yr - rate) if np.isfinite(rate) else NAN
-    inside = filtering.window_mask(t_yr, slow.window)
+    inside = filtering.window_mask(t_yr, measured)
     use = inside if np.count_nonzero(inside) >= 2 else np.ones_like(t_yr, dtype=bool)
     order = abs(spec.body_varpi_coefficient)
     _, dk, trend = modulation_from_eccentricity(t_yr[use], e[use], order, 1.0, nu)
@@ -340,7 +402,7 @@ def eccentricity_modulation(series: MMRSeries, slow: SlowComponents, context: Co
     if not np.all(np.isfinite(omega_squared)):
         omega_squared = np.ones_like(t_yr)
     source = SOURCE_ECCENTRICITY if order != 0 else SOURCE_NONE
-    return Modulation(source, t_yr, omega_squared, np.zeros_like(t_yr), '', (), NAN, nu, dk, trend)
+    return Modulation(source, t_yr, omega_squared, np.zeros_like(t_yr), '', (), NAN, nu, dk, trend, unresolved)
 
 
 # --------------------------------------------------------------------------------------------- the zone
@@ -1008,10 +1070,13 @@ def _zone_of(
 
 
 def _zone_flags(modulation: Modulation, zone: Optional[Zone], edges: Sequence[bool], in_zone: bool) -> List[str]:
-    """zone_eq_only (no members), zone_numeric_mismatch, zone_edge_cycle, episodes_in_separatrix_zone."""
+    """zone_eq_only (no members), zone_external_unresolved (a standing separatrix: the record resolves no motion slower
+    than the angle's own period), zone_numeric_mismatch, zone_edge_cycle, episodes_in_separatrix_zone."""
     flags = []
     if modulation.source != SOURCE_MEMBERS:
         flags.append(str(Flag.ZONE_EQ_ONLY))
+    if modulation.external_unresolved:
+        flags.append(str(Flag.ZONE_EXTERNAL_UNRESOLVED))
     if zone is not None and zone.mismatch:
         flags.append(str(Flag.ZONE_NUMERIC_MISMATCH))
     if any(edges):
@@ -1019,6 +1084,42 @@ def _zone_flags(modulation: Modulation, zone: Optional[Zone], edges: Sequence[bo
     if in_zone:
         flags.append(pendulum.EPISODES_IN_SEPARATRIX_ZONE)
     return flags
+
+
+def modulations(
+    series: MMRSeries,
+    slow: SlowComponents,
+    context: Context,
+    t_yr: np.ndarray,
+    angle: np.ndarray,
+    adot: np.ndarray,
+    window: np.ndarray,
+    cutoff_yr: float,
+    period_yr: float,
+    settings: AnalysisSettings,
+) -> Tuple[Modulation, Modulation]:
+    """(the zone's modulation, the frames' modulation).
+
+    The zone's: the strength modulation read only from motion external to the angle (`best_members` and
+    `eccentricity_modulation` with the angle's own period `period_yr`): it predicts how the separatrix pulsates.
+    The frames': the members' own fit (`best_members` without the period, the reading before the external cutoff) when
+    it explains sigma_dot^2 better than one harmonic by mmr_force_multi_gain, else the zone's. A frame is a coordinate
+    system V_E is fitted in and is kept only by its R^2 (`best_frame`), not a prediction of the zone: removing the
+    members' frame removed the frame in which R0 passed (UG22 10E-17, 117306 11M-20, 10123 and 4 more; W18 moving
+    centre)."""
+    if settings.mmr_zone_method == 'eq_only':
+        modulation = eccentricity_modulation(series, slow, context, t_yr, period_yr, settings)
+        return modulation, modulation
+
+    def taken(candidate: Optional[Modulation]) -> bool:
+        return candidate is not None and candidate.gain >= settings.mmr_force_multi_gain
+
+    external = best_members(series, t_yr, angle, adot, window, context, cutoff_yr, settings, period_yr)
+    zone_modulation = external if taken(external) else eccentricity_modulation(series, slow, context, t_yr, period_yr, settings)
+    own = external  # without a period the zone's reading is the members' own fit
+    if np.isfinite(external_cutoff_yr(period_yr, settings)):
+        own = best_members(series, t_yr, angle, adot, window, context, cutoff_yr, settings)
+    return zone_modulation, own if taken(own) else zone_modulation
 
 
 def analyse_separatrix(
@@ -1035,7 +1136,8 @@ def analyse_separatrix(
     crossings and the mechanism (pulsation, layer, kick, trend, unexplained); None without a cycle or a turn.
 
     R0 sigma-only: the period law (median T_obs/T_pred over the cycles) and the coherence of the per-cycle wells, both
-    in the frame that explains sigma_dot^2 best (`best_frame`). T_pred of a libration cycle is its period in the full
+    in the frame that explains sigma_dot^2 best (`best_frame`; the candidates from the frames' modulation, the zone
+    and its columns from the zone's: `modulations`). T_pred of a libration cycle is its period in the full
     averaged well when `well` exists (a two-body angle with its planet saved: `full_well_laws`) and the swing librates
     in it, else in the fitted V_E; a turn keeps V_E's. R0 with a: sigma-only passes and V_E ~ V_F cycle by
     cycle on the visited arc, counted over the eligible cycles only (`_window_correlation`, `window_eligible`,
@@ -1055,11 +1157,11 @@ def analyse_separatrix(
     if np.count_nonzero(window) < 2:
         return None
 
-    modulation = None if settings.mmr_zone_method == 'eq_only' else best_members(series, t, angle, adot, window, context, cutoff, settings)
-    if modulation is None or not modulation.gain >= settings.mmr_force_multi_gain:
-        modulation = eccentricity_modulation(series, slow, context, t)
+    # the zone's strength modulation is read from motion slower than the angle's own period (members and e^q alike);
+    # the members' own fit stays a frame candidate (`modulations`)
+    modulation, frame_modulation = modulations(series, slow, context, t, angle, adot, window, cutoff, period, settings)
     windows = [(start, end) for start, end, _ in bounds]
-    frame_name, frame, v_e, per_window = best_frame(t, angle, rate, windows, candidate_frames(t, modulation, geometry), settings)
+    frame_name, frame, v_e, per_window = best_frame(t, angle, rate, windows, candidate_frames(t, frame_modulation, geometry), settings)
     if v_e is None:
         return None
     coherence = pendulum.well_coherence(per_window)
@@ -1109,7 +1211,7 @@ def analyse_separatrix(
         vf_law = vf_period_law(comparisons) if vf_check else vf_law
     r0_episode = None
     if settings.separatrix_r0_episodes and with_slow == CheckValue.NOT_MEASURED and sigma_only != CheckValue.FAIL:
-        local = episode_r0(t, prep, geometry, modulation, context, settings, well, vf_check)
+        local = episode_r0(t, prep, geometry, frame_modulation, context, settings, well, vf_check)
         if local is not None:
             sigma_only, with_slow, r0_episode, vf_law = local
     eligible = [c.eligible for c in comparisons]
@@ -1154,7 +1256,7 @@ def analyse_separatrix(
 
     flags = _zone_flags(modulation, zone, edges, in_zone)
     h_finite = [h for h in h_values if np.isfinite(h)]
-    shift = modulation.frame().well_shift_rad[window]
+    shift = modulation.frame().well_shift_rad[window]  # the zone's modulation (a column)
     return EnergyAnalysis(
         potential_e=v_e,
         potential_f=v_f,

@@ -253,7 +253,8 @@ CASES = (
         'mmr2__523899__3N-5+0+2',
         'near_separatrix',
         'Stalls at the top of the well',
-        'No closed libration cycle, but $\\sigma$ stalls near the top of its own potential well in each revolution while '
+        'No closed libration cycle, but in each revolution $\\sigma$ turns back briefly at the top of its own potential well, '
+        'slower than any free rotation at its energy, while '
         'the energy fits the potential built from $a$ (pattern B): motion close to the separatrix. A measured objection '
         '($\\dot\\sigma$ does not follow $a - a_*$ closely: the identity check fails) makes the confidence low, and the '
         'action asks for a review. This status is rare.',

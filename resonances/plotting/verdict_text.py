@@ -1580,6 +1580,7 @@ ZONE_METHOD_WORDS = {
 }
 ZONE_FLAG_WORDS = {
     'zone_eq_only': 'the modulation from e alone',
+    'zone_external_unresolved': 'the record resolves no motion slower than the angle’s own period (a standing separatrix)',
     'zone_numeric_mismatch': 'the integrated and adiabatic estimates disagree',
     'zone_edge_cycle': 'a cycle lies at the zone’s edge',
 }
@@ -2243,7 +2244,8 @@ def _shape_step(f: MMRFacts) -> Step:
     if angle == 'drift':
         return _drift_shape_step(f)
     if angle == 'near_separatrix':
-        what = 'stalls at the top in each revolution (pattern B)' if subtype == 'pattern_b' else 'slips over the top (pattern A)'
+        pattern_b = 'slows at the top below its rotating branch in most revolutions (pattern B)'
+        what = pattern_b if subtype == 'pattern_b' else 'slips over the top (pattern A)'
         return _shape(f'no libration; σ {what} → near_separatrix')
     if angle == 'insufficient_time':
         return _shape(_insufficient_text(f, subtype), StepState.LEAF)

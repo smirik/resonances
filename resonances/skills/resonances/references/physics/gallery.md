@@ -158,7 +158,7 @@ No closed libration cycle, but the angle stalls at the top of its own well.
 
 ### Stalls at the top of the well {#near-separatrix}
 
-No closed libration cycle, but $\sigma$ stalls near the top of its own potential well in each revolution while the energy fits the potential built from $a$ (pattern B): motion close to the separatrix. A measured objection ($\dot\sigma$ does not follow $a - a_*$ closely: the identity check fails) makes the confidence low, and the action asks for a review. This status is rare.
+No closed libration cycle, but in each revolution $\sigma$ turns back briefly at the top of its own potential well, slower than any free rotation at its energy, while the energy fits the potential built from $a$ (pattern B): motion close to the separatrix. A measured objection ($\dot\sigma$ does not follow $a - a_*$ closely: the identity check fails) makes the confidence low, and the action asks for a review. This status is rare.
 
 **523899**, `3N-5+0+2`: `near_separatrix` · `near_separatrix` · `separatrix_zone` · `low`. Record: 100 kyr, step 1 yr, SABA(10,6,4).
 

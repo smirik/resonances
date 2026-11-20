@@ -281,7 +281,7 @@ see, on the episode the status rests on and its counterpart at $2P_c$ (the episo
 |---|---|---|
 | turning points | the counts differ by more than $\max(2,\ 0.1 N)$, or one full cycle appears or vanishes | `MMR_FILTER_GUARD_TP_ABS` = 2, `MMR_FILTER_GUARD_TP_REL` = 0.1 |
 | episode | not reproduced, or its start or end moves by more than one libration period | `MMR_FILTER_GUARD_BOUNDARY_PERIODS` = 1 |
-| stalls | appear or vanish | — |
+| stalls (pattern B) | appear or vanish; compared only on a record without librating episodes, the only one whose verdict reads pattern B (G3); on a record with episodes it is not checked | — |
 | energy $h$ (median per cycle) | crosses $h = 1$, or changes by more than $0.1\max(1, \lvert h\rvert)$ | `MMR_FILTER_GUARD_H_TOL` = 0.1 |
 | shape | the largest half-amplitude changes by more than 20 %, or the amplitude or center-shift check flips | `MMR_FILTER_GUARD_AMP_REL` = 0.2 |
 

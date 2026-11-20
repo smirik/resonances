@@ -145,13 +145,7 @@ LEAVES = {
     'K3s': VETO,
     '5s': VETO,  # two-body by direct averaging or the harmonic; the three-body e^q route is SCALE (`_strength_veto`)
     '5s*': SCALE,
-    '5a': OBJECTION,
-    '5a*': OBJECTION,
-    '5b': OBJECTION,
-    '5e': OBJECTION,
-    '5f': OBJECTION,
-    '5g': OBJECTION,
-    '5o': OBJECTION,
+    **dict.fromkeys(mmr_decide.OBJECTION_LEAVES, OBJECTION),  # 5a, 5a*, 5b, 5e, 5f, 5g, 5o: one set with the G2c guard
     '2j': GEOMETRIC,
     '5x': GEOMETRIC,
     '5n': GEOMETRIC,
@@ -198,7 +192,7 @@ OBJECTION_STRENGTH, OBJECTION_ONSET, OBJECTION_STRENGTH_SCALE = 'strength', 'ons
 OBJECTION_FORCE_LINE, OBJECTION_OWNER, OBJECTION_KINEMATIC = 'force_line', 'owner', 'kinematic'
 OBJECTION_ZLK_GATE, OBJECTION_ZLK_FREE_E, OBJECTION_ZLK_INTEGRAL = 'zlk_gate_kinematic', 'zlk_free_e', 'zlk_ei_integral'
 # the checks an objection leaf of `mmr.decide` measured failing (`_objection`, `_contaminated`, `_identity_objects`);
-# 5o reads its own (`_leaf_objections`)
+# 5o reads its own (`_leaf_objections`); with 5o these are `mmr.decide.OBJECTION_LEAVES` (tested)
 LEAF_OBJECTIONS = {
     '5a': (OBJECTION_FORCE_LAW, OBJECTION_POTENTIAL),
     '5a*': (OBJECTION_FORCE_LAW,),

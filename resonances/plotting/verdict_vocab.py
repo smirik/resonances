@@ -556,7 +556,7 @@ ANGLE_SUBTYPE_WORDS = {
     'stall': 'σ stalls',
     'few_cycles': 'too few turning points for a cycle',
     'pattern_a': 'slips over the top by whole turns',
-    'pattern_b': 'stalls near the top of its well in each revolution',
+    'pattern_b': 'crawls over the top of its well, slower than a free rotation, in most revolutions',
     'undefined_phase': 'the phase is not defined',
 }
 

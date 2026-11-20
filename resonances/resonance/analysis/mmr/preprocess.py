@@ -593,7 +593,7 @@ GUARD_QUANTITIES = ('turning_points', 'episodes', 'stall', 'energy', 'shape')
 SENSITIVE_CHECKS = {
     'turning_points': ('check_mmr_one_pendulum', 'check_mmr_onset', 'check_mmr_exit'),
     'episodes': ('check_mmr_one_pendulum', 'check_mmr_onset', 'check_mmr_exit'),
-    'stall': (),
+    'stall': (),  # pattern B (G3): compared only on a record without librating episodes (`filter_sensitivity`)
     'energy': ('check_mmr_potential', 'check_mmr_separatrix_zone'),
     'shape': ('check_mmr_one_pendulum',),
 }
@@ -620,8 +620,8 @@ class DecisiveQuantities:
     cutoff_yr: float
     n_tp: int  # turning points in the interval
     n_episodes: int  # accepted episodes reaching into the interval
-    stall: bool  # pattern B: the turns stall at the top of the potential
-    stall_fraction: float
+    stall: bool  # pattern B: the turns stall at the top of the potential (geometry.pattern_b detected)
+    stall_fraction: float  # the share of counted turns (PatternB.counted_fraction)
     h_med: float  # median energy of the cycles over the separatrix energy (nan without cycles)
     interval: Tuple[float, float] = (NAN, NAN)
     period_yr: float = NAN  # P_cyc of this measurement (on the decisive episode: its own median period)
@@ -754,7 +754,7 @@ def decisive_quantities(
         n_tp=int(np.sum(_inside(tp_times, region))),
         n_episodes=len(bounds),
         stall=bool(pattern is not None and pattern.detected),
-        stall_fraction=float(pattern.stall_fraction) if pattern is not None else NAN,
+        stall_fraction=float(pattern.counted_fraction) if pattern is not None else NAN,  # the share `stall` reads
         h_med=float(np.median(h)) if len(h) else NAN,
         interval=(float(interval[0]), float(interval[1])),
         period_yr=period,
@@ -880,15 +880,22 @@ def compare_quantities(
     at_double: Optional[DecisiveQuantities],
     settings: AnalysisSettings,
     step_yr: Optional[float] = None,
+    compare_stall: bool = True,
 ) -> FilterSensitivity:
     """Each decisive quantity at P_c against 2 P_c with the tolerance of its setting (`GuardOutcome`); without the
-    x2 measurement nothing is checked. `step_yr`: the output step of the filter gain (None = the analog limit)."""
+    x2 measurement nothing is checked. `step_yr`: the output step of the filter gain (None = the analog limit).
+    `compare_stall` False: the stall is not_checked (a record with librating episodes, where no decision reads
+    pattern B: `filter_sensitivity`)."""
     if at_double is None:
         return FilterSensitivity(at_cutoff, None, (), GUARD_QUANTITIES)
+    if not compare_stall:
+        stall = GuardOutcome.NOT_CHECKED
+    else:
+        stall = GuardOutcome.SAME if at_cutoff.stall == at_double.stall else GuardOutcome.CHANGED
     outcomes = {
         'turning_points': _compare_turning_points(at_cutoff, at_double, settings),
         'episodes': _compare_episodes(at_cutoff, at_double, settings),
-        'stall': GuardOutcome.SAME if at_cutoff.stall == at_double.stall else GuardOutcome.CHANGED,
+        'stall': stall,
         'energy': _compare_energy(at_cutoff, at_double, settings, step_yr),
         'shape': _compare_shape(at_cutoff, at_double, settings, step_yr),
     }
@@ -946,6 +953,7 @@ def filter_sensitivity(
     prominence_rad: float,
     settings: AnalysisSettings,
     decisive_id: Optional[int] = None,
+    compare_stall: bool = True,
 ) -> FilterSensitivity:
     """DELTA 13a: measure turning points, episodes, stalls, the energy per cycle and the shape again at 2 P_c and
     compare the numbers with those at P_c (`geometry`, `energy` of the analysis) on the interval both see (the x1
@@ -961,7 +969,11 @@ def filter_sensitivity(
     (`geometry.turning_points.local`); the record's alone loses every swing of a quiet libration before an exit
     (W16 independent test: 31 TPs at x1, none at x2 with the record's 35 deg). `angle`: the x1 angle of `geometry`;
     the x2 one is built from it (`doubled_angle`), so the runs at x2 are judged in the same frames (its well model) and
-    by the same MMR rules (edges, returns, cuts)."""
+    by the same MMR rules (edges, returns, cuts). `compare_stall` False (the caller's record has librating episodes,
+    `decide.librating_episodes`): the stall is measured at both cutoffs (columns) but not compared. Pattern B is a
+    reading of a record without episodes (G3 runs only when G2 finds none), so on a record with episodes the stall
+    measures nothing the verdict reads; compared there it flips on turns that reverse inside a libration (17445
+    5J-2S-2: 0.58 counted at P_c, 0.92 at 2 P_c) and made the row filter_sensitive."""
     from resonances.resonance.analysis.mmr import zone as zone_module
 
     cycles = list(energy.cycles) if energy is not None else []
@@ -987,11 +999,11 @@ def filter_sensitivity(
             inside = np.flatnonzero((mid >= turn.t_start_yr) & (mid <= turn.t_end_yr) & np.isfinite(h))
             turns.append(replace(turn, energy_h=float(h[inside[0]])) if len(inside) else turn)
         h_hi = energy.zone.h_hi if energy.zone is not None else NAN
-        doubled.pattern_b = geometry_module.pattern_b(turns, energy.potential_e.top_rad, h_hi, energy.sigma_h, settings)
+        doubled.pattern_b = geometry_module.pattern_b(turns, energy.potential_e.top_rad, h_hi, energy.sigma_h, settings, energy.potential_e)
     episode = decisive_run(geometry, decisive_id, interval)
     span = (episode.t_start_yr, episode.t_end_yr) if episode is not None else None
     other = counterpart(episode, doubled.episodes) if episode is not None else None
     at_cutoff = decisive_quantities(geometry, h_cutoff, prep.cutoff.cutoff_yr, interval, t_cutoff, episode, span)
     at_double = decisive_quantities(doubled, h, 2 * prep.cutoff.cutoff_yr, interval, mid, other, span)
-    result = compare_quantities(at_cutoff, at_double, settings, step_yr)
+    result = compare_quantities(at_cutoff, at_double, settings, step_yr, compare_stall)
     return replace(result, decisive_episode_id=episode.episode_id if episode is not None else None)

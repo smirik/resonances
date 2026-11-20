@@ -289,8 +289,10 @@ $\sigma$ librates, the first leaf that holds:
 | 5n | the decisive episode has fewer than `LIBRATION_CENTRE_MIN_ESTIMATES` = 2 independent cycles | uncertain / origin_unknown | unknown |
 | 5u → 6 | nothing measured | by the behavior, reason `geometric_libration` / `geometric_episode`, cap ≤ low (`geometry_only`) or ≤ medium (`strength_scale_only`, when the order-of-magnitude strength agrees) | unknown |
 
-Two kinds of `uncertain / origin_unknown` leaves: a measurement **contradicts** the angle's own dynamics (5a, 5b,
-5e's failed R0, 5g's failed identity, 5o), or **nothing was measured** (5n, 5x). Where the only missing measurement
+Two kinds of `uncertain / origin_unknown` leaves: a measurement **contradicts** the angle's own dynamics (5a, 5a\*,
+5b, 5e's failed R0, 5f's forced line, 5g's failed identity, 5o), or **nothing was measured** (5n, 5x). Only the first
+kind keeps a reading at the center scale from displacing a fine libration of dynamic origin
+([the center scale](geometry.md#the-center-scale)). Where the only missing measurement
 is missing for lack of length, the action is `extend`, not `review` ([Actions](confidence.md#actions)).
 
 **6. By the observed behavior.** When the force is measured, or nothing objects, the angle's own behavior gives

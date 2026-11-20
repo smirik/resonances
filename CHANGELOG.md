@@ -6,6 +6,24 @@ All notable changes to `resonances` are listed here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- MMR rule G2c (the scale of the center) no longer displaces a fine libration of dynamic origin by a slower reading
+  that a measurement contradicts at its own scale (leaves 5a, 5a*, 5b, 5e, 5f, 5g, 5o): the fine verdict stays, the
+  slower motion is reported as the slow scale and in the new `geo_cs_displaced_*` columns (rule
+  `centre_scale_displaced`, setting `LIBRATION_CENTRE_SCALE_OBJECTION_GUARD`, on by default). 709123 2J-1 over 50 kyr:
+  resonant/low (P 3.26 kyr, the g − g5 wave of the center) → resonant/high (P 458 yr); no other benchmark row moves.
+- MMR near_separatrix, pattern B (rule G3) is judged revolution by revolution: a turn counts only when it is slowest
+  at the top, slower than a free rotation at its own energy by `LIBRATION_STALL_RATE_TOL`, and its top passage is
+  within reach of the separatrix zone (new columns `geo_stall_counted_fraction`, `geo_h_top_med`, `geo_h_top_min`).
+  A free rotation just above the separatrix is now a circulation. The separatrix zone reads its strength modulation
+  only from motion slower than `LIBRATION_CENTRE_CYCLES` × the angle's own period (members only when their slow
+  offset turns at least once); a record too short for that has a standing separatrix, zone [1, 1], flag
+  `zone_external_unresolved`. The frames the potential is fitted in keep the members' own fit, so the pendulum test
+  R0 is unchanged. The ×2 filter guard compares pattern B only on a record without librating episodes (else `stall`
+  is in `flt_unchecked_quantities`). Benchmark: 564160 3N-4 (100 kyr) near_separatrix → non_resonant, 145480 1N-4
+  (1 Myr) non_resonant → near_separatrix/medium.
+
 ### Fixed
 
 - `resonances check --resonances=4E-15` (and any Earth resonance such as `1E-2`) failed: the CLI read the key as the

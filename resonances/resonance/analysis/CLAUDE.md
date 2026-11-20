@@ -62,7 +62,8 @@ tree: `docs/physics/` (one home per topic; the rule IDs with their settings and 
   `verdict.REVIEW_FLAGS` put the row in the review queue; never a status) (outermost call only: an inner pass returns the raw v2 analysis; derived rows first, then the
   catalogue row, then the multiplet status), `analyse_secular` and `analyse_zlk` (after its columns). It re-reads the
   finished v2 analysis: status from the geometry (`LEAVES`/`HANDLERS` map every `rec_rule` of `mmr.decide`; a new
-  leaf needs a mapping, `test_policy_mapping` fails otherwise; the single 1:1 legs are read only on G4c and rule C,
+  leaf needs a mapping, `test_policy_mapping` fails otherwise; the objection leaves come from
+  `mmr.decide.OBJECTION_LEAVES`, which the G2c guard reads too; the single 1:1 legs are read only on G4c and rule C,
   `LEG_RULES`: beside an accepted episode a leg is no evidence; rule 5s's strength marks count again where the veto is
   not upheld, also as Episode rows for N: `_countable`; a status the policy moves re-reads the header's orbit type), non_resonant only by a measured veto (owner, kinematic,
   strength two-body, ZLK kinematic or free e < forced e; thin -> medium + `veto_thin`; a secular/ZLK insufficient_time
@@ -108,6 +109,11 @@ is certain, Q18), `PolicyResult` (counted and candidate episodes)
   where interleaved waves hide its period from `libration_image`). Secular/ZLK only: a stretch keeps the record's
   prominence when its own would lose a librating episode the record's finds (`secular.analyse.measure_fine`: the
   run spans the slow approach to a libration, 455327 g-s-g5+s6); the MMR path has no such guard.
+- Pattern B (`pattern_b`, 2026-11-20) is judged turn by turn: every rotating branch is slowest at the top, so a turn
+  counts only below its own branch (`rotating_branch_rate`: the cosine formula, or V_E's v_top T(h)/2pi) by
+  `LIBRATION_STALL_RATE_TOL` and with its top passage `top_passage_energy` within reach of h_hi; never go back to the
+  stall-at-the-top share alone (the 2J-1 pilot: four free rotations were near_separatrix). `stall_fraction` stays the
+  at-top share (a column); `detected` reads `counted_fraction`.
 - An episode must close at least one full cycle (`closure_ratios`), or one cycle by its phase return between two TPs
   (`phase_return`: at the mid-level or a band of levels, `LIBRATION_RETURN_LEVELS`, `LIBRATION_RETURN_BAND_LEVELS`);
   a return-closed cycle caps the level at medium and cannot cross a confirmed jump. ≥ 3 TPs and a closed cycle, never a

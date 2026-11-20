@@ -216,6 +216,16 @@ Distinctions that matter when you report:
   cutoff that keeps its slow extrema (`geo_scale_ladder_cutoff_yr`, `geo_scale_ladder_n_tp` against
   `_n_tp_centre`), and neither the force law nor R0 was measured there: only the theoretical strength supports it.
   Ask for a record of ≥ 5.25 P (TNOs: ≥ 300 kyr) before trusting the level.
+- **A slow reading set aside.** `rules_fired` with `centre_scale_displaced`: at the center scale (G2c) the angle read
+  as a slower libration whose own physics failed (`geo_cs_displaced_leaf`, `geo_cs_displaced_failed`), while the fine
+  scale measured this resonance's own libration; the fine verdict stands and the slower motion is the slow scale
+  (`slow_period_yr`, `slow_cause_term`, often g − g5 for a Jupiter 2:1 body). Read the period from `geo_period_cycle_yr`,
+  not from `geo_cs_displaced_period_yr`.
+- **near_separatrix pattern B.** Since 2026-11-20 a revolution counts only when it crosses the top slower than a free
+  rotation at its own energy (`geo_stall_counted_fraction` ≥ 0.75; `geo_h_top_med` is the energy of the top passages):
+  a free rotation that is merely slowest at the top is a circulation. `zone_external_unresolved`: the record is too
+  short to see any motion slower than the angle, so the separatrix is taken as standing (zone [1, 1]); ask for a
+  longer record before reading the zone.
 - **Both resonances at once?** An induced row is never "in both": the flag `second_capture_unresolved` (≤ medium)
   means it was not ruled out. It is ruled out when x = Ψ/u sweeps ≥ 180° without an energy integral, or when ẍ follows
   the 2ω / ϖ − ϖ_j cycle and not sin x (`own_second_capture_route` = `secular_forcing`, rule `second_capture_f3`).

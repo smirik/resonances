@@ -330,6 +330,7 @@ def _finish(geometry, angle, energy, context, sampling, local, settings) -> Geom
         settings,
         regime_prominence=local,
         cycle_spans_yr=np.array([(c.t_start_yr, c.t_end_yr) for c in cycles], dtype=float).reshape(-1, 2),
+        potential=potential,
     )
     key = _ROW_KEY.get()
     finished.action_steps = [replace(step, key=key) for step in finished.action_steps]
@@ -489,8 +490,8 @@ def _without_episodes(
 class _InducedPass:
     """The second pass of a row whose accepted owner induces some of its episodes but not all (A1, card g04-3): the
     owner of the first pass, the ids of the induced episodes, and what the first pass measured at other scales
-    (G1q's well and outcome, the G2c columns of a rejected union, G1f's columns), which the second pass does not
-    measure again."""
+    (G1q's well and outcome, the G2c columns of a rejected union, G1f's columns, a G2c analysis the guard holds), which
+    the second pass does not measure again (the held analysis is judged against the second pass's decision)."""
 
     owner: OwnerResult
     ids: frozenset
@@ -498,6 +499,19 @@ class _InducedPass:
     qs_outcome: str
     rejected: dict
     subfloor: dict  # the first pass's G1f columns (`subfloor_columns`)
+    held: Optional['_HeldCentreScale'] = None  # the first pass's G2c analysis the guard holds (`_held_centre_scale`)
+
+
+@dataclass(frozen=True)
+class _HeldCentreScale:
+    """A G2c analysis held while the fine pass decides (LIBRATION_CENTRE_SCALE_OBJECTION_GUARD,
+    `decide.centre_scale_displaced`): it carries a measured objection (an objection leaf, origin unknown), so it replaces
+    the fine verdict only when the fine pass does not establish the origin as dynamic. `cuts`: the G2a cuts of the
+    record when it was held; the fine pass's later cuts go when it is returned (`_return_held`), so the returned
+    analysis is the one G2c kept before the guard, its arrays included (held until the fine pass decides)."""
+
+    analysis: MMRAnalysis
+    cuts: int
 
 
 def _episode_tp_counts(prep: Preprocessed, geometry: Geometry, episode_id) -> dict:
@@ -813,8 +827,9 @@ def _undersampled(series, context, sampling, settings, cells, parent: str, cutof
 
 def _verdict_only(series: MMRSeries, verdict: Verdict, settings, cells, **fields) -> MMRAnalysis:
     """The analysis of a record stopped before the measurements: the verdict and what `fields` give (context, sampling,
-    parent, columns); every measurement None, no rejected G2c analysis (geo_cs_rej_* empty)."""
-    fields['extra_columns'] = {**CS_REJECTED_NONE, **fields.get('extra_columns', {})}
+    parent, columns); every measurement None, no rejected or displaced G2c analysis (geo_cs_rej_*, geo_cs_displaced_*
+    empty)."""
+    fields['extra_columns'] = {**CS_REJECTED_NONE, **CS_DISPLACED_NONE, **fields.get('extra_columns', {})}
     verdict.commensurability = roles_module.commensurability(series.resonance)
     return MMRAnalysis(
         series_name=series.name,
@@ -1165,7 +1180,9 @@ def _analyse_mmr(
     induced: Optional[_InducedPass] = None,
 ) -> MMRAnalysis:
     """`analyse_mmr` inside the record's table scope; `induced`: the second pass of a row whose owner induces some of
-    its episodes but not all (A1: those episodes out of the geometry, the first pass's owner, no other scales)."""
+    its episodes but not all (A1: those episodes out of the geometry, the first pass's owner, no other scales). A G2c
+    analysis with a measured objection is held, not returned, until the fine pass has decided: it is returned unless the
+    fine origin is dynamic (the G2c guard, `_held_centre_scale`, `decide.centre_scale_displaced`)."""
     series.validate()
     cells = cells if cells is not None else confidence_module.cells_from_settings(settings)
     problems = series.domain_problems()
@@ -1214,8 +1231,11 @@ def _analyse_mmr(
     args = (series, context, sampling, prep, angle, geometry, prominence, angle_decision, ledger, settings, cells, options)
     seen = []  # the slow tracks of G2c's centre-scale geometries, for the slow scale (B10a)
     qs, qs_outcome, other_scale, rejected, subfloor_found = _other_scales(*args, induced=induced, seen=seen)
-    if other_scale is not None:
+    # the G2c guard: a center-scale reading with a measured objection waits for the fine decision (`_held_centre_scale`)
+    held = induced.held if induced is not None else _held_centre_scale(other_scale, settings)
+    if other_scale is not None and held is None:
         return other_scale
+    del other_scale
     union_word = bool(rejected)  # G2c found a union of episodes read as episodic (`_at_centre_scale`)
     decisive_id = decide.status_basis(angle_decision).episode_id  # G1e: the episode before the last jump of a
     # the short-period scatter of a over the decisive a half-excursion, once: R-ALIAS-A and the flag read it
@@ -1225,7 +1245,9 @@ def _analyse_mmr(
     # the filter guard before the tree (W21 Q9, principle b): the last regime's own prominence, the decisive episode
     # against its counterpart at 2 P_c; a passed check it withdraws is not_measured for the tree (`tree_energy`)
     last_prominence = geometry.turning_points.prominence_rad
-    sensitivity = preprocess_module.filter_sensitivity(prep, angle, geometry, energy, last_prominence, settings, decisive_id)
+    # pattern B's stall is compared only where G3 can read it: a record without librating episodes
+    compare_stall = not decide.librating_episodes(geometry, settings)
+    sensitivity = preprocess_module.filter_sensitivity(prep, angle, geometry, energy, last_prominence, settings, decisive_id, compare_stall)
     if sensitivity.sensitive and str(Flag.FILTER_SENSITIVE) not in prep.flags:
         prep.flags.append(str(Flag.FILTER_SENSITIVE))
     tree_energy, withdrawn = decide.energy_for_tree(energy, sensitivity, ledger)
@@ -1234,17 +1256,7 @@ def _analyse_mmr(
         series, prep, context, sampling, geometry, response, tree_energy, kinematics, angle_decision, settings, scan_subresonances, cheap
     )
     basis = decide.status_basis(angle_decision)
-    if basis.angle_status in decide.LIBRATING:
-        # the slow-angle test does not judge an episode, its cycle is judged instead (decide.kinematic_check)
-        period = decide.decisive_period(basis, geometry)
-        check = decide.kinematic_check(basis, kinematics, response, period, settings, geometry)
-        ripple = context.great_inequality.period_yr if context.great_inequality is not None else NAN
-        kinematics.detail = kinematics_module.origin_detail(kinematics, response, settings, period, ripple, check)
-        # A5: K1 and the swing shares on the decisive episode, at its response cutoff (the margin K1e reads them)
-        window, _ = decisive_window(basis, geometry, prep)
-        cutoff = response_module.response_cutoff_yr(prep.cutoff.cutoff_yr, period, settings)
-        k1e = kinematics_module.episode_kinematics(series, prep, window, cutoff, settings)
-        kinematics.k1_episode, kinematics.swing_share, kinematics.lambda_swing_share, kinematics.k1_episode_reason = k1e
+    _decisive_kinematics(series, prep, context, geometry, response, kinematics, basis, settings)
     episodes = sorted(episodes, key=lambda p: p.episode_id != decisive_id)  # the decisive episode first (strength)
     strength = strength_module.analyse_strength(context, episodes, settings, series, geometry, prep.cutoff.cutoff_yr)
     # W28 B8: the direct averaged-force law where L4 fails or is thin (lifts L4 only); F then reads the large turns
@@ -1253,7 +1265,7 @@ def _analyse_mmr(
     response = response_module.with_line_share(response, series, prep, context, *decisive_window(basis, geometry, prep), settings)
     strength = strength_module.at_large_period(strength, decide.taken_direct_law(response, angle_decision), settings)
     args = (series, prep, context, geometry, response, strength, angle_decision, settings, cells, scan_owner, ledger)
-    owner, again = _owner_per_episode(*args, induced, (qs, qs_outcome, rejected, subfloor_found))
+    owner, again = _owner_per_episode(*args, induced, (qs, qs_outcome, rejected, subfloor_found, held))
     if again is not None:  # A1, card g04-3: some episodes induced, others the row's own -> the own episodes decide
         return _analyse_mmr(series, settings, cells, *options, induced=again)
     derived = _derived(series, subresonances, settings, cells)  # before the status: the catalogue row may take its status
@@ -1279,6 +1291,10 @@ def _analyse_mmr(
         slow_scale=slow_scale,
     )
     decision.rules_fired = decision.rules_fired | _slow_scale_rules(slow_scale) | subresonance_rules
+    kept, displaced = _centre_scale_guard(held, decision, ledger, prep.cutoff.cutoff_yr)
+    if kept is not None:  # the held center-scale reading keeps its precedence: the fine origin is not dynamic
+        return kept
+    held = None  # a displaced reading's arrays go
     # A3a: the decision's other key split by its role (owner/driver, neighbours, resonant argument, cause term)
     roles = roles_module.verdict_roles(
         series.resonance, decision.origin, decision.origin_detail, decision.owner, decision.flags, owner, settings
@@ -1479,6 +1495,8 @@ def _analyse_mmr(
             'geo_union_read_episodic': union_episodic,
             'geo_union_word_centre_scale': float(rewritten),
             **(rejected or CS_REJECTED_NONE),
+            # the G2c reading the guard did not let displace this verdict (geo_cs_displaced_*, `_displaced_columns`)
+            **displaced,
             # the passed checks the filter guard withdrew before the tree read them (W21 Q9)
             'flt_withdrawn_before_tree': join_list(decide.withdrawn_checks(decision, decide.WITHDRAWN_FILTER_GUARD)),
             **quasi_satellite_module.columns(qs, qs_outcome),
@@ -1495,6 +1513,22 @@ def _analyse_mmr(
     if analysis.derived:
         _share_multiplet_status(analysis)
     return analysis
+
+
+def _decisive_kinematics(series, prep, context, geometry, response, kinematics, basis, settings) -> None:
+    """The kinematic numbers of the decisive episode of a librating angle (`basis`), set on `kinematics`: the slow-angle
+    test does not judge an episode, its cycle is judged instead (`decide.kinematic_check`, origin_detail); A5: K1 and the
+    swing shares on that episode, at its response cutoff (the margin K1e reads them). Nothing for another angle."""
+    if basis.angle_status not in decide.LIBRATING:
+        return
+    period = decide.decisive_period(basis, geometry)
+    check = decide.kinematic_check(basis, kinematics, response, period, settings, geometry)
+    ripple = context.great_inequality.period_yr if context.great_inequality is not None else NAN
+    kinematics.detail = kinematics_module.origin_detail(kinematics, response, settings, period, ripple, check)
+    window, _ = decisive_window(basis, geometry, prep)
+    cutoff = response_module.response_cutoff_yr(prep.cutoff.cutoff_yr, period, settings)
+    k1e = kinematics_module.episode_kinematics(series, prep, window, cutoff, settings)
+    kinematics.k1_episode, kinematics.swing_share, kinematics.lambda_swing_share, kinematics.k1_episode_reason = k1e
 
 
 def _slow_scale(series, prep, geometry, kinematics, context, owner, seen, basis, settings) -> Optional[SlowScale]:
@@ -1963,6 +1997,88 @@ def _rejected_columns(analysis: MMRAnalysis) -> dict:
 
 def _span(run) -> str:
     return f'{run.t_start_yr:.0f}-{run.t_end_yr:.0f}'
+
+
+# the G2c guard's ledger name (the fine verdict kept; its column is the displaced reading's W_c)
+CENTRE_SCALE_DISPLACED = 'G2c guard: the center-scale reading carries a measured objection; the fine dynamic libration stays'
+
+
+def _held_centre_scale(analysis: Optional[MMRAnalysis], settings: AnalysisSettings) -> Optional[_HeldCentreScale]:
+    """The analysis `_other_scales` kept, held for the fine decision (`_HeldCentreScale`) when the guard is on
+    (libration_centre_scale_objection_guard), it is a G2c analysis (geo_centre_scale_cutoff_yr finite: G1q and G1f
+    passes are not judged) and the tree left its origin unknown on a leaf where a measurement contradicts it
+    (`decide.objection_leaf` of its rec_rule); None otherwise, and the analysis is returned as before."""
+    if analysis is None or not settings.libration_centre_scale_objection_guard:
+        return None
+    columns = analysis.extra_columns
+    if not is_finite(columns.get('geo_centre_scale_cutoff_yr', NAN)):
+        return None
+    if analysis.verdict.libration_origin != LibrationOrigin.UNKNOWN or not decide.objection_leaf(columns.get('rec_rule', '')):
+        return None
+    cuts = _ACTION_STEP_CUTS.get()
+    return _HeldCentreScale(analysis, len(cuts) if cuts is not None else 0)
+
+
+def _centre_scale_guard(
+    held: Optional[_HeldCentreScale], decision: decide.StatusDecision, ledger: Ledger, fine_cutoff_yr: float
+) -> Tuple[Optional[MMRAnalysis], dict]:
+    """(the analysis to return instead of the fine one, the geo_cs_displaced_* columns): the held G2c analysis when
+    the fine decision does not displace it (`decide.centre_scale_displaced`: the fine origin is not dynamic), else None
+    and its columns (`_displaced_columns`), with rule centre_scale_displaced on the decision and its ledger entry
+    (W_c against the fine cutoff); (None, empty columns) without a held analysis."""
+    if held is None:
+        return None, CS_DISPLACED_NONE
+    coarse = held.analysis
+    if not decide.centre_scale_displaced(decision, coarse.extra_columns.get('rec_rule', ''), coarse.verdict.libration_origin):
+        return _return_held(held), CS_DISPLACED_NONE
+    displaced = _displaced_columns(coarse)
+    decision.rules_fired = fire(decision.rules_fired, Rule.CENTRE_SCALE_DISPLACED)
+    cutoff = displaced['geo_cs_displaced_cutoff_yr']
+    ledger.compare(CENTRE_SCALE_DISPLACED, cutoff, Op.GT, fine_cutoff_yr, 'yr', 'geo_cs_displaced_cutoff_yr')
+    return None, displaced
+
+
+def _return_held(held: _HeldCentreScale) -> MMRAnalysis:
+    """The held G2c analysis as G2c kept it: the G2a cuts the fine pass made after it was held are dropped (without the
+    guard that pass would have stopped there)."""
+    cuts = _ACTION_STEP_CUTS.get()
+    if cuts is not None:
+        del cuts[held.cuts :]
+    return held.analysis
+
+
+# the G2c reading the guard did not let displace the fine verdict: empty values when there is none
+CS_DISPLACED_NONE = {
+    'geo_cs_displaced_cutoff_yr': NAN,
+    'geo_cs_displaced_leaf': '',
+    'geo_cs_displaced_status': '',
+    'geo_cs_displaced_angle_status': '',
+    'geo_cs_displaced_reason': '',
+    'geo_cs_displaced_origin': '',
+    'geo_cs_displaced_failed': '',
+    'geo_cs_displaced_period_yr': NAN,
+    'geo_cs_displaced_decisive': '',
+}
+
+
+def _displaced_columns(analysis: MMRAnalysis) -> dict:
+    """The geo_cs_displaced_* columns of a G2c analysis the guard set aside (`decide.centre_scale_displaced`): its cutoff
+    W_c [yr], leaf (rec_rule), the tree's verdict there (status, angle word, reason, origin), the checks that failed
+    there (the objection kept with its reading), its libration period [yr] (`_libration_period`) and the decisive
+    episode's span; its slow runs are the slow scale (`_slow_scale`)."""
+    verdict = analysis.verdict
+    decisive = geometry_module.run_of(analysis.geometry, analysis.decisive_episode_id) if analysis.geometry is not None else None
+    return {
+        'geo_cs_displaced_cutoff_yr': analysis.extra_columns.get('geo_centre_scale_cutoff_yr', NAN),
+        'geo_cs_displaced_leaf': analysis.extra_columns.get('rec_rule', ''),
+        'geo_cs_displaced_status': str(verdict.status),
+        'geo_cs_displaced_angle_status': str(verdict.angle_status),
+        'geo_cs_displaced_reason': str(verdict.reason),
+        'geo_cs_displaced_origin': str(verdict.libration_origin),
+        'geo_cs_displaced_failed': join_list(name for name, value in verdict.checks.items() if value == CheckValue.FAIL),
+        'geo_cs_displaced_period_yr': _libration_period(analysis),
+        'geo_cs_displaced_decisive': _span(decisive) if decisive is not None else '',
+    }
 
 
 def _centre_scale_union_word(reported, union_word: bool, decision, ledger: Ledger):

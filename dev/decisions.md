@@ -575,3 +575,22 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   corrector ran with 17); `SimulationSerializer.restore` drops them from an old simulation.json (the benchmark's runs
   hold the last two). (3) Docs and skill: under the minimal policy `short_period_aliased` is a flag; the level drops
   and `action=resample` comes only where R-ALIAS-A withdrew a check (`rsp_short_period_unmeasured`).
+- **Nov 20 (author; log entry by Claude, `benchmark/DECISIONS.md` 2026-11-20, second entry).** 709123 2J-1+0-1
+  (2012 UO134) is resonant/high («4 - да + давай сразу править»): the G2c guard. A coarser reading of the angle may
+  replace the fine one only when it is at least as well established as the resonance's own libration: a fine origin
+  dynamic against a center-scale reading left unknown on an objection leaf (5a, 5a*, 5b, 5e, 5f, 5g, 5o; one set
+  `mmr.decide.OBJECTION_LEAVES`, read by the policy too) keeps the fine verdict; the coarse reading goes to the slow
+  scale and `geo_cs_displaced_*` (rule `centre_scale_displaced`, `LIBRATION_CENTRE_SCALE_OBJECTION_GUARD`). The
+  mirror of the return condition of rejected rule (b): a measured support is not lost at another scale either. 709123:
+  resonant/low (P 3.26 kyr, leaf 5g at W_c 1374 yr) → resonant/high (P_cyc 458 yr, slow scale 3.26 kyr at g − g5);
+  the 22 G2c rows of the benchmark byte-identical. Rejected variants: [rejected.md](rejected.md).
+- **Nov 20 (author; log entry by Claude, `benchmark/DECISIONS.md` 2026-11-20, third entry).** near_separatrix
+  pattern B is fixed through its cause («3 - да, через причину»; Codex's ε = 0.10 energy gap declined). The zone's
+  strength modulation comes only from motion slower than `LIBRATION_CENTRE_CYCLES` × P_own (members only when their
+  slow offset turns once; a record shorter than twice that: standing separatrix [1, 1], `zone_external_unresolved`);
+  a revolution counts for pattern B only below its own rotating branch by `LIBRATION_STALL_RATE_TOL` with its top
+  passage within reach. The rule is the zone's only: the frames of V_E keep the members' own fit (applied to them it
+  cost R0 on 10 rows, UG22 10E-17 a moving center among them), and the ×2 guard compares pattern B only where G3 can
+  read it, a record without librating episodes (compared on 17445 5J-2S-2 it flipped on turns reversing inside a
+  libration). Moves: 564160 3N-4 100 kyr → non_resonant, 145480 1N-4 1 Myr → near_separatrix/medium; 523899 stays.
+  Open: Btoptol vs Bor, 564160 at 50 kyr, 145480.

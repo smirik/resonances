@@ -422,7 +422,10 @@ def _seen_drift(m: _Mmr) -> str:
 
 def _seen_near_separatrix(m: _Mmr) -> str:
     if str(m.v.angle_subtype) == 'pattern_b':
-        return f'σ has no libration: in each revolution it stalls near the top of its potential {_panels(M_MOD, M_ENERGY)}.'
+        return (
+            'σ has no libration: in most revolutions it crawls over the top of its potential, slower than a free rotation '
+            f'at its energy {_panels(M_MOD, M_ENERGY)}.'
+        )
     return f'σ has no libration: it slips over the top of its potential {_panels(M_MOD, M_ENERGY)}.'
 
 

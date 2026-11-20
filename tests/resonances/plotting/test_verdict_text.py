@@ -96,7 +96,9 @@ RECORDS = (
     'mmr3__24820__3J-1S-1+0+0-1',  # transient by the geometry alone (5u/6), cap strength_scale_only (W22)
     'mmr2__33128__6N-7+0+1',  # transient with the mark exit_and_capture
     'mmr3__501710__1E+7S-4+0+0-4__500kyr',  # uncertain (5s*): no two-body candidate, the residual a lower bound
-    'mmr2__564160__3N-4+0+1',  # near_separatrix of the pattern (G3), zone not measured: cap medium
+    # near_separatrix of the pattern (G3), zone not measured: cap medium; 564160 3N-4 until 2026-11-20, a circulation
+    # since the per-turn pattern B (its turns after 50 kyr pass the top on their own branch)
+    'mmr2__523899__3N-5+0+2',
     'mmr2__30963__14M-25+0+11',  # non_resonant/certain far circulation: L8's step part not graded (W20 CS10)
     'mmr2__29744__23M-49+0+26',  # non_resonant/certain alias: C5 branch clearance 19.7° > 2 × 8.84° (W20 CS10)
     'mmr2__433__47M-44+0-3',  # transient (5 yr): R-ALIAS-A reads the failed L3/L4 as not measured (W22)

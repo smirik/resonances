@@ -383,6 +383,42 @@ guards) → io.
   high) took K3s and lost the cap exemption (→ medium); a centre-scale run of a librating angle at its own period is
   that libration again (6489 3J-1, W_c 182 yr). 153 3J-2 (resonant/high) has a kinematic slow scale (g − g5,
   identified): reported, never demoted.
+- **G2c guard** (`analyse._held_centre_scale`, `_centre_scale_guard`, `_HeldCentreScale`, `_displaced_columns`;
+  `decide.OBJECTION_LEAVES`, `objection_leaf`, `centre_scale_displaced`; rule `centre_scale_displaced`,
+  `LIBRATION_CENTRE_SCALE_OBJECTION_GUARD`; the author 2026-11-20 on 709123 2J-1): a G2c analysis whose tree left the
+  origin unknown on an objection leaf (5a, 5a*, 5b, 5e, 5f, 5g, 5o; the same set the policy reads as a measured
+  objection) is held, not returned; the fine pass decides, and its verdict stays when its origin is dynamic: G2c's
+  slow runs (`seen`) become the slow scale, the held reading goes to `geo_cs_displaced_*` and the ledger. Otherwise the
+  held analysis is returned unchanged and the G2a cuts the fine pass made after the hold are dropped (`_return_held`).
+  A G1q/G1f pass (no W_c) and a coarse origin dynamic/kinematic or a 5n/5x/5u leaf keep G2c's precedence. The A1
+  second pass gets the held analysis through `_InducedPass.held` (its `seen` is empty: the slow scale there falls
+  back to c(t)). Memory: the held analysis keeps its arrays until the fine pass decides (objection-coarse rows only:
+  EH16 ×2, TX9 ×2 on the benchmark). Moves: 709123 resonant/low → resonant/high (P_cyc 458 yr, slow 3.26 kyr g − g5);
+  the 22 G2c rows unchanged. Trap: the benchmark record needs the planets the run saved (`extract_existing.py
+  --all-planets`): with Jupiter alone the owner search sees no 5S-1 candidate, W is full and the level is certain.
+- **near_separatrix, cause fix** (the author 2026-11-20, «3 - да, через причину»; design
+  `docs/physics/geometry.md` near the separatrix and the separatrix zone). Zone: `zone.external_cutoff_yr`
+  (LIBRATION_CENTRE_CYCLES x P_own, `record_period`) passed to `best_members` and `eccentricity_modulation` (both
+  default to the old reading without a period): e of a circulation is low-passed there and held flat within a cutoff
+  of the edges; the members' offset too, and a planet counts only when that slow offset sweeps >= 1 turn; a record
+  shorter than 2 x the cutoff gives `Modulation.external_unresolved` (e = its mean: zone [1, 1], flag
+  zone_external_unresolved, never zone None: 523899 would drop). That rule is the ZONE's only (`zone.modulations`:
+  the zone's modulation and the frames'): `candidate_frames` (and `episode_r0`) get the members' own fit at P_c
+  (`best_members` without a period) whenever it passes mmr_force_multi_gain, else the zone's modulation; the zone,
+  its flags and the sep_modulation_* columns read the zone's. Pattern B (`geometry.pattern_b`, also the x2 guard's
+  `preprocess` call, both with V_E): per turn, at the top + `r_pend(h) - r_min > LIBRATION_STALL_RATE_TOL`
+  (`rotating_branch_rate`, V_E's own branch for several harmonics) + `h_top <= h_hi + z sigma_h`
+  (`top_passage_energy`); G3 reads `counted_fraction` (ledger line, column `geo_stall_counted_fraction`). The x2
+  guard compares `stall` only on a record without librating episodes (`decide.librating_episodes` empty, as G3;
+  `filter_sensitivity(compare_stall=)`, else not_checked): pattern B is a no-episode reading. Moves: 564160 3N-4
+  100 kyr near_separatrix → non_resonant/certain, 145480 1N-4 1 Myr non_resonant → near_separatrix/medium; the 2J-1
+  pilot (731025, 761750, 832620, 881181) → circulation; 523899 stays (reversing turns). Traps: the variant measured
+  first had no edge hold (the own line came back within a cutoff of each edge); applied to the frames too, the
+  one-turn rule and the low-pass removed the members' frame in which R0 passed (10 rows: UG22 10E-17 and 5M-9S-4,
+  117306 11M-20, 10123, 115978, 433 0.5-yr step, 17886, 48017, 285637), and 17886 36M-61 went medium → low; comparing
+  `stall` on episodic rows flipped it on turns that reverse inside a libration (17445 5J-2S-2: x2 0.92, x1 0.58 →
+  filter_sensitive, tree level high → medium). The free cosine pendulum above the separatrix is a circulation
+  ('Btoptol'; 'Bor' would keep it: open question).
 - **W28 q-2 b** `full_support_caps`: an own-dynamics resonant/transient/near_separatrix verdict is high only when one of
   `FULL_SUPPORT_MARGINS` (L4 incl. the 1:1 law, R0, F direct) is full, else cap `no_full_physics_support` (≤ medium;
   `MMR_HIGH_NEEDS_FULL_SUPPORT`); skipped when all physics is not_measured (that cap already says so).

@@ -1,7 +1,8 @@
 """Independent tests of W18 items 4 and 5 (docs/physics/geometry.md "The separatrix zone", crossings;
 docs/physics/confidence.md caps; docs/output.md `flags`, `sep_`):
 
-- the near_separatrix cap: a near_separatrix of the geometry (G3) whose zone is not measured is at most medium;
+- the near_separatrix cap: a near_separatrix of the geometry (G3) whose zone is not measured is at most medium (since
+  2026-11-20 on a rotation over a narrow-topped barrier; the free pendulum above the separatrix is a circulation);
 - the counts of exits and captures and the mark exit_and_capture on a pendulum with one slip and a separate exit;
 - the flag/cap is written as episodes_in_separatrix_zone, never under its old name separatrix_chaos.
 
@@ -84,12 +85,64 @@ def _free_pendulum(h, span_yr=20000.0):
     return _analyse(_series(t, sol.y[0], sol.y[1]))
 
 
+BUMP, BUMP_WIDTH = 0.3, np.radians(15.0)  # a narrow barrier of 0.3 w0^2, 15 deg wide, on the cosine top
+
+
+@functools.lru_cache(maxsize=None)
+def _over_a_narrow_top(x, span_yr=20000.0):
+    """A rotation over V = w0^2 (-cos sigma + b exp(-d^2 / 2 w^2)), d = sigma - pi (wrapped): the true barrier is
+    w0^2 (1 + b) at pi, and the energy is x times its height above V_min. The narrow top is the one a fitted harmonic
+    V_E cannot follow: the turn crawls over it slower than its branch in V_E explains."""
+
+    def force(sigma):
+        d = np.mod(sigma, 2 * np.pi) - np.pi
+        return -(W0**2) * (np.sin(sigma) - BUMP * d / BUMP_WIDTH**2 * np.exp(-(d**2) / (2 * BUMP_WIDTH**2)))
+
+    v_top = W0**2 * (1 + BUMP)
+    v_min = -(W0**2) * (1 - BUMP * np.exp(-(np.pi**2) / (2 * BUMP_WIDTH**2)))
+    energy = v_min + x * (v_top - v_min)
+    t = np.arange(0.0, span_yr + 0.5, 1.0)
+    sol = solve_ivp(
+        lambda _, y: [y[1], force(y[0])],
+        (t[0], t[-1]),
+        [0.0, np.sqrt(2 * (energy - v_min))],
+        t_eval=t,
+        rtol=1e-10,
+        atol=1e-12,
+        method='DOP853',
+    )
+    return _analyse(_series(t, sol.y[0], sol.y[1]))
+
+
 @pytest.mark.parametrize('h', [1.01, 1.03])
-def test_near_separatrix_without_zone_is_capped_at_medium(h):
-    """Just above the separatrix every revolution stalls at the top (the rate there is 2 w0 sqrt(h - 1), 10-17 % of
-    the rate at the bottom): pattern B. A constant pendulum has no modulation, so no zone is measured; the raw level is
-    above medium and the cap near_separatrix_without_zone sets medium (564160 3N-4)."""
-    verdict = _free_pendulum(h).verdict
+def test_free_rotation_just_above_the_separatrix_is_a_circulation(h):
+    """2026-11-20 (near_separatrix fix, 'Btoptol'): a free cosine pendulum just above the separatrix is slowest at the
+    top in every revolution, but exactly on its own rotating branch (r_min = r_pend(h)); a stall at the top alone is
+    no sign of the separatrix, so it is a circulation. Until then this record was the near_separatrix of this test; the
+    alternative reading 'Bor' (a turn within the energy noise of a standing separatrix counts too) keeps it
+    near_separatrix: an open question to the author."""
+    analysis = _free_pendulum(h)
+    pattern = analysis.geometry.pattern_b
+    assert pattern.stall_fraction == pytest.approx(1.0)
+    assert abs(pattern.rate_min_over_mean_med - pattern.rate_min_over_mean_pend_med) < 0.05  # on its branch
+    assert pattern.counted_fraction == 0.0 and not pattern.detected
+    assert (str(analysis.verdict.status), str(analysis.verdict.angle_status)) == ('non_resonant', 'circulation')
+
+
+@pytest.mark.parametrize('x', [1.01, 1.03])
+def test_near_separatrix_without_zone_is_capped_at_medium(x):
+    """A rotation x = 1.01, 1.03 over a barrier whose narrow top the fitted V_E (one harmonic) misses: every turn
+    crawls over the top below its V_E branch (r_pend - r_min > 0.2), and its top passage read from that crawl,
+    h_top = 1 + (h - 1) (r_min / r_pend)^2, is within 0.01 of the true x. Pattern B. A potential without modulation
+    has no measured zone (e^q only); the raw level is above medium and the cap near_separatrix_without_zone sets medium
+    (564160 3N-4 before 2026-11-20). Until 2026-11-20 this test used the free pendulum, which no longer counts
+    (`test_free_rotation_just_above_the_separatrix_is_a_circulation`)."""
+    analysis = _over_a_narrow_top(x)
+    verdict, pattern = analysis.verdict, analysis.geometry.pattern_b
+    assert analysis.energy.potential_e.n_harmonics == 1
+    assert pattern.rate_min_over_mean_pend_med - pattern.rate_min_over_mean_med > 0.2
+    assert pattern.h_top_med == pytest.approx(x, abs=0.01)
+    assert pattern.counted_fraction == pytest.approx(1.0)
     assert (str(verdict.status), str(verdict.angle_status), str(verdict.angle_subtype)) == (
         'near_separatrix',
         'near_separatrix',
