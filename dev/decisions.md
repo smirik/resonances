@@ -617,3 +617,12 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   (label, no level); second gallery example `near-separatrix-slowing`. (4) The standing separatrix [1, 1] ± zσ_h with
   `zone_external_unresolved` for a record shorter than its resolution window is an accepted convention. (3) Btoptol
   vs Bor: open, checked against the literature and Codex. No rule changed.
+- **Nov 20 (Claude and Codex, the author's question 3: "сверься с литературой из zotero и codex'ом, придите к
+  согласию"; `benchmark/DECISIONS.md` 2026-11-20, sixth entry).** Btoptol stays: a regular rotation exactly on its
+  rotating branch is a circulation even when its top passages lie within the energy noise of a standing separatrix.
+  The literature defines the near-separatrix domain by behaviour (chaotic layer, regime switching: Murray & Dermott
+  p. 448, Wisdom 1983 p. 68, Shevchenko 2020 p. 16), not by energy proximity; σ_h sits on its 0.02 floor in every
+  row concerned, so "within noise" is a fixed gap of 0.04, a count-like convention. The literal OR (Bor) moves 3 rows
+  (15807 4N-7, 523588 5N-9, 145480 100 kyr), all through the branch clause alone, out of reach; the narrower form
+  (A ∧ ((D ∧ R) ∨ h_top ≤ 1 + zσ_h)) moves none. Code unchanged; one paragraph of `docs/physics/geometry.md`. Open
+  for the author: a column-only overlap diagnostic (`separatrix_energy_overlap_fraction`), no status or level.

@@ -575,8 +575,13 @@ need the potential fitted to $\sigma$ alone to hold (the pendulum test R0 on $\s
   This is a convention aimed at near-separatrix passages, not a bound on a fast circulation. At least
   `LIBRATION_PATTERN_A_MIN_SLIPS` = 2 slips of pieces with a median half-amplitude $\ge$
   `LIBRATION_PATTERN_A_MIN_AMP_DEG` = 60° are needed;
-- **pattern B, stalls**: judged revolution by revolution. Every rotating branch is slowest at the top, so a stall at
-  the top alone says nothing. A revolution $k$ of energy $h_k$ and slowest rate $r_{\min,k}$ (over its mean rate)
+- **pattern B, stalls**: judged revolution by revolution. A regular rotation can approach a standing separatrix
+  arbitrarily closely and remains a circulation: the literature defines the near-separatrix domain by its behaviour
+  (the chaotic layer, switching between regimes), not by energy proximity (Murray & Dermott 1999, p. 448; Wisdom
+  1983; Shevchenko 2020, p. 16). Pattern B therefore looks for departures from the rotating branch near the modeled
+  boundary, not for proximity alone. Every rotating branch is slowest at the top, so where the minimum of the rate
+  lies does not measure proximity; how deep it is follows the branch's own law (agreed with Codex, 2026-11-20). A
+  revolution $k$ of energy $h_k$ and slowest rate $r_{\min,k}$ (over its mean rate)
   counts when (i) that minimum is within `LIBRATION_STALL_PHASE_TOL_DEG` = 30° of the top of the potential; (ii) it is
   slower than its own branch, $r_\text{pend}(h_k) - r_{\min,k} >$ `LIBRATION_STALL_RATE_TOL` = 0.2, with
   $r_\text{pend}$ the min/mean rate of a free rotation at $h_k$ in the fitted potential
