@@ -259,6 +259,17 @@ CASES = (
         '($\\dot\\sigma$ does not follow $a - a_*$ closely: the identity check fails) makes the confidence low, and the '
         'action asks for a review. This status is rare.',
     ),
+    Case(
+        'near-separatrix-slowing',
+        'mmr2__145480__1N-4+0+3__1Myr',
+        'near_separatrix',
+        'Top passages that slow down to the separatrix',
+        'The same pattern B on a 1 Myr record with nothing objecting: $\\sigma$ circulates, and turn after turn it passes '
+        'the top of its own well more slowly than its rotating branch at that energy allows, ever closer to the '
+        'separatrix, until at about 730 kyr it turns back at the top and circulates the other way. The identity check '
+        'passes, but the zone of the separatrix is '
+        'not measured (only its estimate from $e^q$), so the confidence is medium.',
+    ),
     # non-resonant
     Case(
         'circulation',

@@ -328,7 +328,7 @@ planet longitudes caps the level (`catalogue_longitudes`). These change the conf
 | `dynamic_episode` | transient | dynamic | librating episodes with a measured force, circulation elsewhere | [52356](gallery.md#transient-recurrent) |
 | `geometric_libration` | resonant | unknown | librates over the record; no force could be measured, nothing objects | [2348](gallery.md#geometric-libration) |
 | `geometric_episode` | transient | unknown | as above, in episodes | [24820](gallery.md#geometric-episode) |
-| `separatrix_zone` | near_separatrix | dynamic | stalls and slips at the top of its own well, $a$ responds | [523899](gallery.md#near-separatrix) |
+| `separatrix_zone` | near_separatrix | dynamic | stalls and slips at the top of its own well, $a$ responds | [523899](gallery.md#near-separatrix), [145480](gallery.md#near-separatrix-slowing) |
 | `circulation` | non_resonant | — | the center of $\sigma$ runs through full turns | [42355](gallery.md#circulation) |
 | `alias` | non_resonant | — | the sampled angle is an alias; one branch, far from $a_*$: no libration possible | [1999 UQ](gallery.md#alias) |
 | `alias` | invalid | — | an alias that could hide a libration | [1864](gallery.md#invalid-alias) |

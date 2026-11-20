@@ -21,7 +21,9 @@ All notable changes to `resonances` are listed here. The format follows
   `zone_external_unresolved`. The frames the potential is fitted in keep the members' own fit, so the pendulum test
   R0 is unchanged. The ×2 filter guard compares pattern B only on a record without librating episodes (else `stall`
   is in `flt_unchecked_quantities`). Benchmark: 564160 3N-4 (100 kyr) near_separatrix → non_resonant, 145480 1N-4
-  (1 Myr) non_resonant → near_separatrix/medium.
+  (1 Myr) non_resonant → near_separatrix/medium; the author confirmed both verdicts, and 145480 is now the second
+  near_separatrix example of the gallery. The standing separatrix of a record too short to resolve external motion
+  is a documented convention.
 - Pattern B and the separatrix zone after an independent review of the change above. The energy of a turn's top
   passage is read on its own samples, from the observed speed and the potential at the measured phase (it was the
   branch's top speed scaled by the slowest rate, wrong when the turn does not last its branch's period, and signed,

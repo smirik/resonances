@@ -411,8 +411,8 @@ guards) → io.
   (`top_passages`, next bullet); G3 reads `counted_fraction` (ledger line, column `geo_stall_counted_fraction`). The x2
   guard compares `stall` only on a record without librating episodes (`decide.librating_episodes` empty, as G3;
   `filter_sensitivity(compare_stall=)`, else not_checked): pattern B is a no-episode reading. Moves: 564160 3N-4
-  100 kyr near_separatrix → non_resonant/certain, 145480 1N-4 1 Myr non_resonant → near_separatrix/medium; the 2J-1
-  pilot (731025, 761750, 832620, 881181) → circulation; 523899 stays (reversing turns). Traps: the variant measured
+  100 kyr near_separatrix → non_resonant/certain, 145480 1N-4 1 Myr non_resonant → near_separatrix/medium (both
+  confirmed by the author 2026-11-20, labels); the 2J-1 pilot (731025, 761750, 832620, 881181) → circulation; 523899 stays (reversing turns). Traps: the variant measured
   first had no edge hold (the own line came back within a cutoff of each edge); applied to the frames too, the
   one-turn rule and the low-pass removed the members' frame in which R0 passed (10 rows: UG22 10E-17 and 5M-9S-4,
   117306 11M-20, 10123, 115978, 433 0.5-yr step, 17886, 48017, 285637), and 17886 36M-61 went medium → low; comparing

@@ -4136,8 +4136,9 @@ def near_separatrix_caps(
 ) -> List[str]:
     """near_separatrix_without_zone (<= medium, as l2_without_zone): a near_separatrix of the angle's geometry (G3,
     pattern A or B without an episode) whose zone is not measured (`separatrix_zone_check` not pass). The pattern
-    alone does not place the angle at the separatrix: 564160 3N-4 stalls at the top, but its zone is only estimated
-    (zone_eq_only) and the frozen model puts it inside the island after 30 kyr (W17 Q15)."""
+    alone does not place the angle at the separatrix (historical motivation: 564160 3N-4 stalled at the top, but its
+    zone was only estimated (zone_eq_only) and the frozen model put it inside the island after 30 kyr, W17 Q15; since
+    2026-11-20 its turns pass the top on their own branch and it is a circulation; today 523899 3N-5)."""
     near = angle.angle_status == AngleStatus.NEAR_SEPARATRIX and decision.status == Status.NEAR_SEPARATRIX
     if near and separatrix_zone_check(energy, margins) != CheckValue.PASS:
         return [str(Cap.NEAR_SEPARATRIX_WITHOUT_ZONE)]

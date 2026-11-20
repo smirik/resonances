@@ -1252,9 +1252,9 @@ def _insufficient(v: Verdict, end: EndReading, geometry: Optional[Geometry]) -> 
 
 def _mmr_veto_reading(analysis, outcome: _Outcome) -> Tuple[str, List[str]]:
     """(V, the checks that made it ambiguous) of an MMR row (spec §6): ambiguous for a measured objection (the
-    outcome's), an onset that failed or an identity the tree read as failed without a status move (523899 9N-17,
-    564160: no flag, so the check is named here); not_measured when the identity was not measured or R-ALIAS-A
-    withdrew it; partial when the identity passes but the owner search was not measured, a candidate owner is
+    outcome's), an onset that failed or an identity the tree read as failed without a status move (523899 9N-17;
+    564160 until 2026-11-20, a circulation since: no flag, so the check is named here); not_measured when the
+    identity was not measured or R-ALIAS-A withdrew it; partial when the identity passes but the owner search was not measured, a candidate owner is
     probable or W is thin; clean otherwise (the owner search measured with none accepted, or not applicable)."""
     v = analysis.verdict
     if outcome.veto_state is not None:

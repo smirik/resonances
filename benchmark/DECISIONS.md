@@ -2421,3 +2421,32 @@ near_separatrix или нет? С Btoptol свободный маятник h 1.
 либраторы по F5). Согласие с автором: status 243/243, angle_status 188/188, confidence 186/186, author_verdict
 150/150; `known_disagreements.py` — 0; ворота эпизодов без изменений. 709123 2J-1 — resonant/high; пилот 2J-1
 (731025, 761750, 832620, 881181) и контроли — non_resonant/circulation/certain.
+
+## 2026-11-20 — ответы автора по near_separatrix: 564160, 145480, стоящая сепаратриса (запись Claude)
+
+Ответы автора 2026-11-20 17:03 на вопросы записи «near_separatrix, картина B: исправление причины» (дословно):
+«1: 561460 [564160] - согласен с циркуляцией; 2 - согласен, норм. ... 4 - ок». Логика правил не менялась.
+
+- **(1) 564160 3N-4:** принятие near_separatrix на 50 тыс. лет (2026-10-17) отменено, вердикт — циркуляция. Метки
+  (`author_label_decisions_2026-11-20.csv`, статус non_resonant и angle_status circulation, уровень не ставили: ответ о
+  статусе): запись 100 тыс. лет (c0095, пакет non_resonant/circulation/certain) и запись 300 тыс. лет (c0791,
+  non_resonant/circulation/high; вердикт ждал автора с 2026-10-17, ответ закрывает и его). Тесты:
+  `test_w18_branch_rules::test_564160_is_near_separatrix_at_medium` переписан в
+  `test_564160_slows_at_the_top_but_on_its_own_branch_a_circulation` (на вершине медленнее всего 8 из 10 оборотов —
+  старое чтение назвало бы near_separatrix; ниже своей ветви и в досягаемости сепаратрисы — 3 из 10 < 0.75;
+  non_resonant/circulation, без капа near_separatrix_without_zone); в `test_classification_edge_cases` (slow, 50 тыс.
+  лет, 2026-06-10) ожидание 564160 — non_resonant, тест проходит.
+- **(2) 145480 1N-4 1 млн лет:** near_separatrix, картина B — метка near_separatrix/near_separatrix (уровень не
+  ставили; пакет near_separatrix/pattern_b/medium). Второй пример галереи near_separatrix
+  (`docs/physics/gallery.md#near-separatrix-slowing`): без возражений (тождество проходит), зона не измерена — medium.
+- **(4) Стоящая сепаратриса:** соглашение принято. Запись короче окна разрешения внешнего движения (max(срез, W_c))
+  классифицирует циклы относительно стоящей сепаратрисы [1, 1] ± zσ_h с флагом `zone_external_unresolved`
+  (настройка `LIBRATION_CENTRE_CYCLES`, помечена как соглашение, принятое автором 2026-11-20; `docs/physics/geometry.md`).
+- **(3) Btoptol или Bor:** решения нет; вопрос проверяется по литературе и Codex.
+
+`make test-benchmark` (`data/test-benchmark`): 629 passed, 3 xfailed. Против прежнего `data/test-benchmark` статус
+меняется ровно у двух строк, обе теперь с меткой автора: 564160 3N-4 100 тыс. лет near_separatrix/low →
+non_resonant/circulation/certain и 145480 1N-4 1 млн лет non_resonant/high → near_separatrix/medium; плюс четыре
+новых примера этого дня (156048, 709123, 755140 ×2) и флаги зоны у 131 строки (правки 84af9cd и F1–F5); против прогона
+F1–F5 — ни одного изменения. Согласие с автором: status 246/246, angle_status 191/191, confidence 186/186,
+author_verdict 150/150, secular/ZLK status 53/53; `known_disagreements.py` — 0 расхождений, список не меняется.

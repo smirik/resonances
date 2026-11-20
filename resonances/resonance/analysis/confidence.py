@@ -87,7 +87,8 @@ class Cap(StrEnum):
     # 2026-10-17)
     EPISODES_IN_SEPARATRIX_ZONE = 'episodes_in_separatrix_zone'
     # near_separatrix of the angle's geometry (G3, pattern A or B, no episode) while the zone is not measured
-    # (check_mmr_separatrix_zone not pass): the pattern alone does not place the angle at the separatrix (564160 3N-4)
+    # (check_mmr_separatrix_zone not pass): the pattern alone does not place the angle at the separatrix (523899 3N-5;
+    # 564160 3N-4 until 2026-11-20, a circulation since the per-turn pattern B)
     NEAR_SEPARATRIX_WITHOUT_ZONE = 'near_separatrix_without_zone'
     # the force law and the potential with a are not measured, and neither is the strength by direct averaging: the
     # status rests on the geometry alone (rule 5u/6); the owner search cannot lift it (it excludes a foreign force,

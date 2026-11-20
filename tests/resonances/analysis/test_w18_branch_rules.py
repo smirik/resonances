@@ -6,7 +6,8 @@
   or one independent cycle -> uncertain; nothing measured -> the geometry's status, origin unknown, confidence <= low.
 - The small-divisor envelope (`strength.small_divisor_envelope`) on hand-built cases and against Codex's independent
   numbers for the benchmark rows (W17 Q3 codex-fix/small_divisor_envelopes.csv).
-- near_separatrix of the geometry (G3) without a measured zone: confidence <= medium (564160 3N-4).
+- near_separatrix of the geometry (G3) without a measured zone: confidence <= medium; 564160 3N-4, the example until
+  2026-11-20, is a circulation since the per-turn pattern B (the author agreed 2026-11-20).
 - The directed transitions of `pendulum.regime_transitions`, the mark exit_and_capture and the rename of
   separatrix_chaos to episodes_in_separatrix_zone.
 
@@ -415,10 +416,17 @@ def test_near_separatrix_of_the_geometry_is_capped_without_a_measured_zone(zone,
 
 
 @pytest.mark.benchmark
-def test_564160_is_near_separatrix_at_medium():
-    v = _analyse('mmr2__564160__3N-4+0+1').verdict
-    assert (v.status, v.confidence) == (Status.NEAR_SEPARATRIX, Confidence.MEDIUM)
-    assert str(conf.Cap.NEAR_SEPARATRIX_WITHOUT_ZONE) in v.caps and v.checks['check_mmr_separatrix_zone'] != CheckValue.PASS
+def test_564160_slows_at_the_top_but_on_its_own_branch_a_circulation():
+    """564160 3N-4 (100 kyr) was near_separatrix/medium by the at-top share alone (8 of 10 turns slowest at the top).
+    Every rotating branch is slowest at the top, so pattern B counts only the turns below their own branch and within
+    reach of the separatrix: 3 of 10, below LIBRATION_STALL_REV_FRACTION. A circulation; the
+    author agreed 2026-11-20 (benchmark/DECISIONS.md)."""
+    analysis = _analyse('mmr2__564160__3N-4+0+1')
+    v, pattern = analysis.verdict, analysis.geometry.pattern_b
+    assert (v.status, v.angle_status) == (Status.NON_RESONANT, AngleStatus.CIRCULATION)
+    assert pattern.stall_fraction >= S.libration_stall_rev_fraction  # the old reading would have called it
+    assert pattern.counted_fraction < S.libration_stall_rev_fraction and not pattern.detected
+    assert str(conf.Cap.NEAR_SEPARATRIX_WITHOUT_ZONE) not in v.caps
 
 
 # --- exits and captures -------------------------------------------------------------------------------------------

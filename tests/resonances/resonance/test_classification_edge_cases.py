@@ -14,8 +14,9 @@ def test_classification_edge_cases():
       * Full apocentriclibration: 4177 (2J-1)
       * Not resonant: 624 (1J+1)
     - Neptune resonances (3N-4):
-      * Near the separatrix: 564160 (circulates on the inner side of the island, approaches the saddle of the
-        spatial model in the first ~30 kyr; author:2026-10-17)
+      * Circulation near the separatrix: 564160 (circulates on the inner side of the island, approaches the saddle
+        of the spatial model in the first ~30 kyr; near_separatrix by the author 2026-10-17, a circulation since the
+        per-turn pattern B: its turns pass the top on their own rotating branch; the author agreed 2026-11-20)
       * Clear circulation: 666184
       (42355 3N-4 removed by the author 2026-10-26: chaotic, its status changes with the epoch; today non_resonant)
     The date is fixed at 2026-06-10, where every row was measured (W24; the rows were the same on 4 dates).
@@ -41,7 +42,7 @@ def test_classification_edge_cases():
         ("17346", "2J-1", Status.TRANSIENT),  # libration only at the end (was |status| = 1: transient, sure or not)
         ("4177", "2J-1", Status.RESONANT),  # Clean apocentric libration throughout
         ("624", "1J+1", Status.NON_RESONANT),  #
-        ("564160", "3N-4", Status.NEAR_SEPARATRIX),  # circulation along the separatrix (author:2026-10-17)
+        ("564160", "3N-4", Status.NON_RESONANT),  # circulation along the separatrix (author:2026-11-20)
         ("666184", "3N-4", Status.NON_RESONANT),  # r_sq=0.999, definite circulation
     ]
 

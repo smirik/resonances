@@ -63,6 +63,22 @@
   "status": "transient",
   "step_yr": 0.6000018999984604
  },
+ "mmr2__145480__1N-4+0+3__1Myr": {
+  "action": "spot_check",
+  "angle_status": "near_separatrix",
+  "confidence": "medium",
+  "example_id": "mmr2__145480__1N-4+0+3__1Myr",
+  "final_regime": "",
+  "integrator": "SABA(10,6,4)",
+  "libration_origin": "dynamic",
+  "moon": false,
+  "name": "145480",
+  "reason": "separatrix_zone",
+  "resonance": "1N-4+0+3",
+  "span_yr": 1000000.0,
+  "status": "near_separatrix",
+  "step_yr": 5.0
+ },
  "mmr2__1864__51M-50+0-1": {
   "action": "resample",
   "angle_status": "circulation",

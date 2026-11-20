@@ -812,7 +812,8 @@ class AnalysisSettings:
         '(e and the varpi offset of the members) is read only from motion slower than this x the angle\'s own period '
         '(P_cyc, else the median turn), the members\' fit is held out on alternate blocks of that length, and a record '
         'with fewer than two samples that far (or the slow window of e, if longer) from both edges has a standing '
-        'separatrix, zone [1, 1] (flag zone_external_unresolved)',
+        'separatrix, zone [1, 1] (flag zone_external_unresolved) (the cycles are classed against it +- z sigma_h: a '
+        'fallback, accepted by the author 2026-11-20)',
         convention=True,
     )
     libration_centre_tp_prominence_deg: float = _setting(

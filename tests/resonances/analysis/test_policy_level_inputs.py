@@ -270,7 +270,8 @@ def test_5o_names_the_onset_and_the_strength():
 
 
 def test_a_failed_identity_on_a_kept_leaf_is_named():
-    # 523899 9N-17, 564160: the tree kept its libration (5c/6), the identity failed: V ambiguous, low, no flag
+    # 523899 9N-17 (and 564160 until 2026-11-20): the tree kept its libration (5c/6), the identity failed: V ambiguous,
+    # low, no flag
     v = applied(
         row('5c/6', status=Status.RESONANT, reason=Reason.DYNAMIC_LIBRATION, verdict={'checks': {'check_mmr_identity': CheckValue.FAIL}})
     )

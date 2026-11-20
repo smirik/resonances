@@ -593,7 +593,7 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   cost R0 on 10 rows, UG22 10E-17 a moving center among them), and the ×2 guard compares pattern B only where G3 can
   read it, a record without librating episodes (compared on 17445 5J-2S-2 it flipped on turns reversing inside a
   libration). Moves: 564160 3N-4 100 kyr → non_resonant, 145480 1N-4 1 Myr → near_separatrix/medium; 523899 stays.
-  Open: Btoptol vs Bor, 564160 at 50 kyr, 145480.
+  Open: Btoptol vs Bor, 564160 at 50 kyr, 145480 (the last two answered below, fifth entry).
 - **Nov 20 (Claude, after Codex's review of 84af9cd; `benchmark/DECISIONS.md` 2026-11-20, fourth entry).** Five
   defects of the near_separatrix fix, each fixed in its own physics, no new setting. F1/F2: the top passage is read on
   the turn's samples (`geometry.top_passages`): h at the slowest sample from the observed speed and V_E at the measured
@@ -609,3 +609,11 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   separatrix and the flag; its cycles are classed against [1, 1] ± zσ_h (a flagged fallback). Full MMR benchmark:
   the same two moves as 84af9cd and nothing else (no level, R0 or cap change); 523899 stays near_separatrix (turning
   points 1.000), 709123 resonant/high, the 2J-1 pilot circulation. Rejected variants: [rejected.md](rejected.md).
+- **Nov 20 (author's answers 17:03; log entry by Claude, `benchmark/DECISIONS.md` 2026-11-20, fifth entry).**
+  «1: 561460 [564160] - согласен с циркуляцией; 2 - согласен, норм. ... 4 - ок». (1) 564160 3N-4 is a circulation:
+  his 2026-10-17 acceptance of near_separatrix at 50 kyr is withdrawn; labels non_resonant/circulation on the 100 kyr
+  and 300 kyr records (no level); the W18 test now asserts the circulation (8 of 10 turns slowest at the top, 3 of 10
+  counted), the slow edge-case expectation is non_resonant. (2) 145480 1N-4 1 Myr is near_separatrix, pattern B
+  (label, no level); second gallery example `near-separatrix-slowing`. (4) The standing separatrix [1, 1] ± zσ_h with
+  `zone_external_unresolved` for a record shorter than its resolution window is an accepted convention. (3) Btoptol
+  vs Bor: open, checked against the literature and Codex. No rule changed.

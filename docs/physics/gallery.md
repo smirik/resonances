@@ -162,6 +162,14 @@ No closed libration cycle, but in each revolution $\sigma$ turns back briefly at
 
 [![mmr2__523899__3N-5+0+2](../img/gallery/mmr2__523899__3N-5+0+2.png){ loading=lazy }](../img/gallery/mmr2__523899__3N-5+0+2.png)
 
+### Top passages that slow down to the separatrix {#near-separatrix-slowing}
+
+The same pattern B on a 1 Myr record with nothing objecting: $\sigma$ circulates, and turn after turn it passes the top of its own well more slowly than its rotating branch at that energy allows, ever closer to the separatrix, until at about 730 kyr it turns back at the top and circulates the other way. The identity check passes, but the zone of the separatrix is not measured (only its estimate from $e^q$), so the confidence is medium.
+
+**145480**, `1N-4+0+3`: `near_separatrix` · `near_separatrix` · `separatrix_zone` · `medium`. Record: 1 Myr, step 5 yr, SABA(10,6,4).
+
+[![mmr2__145480__1N-4+0+3__1Myr](../img/gallery/mmr2__145480__1N-4+0+3__1Myr.png){ loading=lazy }](../img/gallery/mmr2__145480__1N-4+0+3__1Myr.png)
+
 ## Non-resonant
 
 Circulation, or a bounded angle that this resonance does not make.

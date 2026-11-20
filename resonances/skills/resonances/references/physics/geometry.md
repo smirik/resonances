@@ -465,7 +465,8 @@ absent one: the zone reads $e^q$ and the flag `zone_members_unresolved` says so.
 samples a window max(cutoff, $W_c$) away from both edges resolves no external motion, librators as well as
 circulations: its separatrix is a standing one, the zone $[1, 1]$ (flag `zone_external_unresolved`), never an absent
 zone (with $q = 0$ there is nothing to resolve). The cycles are then classed against that standing separatrix with
-the margin $z\,\sigma_h$, a fallback the flag marks, not a measurement of a still separatrix. These rules are the
+the margin $z\,\sigma_h$, a fallback the flag marks, not a measurement of a still separatrix (a convention, accepted
+by the author 2026-11-20). These rules are the
 zone's only: the frames $V_E$ is fitted in (fixed, the modulation's, the center's, the moving well's; the one
 that explains $\dot\sigma^2$ best wins) still include the members' own fit at the filter's cutoff, identified or
 not (without it, the $e^q$ frame is the zone's). A frame is a coordinate system judged by its $R^2$, not a prediction of how the separatrix pulsates;
