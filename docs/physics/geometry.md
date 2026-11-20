@@ -448,14 +448,25 @@ the potential fitted to $\sigma$, and $m(t) = \Omega(t)^2/\bar\Omega^2$.
 period $P_\text{own}$ ($P_\text{cyc}$, else the median turn): $e$ and the offset $\varpi - \varpi_P$ are low-passed at
 `LIBRATION_CENTRE_CYCLES` × $P_\text{own}$ (for a librator that is already the window of $e$). The angle's own line in
 $e$ at $P_\text{own}$ is its response, not a pulsation of the force; left in, it pumps the trial librations over the
-top near $2\bar\Omega$ and empties the zone (the 2J−1 pilot: $J_\text{lo}$ at the 0.1 floor). Within that cutoff
-of either edge $e$ is held at its edge-free value. The members count only when the slow offset sweeps at least one full
-turn over the record: on less their harmonics are not separated from each other (the same rule as the $e$-cycle sine
-of $e^q$; 523899: $\nu T = 0.006$ rad). A record shorter than twice the cutoff resolves no external motion: its
-separatrix is a standing one, the zone $[1, 1]$ (flag `zone_external_unresolved`), never an absent zone. This rule
-is the zone's only: the frames $V_E$ is fitted in (fixed, the modulation's, the center's, the moving well's; the one
-that explains $\dot\sigma^2$ best wins) still include the members' own fit at the filter's cutoff, whatever their
-offset sweeps (without it, the $e^q$ frame is the zone's). A frame is a coordinate system judged by its $R^2$, not a prediction of how the separatrix pulsates;
+top near $2\bar\Omega$ and empties the zone (the 2J−1 pilot: $J_\text{lo}$ at the 0.1 floor). The trend of $e$ is
+removed inside the edge-free window first, and within that cutoff of either edge the remaining oscillation is held at
+its edge-free value; $\mathrm{d}K/K$ and the strength the zone integrates come from that one decomposition (holding
+$e$ before removing its trend turned a pure trend into a clipped ramp, a zone $[0.975, 1.05]$ from no oscillation).
+The members count when their fit is identified: it gains `MMR_FORCE_MULTI_GAIN` in $R^2$ over the single harmonic
+both in sample and out of sample, fitted on alternate blocks of the offset's cutoff and predicting the others. The
+zone integrates $W(t)$ along the record, so what must hold is $W$ between the samples it was fitted on, at the scale
+the modulation is resolved; how far $\varpi - \varpi_P$ sweeps does not matter (a librating offset of 2.4 rad, six
+cycles, is resolved; time halves would make a multiplet of many members extrapolate $W$ over half of the offset's
+circle: 31935 9M−16, seven harmonics on 1.08 turns, −1772 by halves, 0.66 by blocks). A fit that gains in sample
+only (17886 36M−61: 26 members on one turn, 0.76 in sample, −2495 out of it) is a modulation not resolved, not an
+absent one: the zone reads $e^q$ and the flag `zone_members_unresolved` says so. A record that leaves fewer than two
+samples a window max(cutoff, $W_c$) away from both edges resolves no external motion, librators as well as
+circulations: its separatrix is a standing one, the zone $[1, 1]$ (flag `zone_external_unresolved`), never an absent
+zone (with $q = 0$ there is nothing to resolve). The cycles are then classed against that standing separatrix with
+the margin $z\,\sigma_h$, a fallback the flag marks, not a measurement of a still separatrix. These rules are the
+zone's only: the frames $V_E$ is fitted in (fixed, the modulation's, the center's, the moving well's; the one
+that explains $\dot\sigma^2$ best wins) still include the members' own fit at the filter's cutoff, identified or
+not (without it, the $e^q$ frame is the zone's). A frame is a coordinate system judged by its $R^2$, not a prediction of how the separatrix pulsates;
 without it R0 lost the frame it passed in on 7 rows (2003 UG22 in 10E−17, a moving center, among them).
 
 Trial librations and rotations of this model are
@@ -567,10 +578,17 @@ need the potential fitted to $\sigma$ alone to hold (the pendulum test R0 on $\s
   slower than its own branch, $r_\text{pend}(h_k) - r_{\min,k} >$ `LIBRATION_STALL_RATE_TOL` = 0.2, with
   $r_\text{pend}$ the min/mean rate of a free rotation at $h_k$ in the fitted potential
   ($\tfrac{2}{\pi}\sqrt{(h-1)/h}\,K(1/h)$ for one harmonic, $v_\text{top}T(h)/2\pi$ otherwise); (iii) its top passage is
-  within reach of the separatrix,
-  $$h_{\text{top},k} = 1 + (h_k - 1)\,s_k\lvert s_k\rvert \le h_\text{hi} + z\,\sigma_h, \qquad s_k = r_{\min,k}/r_\text{pend}(h_k)$$
-  (the top speed of the branch scaled by the observed one; $s_k < 0$, a turn that backs up at the top, is below the
-  separatrix). Pattern B needs at least `LIBRATION_STALL_REV_FRACTION` = 0.75 of the revolutions counted (columns
+  within reach of the separatrix, $h_{\text{top},k} \le h_\text{hi} + z\,\sigma_h$, with the energy read on the
+  turn's own slowest sample,
+  $$h_{\text{top},k} = \frac{\dot\varphi^2/2 + m\,(V_E(\varphi) - V_\text{min})}{m\,(V_\text{max} - V_\text{min})},$$
+  the observed speed and $V_E$ at the measured phase, in the frame of the turns' energies (fixed: $\varphi = \sigma$,
+  $m = 1$). Neither the turn's duration nor its branch enters: a turn that departs from its branch need not last
+  $T(h)$ (scaling the branch's top speed by $r_{\min}/r_\text{pend}$ is wrong by $(T_\text{pred}/T_\text{obs})^2$),
+  and the energy is quadratic in the speed, so a backward passage is no lower energy. A turn that **backs up** at the
+  top ($\dot\sigma$ changes sign within the phase tolerance of the top; column `geo_stall_reversed_fraction`) has a
+  turning point there: its speed is zero and $h = V_E(\varphi)/(V_\text{max} - V_\text{min}) \le 1$, so for that
+  instant the orbit is on or below its separatrix and the turn counts; $h_{\text{top},k}$ is then the highest $h$ at
+  its turning points (interpolated to zero speed), not the kinetic energy of the backward stretch (523899: 1.000). Pattern B needs at least `LIBRATION_STALL_REV_FRACTION` = 0.75 of the revolutions counted (columns
   `geo_stall_counted_fraction`, `geo_h_top_med`, `geo_h_top_min`). A free pendulum just above the separatrix is
   therefore a circulation: its turns sit on their branch (2026-11-20; the 2J−1 pilot rows sat within 0.02–0.07 of
   it).

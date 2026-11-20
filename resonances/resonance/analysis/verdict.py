@@ -250,6 +250,9 @@ class Flag(StrEnum):
     # the record resolves no motion slower than libration_centre_cycles x the angle's own period: the zone's
     # separatrix is a standing one, [1, 1] (a column, no status)
     ZONE_EXTERNAL_UNRESOLVED = 'zone_external_unresolved'
+    # the members' fit gains in sample but does not reconstruct a_dot out of sample: their modulation is not
+    # identified, the zone reads e^q (a column, no status; not a measurement that the force does not pulsate)
+    ZONE_MEMBERS_UNRESOLVED = 'zone_members_unresolved'
     ZONE_NUMERIC_MISMATCH = 'zone_numeric_mismatch'
     ZONE_EDGE_CYCLE = 'zone_edge_cycle'
     THREE_TP_EPISODE = 'three_tp_episode'

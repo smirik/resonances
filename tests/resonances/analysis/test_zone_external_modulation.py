@@ -1,12 +1,16 @@
 """The separatrix zone reads its strength modulation from motion external to the angle (near_separatrix fix of
 2026-11-20, docs/physics/geometry.md "The separatrix zone"): e and the members' offset varpi - varpi_P are low-passed
-at LIBRATION_CENTRE_CYCLES x the angle's own period P_own (`zone.external_cutoff_yr`); the members count only when that
-slow offset sweeps a full turn; a record too short to resolve the cutoff has a standing separatrix, zone [1, 1], flag
-zone_external_unresolved (never an absent zone).
+at LIBRATION_CENTRE_CYCLES x the angle's own period P_own (`zone.external_cutoff_yr`); the members count when their fit
+reconstructs a_dot out of sample (`zone.members_held_out_gain`), whatever beta sweeps (Codex review of 84af9cd, F3);
+the trend of e is removed before its edge hold, and dK/K and the strength come from that one decomposition (F4); a
+record too short to resolve the effective window max(cutoff, W_c), librators too (F5), has a standing separatrix,
+zone [1, 1], flag zone_external_unresolved (never an absent zone).
 
 Expected values by hand: the e^q half-range dK/K = q de / e_bar of the slow term alone (PHYSICS B1a), the Butterworth
 order-2 forward-backward gain 1 / (1 + (P_c / P)^4) at the own line, the multiplet algebra W = C0 + C1 e^{i beta}.
 """
+
+import dataclasses
 
 import numpy as np
 import pytest
@@ -116,6 +120,51 @@ def test_a_record_too_short_for_the_cutoff_has_a_standing_separatrix():
     assert not zone.eccentricity_modulation(series, slow, context, t, 160.0, S).external_unresolved
 
 
+@pytest.mark.parametrize('slow_window', [30.0, 600.0, 601.0])
+def test_the_resolution_is_checked_on_every_branch(slow_window):
+    """F5: the same 1000-yr record with e low-passed at W_c = 30 yr (a circulation: refiltered at the 600-yr cutoff),
+    W_c = 600 yr (a librator: W_c = 3 P_cyc is the cutoff itself) and 601 yr (longer): the effective window
+    max(600, W_c) leaves no sample 600 yr from both edges, so the strength is constant and flagged on every branch
+    (84af9cd checked only the refiltered one: a strength swing of 0.12 from an edge-dominated filter, no flag)."""
+    t = np.arange(0.0, 1000.0, 1.0)
+    e = 0.1 + 0.02 * np.cos(2 * np.pi * t / 1500.0)
+    slow = _slow(t, filtering.lowpass_with(t, e, slow_window, S), slow_window)
+    found = zone.eccentricity_modulation(_series(t, e), slow, _context(), t, 200.0, S)
+    assert found.external_unresolved
+    assert np.ptp(found.omega_squared) < 1e-12 and abs(found.eq_dk_over_k) < 1e-12
+
+
+def test_an_edge_window_of_one_sample_is_unresolved():
+    """Span exactly 2 x 600 yr on a 1-yr grid: the edge-free window [600, 600] holds one sample, which resolves nothing
+    (a trend and a half-range need two); a span of 1202 yr leaves three samples and is resolved. q = 0 (no power of e
+    in the term): nothing to resolve, never flagged."""
+    for span, unresolved in ((1200.0, True), (1202.0, False)):
+        t = np.arange(0.0, span + 0.5, 1.0)
+        e = 0.1 + 0.02 * np.cos(2 * np.pi * t / 1500.0)
+        found = zone.eccentricity_modulation(_series(t, e), _slow(t, e, 600.0), _context(), t, 200.0, S)
+        assert found.external_unresolved == unresolved
+    t = np.arange(0.0, 1000.0, 1.0)
+    e = 0.1 + 0.02 * np.cos(2 * np.pi * t / 1500.0)
+    flat = zone.eccentricity_modulation(_series(t, e, key='3J-3+0+0'), _slow(t, e, 600.0), _context(), t, 200.0, S)
+    assert flat.source == zone.SOURCE_NONE and not flat.external_unresolved
+
+
+def test_a_pure_trend_of_e_is_no_modulation_after_the_edge_hold():
+    """F4: e = 0.1 + 0.1 t / 60 kyr, own period 4000 yr: the cutoff 12 kyr refilters e (W_c 60 yr) and holds it within
+    12 kyr of the edges. Removing the trend after holding e turned the line into a clipped ramp (84af9cd: a strength
+    swing of 0.128, zone [0.975, 1.05] from no oscillation); removed first, e_osc is a constant: no strength
+    modulation anywhere, dK/K = 0, the trend 0.1 / 60 kyr = 1.667e-3 / kyr, and the zone is the standing [1, 1]."""
+    t = np.arange(0.0, 60000.0, 5.0)
+    e = 0.1 + 0.1 * t / 60000.0
+    found = zone.eccentricity_modulation(_series(t, e), _slow(t, filtering.lowpass_with(t, e, 60.0, S), 60.0), _context(), t, 4000.0, S)
+    assert not found.external_unresolved
+    assert np.ptp(found.omega_squared) < 1e-9
+    assert abs(found.eq_dk_over_k) < 1e-9
+    assert found.e_trend_per_kyr == pytest.approx(0.1 / 60.0, rel=1e-6)
+    standing, _ = zone._zone_of(found, np.ones_like(t, dtype=bool), 2 * np.pi / 4000.0, float('nan'), S)
+    assert (standing.j_lo, standing.h_hi) == pytest.approx((1.0, 1.0))
+
+
 # ------------------------------------------------------------------------------------------------ the members
 
 
@@ -138,33 +187,136 @@ def _members_record(turns, span=60000.0, step=5.0, c=-0.75):
     return t, sigma, adot, varpi_planet
 
 
-@pytest.mark.parametrize('turns, counted', [(0.5, False), (3.0, True)])
-def test_members_count_only_when_the_offset_sweeps_a_full_turn(turns, counted):
-    """The members' harmonics j = 0, 1 are told apart only by the turning of beta; on half a turn the fit trades C1
-    against C0 (523899 3N-5: nu T = 0.006 rad, eps 1-500). P_own = 500 yr: the 60-kyr record resolves 3 x 500 yr."""
+OVERFIT_KEY = '36J-13+0-23'  # p = -23, Jupiter's term 0: the members j = 0..23 (24 harmonics, 17886 36M-61 has 26)
+
+
+def _overfit_record(span=20000.0, step=5.0, c=-0.75):
+    """A single harmonic C0 sin(sigma + arg C0) (small period 500 yr) plus a force it does not explain: Gaussian noise
+    (seed 1) low-passed at 100 yr, of the harmonic's amplitude. beta = varpi - varpi_P makes one turn over the record,
+    so the 24 members of OVERFIT_KEY fit that noise in sample with 48 coefficients on 6.7 blocks of the 1.5-kyr cutoff
+    (17886 36M-61: gain 0.76 in sample, -2495 out of sample)."""
+    scale = (2 * np.pi / 500.0) ** 2 / abs(c)
+    c0 = scale * np.exp(0.4j)
+    t = np.arange(0.0, span, step)
+    sol = solve_ivp(lambda x, y: [y[1], c * np.imag(c0 * np.exp(1j * y[0]))], (t[0], t[-1]), [0.0, 0.0], t_eval=t, rtol=1e-10, atol=1e-13)
+    sigma = sol.y[0]
+    noise = filtering.lowpass_with(t, np.random.default_rng(1).standard_normal(len(t)), 100.0, S)
+    adot = np.imag(c0 * np.exp(1j * sigma)) + noise * abs(c0) / np.std(noise)
+    return t, sigma, adot, 1.0 - 2 * np.pi * t / span
+
+
+def _librating_record(span=120000.0, step=5.0, c=-0.75):
+    """beta = 1.2 sin(2 pi t / 20 kyr) librates (range 2.4 rad, six cycles), W = C0 + C1 e^{i beta}, |C1| / |C0| = 0.8,
+    scaled to a small period of 500 yr (Codex review of 84af9cd, F3): the frozen small periods 373-486 yr are far below
+    the 20-kyr forcing."""
+    scale = (2 * np.pi / 500.0) ** 2 / abs(c)
+    c0, c1 = scale * np.exp(0.4j), 0.8 * scale * np.exp(1.1j)
+    t = np.arange(0.0, span, step)
+
+    def amplitude(x):
+        return c0 + c1 * np.exp(1j * 1.2 * np.sin(2 * np.pi * x / 20000.0))
+
+    sol = solve_ivp(
+        lambda x, y: [y[1], c * np.imag(amplitude(x) * np.exp(1j * y[0]))],
+        (t[0], t[-1]),
+        [-np.angle(amplitude(0.0)) + 0.25, 0.0],
+        t_eval=t,
+        rtol=1e-10,
+        atol=1e-13,
+        method='DOP853',
+    )
+    sigma = sol.y[0]
+    adot = np.imag(amplitude(t) * np.exp(1j * sigma))
+    return t, sigma, adot, 1.0 - 1.2 * np.sin(2 * np.pi * t / 20000.0), abs(c) * np.abs(amplitude(t))
+
+
+@pytest.mark.parametrize('turns', [0.5, 3.0])
+def test_members_count_when_their_fit_carries_out_of_sample(turns):
+    """F3: the members' harmonics are told apart by how beta moves, not by how far: on half a turn as on three the
+    exact multiplet's fit recovers |C1| / |C0| = 0.5 and predicts the blocks of the 1.5-kyr cutoff it was not fitted
+    on as well as in sample. P_own = 500 yr: the 60-kyr record resolves 3 x 500 yr."""
     t, sigma, adot, varpi_planet = _members_record(turns)
     series = _series(t, np.full_like(t, 0.1), varpi_planet)
     mask = np.ones_like(t, dtype=bool)
     context = _context(-0.75)
-    old = zone.best_members(series, t, sigma, adot, mask, context, 20.0, S)
-    assert old is not None  # the old reading takes the members on any offset
-    new = zone.best_members(series, t, sigma, adot, mask, context, 20.0, S, 500.0)
-    assert (new is not None) == counted
-    if counted:
-        assert new.eps == pytest.approx((0.5,), rel=0.02)  # |C1| / |C0| by hand
+    found = zone.best_members(series, t, sigma, adot, mask, context, 20.0, S, 500.0)
+    assert found.eps == pytest.approx((0.5,), rel=0.02)  # |C1| / |C0| by hand
+    assert found.gain >= S.mmr_force_multi_gain and found.held_out_gain == pytest.approx(found.gain, abs=0.01)
+    zone_mod, _ = zone.modulations(series, _slow(t, series.e, 60.0), context, t, sigma, adot, mask, 20.0, 500.0, S)
+    assert zone_mod.source == zone.SOURCE_MEMBERS and not zone_mod.members_unresolved
     # too short a record for 3 x P_own: no members (the e^q route then has a standing separatrix)
     assert zone.best_members(series, t, sigma, adot, mask, context, 20.0, S, 20000.0) is None
 
 
+def test_a_librating_secular_offset_modulates_the_zone():
+    """F3, Codex's counterexample to the one-turn rule: beta librates over 2.4 rad, six cycles in 120 kyr. 84af9cd
+    dropped the members (range < 2 pi) and the zone read a constant strength; the fit is identified (eps 0.8 by hand,
+    out of sample too) and the zone's strength follows |c W(t)| (relative swing 0.48)."""
+    t, sigma, adot, varpi_planet, strength = _librating_record()
+    series = _series(t, np.full_like(t, 0.1), varpi_planet)
+    mask = np.ones_like(t, dtype=bool)
+    context = _context(-0.75)
+    zone_mod, _ = zone.modulations(series, _slow(t, series.e, 60.0), context, t, sigma, adot, mask, 20.0, 500.0, S)
+    assert zone_mod.source == zone.SOURCE_MEMBERS
+    assert zone_mod.eps == pytest.approx((0.8,), rel=0.01)
+    assert zone_mod.held_out_gain >= S.mmr_force_multi_gain
+    inside = filtering.window_mask(t, filtering.edge_window(t, 1500.0))  # beyond the low-pass edge of the offset
+    assert np.max(np.abs(zone_mod.omega_squared[inside] / strength[inside] - 1)) < 0.01
+    assert np.ptp(zone_mod.omega_rel**2) == pytest.approx(0.483, abs=0.01)
+
+
+def test_a_fit_that_does_not_carry_out_of_sample_is_an_unresolved_modulation():
+    """24 members on one turn of beta fit 0.15 of a_dot's variance in sample (above mmr_force_multi_gain 0.1) and
+    predict the blocks they were not fitted on far worse than the single harmonic (held-out gain < -1): the members'
+    modulation is not identified. The zone reads e^q and says why (`members_unresolved`, flag
+    zone_members_unresolved): not an absent modulation."""
+    t, sigma, adot, varpi_planet = _overfit_record()
+    series = _series(t, np.full_like(t, 0.1), varpi_planet, key=OVERFIT_KEY)
+    mask = np.ones_like(t, dtype=bool)
+    context = _context(-0.75)
+    found = zone.best_members(series, t, sigma, adot, mask, context, 20.0, S, 500.0)
+    assert found.gain >= S.mmr_force_multi_gain  # taken in sample
+    assert found.held_out_gain < -1.0
+    zone_mod, _ = zone.modulations(series, _slow(t, series.e, 60.0), context, t, sigma, adot, mask, 20.0, 500.0, S)
+    assert zone_mod.source == zone.SOURCE_ECCENTRICITY
+    assert zone_mod.members_unresolved and zone_mod.held_out_gain == found.held_out_gain
+    assert str(Flag.ZONE_MEMBERS_UNRESOLVED) in zone._zone_flags(zone_mod, None, [], False)
+
+
+def test_held_out_blocks_interpolate_and_do_not_extrapolate_beta():
+    """The blocks are of the offset's cutoff: a nearly fixed beta (nu T = 0.006 rad) whose basis follows a smooth, real
+    strength variation W = C0 (1 + 0.8 sin(2 pi t / T)) predicts the blocks between its fitted ones (held-out gain
+    about the in-sample 0.13): the zone may follow that variation, it is the force's own. An exact multiplet on half a
+    turn, the case time halves would have to extrapolate, carries too (`test_members_count_when_...`)."""
+    span, step, c = 60000.0, 5.0, -0.75
+    c0 = 2e-7 * np.exp(0.4j)
+    t = np.arange(0.0, span, step)
+
+    def amplitude(x):
+        return c0 * (1 + 0.8 * np.sin(2 * np.pi * x / span))
+
+    sol = solve_ivp(
+        lambda x, y: [y[1], c * np.imag(amplitude(x) * np.exp(1j * y[0]))], (t[0], t[-1]), [2.0, 0.0], t_eval=t, rtol=1e-10, atol=1e-13
+    )
+    sigma = sol.y[0]
+    adot = np.imag(amplitude(t) * np.exp(1j * sigma))
+    series = _series(t, np.full_like(t, 0.1), 1.0 - 0.006 * t / span)
+    found = zone.best_members(series, t, sigma, adot, np.ones_like(t, dtype=bool), _context(c), 20.0, S, 500.0)
+    assert found.gain >= S.mmr_force_multi_gain
+    assert found.held_out_gain == pytest.approx(found.gain, abs=0.01)
+
+
 def test_the_members_own_fit_stays_a_frame_when_the_zone_drops_it():
-    """`zone.modulations`: the one-turn rule is the zone's only. On half a turn of beta the zone reads e^q (constant e
-    here: m = 1), while the frames keep the members' own fit at P_c, the same object `best_members` gives without a
+    """`zone.modulations`: identification is the zone's only. On the unidentified 24 members the zone reads e^q
+    (constant e here: m = 1), while the frames keep the members' own fit at P_c, the same object `best_members` gives without a
     period (the reading in which R0 passed on UG22 10E-17, 117306 11M-20); on three turns both read the members (the
     zone's at the external cutoff), and without a period both are the old members' fit."""
     context = _context(-0.75)
-    for turns, zone_source in ((0.5, zone.SOURCE_ECCENTRICITY), (3.0, zone.SOURCE_MEMBERS)):
-        t, sigma, adot, varpi_planet = _members_record(turns)
-        series = _series(t, np.full_like(t, 0.1), varpi_planet)
+    for (t, sigma, adot, varpi_planet), key, zone_source in (
+        (_overfit_record(), OVERFIT_KEY, zone.SOURCE_ECCENTRICITY),
+        (_members_record(3.0), KEY, zone.SOURCE_MEMBERS),
+    ):
+        series = _series(t, np.full_like(t, 0.1), varpi_planet, key=key)
         slow = _slow(t, series.e, 60.0)
         mask = np.ones_like(t, dtype=bool)
         own = zone.best_members(series, t, sigma, adot, mask, context, 20.0, S)
@@ -234,3 +386,34 @@ def test_an_unresolved_record_keeps_a_zone_of_one():
     assert energy is not None and energy.zone is not None
     assert energy.zone.j_lo == pytest.approx(1.0) and energy.zone.h_hi == pytest.approx(1.0)
     assert str(Flag.ZONE_EXTERNAL_UNRESOLVED) in energy.flags
+
+
+def test_a_short_librator_has_a_standing_separatrix():
+    """F5 through the analysis (Codex's short_librator): a libration at h = 0.15 in sigma_ddot = -w0^2 m(t) sin sigma,
+    m = 1 + 0.2 sin(2 pi t / 3000 yr), e = 0.15 sqrt(m) (q = 2 for 3J-1), over 1500 yr. P_cyc = 385 yr: the effective
+    window 3 P_cyc = 1155 yr leaves no sample a window from both edges (2 x 1155 > 1500), so the zone is the flagged
+    standing [1, 1] (84af9cd: [0.975, 1.025] from an edge-dominated filter, no flag); the status stays resonant."""
+    from tests.resonances.independent_w18.test_w18_separatrix import _series as w18_series
+
+    t = np.arange(0.0, 1501.0, 1.0)
+
+    def strength(x):
+        return 1 + 0.2 * np.sin(2 * np.pi * x / 3000.0)
+
+    sol = solve_ivp(
+        lambda x, y: [y[1], -(W0**2) * strength(x) * np.sin(y[0])],
+        (t[0], t[-1]),
+        [0.0, 2 * W0 * np.sqrt(0.15)],
+        t_eval=t,
+        rtol=2e-11,
+        atol=1e-13,
+        method='DOP853',
+    )
+    series = dataclasses.replace(w18_series(t, sol.y[0], sol.y[1]), e=0.15 * np.sqrt(strength(t)))
+    analysis = analyse_mmr(series, S, scan_subresonances=False, scan_owner=False)
+    assert analysis.geometry.period_cycle_yr == pytest.approx(385.0, abs=5.0)
+    assert 2 * 3 * analysis.geometry.period_cycle_yr > t[-1] - t[0]
+    energy = analysis.energy
+    assert (energy.zone.j_lo, energy.zone.h_hi) == pytest.approx((1.0, 1.0))
+    assert str(Flag.ZONE_EXTERNAL_UNRESOLVED) in energy.flags
+    assert str(analysis.verdict.status) == 'resonant'

@@ -810,8 +810,9 @@ class AnalysisSettings:
         'float',
         'the center is the angle smoothed over this many cycles; also the MMR separatrix zone: its strength modulation '
         '(e and the varpi offset of the members) is read only from motion slower than this x the angle\'s own period '
-        '(P_cyc, else the median turn), and a record shorter than twice that has a standing separatrix, zone [1, 1] '
-        '(flag zone_external_unresolved)',
+        '(P_cyc, else the median turn), the members\' fit is held out on alternate blocks of that length, and a record '
+        'with fewer than two samples that far (or the slow window of e, if longer) from both edges has a standing '
+        'separatrix, zone [1, 1] (flag zone_external_unresolved)',
         convention=True,
     )
     libration_centre_tp_prominence_deg: float = _setting(

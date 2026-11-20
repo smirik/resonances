@@ -594,3 +594,18 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   read it, a record without librating episodes (compared on 17445 5J-2S-2 it flipped on turns reversing inside a
   libration). Moves: 564160 3N-4 100 kyr → non_resonant, 145480 1N-4 1 Myr → near_separatrix/medium; 523899 stays.
   Open: Btoptol vs Bor, 564160 at 50 kyr, 145480.
+- **Nov 20 (Claude, after Codex's review of 84af9cd; `benchmark/DECISIONS.md` 2026-11-20, fourth entry).** Five
+  defects of the near_separatrix fix, each fixed in its own physics, no new setting. F1/F2: the top passage is read on
+  the turn's samples (`geometry.top_passages`): h at the slowest sample from the observed speed and V_E at the measured
+  phase, in the frame of the energies; a turn that backs up at the top is read at its turning point, h = V/depth ≤ 1
+  (a turning point at the top is a moment on or below the separatrix: it counts; `geo_stall_reversed_fraction`). The
+  turn is found and placed on σ; the frame enters the energy only. F3: the members modulate the zone when their fit
+  carries out of sample, on alternate blocks of the offset's cutoff (`zone.members_held_out_gain`, gain ≥
+  `MMR_FORCE_MULTI_GAIN` both ways); in sample only → e^q with flag `zone_members_unresolved`. Measured before
+  choosing: time halves −1772 on 31935 9M-16 (7 members, 1.08 turns), −1.14 on 65366, against 0.66/0.80 by blocks;
+  17886 36M-61 (26 members on one turn) −2495 by blocks: unresolved. F4: one trend fit inside the edge-free window
+  gives dK/K and Ω²; the oscillation, not e, is held at the edges. F5: the resolution is checked on the effective
+  window max(external, W_c) on every branch (q ≠ 0): a librator on a record shorter than 6 P_cyc gets the standing
+  separatrix and the flag; its cycles are classed against [1, 1] ± zσ_h (a flagged fallback). Full MMR benchmark:
+  the same two moves as 84af9cd and nothing else (no level, R0 or cap change); 523899 stays near_separatrix (turning
+  points 1.000), 709123 resonant/high, the 2J-1 pilot circulation. Rejected variants: [rejected.md](rejected.md).

@@ -399,16 +399,16 @@ guards) → io.
 - **near_separatrix, cause fix** (the author 2026-11-20, «3 - да, через причину»; design
   `docs/physics/geometry.md` near the separatrix and the separatrix zone). Zone: `zone.external_cutoff_yr`
   (LIBRATION_CENTRE_CYCLES x P_own, `record_period`) passed to `best_members` and `eccentricity_modulation` (both
-  default to the old reading without a period): e of a circulation is low-passed there and held flat within a cutoff
-  of the edges; the members' offset too, and a planet counts only when that slow offset sweeps >= 1 turn; a record
-  shorter than 2 x the cutoff gives `Modulation.external_unresolved` (e = its mean: zone [1, 1], flag
+  default to the old reading without a period): e of a circulation is low-passed there (its oscillation held within
+  a cutoff of the edges); the members' offset too, and a planet counts when identified (superseded rules: next
+  bullet); a record unresolved at that cutoff gives `Modulation.external_unresolved` (e = its mean: zone [1, 1], flag
   zone_external_unresolved, never zone None: 523899 would drop). That rule is the ZONE's only (`zone.modulations`:
   the zone's modulation and the frames'): `candidate_frames` (and `episode_r0`) get the members' own fit at P_c
   (`best_members` without a period) whenever it passes mmr_force_multi_gain, else the zone's modulation; the zone,
   its flags and the sep_modulation_* columns read the zone's. Pattern B (`geometry.pattern_b`, also the x2 guard's
   `preprocess` call, both with V_E): per turn, at the top + `r_pend(h) - r_min > LIBRATION_STALL_RATE_TOL`
   (`rotating_branch_rate`, V_E's own branch for several harmonics) + `h_top <= h_hi + z sigma_h`
-  (`top_passage_energy`); G3 reads `counted_fraction` (ledger line, column `geo_stall_counted_fraction`). The x2
+  (`top_passages`, next bullet); G3 reads `counted_fraction` (ledger line, column `geo_stall_counted_fraction`). The x2
   guard compares `stall` only on a record without librating episodes (`decide.librating_episodes` empty, as G3;
   `filter_sensitivity(compare_stall=)`, else not_checked): pattern B is a no-episode reading. Moves: 564160 3N-4
   100 kyr near_separatrix → non_resonant/certain, 145480 1N-4 1 Myr non_resonant → near_separatrix/medium; the 2J-1
@@ -419,6 +419,17 @@ guards) → io.
   `stall` on episodic rows flipped it on turns that reverse inside a libration (17445 5J-2S-2: x2 0.92, x1 0.58 →
   filter_sensitive, tree level high → medium). The free cosine pendulum above the separatrix is a circulation
   ('Btoptol'; 'Bor' would keep it: open question).
+- **near_separatrix, Codex review of 84af9cd** (F1-F5, `tmp/fair-borderline/codex-review-84af9cd/REVIEW.md`): the top
+  passage is measured on the turn's samples (`geometry.top_passages`: h at the slowest sample in V_E and the frame of
+  the energies; a reversal at the top read at its turning point, V/depth <= 1, column `geo_stall_reversed_fraction`);
+  the turn is found and placed on sigma, the frame enters the energy only (a phase converted into a moving-well frame
+  is noise: 12218 stall_phase_R 0.99 -> 0.28). Members for the zone when identified (`zone.members_held_out_gain`:
+  in-sample gain and the gain on alternate blocks of the offset's cutoff, both >= mmr_force_multi_gain; flag
+  zone_members_unresolved when only in sample), not by how far the offset sweeps. Trap: time halves make a multiplet
+  of many members extrapolate W over half of beta's circle (31935 9M-16: -1772 by halves, 0.66 by blocks; 17886
+  36M-61: -2495 by blocks too, unresolved). e^q: one trend fit inside the edge-free window gives dK/K and Omega^2, the
+  oscillation (not e) is held at the edges (`modulation_from_eccentricity(fit_mask=, hold=)`); the resolution check
+  reads the effective window max(external, W_c) on every branch, q != 0 only.
 - **W28 q-2 b** `full_support_caps`: an own-dynamics resonant/transient/near_separatrix verdict is high only when one of
   `FULL_SUPPORT_MARGINS` (L4 incl. the 1:1 law, R0, F direct) is full, else cap `no_full_physics_support` (≤ medium;
   `MMR_HIGH_NEEDS_FULL_SUPPORT`); skipped when all physics is not_measured (that cap already says so).

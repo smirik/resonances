@@ -111,9 +111,13 @@ is certain, Q18), `PolicyResult` (counted and candidate episodes)
   run spans the slow approach to a libration, 455327 g-s-g5+s6); the MMR path has no such guard.
 - Pattern B (`pattern_b`, 2026-11-20) is judged turn by turn: every rotating branch is slowest at the top, so a turn
   counts only below its own branch (`rotating_branch_rate`: the cosine formula, or V_E's v_top T(h)/2pi) by
-  `LIBRATION_STALL_RATE_TOL` and with its top passage `top_passage_energy` within reach of h_hi; never go back to the
+  `LIBRATION_STALL_RATE_TOL` and with its top passage within reach of h_hi; never go back to the
   stall-at-the-top share alone (the 2J-1 pilot: four free rotations were near_separatrix). `stall_fraction` stays the
-  at-top share (a column); `detected` reads `counted_fraction`.
+  at-top share (a column); `detected` reads `counted_fraction`. The top passage (`top_passages`, Codex review of
+  84af9cd) is the instantaneous h at the turn's slowest sample (observed speed, V_E at the measured phase, the frame of
+  the energies): never scale the branch's top speed by r_min/r_pend (wrong by (T_pred/T_obs)^2 off the branch) nor sign
+  the kinetic energy (s|s| made a fast backward passage arbitrarily "reachable"); a turn that backs up at the top is
+  read at its turning point (zero speed, h = V/depth <= 1; `reversed_at_top`, 523899).
 - An episode must close at least one full cycle (`closure_ratios`), or one cycle by its phase return between two TPs
   (`phase_return`: at the mid-level or a band of levels, `LIBRATION_RETURN_LEVELS`, `LIBRATION_RETURN_BAND_LEVELS`);
   a return-closed cycle caps the level at medium and cannot cross a confirmed jump. ≥ 3 TPs and a closed cycle, never a

@@ -998,6 +998,9 @@ def filter_sensitivity(
         for turn in doubled.revolutions:
             inside = np.flatnonzero((mid >= turn.t_start_yr) & (mid <= turn.t_end_yr) & np.isfinite(h))
             turns.append(replace(turn, energy_h=float(h[inside[0]])) if len(inside) else turn)
+        turns = geometry_module.top_passages(
+            turns, angle.t_yr, angle.angle_f, angle.rate_f, energy.potential_e, settings, energy.model_frame
+        )
         h_hi = energy.zone.h_hi if energy.zone is not None else NAN
         doubled.pattern_b = geometry_module.pattern_b(turns, energy.potential_e.top_rad, h_hi, energy.sigma_h, settings, energy.potential_e)
     episode = decisive_run(geometry, decisive_id, interval)

@@ -722,6 +722,10 @@ class Revolution:
     phase_min_rate_rad: float  # sigma mod 2pi where sigma_dot is smallest
     rate_min_over_mean: float  # min sigma_dot / mean sigma_dot over the turn
     energy_h: float = float('nan')  # h of the turn under the sigma-only potential (pendulum.py)
+    t_min_rate_yr: float = float('nan')  # the time of that slowest sample
+    # the top passage, measured on the turn's own samples in V_E and the frame of the energies (`top_passages`):
+    top_energy_h: float = float('nan')  # h at the slowest sample; of a turn that backs up there, at its turning point
+    reversed_at_top: bool = False  # sigma_dot changes sign near the top of V (the turn backs up at the top)
 
 
 @dataclass(frozen=True)
@@ -740,8 +744,9 @@ class PatternB:
     detected: bool  # counted_fraction >= libration_stall_rev_fraction
     rate_inconsistent: bool  # |r_min - r_pend| > libration_stall_rate_tol, medians (flag)
     counted_fraction: float = NAN  # turns at the top, below their rotating branch and within reach (see pattern_b)
-    h_top_med: float = NAN  # energy of the top passages, 1 + (h - 1) s |s|, s = r_min / r_pend(h)
+    h_top_med: float = NAN  # energy of the top passages, the instantaneous h measured there (`top_passages`)
     h_top_min: float = NAN
+    reversed_fraction: float = NAN  # share of turns that back up at the top (zero rate there: h = V / depth <= 1)
 
 
 @dataclass(frozen=True)
@@ -1246,6 +1251,7 @@ def _pattern_b_columns(pattern: Optional[PatternB]) -> dict:
         'geo_stall_counted_fraction': pattern.counted_fraction,
         'geo_h_top_med': pattern.h_top_med,
         'geo_h_top_min': pattern.h_top_min,
+        'geo_stall_reversed_fraction': pattern.reversed_fraction,
     }
 
 
@@ -4533,8 +4539,14 @@ def revolutions(t_yr: np.ndarray, angle_f: np.ndarray, rate_f: np.ndarray, windo
     phases = x[slowest] % TWO_PI
     depth = direction * rate[slowest] / mean_speed
     return [
-        Revolution(t_start_yr=float(t[a]), t_end_yr=float(t[b]), phase_min_rate_rad=float(phase), rate_min_over_mean=float(ratio))
-        for a, b, phase, ratio in zip(starts, ends, phases, depth)
+        Revolution(
+            t_start_yr=float(t[a]),
+            t_end_yr=float(t[b]),
+            phase_min_rate_rad=float(phase),
+            rate_min_over_mean=float(ratio),
+            t_min_rate_yr=float(t[k]),
+        )
+        for a, b, phase, ratio, k in zip(starts, ends, phases, depth, slowest)
     ]
 
 
@@ -4554,18 +4566,69 @@ def rotating_branch_rate(h, potential=None):
     return out
 
 
-def top_passage_energy(h, r_min, r_pend):
-    """h_top = 1 + (h - 1) s |s|, s = r_min / r_pend(h): the energy of a turn's top passage from its slowest rate.
+def top_passages(
+    revs: Sequence[Revolution],
+    t_yr: np.ndarray,
+    angle_f: np.ndarray,
+    rate_f: np.ndarray,
+    potential,
+    settings: AnalysisSettings,
+    frame=None,
+) -> List[Revolution]:
+    """Each turn with its top passage measured on its own samples (the near_separatrix fix; Codex review of 84af9cd).
 
-    On the rotating branch the top speed is v(h) = sqrt(2 (h - 1) depth) (in the turn's own mean-rate units r_pend);
-    the observed slowest rate r_min = s r_pend is the speed v_top = s v(h), so h_top - 1 = v_top^2 / (2 depth) =
-    s^2 (h - 1), signed by the direction of the passage (s < 0: the turn backs up at the top, h_top < 1). A turn at
-    h <= 1 (no rotating branch) keeps h."""
-    h, r_min, r_pend = (np.asarray(x, dtype=float) for x in (h, r_min, r_pend))
-    rotating = np.isfinite(h) & (h > 1) & np.isfinite(r_pend) & (r_pend > 0)
-    with np.errstate(invalid='ignore', divide='ignore'):
-        s = np.where(rotating, r_min / np.where(rotating, r_pend, 1.0), NAN)
-    return np.where(rotating, 1 + (h - 1) * s * np.abs(s), h)
+    The energy is the instantaneous h(t) = (phi_dot^2 / 2 + m (V(phi) - V_min)) / (m depth) of
+    `pendulum.cycle_energies` (V = `potential`, V_E; phi, phi_dot, m in `frame`, the frame of the turns' energies,
+    fixed when None): the observed speed in rad/yr, so neither the turn's duration nor a branch formula enters (T_obs
+    need not be T_pred(h) on a turn that departs from its branch), quadratic in it (a backward passage is no lower
+    energy), and V at the measured phase. `top_energy_h` is h at the turn's slowest sample (`Revolution.t_min_rate_yr`).
+    A turn that backs up at the top (`reversed_at_top`: sigma_dot, along the turn's net motion, changes sign within
+    libration_stall_phase_tol_deg of the top of V) has a turning point there, where the speed is zero and h is
+    V(phi)/depth <= 1 (plus the frame's own motion): for that instant the orbit is on or below its separatrix. Its
+    `top_energy_h` is then the highest h at those turning points (the state interpolated linearly to zero speed between
+    the two samples of each sign change; the one nearest the separatrix; 523899 3N-5: 1.000): the speed of the
+    backward stretch is a departure from V_E, not a top passage. A reversal outside that arc leaves the slowest
+    sample's energy (conservative: it adds no reach). The turn is found and placed on sigma (the slowest sample, the
+    arc, the reversal) as clause (i) of `pattern_b` reads it; the frame enters the energy only (a converted phase in a
+    moving-well frame is not a measurement). The turns are returned unchanged without a potential."""
+    revs = list(revs)
+    if potential is None or not revs:
+        return revs
+    t = np.asarray(t_yr, dtype=float)
+    sigma, sigma_rate = np.asarray(angle_f, dtype=float), np.asarray(rate_f, dtype=float)
+    phi, phi_rate, strength = pendulum.in_frame(t, sigma, sigma_rate, frame)
+
+    def energy_at(k, weight=0.0):
+        """h at sample k, or interpolated a fraction `weight` of the way to sample k + 1."""
+        k1 = np.minimum(k + 1, len(t) - 1)
+        x = phi[k] + weight * (phi[k1] - phi[k])
+        v = phi_rate[k] + weight * (phi_rate[k1] - phi_rate[k])
+        m = strength[k] + weight * (strength[k1] - strength[k])
+        with np.errstate(invalid='ignore', divide='ignore'):
+            return (v**2 / 2 + m * (potential.value(np.atleast_1d(x)) - potential.v_min)) / (m * potential.depth)
+
+    tolerance = np.radians(settings.libration_stall_phase_tol_deg)
+    last = len(t) - 1
+    out = []
+    for rev in revs:
+        a = int(np.searchsorted(t, rev.t_start_yr, side='left'))
+        b = int(np.searchsorted(t, rev.t_end_yr, side='right'))  # a turn owns its end sample too
+        slowest = int(np.clip(np.searchsorted(t, rev.t_min_rate_yr), 0, last)) if np.isfinite(rev.t_min_rate_yr) else -1
+        top, backs = NAN, False
+        if b - a >= 2:
+            speed = np.sign(sigma[b - 1] - sigma[a]) * sigma_rate[a:b]  # along the turn's net direction
+            change = np.flatnonzero((speed[:-1] > 0) != (speed[1:] > 0))
+            with np.errstate(invalid='ignore', divide='ignore'):
+                weight = speed[change] / (speed[change] - speed[change + 1])  # to zero speed
+            where = sigma[a + change] + weight * (sigma[a + change + 1] - sigma[a + change])
+            keep = np.isfinite(where) & (np.abs(wrap_pi(where - potential.top_rad)) <= tolerance)
+            backs = bool(np.any(keep))
+            if backs:
+                top = float(np.nanmax(energy_at(a + change[keep], weight[keep])))
+        if not backs and slowest >= 0:
+            top = float(energy_at(np.array([slowest]))[0])
+        out.append(replace(rev, top_energy_h=top if np.isfinite(top) else NAN, reversed_at_top=backs))
+    return out
 
 
 def pattern_b(
@@ -4582,13 +4645,16 @@ def pattern_b(
     (i) its rate minimum is within libration_stall_phase_tol_deg of the potential top `top_rad`;
     (ii) it slows more than its own rotating branch explains: r_pend(h_k) - r_min,k > libration_stall_rate_tol
          (`rotating_branch_rate`; a turn at h_k <= 1 has no branch and passes this clause);
-    (iii) its top passage is within reach of the separatrix: h_top,k <= h_hi + separatrix_sigma_margin x sigma_h
-         (`top_passage_energy`; h_hi the zone's upper edge, read from motion external to the angle).
+    (iii) its top passage is within reach of the separatrix: h_top,k <= h_hi + separatrix_sigma_margin x sigma_h, with
+         h_top,k the instantaneous energy of the turn's top passage (`top_passages`: V_E at the measured phase,
+         quadratic in the observed speed; a turn that backs up there has h_top = V/depth <= 1 at its turning point);
+         h_hi the zone's upper edge, read from motion external to the angle.
 
     `detected` when the counted share >= libration_stall_rev_fraction. `stall_fraction` is the share of (i) alone,
-    `in_zone` that share of (iii); `rate_inconsistent` compares the medians of r_min and r_pend (flag).
-    `potential` (V_E) sets r_pend for several harmonics; None or one harmonic: the cosine pendulum.
-    Unknown energies (nan h or h_hi) count no turn: pattern B is then not detected.
+    `in_zone` that share of (iii), `reversed_fraction` the share of turns that back up at the top; `rate_inconsistent`
+    compares the medians of r_min and r_pend (flag). `potential` (V_E) sets r_pend for several harmonics; None or one
+    harmonic: the cosine pendulum. Unknown energies (nan h, h_top or h_hi) count no turn: pattern B is then not
+    detected.
     """
     n = len(revs)
     if n == 0:
@@ -4596,6 +4662,7 @@ def pattern_b(
     phases = np.array([rev.phase_min_rate_rad for rev in revs], dtype=float)
     r_min = np.array([rev.rate_min_over_mean for rev in revs], dtype=float)
     h = np.array([rev.energy_h for rev in revs], dtype=float)
+    h_top = np.array([rev.top_energy_h for rev in revs], dtype=float)
     vector = np.mean(np.exp(1j * phases))
     if np.isfinite(top_rad):
         at_top = np.abs(wrap_pi(phases - top_rad)) <= np.radians(settings.libration_stall_phase_tol_deg)
@@ -4608,7 +4675,6 @@ def pattern_b(
     r_pend = np.full(n, NAN)
     if rotating.any():
         r_pend[rotating] = rotating_branch_rate(h[rotating], potential)
-    h_top = top_passage_energy(h, r_min, r_pend)
     reach = np.isfinite(h_top) & np.isfinite(h_hi) & (h_top <= h_hi + margin)
     with np.errstate(invalid='ignore'):
         below_branch = np.where(rotating, (r_pend - r_min) > settings.libration_stall_rate_tol, np.isfinite(h))
@@ -4633,6 +4699,7 @@ def pattern_b(
         counted_fraction=counted_fraction,
         h_top_med=float(np.median(finite_top)) if len(finite_top) else NAN,
         h_top_min=float(np.min(finite_top)) if len(finite_top) else NAN,
+        reversed_fraction=float(np.mean([rev.reversed_at_top for rev in revs])),
     )
 
 
@@ -6090,10 +6157,12 @@ def finish_geometry(
     regime_prominence: Optional[LocalProminence] = None,
     cycle_spans_yr: Optional[np.ndarray] = None,
     potential=None,
+    frame=None,
 ) -> Geometry:
-    """Add slips (needs T0), pattern B (needs the potential top and the zone h_hi) and confirmed jumps
-    (needs cycle energies); set `regime_start_yr`, the window of the last regime and mark the runs
-    before the last jump. Returns the same object, updated.
+    """Add slips (needs T0), pattern B (needs the potential top and the zone h_hi; the turns' top passages are read in
+    `potential` V_E and `frame`, the frame of the energies, `top_passages`) and confirmed jumps (needs cycle
+    energies); set `regime_start_yr`, the window of the last regime and mark the runs before the last jump. Returns the
+    same object, updated.
 
     After a jump that changes the energy, everything geometric is measured again on the last regime
     [jump + tau/2, t1 - trim] (rule 10); the earlier runs stay in `runs` marked `before_last_jump`, measured regime by
@@ -6170,6 +6239,7 @@ def finish_geometry(
         flags.append(str(Flag.UNWRAP_STEP_SUSPECT))
 
     geometry.revolutions = _with_energies(geometry.revolutions, cycle_times, energies)
+    geometry.revolutions = top_passages(geometry.revolutions, t, angle.angle_f, angle.rate_f, potential, settings, frame)
     geometry.pattern_b = pattern_b(geometry.revolutions, top_rad, h_hi, sigma_h, settings, potential)
     if geometry.pattern_b.rate_inconsistent:
         flags.append(str(Flag.STALL_RATE_INCONSISTENT))

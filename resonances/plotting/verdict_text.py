@@ -1581,6 +1581,7 @@ ZONE_METHOD_WORDS = {
 ZONE_FLAG_WORDS = {
     'zone_eq_only': 'the modulation from e alone',
     'zone_external_unresolved': 'the record resolves no motion slower than the angle’s own period (a standing separatrix)',
+    'zone_members_unresolved': 'the multiplet members fit in sample only (their modulation is not identified)',
     'zone_numeric_mismatch': 'the integrated and adiabatic estimates disagree',
     'zone_edge_cycle': 'a cycle lies at the zone’s edge',
 }

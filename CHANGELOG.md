@@ -17,12 +17,21 @@ All notable changes to `resonances` are listed here. The format follows
   at the top, slower than a free rotation at its own energy by `LIBRATION_STALL_RATE_TOL`, and its top passage is
   within reach of the separatrix zone (new columns `geo_stall_counted_fraction`, `geo_h_top_med`, `geo_h_top_min`).
   A free rotation just above the separatrix is now a circulation. The separatrix zone reads its strength modulation
-  only from motion slower than `LIBRATION_CENTRE_CYCLES` × the angle's own period (members only when their slow
-  offset turns at least once); a record too short for that has a standing separatrix, zone [1, 1], flag
+  only from motion slower than `LIBRATION_CENTRE_CYCLES` × the angle's own period; a record too short for that has a standing separatrix, zone [1, 1], flag
   `zone_external_unresolved`. The frames the potential is fitted in keep the members' own fit, so the pendulum test
   R0 is unchanged. The ×2 filter guard compares pattern B only on a record without librating episodes (else `stall`
   is in `flt_unchecked_quantities`). Benchmark: 564160 3N-4 (100 kyr) near_separatrix → non_resonant, 145480 1N-4
   (1 Myr) non_resonant → near_separatrix/medium.
+- Pattern B and the separatrix zone after an independent review of the change above. The energy of a turn's top
+  passage is read on its own samples, from the observed speed and the potential at the measured phase (it was the
+  branch's top speed scaled by the slowest rate, wrong when the turn does not last its branch's period, and signed,
+  so a fast backward passage looked below the separatrix); a turn that backs up at the top is read at its turning
+  point (new column `geo_stall_reversed_fraction`). The multiplet members modulate the zone when their fit predicts
+  the force on blocks it was not fitted on (new column `sep_modulation_held_out_gain`, new flag
+  `zone_members_unresolved` when it does so only in sample), not only when their offset turns once: a librating
+  secular offset counts. The trend of e is removed before the edge hold, so dK/K and the integrated strength agree
+  (a pure trend made a zone [0.975, 1.05]); a librator whose record is too short for its slow window also gets the
+  standing separatrix and `zone_external_unresolved`.
 
 ### Fixed
 

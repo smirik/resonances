@@ -331,6 +331,7 @@ def _finish(geometry, angle, energy, context, sampling, local, settings) -> Geom
         regime_prominence=local,
         cycle_spans_yr=np.array([(c.t_start_yr, c.t_end_yr) for c in cycles], dtype=float).reshape(-1, 2),
         potential=potential,
+        frame=energy.model_frame if energy is not None else None,
     )
     key = _ROW_KEY.get()
     finished.action_steps = [replace(step, key=key) for step in finished.action_steps]

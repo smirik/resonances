@@ -173,15 +173,16 @@ def test_revolution_rate_minimum_matches_the_pendulum():
 
 def test_pattern_b_reads_energy_and_phase():
     # h 1.05: the free rotation's min/mean rate is 0.407 (r_pend); r_min 0.1 dips 0.31 below it (> the 0.2 tolerance)
-    # and passes the top at h_top = 1 + 0.05 (0.1 / 0.407)^2 = 1.003
-    revs = [g.Revolution(i * 100.0, (i + 1) * 100.0, np.pi + 0.1 * (-1) ** i, 0.1, 1.05) for i in range(8)]
+    # and, on a turn of its branch's duration, passes the top at h_top = 1 + 0.05 (0.1 / 0.407)^2 = 1.003 (the top
+    # passage `top_passages` measures on the samples, given here)
+    revs = [g.Revolution(i * 100.0, (i + 1) * 100.0, np.pi + 0.1 * (-1) ** i, 0.1, 1.05, top_energy_h=1.003) for i in range(8)]
     found = g.pattern_b(revs, np.pi, 1.1, 0.01, S)
     assert found.detected and found.in_zone and found.stall_fraction == 1.0 and found.counted_fraction == 1.0
     assert found.stall_phase_mean_rad == pytest.approx(np.pi, abs=1e-6)
     assert found.h_top_med == pytest.approx(1.003, abs=5e-4)
     assert not g.pattern_b(revs, np.pi, 0.95, 0.01, S).detected  # top passages above the zone (0.95 + 0.02)
     assert not g.pattern_b(revs, 0.0, 1.1, 0.01, S).detected  # minima at the stable point
-    on_branch = [replace(rev, rate_min_over_mean=0.407) for rev in revs]
+    on_branch = [replace(rev, rate_min_over_mean=0.407, top_energy_h=1.05) for rev in revs]
     assert not g.pattern_b(on_branch, np.pi, 1.1, 0.01, S).detected  # a free rotation: slowest at the top anyway
     assert g.pattern_b([], np.pi, 1.1, 0.01, S).n_revolutions == 0
 

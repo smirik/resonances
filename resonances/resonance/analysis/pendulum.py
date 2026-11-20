@@ -267,6 +267,7 @@ class EnergyAnalysis:
     frame: str = ''  # the frame V_E was measured in: 'fixed' | 'members' | 'eccentricity' | 'centre'
     modulation_planet: str = ''  # the planet whose varpi term modulates the force (members)
     modulation_gain: float = float('nan')  # R^2 of the members' fit over the single harmonic
+    modulation_held_out_gain: float = float('nan')  # the same out of sample (alternate blocks), zone only
     modulation_period_yr: float = float('nan')  # 2 pi / nu
     omega_bar_rad_yr: float = float('nan')  # Omega_bar: the time scale of the zone integration
     well_wobble_rad: float = float('nan')  # half-range of the moving stable point sigma_s(t)
@@ -402,6 +403,7 @@ class EnergyAnalysis:
             'sep_frame': self.frame,
             'sep_modulation_planet': self.modulation_planet,
             'sep_modulation_gain': self.modulation_gain,
+            'sep_modulation_held_out_gain': self.modulation_held_out_gain,
             'sep_modulation_period_yr': self.modulation_period_yr,
             'sep_Omega_bar_rad_yr': self.omega_bar_rad_yr,
             'sep_well_wobble_deg': float(np.degrees(self.well_wobble_rad)) if np.isfinite(self.well_wobble_rad) else NAN,
