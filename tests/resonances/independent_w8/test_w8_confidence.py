@@ -641,6 +641,34 @@ def pendulum(t, sigma0, sigmadot0, eps=None):
     return sol.y[0], sol.y[1]
 
 
+BUMP, BUMP_WIDTH = 0.3, np.radians(15.0)  # a narrow barrier of 0.3 w0^2, 15 deg wide, on the cosine top
+
+
+def over_a_narrow_top(t, x):
+    """A rotation over V = w0^2 (-cos sigma + b exp(-d^2 / 2 w^2)), d = sigma - pi (wrapped), at x times the true barrier
+    height above V_min: every turn crawls over a top that a fitted one-harmonic potential cannot follow, slower than its
+    own rotating branch explains (the near_separatrix of the analysis since 2026-11-20; a free cosine pendulum just above
+    the separatrix is exactly on its branch and is a circulation)."""
+
+    def force(sigma):
+        d = np.mod(sigma, TWO_PI) - np.pi
+        return -(W0**2) * (np.sin(sigma) - BUMP * d / BUMP_WIDTH**2 * np.exp(-(d**2) / (2 * BUMP_WIDTH**2)))
+
+    v_top = W0**2 * (1 + BUMP)
+    v_min = -(W0**2) * (1 - BUMP * np.exp(-(np.pi**2) / (2 * BUMP_WIDTH**2)))
+    energy = v_min + x * (v_top - v_min)
+    sol = solve_ivp(
+        lambda _, y: [y[1], force(y[0])],
+        (t[0], t[-1]),
+        [0.0, np.sqrt(2 * (energy - v_min))],
+        t_eval=t,
+        rtol=1e-10,
+        atol=1e-12,
+        method='DOP853',
+    )
+    return sol.y[0], sol.y[1]
+
+
 def mmr_series(t, sigma, sigmadot, key='3J-1', e=0.15, name='syn'):
     """A 3J-1 record consistent with sigma: lambda and a from sigma = 3 lambda_J - lambda - 2 varpi (varpi fixed)."""
     spec = ResonanceSpec.from_key(key)
@@ -712,7 +740,7 @@ def _record(kind):
         # W18 the TP prominence counted the libration's own 300-yr swing as noise (9.2 deg) and cut it in two there
         s, sd = pendulum(t, 0.0, 2.3 * W0, FORCING[kind])
     elif kind == 'near_separatrix':
-        s, sd = pendulum(t, 0.0, 2 * W0 * np.sqrt(1.02))  # energy 2 % above the separatrix
+        s, sd = over_a_narrow_top(t, 1.02)  # energy 2 % above the true barrier
     elif kind == 'non_resonant':
         s, sd = 0.3 + TWO_PI * t / 700.0, np.full_like(t, TWO_PI / 700.0)
     elif kind == 'uncertain':
