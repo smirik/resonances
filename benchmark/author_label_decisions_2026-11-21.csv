@@ -1,2 +1,4 @@
 example_id,status,confidence,angle_status,source
 mmr2__709123__2J-1+0-1__stage1-20kyr,resonant,high,libration,"author:2026-11-21 (FAIR stage-1 20-kyr reference record; on the 1.0.1 combined figure: «вот здесь правильно. Один эпизод на всю запись. Разделение на 2 эпизода ошибочно. Мой вердикт - resonant/high и выше. Но готов обсуждать»; v1.1.0 fd1589b reads transient/high from a false break at 15.8-16.7 kyr)"
+mmr2__13060__5S-2+0-3,non_resonant,,,"author:2026-11-21 (FAIR stage 1: «можно 5S-2» — add the Jupiter Trojan whose 5S-2 angle stalls through the great inequality; non_resonant as the package reads it, the FAIR Saturn plane a false positive; level not labelled)"
+mmr2__523683__2U-9+0+7__stage1-50kyr,uncertain,,insufficient_time,"author:2026-11-21 (FAIR stage 1, 50-kyr record: «Эпизод должен быть - всё время интегрирования; посмотри внимательно, нет пересечений 2pi ... (статус при этом корректный)»; the episode is an episode-expectation case)"

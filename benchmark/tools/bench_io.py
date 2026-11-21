@@ -325,6 +325,12 @@ def write_csv_gz(path: Path, df: pd.DataFrame) -> None:
 def write_run(run_id: str, info: Dict[str, Any], planets: Optional[pd.DataFrame] = None) -> Path:
     """data/runs/<run_id>/run.json (+ planets.csv.gz: t_yr and '<Planet>.<field>' columns)."""
     run_dir = RUNS / run_id
+    old = run_dir / 'run.json'
+    if old.exists() and info.get('source_dir'):
+        prev = json.loads(old.read_text()).get('source_dir')
+        if prev and prev != info['source_dir']:
+            # two source runs with the same id (e.g. <experiment>/<NAME>/20kyr twice) would share one planets file
+            raise ValueError(f'run id {run_id} already holds {prev}, not {info["source_dir"]}: rename the source folder')
     if planets is not None:
         if 't_yr' not in planets.columns:
             raise ValueError('planets table needs a t_yr column')
