@@ -486,6 +486,7 @@ c0815,156048,22J-7+0-15,mmr2,extracted,,mmr2__156048__22J-7+0-15,experiments/202
 c0816,755140,2E-3+0+1,mmr2,extracted,,mmr2__755140__2E-3+0+1,experiments/2026-11-fair-borderline/pilot/output/nea/data/data-755140.csv
 c0817,755140,7E-11+0+4,mmr2,extracted,,mmr2__755140__7E-11+0+4,experiments/2026-11-fair-borderline/pilot/output/nea/data/data-755140.csv
 c0818,709123,2J-1+0-1,mmr2,extracted,,mmr2__709123__2J-1+0-1,experiments/2026-11-fair-borderline/pilot/output/2J-1/data/data-709123.csv
+c0819,709123,2J-1+0-1,mmr2,extracted,,mmr2__709123__2J-1+0-1__stage1-20kyr,experiments/2026-11-fair-borderline/stage1/bench709123/20kyr/data/data-709123.csv
 c0669,9068,all secular angles,secular,failed,"resonance ""all secular angles"" names no single angle",,experiments/2026-09-binary-asteroids/output/secular-10myr-ias15-pair12-v4/data-9068.csv
 c0001,620082,4J-1+0-3,mmr2,skipped,needs_integration=yes (batches A-E),,
 c0002,12123,46J-15+0-31,mmr2,skipped,needs_integration=yes (batches A-E),,

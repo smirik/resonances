@@ -1,0 +1,2 @@
+example_id,status,confidence,angle_status,source
+mmr2__709123__2J-1+0-1__stage1-20kyr,resonant,high,libration,"author:2026-11-21 (FAIR stage-1 20-kyr reference record; on the 1.0.1 combined figure: «вот здесь правильно. Один эпизод на всю запись. Разделение на 2 эпизода ошибочно. Мой вердикт - resonant/high и выше. Но готов обсуждать»; v1.1.0 fd1589b reads transient/high from a false break at 15.8-16.7 kyr)"

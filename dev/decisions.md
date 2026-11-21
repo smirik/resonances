@@ -626,3 +626,10 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   (15807 4N-7, 523588 5N-9, 145480 100 kyr), all through the branch clause alone, out of reach; the narrower form
   (A ∧ ((D ∧ R) ∨ h_top ≤ 1 + zσ_h)) moves none. Code unchanged; one paragraph of `docs/physics/geometry.md`. Open
   for the author: a column-only overlap diagnostic (`separatrix_energy_overlap_fraction`), no status or level.
+- **Nov 21 (author; log entry by Claude, `benchmark/DECISIONS.md` 2026-11-21).** 709123 2J-1 on the 20-kyr FAIR
+  stage-1 record is resonant/high/libration ("one episode over the whole record; the split into two is wrong"), added
+  as c0819 (`mmr2__709123__2J-1+0-1__stage1-20kyr`); v1.1.0 reads transient/high from a false break at 15.8-16.7 kyr,
+  listed as a test-first known disagreement until the episode-detector fix. Requested (not done): when two librations
+  are found, report the others and what drives them, as for induced libration. 523616 5M-4 (not in the benchmark):
+  the author reads one episode 0-8.5 kyr plus one at 9-10.5 kyr; the package took the 155-yr forced wave as the
+  cycles. The column diagnostic `separatrix_energy_overlap_fraction`: not needed for now (author).

@@ -750,6 +750,11 @@ def main() -> int:
                     if eid in seen_ids and seen_ids[eid][1] == path:
                         report.append(dict(base, status='skipped', reason=f'same series as {seen_ids[eid][0]} ({key})', example_id=eid))
                         continue
+                    if eid not in seen_ids:
+                        # an example of another candidate already on disk (one outside --only): never overwrite it
+                        meta_path = io.EXAMPLES / eid / 'meta.json'
+                        if meta_path.exists() and json.loads(meta_path.read_text()).get('candidate_id') not in (None, row.id):
+                            seen_ids[eid] = (json.loads(meta_path.read_text())['candidate_id'], None)
                     if eid in seen_ids:
                         variant = run_id
                         eid = io.make_example_id(row.rtype, row.name, key, variant)
