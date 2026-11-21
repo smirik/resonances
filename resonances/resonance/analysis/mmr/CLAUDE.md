@@ -300,6 +300,15 @@ guards) → io.
   insufficient_time/arc, after G5a (instead of drift) and before the ripple/few_cycles G6; the extension asks for 3
   slow periods. Unmeasured (three-body, 1:1, one turn) changes nothing: 101703/142694 stay drift. Moves: 523683
   extend 400 kyr; 385458 9N-17 100 kyr few_cycles 200 kyr → arc 300 kyr.
+- **G1w forced-wave scale** (v1.1.0, 2026-11-21; `analyse._forced_wave_scale`, rule `forced_wave_scale`,
+  `MMR_FORCED_WAVE_SCALE`; the author: of two scales the one consistent with the theoretical strength): in the
+  OUTERMOST `analyse_mmr`, after the policy, when the policy's veto is `forced_wave` on a two-body non-1:1 angle, the
+  angle is analysed again (outer call, policy included, the rule off, no G2c/G1q/G1f) at T0_th/√ratio /
+  `FILTER_MIN_LIBRATION_CUTOFFS` (T0_th = the record's `strength.period_theory_yr`); kept only when resonant or
+  transient, no veto, F passes by direct averaging. The trigger is the measured veto, never T_obs < T0 (rejected).
+  Moves only 523616 5M-4 (non_resonant/medium → transient/high, episodes 1.1-8.4 and 9.7-10.4 kyr at 711 yr); the four
+  forced-wave rows of the benchmark are three-body. The level depends on the cutoff (400-620 yr: low, L4 fails): the
+  cutoff comes from the theory, never tuned.
 - **W28 B5 G1f sub-floor pass** (`analyse._subfloor_pass`, `subfloor_eligible`, `subfloor_conditions`; card g08-2 B,
   rule `subfloor_pass`, `MMR_SUBFLOOR_PASS`): the 150-yr floor stays; a two-body non-1:1 angle without a libration
   (after G1q, before G2c, first pass only) is analysed again at max(T0_th/√`MMR_STRENGTH_CHECK_RATIO`, 2 dt ×

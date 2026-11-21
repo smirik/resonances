@@ -151,6 +151,17 @@ was. The extension asks for `MMR_EXTEND_SLOW_CYCLES` = 3 slow periods (a budget)
 $A$ = 114°, identity 1.00, $a$ swing 1.07 ×, period 1.00 × → `uncertain` / `insufficient_time`, extend to 400 kyr.
 101703 and 142694 fail the slow identity (slope/c −0.27, −0.25) and stay `drift`.
 
+*The forced wave's scale* (rule G1w, `MMR_FORCED_WAVE_SCALE`). When the minimal policy vetoes a two-body angle (not
+1:1) as the background's forced wave, its fine cycles are no libration of this resonance: their strength lies far
+outside the band. The angle is analyzed once more at the cutoff of the shortest libration its own directly averaged
+potential admits, $T_{0,\text{th}}/\sqrt{x}$ / `FILTER_MIN_LIBRATION_CUTOFFS` ($x$ = `MMR_STRENGTH_CHECK_RATIO`, the
+band's fast edge): of two scales, the one consistent with the resonance's strength. That reading replaces the vetoed
+one only when it is resonant or transient, carries no veto and F passes by direct averaging; otherwise the vetoed
+verdict stays (columns `geo_forced_wave_scale_*`). Three-body angles have no computed theory and are never eligible.
+523616 5M-4 (an NEA, 20 kyr): the 155-yr wave would need 820 times the strength; at 711 yr ($T_{0,\text{th}}$ = 4.49
+kyr) a 1.4-kyr libration from 1.1 to 8.4 kyr and a second at 9.7–10.4 kyr pass F (ratio 6.8), then the angle
+circulates: transient, high.
+
 *A cycle faster than the floor* (rule G1f, `MMR_SUBFLOOR_PASS`). The 150-yr floor stays, but a
 two-body angle (not 1:1) without a libration over the record is analyzed once more at the floor of its own averaged
 potential, $\max(T_{0,\text{th}}/\sqrt{x},\ 2\Delta t \cdot$ `FILTER_MIN_LIBRATION_CUTOFFS`$)$, $x$ =

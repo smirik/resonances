@@ -443,6 +443,10 @@ If you can view images, open the figure of every `medium`/`low` verdict before r
 5. Name the origin: `dynamic` vs `unknown` (geometric), `kinematic`, `induced` (with `owner`), `subresonance`.
    `subfloor_pass` in `rules_fired`: a two-body libration faster than the 150-yr floor, accepted because its own
    averaged potential, center and force law confirm it (G1f; `geo_subfloor_*`).
+   `forced_wave_scale` in `rules_fired`: the fine cycles were the background's forced wave, and the angle was read
+   again at its own theory's libration scale, where F passes (G1w; `geo_forced_wave_scale_*`). `arc` in
+   `candidate_episode_ids` of an uncertain row: the whole window without a revolution and without a closed slow cycle
+   (a stay, not an episode; integrate longer).
 6. `certain`/`high`: state it. `medium`: look at the figure and name what limits it (the ⚠/?/✗ pills of the
    Confidence block, `pol_level_inputs`; the flags). `low`: a measured objection (`pol_objection_check`), N < 1.5 or
    an MMR own force not shown: review.

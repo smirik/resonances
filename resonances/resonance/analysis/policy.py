@@ -46,6 +46,7 @@ from resonances.resonance.analysis.geometry import (
     covers_edges,
     edge_travel_rev,
     last_reversal_yr,
+    raw_range_in,
     run_of,
     short_runs,
 )
@@ -113,6 +114,7 @@ N_EPISODE, N_UNION, N_COVER, N_LEG, N_MEMBER = 'episode', 'union', 'cover', 'leg
 CLAUSE_LEG, CLAUSE_HALF, CLAUSE_END, CLAUSE_PERIOD, CLAUSE_VETO = 'A1', 'A2', 'A', 'B', 'C'
 # the ids a 1:1 leg and a half-swing have in counted/candidate_episode_ids (they are no episode rows)
 LEG_ID, HALF_ID = 'leg', 'half'
+ARC_ID = 'arc'  # candidate_episode_ids: a whole-window stretch without a revolution and without a closed cycle
 
 # The MMR leaves of `mmr.decide` (`rec_rule`), by what the policy does with them (spec §3.1). Every leaf decide.py can
 # emit is a key of LEAVES (test_policy_mapping); one that is not maps to the geometry's status with policy_unknown_leaf.
@@ -589,6 +591,7 @@ class _Outcome:
     upheld: bool = False  # the veto is the tree leaf's own, upheld
     not_upheld: str = ''  # the tree's leaf whose veto the policy did not uphold
     objections: List[str] = field(default_factory=list)  # the checks behind a forced V ambiguous (`OBJECTION_*`)
+    span_tag: str = ''  # the tag of the candidate spans in candidate_episode_ids ('' -> leg or half, `_span_tag`)
 
 
 def _keep(v: Verdict, **fields) -> _Outcome:
@@ -693,6 +696,8 @@ def libration_time(
 
 
 def _span_tag(outcome: _Outcome) -> str:
+    if outcome.span_tag:
+        return outcome.span_tag
     return HALF_ID if str(Flag.ONE_HALF_LIBRATION) in outcome.flags or outcome.reason == Reason.ONE_HALF_LIBRATION else LEG_ID
 
 
@@ -1085,7 +1090,7 @@ HANDLERS = {
     LEG: _on_leg,
     KEEP: _on_leg,  # rule C of a 1:1 angle with legs: a scattering leg is a candidate (G4c)
     HALF: lambda row: _tagged(_mmr_half_outcome(row.analysis.geometry, row.held, row.settings), DECIDED_HALF),
-    INSUFFICIENT: lambda row: _insufficient(row.v, row.end, row.analysis.geometry),
+    INSUFFICIENT: lambda row: _insufficient(row.v, row.end, row.analysis.geometry, row.analysis.prep),
 }
 
 
@@ -1236,7 +1241,7 @@ def _drift(v: Verdict, geometry: Geometry, revolution: float, span_yr: float) ->
     return _Outcome(Status.UNCERTAIN, reason, LibrationOrigin.UNKNOWN, period_dec_yr=period, decided_by=DECIDED_DRIFT)
 
 
-def _insufficient(v: Verdict, end: EndReading, geometry: Optional[Geometry]) -> _Outcome:
+def _insufficient(v: Verdict, end: EndReading, geometry: Optional[Geometry], prep=None) -> _Outcome:
     """P1/P5 insufficient_time: non_resonant / circulation when the record ends in circulation (flag
     rejected_candidate when it had turning points), else uncertain / baseline_needed; a secular phase_unresolved angle
     is never non_resonant (P7)."""
@@ -1245,9 +1250,41 @@ def _insufficient(v: Verdict, end: EndReading, geometry: Optional[Geometry]) -> 
         flags = [str(Flag.REJECTED_CANDIDATE)] if had else []
         return _Outcome(Status.NON_RESONANT, Reason.CIRCULATION, LibrationOrigin.NONE, flags=flags, decided_by=DECIDED_INSUFFICIENT)
     origin = v.libration_origin if v.status == Status.UNCERTAIN else LibrationOrigin.NONE
+    arc = unfinished_arc(geometry, prep)
     return _Outcome(
-        Status.UNCERTAIN, Reason.BASELINE_NEEDED, origin, angle_status=AngleStatus.INSUFFICIENT_TIME, decided_by=DECIDED_INSUFFICIENT
+        Status.UNCERTAIN,
+        Reason.BASELINE_NEEDED,
+        origin,
+        angle_status=AngleStatus.INSUFFICIENT_TIME,
+        decided_by=DECIDED_INSUFFICIENT,
+        candidate_spans=(arc,) if arc is not None else (),
+        span_tag=ARC_ID if arc is not None else '',
     )
+
+
+def unfinished_arc(geometry: Optional[Geometry], prep=None) -> Optional[Tuple[float, float]]:
+    """The analysis window as one candidate span (tag 'arc') of an uncertain row: sigma_f stays within less than a turn
+    over the whole window (its samples, and for an MMR angle the orbit-averaged raw angle, span < 2pi), so the record
+    shows no circulation anywhere, but no cycle of the slow motion closes, so it is no episode (an episode closes a
+    cycle) and counts nothing: the row stays insufficient_time. What the author reads as one episode over the whole
+    record (523683 2U-9 over 50 kyr: sigma_f 95-269 deg, 0.45 turn of the slow centre, the 2U-9 well's period ~90 kyr;
+    the author 2026-11-21). The span is drawn and listed as a candidate only; it is read after the end witness, so it
+    never hides a terminal circulation. sigma_f is the prep's (`prep.t_yr`, `prep.angle_f`), else the geometry's. None
+    without sigma_f or when sigma_f turns."""
+    if geometry is None:
+        return None
+    t_yr, angle_f = (prep.t_yr, prep.angle_f) if prep is not None else (geometry.angle_f_t_yr, geometry.angle_f)
+    if t_yr is None or angle_f is None:
+        return None
+    w0, w1 = float(geometry.window[0]), float(geometry.window[1])
+    t = np.asarray(t_yr, dtype=float)
+    angle = np.asarray(angle_f, dtype=float)[int(np.searchsorted(t, w0, 'left')) : int(np.searchsorted(t, w1, 'right'))]
+    if not len(angle) or not np.all(np.isfinite(angle)) or np.ptp(angle) >= 2 * math.pi:
+        return None
+    raw = raw_range_in(geometry, w0, w1)
+    if np.isfinite(raw) and raw >= 2 * math.pi:
+        return None
+    return (w0, w1)
 
 
 def _mmr_veto_reading(analysis, outcome: _Outcome) -> Tuple[str, List[str]]:
@@ -1617,7 +1654,7 @@ def _long_geometric(analysis, end: EndReading, revolution: float, span: float) -
         outcome.reason = Reason.BASELINE_NEEDED if outcome.status == Status.UNCERTAIN else outcome.reason
         return outcome
     if word == AngleStatus.INSUFFICIENT_TIME:
-        outcome = _insufficient(v, end, analysis.geometry)
+        outcome = _insufficient(v, end, analysis.geometry, getattr(analysis, 'prep', None))
         outcome.candidates = ids
         return outcome
     return _keep(v)

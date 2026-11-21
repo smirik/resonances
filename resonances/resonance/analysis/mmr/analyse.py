@@ -945,8 +945,70 @@ def analyse_mmr(
     if _ACTION_STEP_CUTS.get() is not None:  # a pass inside a record's analysis: no policy, the outermost call applies it
         return _analyse_mmr_record(series, settings, cells, *options)
     analysis = policy_module.apply_mmr(_analyse_mmr_record(series, settings, cells, *options), settings)
+    analysis = _forced_wave_scale(series, analysis, settings, cells, options)
     _coverage_audit(series, analysis, settings)
     return analysis
+
+
+FORCED_WAVE_SCALE_CUTOFF = "G1w the forced wave's scale: the cutoff of the theory's shortest libration exceeds the fine cutoff"
+
+
+def _forced_wave_scale(series: MMRSeries, analysis: MMRAnalysis, settings: AnalysisSettings, cells, options) -> MMRAnalysis:
+    """G1w (MMR_FORCED_WAVE_SCALE; the author 2026-11-21, "of two scales keep the one whose period is consistent with
+    the theoretical strength"): the outermost analysis, after its policy, when the policy vetoed the row as the
+    background's forced wave. Its fine cycles are then no libration of this resonance (their strength is far outside
+    the band), so the fine cutoff is the wave's scale, not the resonance's. A two-body angle that is not 1:1 (a direct
+    theory) is analysed again at the cutoff of the shortest libration its own averaged potential admits, P_min =
+    T0_th / sqrt(mmr_strength_check_ratio) (the band's fast edge; T0_th from the record's strength), cutoff P_min /
+    filter_min_libration_cutoffs; the G1f floor's reasoning, here for a wave above the floor. That reading replaces the
+    fine one only when it is resonant or transient, carries no veto and F passes by direct averaging on its decisive
+    episode; else the fine analysis stays, with the attempt in its geo_forced_wave_scale_* columns. 523616 5M-4 (NEA, 20
+    kyr): the 155-yr wave needs 820x the strength; T0_th 4.49 kyr gives 711 yr, where a 1.4-kyr libration from ~1 to
+    8.4 kyr and a second at 9.7-10.4 kyr pass F (ratio 6.8), then circulation. No second level: the pass runs with the
+    rule off, without G2c, G1q, G1f."""
+    _, _, parent, centre_scale, quasi_satellite, subfloor = options
+    if not settings.mmr_forced_wave_scale or not centre_scale or quasi_satellite is not None or subfloor is not None:
+        return analysis
+    if analysis.verdict.veto != policy_module.VETO_FORCED_WAVE or not strength_module.direct_applicable(series.resonance):
+        return analysis
+    strength, prep = analysis.strength, analysis.prep
+    period = strength.period_theory_yr if strength is not None else NAN
+    if prep is None or not is_finite(period) or period <= 0:
+        return analysis
+    cutoff = period / math.sqrt(settings.mmr_strength_check_ratio) / settings.filter_min_libration_cutoffs
+    ledger = Ledger.from_settings(settings)
+    if not ledger.compare(FORCED_WAVE_SCALE_CUTOFF, cutoff, Op.GT, prep.cutoff.cutoff_yr, 'yr', 'geo_forced_wave_scale_cutoff_yr'):
+        return analysis
+    scan_subresonances, scan_owner = options[0], options[1]
+    second = analyse_mmr(
+        series,
+        replace(settings, mmr_filter_cutoff_yr=cutoff, mmr_forced_wave_scale=False),
+        cells,
+        scan_subresonances=scan_subresonances,
+        scan_owner=scan_owner,
+        parent=parent,
+        centre_scale=False,
+    )
+    v = second.verdict
+    method = second.strength.method if second.strength is not None else ''
+    kept = (
+        v.status in (Status.RESONANT, Status.TRANSIENT)
+        and not v.veto
+        and v.checks.get('check_mmr_strength') == CheckValue.PASS
+        and method in strength_module.DIRECT_METHODS
+    )
+    columns = {
+        'geo_forced_wave_scale_cutoff_yr': cutoff,
+        'geo_forced_wave_scale_kept': float(kept),
+        'geo_forced_wave_scale_status': str(v.status),
+    }
+    if not kept:
+        analysis.extra_columns.update(columns)
+        return analysis
+    v.decision_path = list(ledger) + list(v.decision_path)
+    v.rules_fired = fire(v.rules_fired, Rule.FORCED_WAVE_SCALE)
+    second.extra_columns.update(columns)
+    return second
 
 
 def _coverage_audit(series: MMRSeries, analysis: MMRAnalysis, settings: AnalysisSettings) -> None:

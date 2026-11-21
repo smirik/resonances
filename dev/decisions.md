@@ -633,3 +633,9 @@ The exact current behavior is in the code and in `docs/physics/`; the rule IDs a
   are found, report the others and what drives them, as for induced libration. 523616 5M-4 (not in the benchmark):
   the author reads one episode 0-8.5 kyr plus one at 9-10.5 kyr; the package took the 155-yr forced wave as the
   cycles. The column diagnostic `separatrix_energy_overlap_fraction`: not needed for now (author).
+- **Nov 21 (Claude, the author's go "fix the code, check with Codex and a subagent", `benchmark/DECISIONS.md`
+  2026-11-21, last entry).** Three detector fixes, each a generalisation of an existing rule: G2u's edge reached by a
+  bounded continuation (A7 at the record's edge, at most one cycle at the episode's slowest pace: 709123 2J-1 20 kyr
+  resonant; 2003 TG2's 12.6-P stall stays out); the unfinished arc of an uncertain row as a candidate span `arc`
+  (523683 2U-9 50 kyr); rule G1w `MMR_FORCED_WAVE_SCALE`, a forced-wave veto re-read at the theory's shortest
+  libration T0_th/sqrt(x)/2 (523616 5M-4 transient/high). Only 709123 20 kyr changes status on the benchmark.

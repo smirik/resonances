@@ -50,7 +50,8 @@ def test_the_cases_are_well_formed():
     # 2026-11-14: E118 (485 Genua 3J-1S-1, the author: transient; K2 needs a measured force law)
     # 2026-11-14: E119-E122 (Earth co-orbital clones 2003 YN107 c027/c032, 2024 JR16 c005/c010, the author's figure labels)
     # 2026-11-15: E123 (2022 RD2 c075, a horseshoe turning inside 1-3 r_H, the author: transient)
-    assert len(names) == len(set(names)) == 177
+    # 2026-11-21: E124 (709123 2J-1 20 kyr), E125 (523683 2U-9 50 kyr), E126 (523616 5M-4), the author's FAIR stage-1 notes
+    assert len(names) == len(set(names)) == 180
     assert {case.tier for case in CASES} <= set(ee.TIERS)
     assert {case.scope for case in CASES} <= set(ee.SCOPES)
     for case in CASES:

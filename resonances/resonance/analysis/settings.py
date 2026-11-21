@@ -93,6 +93,18 @@ class AnalysisSettings:
         unit='yr',
         convention=True,
     )
+    mmr_forced_wave_scale: bool = _setting(
+        True,
+        'MMR_FORCED_WAVE_SCALE',
+        'bool',
+        "rule G1w: when the minimal policy vetoes a two-body angle (not 1:1) as the background's forced wave, its fine "
+        'scale holds no libration of this resonance; the angle is analyzed again at the cutoff of the shortest libration '
+        "the resonance's own directly averaged potential admits, T0_th / sqrt(MMR_STRENGTH_CHECK_RATIO) / "
+        'FILTER_MIN_LIBRATION_CUTOFFS (of two scales the one consistent with the theoretical strength, the author '
+        '2026-11-21), and that reading is kept only when it is resonant or transient, not vetoed, and F passes by direct '
+        'averaging (523616 5M-4: 155-yr forced wave at 820x the strength, a 1.4-kyr libration at the 711-yr cutoff); '
+        'three-body angles are unchanged (no new threshold: it reuses MMR_STRENGTH_CHECK_RATIO)',
+    )
     mmr_subfloor_pass: bool = _setting(
         True,
         'MMR_SUBFLOOR_PASS',

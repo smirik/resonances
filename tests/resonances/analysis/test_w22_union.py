@@ -161,15 +161,61 @@ def _edge_geometry(tp_times, tp_values=None, raw=(0.0, 0.0)):
 @pytest.mark.parametrize('tp_times, shortfall', [([800.0, 920.0], 0.8), ([800.0, 850.0], 1.5), ([800.0], 2.0)])
 def test_the_turning_points_beyond_the_episode_reach_the_edge(tp_times, shortfall):
     outer = SimpleNamespace(t_start_yr=500.0, t_end_yr=800.0, period_med_yr=100.0, exit_observed=False)
-    assert g._union_edge(_edge_geometry(tp_times), outer, 'end') == pytest.approx(shortfall)
+    assert g._union_edge(_edge_geometry(tp_times), outer, 'end', S) == pytest.approx(shortfall)
 
 
 def test_an_observed_exit_or_a_turn_closes_the_edge():
     outer = SimpleNamespace(t_start_yr=500.0, t_end_yr=800.0, period_med_yr=100.0, exit_observed=True)
-    assert g._union_edge(_edge_geometry([800.0, 920.0]), outer, 'end') == math.inf
+    assert g._union_edge(_edge_geometry([800.0, 920.0]), outer, 'end', S) == math.inf
     outer.exit_observed = False
-    assert g._union_edge(_edge_geometry([800.0, 920.0], raw=(0.0, 7.0)), outer, 'end') == math.inf  # 7 rad > 2 pi
-    assert g._union_edge(_edge_geometry([800.0, 920.0], [0.0, 7.0]), outer, 'end') == math.inf
+    assert g._union_edge(_edge_geometry([800.0, 920.0], raw=(0.0, 7.0)), outer, 'end', S) == math.inf  # 7 rad > 2 pi
+    assert g._union_edge(_edge_geometry([800.0, 920.0], [0.0, 7.0]), outer, 'end', S) == math.inf
+
+
+def _continuation(angle_tail_deg, hidden_p=0.2):
+    """An outer episode librating about 0 with half-amplitude 30 deg, its last turning point at 800 yr, the window
+    ending at 1000 yr: sigma_f after it is `angle_tail_deg` (the stretch to the edge)."""
+    t = np.linspace(800.0, 1000.0, len(angle_tail_deg))
+    geometry = SimpleNamespace(
+        window=(0.0, 1000.0),
+        turning_points=SimpleNamespace(times_yr=np.array([800.0]), values_rad=np.array([math.radians(30.0)])),
+        averaged_raw=np.zeros(2),
+        averaged_raw_t_yr=np.array([800.0, 1000.0]),
+        angle_f=np.radians(np.asarray(angle_tail_deg, float)),
+        angle_f_t_yr=t,
+    )
+    outer = SimpleNamespace(
+        t_start_yr=200.0,
+        t_end_yr=800.0,
+        period_med_yr=100.0,
+        exit_observed=False,
+        entry_observed=False,
+        tp_times_yr=[200.0, 300.0, 450.0, 550.0, 650.0, 800.0],  # the slowest half-cycle 150 yr: a cycle of 300 yr
+        tp_values_rad=[math.radians(30.0), math.radians(-30.0), math.radians(30.0)],
+        half_amp_max_rad=math.radians(30.0),
+        window_end_hidden_p=hidden_p,
+        window_start_hidden_p=hidden_p,
+    )
+    return geometry, outer
+
+
+def test_a_bounded_continuation_reaches_the_edge():
+    # 2 P without a turning point (within one cycle at the episode's slowest pace, 300 yr), sigma_f inside the band
+    # 0 +- 30 deg: the same libration (A7 at the edge; 709123 2J-1 20 kyr); 10 deg beyond the band (more than the
+    # margin) or a filter trim hiding 1.5 P: the old shortfall, 2 P
+    geometry, outer = _continuation([30.0, 25.0, 10.0, -5.0, -20.0])
+    assert g.bounded_continuation(geometry, outer, 'end', S)
+    assert g._union_edge(geometry, outer, 'end', S) == 0.0
+    margin = S.libration_union_band_margin_deg
+    geometry, outer = _continuation([30.0, 40.0, 30.0 + margin + 10.0, 30.0])
+    assert not g.bounded_continuation(geometry, outer, 'end', S)
+    assert g._union_edge(geometry, outer, 'end', S) == pytest.approx(2.0)
+    geometry, outer = _continuation([30.0, 25.0, 10.0], hidden_p=1.5)
+    assert g._union_edge(geometry, outer, 'end', S) == pytest.approx(2.0)
+    # a stall: 200 yr without a turn against a slowest half-cycle of 50 yr (a cycle of 100 yr) is no swing (2003 TG2)
+    geometry, outer = _continuation([30.0, 25.0, 10.0, -5.0, -20.0])
+    outer.tp_times_yr = [600.0, 650.0, 700.0, 750.0, 800.0]
+    assert not g.bounded_continuation(geometry, outer, 'end', S)
 
 
 # --- the physics guard ----------------------------------------------------------------------------------------------

@@ -37,6 +37,7 @@ class Rule(StrEnum):
     R0_WINDOWS = 'r0_windows'
     POTENTIAL_ON_ARC = 'potential_on_arc'
     SUBFLOOR_PASS = 'subfloor_pass'
+    FORCED_WAVE_SCALE = 'forced_wave_scale'  # G1w: a forced-wave veto sends the angle to its theory's libration scale
     ORBIT_CUTOFF = 'orbit_cutoff'
     RIPPLE_ON_ARC = 'ripple_on_arc'
     SLOW_SWING_IN_WELL = 'slow_swing_in_well'
@@ -106,6 +107,7 @@ RULES: dict[Rule, RuleInfo] = {
     Rule.R0_WINDOWS: _w28('R0', 'R0 counts only windows where sigma swings enough (B3)'),
     Rule.POTENTIAL_ON_ARC: _w28('R0', 'R0 compares V_F on the visited arc, without a free constant (B3)'),
     Rule.SUBFLOOR_PASS: _w28('G1f', 'G1f: a two-body cycle below the period floor passed (B5)'),
+    Rule.FORCED_WAVE_SCALE: RuleInfo('G1w', "G1w: the forced-wave scale replaced by the theory's libration scale", 'v1.1.0'),
     Rule.ORBIT_CUTOFF: _w28('Pc', 'the cutoff raised to the body orbital period bound (B6a)'),
     Rule.RIPPLE_ON_ARC: _w28('F6r', 'a ripple without physics on an unfinished slow swing does not decide (B6b)'),
     Rule.SLOW_SWING_IN_WELL: _w28('G5w', 'G5w: an unfinished slow swing compatible with the well (B6c)'),

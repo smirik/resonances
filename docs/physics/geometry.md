@@ -300,6 +300,12 @@ part of one slow swing and cannot tell a drift from a slow libration: `insuffici
 is `arc` (the range of $\sigma_f$ is at least $\pi$) or `stall` (below $\pi$), rule G6. The record then sets only a
 lower bound on the libration period, which gives the length to integrate ([Confidence](confidence.md#actions)).
 
+**The unfinished arc.** When such a row stays `uncertain` and $\sigma_f$ (and, for an MMR, the orbit-averaged raw
+angle) spans less than one turn over the whole analysis window, the window is shown as one candidate span, `arc` in
+`candidate_episode_ids` and a faint `cand` span on the figure: the record shows no circulation anywhere, but no cycle
+of the slow motion closes, so it is no episode and counts nothing (523683 2U−9 over 50 kyr: $\sigma_f$ swings from 95°
+to 269°, the 2U−9 well's period is about 90 kyr; the author reads the whole record as one stay).
+
 ??? info "The lower bound of an arc or a stall"
     A libration about a center 0 or $\pi$ moves $a$ at $\lvert\dot a\rvert = K\lvert\sin\sigma\rvert$. Over the
     analysis window of length $\tau$, with the range $\delta a = \max a_f - \min a_f$ and
@@ -355,7 +361,14 @@ $\sigma_f$ there would follow any excursion slower than its window, and the carr
 into the other neighbor's band (the co-orbital 524522). How long the gap is does not matter (2001 WK15 32E−39: gaps of 1.5 and
 1.7 $(P_\text{left} + P_\text{right})$ inside the band; an excursion over the top and back stays two episodes, even
 without a full turn). Nothing may go round over the whole chain either, and the outer episodes must reach the record's
-edges. The angle is then `libration` /
+edges: within one period, or by a bounded continuation, the same reading at the edge. From the outer episode's edge
+turning point to the edge of the analysis window $\sigma_f$ stays inside that episode's band $|\sigma_f - c| \le A$
+(up to the same margin), no turn and no observed exit or entry lie there, the stretch is no longer than one cycle at
+the episode's slowest observed pace (twice its longest step between turning points: an unfinished swing, not a stall),
+and the filter's trim hides at most one period beyond the window. Such a stretch is the same libration (709123 2J−1
+over 20 kyr: a 3.5-kyr wave of the center slows the 440-yr swing, the last turning point is 467 yr = 1.14 periods
+before the window's end, σ_f stays 9.6° inside the band; resonant, high). A stall is not (2003 TG2 4E−1M−3: 14 kyr,
+12.6 periods, without a turn before its first episode). The angle is then `libration` /
 `regime_change`. For a 1:1 angle this is rule G2: a quasi-satellite becoming a horseshoe without circulating is one
 libration ([Gallery](gallery.md#coorbital-regime-change)); with `MMR_COORBITAL_WELL_EPISODES` such a change is one
 episode already (above), and the union joins only what a rejected stretch separates. For any other angle it is rule G2u: the reported word is

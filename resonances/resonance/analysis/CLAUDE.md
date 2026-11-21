@@ -224,7 +224,8 @@ is certain, Q18), `PolicyResult` (counted and candidate episodes)
 - Episodes without circulation between them cover the record together (`regime_change`, `covering_union`): 1:1 rule
   G2, any other MMR G2u; every gap bounded: each σ_f sample inside a neighbour's own band c ± A_max or the band carried
   linearly between their facing centres (± max A_max), up to `LIBRATION_UNION_BAND_MARGIN_DEG` (`gap_band_overshoot`;
-  never the low-pass centre track, which follows a slow excursion; the carried band alone splits 524522 1V-1), whatever the gap's length (A7, cancels D1b); edges reached within a period.
+  never the low-pass centre track, which follows a slow excursion; the carried band alone splits 524522 1V-1), whatever the gap's length (A7, cancels D1b); edges reached within a period, or by a bounded continuation (`bounded_continuation`, 2026-11-21: σ_f from the outer episode's edge TP to the window's edge inside that episode's band, no turn, no observed exit, no longer than one cycle at the episode's slowest pace (twice its longest TP step: an unfinished swing, not a stall; 2003 TG2 stalls 12.6 P), trim <= 1 P; 709123 2J-1 20 kyr). Lone episodes (`covers_edges`) do not use it: the 1-kyr co-orbitals with 1.0-1.7 P edge gaps, labelled transient, were not measured.
+- The unfinished arc (`policy.unfinished_arc`, 2026-11-21): an uncertain row from `_insufficient` whose σ_f (and the averaged raw angle) spans < 2π over the whole window gets the window as a candidate span, tag `arc`; read after the end witness, it never hides a circulation and counts nothing (523683 2U-9 50 kyr).
 - After any cut (a jump of a or an action step) the record's entry is read on its first run (`Geometry.record_entry`,
   columns `record_entry_*`, flag `entry_suspected`; `Geometry.entry_suspected()` covers both).
 - Derived views (`Geometry.derived`, held in `derived_views`) are emptied by `forget_derived` wherever runs or their

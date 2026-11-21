@@ -109,7 +109,8 @@ The resonant angle $\sigma$, unwrapped: a circulation runs off upwards or downwa
 - a fill labeled `leg`: a counted 1:1 leg (one clean leg of a co-orbital, half a cycle, no episode row);
 - a faint fill with a dashed outline labeled `cand`: a candidate the status did not count (an episode a measured
   veto rejected, as in a kinematic or induced row, the episodes of a parent row whose member librates, a leg or
-  half-swing that is not counted), shown so the reader can judge it;
+  half-swing that is not counted, or the unfinished arc of an uncertain row: the whole window without a revolution and
+  without a closed slow cycle), shown so the reader can judge it;
 - nothing else: rejected runs, runs below the period floor and runs the strength rejected are not drawn; episodes.csv
   lists them (columns `counted`, `candidate`, `reject_reason`) and (l) still shows the accepted ones;
 - a turning point inside the filter's pale edge of a 1:1 angle: a turn read on the orbit-averaged raw angle; it is

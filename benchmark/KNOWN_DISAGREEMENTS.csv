@@ -3,5 +3,3 @@
 # author/package: the values compared; category and reason: Claude's reading of each case, NOT an author label;
 # since: the run that recorded the row. Regenerate with `known_disagreements.py <run> --write` (keeps category and reason).
 example_id,field,author,package,category,reason,since
-mmr2__709123__2J-1+0-1__stage1-20kyr,status,resonant,transient,unreviewed,"false episode break 15.8-16.7 kyr on the 20-kyr stage-1 record (the 3.7-kyr centre wave splits the fine 2J-1 libration into two episodes); test-first: the author's label 2026-11-21, cleared by the episode-detector fix (two scales: keep the one whose period matches the theoretical strength)",test-benchmark
-mmr2__709123__2J-1+0-1__stage1-20kyr,angle_status,libration,episodic,unreviewed,"false episode break 15.8-16.7 kyr on the 20-kyr stage-1 record (the 3.7-kyr centre wave splits the fine 2J-1 libration into two episodes); test-first: the author's label 2026-11-21, cleared by the episode-detector fix (two scales: keep the one whose period matches the theoretical strength)",test-benchmark

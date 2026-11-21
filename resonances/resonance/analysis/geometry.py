@@ -4318,8 +4318,8 @@ def covering_union(geometry: 'Geometry', episodes: Sequence[Episode], settings: 
         span_tp, span_raw = tp_range_in(geometry, *span), raw_range_in(geometry, *span)
         if not (span_tp < TWO_PI and span_raw < TWO_PI):
             continue
-        start = None if covers_edges(chain[0], settings)[0] else _union_edge(geometry, chain[0], 'start')
-        end = None if covers_edges(chain[-1], settings)[1] else _union_edge(geometry, chain[-1], 'end')
+        start = None if covers_edges(chain[0], settings)[0] else _union_edge(geometry, chain[0], 'start', settings)
+        end = None if covers_edges(chain[-1], settings)[1] else _union_edge(geometry, chain[-1], 'end', settings)
         if all(short is None or short <= settings.libration_coverage_periods for short in (start, end)):
             shortfalls = [NAN if short is None else short for short in (start, end)]
             geometry.rules_fired = rules.fire(geometry.rules_fired, rules.Rule.BOUNDED_GAP_MERGE)
@@ -4345,18 +4345,21 @@ def raw_range_in(geometry: 'Geometry', start_yr: float, end_yr: float) -> float:
     return float(np.ptp(part)) if len(part) else 0.0
 
 
-def _union_edge(geometry: 'Geometry', outer: Episode, edge: str) -> float:
+def _union_edge(geometry: 'Geometry', outer: Episode, edge: str, settings: AnalysisSettings) -> float:
     """The edge of a union chain that `covers_edges` does not cover ('start' or 'end'): how far sigma_f's turning
     points, accepted in a run or not, fall short of the analysis window's edge beyond the `outer` episode, in periods
     of that episode [P] (TK14 31M-34 at 0.5 yr: 0.15 after a lone TP 1.74 P past the last episode; 2003 TG2 4E-1M-3:
     12.6, a stall at a* without TPs). inf when the record shows the regime ending there: an observed exit (entry), or
-    a turn of sigma_f's turning points or of the orbit-averaged raw angle between the episode and the edge."""
+    a turn of sigma_f's turning points or of the orbit-averaged raw angle between the episode and the edge; 0 when
+    the stretch is the same libration bounded (`bounded_continuation`), however long it is."""
     if getattr(outer, 'exit_observed' if edge == 'end' else 'entry_observed', False):
         return math.inf
     w0, w1 = float(geometry.window[0]), float(geometry.window[1])
     lo, hi = (w0, outer.t_start_yr) if edge == 'start' else (outer.t_end_yr, w1)
     if not (tp_range_in(geometry, lo, hi) < TWO_PI and raw_range_in(geometry, lo, hi) < TWO_PI):
         return math.inf
+    if bounded_continuation(geometry, outer, edge, settings):
+        return 0.0
     times = np.asarray(geometry.turning_points.times_yr, dtype=float)
     inside = times[(times >= lo) & (times <= hi)]
     if edge == 'start':
@@ -4364,6 +4367,37 @@ def _union_edge(geometry: 'Geometry', outer: Episode, edge: str) -> float:
     else:
         reach = w1 - (inside.max() if len(inside) else lo)
     return float(reach / outer.period_med_yr) if outer.period_med_yr > 0 else math.inf
+
+
+def bounded_continuation(geometry: 'Geometry', outer: Episode, edge: str, settings: AnalysisSettings) -> bool:
+    """The stretch between an outer episode of a union and the analysis window's `edge` ('start' or 'end') continues
+    that libration: sigma_f there stays inside the episode's band at that edge, c +- A_max (c: `edge_centre`, A:
+    half_amp_max), up to libration_union_band_margin_deg, the stretch is no longer than one cycle at the episode's
+    slowest observed pace (twice its longest turning-point step: an unfinished swing, not a stall; 2003 TG2 4E-1M-3
+    stalls 12.6 P, 14 kyr, before its first episode, whose longest half-cycle is 678 yr), and the filter's trim hides at
+    most libration_coverage_periods periods beyond the window. A7 (bounded gaps join whatever their length) read at the
+    record's edge: the time since the last turning point is no exit while the angle stays in its band (709123 2J-1 over
+    20 kyr: the last TP 1.14 P before the window's end, a 3.5-kyr centre wave slowing the swing, sigma_f 9.6 deg inside
+    the band). The caller has already excluded an observed exit (entry) and any turn. False without sigma_f, a
+    centre or samples beyond the episode."""
+    if getattr(geometry, 'angle_f', None) is None or getattr(geometry, 'angle_f_t_yr', None) is None:
+        return False
+    centre, amplitude = edge_centre(outer, edge), outer.half_amp_max_rad
+    hidden = outer.window_end_hidden_p if edge == 'end' else outer.window_start_hidden_p
+    if not np.all(np.isfinite([centre, amplitude])):
+        return False
+    if not hidden <= settings.libration_coverage_periods:
+        return False
+    t = np.asarray(geometry.angle_f_t_yr, dtype=float)
+    w0, w1 = float(geometry.window[0]), float(geometry.window[1])
+    lo_t, hi_t = (w0, outer.t_start_yr) if edge == 'start' else (outer.t_end_yr, w1)
+    steps = np.diff(np.asarray(getattr(outer, 'tp_times_yr', ()), dtype=float))
+    if not len(steps) or not hi_t - lo_t <= 2.0 * float(np.max(steps)):
+        return False  # longer than a cycle at the episode's slowest pace: a stall, not an unfinished swing
+    angle = np.asarray(geometry.angle_f, dtype=float)[int(np.searchsorted(t, lo_t, 'left')) : int(np.searchsorted(t, hi_t, 'right'))]
+    if not len(angle) or not np.all(np.isfinite(angle)):
+        return False
+    return bool(np.max(np.abs(angle - centre)) - amplitude <= math.radians(settings.libration_union_band_margin_deg))
 
 
 def break_range(geometry: 'Geometry', left: Episode, right: Episode) -> float:

@@ -3583,5 +3583,47 @@
         "transcript": "chat 2026-11-15 (answers page of qs-missed-episodes, followup/answers/q2_rd2_b_*.png)"
       }
     ]
+  },
+  {
+    "case": "E124",
+    "example_id": "mmr2__709123__2J-1+0-1__stage1-20kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 2472,
+        "who": "author",
+        "text": "Один эпизод на всю запись. Разделение на 2 эпизода ошибочно.",
+        "transcript": "chat 2026-11-21 (FAIR stage-1 page and combined figures)"
+      }
+    ]
+  },
+  {
+    "case": "E125",
+    "example_id": "mmr2__523683__2U-9+0+7__stage1-50kyr",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 2485,
+        "who": "author",
+        "text": "Эпизод должен быть - всё время",
+        "transcript": "chat 2026-11-21 (FAIR stage-1 page and combined figures)"
+      }
+    ]
+  },
+  {
+    "case": "E126",
+    "example_id": "mmr2__523616__5M-4+0-1",
+    "tier": "A",
+    "quotes": [
+      {
+        "file": "benchmark/DECISIONS.md",
+        "line": 2479,
+        "who": "author",
+        "text": "эпизод примерно с 0 8-8.5 kyr, затем",
+        "transcript": "chat 2026-11-21 (FAIR stage-1 page and combined figures)"
+      }
+    ]
   }
 ]
